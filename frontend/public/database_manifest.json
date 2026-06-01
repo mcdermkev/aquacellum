@@ -1,0 +1,11 @@
+{
+  "current_version": "1.0.0",
+  "total_species_indexed": 150,
+  "canonical_ipfs_uri": "ipfs://bafkreiavfny7scee4mxyvc4pgoqicts4tzaq3f7fepprixftea6vj4lllu",
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "description": "Initial base database seeding covering major Freshwater Cichlid, Tetra, Livebearer, and Pleco families."
+    }
+  ]
+}

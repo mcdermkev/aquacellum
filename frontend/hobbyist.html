@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aquacellum for Hobbyists — Your Digital Aquarium Logbook</title>
+  <meta name="description" content="Aquacellum makes fishkeeping effortless and rewarding. Log your tank in one tap, discover local sellers, earn loyalty points, and let your AI companion grow with your collection.">
+  <meta name="keywords" content="aquarium app, fish tank logbook, aquarium tracker, hobbyist fishkeeping, local fish breeders, aquarium companion, neon tetra care">
+  <meta property="og:title" content="Aquacellum for Hobbyists — Your Digital Aquarium Logbook">
+  <meta property="og:description" content="One-tap care logs, species intelligence, local sellers, loyalty rewards, and an AI companion that lives in your tank.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* =========================================
+       HOBBYIST DESIGN SYSTEM — Sky Blue Palette
+    ========================================= */
+    :root {
+      --bg-void:      #040c18;
+      --bg-deep:      #071220;
+      --bg-surface:   #0c1c30;
+
+      --sky-100:      #e0f2fe;
+      --sky-200:      #bae6fd;
+      --sky-300:      #7dd3fc;
+      --sky-400:      #38bdf8;
+      --sky-500:      #0ea5e9;
+      --sky-600:      #0284c7;
+
+      --cyan-200:     #a5f3fc;
+      --cyan-300:     #67e8f9;
+      --cyan-400:     #22d3ee;
+
+      --teal-300:     #5eead4;
+      --teal-400:     #2dd4bf;
+
+      --emerald-400:  #34d399;
+      --amber-300:    #fcd34d;
+      --amber-400:    #fbbf24;
+      --rose-400:     #fb7185;
+
+      --text-primary: #f0f8ff;
+      --text-secondary: #94b8d0;
+      --text-muted:   #3d6a8a;
+
+      --glass-bg:     rgba(7, 18, 32, 0.65);
+      --glass-border: rgba(56, 189, 248, 0.1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-void);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: inherit; border: none; background: none; }
+
+    /* =========================================
+       AMBIENT LAYER
+    ========================================= */
+    .ambient-layer {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0; overflow: hidden;
+    }
+    .orb {
+      position: absolute; border-radius: 50%;
+      filter: blur(130px);
+      animation: orb-drift 20s ease-in-out infinite;
+    }
+    .orb-1 {
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(14,165,233,0.14) 0%, transparent 70%);
+      top: -200px; left: -100px;
+    }
+    .orb-2 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(56,189,248,0.08) 0%, transparent 70%);
+      top: 40%; right: -150px;
+      animation-delay: 8s;
+    }
+    .orb-3 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(34,211,238,0.07) 0%, transparent 70%);
+      bottom: 0; left: 30%;
+      animation-delay: 14s;
+    }
+    @keyframes orb-drift {
+      0%,100% { transform: translate(0,0) scale(1); }
+      33%      { transform: translate(30px,-25px) scale(1.06); }
+      66%      { transform: translate(-15px,20px) scale(0.96); }
+    }
+
+    /* Bubble animation */
+    .bubbles {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0;
+      overflow: hidden;
+    }
+    .bubble {
+      position: absolute;
+      bottom: -20px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, rgba(56,189,248,0.25), rgba(56,189,248,0.06));
+      border: 1px solid rgba(56,189,248,0.15);
+      animation: bubble-rise linear infinite;
+    }
+    @keyframes bubble-rise {
+      0%   { transform: translateY(0) scale(1); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 0.6; }
+      100% { transform: translateY(-110vh) scale(1.2); opacity: 0; }
+    }
+
+    /* =========================================
+       UTILITIES
+    ========================================= */
+    .container { max-width: 1160px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+    .section    { padding: 100px 0; }
+    .section-sm { padding: 60px 0; }
+
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass-card:hover {
+      border-color: rgba(56,189,248,0.22);
+      transform: translateY(-3px);
+      box-shadow: 0 20px 50px rgba(14,165,233,0.1);
+    }
+
+    .text-sky  { color: var(--sky-300); }
+    .text-cyan { color: var(--cyan-300); }
+    .text-teal { color: var(--teal-300); }
+
+    .gradient-sky {
+      background: linear-gradient(135deg, var(--sky-300) 0%, var(--cyan-200) 50%, var(--teal-300) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .btn-sky {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 14px 28px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--sky-500), var(--cyan-400));
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      transition: all 0.3s;
+      box-shadow: 0 4px 20px rgba(14,165,233,0.3);
+      cursor: pointer;
+      border: none;
+    }
+    .btn-sky:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(14,165,233,0.45);
+      filter: brightness(1.1);
+    }
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 13px 24px;
+      border-radius: 12px;
+      background: rgba(56,189,248,0.05);
+      border: 1px solid rgba(56,189,248,0.2);
+      color: var(--sky-300);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    .btn-ghost:hover {
+      background: rgba(56,189,248,0.1);
+      border-color: rgba(56,189,248,0.4);
+    }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 5px 14px;
+      border-radius: 100px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .badge-sky { background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.25); color: var(--sky-300); }
+    .badge-cyan { background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.25); color: var(--cyan-300); }
+    .badge-teal { background: rgba(45,212,191,0.1); border: 1px solid rgba(45,212,191,0.25); color: var(--teal-300); }
+    .badge-emerald { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.25); color: var(--emerald-400); }
+    .badge-amber { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.25); color: var(--amber-300); }
+
+    /* =========================================
+       NAVIGATION
+    ========================================= */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(4,12,24,0.85);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid rgba(56,189,248,0.08);
+    }
+    .nav-inner {
+      max-width: 1160px; margin: 0 auto; padding: 0 24px;
+      height: 66px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: relative; z-index: 1;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; }
+    .nav-logo-mark {
+      width: 36px; height: 36px; border-radius: 9px;
+      background: linear-gradient(135deg, var(--sky-400), var(--teal-400));
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 16px rgba(14,165,233,0.3);
+      font-size: 1rem;
+    }
+    .nav-back {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.8rem; font-weight: 500;
+      color: var(--text-secondary);
+      transition: color 0.2s;
+    }
+    .nav-back:hover { color: var(--sky-300); }
+
+    /* =========================================
+       HERO
+    ========================================= */
+    .hero {
+      position: relative; min-height: 100vh;
+      display: flex; align-items: center;
+      overflow: hidden;
+    }
+    .hero-bg-img {
+      position: absolute; inset: 0;
+      background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><radialGradient id="g" cx="50%25" cy="40%25" r="60%25"><stop offset="0%25" style="stop-color:%230ea5e9;stop-opacity:0.08"/><stop offset="100%25" style="stop-color:transparent"/></radialGradient></defs><rect width="100" height="100" fill="url(%23g)"/></svg>');
+      background-size: cover;
+    }
+    /* Horizontal scan lines for underwater feel */
+    .hero-scanlines {
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(56,189,248,0.012) 3px,
+        rgba(56,189,248,0.012) 4px
+      );
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative; z-index: 1;
+      max-width: 680px;
+      padding: 0 24px;
+    }
+    .hero-eyebrow {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 28px;
+    }
+    .back-link {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.8rem; color: var(--text-muted);
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--sky-300); }
+
+    .hero-h1 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 900;
+      font-size: clamp(2.8rem, 5.5vw, 4.5rem);
+      line-height: 1.08;
+      letter-spacing: -0.025em;
+      color: #fff;
+      margin-bottom: 24px;
+    }
+    .hero-p {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      line-height: 1.75;
+      max-width: 520px;
+      margin-bottom: 40px;
+    }
+    .hero-ctas { display: flex; gap: 14px; flex-wrap: wrap; }
+
+    /* =========================================
+       QUICK-TAP BAR
+    ========================================= */
+    .quick-tap-section { padding: 80px 0; }
+    .quick-tap-bar {
+      background: rgba(7,18,32,0.8);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(56,189,248,0.12);
+      border-radius: 20px;
+      padding: 32px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .tap-action {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 24px 16px;
+      border-radius: 14px;
+      background: rgba(56,189,248,0.04);
+      border: 1px solid rgba(56,189,248,0.08);
+      transition: all 0.25s;
+      cursor: pointer;
+      user-select: none;
+    }
+    .tap-action:hover, .tap-action.tapped {
+      background: rgba(56,189,248,0.10);
+      border-color: rgba(56,189,248,0.25);
+      transform: scale(0.97);
+    }
+    .tap-action.tapped { animation: tap-flash 0.5s ease; }
+    @keyframes tap-flash {
+      0%   { box-shadow: 0 0 0 0 rgba(56,189,248,0.4); }
+      50%  { box-shadow: 0 0 0 10px rgba(56,189,248,0); }
+      100% { box-shadow: 0 0 0 0 rgba(56,189,248,0); }
+    }
+    .tap-emoji { font-size: 1.8rem; }
+    .tap-label { font-family: 'Outfit',sans-serif; font-size: 0.85rem; font-weight: 700; color: #fff; }
+    .tap-sub   { font-size: 0.7rem; color: var(--text-muted); }
+    .tap-streak { font-size: 0.72rem; color: var(--amber-300); font-weight: 600; }
+
+    /* Maintenance log result */
+    .log-result {
+      margin-top: 20px;
+      padding: 16px 20px;
+      border-radius: 12px;
+      background: rgba(52,211,153,0.08);
+      border: 1px solid rgba(52,211,153,0.2);
+      display: none;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.84rem;
+      color: var(--emerald-400);
+      animation: fade-in 0.3s ease;
+    }
+    .log-result.visible { display: flex; }
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* =========================================
+       ENVIRONMENT SLIDERS
+    ========================================= */
+    .env-section { padding: 100px 0; }
+    .env-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 56px;
+      align-items: center;
+    }
+
+    .env-panel {
+      background: rgba(7,18,32,0.8);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(56,189,248,0.12);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    .env-panel-header {
+      padding: 14px 22px;
+      background: rgba(14,165,233,0.05);
+      border-bottom: 1px solid rgba(56,189,248,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .env-panel-title {
+      font-family: 'JetBrains Mono',monospace;
+      font-size: 0.78rem;
+      color: var(--sky-300);
+    }
+    .env-panel-body { padding: 28px; }
+
+    .slider-group { margin-bottom: 24px; }
+    .slider-label-row {
+      display: flex; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .slider-name { font-size: 0.83rem; font-weight: 600; color: #c8e6f8; }
+    .slider-val  {
+      font-family: 'JetBrains Mono',monospace;
+      font-size: 0.83rem;
+      color: var(--sky-300);
+      font-weight: 500;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 5px;
+      border-radius: 3px;
+      background: rgba(56,189,248,0.1);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--sky-400), var(--cyan-300));
+      box-shadow: 0 0 8px rgba(56,189,248,0.5);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+    .compat-status {
+      padding: 14px 18px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      margin-top: 8px;
+      transition: all 0.4s;
+    }
+    .compat-ok  { background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.22); color: var(--emerald-400); }
+    .compat-warn{ background: rgba(251,191,36,0.08);  border: 1px solid rgba(251,191,36,0.22);  color: var(--amber-300); }
+
+    /* =========================================
+       FEATURES GRID
+    ========================================= */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 56px;
+    }
+    .feat-card {
+      padding: 32px;
+      border-radius: 18px;
+      background: rgba(7,18,32,0.7);
+      border: 1px solid rgba(56,189,248,0.09);
+      transition: all 0.3s;
+    }
+    .feat-card:hover {
+      border-color: rgba(56,189,248,0.2);
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(14,165,233,0.08);
+    }
+    .feat-icon {
+      width: 52px; height: 52px;
+      border-radius: 13px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      background: rgba(14,165,233,0.08);
+      border: 1px solid rgba(14,165,233,0.15);
+    }
+    .feat-title {
+      font-family: 'Outfit',sans-serif;
+      font-size: 1.05rem; font-weight: 800;
+      color: #fff; margin-bottom: 10px;
+    }
+    .feat-desc {
+      font-size: 0.83rem; color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    /* =========================================
+       LOYALTY POINTS SECTION
+    ========================================= */
+    .loyalty-section { padding: 100px 0; }
+    .loyalty-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 56px;
+      align-items: center;
+    }
+    .loyalty-card {
+      background: rgba(7,18,32,0.85);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(56,189,248,0.12);
+      border-radius: 20px;
+      padding: 32px;
+    }
+    .loyalty-header {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(56,189,248,0.08);
+    }
+    .loyalty-avatar {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(14,165,233,0.2), rgba(45,212,191,0.1));
+      border: 1px solid rgba(56,189,248,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+    }
+    .loyalty-name { font-family:'Outfit',sans-serif; font-weight:700; font-size:1rem; color:#fff; }
+    .loyalty-tier { font-size:0.72rem; color:var(--sky-300); letter-spacing:0.06em; text-transform:uppercase; }
+
+    .xp-bar-wrap {
+      margin-bottom: 6px;
+    }
+    .xp-label-row { display:flex; justify-content:space-between; margin-bottom:7px; }
+    .xp-label { font-size:0.78rem; color:var(--text-secondary); }
+    .xp-val { font-family:'JetBrains Mono',monospace; font-size:0.78rem; color:var(--sky-300); }
+    .xp-bar {
+      height: 8px; border-radius: 4px;
+      background: rgba(56,189,248,0.08);
+      overflow: hidden;
+    }
+    .xp-bar-fill {
+      height: 100%; border-radius: 4px;
+      background: linear-gradient(90deg, var(--sky-500), var(--cyan-300));
+      transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    .reward-row {
+      display: flex; align-items: center;
+      gap: 12px; padding: 12px 0;
+      border-bottom: 1px solid rgba(56,189,248,0.06);
+    }
+    .reward-row:last-child { border-bottom: none; }
+    .reward-icon { font-size: 1.2rem; width: 28px; text-align: center; }
+    .reward-text { flex:1; font-size:0.82rem; color:#c0d8ec; }
+    .reward-pts  {
+      font-family:'JetBrains Mono',monospace;
+      font-size:0.8rem; font-weight:700; color:var(--amber-300);
+    }
+
+    /* =========================================
+       COMPANION GROWTH
+    ========================================= */
+    .companion-section { padding: 100px 0; }
+    .companion-cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-top: 48px;
+    }
+    .tier-card {
+      padding: 24px 20px;
+      border-radius: 16px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(7,18,32,0.7);
+      transition: all 0.3s;
+    }
+    .tier-card:hover { transform: translateY(-5px); }
+    .tier-card.active { border-color: rgba(56,189,248,0.3); background: rgba(14,165,233,0.07); }
+
+    .tier-fish { font-size: 2.4rem; margin-bottom: 12px; display: block; }
+    .tier-name { font-family:'Outfit',sans-serif; font-size:0.9rem; font-weight:700; color:#fff; margin-bottom:4px; }
+    .tier-xp   { font-size:0.7rem; color:var(--text-muted); margin-bottom:12px; }
+    .tier-desc { font-size:0.75rem; color:var(--text-secondary); line-height:1.5; }
+
+    /* =========================================
+       WAITLIST FORM
+    ========================================= */
+    .waitlist-section { padding: 100px 0; }
+    .waitlist-card {
+      max-width: 520px;
+      margin: 0 auto;
+      background: rgba(7,18,32,0.9);
+      backdrop-filter: blur(40px);
+      -webkit-backdrop-filter: blur(40px);
+      border: 1px solid rgba(56,189,248,0.18);
+      border-radius: 28px;
+      padding: 48px 40px;
+      text-align: center;
+      box-shadow: 0 0 80px rgba(14,165,233,0.07), 0 60px 100px rgba(0,0,0,0.5);
+    }
+    .waitlist-card h2 {
+      font-family:'Outfit',sans-serif;
+      font-size:2rem; font-weight:900;
+      color:#fff; line-height:1.2;
+      margin-bottom:12px;
+    }
+    .waitlist-card p {
+      font-size:0.9rem; color:var(--text-secondary);
+      line-height:1.7; margin-bottom:32px;
+    }
+    .form-input {
+      width:100%; padding:13px 16px;
+      border-radius:10px;
+      background:rgba(0,0,0,0.4);
+      border:1px solid rgba(56,189,248,0.12);
+      color:#fff; font-size:0.9rem;
+      font-family:'Inter',sans-serif;
+      outline:none; margin-bottom:12px;
+      transition:all 0.25s;
+    }
+    .form-input::placeholder { color:var(--text-muted); }
+    .form-input:focus {
+      border-color:rgba(56,189,248,0.4);
+      box-shadow:0 0 0 3px rgba(56,189,248,0.07);
+    }
+    .success-window {
+      display:none; padding:24px;
+      border-radius:14px;
+      background:rgba(52,211,153,0.06);
+      border:1px solid rgba(52,211,153,0.2);
+      animation:fade-in 0.4s ease;
+    }
+    .success-window h4 {
+      font-family:'Outfit',sans-serif;
+      font-size:1.1rem; font-weight:700;
+      color:#fff; margin:10px 0 8px;
+    }
+    .success-window p { font-size:0.82rem; color:var(--text-secondary); line-height:1.6; }
+
+    /* =========================================
+       FOOTER
+    ========================================= */
+    .footer {
+      border-top:1px solid rgba(56,189,248,0.07);
+      padding:44px 0;
+      background:rgba(4,12,24,0.8);
+    }
+    .footer-inner {
+      display:flex; align-items:center;
+      justify-content:space-between; flex-wrap:wrap; gap:16px;
+    }
+    .footer-copy { font-size:0.78rem; color:var(--text-muted); }
+
+    /* =========================================
+       RESPONSIVE
+    ========================================= */
+    @media(max-width:900px){
+      .env-grid, .loyalty-grid { grid-template-columns:1fr; }
+      .features-grid { grid-template-columns:repeat(2,1fr); }
+      .quick-tap-bar { grid-template-columns:repeat(2,1fr); }
+      .companion-cards { grid-template-columns:repeat(2,1fr); }
+    }
+    @media(max-width:600px){
+      .section { padding:70px 0; }
+      .features-grid { grid-template-columns:1fr; }
+      .quick-tap-bar { grid-template-columns:1fr 1fr; }
+      .companion-cards { grid-template-columns:1fr 1fr; }
+      .waitlist-card { padding:32px 24px; }
+      .hero-h1 { font-size:2.4rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Layer -->
+  <div class="ambient-layer">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Rising Bubbles -->
+  <div class="bubbles" id="bubbles"></div>
+
+  <!-- ========== NAVIGATION ========== -->
+  <header class="nav">
+    <nav class="nav-inner">
+      <a href="/" class="nav-logo">
+        <div class="nav-logo-mark">🐟</div>
+        <div>
+          <span style="font-family:'Outfit',sans-serif;font-weight:800;font-size:1rem;letter-spacing:0.1em;color:#fff;">AQUACELLUM</span>
+          <span style="display:block;font-size:9px;letter-spacing:0.15em;color:var(--sky-300);font-weight:600;text-transform:uppercase;margin-top:-2px;">For Hobbyists</span>
+        </div>
+      </a>
+
+      <div style="display:flex;align-items:center;gap:20px;">
+        <a href="#features" style="font-size:0.82rem;font-weight:500;color:var(--text-secondary);">Features</a>
+        <a href="#companion" style="font-size:0.82rem;font-weight:500;color:var(--text-secondary);">Companion</a>
+        <a href="/breeder" style="font-size:0.82rem;font-weight:500;color:var(--text-secondary);">For Breeders →</a>
+        <a href="#waitlist" class="btn-sky" style="padding:9px 20px;font-size:0.82rem;">Secure My Spot</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ========== HERO ========== -->
+  <section class="hero">
+    <div class="hero-bg-img"></div>
+    <div class="hero-scanlines"></div>
+
+    <div class="container" style="width:100%;">
+      <div class="hero-content">
+
+        <div class="hero-eyebrow">
+          <a href="/" class="back-link">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            Back to main
+          </a>
+          <div class="badge badge-sky">🐠 Casual Hobbyist Mode</div>
+        </div>
+
+        <h1 class="hero-h1">
+          Fishkeeping made<br>
+          <span class="gradient-sky">simple, rewarding,<br>and a little magical.</span>
+        </h1>
+
+        <p class="hero-p">
+          Log your tank in seconds. Know exactly which fish will thrive in your setup. Find local sellers nearby. And let an AI companion that actually understands your aquarium grow alongside you — from your first neon tetra to your hundredth spawn.
+        </p>
+
+        <div class="hero-ctas">
+          <a href="#waitlist" class="btn-sky">
+            Secure My Spot
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+          <a href="#features" class="btn-ghost">See All Features</a>
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;">
+          <span class="badge badge-emerald">✓ No technical knowledge required</span>
+          <span class="badge badge-cyan">✓ Works offline</span>
+          <span class="badge badge-amber">✓ Earn loyalty points</span>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== QUICK-TAP MAINTENANCE BAR ========== -->
+  <section class="quick-tap-section">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:40px;">
+        <div class="badge badge-sky" style="justify-content:center;margin:0 auto 16px;">⚡ Quick-Tap Maintenance</div>
+        <h2 style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;color:#fff;margin-bottom:10px;">
+          Your whole routine, logged in <span class="gradient-sky">under 10 seconds.</span>
+        </h2>
+        <p style="font-size:0.9rem;color:var(--text-secondary);">Tap any card to log it. Aquacellum timestamps and saves everything automatically — no typing, no forms, no friction.</p>
+      </div>
+
+      <div class="quick-tap-bar">
+        <div class="tap-action" id="tap-feed" onclick="handleTap('feed','🐟 Feeding logged!','Tetras Fed','+5 pts')">
+          <div class="tap-emoji">🍽️</div>
+          <div class="tap-label">Feed Tank</div>
+          <div class="tap-sub">Tap to log feeding</div>
+          <div class="tap-streak">🔥 Day 7 streak</div>
+        </div>
+        <div class="tap-action" id="tap-glass" onclick="handleTap('glass','🪟 Glass cleaned!','Glass Cleaned','+3 pts')">
+          <div class="tap-emoji">🪟</div>
+          <div class="tap-label">Clear Glass</div>
+          <div class="tap-sub">Wipe algae log</div>
+          <div class="tap-streak">Weekly task</div>
+        </div>
+        <div class="tap-action" id="tap-water" onclick="handleTap('water','💧 Water change saved!','Water Change','+10 pts')">
+          <div class="tap-emoji">💧</div>
+          <div class="tap-label">Water Change</div>
+          <div class="tap-sub">25% partial log</div>
+          <div class="tap-streak">Due in 2 days</div>
+        </div>
+        <div class="tap-action" id="tap-test" onclick="handleTap('test','🧪 Parameters saved!','Water Test','+8 pts')">
+          <div class="tap-emoji">🧪</div>
+          <div class="tap-label">Test Parameters</div>
+          <div class="tap-sub">Log pH, temp, nitrate</div>
+          <div class="tap-streak">⭐ Milestone unlocked</div>
+        </div>
+      </div>
+
+      <div class="log-result" id="logResult">
+        <span id="logResultIcon" style="font-size:1.5rem;"></span>
+        <div>
+          <div id="logResultText" style="font-weight:700;color:#fff;font-size:0.88rem;"></div>
+          <div id="logResultSub" style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;"></div>
+        </div>
+        <div id="logResultPts" style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:0.88rem;color:var(--amber-300);"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== ENVIRONMENT SLIDERS ========== -->
+  <section class="env-section" id="compatibility">
+    <div class="container">
+      <div class="env-grid">
+
+        <!-- Left: Content -->
+        <div>
+          <div class="badge badge-sky" style="margin-bottom:16px;">🌡️ Tank Compatibility</div>
+          <h2 style="font-family:'Outfit',sans-serif;font-size:2.2rem;font-weight:900;color:#fff;line-height:1.2;margin-bottom:16px;">
+            Know which fish belong<br>
+            <span class="gradient-sky">in your tank before you buy.</span>
+          </h2>
+          <p style="font-size:0.9rem;color:var(--text-secondary);line-height:1.7;margin-bottom:28px;">
+            Dial in your temperature, pH, and tank volume. Every species in the Spec-Dex is instantly checked against your real setup — so you never bring home a fish that won't thrive.
+          </p>
+          <ul style="list-style:none;display:flex;flex-direction:column;gap:10px;">
+            <li style="display:flex;align-items:flex-start;gap:10px;font-size:0.84rem;color:#b8d4e8;">
+              <span style="color:var(--emerald-400);font-weight:700;flex-shrink:0;">✓</span>
+              Green = perfect match · Yellow = borderline · Red = incompatible
+            </li>
+            <li style="display:flex;align-items:flex-start;gap:10px;font-size:0.84rem;color:#b8d4e8;">
+              <span style="color:var(--emerald-400);font-weight:700;flex-shrink:0;">✓</span>
+              Cross-references all 280+ Spec-Dex species against your exact values
+            </li>
+            <li style="display:flex;align-items:flex-start;gap:10px;font-size:0.84rem;color:#b8d4e8;">
+              <span style="color:var(--emerald-400);font-weight:700;flex-shrink:0;">✓</span>
+              Filters the marketplace to only show species that fit your tank today
+            </li>
+          </ul>
+        </div>
+
+        <!-- Right: Interactive Panel -->
+        <div>
+          <div class="env-panel">
+            <div class="env-panel-header">
+              <span class="env-panel-title">tank-setup-wizard.js</span>
+              <div class="badge badge-emerald" id="compatBadge">🟢 3 Compatible Species</div>
+            </div>
+            <div class="env-panel-body">
+
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span class="slider-name">🌡️ Temperature</span>
+                  <span class="slider-val" id="tempVal">25.5°C</span>
+                </div>
+                <input type="range" id="tempSlider" min="18.0" max="32.0" value="25.5" step="0.5"
+                  oninput="updateSlider('temp',this.value)" style="--fill:var(--sky-400);">
+                <div style="display:flex;justify-content:space-between;margin-top:4px;">
+                  <span style="font-size:0.65rem;color:var(--text-muted);">18°C</span>
+                  <span style="font-size:0.65rem;color:var(--text-muted);">32°C</span>
+                </div>
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-label-row">
+                  <span class="slider-name">⚗️ pH Level</span>
+                  <span class="slider-val" id="phVal">7.2</span>
+                </div>
+                <input type="range" id="phSlider" min="6.0" max="9.0" value="7.2" step="0.1"
+                  oninput="updateSlider('ph',this.value)">
+                <div style="display:flex;justify-content:space-between;margin-top:4px;">
+                  <span style="font-size:0.65rem;color:var(--text-muted);">6.0 (Acidic)</span>
+                  <span style="font-size:0.65rem;color:var(--text-muted);">9.0 (Alkaline)</span>
+                </div>
+              </div>
+
+              <div class="slider-group" style="margin-bottom:20px;">
+                <div class="slider-label-row">
+                  <span class="slider-name">🪣 Tank Volume</span>
+                  <span class="slider-val" id="volVal">60 L</span>
+                </div>
+                <input type="range" id="volSlider" min="20" max="200" value="60" step="10"
+                  oninput="updateSlider('vol',this.value)">
+                <div style="display:flex;justify-content:space-between;margin-top:4px;">
+                  <span style="font-size:0.65rem;color:var(--text-muted);">20L (Mini)</span>
+                  <span style="font-size:0.65rem;color:var(--text-muted);">200L (Large)</span>
+                </div>
+              </div>
+
+              <div class="compat-status compat-ok" id="compatStatus">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                <span id="compatText">Neon Tetras, Corydoras, Guppies — 100% compatible ✓</span>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FEATURES GRID ========== -->
+  <section class="section" id="features">
+    <div class="container">
+      <div style="text-align:center;max-width:560px;margin:0 auto 0;">
+        <div class="badge badge-cyan" style="justify-content:center;margin:0 auto 16px;">🐠 Built for Hobbyists</div>
+        <h2 style="font-family:'Outfit',sans-serif;font-size:2.3rem;font-weight:900;color:#fff;margin-bottom:12px;">
+          Everything your tank <span class="gradient-sky">deserves.</span>
+        </h2>
+        <p style="font-size:0.9rem;color:var(--text-secondary);">Tools built around how hobbyists actually keep fish — not how software engineers think they do.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feat-card">
+          <div class="feat-icon">📔</div>
+          <div class="feat-title">Digital Logbook</div>
+          <p class="feat-desc">One tap to log a feeding. One tap for a water change. Your full tank history builds itself in the background — timestamped, organized, and always there when you need it.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">👁️</div>
+          <div class="feat-title">Biometric Login</div>
+          <p class="feat-desc">Face ID or fingerprint gets you straight into your dashboard. No passwords, no friction — just your tank, ready the moment you open the app.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">🗺️</div>
+          <div class="feat-title">Local Sellers Radar</div>
+          <p class="feat-desc">Find certified breeders and pickup listings near you on an interactive map. Buy local, skip the shipping stress, and know exactly where your fish came from.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">⭐</div>
+          <div class="feat-title">Loyalty Points</div>
+          <p class="feat-desc">Good care earns real rewards. Every feeding, water change, and care streak builds points you can redeem for marketplace discounts and platform perks.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">🔍</div>
+          <div class="feat-title">Spec-Dex Browser</div>
+          <p class="feat-desc">280+ species with honest care guides, personality vibe lines, and instant compatibility checks against your actual setup. Find your next fish with confidence, not guesswork.</p>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon">💬</div>
+          <div class="feat-title">Expert Mentorship Feed</div>
+          <p class="feat-desc">Share an observation and get real feedback from Verified Master Breeders. Expert audits earn bonus XP and unlock the next tier of your companion's evolution.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== LOYALTY POINTS ========== -->
+  <section class="loyalty-section">
+    <div class="container">
+      <div class="loyalty-grid">
+
+        <!-- Loyalty Card -->
+        <div>
+          <div class="loyalty-card">
+            <div class="loyalty-header">
+              <div class="loyalty-avatar">🐠</div>
+              <div>
+                <div class="loyalty-name">Your Aquacellum Account</div>
+                <div class="loyalty-tier" id="loyaltyTierLabel">🥈 Silver Keeper · 1,847 pts</div>
+              </div>
+              <div style="margin-left:auto;text-align:right;">
+                <div id="loyaltyPointsDisplay" style="font-family:'Outfit',sans-serif;font-size:1.6rem;font-weight:900;color:var(--amber-300);">1,847</div>
+                <div style="font-size:0.7rem;color:var(--text-muted);">Loyalty Points</div>
+              </div>
+            </div>
+
+            <div class="xp-bar-wrap" style="margin-bottom:24px;">
+              <div class="xp-label-row">
+                <span class="xp-label">Progress to Gold Keeper</span>
+                <span class="xp-val" id="xpValLabel">1,847 / 2,500 pts</span>
+              </div>
+              <div class="xp-bar">
+                <div class="xp-bar-fill" id="xpBarFill" style="width:73.9%"></div>
+              </div>
+              <div id="xpRemainingLabel" style="font-size:0.7rem;color:var(--text-muted);margin-top:6px;">653 points until your next tier</div>
+            </div>
+
+            <div class="reward-row">
+              <span class="reward-icon">🍽️</span>
+              <span class="reward-text">Daily feeding log</span>
+              <span class="reward-pts">+5 pts</span>
+            </div>
+            <div class="reward-row">
+              <span class="reward-icon">💧</span>
+              <span class="reward-text">Water change logged</span>
+              <span class="reward-pts">+10 pts</span>
+            </div>
+            <div class="reward-row">
+              <span class="reward-icon">🧪</span>
+              <span class="reward-text">Water parameters tested</span>
+              <span class="reward-pts">+8 pts</span>
+            </div>
+            <div class="reward-row">
+              <span class="reward-icon">🤝</span>
+              <span class="reward-text">Verified local pickup completed</span>
+              <span class="reward-pts">+25 pts</span>
+            </div>
+            <div class="reward-row">
+              <span class="reward-icon">📸</span>
+              <span class="reward-text">Photo observation shared</span>
+              <span class="reward-pts">+12 pts</span>
+            </div>
+            <div class="reward-row" style="border-bottom:none;">
+              <span class="reward-icon">⚡</span>
+              <span class="reward-text">Expo zone double-XP event</span>
+              <span class="reward-pts">×2 pts</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Content -->
+        <div>
+          <div class="badge badge-amber" style="margin-bottom:16px;">⭐ Loyalty Rewards</div>
+          <h2 style="font-family:'Outfit',sans-serif;font-size:2.2rem;font-weight:900;color:#fff;line-height:1.2;margin-bottom:16px;">
+            Good care<br>
+            <span class="gradient-sky">pays off.</span>
+          </h2>
+          <p style="font-size:0.9rem;color:var(--text-secondary);line-height:1.7;margin-bottom:28px;">
+            Every act of care earns points — morning feedings, weekly water changes, community contributions. Those points convert into real marketplace discounts and platform credits. The more you care for your tank, the more Aquacellum gives back.
+          </p>
+          <p style="font-size:0.9rem;color:var(--text-secondary);line-height:1.7;margin-bottom:28px;">
+            Progress through Bronze, Silver, Gold, Master, and the coveted God-Tier regional champion as your experience grows.
+          </p>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;align-items:center;gap:12px;font-size:0.84rem;color:#b8d4e8;">
+              <span style="width:24px;height:24px;border-radius:50%;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:var(--amber-300);flex-shrink:0;">✓</span>
+              40% of all marketplace protocol fees flow back into the Loyalty Rewards Pool
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;font-size:0.84rem;color:#b8d4e8;">
+              <span style="width:24px;height:24px;border-radius:50%;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:var(--amber-300);flex-shrink:0;">✓</span>
+              Expo events award double XP when you're inside a verified event zone
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;font-size:0.84rem;color:#b8d4e8;">
+              <span style="width:24px;height:24px;border-radius:50%;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:var(--amber-300);flex-shrink:0;">✓</span>
+              Regional zone leaderboards — be the top Keeper in your area
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== COMPANION GROWTH ========== -->
+  <section class="companion-section" id="companion">
+    <div class="container">
+      <div style="text-align:center;max-width:600px;margin:0 auto;">
+        <div class="badge badge-sky" style="justify-content:center;margin:0 auto 16px;">🌊 Your AI Companion</div>
+        <h2 style="font-family:'Outfit',sans-serif;font-size:2.3rem;font-weight:900;color:#fff;margin-bottom:14px;">
+          Echo grows with <span class="gradient-sky">your tank.</span>
+        </h2>
+        <p style="font-size:0.9rem;color:var(--text-secondary);line-height:1.7;">
+          Echo is warm, reactive, and slightly poetic. She responds to how your tank is actually doing — calm when things are thriving, gently concerned when parameters drift, quietly joyful after a good streak. Your companion starts as a translucent fry and evolves through tiers as your care record grows, unlocking new visual forms, moods, and capabilities along the way.
+        </p>
+      </div>
+
+      <div class="companion-cards">
+        <div class="tier-card">
+          <span class="tier-fish" style="opacity:0.5;filter:blur(1px);">🐟</span>
+          <div class="tier-name">Bronze Fry</div>
+          <div class="tier-xp">0 – 1,499 pts</div>
+          <div class="tier-desc">Translucent and shy. Just hatched. Learns from your earliest logs.</div>
+        </div>
+        <div class="tier-card active">
+          <span class="tier-fish" style="filter:drop-shadow(0 0 6px rgba(56,189,248,0.6));">🐠</span>
+          <div class="tier-name" style="color:var(--sky-300);">Silver Keeper</div>
+          <div class="tier-xp">1,500 – 2,499 pts · You are here</div>
+          <div class="tier-desc">Silver-blue shimmer. Reactive moods based on your care streak quality.</div>
+        </div>
+        <div class="tier-card">
+          <span class="tier-fish" style="filter:drop-shadow(0 0 8px rgba(251,191,36,0.7));">🐡</span>
+          <div class="tier-name" style="color:var(--amber-300);">Gold Aquarist</div>
+          <div class="tier-xp">2,500 – 4,999 pts</div>
+          <div class="tier-desc">Golden aura glow. Proactively surfaces care suggestions and spawn alerts.</div>
+        </div>
+        <div class="tier-card">
+          <span class="tier-fish" style="filter:drop-shadow(0 0 10px rgba(139,92,246,0.8));font-size:2.8rem;">🐉</span>
+          <div class="tier-name" style="color:#c4b5fd;">God-Tier Koi</div>
+          <div class="tier-xp">10,000+ pts · Regional Champion</div>
+          <div class="tier-desc">Legendary golden koi with flowing tail. Sole champion of your zone.</div>
+        </div>
+      </div>
+
+      <div style="margin-top:32px;padding:24px;border-radius:16px;background:rgba(14,165,233,0.05);border:1px solid rgba(56,189,248,0.1);text-align:center;">
+        <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.7;">
+          ⚠️ <strong style="color:#fff;">Medical note:</strong> Echo and Poseidon are care companions, not veterinary tools. If your fish shows signs of illness, always consult a qualified aquatic veterinarian. Your companion will help you log symptoms and track parameters — but diagnosis is always for professionals.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FINAL CTA / WAITLIST ========== -->
+  <section class="waitlist-section" id="waitlist">
+    <div class="container">
+      <div class="waitlist-card">
+        <div class="badge badge-emerald" style="justify-content:center;margin:0 auto 24px;">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--emerald-400);display:inline-block;animation:pulse-ring 2s infinite;"></span>
+          Waitlist Now Open
+        </div>
+        <h2>Your tank deserves<br><span class="gradient-sky">a proper home base.</span></h2>
+        <p>Join the waitlist and be among the first hobbyists on the platform. Founding members get priority access, exclusive loyalty bonuses, and a direct say in what gets built first.</p>
+
+        <form id="waitlistForm" onsubmit="handleWaitlistSubmit(event)">
+          <input class="form-input" type="text" name="name" id="nameInput" placeholder="Your first name" required>
+          <input class="form-input" type="email" name="email" id="emailInput" placeholder="your@email.com" required>
+          <input type="hidden" name="role" value="Casual Hobbyist">
+          <input type="hidden" name="_subject" value="Aquacellum Hobbyist Waitlist Signup">
+          <button class="btn-sky" type="submit" id="submitBtn" style="width:100%;padding:14px;">
+            <span id="submitText">Secure My Spot</span>
+            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </form>
+
+        <p style="font-size:0.78rem;color:var(--text-secondary);text-align:center;margin-top:12px;">Founding members get priority access, exclusive early perks, and a direct say in what gets built.</p>
+
+        <div class="success-window" id="successWindow">
+          <div style="font-size:2.5rem;">🐠</div>
+          <h4>You're in!</h4>
+          <p>We'll reach out to <strong id="successEmail" style="color:#fff;"></strong> when early access opens. Your tank journey is about to get a whole lot better.</p>
+        </div>
+
+        <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-top:20px;">
+          <span style="font-size:0.73rem;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
+            <span style="width:5px;height:5px;border-radius:50%;background:var(--emerald-400);"></span>No credit card
+          </span>
+          <span style="font-size:0.73rem;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
+            <span style="width:5px;height:5px;border-radius:50%;background:var(--emerald-400);"></span>Free early access
+          </span>
+          <span style="font-size:0.73rem;color:var(--text-muted);display:flex;align-items:center;gap:6px;">
+            <span style="width:5px;height:5px;border-radius:50%;background:var(--emerald-400);"></span>No spam, ever
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:1.2rem;">🐟</span>
+          <span style="font-family:'Outfit',sans-serif;font-weight:800;font-size:0.9rem;letter-spacing:0.1em;color:#fff;">AQUACELLUM</span>
+          <span style="font-size:0.78rem;color:var(--text-muted);margin-left:4px;">· For Hobbyists</span>
+        </div>
+        <div style="display:flex;gap:20px;">
+          <a href="/" style="font-size:0.78rem;color:var(--text-muted);">Main Site</a>
+          <a href="/breeder" style="font-size:0.78rem;color:var(--text-muted);">For Breeders</a>
+          <a href="mailto:kevin@aquacellum.com" style="font-size:0.78rem;color:var(--text-muted);">Contact</a>
+        </div>
+        <p class="footer-copy">© 2026 Aquacellum. 25% of all platform fees support marine conservation.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========== JAVASCRIPT ========== -->
+  <script>
+    // Bubble generation
+    function createBubbles() {
+      const container = document.getElementById('bubbles');
+      const count = 18;
+      for (let i = 0; i < count; i++) {
+        const b = document.createElement('div');
+        b.className = 'bubble';
+        const size = 6 + Math.random() * 18;
+        b.style.cssText = `
+          width:${size}px; height:${size}px;
+          left:${Math.random() * 100}%;
+          animation-duration:${12 + Math.random() * 18}s;
+          animation-delay:${Math.random() * 20}s;
+        `;
+        container.appendChild(b);
+      }
+    }
+    createBubbles();
+
+    // =================================================================
+    // QUICK-TAP OFFLINE ACTION LOG SYSTEM
+    // =================================================================
+
+    // --- Config ---
+    const STORAGE_KEY   = 'aquadex_action_log'; // localStorage ledger key
+    const IDB_DB_NAME   = 'AquadexDB';
+    const IDB_STORE     = 'actionLog';
+    const XP_TIER_MAX   = 2500;                 // Gold Keeper threshold
+    const XP_BASE_START = 1847;                 // demo baseline
+
+    // Emoji map
+    const tapEmojis = { feed: '🍽️', glass: '🪟', water: '💧', test: '🧪' };
+
+    // Point weights per action type (Requirement 4)
+    const ACTION_POINTS = { feed: 5, glass: 3, water: 10, test: 8 };
+
+    // Friendly display titles
+    const ACTION_LABELS = {
+      feed:  'Daily Feeding',
+      glass: 'Glass Cleaned',
+      water: 'Water Change',
+      test:  'Parameter Test',
+    };
+
+    // Session XP — seeded from localStorage so taps persist across reloads
+    let sessionXP = (() => {
+      const v = localStorage.getItem('aquadex_session_xp');
+      return v !== null ? parseInt(v, 10) : XP_BASE_START;
+    })();
+
+    // Single dismiss timer — prevents stacked setTimeout calls on rapid taps
+    let toastTimer = null;
+
+    // =================================================================
+    // IndexedDB — open once, reuse connection
+    // =================================================================
+    let _idb = null;
+
+    function openIDB() {
+      return new Promise((resolve, reject) => {
+        if (_idb) { resolve(_idb); return; }
+        const req = indexedDB.open(IDB_DB_NAME, 1);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(IDB_STORE)) {
+            // txId is our unique compound key stored as an array
+            db.createObjectStore(IDB_STORE, { keyPath: 'txId' });
+          }
+        };
+        req.onsuccess = (e) => { _idb = e.target.result; resolve(_idb); };
+        req.onerror   = (e) => reject(e.target.error);
+      });
+    }
+
+    // Write one payload record to IDB, resolve when transaction commits
+    async function writeToIDB(payload) {
+      const db = await openIDB();
+      return new Promise((resolve, reject) => {
+        const tx    = db.transaction(IDB_STORE, 'readwrite');
+        const store = tx.objectStore(IDB_STORE);
+        store.put(payload);                          // put = upsert by key
+        tx.oncomplete = () => resolve();
+        tx.onerror    = (e) => reject(e.target.error);
+      });
+    }
+
+    // =================================================================
+    // localStorage ledger — pull existing array, append, push back
+    // (Requirement 3)
+    // =================================================================
+    function appendToLocalLedger(payload) {
+      let ledger = [];
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) ledger = JSON.parse(raw);
+        if (!Array.isArray(ledger)) ledger = [];
+      } catch (_) { ledger = []; }
+
+      ledger.push(payload);
+
+      // Keep most recent 500 entries — stays safely under quota
+      if (ledger.length > 500) ledger = ledger.slice(-500);
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(ledger));
+      return ledger.length;
+    }
+
+    // =================================================================
+    // XP / Loyalty Points — reactive update on the companion card
+    // (Requirement 4)
+    // =================================================================
+    function updateXPDisplay(earnedPts) {
+      sessionXP += earnedPts;
+      localStorage.setItem('aquadex_session_xp', sessionXP);
+
+      // Big amber point counter
+      const display = document.getElementById('loyaltyPointsDisplay');
+      if (display) display.textContent = sessionXP.toLocaleString();
+
+      // Tier sub-label beside the avatar
+      const tierLabel = document.getElementById('loyaltyTierLabel');
+      if (tierLabel) tierLabel.textContent = '\uD83E\uDD48 Silver Keeper \u00B7 ' + sessionXP.toLocaleString() + ' pts';
+
+      // Progress label "1,847 / 2,500 pts"
+      const xpValEl = document.getElementById('xpValLabel');
+      if (xpValEl) xpValEl.textContent = sessionXP.toLocaleString() + ' / ' + XP_TIER_MAX.toLocaleString() + ' pts';
+
+      // Animated XP bar (capped at 100%)
+      const pct  = Math.min((sessionXP / XP_TIER_MAX) * 100, 100);
+      const fill = document.getElementById('xpBarFill');
+      if (fill) fill.style.width = pct.toFixed(2) + '%';
+
+      // "X points until your next tier" remaining text
+      const remaining = Math.max(XP_TIER_MAX - sessionXP, 0);
+      const remEl = document.getElementById('xpRemainingLabel');
+      if (remEl) {
+        remEl.textContent = remaining > 0
+          ? remaining.toLocaleString() + ' points until your next tier'
+          : '\uD83C\uDF89 Gold Keeper tier reached!';
+      }
+    }
+
+    // =================================================================
+    // Toast — smooth fade-in entry, 3.5 s hold, clean fade-out
+    // (Requirement 5 — no layout disruption)
+    // =================================================================
+    function showToast({ icon, title, subtitle, pts }) {
+      const toast = document.getElementById('logResult');
+      if (!toast) return;
+
+      // Pre-populate labels before making visible
+      document.getElementById('logResultIcon').textContent = icon;
+      document.getElementById('logResultText').textContent = title;
+      document.getElementById('logResultSub').textContent  = subtitle;
+      document.getElementById('logResultPts').textContent  = pts;
+
+      // Cancel any running dismiss timer from a prior tap
+      if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+
+      // Reset inline fade-out styles in case they were mid-animation
+      toast.style.transition = '';
+      toast.style.opacity    = '';
+      toast.style.transform  = '';
+
+      // Remove and re-add .visible across two rAF ticks so the browser
+      // fully registers the removal and replays the CSS keyframe entrance
+      toast.classList.remove('visible');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          toast.classList.add('visible');
+
+          // Hold for exactly 3,500 ms, then fade out without disrupting layout
+          toastTimer = setTimeout(() => {
+            toast.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+            toast.style.opacity    = '0';
+            toast.style.transform  = 'translateY(4px)';
+
+            // After the 400 ms fade-out, hide and reset for next tap
+            setTimeout(() => {
+              toast.classList.remove('visible');
+              toast.style.transition = '';
+              toast.style.opacity    = '';
+              toast.style.transform  = '';
+            }, 400);
+          }, 3500);
+        });
+      });
+    }
+
+    // =================================================================
+    // handleTap — entry point called by each tap card's onclick
+    // (Requirements 1-5 all converge here)
+    // =================================================================
+    async function handleTap(type, msg, label, _legacyPts) {
+      // Requirement 1: intercept tap, trigger card flash animation
+      const card = document.getElementById('tap-' + type);
+      if (card) {
+        card.classList.add('tapped');
+        setTimeout(() => card.classList.remove('tapped'), 600);
+      }
+
+      const earnedPts = ACTION_POINTS[type] ?? 0;
+      const unix      = Math.floor(Date.now() / 1000);    // Requirement 2: UNIX timestamp
+      const nonce     = Math.floor(Math.random() * 0xFFFFFF);
+
+      // Requirement 2: clean transaction payload with unique tracking ID array
+      const payload = {
+        txId:          [unix, type, nonce],               // unique tracking identification array
+        unixTs:        unix,
+        activityTitle: ACTION_LABELS[type] ?? label,      // text title of the activity
+        actionType:    type,
+        pointsEarned:  earnedPts,
+        readableTime:  new Date(unix * 1000).toLocaleTimeString(),
+      };
+
+      // Requirement 3: write to IDB + append to localStorage ledger
+      let ledgerSize = 0;
+      try {
+        await writeToIDB(payload);
+        ledgerSize = appendToLocalLedger(payload);
+      } catch (err) {
+        // Graceful IDB fallback (e.g. private-browsing restrictions)
+        console.warn('[AQUADEX] IDB write blocked, localStorage-only fallback:', err.message);
+        ledgerSize = appendToLocalLedger(payload);
+      }
+
+      // Requirement 4: accumulate XP in the silver-blue companion tracker
+      updateXPDisplay(earnedPts);
+
+      // Requirement 5: show glassmorphic toast
+      showToast({
+        icon:     tapEmojis[type],
+        title:    msg,
+        subtitle: ACTION_LABELS[type] + ' \u00B7 Logged at ' + payload.readableTime,
+        pts:      '+' + earnedPts + ' pts',
+      });
+
+      // Clean structured console confirmation block
+      console.groupCollapsed(
+        '%c[AQUADEX] Tap logged \u2192 ' + ACTION_LABELS[type],
+        'color: #38bdf8; font-weight: 700;'
+      );
+      console.log('%cPayload', 'color: #64748b; font-weight: 600;', payload);
+      console.log('%cLedger size', 'color: #64748b;', ledgerSize, 'entries');
+      console.log('%cSession XP', 'color: #fbbf24; font-weight: 600;', sessionXP, 'pts');
+      console.groupEnd();
+    }
+
+    // ================================================================
+    // ENVIRONMENT CHECKER — Integer-Scaled Smart Protocol Standard
+    // ================================================================
+
+    // Neon Tetra Entry #2001 — biological envelope in 10x integer scale
+    // Temp:   22.0–28.0°C  →  220–280  (×10)
+    // pH:      6.5–7.5     →   65–75   (×10)
+    // Volume: ≥ 40L        →   40      (raw, no scaling)
+    const NEON_TETRA = {
+      name:    'Neon Tetra',
+      entry:   '#2001',
+      minTx10: 220,   // 22.0°C × 10
+      maxTx10: 280,   // 28.0°C × 10
+      minPhx10:  65,  //  6.5   × 10
+      maxPhx10:  75,  //  7.5   × 10
+      minVolL:   40,  // 40 L   (raw)
+    };
+
+    // Integer-scaled state variables
+    // Seed from the corrected slider defaults:
+    //   temp  25.5°C  → 25.5 × 10 = 255
+    //   pH     7.2    →  7.2 × 10 =  72
+    //   vol   60 L    → raw        =  60
+    let tankTempX10 = 255;
+    let tankPhX10   = 72;
+    let tankVolL    = 60;
+
+    // ----------------------------------------------------------------
+    // updateSlider — Requirement 1
+    // Converts each slider's raw float output into an integer-scaled
+    // tracking property matching the smart protocol standard.
+    // ----------------------------------------------------------------
+    function updateSlider(type, val) {
+      const raw = parseFloat(val);
+
+      if (type === 'temp') {
+        // Requirement 1a: float °C × 10 → integer-scaled representation
+        // e.g. 25.5°C → Math.round(25.5 × 10) = 255
+        tankTempX10 = Math.round(raw * 10);
+        document.getElementById('tempVal').textContent = raw.toFixed(1) + '\u00B0C';
+
+      } else if (type === 'ph') {
+        // Requirement 1b: logarithmic pH float × 10 → integer-scaled
+        // e.g. 7.2 → Math.round(7.2 × 10) = 72
+        tankPhX10 = Math.round(raw * 10);
+        document.getElementById('phVal').textContent = raw.toFixed(1);
+
+      } else if (type === 'vol') {
+        // Requirement 1c: fluid volume in whole-number liters (no scaling)
+        tankVolL = Math.round(raw);
+        document.getElementById('volVal').textContent = tankVolL + ' L';
+      }
+
+      checkCompat();
+    }
+
+    // ----------------------------------------------------------------
+    // checkCompat — Requirement 2, 3, 4
+    // Evaluates the live integer-scaled values against the fixed
+    // biological envelope of Entry #2001 (Neon Tetra).
+    // All comparisons are done 100% in integer space — no floats.
+    // ----------------------------------------------------------------
+    function checkCompat() {
+      const el    = document.getElementById('compatStatus');
+      const badge = document.getElementById('compatBadge');
+      const txt   = document.getElementById('compatText');
+      if (!el || !badge || !txt) return;
+
+      const NT = NEON_TETRA;
+
+      // Requirement 2: integer-scaled boundary evaluation
+      const tempOk = tankTempX10 >= NT.minTx10 && tankTempX10 <= NT.maxTx10;
+      const phOk   = tankPhX10   >= NT.minPhx10 && tankPhX10   <= NT.maxPhx10;
+      const volOk  = tankVolL    >= NT.minVolL;
+      const inEnvelope = tempOk && phOk && volOk;
+
+      if (inEnvelope) {
+        // Requirement 3: 100% inside envelope → green compat-ok state
+        el.className    = 'compat-status compat-ok';
+        badge.className = 'badge badge-emerald';
+        badge.textContent = '\uD83D\uDFE2 Perfect Aquarium Fit';
+        txt.textContent   = NT.name + ' ' + NT.entry
+          + ' \u2014 All parameters within biological envelope \u2713';
+      } else {
+        // Requirement 4: any parameter out of range → yellow warning state
+        el.className    = 'compat-status compat-warn';
+        badge.className = 'badge badge-amber';
+        badge.textContent = '\uD83D\uDFE1 Parameters Out of Range';
+
+        // Build a precise diagnostic string identifying which axis drifted
+        const issues = [];
+        if (!tempOk) {
+          const dispTemp = (tankTempX10 / 10).toFixed(1);
+          const safeMin  = (NT.minTx10 / 10).toFixed(1);
+          const safeMax  = (NT.maxTx10 / 10).toFixed(1);
+          issues.push('Temp ' + dispTemp + '\u00B0C (safe: ' + safeMin + '\u2013' + safeMax + '\u00B0C)');
+        }
+        if (!phOk) {
+          const dispPh  = (tankPhX10  / 10).toFixed(1);
+          const safeMin = (NT.minPhx10 / 10).toFixed(1);
+          const safeMax = (NT.maxPhx10 / 10).toFixed(1);
+          issues.push('pH ' + dispPh + ' (safe: ' + safeMin + '\u2013' + safeMax + ')');
+        }
+        if (!volOk) {
+          issues.push('Volume ' + tankVolL + 'L (min: ' + NT.minVolL + 'L)');
+        }
+
+        txt.textContent = NT.name + ' \u2014 Environmental values drifted outside safe parameters: '
+          + issues.join(' | ');
+      }
+    }
+
+    // Waitlist Form
+    async function handleWaitlistSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('nameInput').value.trim();
+      const email = document.getElementById('emailInput').value.trim();
+      const btn = document.getElementById('submitBtn');
+      const txt = document.getElementById('submitText');
+      if (!email) return;
+      btn.disabled = true; txt.textContent = 'Joining…';
+      try {
+        await fetch('https://formsubmit.co/ajax/kevin@aquacellum.com', {
+          method:'POST',
+          headers:{'Content-Type':'application/json',Accept:'application/json'},
+          body:JSON.stringify({ name, email, role:'Casual Hobbyist', _subject:'Aquacellum Hobbyist Waitlist Signup' })
+        });
+        document.getElementById('successEmail').textContent = email;
+        document.getElementById('waitlistForm').style.display = 'none';
+        document.getElementById('successWindow').style.display = 'block';
+      } catch {
+        txt.textContent = 'Try again';
+      } finally {
+        btn.disabled = false;
+        if (txt.textContent === 'Joining…') txt.textContent = 'Secure My Spot';
+      }
+    }
+  </script>
+</body>
+</html>

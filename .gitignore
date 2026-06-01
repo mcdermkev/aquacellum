@@ -1,0 +1,40 @@
+# Environment — NEVER commit private keys
+.env
+.env.*
+!.env.example
+
+# Hardhat
+cache/
+artifacts/
+deployed-addresses-*.json
+
+# Node
+node_modules/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Build output
+dist/
+frontend/dist/
+
+# Logs
+*.log
+migration_errors.log
+
+# Vercel
+.vercel/
+**/.vercel/
+
+# IDE / Editor
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Kiro internal
+.kiro/

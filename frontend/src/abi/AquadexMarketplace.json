@@ -1,0 +1,1791 @@
+﻿[
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "_aquadexManager",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "address",
+                           "name":  "_marineConservationTreasury",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "address",
+                           "name":  "_ecosystemTreasury",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "address",
+                           "name":  "_kevin",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "address",
+                           "name":  "_steve",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "address",
+                           "name":  "_coFounder",
+                           "type":  "address"
+                       }
+                   ],
+        "stateMutability":  "nonpayable",
+        "type":  "constructor"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "AccessControlBadConfirmation",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "account",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "bytes32",
+                           "name":  "neededRole",
+                           "type":  "bytes32"
+                       }
+                   ],
+        "name":  "AccessControlUnauthorizedAccount",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "BatchQuantityExceeded",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "CallerNotAdmin",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "CallerNotCurator",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "CallerNotOwner",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "CallerNotSeller",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "EmptyTokenList",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "EscrowAlreadyResolved",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "EscrowNotDispatched",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "EscrowNotLocked",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "EventInactive",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "EventWindowClosed",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "IncorrectPayment",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "InsufficientPayment",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "InvalidAddress",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "InvalidCommitment",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "InvalidRefundStatus",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "ListingNotActive",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "MaxBatchExceeded",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "NotInDispute",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "NotInPersonFulfillment",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "NotShippingFulfillment",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "NotShippingListing",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "PriceZero",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "QuantityExceedsAvailable",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "QuantityZero",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "SafetyWindowNotElapsed",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "SafetyWindowPassed",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "SellerMismatch",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "TrackingEmpty",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "TransferFailed",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "Unauthorized",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "ZeroAddress",
+        "type":  "error"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "listingId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "spawnId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "quantity",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "pricePerFish",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "seller",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "BatchListed",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "listingId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "seller",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "BatchListingCancelled",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "purchaseId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "listingId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "buyer",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "quantity",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "amountLocked",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "BatchPurchased",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "purchaseId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "buyer",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "amount",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "EscrowRefunded",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "purchaseId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "seller",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "buyer",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "amount",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "EscrowReleased",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "seller",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "ListingCancelled",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "bytes32",
+                           "name":  "role",
+                           "type":  "bytes32"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "bytes32",
+                           "name":  "previousAdminRole",
+                           "type":  "bytes32"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "bytes32",
+                           "name":  "newAdminRole",
+                           "type":  "bytes32"
+                       }
+                   ],
+        "name":  "RoleAdminChanged",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "bytes32",
+                           "name":  "role",
+                           "type":  "bytes32"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "account",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "sender",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "RoleGranted",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "bytes32",
+                           "name":  "role",
+                           "type":  "bytes32"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "account",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "sender",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "RoleRevoked",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "string",
+                           "name":  "trackingNumber",
+                           "type":  "string"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "dispatchTimestamp",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "ShippingDispatched",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "ShippingDisputed",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "buyer",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "amount",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "ShippingEscrowRefunded",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "seller",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "buyer",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "amount",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "ShippingEscrowReleased",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "seller",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "price",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "shippingFee",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "ShippingListingCreated",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "buyer",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "amountLocked",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "ShippingPurchaseCreated",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "seller",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "price",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "SpecimenListed",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "seller",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "buyer",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "price",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "fee",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "SpecimenPurchased",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "oldTreasury",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "newTreasury",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "TreasuryUpdated",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "user",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "amount",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "string",
+                           "name":  "reason",
+                           "type":  "string"
+                       }
+                   ],
+        "name":  "XPEarned",
+        "type":  "event"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "COUNCIL_MEMBER_ROLE",
+        "outputs":  [
+                        {
+                            "internalType":  "bytes32",
+                            "name":  "",
+                            "type":  "bytes32"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "DEFAULT_ADMIN_ROLE",
+        "outputs":  [
+                        {
+                            "internalType":  "bytes32",
+                            "name":  "",
+                            "type":  "bytes32"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "SHIPPING_SAFETY_WINDOW",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "TOTAL_FEE_BPS",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "aquadexManager",
+        "outputs":  [
+                        {
+                            "internalType":  "contract AquadexManager",
+                            "name":  "",
+                            "type":  "address"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "batchListings",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "listingId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "spawnId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "quantity",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "pricePerFish",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "address",
+                            "name":  "seller",
+                            "type":  "address"
+                        },
+                        {
+                            "internalType":  "bool",
+                            "name":  "isActive",
+                            "type":  "bool"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "listingId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "cancelBatchListing",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "cancelListing",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "coFounder",
+        "outputs":  [
+                        {
+                            "internalType":  "address",
+                            "name":  "",
+                            "type":  "address"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "spawnId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "quantity",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "pricePerFish",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "createBatchListing",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "price",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "shippingFee",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "createShippingListing",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "string",
+                           "name":  "trackingNumber",
+                           "type":  "string"
+                       }
+                   ],
+        "name":  "dispatchShipping",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "disputeShipping",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "ecosystemTreasury",
+        "outputs":  [
+                        {
+                            "internalType":  "address",
+                            "name":  "",
+                            "type":  "address"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "escrowPurchases",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "purchaseId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "listingId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "address",
+                            "name":  "buyer",
+                            "type":  "address"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "quantity",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "amountLocked",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "bytes32",
+                            "name":  "commitmentHash",
+                            "type":  "bytes32"
+                        },
+                        {
+                            "internalType":  "enum AquadexMarketplace.EscrowState",
+                            "name":  "state",
+                            "type":  "uint8"
+                        },
+                        {
+                            "internalType":  "uint8",
+                            "name":  "fulfillmentType",
+                            "type":  "uint8"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "address",
+                           "name":  "buyer",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "eventId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "bool",
+                           "name":  "fromEscrow",
+                           "type":  "bool"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "batchListingId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "batchQuantity",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "fulfillCashHandshake",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "bytes32",
+                           "name":  "role",
+                           "type":  "bytes32"
+                       }
+                   ],
+        "name":  "getRoleAdmin",
+        "outputs":  [
+                        {
+                            "internalType":  "bytes32",
+                            "name":  "",
+                            "type":  "bytes32"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "bytes32",
+                           "name":  "role",
+                           "type":  "bytes32"
+                       },
+                       {
+                           "internalType":  "address",
+                           "name":  "account",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "grantRole",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "bytes32",
+                           "name":  "role",
+                           "type":  "bytes32"
+                       },
+                       {
+                           "internalType":  "address",
+                           "name":  "account",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "hasRole",
+        "outputs":  [
+                        {
+                            "internalType":  "bool",
+                            "name":  "",
+                            "type":  "bool"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "kevin",
+        "outputs":  [
+                        {
+                            "internalType":  "address",
+                            "name":  "",
+                            "type":  "address"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "price",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "listSpecimen",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "listings",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "tokenId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "address",
+                            "name":  "seller",
+                            "type":  "address"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "price",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "shippingFee",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "bool",
+                            "name":  "active",
+                            "type":  "bool"
+                        },
+                        {
+                            "internalType":  "bool",
+                            "name":  "isShipping",
+                            "type":  "bool"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "liveEvents",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "eventId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "startTime",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "endTime",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "bool",
+                            "name":  "active",
+                            "type":  "bool"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "marineConservationTreasury",
+        "outputs":  [
+                        {
+                            "internalType":  "address",
+                            "name":  "",
+                            "type":  "address"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "address",
+                           "name":  "",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "bytes",
+                           "name":  "",
+                           "type":  "bytes"
+                       }
+                   ],
+        "name":  "onERC721Received",
+        "outputs":  [
+                        {
+                            "internalType":  "bytes4",
+                            "name":  "",
+                            "type":  "bytes4"
+                        }
+                    ],
+        "stateMutability":  "pure",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "operationalDevelopmentWallet",
+        "outputs":  [
+                        {
+                            "internalType":  "address",
+                            "name":  "",
+                            "type":  "address"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "listingId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "quantity",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "purchaseBatch",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "payable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "listingId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "quantity",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "bytes32",
+                           "name":  "commitmentHash",
+                           "type":  "bytes32"
+                       }
+                   ],
+        "name":  "purchaseInPerson",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "payable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256[]",
+                           "name":  "tokenIds",
+                           "type":  "uint256[]"
+                       }
+                   ],
+        "name":  "purchaseMultipleSpecimens",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "payable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "purchaseShippingListing",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "payable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "purchaseSpecimen",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "payable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "purchaseId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "refundEscrow",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "refundShippingEscrow",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "purchaseId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "releaseEscrow",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "releaseShippingEscrow",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "bytes32",
+                           "name":  "role",
+                           "type":  "bytes32"
+                       },
+                       {
+                           "internalType":  "address",
+                           "name":  "callerConfirmation",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "renounceRole",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "bool",
+                           "name":  "refundBuyer",
+                           "type":  "bool"
+                       }
+                   ],
+        "name":  "resolveShippingDispute",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "bytes32",
+                           "name":  "role",
+                           "type":  "bytes32"
+                       },
+                       {
+                           "internalType":  "address",
+                           "name":  "account",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "revokeRole",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "purchaseId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "pin",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "bytes32",
+                           "name":  "salt",
+                           "type":  "bytes32"
+                       },
+                       {
+                           "internalType":  "bool",
+                           "name":  "inEventZone",
+                           "type":  "bool"
+                       }
+                   ],
+        "name":  "secureInPersonRelease",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "eventId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "startTime",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "endTime",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "bool",
+                           "name":  "active",
+                           "type":  "bool"
+                       }
+                   ],
+        "name":  "setLiveEvent",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "_wallet",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "setOperationalDevelopmentWallet",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "shippingEscrows",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "tokenId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "address",
+                            "name":  "buyer",
+                            "type":  "address"
+                        },
+                        {
+                            "internalType":  "address",
+                            "name":  "seller",
+                            "type":  "address"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "price",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "shippingFee",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "amountLocked",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "string",
+                            "name":  "trackingNumber",
+                            "type":  "string"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "dispatchTimestamp",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "enum AquadexMarketplace.ShippingStatus",
+                            "name":  "status",
+                            "type":  "uint8"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "spawnToListing",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "steve",
+        "outputs":  [
+                        {
+                            "internalType":  "address",
+                            "name":  "",
+                            "type":  "address"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "bytes4",
+                           "name":  "interfaceId",
+                           "type":  "bytes4"
+                       }
+                   ],
+        "name":  "supportsInterface",
+        "outputs":  [
+                        {
+                            "internalType":  "bool",
+                            "name":  "",
+                            "type":  "bool"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    }
+]

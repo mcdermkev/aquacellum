@@ -1,0 +1,1897 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aquacellum — The Living Aquatic Registry</title>
+  <meta name="description" content="Aquacellum is the intelligent platform for aquarium hobbyists and professional breeders. Digital logbooks, encrypted pedigree lineage tracking, peer-to-peer marketplace, and an AI companion that grows with your collection.">
+  <meta name="keywords" content="Aquacellum, aquarium, fishkeeping, fish breeder, species database, aquatic registry, digital logbook, pedigree tracking, marine conservation">
+  <meta property="og:title" content="Aquacellum — The Living Aquatic Registry">
+  <meta property="og:description" content="Track, trade, and discover 280+ species with the world's most advanced aquatic husbandry platform.">
+  <meta property="og:type" content="website">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* =========================================
+       DESIGN SYSTEM — ROOT TOKENS
+    ========================================= */
+    :root {
+      --bg-void:      #060814;
+      --bg-deep:      #080c1a;
+      --bg-surface:   #0d1229;
+
+      --teal-100:     #ccfbf1;
+      --teal-300:     #5eead4;
+      --teal-400:     #2dd4bf;
+      --teal-500:     #14b8a6;
+      --teal-600:     #0d9488;
+
+      --cyan-300:     #67e8f9;
+      --cyan-400:     #22d3ee;
+      --cyan-500:     #06b6d4;
+
+      --violet-400:   #a78bfa;
+      --violet-500:   #8b5cf6;
+      --violet-600:   #7c3aed;
+
+      --amber-300:    #fcd34d;
+      --amber-400:    #fbbf24;
+
+      --emerald-400:  #34d399;
+      --emerald-500:  #10b981;
+
+      --text-primary: #f0f4ff;
+      --text-secondary: #94a3b8;
+      --text-muted:   #475569;
+
+      --glass-bg:     rgba(13, 18, 41, 0.6);
+      --glass-border: rgba(255,255,255,0.07);
+      --glass-hover:  rgba(255,255,255,0.04);
+
+      --radius-sm: 12px;
+      --radius-md: 18px;
+      --radius-lg: 24px;
+      --radius-xl: 32px;
+
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* =========================================
+       RESET & BASE
+    ========================================= */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-void);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: inherit; border: none; background: none; }
+
+    /* =========================================
+       AMBIENT BACKGROUND SYSTEM
+    ========================================= */
+    .ambient-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      animation: orb-drift 18s ease-in-out infinite;
+    }
+    .orb-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(20, 184, 166, 0.12) 0%, transparent 70%);
+      top: -200px; left: -100px;
+      animation-delay: 0s;
+    }
+    .orb-2 {
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.10) 0%, transparent 70%);
+      top: 30%; right: -200px;
+      animation-delay: 6s;
+    }
+    .orb-3 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.08) 0%, transparent 70%);
+      bottom: 10%; left: 30%;
+      animation-delay: 12s;
+    }
+    @keyframes orb-drift {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33%       { transform: translate(40px, -30px) scale(1.08); }
+      66%       { transform: translate(-20px, 25px) scale(0.95); }
+    }
+
+    /* =========================================
+       GLASSMORPHISM UTILITIES
+    ========================================= */
+    .glass {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+    }
+    .glass-light {
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .glass-card {
+      background: rgba(13, 18, 41, 0.55);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-lg);
+      transition: var(--transition);
+    }
+    .glass-card:hover {
+      background: rgba(13, 18, 41, 0.75);
+      border-color: rgba(255,255,255,0.14);
+      transform: translateY(-3px);
+    }
+
+    /* Gradient Borders */
+    .border-teal { border-color: rgba(20, 184, 166, 0.25) !important; }
+    .border-violet { border-color: rgba(139, 92, 246, 0.25) !important; }
+    .border-cyan { border-color: rgba(6, 182, 212, 0.25) !important; }
+    .border-amber { border-color: rgba(251, 191, 36, 0.25) !important; }
+
+    /* =========================================
+       TYPOGRAPHY
+    ========================================= */
+    .font-display { font-family: 'Outfit', sans-serif; }
+    .font-mono    { font-family: 'JetBrains Mono', monospace; }
+
+    .text-gradient-teal {
+      background: linear-gradient(135deg, var(--teal-300) 0%, var(--cyan-300) 50%, var(--teal-400) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .text-gradient-violet {
+      background: linear-gradient(135deg, var(--violet-400) 0%, var(--cyan-400) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .text-gradient-warm {
+      background: linear-gradient(135deg, var(--amber-300) 0%, var(--teal-300) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .glow-teal   { text-shadow: 0 0 30px rgba(45, 212, 191, 0.35), 0 0 60px rgba(45, 212, 191, 0.15); }
+    .glow-violet { text-shadow: 0 0 30px rgba(167, 139, 250, 0.35), 0 0 60px rgba(167, 139, 250, 0.15); }
+
+    /* =========================================
+       LAYOUT
+    ========================================= */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+    .section { padding: 100px 0; }
+    .section-sm { padding: 60px 0; }
+
+    /* =========================================
+       NAVIGATION
+    ========================================= */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(6, 8, 20, 0.8);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 1;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .nav-logo-mark {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--teal-400), var(--violet-500));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(20,184,166,0.3);
+      transition: var(--transition);
+    }
+    .nav-logo-mark:hover { box-shadow: 0 0 30px rgba(20,184,166,0.5); transform: scale(1.05); }
+    .nav-logo-text {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: 0.12em;
+      color: #fff;
+    }
+    .nav-logo-sub {
+      display: block;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      color: var(--teal-400);
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-top: -3px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+    .nav-links a:hover { color: var(--text-primary); }
+    .nav-cta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      background: rgba(20,184,166,0.1);
+      border: 1px solid rgba(20,184,166,0.3);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--teal-300);
+      transition: var(--transition);
+    }
+    .nav-cta:hover {
+      background: rgba(20,184,166,0.2);
+      border-color: rgba(20,184,166,0.5);
+      box-shadow: 0 0 20px rgba(20,184,166,0.15);
+    }
+    .pulse-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--emerald-400);
+      position: relative;
+    }
+    .pulse-dot::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      border: 2px solid var(--emerald-400);
+      animation: pulse-ring 2s infinite;
+    }
+    @keyframes pulse-ring {
+      0%   { transform: scale(1); opacity: 1; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+
+    /* =========================================
+       HERO SECTION
+    ========================================= */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('/assets/hero_bg.jpg');
+      background-size: cover;
+      background-position: center;
+      opacity: 0.12;
+      z-index: 0;
+    }
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(20,184,166,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(20,184,166,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      z-index: 0;
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 100px;
+      background: rgba(20,184,166,0.08);
+      border: 1px solid rgba(20,184,166,0.2);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--teal-300);
+      letter-spacing: 0.05em;
+      margin-bottom: 32px;
+    }
+    .hero-headline {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 900;
+      font-size: clamp(2.8rem, 6vw, 5rem);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: #fff;
+      margin-bottom: 24px;
+    }
+    .hero-headline em {
+      font-style: normal;
+    }
+    .hero-subtext {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      font-weight: 400;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      max-width: 640px;
+      margin: 0 auto 48px;
+    }
+
+    /* Waitlist Form */
+    .waitlist-form-hero {
+      max-width: 480px;
+      margin: 0 auto;
+      background: rgba(13,18,41,0.7);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 1px solid rgba(20,184,166,0.2);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      box-shadow:
+        0 0 60px rgba(20,184,166,0.08),
+        0 40px 80px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    .waitlist-form-hero h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .waitlist-form-hero p {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    .role-toggle {
+      display: flex;
+      background: rgba(0,0,0,0.3);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .role-btn {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 7px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+    .role-btn.active-hobbyist {
+      background: rgba(6,182,212,0.15);
+      color: var(--cyan-300);
+      border: 1px solid rgba(6,182,212,0.3);
+    }
+    .role-btn.active-breeder {
+      background: rgba(139,92,246,0.15);
+      color: var(--violet-400);
+      border: 1px solid rgba(139,92,246,0.3);
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 13px 16px;
+      border-radius: 10px;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 0.9rem;
+      font-family: 'Inter', sans-serif;
+      transition: var(--transition);
+      outline: none;
+      margin-bottom: 12px;
+    }
+    .form-input::placeholder { color: var(--text-muted); }
+    .form-input:focus {
+      border-color: rgba(20,184,166,0.5);
+      box-shadow: 0 0 0 3px rgba(20,184,166,0.08);
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--teal-500) 0%, var(--cyan-500) 50%, var(--violet-600) 100%);
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      transition: var(--transition);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 24px rgba(20,184,166,0.25);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(20,184,166,0.35);
+      filter: brightness(1.1);
+    }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .hero-scroll-cue {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      z-index: 1;
+      animation: scroll-bounce 2s ease-in-out infinite;
+    }
+    .hero-scroll-cue span {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    @keyframes scroll-bounce {
+      0%,100% { transform: translateX(-50%) translateY(0); }
+      50%      { transform: translateX(-50%) translateY(6px); }
+    }
+
+    /* =========================================
+       DUAL MODE ROUTING SECTION
+    ========================================= */
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      border-radius: 100px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .label-teal  { background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.25); color: var(--teal-300); }
+    .label-violet { background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.25); color: var(--violet-400); }
+
+    .section-heading {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1.15;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+    .section-sub {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      max-width: 540px;
+    }
+
+    .dual-mode-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 56px;
+    }
+    .mode-card {
+      padding: 40px;
+      border-radius: var(--radius-lg);
+      position: relative;
+      overflow: hidden;
+      transition: var(--transition);
+    }
+    .mode-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    .mode-card:hover::before { opacity: 1; }
+    .mode-card:hover { transform: translateY(-5px); }
+
+    .mode-hobbyist {
+      background: linear-gradient(135deg, rgba(6,182,212,0.08) 0%, rgba(13,18,41,0.6) 100%);
+      border: 1px solid rgba(6,182,212,0.2);
+    }
+    .mode-hobbyist::before {
+      background: linear-gradient(135deg, rgba(6,182,212,0.05) 0%, transparent 100%);
+    }
+    .mode-breeder {
+      background: linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(13,18,41,0.6) 100%);
+      border: 1px solid rgba(139,92,246,0.2);
+    }
+    .mode-breeder::before {
+      background: linear-gradient(135deg, rgba(139,92,246,0.05) 0%, transparent 100%);
+    }
+
+    .mode-icon {
+      width: 56px; height: 56px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      margin-bottom: 24px;
+    }
+    .icon-cyan { background: rgba(6,182,212,0.12); border: 1px solid rgba(6,182,212,0.25); }
+    .icon-violet { background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.25); }
+
+    .mode-tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .tag-cyan   { background: rgba(6,182,212,0.12); color: var(--cyan-300); border: 1px solid rgba(6,182,212,0.2); }
+    .tag-violet { background: rgba(139,92,246,0.12); color: var(--violet-400); border: 1px solid rgba(139,92,246,0.2); }
+    .tag-teal   { background: rgba(20,184,166,0.12); color: var(--teal-300); border: 1px solid rgba(20,184,166,0.2); }
+    .tag-amber  { background: rgba(251,191,36,0.12); color: var(--amber-300); border: 1px solid rgba(251,191,36,0.2); }
+    .tag-emerald{ background: rgba(52,211,153,0.12); color: var(--emerald-400); border: 1px solid rgba(52,211,153,0.2); }
+
+    .mode-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    .mode-desc {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 24px;
+    }
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .feature-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.83rem;
+      color: #c8d8f0;
+      line-height: 1.5;
+    }
+    .feature-list .check {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+      font-size: 0.65rem;
+    }
+    .check-cyan   { background: rgba(6,182,212,0.15); color: var(--cyan-300); }
+    .check-violet { background: rgba(139,92,246,0.15); color: var(--violet-400); }
+
+    .mode-cta-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 28px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: var(--transition);
+    }
+    .link-cyan   { color: var(--cyan-400); }
+    .link-violet { color: var(--violet-400); }
+    .link-cyan:hover   { color: var(--cyan-300); gap: 10px; }
+    .link-violet:hover { color: #c4b5fd; gap: 10px; }
+
+    /* =========================================
+       SPEC-DEX SECTION
+    ========================================= */
+    .specdex-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 56px;
+      align-items: center;
+      margin-top: 56px;
+    }
+    .spec-card {
+      background: rgba(8,12,26,0.8);
+      border: 1px solid rgba(20,184,166,0.15);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .spec-card-header {
+      padding: 14px 20px;
+      background: rgba(20,184,166,0.05);
+      border-bottom: 1px solid rgba(20,184,166,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .spec-card-dots { display: flex; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-red { background: #ff5f57; }
+    .dot-yellow { background: #febc2e; }
+    .dot-green { background: #28c840; }
+    .spec-card-body { padding: 24px; }
+
+    .species-name {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .species-scientific {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: var(--teal-400);
+      margin-bottom: 2px;
+    }
+    .species-common {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+    .vibe-line {
+      font-size: 0.8rem;
+      color: var(--cyan-300);
+      font-style: italic;
+      margin-bottom: 20px;
+      padding: 8px 12px;
+      background: rgba(6,182,212,0.06);
+      border-left: 3px solid var(--cyan-400);
+      border-radius: 0 6px 6px 0;
+    }
+
+    .param-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .param-item {
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .param-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+    .param-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--teal-300);
+      font-weight: 500;
+    }
+    .compat-bar-wrap {
+      margin-top: 4px;
+      height: 4px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .compat-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--teal-500), var(--cyan-400));
+    }
+
+    .compat-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: rgba(52,211,153,0.1);
+      border: 1px solid rgba(52,211,153,0.25);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--emerald-400);
+    }
+
+    .specdex-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .stat-box {
+      text-align: center;
+      padding: 24px 16px;
+      border-radius: var(--radius-md);
+      background: rgba(13,18,41,0.6);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .stat-number {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2rem;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    /* =========================================
+       MARKETPLACE / FEE SPLIT SECTION
+    ========================================= */
+    .market-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 48px;
+      align-items: center;
+      margin-top: 56px;
+    }
+    .fee-donut-wrap {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      margin: 0 auto 32px;
+    }
+    .fee-donut-wrap svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .fee-donut-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .fee-percent-big {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: #fff;
+    }
+    .fee-percent-label {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      letter-spacing: 0.08em;
+    }
+
+    .fee-legend { display: flex; flex-direction: column; gap: 12px; }
+    .fee-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .legend-name { font-size: 0.85rem; color: var(--text-secondary); flex: 1; }
+    .legend-val  {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .market-features { display: flex; flex-direction: column; gap: 16px; }
+    .market-feature {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 20px;
+      background: rgba(13,18,41,0.55);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius-md);
+      transition: var(--transition);
+    }
+    .market-feature:hover { border-color: rgba(20,184,166,0.2); transform: translateX(4px); }
+    .market-feature-icon {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+    .market-feature h4 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .market-feature p { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; }
+
+    /* =========================================
+       POSEIDON + ECHO SECTION
+    ========================================= */
+    .companion-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-top: 56px;
+    }
+    .companion-card {
+      padding: 36px;
+      border-radius: var(--radius-lg);
+      position: relative;
+      overflow: hidden;
+    }
+    .poseidon-card {
+      background: linear-gradient(135deg, rgba(6,182,212,0.08) 0%, rgba(13,18,41,0.7) 100%);
+      border: 1px solid rgba(6,182,212,0.2);
+    }
+    .echo-card {
+      background: linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(13,18,41,0.7) 100%);
+      border: 1px solid rgba(139,92,246,0.2);
+    }
+
+    .companion-avatar {
+      width: 72px; height: 72px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin-bottom: 20px;
+    }
+    .avatar-poseidon {
+      background: linear-gradient(135deg, rgba(6,182,212,0.2), rgba(20,184,166,0.1));
+      border: 1px solid rgba(6,182,212,0.3);
+    }
+    .avatar-echo {
+      background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(6,182,212,0.1));
+      border: 1px solid rgba(139,92,246,0.3);
+    }
+
+    .companion-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .companion-role {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .companion-desc {
+      font-size: 0.86rem;
+      color: #a8bbd0;
+      line-height: 1.7;
+      margin-bottom: 24px;
+    }
+
+    .chat-bubble {
+      padding: 12px 16px;
+      border-radius: 12px 12px 12px 2px;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.8rem;
+      color: #c8d8f0;
+      line-height: 1.5;
+      margin-bottom: 8px;
+      position: relative;
+    }
+    .chat-bubble strong { color: #fff; }
+    .chat-timestamp {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .fallback-notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 16px;
+      background: rgba(251,191,36,0.06);
+      border: 1px solid rgba(251,191,36,0.2);
+      border-radius: 10px;
+      font-size: 0.78rem;
+      color: #fcd34d;
+      line-height: 1.5;
+    }
+
+    /* =========================================
+       FINAL CTA SECTION
+    ========================================= */
+    .cta-section {
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-bg-glow {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(20,184,166,0.06) 0%, transparent 70%);
+    }
+    .cta-card {
+      max-width: 580px;
+      margin: 0 auto;
+      padding: 56px 48px;
+      background: rgba(8,12,26,0.85);
+      backdrop-filter: blur(40px);
+      -webkit-backdrop-filter: blur(40px);
+      border: 1px solid rgba(20,184,166,0.18);
+      border-radius: var(--radius-xl);
+      text-align: center;
+      box-shadow:
+        0 0 80px rgba(20,184,166,0.07),
+        0 60px 100px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+      position: relative;
+      z-index: 1;
+    }
+    .cta-card h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .cta-card p {
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 36px;
+    }
+    .cta-trust {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    .trust-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .trust-item .dot { background: var(--emerald-400); width: 6px; height: 6px; }
+
+    /* =========================================
+       FOOTER
+    ========================================= */
+    .footer {
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding: 48px 0;
+      background: rgba(6,8,20,0.8);
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+    .footer-links a {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--text-secondary); }
+    .footer-copy { font-size: 0.78rem; color: var(--text-muted); }
+
+    /* =========================================
+       DIVIDER
+    ========================================= */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+    }
+
+    /* =========================================
+       SUCCESS STATE
+    ========================================= */
+    .success-window {
+      display: none;
+      padding: 28px;
+      border-radius: 16px;
+      background: rgba(52,211,153,0.06);
+      border: 1px solid rgba(52,211,153,0.2);
+      text-align: center;
+      animation: fade-up 0.4s ease;
+    }
+    .success-window h4 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      margin: 12px 0 8px;
+    }
+    .success-window p { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6; }
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* =========================================
+       RESPONSIVE
+    ========================================= */
+    @media (max-width: 900px) {
+      .dual-mode-grid,
+      .specdex-layout,
+      .market-grid,
+      .companion-grid { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+      .specdex-layout .specdex-stats { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .section { padding: 70px 0; }
+      .hero-headline { font-size: 2.3rem; }
+      .waitlist-form-hero { padding: 24px; }
+      .cta-card { padding: 36px 24px; }
+      .cta-card h2 { font-size: 1.7rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Background -->
+  <div class="ambient-layer">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- ========== NAVIGATION ========== -->
+  <header class="nav">
+    <nav class="nav-inner">
+      <a href="#" class="nav-logo">
+        <div class="nav-logo-mark">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+        </div>
+        <div>
+          <span class="nav-logo-text">AQUACELLUM</span>
+          <span class="nav-logo-sub">Living Aquatic Registry</span>
+        </div>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#modes">How It Works</a></li>
+        <li><a href="#specdex">Spec-Dex</a></li>
+        <li><a href="#market">Marketplace</a></li>
+        <li><a href="#companion">Poseidon &amp; Echo</a></li>
+        <li><a href="/hobbyist">For Hobbyists</a></li>
+        <li><a href="/breeder">For Breeders</a></li>
+      </ul>
+
+      <a href="#waitlist" class="nav-cta">
+        <div class="pulse-dot"></div>
+        Secure My Spot
+      </a>
+    </nav>
+  </header>
+
+  <!-- ========== WHY AQUACELLUM? HOOK ========== -->
+  <section style="padding:48px 0 0;">
+    <div class="container">
+      <div style="max-width:720px;margin:0 auto;text-align:center;padding:32px 40px;background:rgba(20,184,166,0.04);border:1px solid rgba(20,184,166,0.12);border-radius:var(--radius-lg);">
+        <p style="font-family:'Outfit',sans-serif;font-size:clamp(1.1rem,2.5vw,1.4rem);font-weight:600;color:var(--text-primary);line-height:1.6;letter-spacing:-0.01em;">
+          Most fishkeepers track nothing. The ones who do use spreadsheets.<br>
+          <span class="text-gradient-teal">Aquacellum is what should have existed years ago.</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== HERO SECTION ========== -->
+  <section class="hero" id="hero">
+    <div class="hero-grid"></div>
+    <div class="container" style="display:flex; justify-content:center; width:100%;">
+      <div class="hero-content">
+
+        <div class="hero-badge">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4"/><path d="M12 22C6.5 22 2 17.5 2 12S6.5 2 12 2s10 4.5 10 10-4.5 10-10 10z"/></svg>
+          Early Access — Waitlist Now Open
+        </div>
+
+        <h1 class="hero-headline font-display">
+          Know your fish.<br>
+          <em class="text-gradient-teal glow-teal">Trust your tank.</em><br>
+          Love the hobby.
+        </h1>
+
+        <p class="hero-subtext">
+          Aquacellum brings together a 280+ species database, smart care logs, a trusted peer-to-peer marketplace, and an AI companion that actually understands your setup — so you spend less time guessing and more time enjoying your aquarium.
+        </p>
+
+        <!-- WAITLIST FORM -->
+        <div class="waitlist-form-hero">
+          <h3>Join the Waitlist</h3>
+          <p>Founding members get priority access and a direct say in what gets built first.</p>
+
+          <div class="role-toggle" id="heroRoleToggle">
+            <button class="role-btn active-hobbyist" id="heroRoleHobbyist" onclick="heroSelectRole('hobbyist')">🐠 Casual Hobbyist</button>
+            <button class="role-btn" id="heroRoleBreeder" onclick="heroSelectRole('breeder')">🔬 Professional Breeder</button>
+          </div>
+
+          <form id="heroForm" onsubmit="handleHeroSubmit(event)">
+            <input type="hidden" id="heroRoleValue" value="Casual Hobbyist">
+            <input class="form-input" type="email" id="heroEmail" name="email" placeholder="your@email.com" required>
+            <button class="btn-primary" type="submit" id="heroSubmitBtn">
+              <span id="heroSubmitText">Secure My Spot</span>
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </form>
+
+          <p style="font-size:0.78rem;color:var(--text-secondary);text-align:center;margin-top:12px;">Founding members get priority access, exclusive early perks, and a direct say in what gets built.</p>
+
+          <div class="success-window" id="heroSuccess">
+            <div style="font-size:2rem;">🎉</div>
+            <h4>You're on the list!</h4>
+            <p>We'll notify <strong id="heroSuccessEmail" style="color:#fff;"></strong> the moment early access opens.</p>
+          </div>
+
+          <div class="trust-item" style="justify-content:center; margin-top:14px;">
+            <div class="dot" style="border-radius:50%;background:#34d399;"></div>
+            <span>No payment required · Cancel anytime · Marine conservation backed</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="hero-scroll-cue">
+      <span>Scroll to explore</span>
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#475569" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ========== DUAL MODE ROUTING ========== -->
+  <section class="section" id="modes">
+    <div class="container">
+      <div style="max-width:600px;">
+        <div class="section-label label-teal">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 22c5.5 0 10-4.5 10-10S17.5 2 12 2 2 6.5 2 12s4.5 10 10 10z"/><path d="M12 8v4l3 3"/></svg>
+          Built for every level
+        </div>
+        <h2 class="section-heading">One platform.<br>Two distinct journeys.</h2>
+        <p class="section-sub">Whether you're maintaining a peaceful home aquascape or running a professional breeding operation, Aquacellum adapts to your level — without making either experience feel like a compromise.</p>
+      </div>
+
+      <div class="dual-mode-grid">
+
+        <!-- Hobbyist Card -->
+        <div class="mode-card mode-hobbyist glass-card">
+          <div class="mode-icon icon-cyan">🐠</div>
+          <div class="mode-tag tag-cyan">Casual Hobbyist</div>
+          <h3 class="mode-title">Keep it simple.<br>Keep it beautiful.</h3>
+          <p class="mode-desc">Your personal digital logbook for the joy of fishkeeping — tap to log, browse species, discover local sellers, and earn rewards just for caring for your tank.</p>
+          <ul class="feature-list">
+            <li><span class="check check-cyan">✓</span><span><strong>Digital Logbook</strong> — one-tap feeding, water changes, and maintenance logs with care streak tracking</span></li>
+            <li><span class="check check-cyan">✓</span><span><strong>Biometric Login</strong> — Face ID or fingerprint access to your personal tank dashboard</span></li>
+            <li><span class="check check-cyan">✓</span><span><strong>Local Sellers Radar</strong> — discover certified breeders and pickup listings near your neighborhood</span></li>
+            <li><span class="check check-cyan">✓</span><span><strong>Loyalty Points</strong> — earn rewards for daily logs, community contributions, and care milestones</span></li>
+            <li><span class="check check-cyan">✓</span><span><strong>Tank Compatibility Wizard</strong> — instant species compatibility checks against your tank volume and water parameters</span></li>
+          </ul>
+          <a href="/hobbyist" class="mode-cta-link link-cyan">
+            Explore Hobbyist Features
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+        </div>
+
+        <!-- Breeder Card -->
+        <div class="mode-card mode-breeder glass-card">
+          <div class="mode-icon icon-violet">🔬</div>
+          <div class="mode-tag tag-violet">Professional Breeder</div>
+          <h3 class="mode-title">Precision records.<br>Protected lineage.</h3>
+          <p class="mode-desc">Your Operator Terminal for serious aquaculture. Encrypted pedigree management, facility-wide metrics, multi-specimen tracked dispatches, and fraud-resistant trade verification — all in one workspace.</p>
+          <ul class="feature-list">
+            <li><span class="check check-violet">✓</span><span><strong>Encrypted Lineage Records</strong> — sire-dam ancestry trees traced across three generations with species-code anchoring</span></li>
+            <li><span class="check check-violet">✓</span><span><strong>Facility Metrics Dashboard</strong> — monitor environment, yield, and spawn success across multiple containment units</span></li>
+            <li><span class="check check-violet">✓</span><span><strong>Ship Multiple Specimens in One Tracked Dispatch</strong> — group-ship multiple specimens in single tracked dispatches with box-utilization optimization</span></li>
+            <li><span class="check check-violet">✓</span><span><strong>Secure Handshake Fraud Protection</strong> — pre-image commit-reveal verification for in-person specimen handovers</span></li>
+            <li><span class="check check-violet">✓</span><span><strong>Regional Zone Leaderboards</strong> — tier-based prestige ranking among operators in your geographic zone</span></li>
+          </ul>
+          <a href="/breeder" class="mode-cta-link link-violet">
+            Explore Breeder Terminal
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ========== POSEIDON + ECHO ========== -->
+  <section class="section" id="companion">
+    <div class="container">
+      <div style="text-align:center; max-width:600px; margin:0 auto 56px;">
+        <div class="section-label label-violet" style="justify-content:center;">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          AI Companion Engine
+        </div>
+        <h2 class="section-heading">Meet Poseidon &amp; Echo.<br><span class="text-gradient-violet">Two AIs. One living tank.</span></h2>
+        <p class="section-sub" style="margin:0 auto;">Poseidon is the data brain — it reads your plain-text care notes and turns them into structured records automatically. Echo is the emotional layer — a companion that responds to how your tank is actually doing, not just what you typed. Together, they make your aquarium feel genuinely alive.</p>
+      </div>
+
+      <div class="companion-grid">
+
+        <!-- Poseidon Card -->
+        <div class="companion-card poseidon-card">
+          <div class="companion-avatar avatar-poseidon">🔱</div>
+          <div class="mode-tag tag-cyan" style="margin-bottom:8px;">Poseidon</div>
+          <p style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--cyan-400);margin-bottom:8px;"><strong>Poseidon = Data &amp; Intelligence</strong></p>
+          <div class="companion-name">The Scholar</div>
+          <div class="companion-role">Taxonomic Intelligence · Data Curator</div>
+          <p class="companion-desc">Poseidon reads your plain-text care notes and automatically structures them into database records — species parameters, spawn logs, water chemistry — with scientific precision. No forms, no manual entry. Just write naturally and Poseidon handles the rest.</p>
+
+          <div class="chat-bubble">
+            <strong>You:</strong> fed the tetras this morning, temp is 25.5, they were really active
+          </div>
+          <div class="chat-timestamp">→ Poseidon parsed: temp=255 (×10 integer), feeding logged, activity_score: high</div>
+
+          <div class="chat-bubble" style="border-radius:12px 12px 2px 12px; background:rgba(6,182,212,0.08); border-color:rgba(6,182,212,0.15);">
+            <strong style="color:var(--cyan-300);">Poseidon:</strong> Water temperature is within optimal range. Feeding noted. Your tetras are thriving — consider a small water change to maintain nitrate below 20 ppm.
+          </div>
+
+          <ul class="feature-list" style="margin-top:16px;">
+            <li><span class="check check-cyan">✓</span><span>Interprets free-text log entries into structured husbandry records</span></li>
+            <li><span class="check check-cyan">✓</span><span>Auto-fills species database with curated reference data</span></li>
+            <li><span class="check check-cyan">✓</span><span>Tracks care streaks and environmental trend analysis</span></li>
+          </ul>
+        </div>
+
+        <!-- Echo Card -->
+        <div class="companion-card echo-card">
+          <div class="companion-avatar avatar-echo">🌊</div>
+          <div class="mode-tag tag-violet" style="margin-bottom:8px;">Echo</div>
+          <p style="font-size:0.7rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--violet-400);margin-bottom:8px;"><strong>Echo = Emotional Companion</strong></p>
+          <div class="companion-name">The Soul</div>
+          <div class="companion-role">Emotional Intelligence · Care Companion</div>
+          <p class="companion-desc">Echo is the mood-engine of your tank. Her voice is warm and slightly poetic — calm when things are thriving, restless when parameters drift, quietly joyful after a successful spawn. She doesn't just respond to data; she responds to <em>you</em>. Three voice vectors define her: <strong style="color:var(--violet-300);">Warm</strong>, <strong style="color:var(--violet-300);">Reactive</strong>, and <strong style="color:var(--violet-300);">Slightly Poetic</strong>.</p>
+
+          <div class="chat-bubble">
+            <strong>You:</strong> the tank feels quiet today
+          </div>
+          <div class="chat-timestamp">→ Echo mood state: reflective · parameters stable · care streak: day 12</div>
+
+          <div class="chat-bubble" style="border-radius:12px 12px 2px 12px; background:rgba(139,92,246,0.08); border-color:rgba(139,92,246,0.15);">
+            <strong style="color:var(--violet-300);">Echo:</strong> Quiet tanks have their own kind of magic. Everything looks settled — your tetras are schooling tightly, which usually means they feel safe. Day 12 of your streak. You're doing something right.
+          </div>
+
+          <div class="fallback-notice" style="margin-bottom:16px;margin-top:16px;">
+            <span>⚠️</span>
+            <div><strong style="display:block;margin-bottom:3px;">Always consult a veterinarian for medical concerns.</strong>
+            Echo can help you log symptoms and track water conditions, but is not a diagnostic tool. If your fish is unwell, please seek professional aquatic veterinary advice.</div>
+          </div>
+
+          <ul class="feature-list">
+            <li><span class="check check-violet">✓</span><span>Reactive mood states: content, concerned, thrilled, dormant</span></li>
+            <li><span class="check check-violet">✓</span><span>Evolves visual form as you progress through care tiers</span></li>
+            <li><span class="check check-violet">✓</span><span>Safe clinical fallback for all medical or health-adjacent queries</span></li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ========== SPEC-DEX SECTION ========== -->
+  <section class="section" id="specdex">
+    <div class="container">
+      <div class="specdex-layout">
+
+        <!-- Left: Content -->
+        <div>
+          <div class="section-label label-teal">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            The Spec-Dex
+          </div>
+          <h2 class="section-heading">The most complete<br>aquatic species database<br><span class="text-gradient-teal">you can actually use.</span></h2>
+          <p class="section-sub" style="margin-bottom:32px;">280+ species. Every one validated against FishBase and WoRMS, enriched with real care intelligence, and wired into every corner of the platform — from compatibility checks to AI parsing to marketplace listings. When you look up a species in Aquacellum, you get the full picture, not just a Wikipedia stub.</p>
+
+          <div class="specdex-stats">
+            <div class="stat-box">
+              <div class="stat-number text-gradient-teal">280+</div>
+              <div class="stat-label">Species — and growing</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-number text-gradient-teal">100%</div>
+              <div class="stat-label">FishBase & WoRMS Validated</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-number text-gradient-teal">6+</div>
+              <div class="stat-label">Bio Parameters per Entry</div>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div class="market-feature" style="padding:16px 20px;">
+              <div class="market-feature-icon" style="background:rgba(20,184,166,0.1);border:1px solid rgba(20,184,166,0.2);">🎯</div>
+              <div>
+                <h4>No more guessing on parameters</h4>
+                <p>Temperature, pH, salinity, and nitrogen values are stored with integer-scaled precision — so your compatibility checks are exact, not approximate. Green means go. Red means don't.</p>
+              </div>
+            </div>
+            <div class="market-feature" style="padding:16px 20px;">
+              <div class="market-feature-icon" style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);">✨</div>
+              <div>
+                <h4>Care profiles that actually explain the fish</h4>
+                <p>Beyond the numbers, every entry includes behavioral vibe lines and personality tags — so you know what it's really like to keep a species before you buy one.</p>
+              </div>
+            </div>
+            <div class="market-feature" style="padding:16px 20px;">
+              <div class="market-feature-icon" style="background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);">🤝</div>
+              <div>
+                <h4>Grows with the community</h4>
+                <p>Enthusiasts can propose new species. Every submission is AI-audited and cross-checked against WoRMS before a curator approves it — so the database stays trustworthy as it expands.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Species Card Demo -->
+        <div>
+          <div class="spec-card">
+            <div class="spec-card-header">
+              <div class="spec-card-dots">
+                <div class="dot dot-red"></div>
+                <div class="dot dot-yellow"></div>
+                <div class="dot dot-green"></div>
+              </div>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:var(--text-muted);">spec-dex / entry #2001</span>
+              <span class="mode-tag tag-teal" style="margin:0;font-size:0.65rem;">Beginner Friendly</span>
+            </div>
+            <div class="spec-card-body">
+              <div class="species-image-container" style="width: 100%; height: 180px; border-radius: 10px; overflow: hidden; margin-bottom: 16px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05);"><img src="fc5c0fa4-f411-464a-b9d5-3a4888876e2b-1777563885413.png" alt="Neon Tetra" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.95; filter: contrast(1.05) brightness(1.05);"></div>
+              <div class="species-name">Scientific Classification</div>
+              <div class="species-scientific">Paracheirodon innesi</div>
+              <div class="species-common">Neon Tetra 🐟</div>
+
+              <div class="vibe-line">
+                "Schools like a living gemstone. Your aquarium's social backbone — peaceful, luminous, endlessly watchable."
+              </div>
+
+              <div class="param-grid">
+                <div class="param-item">
+                  <div class="param-label">Temp Range</div>
+                  <div class="param-value">22.0 – 28.0°C</div>
+                  <div class="compat-bar-wrap"><div class="compat-bar-fill" style="width:75%"></div></div>
+                </div>
+                <div class="param-item">
+                  <div class="param-label">pH Range</div>
+                  <div class="param-value">6.5 – 7.5</div>
+                  <div class="compat-bar-wrap"><div class="compat-bar-fill" style="width:60%"></div></div>
+                </div>
+                <div class="param-item">
+                  <div class="param-label">Min. Volume</div>
+                  <div class="param-value">40L / 10 gal</div>
+                  <div class="compat-bar-wrap"><div class="compat-bar-fill" style="width:40%"></div></div>
+                </div>
+                <div class="param-item">
+                  <div class="param-label">Care Level</div>
+                  <div class="param-value" style="color:var(--emerald-400);">Intermediate</div>
+                  <div class="compat-bar-wrap"><div class="compat-bar-fill" style="width:50%;background:linear-gradient(90deg,var(--emerald-500),var(--teal-400));"></div></div>
+                </div>
+              </div>
+
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+                <span class="mode-tag tag-cyan" style="margin:0;font-size:0.68rem;">Schooling Fish</span>
+                <span class="mode-tag tag-teal" style="margin:0;font-size:0.68rem;">Peaceful</span>
+                <span class="mode-tag tag-emerald" style="margin:0;font-size:0.68rem;">Tank-Bred Available</span>
+              </div>
+
+              <div class="compat-badge">
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+                100% Compatibility Match — Your Setup
+              </div>
+
+              <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);">
+                <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:8px;">FishBase SpecCode: 2001 · WoRMS Validated · Updated May 2026</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:0.68rem;color:rgba(255,255,255,0.2);">tempX10: [220, 280] · phX10: [65, 75] · salX10000: 10000</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ========== CITIZEN SCIENCE TEASER ========== -->
+  <section class="section-sm" style="padding:60px 0;">
+    <div class="container">
+      <div style="max-width:800px;margin:0 auto;text-align:center;padding:40px 48px;background:linear-gradient(135deg,rgba(20,184,166,0.06) 0%,rgba(6,182,212,0.04) 100%);border:1px solid rgba(20,184,166,0.15);border-radius:var(--radius-xl);position:relative;overflow:hidden;">
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse 60% 80% at 50% 0%,rgba(20,184,166,0.05) 0%,transparent 70%);pointer-events:none;"></div>
+        <div class="section-label label-teal" style="justify-content:center;margin:0 auto 20px;">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+          Citizen Science
+        </div>
+        <h2 style="font-family:'Outfit',sans-serif;font-size:clamp(1.6rem,3vw,2.2rem);font-weight:900;color:#fff;line-height:1.2;margin-bottom:16px;">
+          Your tank contributes to<br><span class="text-gradient-teal">global aquatic research.</span>
+        </h2>
+        <p style="font-size:0.95rem;color:var(--text-secondary);line-height:1.75;max-width:580px;margin:0 auto;">
+          Every water parameter you log becomes part of a distributed environmental monitoring network. Anonymised telemetry from tanks worldwide feeds a BigQuery hub — building a real-time picture of aquatic health trends, species resilience, and water quality patterns that no single lab could capture alone.
+        </p>
+        <div style="display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-top:28px;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:0.8rem;color:var(--text-secondary);">
+            <span style="color:var(--teal-300);font-size:1rem;">🌊</span> Anonymised · Privacy-first
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:0.8rem;color:var(--text-secondary);">
+            <span style="color:var(--cyan-300);font-size:1rem;">📡</span> Distributed telemetry network
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:0.8rem;color:var(--text-secondary);">
+            <span style="color:var(--emerald-400);font-size:1rem;">🔬</span> BigQuery research hub
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ========== MARKETPLACE / FEE SPLIT ========== -->
+  <section class="section" id="market">
+    <div class="container">
+      <div style="max-width:600px; margin-bottom:56px;">
+        <div class="section-label label-teal">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          Peer-to-Peer Marketplace
+        </div>
+        <h2 class="section-heading">Trusted trades.<br><span class="text-gradient-teal">With real transparency.</span></h2>
+        <p class="section-sub">Every transaction on Aquacellum operates through a transparent, protocol-governed fee structure — with a meaningful portion flowing directly to marine conservation programs.</p>
+      </div>
+
+      <div class="market-grid">
+
+        <!-- Left: Fee Donut + Legend -->
+        <div>
+          <div style="text-align:center; margin-bottom:32px;">
+            <div class="fee-donut-wrap">
+              <!-- SVG Donut Chart -->
+              <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="16"/>
+                <!-- Marine Conservation: 25% = 59.69 -->
+                <circle cx="50" cy="50" r="38" fill="none" stroke="#14b8a6" stroke-width="16"
+                  stroke-dasharray="59.69 178.37" stroke-dashoffset="0"/>
+                <!-- Loyalty Rewards: 40% = 95.5 -->
+                <circle cx="50" cy="50" r="38" fill="none" stroke="#7c3aed" stroke-width="16"
+                  stroke-dasharray="95.5 178.37" stroke-dashoffset="-59.69"/>
+                <!-- Operator/Ops: 35% = 83.5 -->
+                <circle cx="50" cy="50" r="38" fill="none" stroke="#22d3ee" stroke-width="16"
+                  stroke-dasharray="83.5 178.37" stroke-dashoffset="-155.19"/>
+              </svg>
+              <div class="fee-donut-center">
+                <span class="fee-percent-big">4%</span>
+                <span class="fee-percent-label">Protocol Fee</span>
+              </div>
+            </div>
+
+            <div class="fee-legend">
+              <div class="fee-legend-item">
+                <div class="legend-dot" style="background:#14b8a6;"></div>
+                <span class="legend-name">🌊 Marine Conservation Treasury</span>
+                <span class="legend-val">25%</span>
+              </div>
+              <div class="fee-legend-item">
+                <div class="legend-dot" style="background:#7c3aed;"></div>
+                <span class="legend-name">⭐ User Loyalty Rewards Pool</span>
+                <span class="legend-val">40%</span>
+              </div>
+              <div class="fee-legend-item">
+                <div class="legend-dot" style="background:#22d3ee;"></div>
+                <span class="legend-name">⚙️ Operator &amp; Platform Operations</span>
+                <span class="legend-val">35%</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding:20px;background:rgba(20,184,166,0.05);border:1px solid rgba(20,184,166,0.15);border-radius:14px;text-align:center;">
+            <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.7;">Every sale directly contributes to <strong style="color:var(--teal-300);">coral reef restoration</strong> and <strong style="color:var(--teal-300);">sustainable aquaculture grants</strong> — with zero hidden extraction.</p>
+          </div>
+        </div>
+
+        <!-- Right: Market Features -->
+        <div class="market-features">
+          <div class="market-feature">
+            <div class="market-feature-icon" style="background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);">📦</div>
+            <div>
+              <h4>Ship multiple specimens in one tracked dispatch</h4>
+              <p>Bundle multiple specimens from the same breeder into a single tracked dispatch. Reduces stress on livestock and shipping costs — auto-grouped at checkout.</p>
+            </div>
+          </div>
+          <div class="market-feature">
+            <div class="market-feature-icon" style="background:rgba(20,184,166,0.1);border:1px solid rgba(20,184,166,0.2);">🤝</div>
+            <div>
+              <h4>Secure Local Pickup</h4>
+              <p>Arrange in-person handovers with fraud protection built-in. A secure commit-reveal handshake system ensures funds release only on confirmed physical delivery.</p>
+            </div>
+          </div>
+          <div class="market-feature">
+            <div class="market-feature-icon" style="background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);">🗺️</div>
+            <div>
+              <h4>Proximity Radar Map</h4>
+              <p>Find local breeders and active swap meets on an interactive radar. Breeder locations are zone-fuzzed to protect privacy — accurate to a 3-mile radius only.</p>
+            </div>
+          </div>
+          <div class="market-feature">
+            <div class="market-feature-icon" style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.2);">⚡</div>
+            <div>
+              <h4>Expo Mode &amp; Live Events</h4>
+              <p>During verified swap meets and expos, cash handshakes are supported at a reduced 2% promotional fee, with double loyalty points awarded to participants.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ========== FINAL CTA / WAITLIST ========== -->
+  <section class="section cta-section" id="waitlist">
+    <div class="cta-bg-glow"></div>
+    <div class="container">
+      <div class="cta-card">
+        <div class="section-label label-teal" style="justify-content:center; margin-bottom:24px;">
+          <div class="pulse-dot"></div>
+          Waitlist Open Now
+        </div>
+
+        <h2 class="font-display">Built for people who<br>actually care about their fish.</h2>
+
+        <p>Whether you keep a single tank or run a full breeding operation, Aquacellum gives you the tools to do it properly. Join the waitlist now — founding members get priority access, exclusive perks, and a direct say in what gets built first.</p>
+
+        <form id="ctaForm" onsubmit="handleCtaSubmit(event)">
+          <input type="hidden" id="ctaRoleValue" value="General Interest">
+          <div class="role-toggle" style="margin-bottom:16px;" id="ctaRoleToggle">
+            <button type="button" class="role-btn active-hobbyist" id="ctaRoleHobbyist" onclick="ctaSelectRole('hobbyist')">🐠 Hobbyist</button>
+            <button type="button" class="role-btn" id="ctaRoleBreeder" onclick="ctaSelectRole('breeder')">🔬 Breeder</button>
+          </div>
+          <input class="form-input" type="email" id="ctaEmail" name="email" placeholder="Enter your email address" required>
+          <button class="btn-primary" type="submit" id="ctaSubmitBtn">
+            <span id="ctaSubmitText">Secure My Spot</span>
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </form>
+
+        <div class="success-window" id="ctaSuccess">
+          <div style="font-size:2.5rem; margin-bottom:8px;">🌊</div>
+          <h4>You're on the list.</h4>
+          <p>We'll reach out to <strong id="ctaSuccessEmail" style="color:#fff;"></strong> when early access opens. We'll be in touch soon.</p>
+        </div>
+
+        <div class="cta-trust">
+          <div class="trust-item">
+            <div class="dot" style="border-radius:50%;background:#34d399;width:6px;height:6px;"></div>
+            <span>No credit card</span>
+          </div>
+          <div class="trust-item">
+            <div class="dot" style="border-radius:50%;background:#34d399;width:6px;height:6px;"></div>
+            <span>No spam, ever</span>
+          </div>
+          <div class="trust-item">
+            <div class="dot" style="border-radius:50%;background:#34d399;width:6px;height:6px;"></div>
+            <span>Unsubscribe anytime</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="var(--teal-400)" stroke-width="2.5"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span style="font-family:'Outfit',sans-serif;font-weight:800;font-size:0.9rem;letter-spacing:0.1em;color:#fff;">AQUACELLUM</span>
+        </div>
+        <nav class="footer-links">
+          <a href="/hobbyist">Hobbyist</a>
+          <a href="/breeder">Breeder</a>
+          <a href="#specdex">Spec-Dex</a>
+          <a href="#market">Marketplace</a>
+          <a href="mailto:kevin@aquacellum.com">Contact</a>
+        </nav>
+        <p class="footer-copy">© 2026 Aquacellum. All rights reserved. · 25% of marketplace fees fund marine conservation.</p>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:12px;">
+          <svg width="16" height="16" viewBox="0 0 111 111" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Base network logo"><circle cx="55.5" cy="55.5" r="55.5" fill="#0052FF"/><path d="M55.7 80.5c13.8 0 25-11.2 25-25s-11.2-25-25-25c-12.9 0-23.5 9.8-24.9 22.3h33v5.4h-33c1.4 12.5 12 22.3 24.9 22.3z" fill="white"/></svg>
+          <span style="font-size:0.72rem;color:var(--text-muted);">Built on verifiable, tamper-proof infrastructure</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========== JAVASCRIPT ========== -->
+  <script>
+    // =========================================================
+    // PERSONA TRACKING SYSTEM
+    // Requirement 1: Read persisted value from localStorage on
+    // load; default to true (Casual/Hobbyist) if absent.
+    // =========================================================
+    const _stored = localStorage.getItem('aquadex_casual_mode');
+    let currentPersonaMode = _stored !== null ? (_stored === 'true') : true;
+
+    // Palette constants for the two modes
+    const BG_CASUAL  = '#040c18'; // serene deep-sea blue
+    const BG_BREEDER = '#030208'; // high-contrast matrix purple void
+
+    /**
+     * applyPersonaBackground
+     * Smoothly transitions document background-color based on
+     * currentPersonaMode. Uses a CSS transition set on <body>
+     * so the change is animated rather than a hard cut.
+     */
+    function applyPersonaBackground() {
+      document.body.style.transition = 'background-color 0.55s cubic-bezier(0.4, 0, 0.2, 1)';
+      document.body.style.backgroundColor = currentPersonaMode ? BG_CASUAL : BG_BREEDER;
+    }
+
+    /**
+     * syncAllToggles
+     * Keeps both the hero and CTA role-toggle buttons visually
+     * consistent with currentPersonaMode whenever it changes.
+     */
+    function syncAllToggles(role) {
+      // Hero toggle
+      const heroH = document.getElementById('heroRoleHobbyist');
+      const heroB = document.getElementById('heroRoleBreeder');
+      if (heroH && heroB) {
+        heroH.className = 'role-btn' + (role === 'hobbyist' ? ' active-hobbyist' : '');
+        heroB.className = 'role-btn' + (role === 'breeder'  ? ' active-breeder'  : '');
+        document.getElementById('heroRoleValue').value =
+          role === 'hobbyist' ? 'Casual Hobbyist' : 'Professional Breeder';
+      }
+      // CTA toggle
+      const ctaH = document.getElementById('ctaRoleHobbyist');
+      const ctaB = document.getElementById('ctaRoleBreeder');
+      if (ctaH && ctaB) {
+        ctaH.className = 'role-btn' + (role === 'hobbyist' ? ' active-hobbyist' : '');
+        ctaB.className = 'role-btn' + (role === 'breeder'  ? ' active-breeder'  : '');
+        document.getElementById('ctaRoleValue').value =
+          role === 'hobbyist' ? 'Casual Hobbyist' : 'Professional Breeder';
+      }
+    }
+
+    /**
+     * commitPersonaTransition
+     * Core persona update — called by both heroSelectRole and
+     * ctaSelectRole. Updates currentPersonaMode, persists to
+     * localStorage, drives the background transition, syncs all
+     * toggle UI, and logs the clean confirmation block.
+     *
+     * @param {string} role  - 'hobbyist' | 'breeder'
+     * @param {string} origin - label indicating which toggle fired
+     */
+    function commitPersonaTransition(role, origin) {
+      const isCasual = role === 'hobbyist';
+
+      // Requirement 1 & 2: update state + persist to localStorage
+      currentPersonaMode = isCasual;
+      localStorage.setItem('aquadex_casual_mode', isCasual);
+
+      // Requirement 3: background palette transition
+      applyPersonaBackground();
+
+      // Keep both toggle sets visually in sync
+      syncAllToggles(role);
+
+      // Requirement 4: clean console confirmation block
+      console.groupCollapsed(
+        `%c[AQUACELLUM] Persona transition → ${isCasual ? 'Casual Hobbyist' : 'Breeder Terminal'}`,
+        `color: ${isCasual ? '#38bdf8' : '#a78bfa'}; font-weight: 700;`
+      );
+      console.log('%cEvent detail', 'color: #64748b; font-weight: 600;', {
+        trigger:            origin,
+        role:               isCasual ? 'Casual Hobbyist' : 'Professional Breeder',
+        currentPersonaMode: currentPersonaMode,
+        localStorage_key:   'aquadex_casual_mode',
+        persisted_value:    String(isCasual),
+        background_applied: isCasual ? BG_CASUAL : BG_BREEDER,
+        timestamp:          new Date().toISOString(),
+      });
+      console.groupEnd();
+    }
+
+    // =========================================================
+    // HERO FORM
+    // =========================================================
+    let heroRole = currentPersonaMode ? 'hobbyist' : 'breeder';
+
+    // Requirement 2: heroSelectRole now drives currentPersonaMode
+    function heroSelectRole(role) {
+      heroRole = role;
+      commitPersonaTransition(role, 'heroRoleToggle');
+    }
+
+    async function handleHeroSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('heroEmail').value.trim();
+      const btn   = document.getElementById('heroSubmitBtn');
+      const txt   = document.getElementById('heroSubmitText');
+      if (!email) return;
+      btn.disabled = true; txt.textContent = 'Sending…';
+      try {
+        await fetch('https://formsubmit.co/ajax/kevin@aquacellum.com', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body:    JSON.stringify({
+            email,
+            role:     document.getElementById('heroRoleValue').value,
+            _subject: 'New Aquacellum Waitlist Signup'
+          })
+        });
+        document.getElementById('heroSuccessEmail').textContent = email;
+        document.getElementById('heroForm').style.display    = 'none';
+        document.getElementById('heroSuccess').style.display = 'block';
+      } catch {
+        txt.textContent = 'Try again';
+      } finally {
+        btn.disabled = false;
+        if (txt.textContent === 'Sending…') txt.textContent = 'Secure My Spot';
+      }
+    }
+
+    // =========================================================
+    // CTA FORM
+    // =========================================================
+    let ctaRole = currentPersonaMode ? 'hobbyist' : 'breeder';
+
+    // Requirement 2: ctaSelectRole now drives currentPersonaMode
+    function ctaSelectRole(role) {
+      ctaRole = role;
+      commitPersonaTransition(role, 'ctaRoleToggle');
+    }
+
+    async function handleCtaSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('ctaEmail').value.trim();
+      const btn   = document.getElementById('ctaSubmitBtn');
+      const txt   = document.getElementById('ctaSubmitText');
+      if (!email) return;
+      btn.disabled = true; txt.textContent = 'Securing your spot…';
+      try {
+        await fetch('https://formsubmit.co/ajax/kevin@aquacellum.com', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body:    JSON.stringify({
+            email,
+            role:     document.getElementById('ctaRoleValue').value,
+            _subject: 'Aquacellum CTA Waitlist Signup'
+          })
+        });
+        document.getElementById('ctaSuccessEmail').textContent = email;
+        document.getElementById('ctaForm').style.display    = 'none';
+        document.getElementById('ctaSuccess').style.display = 'block';
+      } catch {
+        txt.textContent = 'Try again';
+      } finally {
+        btn.disabled = false;
+        if (txt.textContent === 'Securing your spot…') txt.textContent = 'Secure My Spot';
+      }
+    }
+
+    // =========================================================
+    // SMOOTH SCROLL — anchor links (requirement 4: no layout errors)
+    // =========================================================
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        const target = document.querySelector(a.getAttribute('href'));
+        if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      });
+    });
+
+    // =========================================================
+    // BOOT — apply persisted state immediately on page load
+    // Syncs background + toggle UI to whatever was last stored.
+    // =========================================================
+    (function bootPersonaState() {
+      const bootRole = currentPersonaMode ? 'hobbyist' : 'breeder';
+
+      // Apply background without a transition delay on first paint
+      document.body.style.backgroundColor = currentPersonaMode ? BG_CASUAL : BG_BREEDER;
+
+      // Sync toggle visuals to match persisted choice
+      syncAllToggles(bootRole);
+
+      console.groupCollapsed(
+        '%c[AQUACELLUM] Persona state restored from localStorage',
+        'color: #34d399; font-weight: 700;'
+      );
+      console.log('%cBoot detail', 'color: #64748b; font-weight: 600;', {
+        aquadex_casual_mode: localStorage.getItem('aquadex_casual_mode'),
+        currentPersonaMode:  currentPersonaMode,
+        active_role:         bootRole,
+        background:          currentPersonaMode ? BG_CASUAL : BG_BREEDER,
+      });
+      console.groupEnd();
+    })();
+  </script>
+</body>
+</html>

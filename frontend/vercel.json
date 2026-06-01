@@ -1,0 +1,11 @@
+{
+  "framework": null,
+  "buildCommand": "",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/app", "destination": "/app.html" },
+    { "source": "/hobbyist", "destination": "/hobbyist.html" },
+    { "source": "/breeder", "destination": "/breeder.html" }
+  ]
+}

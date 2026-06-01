@@ -1,0 +1,362 @@
+[
+  {
+    "specCode": 1001,
+    "scientificName": "Amatitlania nigrofasciata",
+    "genus": "Amatitlania",
+    "species": "nigrofasciata",
+    "commonName": "Convict cichlid",
+    "family": "Cichlidae",
+    "maxLengthCm": 15.0,
+    "tankMetrics": {
+      "minVolumeGallons": 75,
+      "tempRangeCelsius": [
+        22,
+        28
+      ],
+      "phRange": [
+        6.5,
+        7.5
+      ],
+      "difficulty": "Intermediate"
+    },
+    "ecology": {
+      "comments": "Inhabits warm, flowing streams. Prefers rocky crevices.",
+      "biotope": "Central American rivers and streams with moderate current and rocky or gravel substrates.",
+      "phMin": 6.5,
+      "phMax": 7.5,
+      "hardnessRange": "8 - 15 dGH",
+      "tempCeiling": 28.0,
+      "socialBehavior": "Must be kept in a conspecific school of 5+ individuals to manage natural cichlid pecking orders."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "benthic invertebrates, detritus",
+      "feedingPlaybook": "Requires high-quality flakes/pellets as a daily staple. Supplement with live or frozen foods such as bloodworms, brine shrimp, and daphnia to copy their natural riverine diets."
+    },
+    "reproduction": {
+      "spawningTrait": "Parent-guarding substrate spawner",
+      "layoutRequirement": "Provide flat slate rocks, clay pots, or breeding caves. They lay eggs on these flat surfaces and defend them aggressively as a breeding pair.",
+      "comments": "Highly protective parents. Will guard the eggs and fry against all tankmates, making separate hatchery setups recommended."
+    }
+  },
+  {
+    "specCode": 1002,
+    "scientificName": "Symphysodon aequifasciatus",
+    "genus": "Symphysodon",
+    "species": "aequifasciatus",
+    "commonName": "Discus",
+    "family": "Cichlidae",
+    "maxLengthCm": 20.0,
+    "tankMetrics": {
+      "minVolumeGallons": 75,
+      "tempRangeCelsius": [
+        22,
+        28
+      ],
+      "phRange": [
+        6.5,
+        7.5
+      ],
+      "difficulty": "Intermediate"
+    },
+    "ecology": {
+      "comments": "Found in quiet acidic blackwater areas of the Amazon basin.",
+      "biotope": "Slow-moving Amazonian tributaries and flooded forests under dense canopy cover.",
+      "phMin": 6.0,
+      "phMax": 7.0,
+      "hardnessRange": "1 - 4 dGH",
+      "tempCeiling": 30.0,
+      "socialBehavior": "Must be kept in a conspecific group of 6+ individuals to prevent submissive stress and establish a natural social hierarchy."
+    },
+    "diet": {
+      "trophicLevel": "Carnivore",
+      "fooditems": "small crustaceans, worms, organic debris",
+      "feedingPlaybook": "Feed premium beefheart mixes, freeze-dried tubifex, and frozen bloodworms. Enjoys grazing on high-protein pellets throughout the day to support body growth."
+    },
+    "reproduction": {
+      "spawningTrait": "Parent-guarding substrate spawner",
+      "layoutRequirement": "Provide vertical slate, breeding cones, or broad-leafed plants (e.g., Amazon Swords) for vertical egg deposition.",
+      "comments": "Lays eggs on vertical surfaces. Parents produce a specialized skin mucus that serves as the primary food source for newly hatched fry."
+    }
+  },
+  {
+    "specCode": 1003,
+    "scientificName": "Apistogramma borellii",
+    "genus": "Apistogramma",
+    "species": "borellii",
+    "commonName": "Umbrella cichlid",
+    "family": "Cichlidae",
+    "maxLengthCm": 8.0,
+    "tankMetrics": {
+      "minVolumeGallons": 30,
+      "tempRangeCelsius": [
+        22,
+        28
+      ],
+      "phRange": [
+        6.5,
+        7.5
+      ],
+      "difficulty": "Intermediate"
+    },
+    "ecology": {
+      "comments": "Inhabits slow-moving streams and flooded areas.",
+      "biotope": "Slow-moving streams, pools, and flooded grasslands in the Paraguay river basin.",
+      "phMin": 6.0,
+      "phMax": 7.2,
+      "hardnessRange": "2 - 8 dGH",
+      "tempCeiling": 26.0,
+      "socialBehavior": "Best kept in pairs or harems (1 male to multiple females) to manage territorial aggression."
+    },
+    "diet": {
+      "trophicLevel": "Carnivore",
+      "fooditems": "insects, larvae",
+      "feedingPlaybook": "Provide small frozen food like daphnia, cyclops, and baby brine shrimp. Flakes are accepted but should not be the sole diet."
+    },
+    "reproduction": {
+      "spawningTrait": "Cave-brooder",
+      "layoutRequirement": "Provide half coconut shells, small clay caves, or dense leaf litter.",
+      "comments": "Maternal mouthbrooder / cave breeder. The female guards the eggs inside the cave while the male defends the outer territory."
+    }
+  },
+  {
+    "specCode": 2001,
+    "scientificName": "Paracheirodon innesi",
+    "genus": "Paracheirodon",
+    "species": "innesi",
+    "commonName": "Neon tetra",
+    "family": "Characidae",
+    "maxLengthCm": 4.0,
+    "tankMetrics": {
+      "minVolumeGallons": 10,
+      "tempRangeCelsius": [
+        22,
+        28
+      ],
+      "phRange": [
+        6.5,
+        7.5
+      ],
+      "difficulty": "Intermediate"
+    },
+    "ecology": {
+      "comments": "Prefers clean, clear or blackwater streams with dense vegetation.",
+      "biotope": "Shaded blackwater streams and tributaries in the western Amazon basin, rich in tannins and leaf litter.",
+      "phMin": 5.5,
+      "phMax": 6.8,
+      "hardnessRange": "1 - 5 dGH",
+      "tempCeiling": 26.0,
+      "socialBehavior": "Must be kept in a schooling group of 6+ (ideally 10+) individuals to reduce anxiety and display natural behavior."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "small insects, worms, plants",
+      "feedingPlaybook": "Eats crushed micro-flakes, baby brine shrimp, and daphnia. Provide tiny food sizes due to their small mouth size."
+    },
+    "reproduction": {
+      "spawningTrait": "Egg-scatterer",
+      "layoutRequirement": "Dense fine-leaved plants, java moss, or spawning mops under extremely dim lighting.",
+      "comments": "Eggs are highly light-sensitive and are scattered among fine vegetation. Parents should be removed immediately after spawning to prevent egg-eating."
+    }
+  },
+  {
+    "specCode": 2002,
+    "scientificName": "Hyphessobrycon eques",
+    "genus": "Hyphessobrycon",
+    "species": "eques",
+    "commonName": "Serpae tetra",
+    "family": "Characidae",
+    "maxLengthCm": 5.0,
+    "tankMetrics": {
+      "minVolumeGallons": 30,
+      "tempRangeCelsius": [
+        22,
+        28
+      ],
+      "phRange": [
+        6.5,
+        7.5
+      ],
+      "difficulty": "Intermediate"
+    },
+    "ecology": {
+      "comments": "Found in slow-flowing rivers and ponds with rich vegetation.",
+      "biotope": "Slow-flowing tributaries, oxbows, and swampy areas in the Amazon and Paraguay river basins.",
+      "phMin": 6.0,
+      "phMax": 7.5,
+      "hardnessRange": "5 - 12 dGH",
+      "tempCeiling": 28.0,
+      "socialBehavior": "Must be kept in a school of 6+ to minimize fin-nipping behavior directed at slower tankmates."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "crustaceans, insects",
+      "feedingPlaybook": "Accepts high-quality flake foods and small pellets. Supplement with frozen bloodworms and brine shrimp to maintain color vibrancy."
+    },
+    "reproduction": {
+      "spawningTrait": "Egg-scatterer",
+      "layoutRequirement": "Java moss beds, spawning grids, or fine plants. Eggs adhere to the plant leaves.",
+      "comments": "Spawns in pairs or small groups. Parents are notorious egg-eaters and must be separated after the spawn event completes."
+    }
+  },
+  {
+    "specCode": 3001,
+    "scientificName": "Poecilia reticulata",
+    "genus": "Poecilia",
+    "species": "reticulata",
+    "commonName": "Guppy",
+    "family": "Poeciliidae",
+    "maxLengthCm": 6.0,
+    "tankMetrics": {
+      "minVolumeGallons": 30,
+      "tempRangeCelsius": [
+        22,
+        28
+      ],
+      "phRange": [
+        6.5,
+        7.5
+      ],
+      "difficulty": "Intermediate"
+    },
+    "ecology": {
+      "comments": "Highly adaptable. Found in wide range of fresh and brackish waters.",
+      "biotope": "Various habitats including clear streams, canals, and brackish coastal waters of northern South America.",
+      "phMin": 7.0,
+      "phMax": 8.0,
+      "hardnessRange": "8 - 20 dGH",
+      "tempCeiling": 28.0,
+      "socialBehavior": "Keep in a ratio of 1 male to 2+ females to prevent excessive harassment of females."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "algae, insect larvae",
+      "feedingPlaybook": "Enjoys spirulina-enriched flakes, freeze-dried daphnia, and micro-pellets. Needs a balance of vegetable and protein matter."
+    },
+    "reproduction": {
+      "spawningTrait": "Livebearer",
+      "layoutRequirement": "Provide floating plants (like Hornwort, Water Wisteria) or fry traps.",
+      "comments": "Gives birth to free-swimming live fry rather than laying eggs. Fry hide in floating vegetation to avoid predation by adults."
+    }
+  },
+  {
+    "specCode": 3002,
+    "scientificName": "Xiphophorus hellerii",
+    "genus": "Xiphophorus",
+    "species": "hellerii",
+    "commonName": "Green swordtail",
+    "family": "Poeciliidae",
+    "maxLengthCm": 14.0,
+    "tankMetrics": {
+      "minVolumeGallons": 30,
+      "tempRangeCelsius": [
+        22,
+        28
+      ],
+      "phRange": [
+        6.5,
+        7.5
+      ],
+      "difficulty": "Intermediate"
+    },
+    "ecology": {
+      "comments": "Prefers fast-flowing streams and rivers with vegetation.",
+      "biotope": "Fast-flowing rivers and streams with rocky bottom substrates and bankside vegetation in Central America.",
+      "phMin": 7.0,
+      "phMax": 8.2,
+      "hardnessRange": "10 - 20 dGH",
+      "tempCeiling": 28.0,
+      "socialBehavior": "Avoid keeping multiple males in small tanks as they establish strict hierarchies and fight."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "worms, insects, plant matter",
+      "feedingPlaybook": "Eats flake food, veggie wafers, and frozen brine shrimp. Appreciates regular vegetable matter supplements."
+    },
+    "reproduction": {
+      "spawningTrait": "Livebearer",
+      "layoutRequirement": "Dense floating plant coverage or breeding box to protect newborn fry.",
+      "comments": "Internal fertilization occurs. Females give birth to large batches of live young. Very prolific breeders in well-planted tanks."
+    }
+  },
+  {
+    "specCode": 4001,
+    "scientificName": "Ancistrus cirrhosus",
+    "genus": "Ancistrus",
+    "species": "cirrhosus",
+    "commonName": "Bristlenose pleco",
+    "family": "Loricariidae",
+    "maxLengthCm": 12.0,
+    "tankMetrics": {
+      "minVolumeGallons": 30,
+      "tempRangeCelsius": [
+        22,
+        28
+      ],
+      "phRange": [
+        6.5,
+        7.5
+      ],
+      "difficulty": "Intermediate"
+    },
+    "ecology": {
+      "comments": "Inhabits fast-flowing streams and rivers. Grazes on driftwood.",
+      "biotope": "Fast-flowing, highly oxygenated tributaries of the Amazon basin, typically with stony beds and sunken wood.",
+      "phMin": 6.5,
+      "phMax": 7.6,
+      "hardnessRange": "6 - 15 dGH",
+      "tempCeiling": 27.0,
+      "socialBehavior": "Generally peaceful, but males are territorial over hiding spots and caves."
+    },
+    "diet": {
+      "trophicLevel": "Herbivore / Detritivore",
+      "fooditems": "algae, biofilm",
+      "feedingPlaybook": "Provide sinking algae wafers, fresh zucchini, spinach, and cucumber. Driftwood MUST be present in the tank as they need to ingest cellulose for proper digestion."
+    },
+    "reproduction": {
+      "spawningTrait": "Cave-brooder",
+      "layoutRequirement": "Provide narrow breeding caves, ceramic tubes, or hollow logs.",
+      "comments": "The male attracts the female to a cave, where she lays eggs. The male then guards and fans the eggs aggressively until they hatch."
+    }
+  },
+  {
+    "specCode": 5001,
+    "scientificName": "Danio rerio",
+    "genus": "Danio",
+    "species": "rerio",
+    "commonName": "Zebrafish",
+    "family": "Cyprinidae",
+    "maxLengthCm": 5.0,
+    "tankMetrics": {
+      "minVolumeGallons": 30,
+      "tempRangeCelsius": [
+        22,
+        28
+      ],
+      "phRange": [
+        6.5,
+        7.5
+      ],
+      "difficulty": "Intermediate"
+    },
+    "ecology": {
+      "comments": "Found in slow-moving streams and rice paddies.",
+      "biotope": "Shallow, slow-moving streams, rice paddies, and canals in South Asia (India and Bangladesh).",
+      "phMin": 6.5,
+      "phMax": 8.0,
+      "hardnessRange": "5 - 15 dGH",
+      "tempCeiling": 25.0,
+      "socialBehavior": "Must be kept in a school of 6+ to allow active shoaling and reduce stress."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "insects, small crustaceans",
+      "feedingPlaybook": "Thrives on high-quality flake foods, freeze-dried bloodworms, and live daphnia. Very active surface-feeders."
+    },
+    "reproduction": {
+      "spawningTrait": "Egg-scatterer",
+      "layoutRequirement": "Fine gravel, glass marbles substrate, or a spawning grid to prevent adults from eating the dropped eggs.",
+      "comments": "Non-adhesive eggs are scattered over the substrate. Fast and prolific spawners. Remove parent fish immediately to ensure high yield."
+    }
+  }
+]

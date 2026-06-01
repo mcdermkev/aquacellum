@@ -1,0 +1,283 @@
+[AQUADEX BIOLOGICAL REFERENCE REGISTRY - STRICT SCALED METRICS]
+METRIC RULES: Temp/pH are scaled x10. Ex: 235 = 23.5C. 72 = pH 7.2.
+
+COMMON:Convict Cichlid|SCIENTIFIC:Amatitlania nigrofasciata|TEMP_MIN:200|TEMP_MAX:280|PH_MIN:70|PH_MAX:80|DIFF:Beginner
+COMMON:Bristlenose Pleco|SCIENTIFIC:Ancistrus cirrhosus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:65|PH_MAX:75|DIFF:Beginner
+COMMON:Betta / Siamese Fighting Fish|SCIENTIFIC:Betta splendens|TEMP_MIN:240|TEMP_MAX:300|PH_MIN:60|PH_MAX:80|DIFF:Beginner
+COMMON:Common Goldfish|SCIENTIFIC:Carassius auratus|TEMP_MIN:100|TEMP_MAX:240|PH_MIN:60|PH_MAX:80|DIFF:Beginner
+COMMON:Bronze Corydoras|SCIENTIFIC:Corydoras aeneus|TEMP_MIN:220|TEMP_MAX:270|PH_MIN:60|PH_MAX:80|DIFF:Beginner
+COMMON:Peppered Corydoras|SCIENTIFIC:Corydoras paleatus|TEMP_MIN:180|TEMP_MAX:250|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Siamese Algae Eater|SCIENTIFIC:Crossocheilus oblongus|TEMP_MIN:240|TEMP_MAX:260|PH_MIN:65|PH_MAX:75|DIFF:Beginner
+COMMON:Zebra Danio|SCIENTIFIC:Danio rerio|TEMP_MIN:180|TEMP_MAX:260|PH_MIN:60|PH_MAX:80|DIFF:Beginner
+COMMON:Black Skirt Tetra|SCIENTIFIC:Gymnocorymbus ternetzi|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:60|PH_MAX:80|DIFF:Beginner
+COMMON:Glowlight Tetra|SCIENTIFIC:Hemigrammus erythrozonus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Red Eye Tetra|SCIENTIFIC:Moenkhausia sanctaefilomenae|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:80|DIFF:Beginner
+COMMON:Neon Tetra|SCIENTIFIC:Paracheirodon innesi|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:65|PH_MAX:75|DIFF:Beginner
+COMMON:Rosy Barb|SCIENTIFIC:Pethia conchonius|TEMP_MIN:180|TEMP_MAX:250|PH_MIN:60|PH_MAX:80|DIFF:Beginner
+COMMON:Guppy|SCIENTIFIC:Poecilia reticulata|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:68|PH_MAX:78|DIFF:Beginner
+COMMON:Molly|SCIENTIFIC:Poecilia sphenops|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:70|PH_MAX:85|DIFF:Beginner
+COMMON:Buenos Aires Tetra|SCIENTIFIC:Psalidodon anisitsi|TEMP_MIN:180|TEMP_MAX:260|PH_MIN:60|PH_MAX:80|DIFF:Beginner
+COMMON:Freshwater Angelfish|SCIENTIFIC:Pterophyllum scalare|TEMP_MIN:240|TEMP_MAX:300|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Tiger Barb|SCIENTIFIC:Puntigrus tetrazona|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Cherry Barb|SCIENTIFIC:Puntius titteya|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:60|PH_MAX:70|DIFF:Beginner
+COMMON:Jewel Cichlid|SCIENTIFIC:Rubricatochromis bimaculatus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:65|PH_MAX:75|DIFF:Beginner
+COMMON:Honey Gourami|SCIENTIFIC:Trichogaster chuna|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Dwarf Gourami|SCIENTIFIC:Trichogaster lalius|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Harlequin Rasbora|SCIENTIFIC:Trigonostigma heteromorpha|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Green Swordtail|SCIENTIFIC:Xiphophorus hellerii|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:70|PH_MAX:84|DIFF:Beginner
+COMMON:Southern Platy|SCIENTIFIC:Xiphophorus maculatus|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:70|PH_MAX:80|DIFF:Beginner
+COMMON:Variatus Platy|SCIENTIFIC:Xiphophorus variatus|TEMP_MIN:180|TEMP_MAX:250|PH_MIN:70|PH_MAX:82|DIFF:Beginner
+COMMON:Spotted Raphael Catfish|SCIENTIFIC:Agamyxis pectinifrons|TEMP_MIN:220|TEMP_MAX:300|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Midas Cichlid|SCIENTIFIC:Amphilophus citrinellus|TEMP_MIN:220|TEMP_MAX:300|PH_MIN:70|PH_MAX:80|DIFF:Advanced
+COMMON:Red Devil Cichlid|SCIENTIFIC:Amphilophus labiatus|TEMP_MIN:220|TEMP_MAX:300|PH_MIN:70|PH_MAX:80|DIFF:Advanced
+COMMON:Blue Acara|SCIENTIFIC:Andinoacara pulcher|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:65|PH_MAX:80|DIFF:Beginner
+COMMON:Green Terror|SCIENTIFIC:Andinoacara rivulatus|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:65|PH_MAX:80|DIFF:Intermediate
+COMMON:Golden Wonder Killifish|SCIENTIFIC:Aplocheilus lineatus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Oscar|SCIENTIFIC:Astronotus ocellatus|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:60|PH_MAX:80|DIFF:Intermediate
+COMMON:Emperor Cichlid|SCIENTIFIC:Aulonocara nyassae|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:78|PH_MAX:86|DIFF:Intermediate
+COMMON:Bala Shark|SCIENTIFIC:Balantiocheilos melanopterus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:80|DIFF:Intermediate
+COMMON:Gold Barb|SCIENTIFIC:Barbodes semifasciolatus|TEMP_MIN:180|TEMP_MAX:240|PH_MIN:60|PH_MAX:80|DIFF:Beginner
+COMMON:Tinfoil Barb|SCIENTIFIC:Barbonymus schwanenfeldii|TEMP_MIN:220|TEMP_MAX:250|PH_MIN:65|PH_MAX:75|DIFF:Intermediate
+COMMON:Madagascar Rainbowfish|SCIENTIFIC:Bedotia madagascariensis|TEMP_MIN:220|TEMP_MAX:250|PH_MIN:65|PH_MAX:75|DIFF:Beginner
+COMMON:Zebra Loach|SCIENTIFIC:Botia almorhae|TEMP_MIN:220|TEMP_MAX:270|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Yoyo / Striata Loach|SCIENTIFIC:Botia striata|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:60|PH_MAX:75|DIFF:Intermediate
+COMMON:Rubber Lipped Pleco|SCIENTIFIC:Chaetostoma milesi|TEMP_MIN:200|TEMP_MAX:250|PH_MIN:65|PH_MAX:75|DIFF:Beginner
+COMMON:Clown Loach|SCIENTIFIC:Chromobotia macracanthus|TEMP_MIN:240|TEMP_MAX:300|PH_MIN:50|PH_MAX:70|DIFF:Intermediate
+COMMON:Keyhole Cichlid|SCIENTIFIC:Cleithracara maronii|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Kadango Cichlid|SCIENTIFIC:Copadichromis borleyi|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:78|PH_MAX:86|DIFF:Intermediate
+COMMON:Julii Corydoras|SCIENTIFIC:Corydoras julii|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Panda Corydoras|SCIENTIFIC:Corydoras panda|TEMP_MIN:200|TEMP_MAX:250|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Sterba's Corydoras|SCIENTIFIC:Corydoras sterbai|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:60|PH_MAX:76|DIFF:Beginner
+COMMON:Three-stripe Corydoras|SCIENTIFIC:Corydoras trilineatus|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Frontosa Cichlid|SCIENTIFIC:Cyphotilapia frontosa|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:78|PH_MAX:90|DIFF:Advanced
+COMMON:Pearl Danio|SCIENTIFIC:Danio albolineatus|TEMP_MIN:200|TEMP_MAX:250|PH_MIN:60|PH_MAX:80|DIFF:Beginner
+COMMON:Giant Danio|SCIENTIFIC:Devario aequipinnatus|TEMP_MIN:200|TEMP_MAX:250|PH_MIN:60|PH_MAX:80|DIFF:Beginner
+COMMON:Red-Tailed Black Shark|SCIENTIFIC:Epalzeorhynchos bicolor|TEMP_MIN:220|TEMP_MAX:270|PH_MIN:65|PH_MAX:75|DIFF:Intermediate
+COMMON:Rainbow Shark|SCIENTIFIC:Epalzeorhynchos frenatum|TEMP_MIN:220|TEMP_MAX:270|PH_MIN:65|PH_MAX:75|DIFF:Intermediate
+COMMON:Flying Fox|SCIENTIFIC:Epalzeorhynchos kalopterum|TEMP_MIN:240|TEMP_MAX:270|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Gardneri Killifish|SCIENTIFIC:Fundulopanchax gardneri|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Redstriped Eartheater|SCIENTIFIC:Geophagus surinamensis|TEMP_MIN:240|TEMP_MAX:300|PH_MIN:60|PH_MAX:70|DIFF:Intermediate
+COMMON:Silvertip Tetra|SCIENTIFIC:Hasemania nana|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Kissing Gourami|SCIENTIFIC:Helostoma temminckii|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:80|DIFF:Intermediate
+COMMON:Texas Cichlid|SCIENTIFIC:Herichthys cyanoguttatus|TEMP_MIN:200|TEMP_MAX:250|PH_MIN:65|PH_MAX:80|DIFF:Advanced
+COMMON:Green Severum|SCIENTIFIC:Heros efasciatus|TEMP_MIN:230|TEMP_MAX:290|PH_MIN:60|PH_MAX:75|DIFF:Intermediate
+COMMON:Banded Severum|SCIENTIFIC:Heros severus|TEMP_MIN:230|TEMP_MAX:290|PH_MIN:60|PH_MAX:75|DIFF:Intermediate
+COMMON:Colombian Tetra|SCIENTIFIC:Hyphessobrycon columbianus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Serpae Tetra|SCIENTIFIC:Hyphessobrycon eques|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:50|PH_MAX:75|DIFF:Beginner
+COMMON:Bleeding Heart Tetra|SCIENTIFIC:Hyphessobrycon erythrostigma|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:60|PH_MAX:70|DIFF:Beginner
+COMMON:Black Neon Tetra|SCIENTIFIC:Hyphessobrycon herbertaxelrodi|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Black Phantom Tetra|SCIENTIFIC:Hyphessobrycon megalopterus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Lemon Tetra|SCIENTIFIC:Hyphessobrycon pulchripinnis|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:72|DIFF:Beginner
+COMMON:Red Phantom Tetra|SCIENTIFIC:Hyphessobrycon sweglesi|TEMP_MIN:220|TEMP_MAX:270|PH_MIN:60|PH_MAX:72|DIFF:Beginner
+COMMON:Glass Catfish|SCIENTIFIC:Kryptopterus vitreolus|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:60|PH_MAX:70|DIFF:Intermediate
+COMMON:Paradise Fish|SCIENTIFIC:Macropodus opercularis|TEMP_MIN:160|TEMP_MAX:260|PH_MIN:60|PH_MAX:80|DIFF:Beginner
+COMMON:Celebes Rainbowfish|SCIENTIFIC:Marosatherina ladigesi|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:70|PH_MAX:80|DIFF:Beginner
+COMMON:Cobalt Blue Cichlid|SCIENTIFIC:Maylandia callainos|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:78|PH_MAX:86|DIFF:Intermediate
+COMMON:Red Zebra Cichlid|SCIENTIFIC:Maylandia estherae|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:78|PH_MAX:86|DIFF:Intermediate
+COMMON:Auratus Cichlid|SCIENTIFIC:Melanochromis auratus|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:78|PH_MAX:86|DIFF:Intermediate
+COMMON:Boesemani Rainbowfish|SCIENTIFIC:Melanotaenia boesemani|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:70|PH_MAX:80|DIFF:Intermediate
+COMMON:Lake Tebera Rainbowfish|SCIENTIFIC:Melanotaenia herbertaxelrodi|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:70|PH_MAX:80|DIFF:Beginner
+COMMON:Lake Kutubu Rainbowfish|SCIENTIFIC:Melanotaenia lacustris|TEMP_MIN:210|TEMP_MAX:250|PH_MIN:70|PH_MAX:85|DIFF:Beginner
+COMMON:Dwarf Neon Rainbowfish|SCIENTIFIC:Melanotaenia praecox|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:65|PH_MAX:75|DIFF:Beginner
+COMMON:Banded Rainbowfish|SCIENTIFIC:Melanotaenia trifasciata|TEMP_MIN:240|TEMP_MAX:300|PH_MIN:70|PH_MAX:80|DIFF:Beginner
+COMMON:Festive Cichlid|SCIENTIFIC:Mesonauta festivus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Silver Dollar|SCIENTIFIC:Metynnis argenteus|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Intermediate
+COMMON:Bolivian Ram|SCIENTIFIC:Mikrogeophagus altispinosus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:German Blue Ram|SCIENTIFIC:Mikrogeophagus ramirezi|TEMP_MIN:260|TEMP_MAX:300|PH_MIN:55|PH_MAX:70|DIFF:Intermediate
+COMMON:Weather Loach|SCIENTIFIC:Misgurnus anguillicaudatus|TEMP_MIN:100|TEMP_MAX:240|PH_MIN:60|PH_MAX:80|DIFF:Beginner
+COMMON:Diamond Tetra|SCIENTIFIC:Moenkhausia pittieri|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Redhook Silver Dollar|SCIENTIFIC:Myloplus rubripinnis|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:60|PH_MAX:70|DIFF:Intermediate
+COMMON:Emperor Tetra|SCIENTIFIC:Nematobrycon palmeri|TEMP_MIN:220|TEMP_MAX:270|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Fairy Cichlid|SCIENTIFIC:Neolamprologus brichardi|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:80|PH_MAX:90|DIFF:Beginner
+COMMON:Lemon Cichlid|SCIENTIFIC:Neolamprologus leleupi|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:80|PH_MAX:90|DIFF:Intermediate
+COMMON:Livingstoni Cichlid|SCIENTIFIC:Nimbochromis livingstonii|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:78|PH_MAX:86|DIFF:Intermediate
+COMMON:Venustus Cichlid|SCIENTIFIC:Nimbochromis venustus|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:78|PH_MAX:86|DIFF:Intermediate
+COMMON:Otocinclus Catfish|SCIENTIFIC:Otocinclus vittatus|TEMP_MIN:220|TEMP_MAX:270|PH_MIN:60|PH_MAX:75|DIFF:Intermediate
+COMMON:Clown Pleco|SCIENTIFIC:Panaqolus maccus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:65|PH_MAX:75|DIFF:Beginner
+COMMON:Kuhli Loach|SCIENTIFIC:Pangio kuhlii|TEMP_MIN:240|TEMP_MAX:300|PH_MIN:55|PH_MAX:70|DIFF:Beginner
+COMMON:Cardinal Tetra|SCIENTIFIC:Paracheirodon axelrodi|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:50|PH_MAX:70|DIFF:Beginner
+COMMON:Black Ruby Barb|SCIENTIFIC:Pethia nigrofasciata|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:60|PH_MAX:70|DIFF:Beginner
+COMMON:Odessa Barb|SCIENTIFIC:Pethia padamya|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:65|PH_MAX:75|DIFF:Beginner
+COMMON:Rummy Nose Tetra|SCIENTIFIC:Petitella rhodostoma|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:55|PH_MAX:70|DIFF:Intermediate
+COMMON:Congo Tetra|SCIENTIFIC:Phenacogrammus interruptus|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Red-Bellied Pacu|SCIENTIFIC:Piaractus brachypomus|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Advanced
+COMMON:Pictus Catfish|SCIENTIFIC:Pimelodus pictus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Striped Raphael Catfish|SCIENTIFIC:Platydoras armatulus|TEMP_MIN:220|TEMP_MAX:300|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Sailfin Molly|SCIENTIFIC:Poecilia velifera|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:75|PH_MAX:85|DIFF:Beginner
+COMMON:Blue Johanni|SCIENTIFIC:Pseudotropheus johannii|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:78|PH_MAX:86|DIFF:Intermediate
+COMMON:Sailfin Pleco|SCIENTIFIC:Pterygoplichthys gibbiceps|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:65|PH_MAX:80|DIFF:Beginner
+COMMON:Jack Dempsey Cichlid|SCIENTIFIC:Rocio octofasciata|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:65|PH_MAX:80|DIFF:Intermediate
+COMMON:Electric Blue Hap|SCIENTIFIC:Sciaenochromis fryeri|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:78|PH_MAX:86|DIFF:Intermediate
+COMMON:Discus|SCIENTIFIC:Symphysodon aequifasciatus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:65|PH_MAX:75|DIFF:Intermediate
+COMMON:Featherfin Synodontis|SCIENTIFIC:Synodontis eupterus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:65|PH_MAX:75|DIFF:Beginner
+COMMON:Upside-Down Catfish|SCIENTIFIC:Synodontis nigriventris|TEMP_MIN:220|TEMP_MAX:270|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:White Cloud Mountain Minnow|SCIENTIFIC:Tanichthys albonubes|TEMP_MIN:150|TEMP_MAX:220|PH_MIN:60|PH_MAX:80|DIFF:Beginner
+COMMON:Penguin Tetra|SCIENTIFIC:Thayeria boehlkei|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Firemouth Cichlid|SCIENTIFIC:Thorichthys meeki|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:65|PH_MAX:80|DIFF:Beginner
+COMMON:Pearl Gourami|SCIENTIFIC:Trichopodus leerii|TEMP_MIN:240|TEMP_MAX:300|PH_MIN:60|PH_MAX:80|DIFF:Beginner
+COMMON:Lambchop Rasbora|SCIENTIFIC:Trigonostigma espei|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Hengel's Rasbora|SCIENTIFIC:Trigonostigma hengeli|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Horseface Loach|SCIENTIFIC:Acantopsis dialuzona|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Intermediate
+COMMON:Pearly Compressiceps|SCIENTIFIC:Altolamprologus calvus|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:80|PH_MAX:90|DIFF:Intermediate
+COMMON:Compressiceps Cichlid|SCIENTIFIC:Altolamprologus compressiceps|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:80|PH_MAX:90|DIFF:Intermediate
+COMMON:Lyretail Killifish|SCIENTIFIC:Aphyosemion australe|TEMP_MIN:210|TEMP_MAX:240|PH_MIN:60|PH_MAX:70|DIFF:Beginner
+COMMON:Twostripe Lyretail|SCIENTIFIC:Aphyosemion bivittatum|TEMP_MIN:200|TEMP_MAX:240|PH_MIN:60|PH_MAX:70|DIFF:Beginner
+COMMON:Redstriped Killifish|SCIENTIFIC:Aphyosemion striatum|TEMP_MIN:200|TEMP_MAX:240|PH_MIN:60|PH_MAX:70|DIFF:Beginner
+COMMON:Agassiz's Dwarf Cichlid|SCIENTIFIC:Apistogramma agassizii|TEMP_MIN:220|TEMP_MAX:290|PH_MIN:50|PH_MAX:70|DIFF:Intermediate
+COMMON:Two-banded Dwarf Cichlid|SCIENTIFIC:Apistogramma bitaeniata|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:50|PH_MAX:65|DIFF:Intermediate
+COMMON:Umbrella Cichlid|SCIENTIFIC:Apistogramma borellii|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:60|PH_MAX:72|DIFF:Beginner
+COMMON:Cockatoo Dwarf Cichlid|SCIENTIFIC:Apistogramma cacatuoides|TEMP_MIN:220|TEMP_MAX:270|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Elizabeth's Dwarf Cichlid|SCIENTIFIC:Apistogramma elizabethae|TEMP_MIN:240|TEMP_MAX:290|PH_MIN:45|PH_MAX:60|DIFF:Advanced
+COMMON:Hongslo's Dwarf Cichlid|SCIENTIFIC:Apistogramma hongsloi|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:55|PH_MAX:68|DIFF:Intermediate
+COMMON:Macmaster's Dwarf Cichlid|SCIENTIFIC:Apistogramma macmasteri|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:55|PH_MAX:68|DIFF:Intermediate
+COMMON:Nijssen's Dwarf Cichlid|SCIENTIFIC:Apistogramma nijsseni|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:50|PH_MAX:65|DIFF:Intermediate
+COMMON:Panduro Dwarf Cichlid|SCIENTIFIC:Apistogramma panduro|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:50|PH_MAX:65|DIFF:Intermediate
+COMMON:Three-striped Dwarf Cichlid|SCIENTIFIC:Apistogramma trifasciata|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:55|PH_MAX:70|DIFF:Intermediate
+COMMON:Viejita Dwarf Cichlid|SCIENTIFIC:Apistogramma viejita|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:55|PH_MAX:68|DIFF:Intermediate
+COMMON:Cochu's Blue Tetra|SCIENTIFIC:Boehlkea fredcochui|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Dwarf Rasbora|SCIENTIFIC:Boraras maculatus|TEMP_MIN:200|TEMP_MAX:280|PH_MIN:60|PH_MAX:70|DIFF:Beginner
+COMMON:Phoenix Rasbora|SCIENTIFIC:Boraras merah|TEMP_MIN:200|TEMP_MAX:280|PH_MIN:60|PH_MAX:70|DIFF:Beginner
+COMMON:Exclamation Point Rasbora|SCIENTIFIC:Boraras urophthalmoides|TEMP_MIN:200|TEMP_MAX:280|PH_MIN:60|PH_MAX:70|DIFF:Beginner
+COMMON:Emerald Eye Rasbora|SCIENTIFIC:Brevibora dorsiocellata|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Banjo Catfish|SCIENTIFIC:Bunocephalus coracoideus|TEMP_MIN:200|TEMP_MAX:270|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Marbled Hatchetfish|SCIENTIFIC:Carnegiella strigata|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:55|PH_MAX:70|DIFF:Intermediate
+COMMON:Demasoni Cichlid|SCIENTIFIC:Chindongo demasoni|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:78|PH_MAX:86|DIFF:Intermediate
+COMMON:Adolfo's Corydoras|SCIENTIFIC:Corydoras adolfoi|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:60|PH_MAX:70|DIFF:Intermediate
+COMMON:Agassiz's Corydoras|SCIENTIFIC:Corydoras agassizii|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Skunk Corydoras|SCIENTIFIC:Corydoras arcuatus|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:60|PH_MAX:72|DIFF:Beginner
+COMMON:Fairy Corydoras|SCIENTIFIC:Corydoras atropersonatus|TEMP_MIN:210|TEMP_MAX:250|PH_MIN:60|PH_MAX:72|DIFF:Beginner
+COMMON:Slate Corydoras|SCIENTIFIC:Corydoras concolor|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Duplicate Corydoras|SCIENTIFIC:Corydoras duplicareus|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:60|PH_MAX:70|DIFF:Intermediate
+COMMON:Elegant Corydoras|SCIENTIFIC:Corydoras elegans|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Dainty Corydoras|SCIENTIFIC:Corydoras habrosus|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Dwarf Corydoras|SCIENTIFIC:Corydoras hastatus|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:60|PH_MAX:72|DIFF:Beginner
+COMMON:Loreto Corydoras|SCIENTIFIC:Corydoras loretoensis|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:60|PH_MAX:70|DIFF:Beginner
+COMMON:Melini's Corydoras|SCIENTIFIC:Corydoras melini|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:60|PH_MAX:72|DIFF:Beginner
+COMMON:Bandit Corydoras|SCIENTIFIC:Corydoras metae|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:60|PH_MAX:72|DIFF:Beginner
+COMMON:Rust Corydoras|SCIENTIFIC:Corydoras rabauti|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:60|PH_MAX:72|DIFF:Beginner
+COMMON:Schwartz's Corydoras|SCIENTIFIC:Corydoras schwartzi|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Similis Corydoras|SCIENTIFIC:Corydoras similis|TEMP_MIN:210|TEMP_MAX:270|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Leopard Bush Fish|SCIENTIFIC:Ctenopoma acutirostre|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Intermediate
+COMMON:Slender Cichlid|SCIENTIFIC:Cyprichromis leptosoma|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:80|PH_MAX:90|DIFF:Intermediate
+COMMON:Glowlight Danio|SCIENTIFIC:Danio choprae|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Emerald Dwarf Danio|SCIENTIFIC:Danio erythromicron|TEMP_MIN:200|TEMP_MAX:240|PH_MIN:70|PH_MAX:80|DIFF:Intermediate
+COMMON:Orange Fin Danio|SCIENTIFIC:Danio kyathit|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:65|PH_MAX:75|DIFF:Beginner
+COMMON:Malawi Eyebiter|SCIENTIFIC:Dimidiochromis compressiceps|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:78|PH_MAX:86|DIFF:Intermediate
+COMMON:Twig Catfish|SCIENTIFIC:Farlowella acus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:72|DIFF:Intermediate
+COMMON:Silver Hatchetfish|SCIENTIFIC:Gasteropelecus sternicla|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Intermediate
+COMMON:Pearl Cichlid|SCIENTIFIC:Geophagus brasiliensis|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:65|PH_MAX:75|DIFF:Intermediate
+COMMON:Redhump Eartheater|SCIENTIFIC:Geophagus steindachneri|TEMP_MIN:240|TEMP_MAX:300|PH_MIN:65|PH_MAX:75|DIFF:Intermediate
+COMMON:Least Killifish|SCIENTIFIC:Heterandria formosa|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:70|PH_MAX:80|DIFF:Beginner
+COMMON:Blue Emperor Tetra|SCIENTIFIC:Inpaichthys kerri|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:60|PH_MAX:70|DIFF:Beginner
+COMMON:Flagfish|SCIENTIFIC:Jordanella floridae|TEMP_MIN:180|TEMP_MAX:240|PH_MIN:65|PH_MAX:78|DIFF:Beginner
+COMMON:Marlier's Julie|SCIENTIFIC:Julidochromis marlieri|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:80|PH_MAX:90|DIFF:Intermediate
+COMMON:Golden Julie|SCIENTIFIC:Julidochromis ornatus|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:80|PH_MAX:90|DIFF:Intermediate
+COMMON:Convict Julie|SCIENTIFIC:Julidochromis regani|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:80|PH_MAX:90|DIFF:Intermediate
+COMMON:Masked Julie|SCIENTIFIC:Julidochromis transcriptus|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:80|PH_MAX:90|DIFF:Intermediate
+COMMON:Flag Cichlid|SCIENTIFIC:Laetacara curviceps|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:72|DIFF:Beginner
+COMMON:Redbreast Acara|SCIENTIFIC:Laetacara dorsigera|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Ocellatus Shell Dweller|SCIENTIFIC:Lamprologus ocellatus|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:80|PH_MAX:90|DIFF:Intermediate
+COMMON:Common Spiny Loach|SCIENTIFIC:Lepidocephalichthys thermalis|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Humpback Limia|SCIENTIFIC:Limia nigrofasciata|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:70|PH_MAX:80|DIFF:Beginner
+COMMON:Goldie River Rainbowfish|SCIENTIFIC:Melanotaenia goldiei|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:70|PH_MAX:80|DIFF:Beginner
+COMMON:Parkinson's Rainbowfish|SCIENTIFIC:Melanotaenia parkinsoni|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:70|PH_MAX:80|DIFF:Beginner
+COMMON:Bumblebee Catfish|SCIENTIFIC:Microglanis iheringi|TEMP_MIN:210|TEMP_MAX:260|PH_MIN:65|PH_MAX:75|DIFF:Beginner
+COMMON:Golden Dwarf Cichlid|SCIENTIFIC:Nannacara anomala|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Beckford's Pencilfish|SCIENTIFIC:Nannostomus beckfordi|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Brevis Shell Dweller|SCIENTIFIC:Neolamprologus brevis|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:80|PH_MAX:90|DIFF:Beginner
+COMMON:Multi Shell Dweller|SCIENTIFIC:Neolamprologus multifasciatus|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:80|PH_MAX:90|DIFF:Beginner
+COMMON:Redtail Notho|SCIENTIFIC:Nothobranchius guentheri|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:60|PH_MAX:70|DIFF:Intermediate
+COMMON:Golden Otocinclus|SCIENTIFIC:Otocinclus affinis|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Intermediate
+COMMON:Dwarf Otocinclus|SCIENTIFIC:Otocinclus macrospilus|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Intermediate
+COMMON:Royal Pleco|SCIENTIFIC:Panaque nigrolineatus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:65|PH_MAX:75|DIFF:Intermediate
+COMMON:Black Kuhli Loach|SCIENTIFIC:Pangio oblonga|TEMP_MIN:240|TEMP_MAX:300|PH_MIN:55|PH_MAX:70|DIFF:Beginner
+COMMON:Half-banded Kuhli Loach|SCIENTIFIC:Pangio semicincta|TEMP_MIN:240|TEMP_MAX:300|PH_MIN:55|PH_MAX:70|DIFF:Beginner
+COMMON:Striped Kribensis|SCIENTIFIC:Pelvicachromis taeniatus|TEMP_MIN:240|TEMP_MAX:270|PH_MIN:60|PH_MAX:70|DIFF:Intermediate
+COMMON:Golden Dwarf Barb|SCIENTIFIC:Pethia gelius|TEMP_MIN:180|TEMP_MAX:240|PH_MIN:60|PH_MAX:72|DIFF:Beginner
+COMMON:Brilliant Rasbora|SCIENTIFIC:Rasbora einthovenii|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Clown Rasbora|SCIENTIFIC:Rasbora kalochroma|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:50|PH_MAX:65|DIFF:Intermediate
+COMMON:Redstripe Rasbora|SCIENTIFIC:Rasbora rubrodorsalis|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Whiptail Catfish|SCIENTIFIC:Rineloricaria lanceolata|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Lionhead Cichlid|SCIENTIFIC:Steatocranus casuarius|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:65|PH_MAX:75|DIFF:Intermediate
+COMMON:Giant Whiptail Catfish|SCIENTIFIC:Sturisomatichthys aureum|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:65|PH_MAX:75|DIFF:Intermediate
+COMMON:Tiger Botia Loach|SCIENTIFIC:Syncrossus hymenophysa|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Intermediate
+COMMON:Cuckoo Catfish|SCIENTIFIC:Synodontis multipunctatus|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:78|PH_MAX:85|DIFF:Intermediate
+COMMON:Vietnamese Cardinal Minnow|SCIENTIFIC:Tanichthys micagemmae|TEMP_MIN:180|TEMP_MAX:230|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Sparkling Gourami|SCIENTIFIC:Trichopsis pumila|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Croaking Gourami|SCIENTIFIC:Trichopsis vittata|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:White-spotted Cichlid|SCIENTIFIC:Tropheus duboisi|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:80|PH_MAX:90|DIFF:Advanced
+COMMON:Blunthead Cichlid|SCIENTIFIC:Tropheus moorii|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:80|PH_MAX:90|DIFF:Advanced
+COMMON:Blue Botia Loach|SCIENTIFIC:Yasuhikotakia modesta|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:65|PH_MAX:75|DIFF:Intermediate
+COMMON:Dwarf Chain Loach|SCIENTIFIC:Ambastaia sidthimunki|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Badis|SCIENTIFIC:Badis badis|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Chili Rasbora|SCIENTIFIC:Boraras brigittae|TEMP_MIN:200|TEMP_MAX:280|PH_MIN:60|PH_MAX:70|DIFF:Beginner
+COMMON:Bumblebee Goby|SCIENTIFIC:Brachygobius doriae|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:70|PH_MAX:85|DIFF:Intermediate
+COMMON:Dwarf Pufferfish|SCIENTIFIC:Carinotetraodon travancoricus|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:65|PH_MAX:75|DIFF:Intermediate
+COMMON:Desert Goby|SCIENTIFIC:Chlamydogobius eremius|TEMP_MIN:180|TEMP_MAX:280|PH_MIN:70|PH_MAX:85|DIFF:Beginner
+COMMON:Amazon Pufferfish|SCIENTIFIC:Colomesus asellus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:55|PH_MAX:70|DIFF:Advanced
+COMMON:Pygmy Corydoras|SCIENTIFIC:Corydoras pygmaeus|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:62|PH_MAX:72|DIFF:Beginner
+COMMON:Weitzman's Corydoras|SCIENTIFIC:Corydoras weitzmani|TEMP_MIN:200|TEMP_MAX:250|PH_MIN:60|PH_MAX:70|DIFF:Intermediate
+COMMON:Celestial Pearl Danio|SCIENTIFIC:Danio margaritatus|TEMP_MIN:200|TEMP_MAX:240|PH_MIN:65|PH_MAX:75|DIFF:Intermediate
+COMMON:Gold Ring Danio|SCIENTIFIC:Danio tinwini|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:65|PH_MAX:75|DIFF:Beginner
+COMMON:Scarlet Badis|SCIENTIFIC:Dario dario|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:65|PH_MAX:75|DIFF:Intermediate
+COMMON:Clown Killifish|SCIENTIFIC:Epiplatys annulatus|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:60|PH_MAX:70|DIFF:Intermediate
+COMMON:Borneo Sucker Loach|SCIENTIFIC:Gastromyzon ctenocephalus|TEMP_MIN:200|TEMP_MAX:240|PH_MIN:65|PH_MAX:75|DIFF:Intermediate
+COMMON:Ember Tetra|SCIENTIFIC:Hyphessobrycon amandae|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:70|DIFF:Beginner
+COMMON:Reed Tetra|SCIENTIFIC:Hyphessobrycon elachys|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Empire Gudgeon|SCIENTIFIC:Hypseleotris compressa|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:65|PH_MAX:80|DIFF:Beginner
+COMMON:Blackbelly Limia|SCIENTIFIC:Limia melanogaster|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:70|PH_MAX:80|DIFF:Beginner
+COMMON:Neon Green Rasbora|SCIENTIFIC:Microdevario kubotai|TEMP_MIN:220|TEMP_MAX:270|PH_MIN:60|PH_MAX:70|DIFF:Beginner
+COMMON:Brown Pencilfish|SCIENTIFIC:Nannostomus eques|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:55|PH_MAX:70|DIFF:Intermediate
+COMMON:Dwarf Pencilfish|SCIENTIFIC:Nannostomus marginatus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:70|DIFF:Intermediate
+COMMON:Celebes Halfbeak|SCIENTIFIC:Nomorhamphus liemi|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:65|PH_MAX:75|DIFF:Intermediate
+COMMON:Bluefin Notho|SCIENTIFIC:Nothobranchius rachovii|TEMP_MIN:200|TEMP_MAX:240|PH_MIN:60|PH_MAX:70|DIFF:Intermediate
+COMMON:Green Neon Tetra|SCIENTIFIC:Paracheirodon simulans|TEMP_MIN:230|TEMP_MAX:290|PH_MIN:50|PH_MAX:65|DIFF:Beginner
+COMMON:Endler's Livebearer|SCIENTIFIC:Poecilia wingei|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:70|PH_MAX:85|DIFF:Beginner
+COMMON:Forktail Blue-eye|SCIENTIFIC:Pseudomugil furcatus|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:70|PH_MAX:80|DIFF:Beginner
+COMMON:Gertrude's Blue-eye|SCIENTIFIC:Pseudomugil gertrudae|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Red Neon Blue-eye|SCIENTIFIC:Pseudomugil luminatus|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Pacific Blue-eye|SCIENTIFIC:Pseudomugil signifer|TEMP_MIN:200|TEMP_MAX:260|PH_MIN:65|PH_MAX:75|DIFF:Beginner
+COMMON:Sawbwa Barb|SCIENTIFIC:Sawbwa resplendens|TEMP_MIN:210|TEMP_MAX:250|PH_MIN:70|PH_MAX:80|DIFF:Intermediate
+COMMON:Reticulated Hillstream Loach|SCIENTIFIC:Sewellia lineolata|TEMP_MIN:180|TEMP_MAX:240|PH_MIN:65|PH_MAX:75|DIFF:Intermediate
+COMMON:Axelrod's Rasbora|SCIENTIFIC:Sundadanio axelrodi|TEMP_MIN:230|TEMP_MAX:260|PH_MIN:50|PH_MAX:65|DIFF:Advanced
+COMMON:Peacock Gudgeon|SCIENTIFIC:Tateurndina ocellicauda|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:65|PH_MAX:75|DIFF:Beginner
+COMMON:Spotfin Hatchetfish|SCIENTIFIC:Thoracocharax stellatus|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Intermediate
+COMMON:Schaller's Croaking Gourami|SCIENTIFIC:Trichopsis schalleri|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Beginner
+COMMON:Adonis Pleco|SCIENTIFIC:Acanthicus adonis|TEMP_MIN:220|TEMP_MAX:300|PH_MIN:60|PH_MAX:75|DIFF:Advanced
+COMMON:Double-banded Dwarf Cichlid|SCIENTIFIC:Apistogramma diplotaenia|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:45|PH_MAX:55|DIFF:Advanced
+COMMON:Mendez's Dwarf Cichlid|SCIENTIFIC:Apistogramma mendezi|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:50|PH_MAX:60|DIFF:Advanced
+COMMON:Brown Ghost Knifefish|SCIENTIFIC:Apteronotus leptorhynchus|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Advanced
+COMMON:Gold Nugget Pleco|SCIENTIFIC:Baryancistrus xanthellus|TEMP_MIN:250|TEMP_MAX:290|PH_MIN:60|PH_MAX:75|DIFF:Advanced
+COMMON:Pike Livebearer|SCIENTIFIC:Belonesox belizanus|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:70|PH_MAX:82|DIFF:Advanced
+COMMON:Whiteseam Betta|SCIENTIFIC:Betta albimarginata|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:55|PH_MAX:65|DIFF:Intermediate
+COMMON:Snakehead Betta|SCIENTIFIC:Betta channoides|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:50|PH_MAX:65|DIFF:Intermediate
+COMMON:Peaceful Betta|SCIENTIFIC:Betta imbellis|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Intermediate
+COMMON:Brunei Beauty|SCIENTIFIC:Betta macrostoma|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:50|PH_MAX:60|DIFF:Advanced
+COMMON:Mahachai Betta|SCIENTIFIC:Betta mahachaiensis|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:70|PH_MAX:85|DIFF:Intermediate
+COMMON:Painted Betta|SCIENTIFIC:Betta picta|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:65|PH_MAX:75|DIFF:Intermediate
+COMMON:Forest Betta|SCIENTIFIC:Betta pugnax|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Intermediate
+COMMON:Krabi Mouthbrooding Betta|SCIENTIFIC:Betta simplex|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:70|PH_MAX:80|DIFF:Intermediate
+COMMON:Emerald Betta|SCIENTIFIC:Betta smaragdina|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Intermediate
+COMMON:Sand Cichlid|SCIENTIFIC:Biotoecus opercularis|TEMP_MIN:250|TEMP_MAX:300|PH_MIN:50|PH_MAX:60|DIFF:Advanced
+COMMON:Redeye Pufferfish|SCIENTIFIC:Carinotetraodon lorteti|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Advanced
+COMMON:Striped Borneo Redeye Puffer|SCIENTIFIC:Carinotetraodon salivator|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:60|PH_MAX:70|DIFF:Advanced
+COMMON:Frogmouth Catfish|SCIENTIFIC:Chaca chaca|TEMP_MIN:220|TEMP_MAX:260|PH_MIN:60|PH_MAX:75|DIFF:Advanced
+COMMON:Redspotted Copeina|SCIENTIFIC:Copeina guttata|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Intermediate
+COMMON:Splash Tetra|SCIENTIFIC:Copella arnoldi|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:70|DIFF:Intermediate
+COMMON:Dwarf Pike Cichlid|SCIENTIFIC:Crenicichla compressiceps|TEMP_MIN:220|TEMP_MAX:270|PH_MIN:60|PH_MAX:70|DIFF:Advanced
+COMMON:Marbled Pike Cichlid|SCIENTIFIC:Crenicichla marmorata|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Advanced
+COMMON:Indonesian Tiger Fish|SCIENTIFIC:Datnioides microlepis|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:65|PH_MAX:75|DIFF:Advanced
+COMMON:Siamese Tiger Fish|SCIENTIFIC:Datnioides pulcher|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:65|PH_MAX:75|DIFF:Advanced
+COMMON:Denison Barb|SCIENTIFIC:Dawkinsia denisonii|TEMP_MIN:150|TEMP_MAX:250|PH_MIN:65|PH_MAX:78|DIFF:Beginner
+COMMON:Checkerboard Cichlid|SCIENTIFIC:Dicrossus filamentosus|TEMP_MIN:250|TEMP_MAX:300|PH_MIN:45|PH_MAX:60|DIFF:Advanced
+COMMON:Honeycomb Catfish|SCIENTIFIC:Duringlanis perugiae|TEMP_MIN:220|TEMP_MAX:270|PH_MIN:60|PH_MAX:72|DIFF:Intermediate
+COMMON:Reedfish / Ropefish|SCIENTIFIC:Erpetoichthys calabaricus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:65|PH_MAX:75|DIFF:Intermediate
+COMMON:Bucktooth Tetra|SCIENTIFIC:Exodon paradoxus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Advanced
+COMMON:Elephantnose Fish|SCIENTIFIC:Gnathonemus petersii|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:72|DIFF:Advanced
+COMMON:Aba Aba|SCIENTIFIC:Gymnarchus niloticus|TEMP_MIN:230|TEMP_MAX:280|PH_MIN:65|PH_MAX:75|DIFF:Advanced
+COMMON:Banded Knifefish|SCIENTIFIC:Gymnotus carapo|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:75|DIFF:Intermediate
+COMMON:Redtail Hemiodus|SCIENTIFIC:Hemiodus gracilis|TEMP_MIN:230|TEMP_MAX:270|PH_MIN:60|PH_MAX:70|DIFF:Intermediate
+COMMON:Lizard Loach|SCIENTIFIC:Homaloptera orthogoniata|TEMP_MIN:200|TEMP_MAX:240|PH_MIN:60|PH_MAX:70|DIFF:Advanced
+COMMON:Zebra Pleco|SCIENTIFIC:Hypancistrus zebra|TEMP_MIN:260|TEMP_MAX:300|PH_MIN:60|PH_MAX:75|DIFF:Intermediate
+COMMON:Common Glass Catfish|SCIENTIFIC:Kryptopterus bicirrhis|TEMP_MIN:240|TEMP_MAX:280|PH_MIN:60|PH_MAX:72|DIFF:Intermediate
+COMMON:Jaguar Catfish|SCIENTIFIC:Liosomadoras oncinus|TEMP_MIN:220|TEMP_MAX:280|PH_MIN:60|PH_MAX:72|DIFF:Advanced

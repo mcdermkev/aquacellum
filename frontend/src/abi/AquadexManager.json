@@ -1,0 +1,1993 @@
+﻿[
+    {
+        "inputs":  [
+
+                   ],
+        "stateMutability":  "nonpayable",
+        "type":  "constructor"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "CallerNotCurator",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "CallerNotDamOwner",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "CallerNotParentOwner",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "CallerNotSireOwner",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "CallerNotSpecimenOwner",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "CallerNotTankOwner",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "CuratorZeroAddress",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "DamNotFound",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "sender",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "address",
+                           "name":  "owner",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "ERC721IncorrectOwner",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "operator",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "ERC721InsufficientApproval",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "approver",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "ERC721InvalidApprover",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "operator",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "ERC721InvalidOperator",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "owner",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "ERC721InvalidOwner",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "receiver",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "ERC721InvalidReceiver",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "sender",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "ERC721InvalidSender",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "ERC721NonexistentToken",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "EmptyScientificName",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "ParentSpeciesMismatch",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "ParentUnitInactive",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "SireNotFound",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "SpawnNotFound",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "SpeciesInactive",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "SpeciesNotFound",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "TankInactive",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "TankNameEmpty",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "TokenNonexistent",
+        "type":  "error"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "Unauthorized",
+        "type":  "error"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "owner",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "approved",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "Approval",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "owner",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "operator",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "bool",
+                           "name":  "approved",
+                           "type":  "bool"
+                       }
+                   ],
+        "name":  "ApprovalForAll",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "previousCurator",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "newCurator",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "CuratorUpdated",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "spawnId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "offspringId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "OffspringAddedToSpawn",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "spawnId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "sireId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "damId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "tankId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "enum AquadexStorage.SpawnStatus",
+                           "name":  "status",
+                           "type":  "uint8"
+                       }
+                   ],
+        "name":  "SpawnLogged",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "spawnId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "enum AquadexStorage.SpawnStatus",
+                           "name":  "status",
+                           "type":  "uint8"
+                       }
+                   ],
+        "name":  "SpawnStatusUpdated",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "speciesId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "string",
+                           "name":  "scientificName",
+                           "type":  "string"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "string",
+                           "name":  "commonName",
+                           "type":  "string"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "string",
+                           "name":  "canonicalIpfsUri",
+                           "type":  "string"
+                       }
+                   ],
+        "name":  "SpeciesAdded",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "speciesId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "string",
+                           "name":  "scientificName",
+                           "type":  "string"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "string",
+                           "name":  "commonName",
+                           "type":  "string"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "string",
+                           "name":  "canonicalIpfsUri",
+                           "type":  "string"
+                       }
+                   ],
+        "name":  "SpeciesUpdated",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "specimenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "tankId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "SpecimenMovedToTank",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "specimenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "speciesId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "owner",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "string",
+                           "name":  "ipfsMetadataUri",
+                           "type":  "string"
+                       }
+                   ],
+        "name":  "SpecimenRegistered",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "specimenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "enum AquadexStorage.SpecimenStatus",
+                           "name":  "status",
+                           "type":  "uint8"
+                       }
+                   ],
+        "name":  "SpecimenStatusUpdated",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "tankId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "TankDeactivated",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "tankId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "owner",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "string",
+                           "name":  "name",
+                           "type":  "string"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "enum AquadexStorage.TankType",
+                           "name":  "tankType",
+                           "type":  "uint8"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint32",
+                           "name":  "volumeLiters",
+                           "type":  "uint32"
+                       }
+                   ],
+        "name":  "TankRegistered",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "tankId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "owner",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "string",
+                           "name":  "name",
+                           "type":  "string"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "enum AquadexStorage.TankType",
+                           "name":  "tankType",
+                           "type":  "uint8"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint32",
+                           "name":  "volumeLiters",
+                           "type":  "uint32"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "enum AquadexStorage.ContainmentType",
+                           "name":  "containment",
+                           "type":  "uint8"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "parentUnitId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "string",
+                           "name":  "facility",
+                           "type":  "string"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "string",
+                           "name":  "room",
+                           "type":  "string"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "string",
+                           "name":  "rack",
+                           "type":  "string"
+                       }
+                   ],
+        "name":  "TankRegisteredExtended",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "from",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "address",
+                           "name":  "to",
+                           "type":  "address"
+                       },
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "Transfer",
+        "type":  "event"
+    },
+    {
+        "anonymous":  false,
+        "inputs":  [
+                       {
+                           "indexed":  true,
+                           "internalType":  "uint256",
+                           "name":  "tankId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint256",
+                           "name":  "logIndex",
+                           "type":  "uint256"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "int16",
+                           "name":  "tempCelsiusX10",
+                           "type":  "int16"
+                       },
+                       {
+                           "indexed":  false,
+                           "internalType":  "uint8",
+                           "name":  "phX10",
+                           "type":  "uint8"
+                       }
+                   ],
+        "name":  "WaterParametersLogged",
+        "type":  "event"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "string",
+                           "name":  "scientificName",
+                           "type":  "string"
+                       },
+                       {
+                           "internalType":  "string",
+                           "name":  "commonName",
+                           "type":  "string"
+                       },
+                       {
+                           "internalType":  "string",
+                           "name":  "canonicalIpfsUri",
+                           "type":  "string"
+                       },
+                       {
+                           "internalType":  "enum AquadexStorage.CareLevel",
+                           "name":  "careLevel",
+                           "type":  "uint8"
+                       },
+                       {
+                           "internalType":  "int16",
+                           "name":  "minTempCelsiusX10",
+                           "type":  "int16"
+                       },
+                       {
+                           "internalType":  "int16",
+                           "name":  "maxTempCelsiusX10",
+                           "type":  "int16"
+                       },
+                       {
+                           "internalType":  "uint8",
+                           "name":  "minPhX10",
+                           "type":  "uint8"
+                       },
+                       {
+                           "internalType":  "uint8",
+                           "name":  "maxPhX10",
+                           "type":  "uint8"
+                       }
+                   ],
+        "name":  "addSpecies",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "to",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "approve",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "owner",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "balanceOf",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "breedToSpecimens",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "curator",
+        "outputs":  [
+                        {
+                            "internalType":  "address",
+                            "name":  "",
+                            "type":  "address"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "getApproved",
+        "outputs":  [
+                        {
+                            "internalType":  "address",
+                            "name":  "",
+                            "type":  "address"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "speciesId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "getSpecimensByBreed",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256[]",
+                            "name":  "",
+                            "type":  "uint256[]"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "speciesId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "getSpecimensCountByBreed",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "sireId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "damId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tankId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "string",
+                           "name":  "ipfsLogUri",
+                           "type":  "string"
+                       }
+                   ],
+        "name":  "initiateSpawn",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "owner",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "address",
+                           "name":  "operator",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "isApprovedForAll",
+        "outputs":  [
+                        {
+                            "internalType":  "bool",
+                            "name":  "",
+                            "type":  "bool"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "speciesId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "eggCount",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "string",
+                           "name":  "notesHash",
+                           "type":  "string"
+                       }
+                   ],
+        "name":  "logSpawnEvent",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tankId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "int16",
+                           "name":  "tempCelsiusX10",
+                           "type":  "int16"
+                       },
+                       {
+                           "internalType":  "uint8",
+                           "name":  "phX10",
+                           "type":  "uint8"
+                       },
+                       {
+                           "internalType":  "uint16",
+                           "name":  "salinitySgX10000",
+                           "type":  "uint16"
+                       },
+                       {
+                           "internalType":  "uint16",
+                           "name":  "ammoniaPpmX100",
+                           "type":  "uint16"
+                       },
+                       {
+                           "internalType":  "uint16",
+                           "name":  "nitritePpmX100",
+                           "type":  "uint16"
+                       },
+                       {
+                           "internalType":  "uint16",
+                           "name":  "nitratePpmX100",
+                           "type":  "uint16"
+                       },
+                       {
+                           "internalType":  "string",
+                           "name":  "notes",
+                           "type":  "string"
+                       }
+                   ],
+        "name":  "logWaterParameters",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "speciesId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "birthTimestamp",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "address",
+                           "name":  "breeder",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "currentTankId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "sireId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "damId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "string",
+                           "name":  "ipfsMetadataUri",
+                           "type":  "string"
+                       }
+                   ],
+        "name":  "mintSpecimen",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "specimenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "newTankId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "moveSpecimenToTank",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "name",
+        "outputs":  [
+                        {
+                            "internalType":  "string",
+                            "name":  "",
+                            "type":  "string"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "nextSpawnId",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "nextSpeciesId",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "nextTankId",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "ownerOf",
+        "outputs":  [
+                        {
+                            "internalType":  "address",
+                            "name":  "",
+                            "type":  "address"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "ownerTanks",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "spawnId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "speciesId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "birthTimestamp",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "string",
+                           "name":  "ipfsMetadataUri",
+                           "type":  "string"
+                       }
+                   ],
+        "name":  "registerSpawnOffspring",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "string",
+                           "name":  "name",
+                           "type":  "string"
+                       },
+                       {
+                           "internalType":  "enum AquadexStorage.TankType",
+                           "name":  "tankType",
+                           "type":  "uint8"
+                       },
+                       {
+                           "internalType":  "uint32",
+                           "name":  "volumeLiters",
+                           "type":  "uint32"
+                       }
+                   ],
+        "name":  "registerTank",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "string",
+                           "name":  "name",
+                           "type":  "string"
+                       },
+                       {
+                           "internalType":  "enum AquadexStorage.TankType",
+                           "name":  "tankType",
+                           "type":  "uint8"
+                       },
+                       {
+                           "internalType":  "uint32",
+                           "name":  "volumeLiters",
+                           "type":  "uint32"
+                       },
+                       {
+                           "internalType":  "enum AquadexStorage.ContainmentType",
+                           "name":  "containment",
+                           "type":  "uint8"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "parentUnitId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "string",
+                           "name":  "facility",
+                           "type":  "string"
+                       },
+                       {
+                           "internalType":  "string",
+                           "name":  "room",
+                           "type":  "string"
+                       },
+                       {
+                           "internalType":  "string",
+                           "name":  "rack",
+                           "type":  "string"
+                       }
+                   ],
+        "name":  "registerTank",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "from",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "address",
+                           "name":  "to",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "safeTransferFrom",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "from",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "address",
+                           "name":  "to",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "bytes",
+                           "name":  "data",
+                           "type":  "bytes"
+                       }
+                   ],
+        "name":  "safeTransferFrom",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "operator",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "bool",
+                           "name":  "approved",
+                           "type":  "bool"
+                       }
+                   ],
+        "name":  "setApprovalForAll",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "spawnLogs",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "spawnId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "speciesId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "address",
+                            "name":  "breeder",
+                            "type":  "address"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "eggCount",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "eventTimestamp",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "string",
+                            "name":  "notesIpfsHash",
+                            "type":  "string"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "spawnRecords",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "spawnId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "sireId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "damId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "spawnTimestamp",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "tankId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "hatchTimestamp",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "string",
+                            "name":  "ipfsLogUri",
+                            "type":  "string"
+                        },
+                        {
+                            "internalType":  "enum AquadexStorage.SpawnStatus",
+                            "name":  "status",
+                            "type":  "uint8"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "speciesCatalog",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "speciesId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "string",
+                            "name":  "scientificName",
+                            "type":  "string"
+                        },
+                        {
+                            "internalType":  "string",
+                            "name":  "commonName",
+                            "type":  "string"
+                        },
+                        {
+                            "internalType":  "string",
+                            "name":  "canonicalIpfsUri",
+                            "type":  "string"
+                        },
+                        {
+                            "internalType":  "enum AquadexStorage.CareLevel",
+                            "name":  "careLevel",
+                            "type":  "uint8"
+                        },
+                        {
+                            "internalType":  "int16",
+                            "name":  "minTempCelsiusX10",
+                            "type":  "int16"
+                        },
+                        {
+                            "internalType":  "int16",
+                            "name":  "maxTempCelsiusX10",
+                            "type":  "int16"
+                        },
+                        {
+                            "internalType":  "uint8",
+                            "name":  "minPhX10",
+                            "type":  "uint8"
+                        },
+                        {
+                            "internalType":  "uint8",
+                            "name":  "maxPhX10",
+                            "type":  "uint8"
+                        },
+                        {
+                            "internalType":  "bool",
+                            "name":  "active",
+                            "type":  "bool"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "specimenTankIndex",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "specimens",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "specimenId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "speciesId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "birthTimestamp",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "address",
+                            "name":  "breeder",
+                            "type":  "address"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "currentTankId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "sireId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "damId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "string",
+                            "name":  "ipfsMetadataUri",
+                            "type":  "string"
+                        },
+                        {
+                            "internalType":  "enum AquadexStorage.SpecimenStatus",
+                            "name":  "status",
+                            "type":  "uint8"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "bytes4",
+                           "name":  "interfaceId",
+                           "type":  "bytes4"
+                       }
+                   ],
+        "name":  "supportsInterface",
+        "outputs":  [
+                        {
+                            "internalType":  "bool",
+                            "name":  "",
+                            "type":  "bool"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "symbol",
+        "outputs":  [
+                        {
+                            "internalType":  "string",
+                            "name":  "",
+                            "type":  "string"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "tankParameterLogs",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "timestamp",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "int16",
+                            "name":  "tempCelsiusX10",
+                            "type":  "int16"
+                        },
+                        {
+                            "internalType":  "uint8",
+                            "name":  "phX10",
+                            "type":  "uint8"
+                        },
+                        {
+                            "internalType":  "uint16",
+                            "name":  "salinitySgX10000",
+                            "type":  "uint16"
+                        },
+                        {
+                            "internalType":  "uint16",
+                            "name":  "ammoniaPpmX100",
+                            "type":  "uint16"
+                        },
+                        {
+                            "internalType":  "uint16",
+                            "name":  "nitritePpmX100",
+                            "type":  "uint16"
+                        },
+                        {
+                            "internalType":  "uint16",
+                            "name":  "nitratePpmX100",
+                            "type":  "uint16"
+                        },
+                        {
+                            "internalType":  "string",
+                            "name":  "notes",
+                            "type":  "string"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "tankSpecimenIds",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "tanks",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "tankId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "address",
+                            "name":  "owner",
+                            "type":  "address"
+                        },
+                        {
+                            "internalType":  "string",
+                            "name":  "name",
+                            "type":  "string"
+                        },
+                        {
+                            "internalType":  "enum AquadexStorage.TankType",
+                            "name":  "tankType",
+                            "type":  "uint8"
+                        },
+                        {
+                            "internalType":  "uint32",
+                            "name":  "volumeLiters",
+                            "type":  "uint32"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "creationTimestamp",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "bool",
+                            "name":  "active",
+                            "type":  "bool"
+                        },
+                        {
+                            "internalType":  "enum AquadexStorage.ContainmentType",
+                            "name":  "containment",
+                            "type":  "uint8"
+                        },
+                        {
+                            "internalType":  "uint256",
+                            "name":  "parentUnitId",
+                            "type":  "uint256"
+                        },
+                        {
+                            "internalType":  "string",
+                            "name":  "facility",
+                            "type":  "string"
+                        },
+                        {
+                            "internalType":  "string",
+                            "name":  "room",
+                            "type":  "string"
+                        },
+                        {
+                            "internalType":  "string",
+                            "name":  "rack",
+                            "type":  "string"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "tokenURI",
+        "outputs":  [
+                        {
+                            "internalType":  "string",
+                            "name":  "",
+                            "type":  "string"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+
+                   ],
+        "name":  "totalSpecimensMinted",
+        "outputs":  [
+                        {
+                            "internalType":  "uint256",
+                            "name":  "",
+                            "type":  "uint256"
+                        }
+                    ],
+        "stateMutability":  "view",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "newCurator",
+                           "type":  "address"
+                       }
+                   ],
+        "name":  "transferCuratorship",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "address",
+                           "name":  "from",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "address",
+                           "name":  "to",
+                           "type":  "address"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "tokenId",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "transferFrom",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "spawnId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "enum AquadexStorage.SpawnStatus",
+                           "name":  "status",
+                           "type":  "uint8"
+                       },
+                       {
+                           "internalType":  "uint256",
+                           "name":  "hatchTimestamp",
+                           "type":  "uint256"
+                       }
+                   ],
+        "name":  "updateSpawnStatus",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "speciesId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "string",
+                           "name":  "scientificName",
+                           "type":  "string"
+                       },
+                       {
+                           "internalType":  "string",
+                           "name":  "commonName",
+                           "type":  "string"
+                       },
+                       {
+                           "internalType":  "string",
+                           "name":  "canonicalIpfsUri",
+                           "type":  "string"
+                       },
+                       {
+                           "internalType":  "enum AquadexStorage.CareLevel",
+                           "name":  "careLevel",
+                           "type":  "uint8"
+                       },
+                       {
+                           "internalType":  "int16",
+                           "name":  "minTempCelsiusX10",
+                           "type":  "int16"
+                       },
+                       {
+                           "internalType":  "int16",
+                           "name":  "maxTempCelsiusX10",
+                           "type":  "int16"
+                       },
+                       {
+                           "internalType":  "uint8",
+                           "name":  "minPhX10",
+                           "type":  "uint8"
+                       },
+                       {
+                           "internalType":  "uint8",
+                           "name":  "maxPhX10",
+                           "type":  "uint8"
+                       },
+                       {
+                           "internalType":  "bool",
+                           "name":  "active",
+                           "type":  "bool"
+                       }
+                   ],
+        "name":  "updateSpecies",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    },
+    {
+        "inputs":  [
+                       {
+                           "internalType":  "uint256",
+                           "name":  "specimenId",
+                           "type":  "uint256"
+                       },
+                       {
+                           "internalType":  "enum AquadexStorage.SpecimenStatus",
+                           "name":  "status",
+                           "type":  "uint8"
+                       }
+                   ],
+        "name":  "updateSpecimenStatus",
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable",
+        "type":  "function"
+    }
+]
