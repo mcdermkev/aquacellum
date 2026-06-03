@@ -5,6 +5,47 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 3, 2026 — Onboarding Wizard & Privy Embedded Wallets
+
+Full narrative-driven onboarding experience with zero-friction wallet creation.
+
+### Onboarding Wizard (`OnboardingWizard.jsx`)
+- 4-step guided walkthrough: Poseidon greeting → Persona selection → Wallet creation → Echo egg → Tank setup
+- Poseidon's dialogue adapts to Casual/Pro mode immediately after persona choice
+- Echo egg interaction with wobble animation, tap nudge timer, and XP reward
+- Background species catalog hydration (1.4MB) loads during wizard — no loading screens
+- Transition gating: dashboard only accessible after tank setup complete + catalog ready
+- Mid-wizard abandonment handling: clean restart on incomplete OAuth
+- Mobile responsive: 48px touch targets, portrait-optimized layout
+
+### Privy Integration (Account Abstraction)
+- `@privy-io/react-auth` v3.28 activated with embedded MPC wallets
+- Login methods: Email + Google (no browser extension needed)
+- `AuthContext.jsx` rewritten: dual-path (Privy primary, MetaMask fallback)
+- `useCreateWallet()` hook for auto-provisioning embedded wallets on first auth
+- Signer resolver bridges Privy wallet to all existing contract interactions
+- `ConnectWallet.jsx` updated: Privy as primary login, MetaMask as Pro-mode option
+
+### Wallet UX Abstraction
+- Deterministic fish-themed alias generator (`generateAlias.js`): "Drift-Loach-3483" style
+- Casual mode: alias displayed instead of hex address everywhere
+- Pro mode: short hex address shown, "Link external wallet" option available
+
+### Settings Additions (`DataPortabilityWidget.jsx`)
+- Experience Mode toggle: switch Casual ↔ Pro with confirmation dialog
+- Replay Introduction: re-run onboarding wizard without losing data
+
+### Landing Page Updates
+- Nav CTA and hero buttons now link to `/app.html` (app entry) instead of waitlist form
+- Landing pages no longer set persona — wizard handles persona selection
+
+### Background Catalog Hydration (`useCatalogHydration.js`)
+- Fires on wizard mount, completely decoupled from UI
+- Exponential backoff retry (3 attempts) on fetch failure
+- Skips fetch if Dexie already has >100 species cached
+
+---
+
 ## June 1, 2026 — Pro Breeder Operational Readiness (5-Phase)
 
 Comprehensive implementation to make Pro mode ready for serious rack-based breeders.

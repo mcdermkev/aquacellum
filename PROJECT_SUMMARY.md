@@ -11,9 +11,10 @@ By bridging hobbyist fishkeeping registries with professional breeding standards
 
 ### Core Value Anchors
 - **Immutable Provenance**: Un-falsifiable ancestry trees (Sire/Dam indices) tracing specimens across generations, with inbreeding coefficient detection.
-- **Account Abstraction & Zero-Gas** (planned): Seamless onboarding via Coinbase Smart Wallet and Paymaster gasless transactions. Currently testnet uses MetaMask/injected wallet.
+- **Account Abstraction & Embedded Wallets**: Seamless onboarding via Privy embedded MPC wallets (email/Google login). MetaMask available as fallback for advanced users. Paymaster gasless transactions planned.
 - **Local-First Architecture**: Dexie.js offline database with TanStack Query caching. All operational data (action logs, grow-out tracking, photos) works without network.
 - **Dual-Mode Experience**: Casual Hobbyist mode (friendly, gamified) and Pro Breeder mode (operational, de-gamified) driven by a single toggle.
+- **Narrative Onboarding**: 4-step wizard guided by Poseidon (AI assistant) introducing users to their companion (Echo), creating their identity, and setting up their first tank — all while the species database loads in the background.
 
 ### Protocol Fee Structure (Current — Testnet)
 - **Total fee**: 4% of transaction price (`TOTAL_FEE_BPS = 400`)
