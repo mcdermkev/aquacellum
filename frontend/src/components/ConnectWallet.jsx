@@ -1,12 +1,13 @@
 /**
  * ConnectWallet.jsx
  * 
- * Login component — MetaMask / injected wallet only.
- * Privy (Google/Email) is disabled until env vars are configured on Vercel.
+ * Login component — supports Privy (email/Google) and MetaMask.
+ * Privy is the primary login method; MetaMask is the fallback for advanced users.
  */
 
 import React, { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { generateAlias } from "../utils/generateAlias";
 
 // Shorten address for display: 0xABCD…1234
 function shortAddress(addr) {
@@ -22,10 +23,13 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
     error,
     wrongNetwork,
     ready,
+    connectPrivy,
     connectMetaMask,
     disconnect,
     handleSwitchNetwork,
   } = useAuth();
+
+  const [showMetaMaskOption, setShowMetaMaskOption] = useState(false);
 
   // Notify parent when account changes
   React.useEffect(() => {
@@ -36,7 +40,7 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
   // Auto-trigger login when landing page CTA sets triggerLoginOnEntry
   React.useEffect(() => {
     if (triggerLoginOnEntry && !account && !isConnecting && ready) {
-      connectMetaMask();
+      connectPrivy();
       if (clearTriggerLogin) clearTriggerLogin();
     } else if (triggerLoginOnEntry) {
       // Already connected or not ready — just clear the flag
@@ -119,7 +123,7 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
               padding: "0 0.5rem",
             }}
           >
-            {shortAddress(account)}
+            {casualModeActive ? generateAlias(account) : shortAddress(account)}
           </span>
         </div>
         <button
@@ -140,8 +144,8 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem" }}>
       <button
         className="btn-primary"
-        onClick={connectMetaMask}
-        disabled={!ready || isConnecting}
+        onClick={connectPrivy}
+        disabled={isConnecting}
         style={{ position: "relative", display: "flex", alignItems: "center", gap: "0.5rem" }}
       >
         {isConnecting ? (
@@ -174,17 +178,26 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
               <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
               <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
             </svg>
-            {casualModeActive ? "Connect Wallet" : "Connect Wallet"}
+            {casualModeActive ? "Open Logbook" : "Connect"}
           </>
         )}
       </button>
-      {!window.ethereum && (
-        <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
-          No wallet detected.{" "}
-          <a href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-blue)" }}>
-            Install MetaMask
-          </a>
-        </span>
+      {!casualModeActive && (
+        <button
+          onClick={connectMetaMask}
+          disabled={!ready || isConnecting}
+          style={{
+            background: "none",
+            border: "none",
+            color: "var(--text-muted)",
+            fontSize: "0.7rem",
+            cursor: "pointer",
+            textDecoration: "underline",
+            padding: "0.25rem",
+          }}
+        >
+          Use MetaMask instead
+        </button>
       )}
       {error && (
         <span style={{ fontSize: "0.75rem", color: "#f87171", fontWeight: 500 }}>

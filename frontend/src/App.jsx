@@ -21,6 +21,7 @@ import { LandingHobbyist } from "./components/LandingHobbyist";
 import { LandingBreeder } from "./components/LandingBreeder";
 import { DataPortabilityWidget } from "./components/DataPortabilityWidget";
 import { ModeSegmentedControl } from "./components/ModeSegmentedControl";
+import { OnboardingWizard } from "./components/OnboardingWizard";
 import { useAuth } from "./contexts/AuthContext";
 
 
@@ -115,6 +116,9 @@ export default function App() {
   });
   const [enteredDashboard, setEnteredDashboard] = useState(() => {
     return localStorage.getItem("aquadex_entered_dashboard") === "true";
+  });
+  const [onboardingComplete, setOnboardingComplete] = useState(() => {
+    return localStorage.getItem("aquadex_onboarding_complete") === "true";
   });
   const [triggerLoginOnEntry, setTriggerLoginOnEntry] = useState(false);
   const [viewParam, setViewParam] = useState(() => {
@@ -355,7 +359,13 @@ export default function App() {
         );
       case "settings":
         return (
-          <DataPortabilityWidget casualModeActive={casualModeActive} />
+          <DataPortabilityWidget 
+            casualModeActive={casualModeActive} 
+            onToggleMode={(newCasualVal) => {
+              setCasualModeActive(newCasualVal);
+              localStorage.setItem("aquadex_casual_mode", newCasualVal.toString());
+            }}
+          />
         );
       case "tanks":
       default:
@@ -377,11 +387,8 @@ export default function App() {
       return (
         <LandingBreeder 
           onEnter={() => {
-            setCasualModeActive(false);
-            localStorage.setItem("aquadex_casual_mode", "false");
             setEnteredDashboard(true);
             localStorage.setItem("aquadex_entered_dashboard", "true");
-            setTriggerLoginOnEntry(true);
           }} 
         />
       );
@@ -389,15 +396,27 @@ export default function App() {
       return (
         <LandingHobbyist 
           onEnter={() => {
-            setCasualModeActive(true);
-            localStorage.setItem("aquadex_casual_mode", "true");
             setEnteredDashboard(true);
             localStorage.setItem("aquadex_entered_dashboard", "true");
-            setTriggerLoginOnEntry(true);
           }} 
         />
       );
     }
+  }
+
+  // Show onboarding wizard for first-time users who haven't completed it
+  if (!onboardingComplete) {
+    return (
+      <OnboardingWizard
+        onComplete={(isCasual) => {
+          setOnboardingComplete(true);
+          if (isCasual !== null && isCasual !== undefined) {
+            setCasualModeActive(isCasual);
+            localStorage.setItem("aquadex_casual_mode", isCasual.toString());
+          }
+        }}
+      />
+    );
   }
 
   return (

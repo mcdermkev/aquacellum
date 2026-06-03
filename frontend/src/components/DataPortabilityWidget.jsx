@@ -3,11 +3,13 @@ import { exportLocalDatabase, importLocalDatabase, db } from "../db";
 import { useQueryClient } from "@tanstack/react-query";
 import { generateFacilitySummary } from "../utils/pdfExport";
 
-export function DataPortabilityWidget({ casualModeActive }) {
+export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
   const queryClient = useQueryClient();
   const [importStatus, setImportStatus] = useState({ type: "", message: "" });
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [showModeConfirm, setShowModeConfirm] = useState(false);
+  const [showReplayConfirm, setShowReplayConfirm] = useState(false);
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -89,6 +91,7 @@ export function DataPortabilityWidget({ casualModeActive }) {
   };
 
   return (
+    <>
     <div 
       className="glass-card" 
       style={{
@@ -258,5 +261,154 @@ export function DataPortabilityWidget({ casualModeActive }) {
         </div>
       )}
     </div>
+
+    {/* ─── Experience Mode Toggle ─── */}
+    <div
+      className="glass-card"
+      style={{
+        padding: "2rem",
+        borderRadius: "var(--radius-md)",
+        border: "1px solid rgba(255, 255, 255, 0.08)",
+        background: "rgba(10, 15, 30, 0.7)",
+        backdropFilter: "blur(12px)",
+        boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
+        maxWidth: "600px",
+        margin: "0 auto 3rem auto",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+        <span style={{ fontSize: "1.5rem" }}>{casualModeActive ? "🐠" : "🧬"}</span>
+        <h3 style={{ fontSize: "1.25rem", fontWeight: "700", color: "#fff", margin: 0 }}>
+          Experience Mode
+        </h3>
+      </div>
+
+      <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", lineHeight: "1.5", marginBottom: "1.25rem" }}>
+        {casualModeActive
+          ? "You're currently in Casual Hobbyist mode. The interface uses friendly language, gamified progress, and hides technical blockchain details."
+          : "You're currently in Professional Breeder mode. The interface uses operational language, shows lineage data, and exposes protocol-level details."}
+      </p>
+
+      {!showModeConfirm ? (
+        <button
+          className="btn-secondary"
+          onClick={() => setShowModeConfirm(true)}
+          style={{
+            padding: "0.75rem 1.5rem",
+            fontSize: "0.875rem",
+            minHeight: "44px",
+            cursor: "pointer",
+          }}
+        >
+          {casualModeActive ? "Switch to Pro Breeder Mode" : "Switch to Casual Hobbyist Mode"}
+        </button>
+      ) : (
+        <div style={{
+          padding: "1rem",
+          background: "rgba(251, 191, 36, 0.06)",
+          border: "1px solid rgba(251, 191, 36, 0.2)",
+          borderRadius: "var(--radius-sm)",
+        }}>
+          <p style={{ fontSize: "0.8rem", color: "var(--accent-amber)", marginBottom: "0.75rem" }}>
+            {casualModeActive
+              ? "Switching to Pro mode will change the interface language to operational/technical terminology and reveal advanced features like lineage trees and spawning workflows."
+              : "Switching to Casual mode will simplify the interface, use friendly language, and hide some advanced tools like raw lineage data and spawning workflows."}
+          </p>
+          <div style={{ display: "flex", gap: "0.75rem" }}>
+            <button
+              className="btn-primary"
+              onClick={() => {
+                setShowModeConfirm(false);
+                if (onToggleMode) onToggleMode(!casualModeActive);
+              }}
+              style={{ padding: "0.6rem 1.25rem", fontSize: "0.8rem" }}
+            >
+              Confirm Switch
+            </button>
+            <button
+              className="btn-secondary"
+              onClick={() => setShowModeConfirm(false)}
+              style={{ padding: "0.6rem 1.25rem", fontSize: "0.8rem" }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+
+    {/* ─── Replay Onboarding ─── */}
+    <div
+      className="glass-card"
+      style={{
+        padding: "2rem",
+        borderRadius: "var(--radius-md)",
+        border: "1px solid rgba(255, 255, 255, 0.08)",
+        background: "rgba(10, 15, 30, 0.7)",
+        backdropFilter: "blur(12px)",
+        boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
+        maxWidth: "600px",
+        margin: "0 auto 3rem auto",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+        <span style={{ fontSize: "1.5rem" }}>🔄</span>
+        <h3 style={{ fontSize: "1.25rem", fontWeight: "700", color: "#fff", margin: 0 }}>
+          {casualModeActive ? "Replay Introduction" : "Replay Onboarding Sequence"}
+        </h3>
+      </div>
+
+      <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", lineHeight: "1.5", marginBottom: "1.25rem" }}>
+        {casualModeActive
+          ? "Want to see Poseidon and Echo's introduction again? You can replay the welcome walkthrough anytime."
+          : "Re-run the initial onboarding sequence. Useful for demonstrating the system to new team members."}
+      </p>
+
+      {!showReplayConfirm ? (
+        <button
+          className="btn-secondary"
+          onClick={() => setShowReplayConfirm(true)}
+          style={{
+            padding: "0.75rem 1.5rem",
+            fontSize: "0.875rem",
+            minHeight: "44px",
+            cursor: "pointer",
+          }}
+        >
+          {casualModeActive ? "Replay Intro" : "Re-run Onboarding"}
+        </button>
+      ) : (
+        <div style={{
+          padding: "1rem",
+          background: "rgba(56, 189, 248, 0.06)",
+          border: "1px solid rgba(56, 189, 248, 0.2)",
+          borderRadius: "var(--radius-sm)",
+        }}>
+          <p style={{ fontSize: "0.8rem", color: "var(--accent-blue)", marginBottom: "0.75rem" }}>
+            This will show the Poseidon & Echo introduction wizard again. Your data and progress won't be affected.
+          </p>
+          <div style={{ display: "flex", gap: "0.75rem" }}>
+            <button
+              className="btn-primary"
+              onClick={() => {
+                localStorage.removeItem("aquadex_onboarding_complete");
+                window.location.reload();
+              }}
+              style={{ padding: "0.6rem 1.25rem", fontSize: "0.8rem" }}
+            >
+              Replay Now
+            </button>
+            <button
+              className="btn-secondary"
+              onClick={() => setShowReplayConfirm(false)}
+              style={{ padding: "0.6rem 1.25rem", fontSize: "0.8rem" }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  </>
   );
 }

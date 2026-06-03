@@ -1724,3 +1724,114 @@ textarea:focus:not(:focus-visible) {
     border: none !important;
   }
 }
+
+
+/* =========================================================================
+   ONBOARDING WIZARD — Animations & Styles
+   ========================================================================= */
+
+/* Chat bubble fade-in animation */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Echo egg pulse animation */
+@keyframes eggPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+}
+
+/* Echo egg wobble on tap */
+@keyframes eggWobble {
+  0% { transform: rotate(0deg); }
+  15% { transform: rotate(-8deg); }
+  30% { transform: rotate(6deg); }
+  45% { transform: rotate(-4deg); }
+  60% { transform: rotate(2deg); }
+  75% { transform: rotate(-1deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* Typing indicator dots */
+.typing-dots {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.typing-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  opacity: 0.4;
+  animation: typingBounce 1.4s infinite;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* Onboarding wizard card — prevent hover lift */
+.onboarding-wizard-card:hover {
+  transform: none !important;
+}
+
+/* Chat area scrollbar styling */
+.onboarding-chat-area::-webkit-scrollbar {
+  width: 4px;
+}
+
+.onboarding-chat-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.onboarding-chat-area::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+/* Mobile responsive for onboarding */
+@media (max-width: 640px) {
+  .onboarding-wizard-card {
+    padding: 1.25rem !important;
+    max-height: 95vh !important;
+    border-radius: var(--radius-sm) !important;
+  }
+
+  .onboarding-chat-area {
+    max-height: 35vh !important;
+  }
+
+  .onboarding-action-area button {
+    min-height: 48px !important;
+  }
+}
