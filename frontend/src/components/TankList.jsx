@@ -1937,6 +1937,49 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               {/* 2.5 SOCIAL SUB-TAB: Tank Progress Social Feed */}
               {detailSubTab === "social" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  {/* Share on The Reef CTA */}
+                  <div style={{
+                    padding: "0.75rem 1rem",
+                    borderRadius: "10px",
+                    background: "rgba(56, 189, 248, 0.04)",
+                    border: "1px solid rgba(56, 189, 248, 0.12)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "0.75rem",
+                  }}>
+                    <div>
+                      <p style={{ margin: 0, fontSize: "0.8rem", color: "#fff", fontWeight: 500 }}>
+                        {casualModeActive ? "🪸 Share this tank on The Reef" : "Post to Social Feed"}
+                      </p>
+                      <p style={{ margin: "0.15rem 0 0", fontSize: "0.65rem", color: "var(--text-muted)" }}>
+                        {casualModeActive ? "Show other fishkeepers your setup" : "Publish a Tank Current with parameters"}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        // Store tank info for the composer to pick up
+                        window.dispatchEvent(new CustomEvent("reef_share_tank", {
+                          detail: { tankId: activeTank.id, tankName: activeTank.name || `Tank ${activeTank.id.slice(0, 8)}` }
+                        }));
+                      }}
+                      style={{
+                        padding: "0.4rem 0.8rem",
+                        borderRadius: "8px",
+                        border: "none",
+                        background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
+                        color: "#fff",
+                        fontSize: "0.7rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {casualModeActive ? "Share 🪸" : "Post Current"}
+                    </button>
+                  </div>
+
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <strong style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Tank Progress Social Feed</strong>
                     <span className="badge badge-blue">{(tankComments[activeTank.id] || []).length} Updates</span>
@@ -2072,10 +2115,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             </div>
 
             {/* Quick Actions Card Footer */}
-            <div style={{ display: "flex", gap: "0.5rem", borderTop: "1px solid var(--glass-border)", paddingTop: "1rem", marginTop: "auto" }}>
+            <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", borderTop: "1px solid var(--glass-border)", paddingTop: "0.75rem", marginTop: "auto" }}>
               <button 
                 className="btn-secondary" 
-                style={{ flex: 1, padding: "0.5rem", fontSize: "0.8rem" }}
+                style={{ flex: "1 1 auto", padding: "0.4rem 0.6rem", fontSize: "0.7rem", whiteSpace: "nowrap" }}
                 onClick={() => {
                   setInlineDetailType("population");
                   setInlineDetailText(getSpecimenCount(activeTank).toString());
@@ -2083,12 +2126,12 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   setTimeout(() => inlineDetailRef.current?.focus(), 100);
                 }}
               >
-                Update Count
+                🐟 Count
               </button>
 
               <button 
                 className="btn-secondary" 
-                style={{ flex: 1, padding: "0.5rem", fontSize: "0.8rem" }}
+                style={{ flex: "1 1 auto", padding: "0.4rem 0.6rem", fontSize: "0.7rem", whiteSpace: "nowrap" }}
                 onClick={() => {
                   setFormData({
                     temp: activeTank.latestLog ? (activeTank.latestLog.tempCelsiusX10/10).toString() : "24.5",
@@ -2103,16 +2146,41 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   setQuickLogOpen(true);
                 }}
               >
-                🧪 Quick Water Test
+                🧪 Test
               </button>
+
+              <label
+                className="btn-secondary"
+                style={{ flex: "1 1 auto", padding: "0.4rem 0.6rem", fontSize: "0.7rem", whiteSpace: "nowrap", cursor: "pointer", textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+              >
+                📷 Photo
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const { compressImage } = await import("../utils/imageCompression");
+                      const compressed = await compressImage(file, { maxWidth: 1200, quality: 0.8 });
+                      localStorage.setItem(`aquadex_tank_photo_${activeTank.id}`, compressed);
+                      // Force re-render
+                      setActiveTank({ ...activeTank });
+                    } catch (err) {
+                      console.error("Photo upload failed:", err);
+                    }
+                  }}
+                />
+              </label>
               
               {activeTank.specimens.length > 0 && onListOnMarketplace && (
                 <button 
                   className="btn-primary" 
-                  style={{ flex: 1.5, padding: "0.5rem", fontSize: "0.8rem", justifyContent: "center" }}
+                  style={{ flex: "1 1 auto", padding: "0.4rem 0.6rem", fontSize: "0.7rem", whiteSpace: "nowrap", justifyContent: "center" }}
                   onClick={() => onListOnMarketplace(activeTank, activeTank.specimens[0])}
                 >
-                  🏪 List on Marketplace
+                  🏪 List
                 </button>
               )}
             </div>

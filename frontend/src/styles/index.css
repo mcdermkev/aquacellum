@@ -1835,3 +1835,219 @@ textarea:focus:not(:focus-visible) {
     min-height: 48px !important;
   }
 }
+
+
+/* =========================================================================
+   THE REEF — Social Layer Responsive Styles
+   ========================================================================= */
+
+/* Reef Profile Card — hover glow */
+.reef-profile-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Reef Feed — Desktop (default) */
+.reef-feed-container {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+/* Reef Composer — full screen on mobile */
+@media (max-width: 640px) {
+  .reef-composer-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    height: 100vh;
+  }
+}
+
+/* Reef — Tablet (768px) */
+@media (max-width: 768px) {
+  /* Feed takes full width */
+  .reef-feed-container {
+    max-width: 100%;
+    padding: 0 0.5rem;
+  }
+
+  /* Profile page — tighter padding */
+  .reef-profile-header {
+    padding: 1rem !important;
+  }
+
+  /* Notification dropdown — slide from right edge */
+  .reef-sonar-dropdown {
+    width: 300px !important;
+    right: -0.5rem !important;
+  }
+}
+
+/* Reef — Mobile (640px) */
+@media (max-width: 640px) {
+  /* Photo grid — single column for 3+ images on small screens */
+  .reef-photo-grid-3,
+  .reef-photo-grid-4 {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto !important;
+  }
+
+  /* Notification dropdown — full width on mobile */
+  .reef-sonar-dropdown {
+    position: fixed !important;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-height: 70vh !important;
+    border-radius: 16px 16px 0 0 !important;
+    border-bottom: none !important;
+  }
+
+  /* Profile stats row — wrap on small screens */
+  .reef-profile-stats {
+    justify-content: space-around !important;
+  }
+
+  /* Reactions bar — slightly smaller on mobile */
+  .reef-reaction-bar button {
+    padding: 0.2rem 0.4rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* FAB — smaller on mobile, higher to avoid thumb zone issues */
+  .reef-fab {
+    width: 48px !important;
+    height: 48px !important;
+    bottom: 1.5rem !important;
+    right: 1.5rem !important;
+    font-size: 1.3rem !important;
+  }
+
+  /* Comment input — full width */
+  .reef-comment-input {
+    font-size: 16px !important; /* Prevents iOS zoom on focus */
+  }
+
+  /* Current card — reduce padding */
+  .reef-current-card {
+    padding: 0.75rem !important;
+    border-radius: 10px !important;
+  }
+
+  /* Profile header — stack on mobile */
+  .reef-profile-header-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+
+  /* Connection button — full width on mobile */
+  .reef-connection-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+/* Reef — Small Mobile (480px) */
+@media (max-width: 480px) {
+  /* Even tighter spacing */
+  .reef-current-card {
+    padding: 0.6rem !important;
+  }
+
+  /* Tankmates row — scroll horizontal */
+  .reef-tankmates-row {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 0.25rem;
+  }
+
+  .reef-tankmates-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Species tags — smaller */
+  .reef-species-tag {
+    font-size: 0.55rem !important;
+    padding: 0.08rem 0.3rem !important;
+  }
+
+  /* Feed tabs — stretch full width */
+  .reef-feed-tabs {
+    gap: 0 !important;
+  }
+
+  .reef-feed-tabs button {
+    flex: 1 !important;
+    font-size: 0.75rem !important;
+  }
+}
+
+/* Reef — Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .reef-fab,
+  .reef-current-card,
+  .reef-profile-card,
+  .reef-reaction-bar button {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Reef — Skeleton pulse animation */
+@keyframes reef-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.reef-skeleton {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  animation: reef-pulse 1.5s ease-in-out infinite;
+}
+
+/* Reef — Touch target sizing (mobile accessibility) */
+@media (pointer: coarse) {
+  .reef-reaction-bar button {
+    min-width: 44px;
+    min-height: 36px;
+  }
+
+  .reef-comment-reply-btn {
+    min-height: 36px;
+    padding: 0.4rem 0.6rem !important;
+  }
+
+  .reef-profile-card {
+    min-height: 40px;
+    padding: 0.3rem 0.4rem !important;
+  }
+}
+
+/* Reef — Dark scrollbar for chat/comment areas */
+.reef-scrollable {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.reef-scrollable::-webkit-scrollbar {
+  width: 4px;
+}
+
+.reef-scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.reef-scrollable::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.reef-scrollable::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

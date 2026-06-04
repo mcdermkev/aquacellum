@@ -95,6 +95,25 @@ db.version(9).stores({
   spawnGrowout: "++id, spawnId, timestamp, type"
 });
 
+// Version 10: Add social layer cache tables for The Reef.
+// feedCache: stores recent feed items for offline reading and instant load.
+// socialNotifications: local mirror of Sonar notifications for offline display.
+// draftContent: queued posts for offline-first creation (synced when back online).
+db.version(10).stores({
+  species: "specCode, commonName, scientificName, type, difficulty",
+  listings: "id, tokenId, seller, price, isBatch, speciesId",
+  tanks: "id, ownerAddress, name, active",
+  userProfile: "walletAddress, level, prestigeXp, hobbyistXp, isCouncilMember",
+  breederCompanion: "walletAddress, eggState, companionXp, currentTier, selectedStats, zoneHash",
+  pendingHandshakes: "purchaseId, pin, salt, buyerAddress",
+  speciesManifest: "speciesId, scientificName, commonName, contractAddress, cachedAt",
+  actionLogs: "++id, tankId, actionType, timestamp, details",
+  spawnGrowout: "++id, spawnId, timestamp, type",
+  feedCache: "++id, contentId, authorWallet, createdAt, [authorWallet+createdAt]",
+  socialNotifications: "++id, category, isRead, createdAt",
+  draftContent: "++id, type, status, createdAt"
+});
+
 /**
  * 1. FULL LEXICAL JSON DATA EXPORT:
  * Interfaces directly with our Dexie.js database layers.

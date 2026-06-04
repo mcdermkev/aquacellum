@@ -4,6 +4,9 @@ import { useCatalogHydration } from "../hooks/useCatalogHydration";
 import { addXp } from "../utils/xp";
 import { generateAlias } from "../utils/generateAlias";
 import { db } from "../db";
+import { ensureProfile, updateProfile } from "../services/reefApi";
+import { authenticateWithWallet, isSupabaseConfigured } from "../services/supabaseClient";
+import { relayRegisterTank } from "../services/relayer";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Dialogue Script — Poseidon's canonical onboarding copy
@@ -193,6 +196,7 @@ export function OnboardingWizard({ onComplete }) {
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [eggTapped, setEggTapped] = useState(false);
+  const [displayName, setDisplayName] = useState("");
   const [tankVolume, setTankVolume] = useState("20");
   const [tankPh, setTankPh] = useState("7.0");
   const [tankTemp, setTankTemp] = useState("25.0");
@@ -210,9 +214,14 @@ export function OnboardingWizard({ onComplete }) {
     if (oauthRedirectHandledRef.current) return;
     if (ready && authenticated && casualMode !== null && step === 1) {
       oauthRedirectHandledRef.current = true;
-      setStep(3);
+      // Generate default name from wallet
+      if (account && !displayName) {
+        setDisplayName(generateAlias(account));
+      }
+      // Go to step 2 (name input) instead of skipping to step 3
+      setStep(2);
     }
-  }, [ready, authenticated, casualMode, step]);
+  }, [ready, authenticated, casualMode, step, account, displayName]);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -236,11 +245,14 @@ export function OnboardingWizard({ onComplete }) {
     if (welcomeSentRef.current) return;
     welcomeSentRef.current = true;
 
-    // If we already know we're returning from OAuth, show wallet success + echo intro
+    // If we already know we're returning from OAuth, show wallet success + name prompt
     if (ready && authenticated && casualMode !== null) {
       const mode = casualMode ? "casual" : "pro";
       addMessage(DIALOGUE.walletSuccess[mode], "poseidon", 800).then(() => {
-        addMessage(DIALOGUE.echoIntro[mode], "poseidon", 1000);
+        const namePrompt = casualMode
+          ? "One last thing — what should I call you? I've suggested a name, but you can change it to whatever you like."
+          : "Designate your operator callsign. A default has been generated from your node address.";
+        addMessage(namePrompt, "poseidon", 800);
       });
     } else {
       addMessage(DIALOGUE.welcome, "poseidon", 1200);
@@ -310,8 +322,11 @@ export function OnboardingWizard({ onComplete }) {
       accountHandledRef.current = true;
       const mode = casualMode ? "casual" : "pro";
 
-      // Generate and store friendly alias
+      // Generate a friendly alias as default display name
       const alias = generateAlias(account);
+      setDisplayName(alias);
+
+      // Store in local Dexie
       db.userProfile.get(account).then((profile) => {
         if (profile) {
           db.userProfile.update(account, { alias });
@@ -331,15 +346,54 @@ export function OnboardingWizard({ onComplete }) {
       });
 
       addMessage(DIALOGUE.walletSuccess[mode], "poseidon", 1200).then(() => {
-        setTimeout(() => {
-          setStep(3);
-          const m = casualMode ? "casual" : "pro";
-          addMessage(DIALOGUE.echoIntro[m], "poseidon", 1000);
-        }, 600);
+        // Show name prompt
+        const namePrompt = casualMode
+          ? "One last thing — what should I call you? I've suggested a name, but you can change it to whatever you like."
+          : "Designate your operator callsign. A default has been generated from your node address.";
+        addMessage(namePrompt, "poseidon", 800);
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account]);
+
+  const handleNameConfirm = async () => {
+    const name = displayName.trim();
+    if (!name) return;
+
+    const mode = casualMode ? "casual" : "pro";
+
+    // Create Supabase profile with the chosen name
+    if (isSupabaseConfigured() && account) {
+      try {
+        await authenticateWithWallet(account);
+        await ensureProfile(account, {
+          display_name: name,
+          companion_tier: "Bronze",
+        });
+        // Update display_name if profile already existed
+        await updateProfile(account, { display_name: name });
+      } catch (err) {
+        console.warn("[Reef] Profile creation during onboarding failed:", err);
+      }
+    }
+
+    // Also update the Dexie alias to match
+    try {
+      await db.userProfile.update(account, { alias: name });
+    } catch (err) {
+      // Non-critical
+    }
+
+    const confirmMsg = casualMode
+      ? `Nice to meet you, ${name}. Let's get your logbook set up.`
+      : `Operator "${name}" acknowledged. Proceeding with initialization.`;
+    await addMessage(confirmMsg, "poseidon", 800);
+
+    setTimeout(() => {
+      setStep(3);
+      addMessage(DIALOGUE.echoIntro[mode], "poseidon", 1000);
+    }, 600);
+  };
 
   const handleEggTap = async () => {
     setEggTapped(true);
@@ -362,6 +416,48 @@ export function OnboardingWizard({ onComplete }) {
     // Save display tank to localStorage
     const tank = { volume: tankVolume, ph: tankPh, temp: tankTemp, use: tankUse };
     localStorage.setItem("aquadex_display_tank", JSON.stringify(tank));
+
+    // Register tank on-chain via relayer (your deployer wallet pays gas)
+    let newTankId = null;
+
+    try {
+      await addMessage("Setting up your first tank... one moment.", "poseidon", 400);
+
+      // Map tankUse to tank type enum (0=Display, 1=Breeding, 2=Quarantine, 3=Growout, 4=Hospital)
+      const tankTypeMap = { display: 0, breeding: 1, quarantine: 2, growout: 3, hospital: 4 };
+      const tankType = tankTypeMap[tankUse] || 0;
+
+      // Convert gallons to liters (rough: 1 gal ≈ 3.785 L)
+      const volumeLiters = Math.round(Number(tankVolume) * 3.785);
+
+      const result = await relayRegisterTank({
+        name: casualMode ? "My First Tank" : "Primary Unit",
+        tankType,
+        volumeLiters,
+        containment: 0,
+        parentUnitId: 0,
+        facility: "Main Room",
+        room: "",
+        rack: "",
+        ownerAddress: account,
+      });
+
+      if (result.success) {
+        newTankId = result.tankId;
+        await addMessage(DIALOGUE.tankComplete[mode], "poseidon", 800);
+      } else {
+        throw new Error(result.error || "Registration failed");
+      }
+    } catch (err) {
+      console.error("Tank registration failed:", err);
+      // Still proceed with onboarding even if on-chain fails
+      await addMessage(
+        mode === "casual"
+          ? "Hmm, the tank registration didn't go through — but don't worry, you can add it later from the Aquariums tab. Let's keep going!"
+          : "On-chain registration failed. You can retry from the Aquariums tab. Proceeding.",
+        "poseidon", 800
+      );
+    }
 
     // Award first XP
     addXp("first_tank_setup", 15);
@@ -395,7 +491,6 @@ export function OnboardingWizard({ onComplete }) {
       }
     }
 
-    await addMessage(DIALOGUE.tankComplete[mode], "poseidon", 1200);
     setTankSubmitted(true);
 
     // Check if catalog is ready before transitioning
@@ -523,7 +618,7 @@ export function OnboardingWizard({ onComplete }) {
             </div>
           )}
 
-          {/* Step 2: Connect wallet */}
+          {/* Step 2: Connect wallet + Choose name */}
           {step === 2 && !account && (
             <div style={{ textAlign: "center" }}>
               <button
@@ -562,6 +657,62 @@ export function OnboardingWizard({ onComplete }) {
                 }}
               >
                 {casualMode ? "Or connect an existing wallet" : "Link external wallet (MetaMask)"}
+              </button>
+            </div>
+          )}
+
+          {/* Step 2b: Choose display name (after wallet connected) */}
+          {step === 2 && account && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", alignItems: "center" }}>
+              <div style={{ width: "100%", maxWidth: "320px" }}>
+                <label style={{ 
+                  fontSize: "0.7rem", 
+                  color: "var(--text-secondary)", 
+                  display: "block", 
+                  marginBottom: "0.4rem",
+                  textAlign: "left",
+                }}>
+                  {casualMode ? "Your display name" : "Operator callsign"}
+                </label>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value.slice(0, 30))}
+                  placeholder={casualMode ? "Enter your name..." : "Enter callsign..."}
+                  maxLength={30}
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem 1rem",
+                    background: "rgba(255, 255, 255, 0.04)",
+                    border: "1px solid rgba(56, 189, 248, 0.2)",
+                    borderRadius: "var(--radius-sm)",
+                    color: "#fff",
+                    fontSize: "1rem",
+                    fontWeight: 600,
+                    textAlign: "center",
+                    outline: "none",
+                    transition: "border-color 0.2s ease",
+                  }}
+                  onFocus={(e) => { e.target.style.borderColor = "rgba(56, 189, 248, 0.5)"; }}
+                  onBlur={(e) => { e.target.style.borderColor = "rgba(56, 189, 248, 0.2)"; }}
+                  onKeyDown={(e) => { if (e.key === "Enter" && displayName.trim()) handleNameConfirm(); }}
+                  autoFocus
+                />
+                <p style={{ fontSize: "0.6rem", color: "var(--text-muted)", marginTop: "0.3rem", textAlign: "center" }}>
+                  {casualMode ? "This is how other fishkeepers will see you" : "Visible on your operator profile"}
+                </p>
+              </div>
+              <button
+                className="btn-primary"
+                onClick={handleNameConfirm}
+                disabled={!displayName.trim()}
+                style={{
+                  padding: "0.7rem 2rem",
+                  fontSize: "0.85rem",
+                  opacity: displayName.trim() ? 1 : 0.5,
+                }}
+              >
+                {casualMode ? "That's me! ✨" : "Confirm Callsign"}
               </button>
             </div>
           )}

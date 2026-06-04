@@ -103,6 +103,10 @@ export function getSmartAccountAddress() {
  *   1. If a Privy signer resolver is registered (user logged in via Google/Email),
  *      use the embedded wallet's signer.
  *   2. Otherwise, use MetaMask/injected wallet (window.ethereum).
+ * 
+ * NOTE: During beta, most on-chain writes go through the server-side relayer
+ * (api/relay-transaction) instead of this function. This is used as a fallback
+ * for any client-side signing needs.
  */
 export async function getSigner() {
   // If Privy auth is active, use its signer
@@ -111,7 +115,6 @@ export async function getSigner() {
       const signer = await _privySignerResolver();
       if (signer) return signer;
     } catch (err) {
-      // Fall through to MetaMask if Privy signer fails
       console.warn("Privy signer unavailable, falling back to injected wallet:", err.message);
     }
   }
@@ -119,7 +122,7 @@ export async function getSigner() {
   // Fallback: MetaMask / injected wallet
   if (typeof window === "undefined" || !window.ethereum) {
     throw new Error(
-      "No wallet detected. Please install MetaMask or Coinbase Wallet to sign transactions."
+      "No wallet detected. Please install MetaMask or use Privy login."
     );
   }
 

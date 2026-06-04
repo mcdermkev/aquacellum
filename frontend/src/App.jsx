@@ -22,6 +22,7 @@ import { LandingBreeder } from "./components/LandingBreeder";
 import { DataPortabilityWidget } from "./components/DataPortabilityWidget";
 import { ModeSegmentedControl } from "./components/ModeSegmentedControl";
 import { OnboardingWizard } from "./components/OnboardingWizard";
+import { ReefFeed } from "./components/reef";
 import { useAuth } from "./contexts/AuthContext";
 
 
@@ -99,7 +100,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState(() => {
     // Quick Win 10: Restore tab from URL hash on load
     const hash = window.location.hash.replace("#", "");
-    const validTabs = ["tanks", "mint", "lineage", "directory", "gallery", "map", "spawning", "orders", "settings"];
+    const validTabs = ["tanks", "mint", "lineage", "directory", "gallery", "map", "spawning", "orders", "reef", "settings"];
     return validTabs.includes(hash) ? hash : "tanks";
   });
   const [preselectedLineageId, setPreselectedLineageId] = useState(null);
@@ -211,6 +212,23 @@ export default function App() {
     };
   }, []);
 
+  // Listen for "Share on Reef" events from tank detail panels
+  useEffect(() => {
+    const handleShareOnReef = (e) => {
+      // Navigate to reef tab — the composer will detect the pre-selected tank
+      setActiveTab("reef");
+      window.history.pushState({ tab: "reef" }, "", "#reef");
+      // Store the tank info so ReefFeed can open the composer pre-filled
+      window.__reefShareTank = e.detail;
+      // Dispatch a secondary event for ReefFeed to pick up
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("reef_open_composer", { detail: e.detail }));
+      }, 300);
+    };
+    window.addEventListener("reef_share_tank", handleShareOnReef);
+    return () => window.removeEventListener("reef_share_tank", handleShareOnReef);
+  }, []);
+
   const handleWalletConnected = (addr) => {
     // Account is now managed by AuthContext — this callback is kept for
     // backward compatibility with ConnectWallet's onConnected prop but
@@ -240,7 +258,7 @@ export default function App() {
   useEffect(() => {
     const handlePopState = (e) => {
       const hash = window.location.hash.replace("#", "");
-      const validTabs = ["tanks", "mint", "lineage", "directory", "gallery", "map", "spawning", "orders", "settings"];
+      const validTabs = ["tanks", "mint", "lineage", "directory", "gallery", "map", "spawning", "orders", "reef", "settings"];
       if (validTabs.includes(hash)) {
         setActiveTab(hash);
       }
@@ -357,6 +375,14 @@ export default function App() {
             casualModeActive={casualModeActive}
           />
         );
+      case "reef":
+        return (
+          <ReefFeed 
+            casualModeActive={casualModeActive}
+            walletAccount={account}
+            walletAddress={account}
+          />
+        );
       case "settings":
         return (
           <DataPortabilityWidget 
@@ -430,7 +456,7 @@ export default function App() {
           padding: "0",
           marginBottom: "2rem",
           borderRadius: "var(--radius-md)",
-          overflow: "hidden",
+          overflow: "visible",
           border: casualModeActive 
             ? "1px solid rgba(56, 189, 248, 0.12)" 
             : "1px solid rgba(168, 85, 247, 0.15)",
@@ -590,6 +616,7 @@ export default function App() {
           borderTop: "1px solid rgba(255, 255, 255, 0.04)",
           background: "rgba(0, 0, 0, 0.15)",
           opacity: casualModeActive ? 1 : 0.7,
+          borderRadius: "0 0 var(--radius-md) var(--radius-md)",
         }}>
           {/* Level badge */}
           <span style={{ 
@@ -670,6 +697,7 @@ export default function App() {
             scrollbarWidth: "none",
             msOverflowStyle: "none",
             position: "relative",
+            zIndex: 1,
           }}
         >
           <button 
@@ -731,6 +759,13 @@ export default function App() {
             style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
           >
             {casualModeActive ? "📦 My Orders" : "📦 Orders"}
+          </button>
+          <button 
+            className={activeTab === "reef" ? "btn-primary" : "btn-secondary"} 
+            onClick={() => handleTabChange("reef")}
+            style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
+          >
+            {casualModeActive ? "🪸 The Reef" : "Social"}
           </button>
           <button 
             className={activeTab === "settings" ? "btn-primary" : "btn-secondary"} 

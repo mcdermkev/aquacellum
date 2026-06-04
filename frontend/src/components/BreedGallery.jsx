@@ -15,6 +15,7 @@ import { BreedersCouncil } from "./BreedersCouncil";
 import { db } from "../db";
 import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";
 import { getPersonality } from "../utils/personality";
+import { SpeciesInsights } from "./reef/SpeciesInsights";
 
 // Config configurations for Aquadex biological easter eggs
 export function getEasterEggConfig(key, evolved = false) {
@@ -1353,6 +1354,13 @@ export function BreedGallery({
               >
                 Breeding Profile
               </button>
+              <button 
+                className={activeInfoTab === "insights" ? "btn-primary" : "btn-secondary"} 
+                onClick={() => setActiveInfoTab("insights")}
+                style={{ flex: 1, padding: "0.4rem 0.5rem", fontSize: "0.8rem", borderRadius: "6px", textAlign: "center", whiteSpace: "nowrap" }}
+              >
+                {casualModeActive ? "💡 Tips" : "Insights"}
+              </button>
             </div>
 
             {/* Tab Contents */}
@@ -1477,6 +1485,14 @@ export function BreedGallery({
                   </p>
                 </div>
               </div>
+            )}
+
+            {activeInfoTab === "insights" && (
+              <SpeciesInsights
+                specCode={selectedBreed.speciesId || fullProfile.specCode}
+                speciesName={selectedBreed.commonName}
+                casualModeActive={casualModeActive}
+              />
             )}
           </div>
         </div>

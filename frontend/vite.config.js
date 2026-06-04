@@ -24,6 +24,7 @@ export default defineConfig({
         index: resolve(__dirname, 'index.html'),       // Main landing page (/)
         hobbyist: resolve(__dirname, 'hobbyist.html'), // Hobbyist landing
         breeder: resolve(__dirname, 'breeder.html'),   // Breeder landing
+        database: resolve(__dirname, 'database.html'), // Species database page
         app: resolve(__dirname, 'app.html')            // React dashboard app
       }
     }

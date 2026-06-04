@@ -11,10 +11,11 @@ By bridging hobbyist fishkeeping registries with professional breeding standards
 
 ### Core Value Anchors
 - **Immutable Provenance**: Un-falsifiable ancestry trees (Sire/Dam indices) tracing specimens across generations, with inbreeding coefficient detection.
-- **Account Abstraction & Embedded Wallets**: Seamless onboarding via Privy embedded MPC wallets (email/Google login). MetaMask available as fallback for advanced users. Paymaster gasless transactions planned.
-- **Local-First Architecture**: Dexie.js offline database with TanStack Query caching. All operational data (action logs, grow-out tracking, photos) works without network.
+- **Account Abstraction & Embedded Wallets**: Seamless onboarding via Privy embedded MPC wallets (email/Google login). MetaMask available as fallback for advanced users. Gasless beta via server-side relayer.
+- **Local-First Architecture**: Dexie.js offline database with TanStack Query caching. All operational data (tanks, action logs, grow-out tracking, photos) works without network. On-chain registration deferred to "publish" step.
 - **Dual-Mode Experience**: Casual Hobbyist mode (friendly, gamified) and Pro Breeder mode (operational, de-gamified) driven by a single toggle.
-- **Narrative Onboarding**: 4-step wizard guided by Poseidon (AI assistant) introducing users to their companion (Echo), creating their identity, and setting up their first tank — all while the species database loads in the background.
+- **Narrative Onboarding**: 4-step wizard guided by Poseidon (AI assistant) introducing users to their companion (Echo), creating their identity, and registering their first tank — all while the species database loads in the background.
+- **Social Layer (The Reef)**: Full social backbone with profiles, Tank Currents feed, reactions, comments, Tankmate connections, Schools (clubs), Expert Audits, mentorship pairing, and real-time notifications.
 
 ### Protocol Fee Structure (Current — Testnet)
 - **Total fee**: 4% of transaction price (`TOTAL_FEE_BPS = 400`)
@@ -48,8 +49,10 @@ graph TD
 1. **Frontend Client**: Multi-page Vite React app (`index.html` landing, `app.html` dashboard) with glassmorphic UI.
 2. **Base L2 Smart Contracts**: Registry transactions, pedigree state transitions, escrow/shipping, batch checkout.
 3. **FishBase Master Catalog**: Offline JSON (`fishbase_master.json`) — 326 species with taxonomic envelopes (temp/pH/volume bounds).
-4. **Local Database**: Dexie.js v9 schema with tables: `species`, `listings`, `tanks`, `actionLogs`, `userProfile`, `breederCompanion`, `pendingHandshakes`, `speciesManifest`, `spawnGrowout`.
-5. **Serverless API**: Vercel edge function for species suggestion validation (WoRMS + Gemini AI audit).
+4. **Local Database**: Dexie.js v10 schema with tables: `species`, `listings`, `tanks`, `actionLogs`, `userProfile`, `breederCompanion`, `pendingHandshakes`, `speciesManifest`, `spawnGrowout`, `feedCache`, `socialNotifications`, `draftContent`.
+5. **Serverless API**: Vercel edge function for species suggestion validation (WoRMS + Gemini AI audit). Transaction relayer endpoint for gasless beta writes.
+6. **Social Backend**: Supabase Postgres (15 tables with RLS + notification triggers), Supabase Storage (media CDN), Supabase Realtime (live chat + notifications).
+7. **Beta Relayer**: `/api/relay-transaction` — server-side transaction signing for on-chain writes using a single funded deployer wallet. Beta testers never interact with MetaMask.
 
 ---
 
@@ -111,6 +114,24 @@ All contracts deployed on **Base Sepolia (Chain ID 84532)**.
 - Regional God-Tier leaderboard, expo double-XP events, expert mentorship social feed.
 - All gamification suppressed/quieted in Pro mode (companion hidden, toasts operational, XP bar muted).
 
+### Social Layer — "The Reef" (MVP Live)
+- **Tank Currents**: Users post updates with photos, text, linked tank, water parameters snapshot, and species tags.
+- **Social Feed**: Two modes — "My Feed" (chronological from Tankmates + watched tanks) and "Explore" (all public posts).
+- **Reactions**: Six emoji reactions (🔥 🐟 💧 🌿 👏 ⭐) with optimistic UI and toggle behavior.
+- **Threaded Comments**: 1-level threaded comment system on any Current.
+- **Tankmate Connections**: Mutual connection requests with optional message, accept/decline flow.
+- **Watch Tank**: One-way subscription to specific tanks for feed updates (no approval needed).
+- **Public Profiles**: Wallet-linked profile with display name, avatar, bio, stats (XP, tanks, species, companion tier), and Tankmates list.
+- **Sonar Notifications**: Auto-dispatched via Postgres triggers on reactions, comments, and Tankmate requests. Real-time delivery via Supabase Realtime.
+- **Photo Uploads**: Client-side resize (max 2048px) → Supabase Storage (CDN-delivered).
+- **Dual-Mode Labels**: "The Reef" / "Tankmates" / "Currents" in casual mode → "Social Feed" / "Connections" / "Posts" in pro mode.
+- **Species Insights**: Micro-content system (280-char tips) on species pages. 5 categories (Care Tip, Warning, Breeding, Compatibility, Behavior). Upvotable/downvotable. Integrated as tab in species detail view.
+- **Badge Shelf**: 17 auto-awarded achievement badges on profiles. Calculated from stats: tank count, species mastered, companion tier, XP, posts, insights, and tankmate connections.
+- **Profile Edit**: Inline editor on own profile — change name, bio (280 chars), upload avatar photo anytime.
+- **Share from Tanks**: "Share on The Reef" button in tank detail social tab — navigates to Reef and opens composer pre-filled with that tank.
+- **Backend**: Supabase Postgres (8 tables, RLS, notification triggers) + Supabase Storage + Supabase Realtime.
+- **Planned (Phase 2+)**: Schools (clubs), Tides (events), Expert Audits, Poseidon AI integration, Depth Score reputation.
+
 ---
 
 ## 6. Data Structures
@@ -129,7 +150,7 @@ All contracts deployed on **Base Sepolia (Chain ID 84532)**.
 }
 ```
 
-### Dexie.js Schema (v9)
+### Dexie.js Schema (v10)
 - `species`: specCode, commonName, scientificName, type, difficulty
 - `listings`: id, tokenId, seller, price, isBatch, speciesId
 - `tanks`: id, ownerAddress, name, active
@@ -139,6 +160,19 @@ All contracts deployed on **Base Sepolia (Chain ID 84532)**.
 - `pendingHandshakes`: purchaseId, pin, salt, buyerAddress
 - `speciesManifest`: speciesId, scientificName, commonName, contractAddress, cachedAt
 - `spawnGrowout`: ++id, spawnId, timestamp, type
+- `feedCache`: ++id, contentId, authorWallet, createdAt, [authorWallet+createdAt]
+- `socialNotifications`: ++id, category, isRead, createdAt
+- `draftContent`: ++id, type, status, createdAt
+
+### Supabase Schema (Social Layer)
+- `profiles`: wallet_address (PK), display_name, avatar_url, bio, privacy_settings, tank_count, species_count, xp_total, companion_tier
+- `currents`: id, author_wallet, title, body, media_urls, linked_tank_id, linked_tank_name, species_tags, parameters_snapshot, visibility
+- `reactions`: id, user_wallet, target_id, emoji (UNIQUE per user/target/emoji)
+- `comments`: id, author_wallet, current_id, parent_comment_id, body
+- `follows`: id, follower_wallet, follow_type, target_wallet, target_tank_id, is_mutual
+- `connection_requests`: id, from_wallet, to_wallet, message, status
+- `sonar_notifications`: id, recipient_wallet, category, title, body, icon, link_type, link_id, is_read
+- `species_insights`: id, author_wallet, spec_code, category, body (280 chars), upvotes, downvotes
 
 ---
 
@@ -152,11 +186,14 @@ npx hardhat test                # Contract test suites (from root)
 
 ### Key Dependencies
 - React 18, Vite 5, TanStack Query/Virtual, Dexie 4, ethers 5, Fuse.js, jsPDF, qrcode
+- Supabase JS (social layer, storage, realtime)
 - Hardhat, OpenZeppelin (AccessControl, ERC721, ReentrancyGuard)
 
 ### Deployment
 - **Frontend**: Vercel (aquacellum.com)
 - **Contracts**: Base Sepolia testnet
+- **Social Backend**: Supabase (yahsdztnvsykzecjatsl.supabase.co)
+- **Media Storage**: Supabase Storage (reef-media bucket, public CDN)
 - **Species Catalog**: 283/283 seeded on-chain via batch script
 
 ---

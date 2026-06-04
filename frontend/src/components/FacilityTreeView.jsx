@@ -4,6 +4,7 @@ import aquadexAbi from "../abi/AquadexManager.json";
 import { addXp, XP_ACTIONS } from "../utils/xp";
 import { getProvider, getSigner } from "../utils/smartAccount";
 import { compressImage } from "../utils/imageCompression";
+import { relayRegisterTank } from "../services/relayer";
 
 const TANK_TYPES = ["Freshwater", "Saltwater", "Brackish", "Pond"];
 const CONTAINMENT_TYPES = ["Tank", "Tub", "Basket"];
@@ -154,42 +155,26 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
     setRegisterTx(null);
 
     try {
-      const signer = await getSigner();
-      const contract = new Contract(contractAddress, aquadexAbi, signer);
+      // Use local Dexie storage for beta — no on-chain write needed
+      const result = await relayRegisterTank({
+        name: registerForm.name,
+        tankType: Number(registerForm.tankType),
+        volumeLiters: Number(registerForm.volumeLiters),
+        containment: Number(registerForm.containment),
+        parentUnitId: Number(registerForm.parentUnitId),
+        facility: registerForm.facility || "Main Room",
+        room: registerForm.room || "",
+        rack: registerForm.rack || "",
+        ownerAddress: walletAccount,
+      });
 
-      const tx = await contract["registerTank(string,uint8,uint32,uint8,uint256,string,string,string)"](
-        registerForm.name,
-        Number(registerForm.tankType),
-        Number(registerForm.volumeLiters),
-        Number(registerForm.containment),
-        Number(registerForm.parentUnitId),
-        registerForm.facility || "Main Room",
-        registerForm.room || "Garage Rack",
-        registerForm.rack || "Outdoor Ponds"
-      );
-
-      setRegisterTx(tx.hash);
-      const receipt = await tx.wait();
-
-      // Parse newly registered tankId from receipt logs
-      let newTankId = null;
-      try {
-        const event = receipt.logs
-          .map(log => {
-            try {
-              return contract.interface.parseLog(log);
-            } catch (err) {
-              return null;
-            }
-          })
-          .find(parsed => parsed && parsed.name === "TankRegisteredExtended");
-
-        if (event) {
-          newTankId = Number(event.args.tankId);
-        }
-      } catch (err) {
-        console.warn("Could not parse TankRegisteredExtended log details:", err);
+      if (!result.success) {
+        throw new Error(result.error || "Relay transaction failed");
       }
+
+      setRegisterTx(result.txHash);
+
+      const newTankId = result.tankId;
 
       if (newTankId && selectedPhoto) {
         try {

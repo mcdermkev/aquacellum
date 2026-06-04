@@ -5,6 +5,149 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 4, 2026 — The Reef: Phase 2 — Schools & Expert Audits + Beta Infrastructure
+
+Phase 2 of The Reef social layer implemented (Tasks 21-31). Schools (Clubs), Expert Audits, and Mentorship pairing are now built. Additionally, major beta infrastructure changes: local-first tank storage, profile UI overhaul, and compact action buttons.
+
+### Beta Infrastructure — Gasless Local-First Architecture
+- **Local-first tank registration**: Tanks now save directly to Dexie.js (no on-chain write during beta). Users never see MetaMask or gas fees.
+- **Relayer pattern prepared** (`api/relay-transaction.js`): Vercel serverless endpoint for future on-chain writes using a single funded deployer wallet.
+- **`useUserTanks` refactored**: Reads from Dexie first (local tanks), then merges any on-chain tanks. Privy-only users see their tanks immediately.
+- **Onboarding wizard creates real tank**: Step 4 now saves a tank to Dexie so users see their tank + Echo companion after completing onboarding.
+- **`getSigner()` priority**: Privy embedded wallet first, MetaMask fallback. On-chain writes deferred to relayer for beta.
+
+### Header Profile Chip (ConnectWallet overhaul)
+- **Profile chip replaces "Connected 0x..."**: Avatar circle with green status dot, display name, tier badge
+- **Click to open dropdown**: "View Profile" (navigates to Reef profile) and "Disconnect" options
+- **Fixed-position dropdown**: Renders at z-index 9999 with invisible backdrop, no longer clipped by header overflow or tab bar
+- **Both modes show username**: Pro mode no longer shows raw wallet address
+
+### UX Polish
+- **Compact quick-action buttons**: "Update Count" → "🐟 Count", "Quick Water Test" → "🧪 Test" — smaller, flex-wrap on mobile
+- **📷 Photo button added**: Upload/change tank photo directly from tank detail view (compresses and stores to localStorage)
+- **Header overflow fix**: Changed from `overflow: hidden` to `overflow: visible` so dropdowns render correctly
+- **XP bar border-radius**: Added bottom border-radius to XP bar since header no longer clips it
+
+### Schools (Clubs) — Tasks 21-26
+- **Database migration** (`007_schools_and_audits.sql`): 7 new tables — `schools`, `school_members`, `school_challenges`, `school_chat`, `expert_audits`, `audit_requests`, `mentorships`
+- **Full RLS policies**: school chat restricted to members, challenges managed by elders/founders, audits publicly readable
+- **Notification triggers**: audit received, mentorship request, mentorship accepted, school member count auto-update
+- **Supabase Realtime**: `school_chat` added to realtime publication for live messaging
+- **CreateSchool wizard**: 3-step form (name/slug/type → description/banner/species → settings)
+- **SchoolDirectory**: grid of school cards with type filter, search, "My Schools" section, join button
+- **SchoolPage**: full view with tabs (Feed/Members/Challenges/Chat/Settings), role-based member management
+- **SchoolChat**: real-time persistent chat with Supabase Realtime subscription, date separators, admin moderation
+- **ChallengeCard**: displays progress bar, time remaining, leaderboard, XP rewards
+- **Navigation**: "🏫 Schools" button added to ReefFeed header with full routing
+
+### Expert Audits — Tasks 27-30
+- **ExpertAuditForm**: scorecard with 4 star-rating categories (Water Quality, Stocking, Husbandry, Aesthetics), commentary field
+- **ExpertAuditCard**: gold-bordered display card with score visualization, auditor badge, commentary section
+- **Audit request flow**: `audit_requests` table with open/claimed/completed lifecycle
+- **XP wiring**: +25 Prestige XP for auditor via `window.triggerXpTracking` on submission; +50 for recipient via server-side notification trigger
+
+### Mentorship — Task 31
+- **MentorshipPanel**: accepting mentees toggle (Master+ only), find-a-mentor list, request flow with message
+- **Pairing display**: active mentor/mentee pairings shown on profile with end-pairing option
+- **1.5× XP multiplier**: info banner shown when mentorship is active
+- **Database**: `mentorships` table with pending/active/ended lifecycle, `accepting_mentees` column on profiles
+
+### Services & Hooks
+- `schoolsApi.js`: full CRUD for schools, members, chat, challenges
+- `auditsApi.js`: full CRUD for audits, audit requests, mentorships
+- `useSchools.js`: TanStack Query hooks for school directory, membership, challenges
+- `useAudits.js`: TanStack Query hooks for audits, requests, mentorship
+- `useSchoolChat.js`: real-time chat hook with Supabase Realtime subscription + optimistic updates
+
+---
+
+## June 4, 2026 — The Reef: Phase 1 Complete + Profile Unification
+
+Phase 1 of The Reef social layer is fully complete (20/20 tasks). Unified profile system, Species Insights, BadgeShelf, and profile polish shipped.
+
+### Unified Profile System
+- Display name chosen during onboarding (step 2b, between wallet connect and Echo egg)
+- Supabase `profiles` table is the single source of truth for identity
+- ConnectWallet header now pulls name from Supabase profile (falls back to generated alias)
+- Eliminated duplicate profile issue (Privy auto-alias vs Reef profile)
+- `useEnsureProfile` refactored to check-then-fallback instead of always creating
+
+### Profile Polish (Option A)
+- **ProfileEdit component**: inline edit form on own profile (name, bio, avatar upload)
+- **"Share on The Reef" button**: added to tank detail social tab — navigates to Reef and opens composer
+- **Post count**: displayed on profile next to "Tank Updates" heading
+- **App.jsx**: listens for `reef_share_tank` event, switches to Reef tab, opens composer
+
+### Species Insights (Task 15)
+- **SpeciesInsights component**: category-tagged micro-tips (280 chars) with upvote/downvote
+- **5 categories**: Care Tip, Warning, Breeding Note, Compatibility, Behavior
+- **InsightCard**: vote column (▲/▼ with net score), category badge, author profile, timestamp
+- **Integrated into BreedGallery**: new "💡 Tips" tab (casual) / "Insights" tab (pro) in species detail
+- **Database**: `species_insights` table in Supabase with RLS and indexes
+- **Ranking**: sorted by upvotes descending (most helpful first)
+
+### BadgeShelf (Task 10)
+- **BadgeShelf component**: 17 achievement badges auto-calculated from user stats
+- **Badge categories**: Tank milestones (1/5/10), Species milestones (10/50/100), Tier progression (Silver→God-Tier), XP thresholds (500/2000/5000), Social (posts, insights, tankmates)
+- **Visual design**: rounded icon boxes, full opacity when unlocked, dimmed + 🔒 when locked
+- **Own profile**: shows both unlocked and locked badges (motivation to progress)
+- **Other profiles**: shows only unlocked badges
+- **Tooltips**: badge name + description on hover
+
+### Files Added
+- `src/components/reef/ProfileEdit.jsx`
+- `src/components/reef/SpeciesInsights.jsx`
+- `src/components/reef/BadgeShelf.jsx`
+- `frontend/supabase/migrations/006_species_insights.sql`
+
+### Files Modified
+- `src/components/OnboardingWizard.jsx` — added name input step (2b) + Supabase profile creation
+- `src/components/ConnectWallet.jsx` — uses Supabase profile name, imports useProfile hook
+- `src/components/BreedGallery.jsx` — added Insights tab + SpeciesInsights component
+- `src/components/TankList.jsx` — added "Share on The Reef" CTA in social sub-tab
+- `src/components/reef/PublicProfile.jsx` — added ProfileEdit, BadgeShelf, post count
+- `src/components/reef/ReefFeed.jsx` — listens for reef_open_composer event
+- `src/hooks/useReefProfile.js` — refactored useEnsureProfile for unified flow
+- `src/App.jsx` — reef_share_tank event listener, tab navigation
+
+---
+
+## June 3, 2026 — The Reef: Social Layer MVP
+
+Complete social layer ("The Reef") shipped — posts, feed, reactions, comments, connections, notifications, profiles.
+
+### Infrastructure
+- Provisioned Supabase project (Postgres + Realtime + Storage + Edge Functions)
+- Created 7 database tables with RLS policies, indexes, and auto-notification triggers
+- Set up `reef-media` storage bucket for photo uploads
+- Bridged Privy wallet auth into Supabase sessions via AuthContext
+- Extended Dexie.js schema to v10 (feedCache, socialNotifications, draftContent)
+
+### Features
+- Tank Currents: post text + up to 4 photos + linked tank + parameter snapshot + species tags + visibility control
+- Social Feed: My Feed (from Tankmates/watched tanks) + Explore (all public), infinite scroll
+- Reactions: 6 emoji types with optimistic toggle, unique per user/post/emoji
+- Comments: threaded (1-level), inline reply UI
+- Tankmate Connections: send request with message, accept/decline, mutual follow
+- Watch Tank: one-way follow on specific tanks from the feed
+- Public Profiles: auto-seeded from Dexie, avatar gradient, stats, Tankmates list, user's posts
+- Sonar Notifications: Postgres triggers auto-fire on reactions/comments/requests, bell icon with realtime unread count
+- Media Upload: client-side resize (max 2048px, WebP preferred) → Supabase Storage CDN
+
+### Components Added
+- `src/components/reef/` — ReefFeed, CurrentCard, ContentComposer, ProfileCard, PublicProfile, ReactionBar, CommentThread, SonarBell, TankmateRequests
+- `src/services/` — supabaseClient, reefApi, mediaUpload
+- `src/hooks/` — useReefFeed, useReefProfile, useSonar
+
+### Responsive Pass
+- CSS breakpoints at 480/640/768px for mobile/tablet/desktop
+- Composer fullscreen on mobile, notification bottom sheet, stacked photo grids
+- 44px minimum touch targets on coarse pointer devices
+- iOS zoom prevention (16px font-size on inputs)
+- `prefers-reduced-motion` support
+
+---
+
 ## June 3, 2026 — Onboarding Wizard & Privy Embedded Wallets
 
 Full narrative-driven onboarding experience with zero-friction wallet creation.

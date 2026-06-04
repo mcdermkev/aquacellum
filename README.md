@@ -48,6 +48,8 @@ graph TD
 - **Base L2 Smart Contracts**: Execute registry transactions, pedigree state transitions, and escrow/shipping handling.
 - **FishBase Master Curation File**: Offline JSON manifest (`fishbase_master.json`) storing taxonomic envelopes (temperature/pH/volume bounds) for compatibility evaluations.
 - **Local Database & Cache**: Maintains state persistence via `localStorage` and `Dexie.js` for responsive offline capabilities.
+- **Social Layer (The Reef)**: Supabase-backed social network with profiles, feed, reactions, comments, Schools (clubs), Expert Audits, mentorship, and real-time chat.
+- **Beta Infrastructure**: Local-first tank storage (Dexie.js), server-side transaction relayer for gasless on-chain writes, Privy embedded wallets for frictionless onboarding.
 
 ---
 
@@ -126,6 +128,66 @@ Tailored for commercial hatcheries, scientific curators, and veteran breeders wh
 ---
 
 ## 4. Changelog
+
+### v1.4.0 — The Reef: Social Layer MVP (June 3-4, 2026)
+
+The Reef is Aquacellum's social layer — a living, activity-driven social graph where every interaction is connected to real aquaculture activity. Replaces traditional blogs and forums with data-enriched content tied to tanks, species, and breeding records. Phase 1 fully complete (20/20 tasks).
+
+#### New Infrastructure
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| Social DB | Supabase Postgres | 8 tables with RLS, notification triggers |
+| Media Storage | Supabase Storage (reef-media) | Photo uploads with CDN delivery |
+| Real-time | Supabase Realtime | Live notification delivery |
+| Auth Bridge | Privy → Supabase JWT | Wallet-based session management |
+
+#### New Frontend Components
+- **`ReefFeed.jsx`**: Main social feed with My Feed / Explore tabs, infinite scroll (TanStack Query), profile navigation, floating action button
+- **`CurrentCard.jsx`**: Post card with photo grid (1-4 images), parameter chips, species tags, reactions, comments, Watch Tank button
+- **`ContentComposer.jsx`**: Post creation modal — tank selector, photo upload (max 4, auto-resize to 2048px), params snapshot, visibility control
+- **`ProfileCard.jsx`**: Compact identity card with gradient avatar, name, companion tier icon
+- **`PublicProfile.jsx`**: Full profile page — avatar, bio, stats (XP/tanks/species/tier), BadgeShelf, Tankmates list, user's Currents
+- **`ProfileEdit.jsx`**: Inline profile editor — change name, bio, upload avatar photo
+- **`ReactionBar.jsx`**: 6 emoji reactions (🔥 🐟 💧 🌿 👏 ⭐) with optimistic UI toggle
+- **`CommentThread.jsx`**: Threaded comments (1-level deep) with inline reply
+- **`SonarBell.jsx`**: Notification bell with unread count badge and dropdown panel
+- **`TankmateRequests.jsx`**: Pending connection request inbox with accept/decline
+- **`SpeciesInsights.jsx`**: Micro-content system — 280-char tips per species with categories, upvote/downvote
+- **`BadgeShelf.jsx`**: 17 auto-awarded achievement badges based on user stats
+
+#### Unified Profile System
+- Display name chosen during onboarding wizard (after wallet connect)
+- Supabase `profiles` table = single source of truth
+- ConnectWallet header pulls name from Supabase profile
+- Eliminated duplicate profile issue
+
+#### Species Insights
+- 5 categories: Care Tip, Warning, Breeding Note, Compatibility, Behavior
+- 280-character limit (micro-content, not blogs)
+- Upvote/downvote with net score ranking
+- Integrated as "💡 Tips" tab in species detail view (BreedGallery)
+
+#### Badge Achievements (17 badges)
+- Tank milestones: First Tank, Tank Collector (5), Facility Operator (10)
+- Species milestones: Species Explorer (10), Catalog Scholar (50), Biodiversity Champion (100)
+- Tier progression: Silver, Gold, Master, God-Tier
+- XP thresholds: Rising Current (500), Tidal Force (2000), Poseidon's Favor (5000)
+- Social: Reef Pioneer (first post), Active Voice (10 posts), Knowledge Sharer (first insight), Social Swimmer (5 tankmates)
+
+#### Database (Supabase Postgres — 8 tables)
+- `profiles`, `currents`, `reactions`, `comments`, `follows`, `connection_requests`, `sonar_notifications`, `species_insights`
+
+#### Responsive Design
+- Mobile (≤640px): Composer fullscreen, notification bottom sheet, stacked photo grids
+- Tablet (≤768px): Full-width feed, tighter profile layout
+- Touch: 44px minimum touch targets
+- iOS: 16px font-size on inputs to prevent zoom
+- Reduced motion: All Reef animations disabled
+
+#### Dexie.js v10 Migration
+- Added `feedCache`, `socialNotifications`, `draftContent`
+
+---
 
 ### v1.3.0 — Full Species Catalog On-Chain (May 29, 2026)
 

@@ -21,6 +21,7 @@ import {
   registerSignerResolver,
   unregisterSignerResolver,
 } from "../utils/smartAccount";
+import { authenticateWithWallet, clearReefSession } from "../services/supabaseClient";
 
 const AuthContext = createContext(null);
 
@@ -151,6 +152,21 @@ export function AuthProvider({ children }) {
     return () => clearTimeout(retryTimer);
   }, [privyReady, privyAuthenticated, account, wallets]);
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // REEF SOCIAL: Bridge wallet auth to Supabase session
+  // ─────────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (account) {
+      authenticateWithWallet(account).then(({ success }) => {
+        if (success) {
+          console.log("[Reef] Supabase session established for", account.slice(0, 8));
+        }
+      });
+    } else {
+      clearReefSession();
+    }
+  }, [account]);
+
   // Register Privy signer resolver so all getSigner() calls use embedded wallet
   useEffect(() => {
     if (loginMethod !== "privy" || !wallets?.length) {
@@ -159,7 +175,10 @@ export function AuthProvider({ children }) {
 
     const resolver = async () => {
       const embeddedWallet = wallets.find(w => w.walletClientType === "privy") || wallets[0];
-      if (!embeddedWallet) return null;
+      if (!embeddedWallet) {
+        // Wallet not loaded yet — throw so we don't fall through to MetaMask
+        throw new Error("Embedded wallet not yet available");
+      }
 
       // Get ethers provider from Privy wallet
       const provider = await embeddedWallet.getEthersProvider();
