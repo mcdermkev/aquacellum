@@ -5,6 +5,31 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 4, 2026 — Production Fixes & Performance Optimizations
+
+Critical deployment fixes, major RPC performance improvements, and UI cleanup across the Aquariums tab.
+
+### Deployment Fixes
+- **Database page 404 resolved**: Added `buildCommand: "npm run build"` to `vercel.json` so Vite runs during deployment and `fishbase_master.json` is served correctly from `dist/`
+- **Added `/database` rewrite** to Vercel config for routing consistency
+- **Fetch error handling**: Added `res.ok` check on the database page so failed responses give a clear error instead of a cryptic JSON parse failure
+
+### Onboarding Fix
+- **Persona buttons (Pro/Casual) now always appear**: Fixed a bug where stale `aquadex_casual_mode` in localStorage from an incomplete prior session caused `casualMode` to initialize as non-null, hiding the buttons. Now only trusts stored persona if `aquadex_onboarding_complete` is set.
+- **OAuth redirect flow preserved**: Redirect detection now reads directly from localStorage rather than relying on React state that resets on mount
+
+### Performance — Parallelized Blockchain Reads
+- **Breed Gallery (`useContractSpecies`)**: Rewrote from sequential `for` loop (N×2 serial RPC calls) to batched `Promise.all` (10 at a time). Reduces load time from 15-20s to 2-4s.
+- **Stale-while-revalidate pattern**: Breed Gallery now shows Dexie-cached data instantly on repeat visits while refreshing from chain in the background.
+- **Register tab (`MintSpecimen`)**: Species catalog fetch parallelized — all `speciesCatalog(i)` calls fire concurrently instead of sequentially.
+- **Spawning tab (`SpawningWizard`)**: Species catalog + specimen ownership checks now batched 10 at a time with `Promise.all`. Previously every single minted specimen was checked one-by-one.
+
+### UI Cleanup — Aquariums Tab
+- **Merged Count/Photo into top Quick Actions bar**: Removed the redundant bottom footer bar (Count/Test/Photo) that was blocking content. Those actions now live alongside Feed/Test/Clean/Ask Poseidon in one unified toolbar.
+- **Tank detail panel scrolls independently on desktop**: Changed from `position: relative` to `position: sticky` with `maxHeight: calc(100vh - 2rem)` and `overflowY: auto`. Readings no longer stay stuck on screen when scrolling — the panel scrolls within itself.
+
+---
+
 ## June 4, 2026 — The Reef: Phase 2 — Schools & Expert Audits + Beta Infrastructure
 
 Phase 2 of The Reef social layer implemented (Tasks 21-31). Schools (Clubs), Expert Audits, and Mentorship pairing are now built. Additionally, major beta infrastructure changes: local-first tank storage, profile UI overhaul, and compact action buttons.
