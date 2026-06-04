@@ -62,29 +62,25 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
       const provider = getProvider();
       const contract = new Contract(contractAddress, aquadexAbi, provider);
 
-      // 1. Fetch Curator species catalog
+      // 1. Fetch Curator species catalog (parallelized)
       const nextId = await contract.nextSpeciesId();
-      const tempSpecies = [];
-      for (let i = 1; i < Number(nextId); i++) {
-        try {
-          const spec = await contract.speciesCatalog(i);
-          if (spec.active) {
-            tempSpecies.push({
-              id: i,
-              scientificName: spec.scientificName,
-              commonName: spec.commonName
-            });
-          }
-        } catch (err) {
-          console.warn(`Error loading species metadata ${i}:`, err);
-        }
+      const totalCount = Number(nextId) - 1;
+      const speciesPromises = [];
+      for (let i = 1; i <= totalCount; i++) {
+        speciesPromises.push(
+          contract.speciesCatalog(i)
+            .then(spec => spec.active ? { id: i, scientificName: spec.scientificName, commonName: spec.commonName } : null)
+            .catch(() => null)
+        );
       }
+      const speciesResults = await Promise.all(speciesPromises);
+      const tempSpecies = speciesResults.filter(Boolean);
       setSpeciesList(tempSpecies);
       if (tempSpecies.length > 0) {
         setFormData((prev) => ({ ...prev, speciesId: tempSpecies[0].id.toString() }));
       }
 
-      // 2. Fetch owner's tanks
+      // 2. Fetch owner's tanks (sequential — typically few tanks, bounded by user ownership)
       const tempTanks = [];
       let idx = 0;
       while (true) {

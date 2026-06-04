@@ -74,29 +74,29 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
       const provider = getProvider();
       const contract = new Contract(contractAddress, aquadexAbi, provider);
 
-      // 1. Load Species Catalog
+      // 1. Load Species Catalog (parallelized)
       const nextId = await contract.nextSpeciesId();
+      const totalSpeciesCount = Number(nextId) - 1;
+      const catalogPromises = [];
+      for (let i = 1; i <= totalSpeciesCount; i++) {
+        catalogPromises.push(
+          contract.speciesCatalog(i)
+            .then(spec => spec.active ? { id: i, scientificName: spec.scientificName, commonName: spec.commonName } : null)
+            .catch(() => null)
+        );
+      }
+      const catalogResults = await Promise.all(catalogPromises);
       const catalog = {};
-      for (let i = 1; i < Number(nextId); i++) {
-        try {
-          const spec = await contract.speciesCatalog(i);
-          if (spec.active) {
-            catalog[i] = {
-              scientificName: spec.scientificName,
-              commonName: spec.commonName
-            };
-          }
-        } catch (e) {}
+      for (const item of catalogResults) {
+        if (item) catalog[item.id] = { scientificName: item.scientificName, commonName: item.commonName };
       }
       setSpeciesCatalog(catalog);
 
-      // 2. Load all specimens to choose Sire/Dam
+      // 2. Load all specimens to choose Sire/Dam (parallelized ownership checks)
       const totalSpecimens = Number(await contract.totalSpecimensMinted());
-      const fetchedSpecimens = [];
       let specimenToLocation = {};
-      let cachedTanks = [];
       try {
-        cachedTanks = await db.tanks.toArray();
+        const cachedTanks = await db.tanks.toArray();
         for (const tank of cachedTanks) {
           if (tank.specimens) {
             for (const spec of tank.specimens) {
@@ -111,31 +111,45 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
       } catch (dbErr) {
         console.warn("Failed to load tanks from Dexie:", dbErr);
       }
-      for (let i = 1; i <= totalSpecimens; i++) {
-        try {
-          const owner = await contract.ownerOf(i);
-          if (owner.toLowerCase() === walletAccount.toLowerCase()) {
-            const spec = await contract.specimens(i);
-            if (Number(spec.status) === 0) { // Active
-              const loc = specimenToLocation[i] || { tankId: 0, facility: "Unknown", parentUnitId: 0 };
-              fetchedSpecimens.push({
-                id: i,
-                speciesId: Number(spec.speciesId),
-                sireId: Number(spec.sireId),
-                damId: Number(spec.damId),
-                breeder: spec.breeder,
-                status: Number(spec.status),
-                tankId: loc.tankId,
-                facility: loc.facility,
-                parentUnitId: loc.parentUnitId
-              });
-            }
-          }
-        } catch (e) {}
+
+      // Batch ownership checks in groups of 10
+      const BATCH_SIZE = 10;
+      const fetchedSpecimens = [];
+      for (let batchStart = 1; batchStart <= totalSpecimens; batchStart += BATCH_SIZE) {
+        const batchEnd = Math.min(batchStart + BATCH_SIZE - 1, totalSpecimens);
+        const batchPromises = [];
+        for (let i = batchStart; i <= batchEnd; i++) {
+          batchPromises.push(
+            contract.ownerOf(i)
+              .then(async (owner) => {
+                if (owner.toLowerCase() === walletAccount.toLowerCase()) {
+                  const spec = await contract.specimens(i);
+                  if (Number(spec.status) === 0) {
+                    const loc = specimenToLocation[i] || { tankId: 0, facility: "Unknown", parentUnitId: 0 };
+                    return {
+                      id: i,
+                      speciesId: Number(spec.speciesId),
+                      sireId: Number(spec.sireId),
+                      damId: Number(spec.damId),
+                      breeder: spec.breeder,
+                      status: Number(spec.status),
+                      tankId: loc.tankId,
+                      facility: loc.facility,
+                      parentUnitId: loc.parentUnitId
+                    };
+                  }
+                }
+                return null;
+              })
+              .catch(() => null)
+          );
+        }
+        const batchResults = await Promise.all(batchPromises);
+        fetchedSpecimens.push(...batchResults.filter(Boolean));
       }
       setSpecimens(fetchedSpecimens);
 
-      // 3. Load user tanks
+      // 3. Load user tanks (sequential — typically few tanks)
       const tempTanks = [];
       let idx = 0;
       while (true) {
