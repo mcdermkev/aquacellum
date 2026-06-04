@@ -63,86 +63,128 @@ export function useSpeciesData() {
 }
 
 // Hook to load active registered breeds from the smart contract catalog
+// Uses stale-while-revalidate: shows Dexie cache immediately, refreshes from chain in background
 export function useContractSpecies(contractAddress) {
-  return useQuery({
-    queryKey: ["contractSpecies", contractAddress],
+  // First, serve from Dexie cache for instant load
+  const cachedQuery = useQuery({
+    queryKey: ["contractSpeciesCache", contractAddress],
+    queryFn: async () => {
+      const cached = await db.speciesManifest
+        .where("contractAddress")
+        .equals(contractAddress)
+        .toArray();
+      if (cached && cached.length > 0) return cached;
+      return null;
+    },
+    staleTime: Infinity,
+    gcTime: Infinity,
+    enabled: !!contractAddress,
+  });
+
+  // Then fetch live data from the contract (runs in parallel)
+  const liveQuery = useQuery({
+    queryKey: ["contractSpeciesLive", contractAddress],
     queryFn: async () => {
       const provider = getProvider();
       const contract = new Contract(contractAddress, aquadexAbi, provider);
 
-      try {
-        const nextId = await contract.nextSpeciesId();
-        const catalog = [];
-        const seenNames = new Set();
+      const nextId = await contract.nextSpeciesId();
+      const totalCount = Number(nextId) - 1;
+      if (totalCount <= 0) return [];
 
-        for (let i = 1; i < Number(nextId); i++) {
-          const species = await contract.speciesCatalog(i);
-          if (species.active) {
-            const nameLower = species.scientificName.toLowerCase();
-            const count = await contract.getSpecimensCountByBreed(i);
+      // Fetch all species data in parallel (batched to avoid rate limits)
+      const BATCH_SIZE = 10;
+      const allResults = [];
 
-            if (seenNames.has(nameLower)) {
-              const existing = catalog.find(item => item.scientificName.toLowerCase() === nameLower);
-              if (existing) {
-                existing.specimenCount += Number(count);
-                if (!existing.allSpeciesIds) {
-                  existing.allSpeciesIds = [existing.speciesId];
-                }
-                existing.allSpeciesIds.push(i);
+      for (let batchStart = 1; batchStart <= totalCount; batchStart += BATCH_SIZE) {
+        const batchEnd = Math.min(batchStart + BATCH_SIZE - 1, totalCount);
+        const batchPromises = [];
+
+        for (let i = batchStart; i <= batchEnd; i++) {
+          batchPromises.push(
+            Promise.all([
+              contract.speciesCatalog(i),
+              contract.getSpecimensCountByBreed(i),
+            ]).then(([species, count]) => ({ id: i, species, count }))
+          );
+        }
+
+        const batchResults = await Promise.all(batchPromises);
+        allResults.push(...batchResults);
+      }
+
+      // Process results
+      const catalog = [];
+      const seenNames = new Set();
+
+      for (const { id, species, count } of allResults) {
+        if (species.active) {
+          const nameLower = species.scientificName.toLowerCase();
+
+          if (seenNames.has(nameLower)) {
+            const existing = catalog.find(item => item.scientificName.toLowerCase() === nameLower);
+            if (existing) {
+              existing.specimenCount += Number(count);
+              if (!existing.allSpeciesIds) {
+                existing.allSpeciesIds = [existing.speciesId];
               }
-              continue;
+              existing.allSpeciesIds.push(id);
             }
-            seenNames.add(nameLower);
-
-            catalog.push({
-              speciesId: i,
-              allSpeciesIds: [i],
-              scientificName: species.scientificName,
-              commonName: species.commonName,
-              canonicalIpfsUri: species.canonicalIpfsUri,
-              careLevel: Number(species.careLevel),
-              minTemp: Number(species.minTempCelsiusX10) / 10,
-              maxTemp: Number(species.maxTempCelsiusX10) / 10,
-              minPh: Number(species.minPhX10) / 10,
-              maxPh: Number(species.maxPhX10) / 10,
-              specimenCount: Number(count),
-            });
+            continue;
           }
-        }
+          seenNames.add(nameLower);
 
-        // Persist to Dexie speciesManifest for offline-first reads
-        try {
-          const cachedAt = Date.now();
-          const manifests = catalog.map(entry => ({
-            ...entry,
-            contractAddress,
-            cachedAt
-          }));
-          await db.speciesManifest
-            .where("contractAddress")
-            .equals(contractAddress)
-            .delete();
-          await db.speciesManifest.bulkAdd(manifests);
-        } catch (dbErr) {
-          console.warn("Failed to persist species manifest to Dexie cache:", dbErr);
+          catalog.push({
+            speciesId: id,
+            allSpeciesIds: [id],
+            scientificName: species.scientificName,
+            commonName: species.commonName,
+            canonicalIpfsUri: species.canonicalIpfsUri,
+            careLevel: Number(species.careLevel),
+            minTemp: Number(species.minTempCelsiusX10) / 10,
+            maxTemp: Number(species.maxTempCelsiusX10) / 10,
+            minPh: Number(species.minPhX10) / 10,
+            maxPh: Number(species.maxPhX10) / 10,
+            specimenCount: Number(count),
+          });
         }
+      }
 
-        return catalog;
-      } catch (err) {
-        // Offline fallback: read species manifest from Dexie local cache
-        console.warn("Contract species fetch failed, reading from Dexie species manifest...", err);
-        const cached = await db.speciesManifest
+      // Persist to Dexie speciesManifest for next instant load
+      try {
+        const cachedAt = Date.now();
+        const manifests = catalog.map(entry => ({
+          ...entry,
+          contractAddress,
+          cachedAt
+        }));
+        await db.speciesManifest
           .where("contractAddress")
           .equals(contractAddress)
-          .toArray();
-        if (cached && cached.length > 0) {
-          return cached;
-        }
-        throw err;
+          .delete();
+        await db.speciesManifest.bulkAdd(manifests);
+      } catch (dbErr) {
+        console.warn("Failed to persist species manifest to Dexie cache:", dbErr);
       }
+
+      return catalog;
     },
-    staleTime: 1000 * 60, // 60 seconds
-    gcTime: 1000 * 60 * 15, // 15 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes
     enabled: !!contractAddress,
+    retry: 1,
   });
+
+  // Return live data if available, otherwise cached data, otherwise loading state
+  const data = liveQuery.data ?? cachedQuery.data ?? [];
+  const isLoading = (cachedQuery.isLoading && liveQuery.isLoading) || 
+                    (data.length === 0 && liveQuery.isLoading);
+  const error = liveQuery.error && !cachedQuery.data ? liveQuery.error : null;
+
+  return {
+    data,
+    isLoading,
+    error,
+    refetch: liveQuery.refetch,
+  };
 }
