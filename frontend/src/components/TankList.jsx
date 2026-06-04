@@ -1597,6 +1597,43 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                 >
                   💬 Ask Poseidon
                 </button>
+                <button
+                  onClick={() => {
+                    setInlineDetailType("population");
+                    setInlineDetailText(getSpecimenCount(activeTank).toString());
+                    setInlineDetailOpen(true);
+                    setTimeout(() => inlineDetailRef.current?.focus(), 100);
+                  }}
+                  className="btn-secondary"
+                  title="Update population count"
+                  style={{ padding: "0.35rem 0.75rem", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "0.25rem" }}
+                >
+                  🐟 Count
+                </button>
+                <label
+                  className="btn-secondary"
+                  title="Take a tank photo"
+                  style={{ padding: "0.35rem 0.75rem", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "0.25rem", cursor: "pointer" }}
+                >
+                  📷 Photo
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const { compressImage } = await import("../utils/imageCompression");
+                        const compressed = await compressImage(file, { maxWidth: 1200, quality: 0.8 });
+                        localStorage.setItem(`aquadex_tank_photo_${activeTank.id}`, compressed);
+                        setActiveTank({ ...activeTank });
+                      } catch (err) {
+                        console.error("Photo upload failed:", err);
+                      }
+                    }}
+                  />
+                </label>
               </div>
             </div>
 
@@ -2111,77 +2148,6 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     </div>
                   </form>
                 </div>
-              )}
-            </div>
-
-            {/* Quick Actions Card Footer */}
-            <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", borderTop: "1px solid var(--glass-border)", paddingTop: "0.75rem", marginTop: "auto" }}>
-              <button 
-                className="btn-secondary" 
-                style={{ flex: "1 1 auto", padding: "0.4rem 0.6rem", fontSize: "0.7rem", whiteSpace: "nowrap" }}
-                onClick={() => {
-                  setInlineDetailType("population");
-                  setInlineDetailText(getSpecimenCount(activeTank).toString());
-                  setInlineDetailOpen(true);
-                  setTimeout(() => inlineDetailRef.current?.focus(), 100);
-                }}
-              >
-                🐟 Count
-              </button>
-
-              <button 
-                className="btn-secondary" 
-                style={{ flex: "1 1 auto", padding: "0.4rem 0.6rem", fontSize: "0.7rem", whiteSpace: "nowrap" }}
-                onClick={() => {
-                  setFormData({
-                    temp: activeTank.latestLog ? (activeTank.latestLog.tempCelsiusX10/10).toString() : "24.5",
-                    ph: activeTank.latestLog ? (activeTank.latestLog.phX10/10).toString() : "7.2",
-                    salinity: activeTank.latestLog ? (activeTank.latestLog.salinitySgX10000/10000).toString() : "1.0000",
-                    ammonia: "0.0",
-                    nitrite: "0.0",
-                    nitrate: "5.0",
-                    notes: ""
-                  });
-                  setQuickLogTankId(activeTank.id.toString());
-                  setQuickLogOpen(true);
-                }}
-              >
-                🧪 Test
-              </button>
-
-              <label
-                className="btn-secondary"
-                style={{ flex: "1 1 auto", padding: "0.4rem 0.6rem", fontSize: "0.7rem", whiteSpace: "nowrap", cursor: "pointer", textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
-              >
-                📷 Photo
-                <input
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    try {
-                      const { compressImage } = await import("../utils/imageCompression");
-                      const compressed = await compressImage(file, { maxWidth: 1200, quality: 0.8 });
-                      localStorage.setItem(`aquadex_tank_photo_${activeTank.id}`, compressed);
-                      // Force re-render
-                      setActiveTank({ ...activeTank });
-                    } catch (err) {
-                      console.error("Photo upload failed:", err);
-                    }
-                  }}
-                />
-              </label>
-              
-              {activeTank.specimens.length > 0 && onListOnMarketplace && (
-                <button 
-                  className="btn-primary" 
-                  style={{ flex: "1 1 auto", padding: "0.4rem 0.6rem", fontSize: "0.7rem", whiteSpace: "nowrap", justifyContent: "center" }}
-                  onClick={() => onListOnMarketplace(activeTank, activeTank.specimens[0])}
-                >
-                  🏪 List
-                </button>
               )}
             </div>
           </div>
