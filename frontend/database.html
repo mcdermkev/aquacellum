@@ -854,6 +854,7 @@
     async function init() {
       try {
         const res = await fetch('/fishbase_master.json');
+        if (!res.ok) throw new Error(`Server returned ${res.status}`);
         allSpecies = await res.json();
 
         document.getElementById('statTotal').textContent = allSpecies.length + '+';

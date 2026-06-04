@@ -1,11 +1,12 @@
 {
   "framework": null,
-  "buildCommand": "",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "cleanUrls": true,
   "rewrites": [
     { "source": "/app", "destination": "/app.html" },
     { "source": "/hobbyist", "destination": "/hobbyist.html" },
-    { "source": "/breeder", "destination": "/breeder.html" }
+    { "source": "/breeder", "destination": "/breeder.html" },
+    { "source": "/database", "destination": "/database.html" }
   ]
 }
