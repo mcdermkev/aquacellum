@@ -187,9 +187,13 @@ export function OnboardingWizard({ onComplete }) {
   const { connectPrivy, connectMetaMask, account, isConnecting, authenticated, ready } = useAuth();
   const { catalogReady, progress } = useCatalogHydration();
 
-  // Recover persona from localStorage if returning from OAuth redirect
+  // Recover persona from localStorage only if onboarding was completed (user returning)
+  // or if we're mid-OAuth redirect (authenticated). Otherwise reset to show persona buttons.
   const savedPersona = localStorage.getItem("aquadex_casual_mode");
-  const initialCasualMode = savedPersona !== null ? savedPersona === "true" : null;
+  const onboardingComplete = localStorage.getItem("aquadex_onboarding_complete") === "true";
+  const initialCasualMode = savedPersona !== null && onboardingComplete
+    ? savedPersona === "true"
+    : null;
 
   const [step, setStep] = useState(1);
   const [casualMode, setCasualMode] = useState(initialCasualMode);
@@ -209,11 +213,14 @@ export function OnboardingWizard({ onComplete }) {
   const welcomeSentRef = useRef(false);
   const oauthRedirectHandledRef = useRef(false);
 
-  // Detect OAuth redirect return: Privy is authenticated + persona was chosen + still on step 1
+  // Detect OAuth redirect return: Privy is authenticated + persona was saved in localStorage + still on step 1
   useEffect(() => {
     if (oauthRedirectHandledRef.current) return;
-    if (ready && authenticated && casualMode !== null && step === 1) {
+    const storedPersona = localStorage.getItem("aquadex_casual_mode");
+    if (ready && authenticated && storedPersona !== null && step === 1) {
       oauthRedirectHandledRef.current = true;
+      // Restore the persona choice from before redirect
+      setCasualMode(storedPersona === "true");
       // Generate default name from wallet
       if (account && !displayName) {
         setDisplayName(generateAlias(account));
@@ -221,7 +228,7 @@ export function OnboardingWizard({ onComplete }) {
       // Go to step 2 (name input) instead of skipping to step 3
       setStep(2);
     }
-  }, [ready, authenticated, casualMode, step, account, displayName]);
+  }, [ready, authenticated, step, account, displayName]);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -246,10 +253,12 @@ export function OnboardingWizard({ onComplete }) {
     welcomeSentRef.current = true;
 
     // If we already know we're returning from OAuth, show wallet success + name prompt
-    if (ready && authenticated && casualMode !== null) {
-      const mode = casualMode ? "casual" : "pro";
+    const storedPersona = localStorage.getItem("aquadex_casual_mode");
+    if (ready && authenticated && storedPersona !== null) {
+      const isCasual = storedPersona === "true";
+      const mode = isCasual ? "casual" : "pro";
       addMessage(DIALOGUE.walletSuccess[mode], "poseidon", 800).then(() => {
-        const namePrompt = casualMode
+        const namePrompt = isCasual
           ? "One last thing — what should I call you? I've suggested a name, but you can change it to whatever you like."
           : "Designate your operator callsign. A default has been generated from your node address.";
         addMessage(namePrompt, "poseidon", 800);
@@ -257,7 +266,7 @@ export function OnboardingWizard({ onComplete }) {
     } else {
       addMessage(DIALOGUE.welcome, "poseidon", 1200);
     }
-  }, [addMessage, ready, authenticated, casualMode]);
+  }, [addMessage, ready, authenticated]);
 
   // Step 3: Nudge timer if egg not tapped after 6 seconds
   useEffect(() => {
