@@ -1137,7 +1137,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: activeTank ? "1.2fr 1fr" : "1fr", gap: "2rem", alignItems: "flex-start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: activeTank ? "1.2fr 1fr" : "1fr", gap: "2rem", alignItems: "start" }}>
         {/* LEFT VIEW COMPONENT */}
         <div>
           {viewMode === "tree" ? (
@@ -1335,7 +1335,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               background: casualModeActive
                 ? "rgba(8, 25, 48, 0.98)"
                 : "rgba(14, 8, 30, 0.98)",
-              position: "relative",
+              position: "sticky",
+              top: "1rem",
+              maxHeight: "calc(100vh - 2rem)",
+              overflowY: "auto",
               transition: "all 0.5s ease"
             }}>
               
