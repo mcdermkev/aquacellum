@@ -3,6 +3,11 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "cleanUrls": true,
+  "functions": {
+    "api/poseidon.js": {
+      "includeFiles": "public/fishbase_master.json"
+    }
+  },
   "rewrites": [
     { "source": "/app", "destination": "/app.html" },
     { "source": "/hobbyist", "destination": "/hobbyist.html" },

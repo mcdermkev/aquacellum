@@ -1,131 +1,81 @@
 import React, { useState, useEffect, useRef } from "react";
 import { handlePoseidonAction } from "../utils/poseidonBridge";
+import { usePoseidon } from "../hooks/usePoseidon";
 
 /**
  * PoseidonChatConsole Panel
  * Renders a glassmorphic panel on the right boundary of the biotope banner.
  * Bridges conversational NLP to local Dexie mutations and Echo animations.
+ * 
+ * Architecture: Uses the Poseidon Edge Function gateway (Gemini-powered) as primary,
+ * with the local Web Worker as offline fallback.
  */
 export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, onClose }) {
-  const [messages, setMessages] = useState([
-    {
-      id: "init",
-      sender: "poseidon",
-      text: casualModeActive
-        ? "👋 Hello! I'm Poseidon. Ask me to log feedings, glass cleaning, water tests, or to set up a new tank."
-        : "[POSEIDON CORE ONLINE] Ready for telemetry inputs or system initialization queries.",
-      timestamp: Date.now(),
-      intent: "init"
-    }
-  ]);
+  const mode = casualModeActive ? "casual" : "pro";
+  const {
+    messages,
+    isLoading,
+    isOnline,
+    sendMessage,
+    initGreeting,
+    requestsRemaining,
+  } = usePoseidon({ tankId, mode, walletAddress: walletAccount });
+
   const [inputText, setInputText] = useState("");
   const messagesEndRef = useRef(null);
   const workerRef = useRef(null);
 
-  // Initialize Web Worker
+  // Initialize greeting on mount
   useEffect(() => {
-    // Instantiate worker referencing relative path from components/
+    initGreeting();
+  }, [initGreeting]);
+
+  // Initialize Web Worker as offline fallback
+  useEffect(() => {
     const worker = new Worker(new URL("../workers/poseidonWorker.js", import.meta.url));
-
-    worker.onmessage = (e) => {
-      const { eventId, timestamp, intent, message, action, echoReaction } = e.data;
-
-      // Append Poseidon's response to conversation log
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: eventId || `pos-${Date.now()}`,
-          sender: "poseidon",
-          text: message,
-          timestamp: timestamp || Date.now(),
-          intent: intent || "fallback_unknown"
-        }
-      ]);
-
-      // Route transaction logic to Dexie bridge
-      if (action && action.type !== "NONE") {
-        handlePoseidonAction({
-          type: action.type,
-          payload: action.payload,
-          tankId,
-          walletAddress: walletAccount
-        });
-      }
-
-      // Dispatch custom window event to notify CompanionFishEntity
-      if (echoReaction) {
-        window.dispatchEvent(
-          new CustomEvent("poseidon:echo-reaction", {
-            detail: echoReaction
-          })
-        );
-      }
-    };
-
     workerRef.current = worker;
-
-    return () => {
-      worker.terminate();
-    };
-  }, [tankId, walletAccount]);
+    return () => { worker.terminate(); };
+  }, []);
 
   // Auto-scroll to bottom of conversation
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!inputText.trim()) return;
+  // Route actions and echo reactions whenever messages update
+  useEffect(() => {
+    const lastMsg = messages[messages.length - 1];
+    if (!lastMsg || lastMsg.sender !== 'poseidon' || lastMsg.intent === 'init') return;
 
-    const text = inputText.trim();
-    const userMsg = {
-      id: `user-${Date.now()}`,
-      sender: "user",
-      text,
-      timestamp: Date.now()
-    };
-
-    // Add user message to display log
-    setMessages((prev) => [...prev, userMsg]);
-    setInputText("");
-
-    // Intercept message processing for politeness easter egg
-    const pleaseCount = messages.filter(m => m.text.toLowerCase().includes("please")).length + (text.toLowerCase().includes("please") ? 1 : 0);
-    if (pleaseCount === 3) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `pos-${Date.now()}`,
-          sender: "poseidon",
-          text: "Thank you for being so polite to your local database! 🌊",
-          timestamp: Date.now(),
-          intent: "polite_intercept"
-        }
-      ]);
-
-      window.dispatchEvent(
-        new CustomEvent("poseidon:echo-reaction", {
-          detail: {
-            mood: "excited",
-            swimSpeedMultiplier: 1.8,
-            glowActive: true,
-            glowColor: "#ffd700",
-            durationMs: 8000
-          }
-        })
-      );
-      return;
-    }
-
-    // Dispatch message to worker thread
-    if (workerRef.current) {
-      workerRef.current.postMessage({
-        text,
-        mode: casualModeActive ? "casual" : "pro",
-        personaTone: casualModeActive ? "casual" : "pro"
+    // Route action to Dexie bridge
+    if (lastMsg.action && lastMsg.action.type !== "NONE") {
+      handlePoseidonAction({
+        type: lastMsg.action.type,
+        payload: lastMsg.action.payload,
+        tankId,
+        walletAddress: walletAccount
       });
     }
+
+    // Dispatch echo reaction to CompanionFishEntity
+    if (lastMsg.echoReaction) {
+      window.dispatchEvent(
+        new CustomEvent("poseidon:echo-reaction", {
+          detail: lastMsg.echoReaction
+        })
+      );
+    }
+  }, [messages, tankId, walletAccount]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!inputText.trim() || isLoading) return;
+
+    const text = inputText.trim();
+    setInputText("");
+
+    // Send via the Edge Function gateway (falls back to offline mode internally)
+    await sendMessage(text);
   };
 
   // Color tokens and text branding depending on persona mode
@@ -166,17 +116,36 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, o
           background: isPro ? "rgba(168, 85, 247, 0.05)" : "rgba(56, 189, 248, 0.05)"
         }}
       >
-        <span
-          style={{
-            fontSize: "0.75rem",
-            fontWeight: "700",
-            color: accentColor,
-            letterSpacing: "0.05em",
-            textTransform: "uppercase"
-          }}
-        >
-          {isPro ? "⚡ " : "🐠 "} {titleText}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+          <img
+            src="/poseidon-avatar.jpg"
+            alt="Poseidon"
+            style={{
+              width: "32px",
+              height: "32px",
+              borderRadius: "50%",
+              objectFit: "cover",
+              border: `2px solid ${accentColor}`,
+              boxShadow: `0 0 8px ${isPro ? 'rgba(168, 85, 247, 0.3)' : 'rgba(56, 189, 248, 0.3)'}`,
+            }}
+          />
+          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <span
+              style={{
+                fontSize: "0.75rem",
+                fontWeight: "700",
+                color: accentColor,
+                letterSpacing: "0.05em",
+                textTransform: "uppercase"
+              }}
+            >
+              {titleText}
+            </span>
+            <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", opacity: 0.7 }}>
+              {isOnline ? (isPro ? `ONLINE • ${requestsRemaining}/20 queries` : `Connected • ${requestsRemaining} questions left`) : (isPro ? "OFFLINE • LOCAL MODE" : "Offline mode")}
+            </span>
+          </div>
+        </div>
         {onClose && (
           <button
             onClick={onClose}
@@ -234,30 +203,98 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, o
               style={{
                 alignSelf: align,
                 maxWidth: "85%",
-                padding: "0.5rem 0.75rem",
-                borderRadius: "8px",
-                background: msgBg,
-                border: `1px solid ${isUser ? "rgba(255,255,255,0.08)" : borderColor}`,
-                fontSize: "0.8rem",
-                lineHeight: "1.4"
+                display: "flex",
+                flexDirection: isUser ? "row-reverse" : "row",
+                gap: "0.4rem",
+                alignItems: "flex-start",
               }}
             >
-              {isPro && !isUser && (
-                <div
+              {/* Poseidon avatar for non-user messages */}
+              {!isUser && (
+                <img
+                  src="/poseidon-avatar.jpg"
+                  alt=""
                   style={{
-                    fontSize: "0.6rem",
-                    color: "rgba(255, 255, 255, 0.3)",
-                    marginBottom: "2px",
-                    fontWeight: "700"
+                    width: "22px",
+                    height: "22px",
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    flexShrink: 0,
+                    marginTop: "2px",
+                    border: `1.5px solid ${borderColor}`,
+                    opacity: 0.9,
                   }}
-                >
-                  INTENT_{(msg.intent || "UNKNOWN").toUpperCase()}
-                </div>
+                />
               )}
-              <span style={{ color: msgColor }}>{msg.text}</span>
+              <div
+                style={{
+                  padding: "0.5rem 0.75rem",
+                  borderRadius: "8px",
+                  background: msgBg,
+                  border: `1px solid ${isUser ? "rgba(255,255,255,0.08)" : borderColor}`,
+                  fontSize: "0.8rem",
+                  lineHeight: "1.4"
+                }}
+              >
+                {isPro && !isUser && (
+                  <div
+                    style={{
+                      fontSize: "0.6rem",
+                      color: "rgba(255, 255, 255, 0.3)",
+                      marginBottom: "2px",
+                      fontWeight: "700"
+                    }}
+                  >
+                    INTENT_{(msg.intent || "UNKNOWN").toUpperCase()}
+                    {msg.confidence != null && ` • CONF_${(msg.confidence * 100).toFixed(0)}%`}
+                  </div>
+                )}
+                <span style={{ color: msgColor }}>{msg.text}</span>
+              </div>
             </div>
           );
         })}
+        {isLoading && (
+          <div
+            style={{
+              alignSelf: "flex-start",
+              display: "flex",
+              gap: "0.4rem",
+              alignItems: "flex-start",
+              maxWidth: "85%",
+            }}
+          >
+            <img
+              src="/poseidon-avatar.jpg"
+              alt=""
+              style={{
+                width: "22px",
+                height: "22px",
+                borderRadius: "50%",
+                objectFit: "cover",
+                flexShrink: 0,
+                marginTop: "2px",
+                border: `1.5px solid ${borderColor}`,
+                opacity: 0.6,
+                animation: "pulse 1.5s ease-in-out infinite",
+              }}
+            />
+            <div
+              style={{
+                padding: "0.5rem 0.75rem",
+                borderRadius: "8px",
+                background: isPro ? "rgba(168, 85, 247, 0.08)" : "rgba(56, 189, 248, 0.08)",
+                border: `1px solid ${borderColor}`,
+                fontSize: "0.8rem",
+                lineHeight: "1.4",
+                color: accentColor,
+                opacity: 0.7,
+              }}
+            >
+              {isPro ? "▌ PROCESSING..." : "🌊 Thinking..."}
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -277,6 +314,7 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, o
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           placeholder={isPro ? "INPUT QUERY_..." : "Ask Poseidon..."}
+          disabled={isLoading}
           style={{
             flex: 1,
             background: "rgba(0,0,0,0.3)",
@@ -286,24 +324,27 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, o
             padding: "0.4rem 0.75rem",
             fontSize: "0.8rem",
             outline: "none",
-            fontFamily: "inherit"
+            fontFamily: "inherit",
+            opacity: isLoading ? 0.5 : 1
           }}
         />
         <button
           type="submit"
+          disabled={isLoading || !inputText.trim()}
           style={{
-            background: accentColor,
+            background: isLoading ? "rgba(128,128,128,0.5)" : accentColor,
             border: "none",
             borderRadius: isPro ? "0" : "6px",
             color: isPro ? "#000" : "#fff",
             fontWeight: "700",
             padding: "0.4rem 0.75rem",
             fontSize: "0.8rem",
-            cursor: "pointer",
-            transition: "opacity 0.2s ease"
+            cursor: isLoading ? "wait" : "pointer",
+            transition: "opacity 0.2s ease",
+            opacity: (!inputText.trim() || isLoading) ? 0.5 : 1
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
-          onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+          onMouseEnter={(e) => { if (!isLoading) e.currentTarget.style.opacity = "0.85"; }}
+          onMouseLeave={(e) => { if (!isLoading) e.currentTarget.style.opacity = "1"; }}
         >
           {isPro ? "RUN" : "Ask"}
         </button>

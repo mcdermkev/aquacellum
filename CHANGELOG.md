@@ -5,6 +5,109 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 5, 2026 — Poseidon AI Intelligence Layer (Phase 4 Foundation)
+
+Complete AI infrastructure buildout. Poseidon is now a Gemini-powered freshwater fish expert grounded in the curated 326-species catalog, with RAG context injection, spawn narration, natural language search, image accessibility, and user-controlled toggles.
+
+### Poseidon Edge Function Gateway
+- **`api/poseidon.js`**: Node.js serverless function routing user queries to Gemini 2.0 Flash with structured JSON schema enforcement
+- **System prompt**: Encodes Curation Standard (metric scaling ×10/×100/×10000), FishBase specCode as primary key, dual-persona tone (casual/pro), available actions (CREATE_TANK, LOG_HUSBANDRY, QUERY_COMPATIBILITY, etc.)
+- **Multi-turn context**: Last 6 conversation turns sent for continuity
+- **Graceful degradation**: Returns structured offline fallback when API key missing or Gemini unreachable
+
+### Species RAG Layer
+- **`api/_lib/speciesIndex.js`**: Loads `fishbase_master.json` at cold-start (326 species), builds in-memory indices for fast lookup
+- **Fuzzy name matching**: Exact + partial substring matching against common names, scientific names, and genus
+- **Context injection**: Relevant species data (temp, pH, diet, breeding, personality text) injected into every Gemini prompt
+- **`vercel.json`**: Added `includeFiles` config to bundle the catalog into the serverless function
+
+### Frontend Integration
+- **`usePoseidon.js` hook**: Manages messages, rate limiting (20/hr), session context assembly from Dexie, offline fallback
+- **`PoseidonChatConsole.jsx`**: Rewired from regex worker to Edge Function gateway. Shows avatar, online status, request counter, loading state, confidence scores (pro mode)
+- **Local worker preserved**: `poseidonWorker.js` retained as offline fallback
+
+### Spawn Thread Narration (Task #50)
+- **`utils/spawnNarration.js`**: Calls Poseidon to generate concise narration lines on grow-out checkpoint events
+- **Context-aware**: Includes species name, days since spawn, yield funnel stats, checkpoint type
+- **Non-blocking**: Fires after checkpoint save, doesn't block UI
+- **Inline display**: Narration lines render in the grow-out timeline with Poseidon avatar and distinct cyan styling
+- **Respects toggle**: No API calls when Poseidon is disabled
+
+### Natural Language Search (Task #62)
+- **`api/parse-search.js`**: Converts plain-English queries into structured species filters via Gemini
+- **`useNaturalSearch.js` hook**: Debounced (600ms), applies parsed filters to `useSpeciesSearch`
+- **Examples**: "beginner fish for warm water" → difficulty: Easy, tempMin: 26°C
+- **Visual indicators**: 🔱 icon during parsing, cyan explanation chip with Poseidon avatar, one-click clear
+- **Local fallback**: Regex-based parser handles common patterns when offline
+- **Search placeholder updated**: "Try: 'beginner fish for warm water'"
+
+### Image Alt-Text Generation (Task #55)
+- **`api/generate-alt-text.js`**: Accepts image URL or base64, returns Gemini Vision-generated alt text (< 150 chars)
+- **`utils/altTextGenerator.js`**: Client utility with localStorage caching, batch processing, fallback descriptions
+- **Integrated into upload flow**: `uploadImage()` now returns `{ url, altText, error }`
+- **ContentComposer**: Stores alt texts alongside media URLs on post creation
+- **CurrentCard/PhotoGrid**: Renders AI-generated alt text on all `<img>` tags
+- **Migration `008_media_alt_texts.sql`**: Adds `media_alt_texts jsonb` column to `currents` table
+
+### Marketplace Compatibility Colors
+- **Card border glow**: Green (≥80%), Amber (50-79%), Red (<50%) based on tank compatibility score
+- **Graded badge**: Shows at all compatibility levels (not just 100%), with color-coded dot and percentage
+- **Previously**: Binary — only showed badge at 100% match
+
+### AI Settings & Controls
+- **Settings tab**: New "AI Companions" card with independent toggle switches for Poseidon and Echo
+- **Poseidon toggle**: Disables all Edge Function calls, spawn narration, natural language search, alt-text generation
+- **Echo toggle**: Controls companion entity rendering and gamification reactions
+- **localStorage**: `aquadex_poseidon_enabled`, `aquadex_echo_enabled` (default: true)
+- **Immediate effect**: No reload required, emits `aquadex:ai-prefs-changed` event
+
+### Visual Identity — Poseidon & Echo Avatars
+- **`/poseidon-avatar.jpg`** (519KB): Used in chat console header, message bubbles, landing pages, settings, narration lines
+- **`/echo-fry.jpg`** (224KB): Bronze Fry tier
+- **`/echo-silver.jpg`** (271KB): Silver Keeper tier
+- **`/echo-mid.jpg`** (254KB): Gold Aquarist tier
+- **`/echo-evolved.jpg`** (264KB): God-Tier + main Echo avatar
+- **Landing pages updated**: index.html (Poseidon + Echo cards), hobbyist.html (Poseidon section + tier images), breeder.html (Poseidon intelligence section)
+
+### Files Created
+| File | Purpose |
+|------|---------|
+| `frontend/api/poseidon.js` | Poseidon AI gateway (Gemini 2.0 Flash) |
+| `frontend/api/_lib/speciesIndex.js` | Species catalog loader + fuzzy search for RAG |
+| `frontend/api/generate-alt-text.js` | Image alt-text generation (Gemini Vision) |
+| `frontend/api/parse-search.js` | Natural language search query parser |
+| `frontend/src/hooks/usePoseidon.js` | React hook for Poseidon chat |
+| `frontend/src/hooks/useNaturalSearch.js` | Natural language search hook |
+| `frontend/src/utils/spawnNarration.js` | Spawn thread narration generator |
+| `frontend/src/utils/altTextGenerator.js` | Alt-text generation client utility |
+| `frontend/supabase/migrations/008_media_alt_texts.sql` | DB migration for alt text storage |
+| `frontend/public/poseidon-avatar.jpg` | Poseidon visual identity |
+| `frontend/public/echo-fry.jpg` | Echo Bronze tier image |
+| `frontend/public/echo-silver.jpg` | Echo Silver tier image |
+| `frontend/public/echo-mid.jpg` | Echo Gold tier image |
+| `frontend/public/echo-evolved.jpg` | Echo God-Tier image |
+
+### Files Modified
+| File | Changes |
+|------|---------|
+| `frontend/src/components/PoseidonChatConsole.jsx` | Full rewrite: usePoseidon hook, avatar, loading state, action routing |
+| `frontend/src/components/DataPortabilityWidget.jsx` | Added AI Companions settings section |
+| `frontend/src/components/BreedGallery.jsx` | Natural language search integration, NL explanation chip |
+| `frontend/src/components/MarketplaceBoard.jsx` | Compatibility card colors (green/amber/red glow + graded badge) |
+| `frontend/src/components/HatcheryLogs.jsx` | Spawn narration integration + narration display in timeline |
+| `frontend/src/components/reef/ContentComposer.jsx` | Alt-text storage on post creation |
+| `frontend/src/components/reef/CurrentCard.jsx` | PhotoGrid renders AI alt text |
+| `frontend/src/services/mediaUpload.js` | Alt-text generation after upload |
+| `frontend/src/services/reefApi.js` | createCurrent accepts mediaAltTexts |
+| `frontend/src/workers/poseidonWorker.js` | Preserved as offline fallback |
+| `frontend/vercel.json` | Added functions.includeFiles for species catalog |
+| `frontend/index.html` | Poseidon + Echo avatar images on landing page |
+| `frontend/hobbyist.html` | Poseidon section + Echo tier images |
+| `frontend/breeder.html` | Poseidon intelligence section |
+| `.env.example` | Added GEMINI_API_KEY documentation |
+
+---
+
 ## June 4, 2026 — Production Fixes & Performance Optimizations
 
 Critical deployment fixes, major RPC performance improvements, and UI cleanup across the Aquariums tab.

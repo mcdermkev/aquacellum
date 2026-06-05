@@ -6,6 +6,7 @@ import { getProvider, getSigner } from "../utils/smartAccount";
 import { HatcheryLogs } from "./HatcheryLogs";
 import { MarketplaceBoard } from "./MarketplaceBoard";
 import { useSpeciesSearch } from "../hooks/useSpeciesSearch";
+import { useNaturalSearch } from "../hooks/useNaturalSearch";
 import { LazyImage } from "./LazyImage";
 import { useContractSpecies } from "../hooks/useSpeciesData";
 import { LoadingSkeleton } from "./LoadingSkeleton";
@@ -197,6 +198,28 @@ export function BreedGallery({
     globalData,
     resetFilters
   } = useSpeciesSearch(speciesList);
+
+  // Natural language search — parses queries like "beginner fish for warm water"
+  const { isParsing, explanation: nlExplanation, parseQuery: nlParseQuery, clearParsed } = useNaturalSearch({
+    onFiltersReady: (parsed) => {
+      // Apply the AI-parsed search term
+      if (parsed.searchTerm && parsed.searchTerm !== searchTerm) {
+        setSearchTerm(parsed.searchTerm);
+      }
+      // Apply parsed filters
+      if (parsed.filters) {
+        const newFilters = { ...filters };
+        if (parsed.filters.difficulty) newFilters.difficulty = parsed.filters.difficulty;
+        if (parsed.filters.tempMin) newFilters.tempMin = parsed.filters.tempMin;
+        if (parsed.filters.tempMax) newFilters.tempMax = parsed.filters.tempMax;
+        if (parsed.filters.phMin) newFilters.phMin = parsed.filters.phMin;
+        if (parsed.filters.phMax) newFilters.phMax = parsed.filters.phMax;
+        if (parsed.filters.maxSize) newFilters.maxSize = parsed.filters.maxSize;
+        setFilters(newFilters);
+      }
+    },
+    tankContext: displayTank ? { volume: displayTank.volume, temp: displayTank.temp, ph: displayTank.ph } : null,
+  });
 
   useEffect(() => {
     if (!searchTerm) return;
@@ -1589,14 +1612,22 @@ export function BreedGallery({
           <div style={{ position: "relative", flex: "1" }}>
             <input 
               type="text" 
-              placeholder="Search by common or scientific name..." 
+              placeholder={casualModeActive ? "Try: 'beginner fish for warm water'" : "Search species or describe what you need..."} 
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                nlParseQuery(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchTerm.length >= 8) {
+                  nlParseQuery(searchTerm);
+                }
+              }}
               style={{ 
                 width: "100%", 
                 padding: "0.6rem 2.5rem 0.6rem 1rem", 
                 background: "rgba(255, 255, 255, 0.03)", 
-                border: "1px solid var(--glass-border)", 
+                border: `1px solid ${isParsing ? 'rgba(56, 189, 248, 0.4)' : 'var(--glass-border)'}`, 
                 borderRadius: "50px", 
                 color: "#fff", 
                 fontSize: "0.875rem",
@@ -1604,11 +1635,16 @@ export function BreedGallery({
                 transition: "border-color 0.2s"
               }}
               onFocus={(e) => e.target.style.borderColor = "var(--accent-blue)"}
-              onBlur={(e) => e.target.style.borderColor = "var(--glass-border)"}
+              onBlur={(e) => { if (!isParsing) e.target.style.borderColor = "var(--glass-border)"; }}
             />
+            {isParsing && (
+              <span style={{ position: "absolute", right: "38px", top: "50%", transform: "translateY(-50%)", fontSize: "0.65rem", color: "rgba(56, 189, 248, 0.7)" }}>
+                🔱
+              </span>
+            )}
             {searchTerm ? (
               <button 
-                onClick={() => setSearchTerm("")}
+                onClick={() => { setSearchTerm(""); clearParsed(); }}
                 style={{
                   position: "absolute",
                   right: "10px",
@@ -1767,6 +1803,31 @@ export function BreedGallery({
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          {/* Poseidon NL Search explanation chip */}
+          {nlExplanation && nlExplanation !== 'Parsed locally' && (
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              padding: "0.4rem 0.75rem",
+              borderRadius: "20px",
+              background: "rgba(56, 189, 248, 0.06)",
+              border: "1px solid rgba(56, 189, 248, 0.15)",
+              fontSize: "0.72rem",
+              color: "rgba(103, 232, 249, 0.85)",
+              width: "fit-content"
+            }}>
+              <img src="/poseidon-avatar.jpg" alt="" style={{ width: "16px", height: "16px", borderRadius: "50%", objectFit: "cover" }} />
+              <span>{nlExplanation}</span>
+              <button
+                onClick={() => { resetFilters(); clearParsed(); setSearchTerm(""); }}
+                style={{ background: "none", border: "none", color: "rgba(103, 232, 249, 0.6)", cursor: "pointer", fontSize: "0.8rem", padding: "0 4px" }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           {/* Filter Toggle Button */}
           <button
             onClick={() => setFiltersOpen(!filtersOpen)}

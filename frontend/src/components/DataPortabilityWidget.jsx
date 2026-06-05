@@ -409,6 +409,146 @@ export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
         </div>
       )}
     </div>
+
+    {/* AI Companion Preferences */}
+    <div 
+      className="glass-card" 
+      style={{
+        padding: "2rem",
+        borderRadius: "var(--radius-md)",
+        border: "1px solid rgba(255, 255, 255, 0.08)",
+        background: "rgba(10, 15, 30, 0.7)",
+        backdropFilter: "blur(12px)",
+        boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
+        maxWidth: "600px",
+        margin: "0 auto 3rem auto",
+        position: "relative",
+        overflow: "hidden"
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+        <img src="/poseidon-avatar.jpg" alt="" style={{ width: "28px", height: "28px", borderRadius: "50%", objectFit: "cover" }} />
+        <h3 style={{ fontSize: "1.25rem", fontWeight: "700", color: "#fff", margin: 0 }}>
+          {casualModeActive ? "AI Companions" : "Intelligence Layer Preferences"}
+        </h3>
+      </div>
+
+      <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", lineHeight: "1.5", marginBottom: "1.5rem" }}>
+        {casualModeActive
+          ? "Control whether Poseidon (your fish expert) and Echo (your companion) are active. You can turn either one off if you prefer a quieter experience."
+          : "Toggle Poseidon intelligence layer and Echo companion subsystem independently. Disabling Poseidon stops all API calls to the AI gateway. Disabling Echo hides the companion entity and suppresses gamification reactions."}
+      </p>
+
+      {/* Poseidon Toggle */}
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "1rem",
+        borderRadius: "12px",
+        background: "rgba(6, 182, 212, 0.04)",
+        border: "1px solid rgba(6, 182, 212, 0.12)",
+        marginBottom: "0.75rem"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <img src="/poseidon-avatar.jpg" alt="" style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover", border: "1.5px solid rgba(6, 182, 212, 0.3)" }} />
+          <div>
+            <div style={{ fontSize: "0.9rem", fontWeight: "600", color: "#fff" }}>Poseidon</div>
+            <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+              {casualModeActive ? "Freshwater fish expert & data assistant" : "Taxonomic intelligence • Species RAG • Spawn narration"}
+            </div>
+          </div>
+        </div>
+        <label style={{ position: "relative", display: "inline-block", width: "44px", height: "24px", cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={localStorage.getItem("aquadex_poseidon_enabled") !== "false"}
+            onChange={(e) => {
+              localStorage.setItem("aquadex_poseidon_enabled", e.target.checked.toString());
+              window.dispatchEvent(new CustomEvent("aquadex:ai-prefs-changed"));
+            }}
+            style={{ opacity: 0, width: 0, height: 0, position: "absolute" }}
+          />
+          <span style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: "12px",
+            background: localStorage.getItem("aquadex_poseidon_enabled") !== "false" ? "rgba(6, 182, 212, 0.5)" : "rgba(255,255,255,0.1)",
+            transition: "background 0.3s ease",
+            border: `1px solid ${localStorage.getItem("aquadex_poseidon_enabled") !== "false" ? "rgba(6, 182, 212, 0.6)" : "rgba(255,255,255,0.15)"}`,
+          }}></span>
+          <span style={{
+            position: "absolute",
+            top: "3px",
+            left: localStorage.getItem("aquadex_poseidon_enabled") !== "false" ? "22px" : "3px",
+            width: "18px",
+            height: "18px",
+            borderRadius: "50%",
+            background: "#fff",
+            transition: "left 0.3s ease",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.3)"
+          }}></span>
+        </label>
+      </div>
+
+      {/* Echo Toggle */}
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "1rem",
+        borderRadius: "12px",
+        background: "rgba(139, 92, 246, 0.04)",
+        border: "1px solid rgba(139, 92, 246, 0.12)",
+        marginBottom: "0.75rem"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <img src="/echo-evolved.jpg" alt="" style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover", border: "1.5px solid rgba(139, 92, 246, 0.3)" }} />
+          <div>
+            <div style={{ fontSize: "0.9rem", fontWeight: "600", color: "#fff" }}>Echo</div>
+            <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+              {casualModeActive ? "Your evolving tank companion" : "Emotional intelligence • Companion entity • Gamification engine"}
+            </div>
+          </div>
+        </div>
+        <label style={{ position: "relative", display: "inline-block", width: "44px", height: "24px", cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={localStorage.getItem("aquadex_echo_enabled") !== "false"}
+            onChange={(e) => {
+              localStorage.setItem("aquadex_echo_enabled", e.target.checked.toString());
+              window.dispatchEvent(new CustomEvent("aquadex:ai-prefs-changed"));
+            }}
+            style={{ opacity: 0, width: 0, height: 0, position: "absolute" }}
+          />
+          <span style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: "12px",
+            background: localStorage.getItem("aquadex_echo_enabled") !== "false" ? "rgba(139, 92, 246, 0.5)" : "rgba(255,255,255,0.1)",
+            transition: "background 0.3s ease",
+            border: `1px solid ${localStorage.getItem("aquadex_echo_enabled") !== "false" ? "rgba(139, 92, 246, 0.6)" : "rgba(255,255,255,0.15)"}`,
+          }}></span>
+          <span style={{
+            position: "absolute",
+            top: "3px",
+            left: localStorage.getItem("aquadex_echo_enabled") !== "false" ? "22px" : "3px",
+            width: "18px",
+            height: "18px",
+            borderRadius: "50%",
+            background: "#fff",
+            transition: "left 0.3s ease",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.3)"
+          }}></span>
+        </label>
+      </div>
+
+      <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.5rem", lineHeight: "1.4" }}>
+        {casualModeActive
+          ? "Both are enabled by default. Changes take effect immediately — no reload needed."
+          : "Preferences stored locally. Disabling Poseidon halts all Edge Function calls. Disabling Echo suppresses companion rendering and XP reaction events."}
+      </div>
+    </div>
   </>
   );
 }

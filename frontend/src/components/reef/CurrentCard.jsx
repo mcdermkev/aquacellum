@@ -31,7 +31,7 @@ function timeAgo(dateString) {
 /**
  * Photo grid layout: 1 = full width, 2 = side by side, 3-4 = grid
  */
-function PhotoGrid({ urls }) {
+function PhotoGrid({ urls, altTexts }) {
   if (!urls || urls.length === 0) return null;
 
   const gridStyles = {
@@ -65,7 +65,7 @@ function PhotoGrid({ urls }) {
         >
           <img
             src={url}
-            alt={`Tank photo ${i + 1}`}
+            alt={altTexts?.[i] || `Tank photo ${i + 1}`}
             loading="lazy"
             style={{
               position: "absolute",
@@ -231,7 +231,7 @@ export function CurrentCard({ current, onProfileClick, casualModeActive = false 
       )}
 
       {/* Photo grid */}
-      <PhotoGrid urls={current.media_urls} />
+      <PhotoGrid urls={current.media_urls} altTexts={current.media_alt_texts} />
 
       {/* Parameter chips */}
       <ParameterChips snapshot={current.parameters_snapshot} />

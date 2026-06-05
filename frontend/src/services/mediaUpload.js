@@ -15,6 +15,7 @@
  */
 
 import { supabase, isSupabaseConfigured, getCurrentWallet } from "./supabaseClient";
+import { generateAltText } from "../utils/altTextGenerator";
 
 const MAX_IMAGE_DIMENSION = 2048;
 const MAX_FILE_SIZE_MB = 5;
@@ -158,9 +159,22 @@ export async function uploadImage(file, onProgress) {
       .from("reef-media")
       .getPublicUrl(filePath);
 
+    if (onProgress) onProgress(95);
+
+    const publicUrl = urlData.publicUrl;
+
+    // Step 4: Auto-generate alt text via Poseidon (non-blocking)
+    // Fire and forget — don't block the upload completion
+    let altText = "Aquarium photo";
+    try {
+      altText = await generateAltText(publicUrl);
+    } catch {
+      // Alt text generation is best-effort, don't fail the upload
+    }
+
     if (onProgress) onProgress(100);
 
-    return { url: urlData.publicUrl, error: null };
+    return { url: publicUrl, altText, error: null };
   } catch (err) {
     console.error("[Reef Media] Upload error:", err);
     return { url: null, error: err.message };
@@ -184,11 +198,13 @@ export async function uploadImages(files, onProgress) {
   );
 
   const urls = [];
+  const altTexts = [];
   const errors = [];
 
   for (const result of results) {
     if (result.status === "fulfilled" && result.value.url) {
       urls.push(result.value.url);
+      altTexts.push(result.value.altText || "Aquarium photo");
     } else {
       const errorMsg = result.status === "fulfilled"
         ? result.value.error
@@ -197,7 +213,7 @@ export async function uploadImages(files, onProgress) {
     }
   }
 
-  return { urls, errors };
+  return { urls, altTexts, errors };
 }
 
 /**

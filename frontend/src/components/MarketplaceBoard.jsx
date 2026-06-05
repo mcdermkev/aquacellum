@@ -989,6 +989,17 @@ export function MarketplaceBoard({
                       const masterPhotoUrl = matchedSpecies?.masterPhotoUrl || "";
                       const finalImgSrc = customPhoto || masterPhotoUrl;
 
+                      // Compatibility-based card glow (green/amber/red)
+                      const compatScore = displayTank ? calculateCompatibility(item) : null;
+                      const compatBorderColor = compatScore === null ? null
+                        : compatScore >= 80 ? "rgba(34, 197, 94, 0.4)"
+                        : compatScore >= 50 ? "rgba(251, 191, 36, 0.4)"
+                        : "rgba(248, 113, 113, 0.4)";
+                      const compatGlow = compatScore === null ? null
+                        : compatScore >= 80 ? "0 0 12px rgba(34, 197, 94, 0.15)"
+                        : compatScore >= 50 ? "0 0 12px rgba(251, 191, 36, 0.15)"
+                        : "0 0 12px rgba(248, 113, 113, 0.15)";
+
                       return (
                         <div 
                           key={item.isBatch ? `batch-${item.listingId}` : `spec-${item.tokenId}`} 
@@ -1008,7 +1019,11 @@ export function MarketplaceBoard({
                             flexDirection: "column", 
                             gap: "1rem",
                             background: "rgba(255,255,255,0.01)",
-                            cursor: "pointer"
+                            cursor: "pointer",
+                            ...(compatBorderColor && {
+                              borderColor: compatBorderColor,
+                              boxShadow: compatGlow,
+                            })
                           }}
                         >
                           {/* Photo / Fallback SVG Area */}
@@ -1097,23 +1112,23 @@ export function MarketplaceBoard({
                               </span>
                             )}
                             
-                            {/* Compatibility Badge */}
-                            {displayTank && calculateCompatibility(item) === 100 && (
+                            {/* Compatibility Badge — shows at all levels when tank is configured */}
+                            {displayTank && compatScore !== null && (
                               <div style={{
                                 display: "inline-flex",
                                 alignItems: "center",
                                 gap: "0.4rem",
                                 padding: "0.35rem 0.75rem",
                                 borderRadius: "50px",
-                                background: "rgba(34, 197, 94, 0.15)",
-                                border: "1px solid var(--accent-green)",
-                                color: "var(--accent-green)",
+                                background: compatScore >= 80 ? "rgba(34, 197, 94, 0.15)" : compatScore >= 50 ? "rgba(251, 191, 36, 0.12)" : "rgba(248, 113, 113, 0.12)",
+                                border: `1px solid ${compatScore >= 80 ? "var(--accent-green)" : compatScore >= 50 ? "rgba(251, 191, 36, 0.5)" : "rgba(248, 113, 113, 0.5)"}`,
+                                color: compatScore >= 80 ? "var(--accent-green)" : compatScore >= 50 ? "#fbbf24" : "#f87171",
                                 fontSize: "0.7rem",
                                 fontWeight: "700",
                                 marginTop: "0.5rem"
                               }}>
-                                <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: "var(--accent-green)" }}></span>
-                                [100% Compatibility Match]
+                                <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", background: compatScore >= 80 ? "var(--accent-green)" : compatScore >= 50 ? "#fbbf24" : "#f87171" }}></span>
+                                {compatScore >= 80 ? `[${compatScore}% Compatible]` : compatScore >= 50 ? `[${compatScore}% — Caution]` : `[${compatScore}% — Not Recommended]`}
                               </div>
                             )}
 

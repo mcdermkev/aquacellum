@@ -15,6 +15,7 @@ By bridging hobbyist fishkeeping registries with professional breeding standards
 - **Local-First Architecture**: Dexie.js offline database with TanStack Query caching. All operational data (tanks, action logs, grow-out tracking, photos) works without network. On-chain registration deferred to "publish" step.
 - **Dual-Mode Experience**: Casual Hobbyist mode (friendly, gamified) and Pro Breeder mode (operational, de-gamified) driven by a single toggle.
 - **Narrative Onboarding**: 4-step wizard guided by Poseidon (AI assistant) introducing users to their companion (Echo), creating their identity, and registering their first tank — all while the species database loads in the background.
+- **Poseidon AI Intelligence Layer**: Gemini 2.0 Flash-powered freshwater fish expert, grounded via RAG in the curated 326-species catalog. Provides natural language search, spawn thread narration, species compatibility advice, image alt-text generation, and contextual Q&A — all routed through server-side Edge Functions with structured JSON responses. User-controllable via Settings toggle.
 - **Social Layer (The Reef)**: Full social backbone with profiles, Tank Currents feed, reactions, comments, Tankmate connections, Schools (clubs), Expert Audits, mentorship pairing, and real-time notifications.
 
 ### Protocol Fee Structure (Current — Testnet)
@@ -50,9 +51,10 @@ graph TD
 2. **Base L2 Smart Contracts**: Registry transactions, pedigree state transitions, escrow/shipping, batch checkout.
 3. **FishBase Master Catalog**: Offline JSON (`fishbase_master.json`) — 326 species with taxonomic envelopes (temp/pH/volume bounds).
 4. **Local Database**: Dexie.js v10 schema with tables: `species`, `listings`, `tanks`, `actionLogs`, `userProfile`, `breederCompanion`, `pendingHandshakes`, `speciesManifest`, `spawnGrowout`, `feedCache`, `socialNotifications`, `draftContent`.
-5. **Serverless API**: Vercel edge function for species suggestion validation (WoRMS + Gemini AI audit). Transaction relayer endpoint for gasless beta writes.
-6. **Social Backend**: Supabase Postgres (15 tables with RLS + notification triggers), Supabase Storage (media CDN), Supabase Realtime (live chat + notifications).
-7. **Beta Relayer**: `/api/relay-transaction` — server-side transaction signing for on-chain writes using a single funded deployer wallet. Beta testers never interact with MetaMask.
+5. **Serverless API**: Vercel serverless functions for species suggestion validation (WoRMS + Gemini AI audit), transaction relayer, and Poseidon AI gateway.
+6. **Poseidon AI Gateway**: `/api/poseidon` (Gemini 2.0 Flash) — structured JSON responses, RAG-grounded in 326-species catalog, multi-turn context, rate-limited (20/hr). Additional endpoints: `/api/parse-search` (NL query parsing), `/api/generate-alt-text` (Gemini Vision for accessibility).
+7. **Social Backend**: Supabase Postgres (15 tables with RLS + notification triggers), Supabase Storage (media CDN), Supabase Realtime (live chat + notifications).
+8. **Beta Relayer**: `/api/relay-transaction` — server-side transaction signing for on-chain writes using a single funded deployer wallet. Beta testers never interact with MetaMask.
 
 ---
 

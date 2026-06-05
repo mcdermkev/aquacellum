@@ -114,9 +114,10 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
     try {
       // Upload photos
       let mediaUrls = [];
+      let mediaAltTexts = [];
       if (photos.length > 0) {
         setUploadProgress(0);
-        const { urls, errors } = await uploadImages(
+        const { urls, altTexts, errors } = await uploadImages(
           photos.map((p) => p.file),
           ({ index, progress }) => {
             setUploadProgress(
@@ -125,6 +126,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
           }
         );
         mediaUrls = urls;
+        mediaAltTexts = altTexts;
         if (errors.length > 0) {
           console.warn("[Reef Composer] Some uploads failed:", errors);
         }
@@ -137,6 +139,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
         title: selectedTank?.name || null,
         body: body.trim(),
         mediaUrls,
+        mediaAltTexts,
         linkedTankId: selectedTank?.id || null,
         linkedTankName: selectedTank?.name || null,
         speciesTags,

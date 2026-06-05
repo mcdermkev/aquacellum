@@ -5,6 +5,7 @@ import { HandshakeVerification } from "./HandshakeVerification";
 import { getProvider, getSigner } from "../utils/smartAccount";
 import { db } from "../db";
 import { addXp } from "../utils/xp";
+import { generateSpawnNarration } from "../utils/spawnNarration";
 
 // Grow-out checkpoint types
 const GROWOUT_TYPES = {
@@ -17,9 +18,11 @@ const GROWOUT_TYPES = {
 };
 
 // Inline grow-out tracker component for a single spawn
-function SpawnGrowoutTracker({ spawnId, eggCount }) {
+function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
   const [checkpoints, setCheckpoints] = useState([]);
   const [expanded, setExpanded] = useState(false);
+  const [narrationLoading, setNarrationLoading] = useState(false);
+  const [latestNarration, setLatestNarration] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [formType, setFormType] = useState("fry_count");
   const [formCount, setFormCount] = useState("");
@@ -55,6 +58,30 @@ function SpawnGrowoutTracker({ spawnId, eggCount }) {
     setFormNote("");
     setShowAddForm(false);
     await loadCheckpoints();
+
+    // Trigger Poseidon narration in the background (non-blocking)
+    setNarrationLoading(true);
+    generateSpawnNarration({
+      spawnId,
+      checkpointType: formType,
+      count: formType === "note" ? 0 : count,
+      note: formNote.trim(),
+      yieldSummary: {
+        eggs: eggCount || 0,
+        fry: totalFry,
+        alive: survivors,
+        sold: totalSold,
+        lost: totalCulled + totalLoss,
+        survivalRate: survivalRate || 0
+      },
+      speciesName: speciesName || 'Unknown species',
+      mode: mode || 'casual'
+    }).then(narration => {
+      if (narration) {
+        setLatestNarration(narration);
+        loadCheckpoints(); // Refresh to show the narration entry
+      }
+    }).finally(() => setNarrationLoading(false));
   };
 
   // Calculate yield summary
@@ -235,20 +262,46 @@ function SpawnGrowoutTracker({ spawnId, eggCount }) {
 
       {/* Checkpoint history */}
       {checkpoints.length > 0 && (
-        <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.35rem", maxHeight: "120px", overflowY: "auto" }}>
+        <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.35rem", maxHeight: "160px", overflowY: "auto" }}>
           {checkpoints.map((cp) => (
-            <div key={cp.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", padding: "0.2rem 0", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
-              <span>
-                <span style={{ marginRight: "0.3rem" }}>{GROWOUT_TYPES[cp.type]?.emoji || "📝"}</span>
-                <span style={{ color: "var(--text-secondary)" }}>{GROWOUT_TYPES[cp.type]?.label || cp.type}</span>
-                {cp.count > 0 && <strong style={{ color: "#fff", marginLeft: "0.3rem" }}>×{cp.count}</strong>}
-                {cp.note && <span style={{ color: "var(--text-muted)", marginLeft: "0.4rem" }}>— {cp.note}</span>}
-              </span>
-              <span style={{ color: "var(--text-muted)", fontSize: "0.65rem", whiteSpace: "nowrap" }}>
-                {new Date(cp.timestamp * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-              </span>
-            </div>
+            cp.type === 'narration' ? (
+              // Poseidon narration line — styled distinctly
+              <div key={cp.id} style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "0.4rem",
+                fontSize: "0.72rem",
+                padding: "0.4rem 0.5rem",
+                borderRadius: "6px",
+                background: "rgba(56, 189, 248, 0.04)",
+                border: "1px solid rgba(56, 189, 248, 0.12)",
+                color: "rgba(103, 232, 249, 0.9)",
+                fontStyle: "italic",
+                lineHeight: "1.4"
+              }}>
+                <img src="/poseidon-avatar.jpg" alt="" style={{ width: "16px", height: "16px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, marginTop: "1px", opacity: 0.8 }} />
+                <span>{cp.note}</span>
+              </div>
+            ) : (
+              <div key={cp.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", padding: "0.2rem 0", borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+                <span>
+                  <span style={{ marginRight: "0.3rem" }}>{GROWOUT_TYPES[cp.type]?.emoji || "📝"}</span>
+                  <span style={{ color: "var(--text-secondary)" }}>{GROWOUT_TYPES[cp.type]?.label || cp.type}</span>
+                  {cp.count > 0 && <strong style={{ color: "#fff", marginLeft: "0.3rem" }}>×{cp.count}</strong>}
+                  {cp.note && <span style={{ color: "var(--text-muted)", marginLeft: "0.4rem" }}>— {cp.note}</span>}
+                </span>
+                <span style={{ color: "var(--text-muted)", fontSize: "0.65rem", whiteSpace: "nowrap" }}>
+                  {new Date(cp.timestamp * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                </span>
+              </div>
+            )
           ))}
+          {narrationLoading && (
+            <div style={{ fontSize: "0.68rem", color: "rgba(56, 189, 248, 0.6)", fontStyle: "italic", padding: "0.3rem 0", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              <img src="/poseidon-avatar.jpg" alt="" style={{ width: "14px", height: "14px", borderRadius: "50%", objectFit: "cover", opacity: 0.5 }} />
+              Poseidon is observing...
+            </div>
+          )}
         </div>
       )}
     </div>
