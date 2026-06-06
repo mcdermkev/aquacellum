@@ -5,6 +5,85 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 6, 2026 — The Reef: Phase 3 — Tides (Events) + Web Push Notifications
+
+Complete events system ("Tides") with real-time social interaction, GPS-gated check-ins, live auctions, and push notification infrastructure. All deployed and live on aquacellum.com.
+
+### Tides Infrastructure
+- **Database migration** (`003_tides_tables.sql`): 4 new tables — `tides`, `tide_attendees`, `tide_chat`, `auction_bids`
+- **RLS policies**: tide_chat restricted to attendees, bids publicly readable, RSVP self-managed
+- **Notification triggers**: auto-notify RSVPs when tide goes live, notify previous bidder on outbid
+- **Indexes**: status+start_time, wallet lookups, chat by tide+time, bids by tide+token
+
+### Tide Components
+- **TideCalendar**: grid/list view of upcoming events, type filters (Expo/Virtual/Challenge/Auction), countdown timers, "My Tides" section
+- **CreateTide wizard**: 3-step form — type selection → details (title, time, banner) → type-specific settings (GPS/stream/challenge rules/auction items)
+- **TidePage**: full event detail with tabbed interface — Details / Live Feed / Chat / Map / Swap Sheet / Auction / Recap. Three display states: pre-event, live, post-event
+- **TideLiveFeed**: real-time activity stream via Supabase Realtime channel, auto-scroll with pause/resume, activity burst indicator
+- **TideChat**: ephemeral real-time chat (300-char, 5s rate limit), Poseidon system messages styled distinctly, auto-purged 48h post-event
+- **TideMap**: Mapbox GL JS integration with zone overlay, fuzzed attendee pins, GPS check-in button (+100 XP), Haversine distance calculation
+- **SwapSheet**: pre-event "I'm bringing..." board with species search, read-only when live
+- **AuctionPanel**: real-time bidding with 5% minimum increment, countdown timer, bid history, outbid notifications
+
+### Tide Lifecycle Edge Function
+- **`tide-lifecycle`** (deployed to Supabase, scheduled via pg_cron every minute):
+  - Transitions: upcoming → live → ended based on time
+  - On ended: distributes attendance XP (+100 checked-in, +50 going)
+  - 48h post-end: purges ephemeral tide_chat messages
+
+### Web Push Notifications
+- **VAPID key pair generated** and stored as Supabase secrets
+- **Service Worker** (`sw.js`): handles push events, shows native OS notifications, routes clicks to app deep links
+- **`pushService.js`**: subscribe/unsubscribe management, permission flow, stores subscription in Supabase
+- **`send-push` Edge Function** (deployed): VAPID-authenticated push delivery to browser endpoints, auto-cleanup of expired subscriptions
+- **`push_subscriptions` table**: stores browser push subscription JSON per wallet
+- **SonarPreferences**: per-category push opt-in (Activity/Social/Events/Milestones/Poseidon), quiet hours, email digest frequency
+
+### Services & Hooks
+- `tidesApi.js`: full CRUD — tide create/update/cancel, RSVP/check-in, swap sheet, chat, auction bids
+- `useTides.js`: TanStack Query hooks + Supabase Realtime subscriptions for chat, live feed, and auction bidding
+
+### Integration
+- **Reef header**: "🌊 Tides" button added alongside Schools and Profile
+- **Sub-navigation**: TideCalendar → TidePage with full routing, back button, create flow
+- **Mapbox token**: configured in frontend .env (`VITE_MAPBOX_TOKEN`)
+
+### Deployment
+- Edge Functions deployed: `send-push` (ACTIVE), `tide-lifecycle` (ACTIVE)
+- VAPID secrets set on Supabase project
+- pg_cron scheduled: `tide-lifecycle-check` running every minute
+- Vercel auto-deployed from GitHub push
+
+### Files Created (16)
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/003_tides_tables.sql` | Tides DB schema + RLS + triggers |
+| `supabase/functions/tide-lifecycle/index.ts` | Cron: status transitions + XP + chat purge |
+| `supabase/functions/send-push/index.ts` | VAPID push delivery to browsers |
+| `frontend/public/sw.js` | Service worker for push notifications |
+| `frontend/src/services/tidesApi.js` | Tides CRUD API |
+| `frontend/src/services/pushService.js` | Push subscription management |
+| `frontend/src/hooks/useTides.js` | Tides React hooks + realtime |
+| `frontend/src/components/reef/TideCalendar.jsx` | Events calendar/grid |
+| `frontend/src/components/reef/TidePage.jsx` | Event detail page |
+| `frontend/src/components/reef/TideLiveFeed.jsx` | Real-time event feed |
+| `frontend/src/components/reef/TideChat.jsx` | Ephemeral event chat |
+| `frontend/src/components/reef/TideMap.jsx` | Mapbox GPS map + check-in |
+| `frontend/src/components/reef/SwapSheet.jsx` | Species swap board |
+| `frontend/src/components/reef/AuctionPanel.jsx` | Live auction bidding |
+| `frontend/src/components/reef/CreateTide.jsx` | Tide creation wizard |
+| `frontend/src/components/reef/SonarPreferences.jsx` | Notification preferences |
+
+### Files Modified (4)
+| File | Changes |
+|------|---------|
+| `frontend/src/components/reef/ReefFeed.jsx` | Added Tides sub-views + 🌊 button |
+| `frontend/src/components/reef/index.js` | Exported all Phase 3 components |
+| `frontend/src/styles/index.css` | Full Tides CSS (~400 lines) |
+| `frontend/.env` | Added VITE_MAPBOX_TOKEN, VITE_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY |
+
+---
+
 ## June 5, 2026 — Poseidon AI Intelligence Layer (Phase 4 Foundation)
 
 Complete AI infrastructure buildout. Poseidon is now a Gemini-powered freshwater fish expert grounded in the curated 326-species catalog, with RAG context injection, spawn narration, natural language search, image accessibility, and user-controlled toggles.
