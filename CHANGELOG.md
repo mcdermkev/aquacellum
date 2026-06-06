@@ -5,6 +5,26 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 6, 2026 — The Reef Landing Page
+
+Dedicated static landing page for the Social Reef feature at `/reef`. Coral/ocean-blue palette, distinct from all other pages.
+
+### Built
+- **`frontend/reef.html`**: Full landing page with hero (mock feed UI preview), "How the Reef Works" step cards (mini UI mockups: feed card, Tankmate connections, Depth Score meter), bento-grid feature showcase (audit scorecards, spawn lifecycle, Sonar notifications, Poseidon AI messages, Species Insights), Depth Score tier ladder (Shallow→Hadal with gradient bar), Schools section (mock clubs with member avatars), and Tides section (expanded Expo card with GPS map + swap sheet + countdown, Virtual stream preview, Auction bid preview, Challenge leaderboard)
+- **Ambient design system**: Coral/ocean-blue CSS tokens, glassmorphic cards with per-color hover glows, animated coral branch dividers, wave SVG section separators, hero grid mesh, floating reaction emojis, CSS-only aquarium scenes (animated fish + plants + bubbles)
+- **Routing**: Added to `vite.config.js` build inputs, `vercel.json` rewrites (`/reef` → `/reef.html`), main site navigation
+
+### Files Created/Modified
+| File | Change |
+|------|--------|
+| `frontend/reef.html` | New — full landing page (1700+ lines) |
+| `frontend/vite.config.js` | Added `reef` entry to multi-page build |
+| `frontend/vercel.json` | Added `/reef` rewrite |
+| `frontend/index.html` | Added "The Reef" to nav links |
+| `PROJECT_SUMMARY.md` | Added Landing Pages section |
+
+---
+
 ## June 6, 2026 — The Reef: Phase 4 — Depth Score + Poseidon Social AI
 
 Complete reputation system and AI-powered social intelligence layer. All Edge Functions deployed and active.

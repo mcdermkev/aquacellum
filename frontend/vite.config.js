@@ -25,6 +25,7 @@ export default defineConfig({
         hobbyist: resolve(__dirname, 'hobbyist.html'), // Hobbyist landing
         breeder: resolve(__dirname, 'breeder.html'),   // Breeder landing
         database: resolve(__dirname, 'database.html'), // Species database page
+        reef: resolve(__dirname, 'reef.html'),         // The Reef social landing
         app: resolve(__dirname, 'app.html')            // React dashboard app
       }
     }

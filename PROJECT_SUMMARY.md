@@ -47,7 +47,7 @@ graph TD
 ```
 
 ### Infrastructure Components
-1. **Frontend Client**: Multi-page Vite React app (`index.html` landing, `app.html` dashboard) with glassmorphic UI.
+1. **Frontend Client**: Multi-page Vite React app (`index.html` landing, `app.html` dashboard, `database.html` species registry, `reef.html` social landing, `hobbyist.html` + `breeder.html` persona pages) with glassmorphic UI.
 2. **Base L2 Smart Contracts**: Registry transactions, pedigree state transitions, escrow/shipping, batch checkout.
 3. **FishBase Master Catalog**: Offline JSON (`fishbase_master.json`) — 326 species with taxonomic envelopes (temp/pH/volume bounds).
 4. **Local Database**: Dexie.js v10 schema with tables: `species`, `listings`, `tanks`, `actionLogs`, `userProfile`, `breederCompanion`, `pendingHandshakes`, `speciesManifest`, `spawnGrowout`, `feedCache`, `socialNotifications`, `draftContent`.
@@ -141,6 +141,13 @@ All contracts deployed on **Base Sepolia (Chain ID 84532)**.
 - **Poseidon Social AI (Phase 4)**: Weekly Reef Digest, Breeder Summary auto-generation, Tide live narration + post-event recaps, AI content moderation (text + image via Gemini), Poseidon mentor matching.
 - **Edge Functions (8 deployed)**: `send-push`, `tide-lifecycle`, `reef-digest`, `breeder-summary`, `content-moderation`, `tide-narration`, `mentor-match`, `anti-gaming`.
 - **Planned (Phase 5)**: Full-text search (Typesense), Virtual Tide streaming, rate limiting, GDPR export, accessibility audit, load testing.
+
+### Landing Pages
+- **Main** (`index.html`): Platform overview, dual-mode explainer, Spec-Dex preview, marketplace, Poseidon & Echo companion.
+- **Database** (`database.html`): Species registry with search, filter, and flip-card grid (326 species).
+- **The Reef** (`reef.html`): Social layer landing — coral/ocean-blue palette, mock feed UI, Depth Score tier ladder, Schools showcase, Tides with expanded expo map + auction/leaderboard previews.
+- **For Hobbyists** (`hobbyist.html`): Casual-mode pitch, sky-blue palette.
+- **For Breeders** (`breeder.html`): Pro-mode pitch, neon-purple palette.
 
 ---
 

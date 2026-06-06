@@ -1,0 +1,2768 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Reef — Aquacellum Social Layer</title>
+  <meta name="description" content="The Reef is Aquacellum's social backbone. Share Tank Currents, join Schools, attend live Tides, earn your Depth Score, and connect with fishkeepers who actually understand the obsession.">
+  <meta name="keywords" content="aquarium community, fishkeeping social, breeder network, tank currents, aquacellum reef, depth score, aquarium clubs, fish events">
+  <meta property="og:title" content="The Reef — Where Fishkeepers Connect">
+  <meta property="og:description" content="A living social layer built on real aquaculture activity. Not a forum. Not a subreddit. Something better.">
+  <meta property="og:type" content="website">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* =========================================
+       THE REEF DESIGN SYSTEM — Coral / Ocean Blue
+    ========================================= */
+    :root {
+      --bg-void:      #060810;
+      --bg-deep:      #080b16;
+      --bg-surface:   #0c1020;
+
+      --coral-100:    #ffe4e0;
+      --coral-200:    #ffc7bf;
+      --coral-300:    #ffa599;
+      --coral-400:    #f97066;
+      --coral-500:    #ef4444;
+
+      --ocean-100:    #e0f4ff;
+      --ocean-200:    #b8e8ff;
+      --ocean-300:    #7dd3fc;
+      --ocean-400:    #38bdf8;
+      --ocean-500:    #0ea5e9;
+      --ocean-600:    #0284c7;
+
+      --amber-300:    #fcd34d;
+      --amber-400:    #fbbf24;
+
+      --violet-400:   #a78bfa;
+      --emerald-400:  #34d399;
+      --teal-400:     #2dd4bf;
+
+      --text-primary: #f0f4ff;
+      --text-secondary: #94a3b8;
+      --text-muted:   #475569;
+
+      --glass-bg:     rgba(12, 16, 32, 0.65);
+      --glass-border: rgba(249, 112, 102, 0.1);
+      --glass-hover:  rgba(249, 112, 102, 0.04);
+
+      --radius-sm: 12px;
+      --radius-md: 18px;
+      --radius-lg: 24px;
+      --radius-xl: 32px;
+
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-void);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: inherit; border: none; background: none; }
+
+    /* =========================================
+       AMBIENT BACKGROUND
+    ========================================= */
+    .ambient-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      animation: orb-drift 18s ease-in-out infinite;
+    }
+    .orb-1 {
+      width: 550px; height: 550px;
+      background: radial-gradient(circle, rgba(249, 112, 102, 0.14) 0%, transparent 70%);
+      top: -180px; left: -100px;
+    }
+    .orb-2 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, transparent 70%);
+      top: 35%; right: -200px;
+      animation-delay: 6s;
+    }
+    .orb-3 {
+      width: 450px; height: 450px;
+      background: radial-gradient(circle, rgba(249, 112, 102, 0.09) 0%, transparent 70%);
+      bottom: 10%; left: 20%;
+      animation-delay: 12s;
+    }
+    .orb-4 {
+      width: 350px; height: 350px;
+      background: radial-gradient(circle, rgba(167, 139, 250, 0.08) 0%, transparent 70%);
+      top: 60%; left: -100px;
+      animation-delay: 9s;
+    }
+    @keyframes orb-drift {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33%       { transform: translate(40px, -30px) scale(1.08); }
+      66%       { transform: translate(-20px, 25px) scale(0.95); }
+    }
+
+    /* =========================================
+       HERO GRID BACKGROUND
+    ========================================= */
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(249, 112, 102, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(249, 112, 102, 0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 80%);
+      -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 80%);
+    }
+
+    /* =========================================
+       GLASSMORPHISM
+    ========================================= */
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      transition: var(--transition);
+    }
+    .glass-card:hover {
+      background: rgba(12, 16, 32, 0.80);
+      border-color: rgba(249, 112, 102, 0.25);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 60px rgba(249, 112, 102, 0.08), 0 0 40px rgba(249, 112, 102, 0.04);
+    }
+
+    .border-coral  { border-color: rgba(249, 112, 102, 0.2) !important; }
+    .border-ocean  { border-color: rgba(56, 189, 248, 0.2) !important; }
+    .border-violet { border-color: rgba(167, 139, 250, 0.2) !important; }
+    .border-amber  { border-color: rgba(251, 191, 36, 0.2) !important; }
+
+    .border-coral:hover  { box-shadow: 0 20px 60px rgba(249, 112, 102, 0.1), 0 0 30px rgba(249, 112, 102, 0.05) !important; }
+    .border-ocean:hover  { box-shadow: 0 20px 60px rgba(56, 189, 248, 0.1), 0 0 30px rgba(56, 189, 248, 0.05) !important; }
+    .border-violet:hover { box-shadow: 0 20px 60px rgba(167, 139, 250, 0.1), 0 0 30px rgba(167, 139, 250, 0.05) !important; }
+    .border-amber:hover  { box-shadow: 0 20px 60px rgba(251, 191, 36, 0.1), 0 0 30px rgba(251, 191, 36, 0.05) !important; }
+
+    /* =========================================
+       TYPOGRAPHY
+    ========================================= */
+    .font-display { font-family: 'Outfit', sans-serif; }
+    .font-mono    { font-family: 'JetBrains Mono', monospace; }
+
+    .text-gradient-coral {
+      background: linear-gradient(135deg, var(--coral-300) 0%, var(--coral-400) 50%, var(--amber-400) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .text-gradient-ocean {
+      background: linear-gradient(135deg, var(--ocean-300) 0%, var(--ocean-400) 50%, var(--violet-400) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* =========================================
+       LAYOUT
+    ========================================= */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+    .section { padding: 120px 0; }
+    .section-header {
+      text-align: center;
+      margin-bottom: 70px;
+    }
+    .section-title {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+    .section-desc {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* =========================================
+       SECTION DIVIDERS (SVG wave/coral)
+    ========================================= */
+    .section-divider {
+      width: 100%;
+      height: 80px;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .section-divider svg {
+      width: 100%;
+      height: 100%;
+      opacity: 0.4;
+    }
+    .divider-coral {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+    }
+    .coral-branch {
+      width: 2px;
+      border-radius: 4px;
+      background: linear-gradient(to top, transparent, var(--coral-400), transparent);
+      animation: coral-sway 4s ease-in-out infinite;
+    }
+    .coral-branch:nth-child(odd) { animation-delay: -1s; }
+    .coral-branch:nth-child(3n) { animation-delay: -2s; }
+    @keyframes coral-sway {
+      0%, 100% { transform: rotate(-3deg) scaleY(1); }
+      50% { transform: rotate(3deg) scaleY(1.05); }
+    }
+
+    /* =========================================
+       NAVIGATION
+    ========================================= */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(6, 8, 16, 0.85);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .nav-logo-mark {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--coral-400), var(--ocean-500));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(249, 112, 102, 0.3);
+      transition: var(--transition);
+    }
+    .nav-logo-mark:hover { box-shadow: 0 0 30px rgba(249, 112, 102, 0.5); transform: scale(1.05); }
+    .nav-logo-text {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: 0.12em;
+      color: #fff;
+    }
+    .nav-logo-sub {
+      display: block;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      color: var(--coral-400);
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-top: -3px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+    .nav-links a:hover { color: var(--text-primary); }
+    .nav-cta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 100px;
+      background: linear-gradient(135deg, var(--coral-400), var(--ocean-500));
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: var(--transition);
+      box-shadow: 0 4px 20px rgba(249, 112, 102, 0.3);
+    }
+    .nav-cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 30px rgba(249, 112, 102, 0.45);
+    }
+    .pulse-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #fff;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.7); }
+    }
+
+    /* =========================================
+       HERO
+    ========================================= */
+    .hero {
+      padding: 100px 0 60px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      min-height: 90vh;
+      display: flex;
+      align-items: center;
+    }
+    .hero > .container { width: 100%; }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+    .hero-badge {
+      display: inline-block;
+      padding: 8px 20px;
+      border-radius: 100px;
+      background: rgba(249, 112, 102, 0.08);
+      border: 1px solid rgba(249, 112, 102, 0.2);
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--coral-300);
+      margin-bottom: 24px;
+      animation: badge-glow 3s ease-in-out infinite;
+    }
+    @keyframes badge-glow {
+      0%, 100% { box-shadow: 0 0 0 rgba(249,112,102,0); }
+      50% { box-shadow: 0 0 20px rgba(249,112,102,0.15); }
+    }
+    .hero h1 {
+      font-size: clamp(3rem, 8vw, 5.5rem);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 24px;
+    }
+    .hero-subtitle {
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+      line-height: 1.8;
+      max-width: 600px;
+      margin: 0 auto 40px;
+    }
+    .hero-subtitle strong { color: var(--text-primary); }
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 60px;
+    }
+
+    /* Floating emojis */
+    .hero-reactions {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .float-emoji {
+      position: absolute;
+      bottom: 30%;
+      left: 50%;
+      font-size: 2.2rem;
+      opacity: 0;
+      animation: float-up 9s ease-in-out infinite;
+      animation-delay: var(--delay);
+      transform: translateX(var(--x));
+      filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
+    }
+    @keyframes float-up {
+      0% { opacity: 0; transform: translateX(var(--x)) translateY(0) scale(0.5); }
+      8% { opacity: 0.9; transform: translateX(var(--x)) translateY(-20px) scale(1); }
+      80% { opacity: 0.5; }
+      100% { opacity: 0; transform: translateX(var(--x)) translateY(-250px) scale(0.8); }
+    }
+
+    /* =========================================
+       MOCK UI PREVIEW (Hero)
+    ========================================= */
+    .mock-feed-preview {
+      max-width: 700px;
+      margin: 0 auto;
+      perspective: 1200px;
+    }
+    .mock-feed-wrapper {
+      background: rgba(8, 11, 22, 0.9);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      box-shadow:
+        0 40px 80px rgba(0,0,0,0.5),
+        0 0 60px rgba(249, 112, 102, 0.05),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+      transform: rotateX(2deg);
+      transition: transform 0.5s ease;
+    }
+    .mock-feed-wrapper:hover {
+      transform: rotateX(0deg) translateY(-4px);
+    }
+    .mock-feed-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .mock-feed-tabs {
+      display: flex;
+      gap: 0;
+    }
+    .mock-tab {
+      padding: 8px 18px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 100px;
+      color: var(--text-muted);
+    }
+    .mock-tab.active {
+      background: rgba(249, 112, 102, 0.12);
+      color: var(--coral-400);
+    }
+    .mock-feed-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--coral-400);
+      margin-left: auto;
+      animation: pulse 2s infinite;
+    }
+
+    /* Mock Current Card */
+    .mock-current {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      margin-bottom: 16px;
+      transition: var(--transition);
+    }
+    .mock-current:hover {
+      border-color: rgba(249, 112, 102, 0.15);
+      background: rgba(255,255,255,0.03);
+    }
+    .mock-current-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .mock-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+    }
+    .mock-username {
+      font-weight: 600;
+      font-size: 0.88rem;
+    }
+    .mock-tier {
+      font-size: 0.68rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-muted);
+    }
+    .mock-time {
+      margin-left: auto;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .mock-current-body {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+    .mock-params {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .mock-param-chip {
+      padding: 4px 10px;
+      border-radius: 100px;
+      font-size: 0.7rem;
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.15);
+      color: var(--ocean-300);
+    }
+    .mock-photo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .mock-photo {
+      height: 100px;
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    /* CSS Aquarium Scenes */
+    .aquarium-scene {
+      position: absolute;
+      inset: 0;
+    }
+    .aquarium-scene .water {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(14,165,233,0.15) 0%, rgba(8,30,50,0.9) 100%);
+    }
+    .aquarium-scene .substrate {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 20%;
+      background: linear-gradient(180deg, rgba(120,80,40,0.3) 0%, rgba(60,40,20,0.6) 100%);
+      border-radius: 0 0 8px 8px;
+    }
+    .aquarium-scene .plant {
+      position: absolute;
+      bottom: 15%;
+      width: 3px;
+      border-radius: 3px 3px 0 0;
+      animation: plant-sway 3s ease-in-out infinite;
+    }
+    .aquarium-scene .plant-1 { left: 15%; height: 45%; background: linear-gradient(to top, #166534, #34d399); animation-delay: 0s; }
+    .aquarium-scene .plant-2 { left: 25%; height: 55%; background: linear-gradient(to top, #166534, #4ade80); animation-delay: -1s; width: 4px; }
+    .aquarium-scene .plant-3 { left: 70%; height: 40%; background: linear-gradient(to top, #166534, #34d399); animation-delay: -2s; }
+    .aquarium-scene .plant-4 { left: 80%; height: 50%; background: linear-gradient(to top, #14532d, #22c55e); animation-delay: -0.5s; width: 4px; }
+    @keyframes plant-sway {
+      0%, 100% { transform: rotate(-2deg); }
+      50% { transform: rotate(2deg); }
+    }
+    .aquarium-scene .fish {
+      position: absolute;
+      animation: fish-swim 6s ease-in-out infinite;
+    }
+    .aquarium-scene .fish-1 {
+      top: 30%; left: 40%;
+      width: 24px; height: 10px;
+      background: linear-gradient(90deg, var(--coral-400), var(--amber-400));
+      border-radius: 60% 40% 40% 60%;
+      animation-delay: 0s;
+      box-shadow: 0 0 6px rgba(249,112,102,0.4);
+    }
+    .aquarium-scene .fish-1::after {
+      content: '';
+      position: absolute;
+      right: -6px;
+      top: 1px;
+      width: 8px; height: 8px;
+      background: var(--coral-400);
+      clip-path: polygon(0 50%, 100% 0, 100% 100%);
+    }
+    .aquarium-scene .fish-2 {
+      top: 50%; left: 60%;
+      width: 18px; height: 8px;
+      background: linear-gradient(90deg, var(--ocean-400), var(--ocean-300));
+      border-radius: 60% 40% 40% 60%;
+      animation-delay: -3s;
+      animation-duration: 7s;
+      box-shadow: 0 0 6px rgba(56,189,248,0.4);
+    }
+    .aquarium-scene .fish-2::after {
+      content: '';
+      position: absolute;
+      right: -5px;
+      top: 1px;
+      width: 6px; height: 6px;
+      background: var(--ocean-400);
+      clip-path: polygon(0 50%, 100% 0, 100% 100%);
+    }
+    .aquarium-scene .fish-3 {
+      top: 65%; left: 30%;
+      width: 14px; height: 6px;
+      background: linear-gradient(90deg, var(--violet-400), #c084fc);
+      border-radius: 60% 40% 40% 60%;
+      animation-delay: -1.5s;
+      animation-duration: 5s;
+      box-shadow: 0 0 4px rgba(167,139,250,0.3);
+    }
+    @keyframes fish-swim {
+      0%, 100% { transform: translateX(0) translateY(0); }
+      25% { transform: translateX(12px) translateY(-4px); }
+      50% { transform: translateX(6px) translateY(4px); }
+      75% { transform: translateX(-8px) translateY(-2px); }
+    }
+    .aquarium-scene .bubbles span {
+      position: absolute;
+      bottom: 20%;
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      animation: bubble-rise 4s ease-in infinite;
+    }
+    .aquarium-scene .bubbles span:nth-child(1) { left: 35%; animation-delay: 0s; }
+    .aquarium-scene .bubbles span:nth-child(2) { left: 55%; animation-delay: 1.5s; width: 3px; height: 3px; }
+    .aquarium-scene .bubbles span:nth-child(3) { left: 75%; animation-delay: 3s; width: 2px; height: 2px; }
+    @keyframes bubble-rise {
+      0% { transform: translateY(0) scale(1); opacity: 0.6; }
+      100% { transform: translateY(-60px) scale(0.5); opacity: 0; }
+    }
+    /* Scene variant 2 (darker, more plants) */
+    .aquarium-scene.scene-dark .water {
+      background: linear-gradient(180deg, rgba(6,20,40,0.9) 0%, rgba(4,12,25,0.95) 100%);
+    }
+    .mock-reactions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .mock-reaction {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 100px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.75rem;
+    }
+    .mock-reaction-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+    .mock-comment-count {
+      margin-left: auto;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* =========================================
+       BUTTONS
+    ========================================= */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      border-radius: 100px;
+      background: linear-gradient(135deg, var(--coral-400), var(--ocean-500));
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: var(--transition);
+      box-shadow: 0 4px 24px rgba(249, 112, 102, 0.3);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 40px rgba(249, 112, 102, 0.45);
+    }
+    .btn-primary.btn-lg {
+      padding: 18px 40px;
+      font-size: 1.1rem;
+    }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      border-radius: 100px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text-primary);
+      font-size: 1rem;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.2);
+      transform: translateY(-2px);
+    }
+
+    /* =========================================
+       STEPS (with mini UI previews)
+    ========================================= */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      position: relative;
+    }
+    /* Connecting arrows between steps */
+    .steps-grid::before,
+    .steps-grid::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 40px;
+      height: 2px;
+      background: linear-gradient(90deg, rgba(249,112,102,0.3), rgba(56,189,248,0.3));
+    }
+    .steps-grid::before { left: calc(33.33% - 20px); }
+    .steps-grid::after { left: calc(66.66% - 20px); }
+    .step-card {
+      padding: 0;
+      text-align: left;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .step-card-header {
+      padding: 24px 24px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .step-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--bg-void);
+      letter-spacing: 0.05em;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-number-coral { background: var(--coral-400); }
+    .step-number-ocean { background: var(--ocean-400); }
+    .step-number-violet { background: var(--violet-400); }
+    .step-card h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .step-card-desc {
+      padding: 0 24px 16px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    /* Mini UI preview inside step cards */
+    .step-mini-ui {
+      margin-top: auto;
+      padding: 0 16px 16px;
+    }
+    .step-mini-frame {
+      background: rgba(6, 8, 16, 0.8);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      overflow: hidden;
+    }
+    /* Mini Feed Card */
+    .mini-feed-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .mini-feed-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mini-avatar-sm {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .mini-name {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .mini-time-sm {
+      font-size: 0.58rem;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+    .mini-text {
+      font-size: 0.65rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+    .mini-photo-strip {
+      display: flex;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .mini-photo-strip span {
+      flex: 1;
+      height: 32px;
+      border-radius: 4px;
+    }
+    .mini-params-row {
+      display: flex;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .mini-param {
+      font-size: 0.55rem;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 2px 6px;
+      border-radius: 100px;
+      background: rgba(56,189,248,0.08);
+      border: 1px solid rgba(56,189,248,0.12);
+      color: var(--ocean-300);
+    }
+    .mini-reactions {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .mini-reactions span {
+      font-size: 0.75rem;
+    }
+    /* Mini Connection Card */
+    .mini-connection {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .mini-conn-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .mini-conn-info {
+      flex: 1;
+    }
+    .mini-conn-name {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .mini-conn-species {
+      font-size: 0.58rem;
+      color: var(--text-muted);
+    }
+    .mini-conn-btn {
+      font-size: 0.55rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 100px;
+      background: rgba(56,189,248,0.12);
+      border: 1px solid rgba(56,189,248,0.2);
+      color: var(--ocean-300);
+    }
+    /* Mini Depth Meter */
+    .mini-depth {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .mini-depth-bar {
+      position: relative;
+      height: 8px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.05);
+      overflow: hidden;
+    }
+    .mini-depth-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--coral-400), var(--ocean-400), var(--violet-400));
+      width: 62%;
+      animation: depth-grow 3s ease-in-out infinite alternate;
+    }
+    @keyframes depth-grow {
+      0% { width: 55%; }
+      100% { width: 68%; }
+    }
+    .mini-depth-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.55rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-muted);
+    }
+    .mini-depth-score {
+      font-size: 1.1rem;
+      font-weight: 800;
+      font-family: 'Outfit', sans-serif;
+      text-align: center;
+    }
+    .mini-depth-score .score-num {
+      background: linear-gradient(135deg, var(--coral-400), var(--ocean-400));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .mini-depth-score .score-tier {
+      font-size: 0.6rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--ocean-400);
+      display: block;
+      margin-top: 2px;
+    }
+    .mini-depth-signals {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .mini-signal {
+      font-size: 0.55rem;
+      padding: 2px 6px;
+      border-radius: 100px;
+      background: rgba(52,211,153,0.08);
+      border: 1px solid rgba(52,211,153,0.12);
+      color: var(--emerald-400);
+    }
+
+    /* =========================================
+       FEATURES (Bento Grid)
+    ========================================= */
+    .features-bento {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: auto auto;
+      gap: 24px;
+    }
+    .feature-card {
+      padding: 32px 28px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .feature-card.feature-hero {
+      grid-row: span 2;
+      padding-bottom: 0;
+    }
+    .feature-card::after {
+      content: '';
+      position: absolute;
+      bottom: -50%;
+      right: -50%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, var(--glow-color, rgba(249,112,102,0.06)) 0%, transparent 70%);
+      pointer-events: none;
+      transition: opacity 0.4s;
+      opacity: 0;
+    }
+    .feature-card:hover::after { opacity: 1; }
+    .feature-card.border-coral  { --glow-color: rgba(249,112,102,0.08); }
+    .feature-card.border-ocean  { --glow-color: rgba(56,189,248,0.08); }
+    .feature-card.border-violet { --glow-color: rgba(167,139,250,0.08); }
+    .feature-card.border-amber  { --glow-color: rgba(251,191,36,0.08); }
+
+    .feature-icon {
+      width: 48px; height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .feature-icon.icon-coral {
+      background: rgba(249, 112, 102, 0.08);
+      border: 1px solid rgba(249, 112, 102, 0.2);
+      box-shadow: 0 0 20px rgba(249, 112, 102, 0.1);
+    }
+    .feature-icon.icon-ocean {
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.1);
+    }
+    .feature-icon.icon-violet {
+      background: rgba(167, 139, 250, 0.08);
+      border: 1px solid rgba(167, 139, 250, 0.2);
+      box-shadow: 0 0 20px rgba(167, 139, 250, 0.1);
+    }
+    .feature-icon.icon-amber {
+      background: rgba(251, 191, 36, 0.08);
+      border: 1px solid rgba(251, 191, 36, 0.2);
+      box-shadow: 0 0 20px rgba(251, 191, 36, 0.1);
+    }
+    .feature-card h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .feature-card p {
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+    /* Feature mini visuals */
+    .feature-visual {
+      margin-top: auto;
+      padding-top: 16px;
+    }
+    /* Mini feed in hero feature card */
+    .feature-mini-feed {
+      background: rgba(6,8,16,0.8);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      padding: 12px;
+      margin: 0 -28px;
+    }
+    /* Audit scorecard bars */
+    .mini-scorecard {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .score-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .score-label {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      width: 60px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .score-bar-bg {
+      flex: 1;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.05);
+      overflow: hidden;
+    }
+    .score-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+    }
+    .score-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--text-primary);
+      width: 12px;
+      text-align: right;
+    }
+    /* Spawn lifecycle */
+    .mini-lifecycle {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 12px;
+    }
+    .lifecycle-stage {
+      flex: 1;
+      text-align: center;
+      padding: 6px 4px;
+      border-radius: 6px;
+      font-size: 0.58rem;
+      font-weight: 600;
+    }
+    .lifecycle-stage.active {
+      background: rgba(251,191,36,0.12);
+      border: 1px solid rgba(251,191,36,0.25);
+      color: var(--amber-400);
+    }
+    .lifecycle-stage.done {
+      background: rgba(52,211,153,0.1);
+      border: 1px solid rgba(52,211,153,0.2);
+      color: var(--emerald-400);
+    }
+    .lifecycle-stage.pending {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: var(--text-muted);
+    }
+    .lifecycle-arrow {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    /* Sonar mini bell */
+    .mini-sonar {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .sonar-notif {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.68rem;
+      color: var(--text-secondary);
+    }
+    .sonar-notif .notif-icon {
+      font-size: 0.9rem;
+    }
+    .sonar-notif .notif-time {
+      margin-left: auto;
+      font-size: 0.58rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .sonar-notif .notif-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--ocean-400);
+      flex-shrink: 0;
+    }
+    /* Poseidon mini chat */
+    .mini-poseidon {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(167,139,250,0.04);
+      border: 1px solid rgba(167,139,250,0.12);
+    }
+    .poseidon-msg {
+      font-size: 0.68rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      font-style: italic;
+    }
+    .poseidon-msg::before {
+      content: '🔱 ';
+    }
+    /* Species insight mini */
+    .mini-insight {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .insight-tag {
+      font-size: 0.55rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--violet-400);
+      margin-bottom: 4px;
+    }
+    .insight-body {
+      font-size: 0.68rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .insight-votes {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 0.6rem;
+      color: var(--text-muted);
+    }
+
+    /* =========================================
+       DEPTH SCORE
+    ========================================= */
+    .depth-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: start;
+    }
+    .depth-ladder {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+    .depth-ladder::before {
+      content: '';
+      position: absolute;
+      left: 24px;
+      top: 20px;
+      bottom: 20px;
+      width: 4px;
+      border-radius: 4px;
+      background: linear-gradient(to bottom,
+        var(--coral-400) 0%,
+        var(--ocean-400) 30%,
+        var(--violet-400) 60%,
+        var(--emerald-400) 85%,
+        var(--text-muted) 100%
+      );
+      opacity: 0.4;
+    }
+    .depth-tier {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 20px 28px;
+      padding-left: 56px;
+      border-radius: var(--radius-md);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      transition: var(--transition);
+      position: relative;
+    }
+    .depth-tier:hover {
+      transform: translateX(8px);
+      border-color: rgba(249, 112, 102, 0.2);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    .tier-hadal   { border-left: 4px solid var(--coral-400); }
+    .tier-abyssal { border-left: 4px solid var(--ocean-400); }
+    .tier-pelagic { border-left: 4px solid var(--violet-400); }
+    .tier-coastal { border-left: 4px solid var(--emerald-400); }
+    .tier-shallow { border-left: 4px solid var(--text-muted); }
+
+    .tier-badge {
+      font-size: 1.8rem;
+      width: 44px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .tier-info h4 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .tier-range {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-left: 8px;
+    }
+    .tier-info p {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .depth-signals {
+      padding-top: 20px;
+    }
+    .depth-signals h3 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .depth-signals-desc {
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 28px;
+    }
+    .signals-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .signal-chip {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+    .signal-chip:hover {
+      border-color: rgba(249, 112, 102, 0.2);
+      background: rgba(249, 112, 102, 0.03);
+      color: var(--text-primary);
+      transform: translateX(4px);
+    }
+    .signal-chip span {
+      font-size: 1.2rem;
+    }
+    .signal-weight {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: 100px;
+      background: rgba(249, 112, 102, 0.08);
+      color: var(--coral-400);
+    }
+
+    /* =========================================
+       SCHOOLS
+    ========================================= */
+    .schools-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+    .school-card {
+      overflow: hidden;
+      padding: 0;
+    }
+    .school-banner {
+      height: 100px;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+    .school-banner::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 100'%3E%3Cpath d='M0,80 Q50,60 100,75 T200,70 L200,100 L0,100Z' fill='rgba(255,255,255,0.05)'/%3E%3Cpath d='M0,90 Q50,75 100,85 T200,80 L200,100 L0,100Z' fill='rgba(255,255,255,0.03)'/%3E%3C/svg%3E") center/cover;
+      opacity: 0.8;
+    }
+    .school-body {
+      padding: 20px 24px;
+    }
+    .school-body h4 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .school-type {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--ocean-400);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+    .school-members {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .school-avatar {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.55rem;
+      font-weight: 700;
+      color: white;
+      border: 2px solid var(--bg-surface);
+      margin-left: -6px;
+    }
+    .school-avatar:first-child { margin-left: 0; }
+    .school-avatar-more {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.55rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.06);
+      border: 2px solid var(--bg-surface);
+      margin-left: -6px;
+    }
+    .school-meta {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .schools-features {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .school-feature {
+      padding: 20px 24px;
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      transition: var(--transition);
+    }
+    .school-feature:hover {
+      border-color: rgba(56, 189, 248, 0.15);
+      background: rgba(56, 189, 248, 0.02);
+    }
+    .school-feature strong {
+      color: var(--text-primary);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    /* =========================================
+       TIDES
+    ========================================= */
+    .tide-card {
+      padding: 32px 28px;
+      position: relative;
+      overflow: hidden;
+    }
+    .tide-card::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 150px; height: 150px;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    .tide-card:hover::before { opacity: 1; }
+    .tide-card:nth-child(1)::before { background: rgba(249, 112, 102, 0.15); }
+    .tide-card:nth-child(2)::before { background: rgba(56, 189, 248, 0.15); }
+    .tide-card:nth-child(3)::before { background: rgba(251, 191, 36, 0.15); }
+    .tide-card:nth-child(4)::before { background: rgba(167, 139, 250, 0.15); }
+
+    .tide-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .tide-type-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+    }
+    .tide-type-badge.expo {
+      background: rgba(249, 112, 102, 0.12);
+      color: var(--coral-400);
+      border: 1px solid rgba(249, 112, 102, 0.25);
+    }
+    .tide-type-badge.virtual {
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--ocean-400);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+    .tide-type-badge.auction {
+      background: rgba(251, 191, 36, 0.12);
+      color: var(--amber-400);
+      border: 1px solid rgba(251, 191, 36, 0.25);
+    }
+    .tide-type-badge.challenge {
+      background: rgba(167, 139, 250, 0.12);
+      color: var(--violet-400);
+      border: 1px solid rgba(167, 139, 250, 0.25);
+    }
+    .tide-live-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--coral-400);
+      animation: pulse 1.5s infinite;
+      box-shadow: 0 0 8px var(--coral-400);
+    }
+    .tide-date {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.04);
+    }
+    .tide-card h4 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .tide-card p {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 14px;
+    }
+    .tide-attendees {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .tide-attendee {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      border: 2px solid var(--bg-surface);
+      margin-left: -8px;
+    }
+    .tide-attendee:first-child { margin-left: 0; }
+    .tide-attendee-count {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-left: 8px;
+    }
+
+    /* =========================================
+       TIDE FEATURED (Expanded Expo Card)
+    ========================================= */
+    .tide-featured {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      margin-bottom: 24px;
+      overflow: hidden;
+      padding: 0;
+    }
+    .tide-featured-content {
+      padding: 36px 32px;
+    }
+    .tide-featured-content h3 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+    .tide-featured-content > p {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+    .tide-featured-live {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--coral-400);
+      letter-spacing: 0.05em;
+      animation: pulse 1.5s infinite;
+    }
+    .tide-swap-sheet {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      margin-bottom: 20px;
+    }
+    .swap-sheet-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .swap-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .swap-chip {
+      padding: 4px 10px;
+      border-radius: 100px;
+      font-size: 0.7rem;
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(52, 211, 153, 0.08);
+      border: 1px solid rgba(52, 211, 153, 0.15);
+      color: var(--emerald-400);
+    }
+    .swap-chip-more {
+      padding: 4px 10px;
+      border-radius: 100px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .tide-featured-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .tide-countdown {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .countdown-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .countdown-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--coral-400);
+      text-shadow: 0 0 10px rgba(249,112,102,0.3);
+    }
+
+    /* Mock Map */
+    .tide-featured-map {
+      position: relative;
+      background: rgba(6, 10, 20, 0.8);
+      border-left: 1px solid rgba(255,255,255,0.05);
+      overflow: hidden;
+    }
+    .mock-map {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+    .map-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    .map-zone {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      border: 2px solid rgba(249, 112, 102, 0.3);
+      background: rgba(249, 112, 102, 0.04);
+      animation: zone-pulse 3s ease-in-out infinite;
+    }
+    @keyframes zone-pulse {
+      0%, 100% { transform: translate(-50%,-50%) scale(1); opacity: 0.8; }
+      50% { transform: translate(-50%,-50%) scale(1.05); opacity: 1; }
+    }
+    .map-pin {
+      position: absolute;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--coral-400);
+      box-shadow: 0 0 8px var(--coral-400), 0 0 16px rgba(249,112,102,0.3);
+      animation: pin-pulse 2s ease-in-out infinite;
+    }
+    .map-pin-1 { top: 45%; left: 48%; width: 12px; height: 12px; }
+    .map-pin-2 { top: 38%; left: 55%; animation-delay: -0.5s; }
+    .map-pin-3 { top: 55%; left: 42%; animation-delay: -1s; }
+    .map-pin-4 { top: 50%; left: 60%; animation-delay: -1.5s; width: 8px; height: 8px; }
+    .map-pin-5 { top: 60%; left: 52%; animation-delay: -2s; width: 8px; height: 8px; }
+    @keyframes pin-pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.7; }
+    }
+    .map-label {
+      position: absolute;
+      bottom: 20px; left: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      background: rgba(6,8,16,0.8);
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .map-radius-label {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, 90px);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--coral-400);
+      opacity: 0.7;
+    }
+
+    /* Tides Compact Grid (3 columns below featured) */
+    .tides-grid-compact {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .tides-grid-compact .tide-card {
+      padding: 28px 24px;
+    }
+    .tides-grid-compact .tide-card h4 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .tides-grid-compact .tide-card p {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+
+    /* Mock Stream Preview */
+    .mock-stream {
+      position: relative;
+      height: 120px;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: #080e1a;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .stream-bg {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(56,189,248,0.05), rgba(167,139,250,0.05));
+    }
+    .stream-play {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: 2px solid rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      color: white;
+      backdrop-filter: blur(4px);
+    }
+    .stream-banner {
+      position: absolute;
+      top: 10px; left: 10px;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--ocean-300);
+      background: rgba(14,165,233,0.15);
+      border: 1px solid rgba(56,189,248,0.25);
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .stream-info {
+      position: absolute;
+      bottom: 10px; left: 10px; right: 10px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+    .stream-host { color: var(--ocean-300); }
+
+    /* Mock Auction Preview */
+    .mock-auction {
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+    }
+    .auction-specimen {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .specimen-img {
+      width: 48px; height: 48px;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      background: #0a1a2a;
+      flex-shrink: 0;
+    }
+    .specimen-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .specimen-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .specimen-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+    .auction-bid-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px;
+    }
+    .bid-current, .bid-timer {
+      display: flex;
+      flex-direction: column;
+    }
+    .bid-label {
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+    .bid-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--amber-400);
+      text-shadow: 0 0 8px rgba(251,191,36,0.3);
+    }
+    .bid-countdown {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* Mock Leaderboard */
+    .mock-leaderboard {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .lb-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .lb-rank {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      width: 16px;
+      text-align: center;
+    }
+    .lb-name {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      width: 110px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .lb-bar-wrap {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.04);
+      overflow: hidden;
+    }
+    .lb-bar {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 1s ease;
+    }
+    .lb-score {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      width: 20px;
+      text-align: right;
+    }
+
+    /* =========================================
+       CTA
+    ========================================= */
+    .cta-section {
+      padding: 60px 0 120px;
+    }
+    .cta-card {
+      text-align: center;
+      padding: 80px 40px;
+      background: rgba(249, 112, 102, 0.03);
+      border-color: rgba(249, 112, 102, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-card::before {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: radial-gradient(circle at 50% 80%, rgba(249,112,102,0.06) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .cta-card h2 {
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      font-weight: 800;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .cta-card p {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.7;
+      position: relative;
+    }
+
+    /* =========================================
+       FOOTER
+    ========================================= */
+    .footer {
+      position: relative;
+      z-index: 1;
+      padding: 40px 0;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      text-align: center;
+    }
+    .footer p { font-size: 0.78rem; color: var(--text-muted); }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .footer-links a {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--coral-300); }
+
+    /* =========================================
+       RESPONSIVE
+    ========================================= */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .steps-grid::before, .steps-grid::after { display: none; }
+      .features-bento { grid-template-columns: 1fr; }
+      .feature-card.feature-hero { grid-row: span 1; }
+      .schools-grid { grid-template-columns: 1fr; }
+      .schools-features { grid-template-columns: 1fr; }
+      .tides-grid-compact { grid-template-columns: 1fr; }
+      .tide-featured { grid-template-columns: 1fr; }
+      .tide-featured-map { min-height: 200px; border-left: none; border-top: 1px solid rgba(255,255,255,0.05); }
+      .depth-layout { grid-template-columns: 1fr; gap: 40px; }
+      .hero { padding: 80px 0 60px; min-height: auto; }
+      .mock-feed-wrapper { padding: 16px; }
+    }
+    @media (max-width: 480px) {
+      .hero h1 { font-size: 2.5rem; }
+      .hero-subtitle { font-size: 1rem; }
+      .section { padding: 80px 0; }
+      .depth-tier { padding: 16px 18px; padding-left: 44px; }
+      .mock-photo-grid { grid-template-columns: 1fr; }
+      .tide-featured-content { padding: 24px 20px; }
+      .lb-name { width: 80px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient Background -->
+  <div class="ambient-layer">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+  </div>
+
+  <!-- Navigation -->
+  <header>
+    <nav class="nav">
+      <div class="nav-inner">
+        <a href="/" class="nav-logo">
+          <div class="nav-logo-mark">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2"/><path d="M8 12c0-2 1.5-4 4-4s4 2 4 4-1.5 4-4 4-4-2-4-4"/></svg>
+          </div>
+          <div>
+            <span class="nav-logo-text">AQUACELLUM</span>
+            <span class="nav-logo-sub">The Reef</span>
+          </div>
+        </a>
+
+        <ul class="nav-links">
+          <li><a href="#features">Features</a></li>
+          <li><a href="#depth">Depth Score</a></li>
+          <li><a href="#schools">Schools</a></li>
+          <li><a href="#tides">Tides</a></li>
+          <li><a href="/">Home</a></li>
+          <li><a href="/database">Database</a></li>
+        </ul>
+
+        <a href="/app.html" class="nav-cta">
+          <div class="pulse-dot"></div>
+          Enter the Reef
+        </a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ========== HERO ========== -->
+  <section class="hero" id="hero">
+    <div class="hero-grid"></div>
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-badge">🪸 Social Layer for Fishkeepers</div>
+        <h1 class="font-display">
+          <span class="text-gradient-coral">The Reef</span>
+        </h1>
+        <p class="hero-subtitle">
+          A living social layer where every post is tied to real aquaculture activity.<br>
+          Not a forum. Not a subreddit. <strong>Something built for this hobby.</strong>
+        </p>
+        <div class="hero-actions">
+          <a href="/app.html" class="btn-primary">Enter the Reef</a>
+          <a href="#features" class="btn-secondary">See How It Works</a>
+        </div>
+
+        <!-- Mock Feed Preview -->
+        <div class="mock-feed-preview">
+          <div class="mock-feed-wrapper">
+            <div class="mock-feed-header">
+              <div class="mock-feed-tabs">
+                <div class="mock-tab active">Following</div>
+                <div class="mock-tab">Discover</div>
+                <div class="mock-tab">Regional</div>
+              </div>
+              <div class="mock-feed-dot"></div>
+            </div>
+
+            <!-- Mock Card 1 -->
+            <div class="mock-current">
+              <div class="mock-current-header">
+                <div class="mock-avatar" style="background: linear-gradient(135deg, #f97066, #fb923c);">CJ</div>
+                <div>
+                  <div class="mock-username">CoralJade</div>
+                  <div class="mock-tier">Pelagic · 847 Depth</div>
+                </div>
+                <div class="mock-time">12m ago</div>
+              </div>
+              <div class="mock-current-body">
+                Water change day on the 180G. pH dialed in after weeks of wrestling with it. The Sterbai are finally showing pre-spawn behavior 🎉
+              </div>
+              <div class="mock-params">
+                <span class="mock-param-chip">pH 6.8</span>
+                <span class="mock-param-chip">78°F</span>
+                <span class="mock-param-chip">GH 6</span>
+                <span class="mock-param-chip">NO₃ 5ppm</span>
+              </div>
+              <div class="mock-photo-grid">
+                <div class="mock-photo" style="background: #0a1a2a;">
+                  <div class="aquarium-scene">
+                    <div class="water"></div>
+                    <div class="plant plant-1"></div>
+                    <div class="plant plant-2"></div>
+                    <div class="plant plant-3"></div>
+                    <div class="plant plant-4"></div>
+                    <div class="fish fish-1"></div>
+                    <div class="fish fish-2"></div>
+                    <div class="fish fish-3"></div>
+                    <div class="substrate"></div>
+                    <div class="bubbles"><span></span><span></span><span></span></div>
+                  </div>
+                </div>
+                <div class="mock-photo" style="background: #0a1520;">
+                  <div class="aquarium-scene scene-dark">
+                    <div class="water"></div>
+                    <div class="plant plant-2" style="left:20%;"></div>
+                    <div class="plant plant-4" style="left:45%;"></div>
+                    <div class="plant plant-1" style="left:65%;"></div>
+                    <div class="fish fish-2" style="top:35%;left:30%;"></div>
+                    <div class="fish fish-1" style="top:55%;left:55%;"></div>
+                    <div class="substrate"></div>
+                    <div class="bubbles"><span></span><span></span><span></span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="mock-reactions">
+                <div class="mock-reaction">🔥 <span class="mock-reaction-count">14</span></div>
+                <div class="mock-reaction">🐟 <span class="mock-reaction-count">8</span></div>
+                <div class="mock-reaction">💧 <span class="mock-reaction-count">3</span></div>
+                <span class="mock-comment-count">💬 6 comments</span>
+              </div>
+            </div>
+
+            <!-- Mock Card 2 (partial, peeking) -->
+            <div class="mock-current" style="opacity: 0.5; margin-bottom: 0;">
+              <div class="mock-current-header">
+                <div class="mock-avatar" style="background: linear-gradient(135deg, #38bdf8, #a78bfa);">DR</div>
+                <div>
+                  <div class="mock-username">DeepReef_Mike</div>
+                  <div class="mock-tier">Abyssal · 2,340 Depth</div>
+                </div>
+                <div class="mock-time">28m ago</div>
+              </div>
+              <div class="mock-current-body" style="opacity: 0.6;">
+                Spawn Thread update: Day 14 fry count stable at 38. Survival tracking above species average...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating reaction emojis -->
+        <div class="hero-reactions" aria-hidden="true">
+          <span class="float-emoji" style="--delay:0s;--x:-120px">🔥</span>
+          <span class="float-emoji" style="--delay:1.4s;--x:90px">🐟</span>
+          <span class="float-emoji" style="--delay:2.8s;--x:-50px">💧</span>
+          <span class="float-emoji" style="--delay:4.2s;--x:130px">🌿</span>
+          <span class="float-emoji" style="--delay:5.6s;--x:-140px">👏</span>
+          <span class="float-emoji" style="--delay:7s;--x:60px">⭐</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Wave Divider -->
+  <div class="section-divider">
+    <svg viewBox="0 0 1200 80" preserveAspectRatio="none">
+      <path d="M0,40 C200,10 400,70 600,40 C800,10 1000,70 1200,40 L1200,80 L0,80Z" fill="rgba(249,112,102,0.03)"/>
+      <path d="M0,50 C300,20 500,80 700,45 C900,10 1100,60 1200,50" fill="none" stroke="rgba(249,112,102,0.1)" stroke-width="1"/>
+    </svg>
+  </div>
+
+  <!-- ========== HOW IT WORKS ========== -->
+  <section class="section" id="how">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="font-display section-title">How the Reef Works</h2>
+        <p class="section-desc">Three steps from solo fishkeeper to connected community.</p>
+      </div>
+
+      <div class="steps-grid">
+        <!-- Step 1: Share -->
+        <div class="step-card glass-card">
+          <div class="step-card-header">
+            <div class="step-number step-number-coral">01</div>
+            <h3>Share Your Tanks</h3>
+          </div>
+          <p class="step-card-desc">Post Tank Currents — living updates with real water parameters, species data, and photos.</p>
+          <div class="step-mini-ui">
+            <div class="step-mini-frame">
+              <div class="mini-feed-card">
+                <div class="mini-feed-row">
+                  <div class="mini-avatar-sm" style="background: linear-gradient(135deg, #f97066, #fbbf24);"></div>
+                  <span class="mini-name">mcdermkev81</span>
+                  <span class="mini-time-sm">3d ago</span>
+                </div>
+                <div class="mini-text">Water change day on the 180G. Sterbai showing pre-spawn behavior 🎉</div>
+                <div class="mini-params-row">
+                  <span class="mini-param">pH 6.8</span>
+                  <span class="mini-param">78°F</span>
+                  <span class="mini-param">GH 6</span>
+                </div>
+                <div class="mini-photo-strip">
+                  <span style="background: linear-gradient(135deg, #0a2a3a, #1a3a4a);"></span>
+                  <span style="background: linear-gradient(135deg, #1a2020, #0a2a2a);"></span>
+                </div>
+                <div class="mini-reactions">
+                  <span>🔥</span><span>🐟</span><span>💧</span><span>🌿</span><span>👏</span><span>⭐</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Connect -->
+        <div class="step-card glass-card">
+          <div class="step-card-header">
+            <div class="step-number step-number-ocean">02</div>
+            <h3>Connect with Tankmates</h3>
+          </div>
+          <p class="step-card-desc">Find breeders who keep your species. Watch their tanks. Get matched with mentors.</p>
+          <div class="step-mini-ui">
+            <div class="step-mini-frame">
+              <div class="mini-connection">
+                <div class="mini-conn-row">
+                  <div class="mini-avatar-sm" style="background: linear-gradient(135deg, #38bdf8, #a78bfa);"></div>
+                  <div class="mini-conn-info">
+                    <div class="mini-conn-name">DeepReef_Mike</div>
+                    <div class="mini-conn-species">Keeps: Discus, Sterbai</div>
+                  </div>
+                  <span class="mini-conn-btn">Connect</span>
+                </div>
+                <div class="mini-conn-row">
+                  <div class="mini-avatar-sm" style="background: linear-gradient(135deg, #34d399, #2dd4bf);"></div>
+                  <div class="mini-conn-info">
+                    <div class="mini-conn-name">CoralJade</div>
+                    <div class="mini-conn-species">Keeps: L046, Corydoras</div>
+                  </div>
+                  <span class="mini-conn-btn">Watch</span>
+                </div>
+                <div class="mini-conn-row">
+                  <div class="mini-avatar-sm" style="background: linear-gradient(135deg, #a78bfa, #f97066);"></div>
+                  <div class="mini-conn-info">
+                    <div class="mini-conn-name">PlecoPaul</div>
+                    <div class="mini-conn-species">Mentor · Hadal tier</div>
+                  </div>
+                  <span class="mini-conn-btn">Request</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Grow -->
+        <div class="step-card glass-card">
+          <div class="step-card-header">
+            <div class="step-number step-number-violet">03</div>
+            <h3>Grow Your Depth</h3>
+          </div>
+          <p class="step-card-desc">Earn reputation through real contributions — audits, insights, spawns.</p>
+          <div class="step-mini-ui">
+            <div class="step-mini-frame">
+              <div class="mini-depth">
+                <div class="mini-depth-score">
+                  <span class="score-num">847</span>
+                  <span class="score-tier">PELAGIC TIER</span>
+                </div>
+                <div class="mini-depth-bar">
+                  <div class="mini-depth-fill"></div>
+                </div>
+                <div class="mini-depth-labels">
+                  <span>500</span>
+                  <span>1500 → Abyssal</span>
+                </div>
+                <div class="mini-depth-signals">
+                  <span class="mini-signal">+12 Audit</span>
+                  <span class="mini-signal">+8 Insight</span>
+                  <span class="mini-signal">+25 Spawn</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Coral Divider -->
+  <div class="section-divider">
+    <div class="divider-coral">
+      <div class="coral-branch" style="height: 30px; background: linear-gradient(to top, transparent, var(--coral-400), transparent);"></div>
+      <div class="coral-branch" style="height: 45px; background: linear-gradient(to top, transparent, var(--ocean-400), transparent);"></div>
+      <div class="coral-branch" style="height: 35px; background: linear-gradient(to top, transparent, var(--coral-400), transparent);"></div>
+      <div class="coral-branch" style="height: 50px; background: linear-gradient(to top, transparent, var(--violet-400), transparent);"></div>
+      <div class="coral-branch" style="height: 28px; background: linear-gradient(to top, transparent, var(--ocean-400), transparent);"></div>
+      <div class="coral-branch" style="height: 42px; background: linear-gradient(to top, transparent, var(--coral-400), transparent);"></div>
+      <div class="coral-branch" style="height: 32px; background: linear-gradient(to top, transparent, var(--ocean-400), transparent);"></div>
+      <div class="coral-branch" style="height: 48px; background: linear-gradient(to top, transparent, var(--violet-400), transparent);"></div>
+      <div class="coral-branch" style="height: 25px; background: linear-gradient(to top, transparent, var(--coral-400), transparent);"></div>
+    </div>
+  </div>
+
+  <!-- ========== FEATURES (Bento Grid) ========== -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="font-display section-title">Built for <span class="text-gradient-ocean">Real Fishkeepers</span></h2>
+        <p class="section-desc">Every feature is grounded in actual aquaculture activity. No empty engagement loops.</p>
+      </div>
+
+      <div class="features-bento">
+        <!-- Tank Currents (Hero — spans 2 rows) -->
+        <div class="feature-card feature-hero glass-card border-coral">
+          <div class="feature-icon icon-coral">🌊</div>
+          <h3>Tank Currents</h3>
+          <p>Living posts that auto-update with your tank's water parameters, feeding streaks, and species list. Watch other fishkeepers' tanks in real time.</p>
+          <div class="feature-visual">
+            <div class="feature-mini-feed">
+              <div class="mini-feed-card">
+                <div class="mini-feed-row">
+                  <div class="mini-avatar-sm" style="background: linear-gradient(135deg, #f97066, #fbbf24);"></div>
+                  <span class="mini-name">mcdermkev81 🐙</span>
+                  <span class="mini-time-sm">2d ago</span>
+                </div>
+                <div class="mini-text">third test</div>
+                <div class="mini-photo-strip" style="height:60px;">
+                  <span style="flex:2;background: linear-gradient(135deg, #1a3040, #0a2030);border-radius:6px;position:relative;overflow:hidden;">
+                  </span>
+                </div>
+                <div class="mini-reactions" style="margin-top:8px;">
+                  <span>🔥 1</span> <span>🐟</span> <span>💧</span> <span>🌿</span> <span>👏</span> <span>⭐</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expert Audits -->
+        <div class="feature-card glass-card border-ocean">
+          <div class="feature-icon icon-ocean">🔬</div>
+          <h3>Expert Audits</h3>
+          <p>Get your setup peer-reviewed by Master-tier breeders with structured scorecards.</p>
+          <div class="mini-scorecard">
+            <div class="score-row">
+              <span class="score-label">Water</span>
+              <div class="score-bar-bg"><div class="score-bar-fill" style="width:90%;background:var(--ocean-400);"></div></div>
+              <span class="score-val">5</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Stocking</span>
+              <div class="score-bar-bg"><div class="score-bar-fill" style="width:72%;background:var(--emerald-400);"></div></div>
+              <span class="score-val">4</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Husbandry</span>
+              <div class="score-bar-bg"><div class="score-bar-fill" style="width:80%;background:var(--violet-400);"></div></div>
+              <span class="score-val">4</span>
+            </div>
+            <div class="score-row">
+              <span class="score-label">Aesthetics</span>
+              <div class="score-bar-bg"><div class="score-bar-fill" style="width:95%;background:var(--coral-400);"></div></div>
+              <span class="score-val">5</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Species Insights -->
+        <div class="feature-card glass-card border-violet">
+          <div class="feature-icon icon-violet">💡</div>
+          <h3>Species Insights</h3>
+          <p>Micro-tips tagged to species — care notes, breeding observations, ranked by trust.</p>
+          <div class="mini-insight">
+            <div class="insight-tag">BREEDING NOTE · Corydoras sterbai</div>
+            <div class="insight-body">Drop temp 3°F after a large water change to trigger spawning. Works best in groups of 6+.</div>
+            <div class="insight-votes">👍 24 · 👎 1 · by Pelagic breeder</div>
+          </div>
+        </div>
+
+        <!-- Spawn Threads -->
+        <div class="feature-card glass-card border-amber">
+          <div class="feature-icon icon-amber">🧬</div>
+          <h3>Spawn Threads</h3>
+          <p>Document your breeding journey from egg to raised with lifecycle tracking.</p>
+          <div class="mini-lifecycle">
+            <div class="lifecycle-stage done">🥚 Egg</div>
+            <span class="lifecycle-arrow">→</span>
+            <div class="lifecycle-stage done">🐟 Fry</div>
+            <span class="lifecycle-arrow">→</span>
+            <div class="lifecycle-stage active">📈 Raised</div>
+            <span class="lifecycle-arrow">→</span>
+            <div class="lifecycle-stage pending">💰 Sold</div>
+          </div>
+        </div>
+
+        <!-- Poseidon AI -->
+        <div class="feature-card glass-card border-violet">
+          <div class="feature-icon icon-violet">🤖</div>
+          <h3>Poseidon AI</h3>
+          <p>Weekly digests, mentor matching, spawn narration, and contextual Q&A.</p>
+          <div class="mini-poseidon">
+            <div class="poseidon-msg">Your Depth Score increased by 12 this week. Primary driver: 3 Species Insights received 15+ upvotes.</div>
+          </div>
+        </div>
+
+        <!-- Sonar Notifications -->
+        <div class="feature-card glass-card border-ocean">
+          <div class="feature-icon icon-ocean">🔔</div>
+          <h3>Sonar Notifications</h3>
+          <p>Smart alerts for what matters — tunable per category with quiet hours.</p>
+          <div class="mini-sonar">
+            <div class="sonar-notif">
+              <span class="notif-icon">🔥</span>
+              ggsteve reacted 🔥 to your post
+              <span class="notif-time">14h</span>
+              <span class="notif-dot"></span>
+            </div>
+            <div class="sonar-notif">
+              <span class="notif-icon">🧬</span>
+              Spawn Thread: Day 14 fry stable
+              <span class="notif-time">1d</span>
+              <span class="notif-dot"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Wave Divider -->
+  <div class="section-divider">
+    <svg viewBox="0 0 1200 80" preserveAspectRatio="none">
+      <path d="M0,60 C150,30 350,70 500,50 C650,30 850,70 1000,45 C1100,30 1200,50 1200,50 L1200,80 L0,80Z" fill="rgba(56,189,248,0.03)"/>
+      <path d="M0,55 C200,25 400,75 600,50 C800,25 1000,65 1200,45" fill="none" stroke="rgba(56,189,248,0.08)" stroke-width="1"/>
+    </svg>
+  </div>
+
+  <!-- ========== DEPTH SCORE ========== -->
+  <section class="section" id="depth">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="font-display section-title">Your <span class="text-gradient-coral">Depth Score</span></h2>
+        <p class="section-desc">Reputation that reflects real expertise — not follower count.</p>
+      </div>
+
+      <div class="depth-layout">
+        <div class="depth-ladder">
+          <div class="depth-tier tier-hadal">
+            <div class="tier-badge">🌋</div>
+            <div class="tier-info">
+              <h4>Hadal <span class="tier-range">5000+</span></h4>
+              <p>Host Expo Tides, moderate content, featured in discovery.</p>
+            </div>
+          </div>
+          <div class="depth-tier tier-abyssal">
+            <div class="tier-badge">🦑</div>
+            <div class="tier-info">
+              <h4>Abyssal <span class="tier-range">1500–4999</span></h4>
+              <p>Host Virtual Tides, give Expert Audits, mentor others.</p>
+            </div>
+          </div>
+          <div class="depth-tier tier-pelagic">
+            <div class="tier-badge">🐋</div>
+            <div class="tier-info">
+              <h4>Pelagic <span class="tier-range">500–1499</span></h4>
+              <p>Create Schools, request Audits, advanced discovery.</p>
+            </div>
+          </div>
+          <div class="depth-tier tier-coastal">
+            <div class="tier-badge">🐠</div>
+            <div class="tier-info">
+              <h4>Coastal <span class="tier-range">100–499</span></h4>
+              <p>Post Species Insights, join Schools, enter challenges.</p>
+            </div>
+          </div>
+          <div class="depth-tier tier-shallow">
+            <div class="tier-badge">🐚</div>
+            <div class="tier-info">
+              <h4>Shallow <span class="tier-range">0–99</span></h4>
+              <p>Browse, react, comment, connect. Everyone starts here.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="depth-signals">
+          <h3 class="font-display">What Builds Depth?</h3>
+          <p class="depth-signals-desc">Your score grows from real contributions — not likes, not posting frequency. Quality over quantity.</p>
+          <div class="signals-grid">
+            <div class="signal-chip"><span>🔬</span> Expert Audits given <span class="signal-weight">HIGH</span></div>
+            <div class="signal-chip"><span>🧬</span> Spawn success rate <span class="signal-weight">HIGH</span></div>
+            <div class="signal-chip"><span>💡</span> Insights upvoted <span class="signal-weight">MED</span></div>
+            <div class="signal-chip"><span>⭐</span> Marketplace ratings <span class="signal-weight">MED</span></div>
+            <div class="signal-chip"><span>🎓</span> Mentee progression <span class="signal-weight">MED</span></div>
+            <div class="signal-chip"><span>🏫</span> School contributions <span class="signal-weight">LOW</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Coral Divider -->
+  <div class="section-divider">
+    <div class="divider-coral">
+      <div class="coral-branch" style="height: 35px; background: linear-gradient(to top, transparent, var(--ocean-400), transparent);"></div>
+      <div class="coral-branch" style="height: 50px; background: linear-gradient(to top, transparent, var(--coral-400), transparent);"></div>
+      <div class="coral-branch" style="height: 28px; background: linear-gradient(to top, transparent, var(--violet-400), transparent);"></div>
+      <div class="coral-branch" style="height: 44px; background: linear-gradient(to top, transparent, var(--ocean-400), transparent);"></div>
+      <div class="coral-branch" style="height: 38px; background: linear-gradient(to top, transparent, var(--coral-400), transparent);"></div>
+      <div class="coral-branch" style="height: 52px; background: linear-gradient(to top, transparent, var(--ocean-400), transparent);"></div>
+      <div class="coral-branch" style="height: 30px; background: linear-gradient(to top, transparent, var(--violet-400), transparent);"></div>
+    </div>
+  </div>
+
+  <!-- ========== SCHOOLS ========== -->
+  <section class="section" id="schools">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="font-display section-title">Schools — <span class="text-gradient-ocean">Your People</span></h2>
+        <p class="section-desc">Clubs built around species, regions, breeding programs, or just shared obsession.</p>
+      </div>
+
+      <div class="schools-grid">
+        <div class="school-card glass-card">
+          <div class="school-banner" style="background: linear-gradient(135deg, #f97066 0%, #fb923c 100%)"></div>
+          <div class="school-body">
+            <h4>Cichlid Collective</h4>
+            <p class="school-type">Species-Focused</p>
+            <div class="school-members">
+              <div class="school-avatar" style="background: linear-gradient(135deg, #f97066, #fbbf24);">TK</div>
+              <div class="school-avatar" style="background: linear-gradient(135deg, #38bdf8, #a78bfa);">MR</div>
+              <div class="school-avatar" style="background: linear-gradient(135deg, #34d399, #2dd4bf);">AL</div>
+              <div class="school-avatar" style="background: linear-gradient(135deg, #f97066, #ef4444);">JW</div>
+              <div class="school-avatar-more">+43</div>
+            </div>
+            <p class="school-meta">12 active spawns · 3 challenges running</p>
+          </div>
+        </div>
+        <div class="school-card glass-card">
+          <div class="school-banner" style="background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%)"></div>
+          <div class="school-body">
+            <h4>Pacific NW Breeders</h4>
+            <p class="school-type">Regional</p>
+            <div class="school-members">
+              <div class="school-avatar" style="background: linear-gradient(135deg, #a78bfa, #7c3aed);">DM</div>
+              <div class="school-avatar" style="background: linear-gradient(135deg, #38bdf8, #0ea5e9);">PS</div>
+              <div class="school-avatar" style="background: linear-gradient(135deg, #fbbf24, #f97066);">RK</div>
+              <div class="school-avatar-more">+28</div>
+            </div>
+            <p class="school-meta">Portland/Seattle · Monthly swaps</p>
+          </div>
+        </div>
+        <div class="school-card glass-card">
+          <div class="school-banner" style="background: linear-gradient(135deg, #34d399 0%, #2dd4bf 100%)"></div>
+          <div class="school-body">
+            <h4>Pleco Guild</h4>
+            <p class="school-type">Breeding Program</p>
+            <div class="school-members">
+              <div class="school-avatar" style="background: linear-gradient(135deg, #34d399, #0ea5e9);">BN</div>
+              <div class="school-avatar" style="background: linear-gradient(135deg, #f97066, #a78bfa);">CC</div>
+              <div class="school-avatar" style="background: linear-gradient(135deg, #fbbf24, #34d399);">LS</div>
+              <div class="school-avatar-more">+19</div>
+            </div>
+            <p class="school-meta">L-number focus · Genetic mapping</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="schools-features">
+        <div class="school-feature">
+          <strong>🏆 School Challenges</strong>
+          Breeding sprints, grow-out races, photo contests with XP rewards and leaderboards.
+        </div>
+        <div class="school-feature">
+          <strong>📚 Shared Resources</strong>
+          Pinned care guides, SOPs, genetic lineage maps — a knowledge base for your crew.
+        </div>
+        <div class="school-feature">
+          <strong>💬 Persistent Chat</strong>
+          Always-on conversation with your people. Moderated, searchable, real-time.
+        </div>
+        <div class="school-feature">
+          <strong>🛒 Group Listings</strong>
+          Sell collectively through the Aquacellum marketplace with shared School reputation.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Wave Divider -->
+  <div class="section-divider">
+    <svg viewBox="0 0 1200 80" preserveAspectRatio="none">
+      <path d="M0,45 C100,20 300,70 500,40 C700,10 900,65 1200,35 L1200,80 L0,80Z" fill="rgba(167,139,250,0.03)"/>
+      <path d="M0,50 C200,20 500,70 700,40 C900,15 1100,55 1200,40" fill="none" stroke="rgba(167,139,250,0.08)" stroke-width="1"/>
+    </svg>
+  </div>
+
+  <!-- ========== TIDES ========== -->
+  <section class="section" id="tides">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="font-display section-title">Tides — <span class="text-gradient-coral">Live Events</span></h2>
+        <p class="section-desc">Expos, auctions, virtual demos, and competitive challenges. All in one place.</p>
+      </div>
+
+      <!-- Featured Expo Tide (full-width) -->
+      <div class="tide-featured glass-card">
+        <div class="tide-featured-content">
+          <div class="tide-header">
+            <span class="tide-type-badge expo">EXPO</span>
+            <div class="tide-live-dot"></div>
+            <span class="tide-featured-live">LIVE NOW</span>
+            <span class="tide-date">JUN 14 · SAT</span>
+          </div>
+          <h3 class="font-display">Portland Fish Swap</h3>
+          <p>GPS-gated meetup with 2% reduced fees, double XP, live attendee map, and real-time trade ticker.</p>
+          
+          <!-- Swap Sheet Preview -->
+          <div class="tide-swap-sheet">
+            <div class="swap-sheet-title">🐟 Species Being Brought</div>
+            <div class="swap-chips">
+              <span class="swap-chip">Corydoras sterbai ×6</span>
+              <span class="swap-chip">L046 Zebra Pleco ×2</span>
+              <span class="swap-chip">Apistogramma cacatuoides ×4</span>
+              <span class="swap-chip">Discus (Red Turquoise) ×3</span>
+              <span class="swap-chip-more">+14 more species</span>
+            </div>
+          </div>
+          
+          <div class="tide-featured-footer">
+            <div class="tide-attendees">
+              <div class="tide-attendee" style="background: linear-gradient(135deg, #f97066, #fbbf24);"></div>
+              <div class="tide-attendee" style="background: linear-gradient(135deg, #38bdf8, #a78bfa);"></div>
+              <div class="tide-attendee" style="background: linear-gradient(135deg, #34d399, #2dd4bf);"></div>
+              <div class="tide-attendee" style="background: linear-gradient(135deg, #a78bfa, #f97066);"></div>
+              <div class="tide-attendee" style="background: linear-gradient(135deg, #0ea5e9, #34d399);"></div>
+              <span class="tide-attendee-count">+18 checked in</span>
+            </div>
+            <div class="tide-countdown">
+              <span class="countdown-label">Ends in</span>
+              <span class="countdown-time">02:34:17</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Mock Map -->
+        <div class="tide-featured-map">
+          <div class="mock-map">
+            <div class="map-grid"></div>
+            <div class="map-zone"></div>
+            <div class="map-pin map-pin-1"></div>
+            <div class="map-pin map-pin-2"></div>
+            <div class="map-pin map-pin-3"></div>
+            <div class="map-pin map-pin-4"></div>
+            <div class="map-pin map-pin-5"></div>
+            <div class="map-label">Portland, OR</div>
+            <div class="map-radius-label">2km zone</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Remaining Tides (3 compact cards) -->
+      <div class="tides-grid-compact">
+        <!-- Virtual -->
+        <div class="tide-card glass-card">
+          <div class="tide-header">
+            <span class="tide-type-badge virtual">VIRTUAL</span>
+            <span class="tide-date">JUN 20 · FRI</span>
+          </div>
+          <h4>Discus Breeding Masterclass</h4>
+          <p>Livestream demos from Hadal-tier breeders. Real-time Q&A and auto-transcribed insights.</p>
+          <!-- Mock Stream Preview -->
+          <div class="mock-stream">
+            <div class="stream-bg"></div>
+            <div class="stream-play">▶</div>
+            <div class="stream-banner">LIVE IN 3 DAYS</div>
+            <div class="stream-info">
+              <span class="stream-host">🦑 DeepReef_Mike</span>
+              <span class="stream-viewers">42 interested</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Auction -->
+        <div class="tide-card glass-card">
+          <div class="tide-header">
+            <span class="tide-type-badge auction">AUCTION</span>
+            <span class="tide-date">JUN 22 · SUN</span>
+          </div>
+          <h4>Rare L-Number Drop</h4>
+          <p>Live bidding on verified specimens with on-chain escrow and full lineage display.</p>
+          <!-- Mock Auction Preview -->
+          <div class="mock-auction">
+            <div class="auction-specimen">
+              <div class="specimen-img">
+                <div class="aquarium-scene">
+                  <div class="water"></div>
+                  <div class="fish fish-1" style="top:40%;left:35%;width:28px;height:12px;"></div>
+                  <div class="substrate"></div>
+                </div>
+              </div>
+              <div class="specimen-info">
+                <span class="specimen-name">L046 Zebra Pleco</span>
+                <span class="specimen-id">#0847</span>
+              </div>
+            </div>
+            <div class="auction-bid-row">
+              <div class="bid-current">
+                <span class="bid-label">Current Bid</span>
+                <span class="bid-value">0.08 ETH</span>
+              </div>
+              <div class="bid-timer">
+                <span class="bid-label">Ends in</span>
+                <span class="bid-countdown">4d 12h</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Challenge -->
+        <div class="tide-card glass-card">
+          <div class="tide-header">
+            <span class="tide-type-badge challenge">CHALLENGE</span>
+            <span class="tide-date">JUN 1–30</span>
+          </div>
+          <h4>Spring Spawn Sprint</h4>
+          <p>School vs. School competitive breeding. Auto-tracked via spawn logs.</p>
+          <!-- Mock Leaderboard -->
+          <div class="mock-leaderboard">
+            <div class="lb-row">
+              <span class="lb-rank">1</span>
+              <span class="lb-name">Pleco Guild</span>
+              <div class="lb-bar-wrap"><div class="lb-bar" style="width:85%;background:linear-gradient(90deg,var(--coral-400),var(--amber-400));"></div></div>
+              <span class="lb-score">12</span>
+            </div>
+            <div class="lb-row">
+              <span class="lb-rank">2</span>
+              <span class="lb-name">Cichlid Collective</span>
+              <div class="lb-bar-wrap"><div class="lb-bar" style="width:65%;background:linear-gradient(90deg,var(--ocean-400),var(--violet-400));"></div></div>
+              <span class="lb-score">9</span>
+            </div>
+            <div class="lb-row">
+              <span class="lb-rank">3</span>
+              <span class="lb-name">PNW Breeders</span>
+              <div class="lb-bar-wrap"><div class="lb-bar" style="width:40%;background:linear-gradient(90deg,var(--emerald-400),var(--teal-400));"></div></div>
+              <span class="lb-score">5</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== CTA ========== -->
+  <section class="section cta-section">
+    <div class="container">
+      <div class="cta-card glass-card">
+        <h2 class="font-display">Ready to join the Reef?</h2>
+        <p>Connect your wallet, set up your profile, and start sharing. Your tanks are already waiting.</p>
+        <a href="/app.html" class="btn-primary btn-lg">Enter the Reef</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/database">Database</a>
+        <a href="/hobbyist">For Hobbyists</a>
+        <a href="/breeder">For Breeders</a>
+        <a href="/app.html">Open App</a>
+      </div>
+      <p>&copy; 2025 Aquacellum Protocol. Built on Base L2.</p>
+    </div>
+  </footer>
+</body>
+</html>
