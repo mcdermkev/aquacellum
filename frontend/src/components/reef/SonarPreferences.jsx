@@ -10,6 +10,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase, getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
+import { isPushSupported, getPushPermission, subscribeToPush, unsubscribeFromPush, getActiveSubscription } from "../../services/pushService";
 
 const CATEGORIES = [
   {
@@ -64,7 +65,7 @@ export function SonarPreferences({ onClose }) {
 
   // Check Web Push support
   useEffect(() => {
-    setPushSupported("Notification" in window && "serviceWorker" in navigator);
+    setPushSupported(isPushSupported());
   }, []);
 
   // Load preferences from Supabase profile
@@ -128,14 +129,9 @@ export function SonarPreferences({ onClose }) {
   // Request push permission
   const requestPushPermission = async () => {
     if (!pushSupported) return;
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission === "granted") {
-        // Push permission granted — service worker registration would go here
-        // For now just update UI state
-      }
-    } catch (err) {
-      console.warn("Push permission request failed:", err);
+    const { success, error } = await subscribeToPush();
+    if (!success) {
+      console.warn("Push subscription failed:", error);
     }
   };
 
