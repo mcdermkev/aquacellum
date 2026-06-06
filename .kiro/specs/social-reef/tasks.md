@@ -338,13 +338,13 @@
   - Rate limiting: 20 requests/user/hour for interactive queries
   - Response caching for common queries (species care advice, etc.)
 
-- [ ] 48. Implement weekly Reef Digest generation
+- [x] 48. Implement weekly Reef Digest generation
   - Cron (Sunday 9am UTC): for each active user, generate personalized digest
   - Content: highlights from Tankmates, trending Insights for their species, upcoming Tides in their region
   - Store as `sonar_notifications` with category 'poseidon'
   - PoseidonDigest component renders as a rich card in feed
 
-- [ ] 49. Implement Breeder Summary auto-generation
+- [x] 49. Implement Breeder Summary auto-generation
   - Cron (weekly): for each profile with activity, generate 2-sentence summary
   - Inputs: recent species focus, spawn count, audit activity, school participation
   - Store in `profiles.poseidon_summary`
@@ -356,20 +356,20 @@
   - Stored in `currents.poseidon_narration`
   - Displayed inline on SpawnThreadCard
 
-- [ ] 51. Implement Tide narration and recaps
+- [x] 51. Implement Tide narration and recaps
   - During live Tides: Poseidon posts system messages every 15 min summarizing activity
   - Post-event: generate structured recap (total attendees, trades, top species, XP awarded)
   - Recap stored in `tides.recap_content` as JSON
   - TideRecap component renders the structured recap
 
-- [ ] 52. Implement content moderation pipeline
+- [x] 52. Implement content moderation pipeline
   - On new content insert (Supabase webhook → Edge Function):
     - Image: send to Gemini Vision for appropriateness classification
     - Text: classify for spam/toxicity
   - If flagged: auto-hide content, create `moderation_flags` entry, notify curator
   - If clean: no action (content already visible)
 
-- [ ] 53. Implement Poseidon mentor matching
+- [x] 53. Implement Poseidon mentor matching
   - User requests mentor → Poseidon analyzes:
     - User's species, parameters, struggles (from Dexie data)
     - Available mentors' expertise (species mastered, audit history, Depth Score)
@@ -389,27 +389,27 @@
 
 ### Depth Score System
 
-- [ ] 56. Implement Depth Score calculation Edge Function
+- [x] 56. Implement Depth Score calculation Edge Function
   - Triggered by: audit completion, insight upvote, spawn success, trade review, moderation flag
   - Calculates delta based on signal weights (see requirements doc)
   - Inserts into `depth_score_events` table
   - Updates `profiles.depth_score` and `profiles.depth_tier`
   - Tier thresholds: Shallow (0-99), Coastal (100-499), Pelagic (500-1499), Abyssal (1500-4999), Hadal (5000+)
 
-- [ ] 57. Build DepthScoreMeter component
+- [x] 57. Build DepthScoreMeter component
   - Visual progress indicator showing current score within tier
   - Tier badge with icon and label
   - Tooltip: "What is Depth Score?" explanation
   - Click → detailed breakdown of recent score events
 
-- [ ] 58. Wire Depth Score privileges
+- [x] 58. Wire Depth Score privileges
   - Coastal: can post Species Insights, join Schools
   - Pelagic: can create Schools, request Audits
   - Abyssal: can host Virtual Tides, give Audits, mentor
   - Hadal: can host Expo Tides, moderate School content, featured in discovery
   - Gate UI actions based on tier (show upgrade prompts for locked features)
 
-- [ ] 59. Implement anti-gaming detection
+- [x] 59. Implement anti-gaming detection
   - Poseidon flags: mutual upvote rings (A always upvotes B and vice versa)
   - Sudden score spikes from single source
   - Accounts with high activity but zero engagement from others

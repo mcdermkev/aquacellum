@@ -5,6 +5,53 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 6, 2026 — The Reef: Phase 4 — Depth Score + Poseidon Social AI
+
+Complete reputation system and AI-powered social intelligence layer. All Edge Functions deployed and active.
+
+### Depth Score System (Tasks 56-59)
+- **Database migration** (`004_depth_score_and_moderation.sql`): `depth_score_events`, `moderation_flags` tables + profile columns (`depth_score`, `depth_tier`, `poseidon_summary`)
+- **Auto-calculation triggers**: score updates on expert audit creation (+15 auditor, +10 recipient), insight upvote milestones (+5 at 5 votes, +10 at 15), moderation action (-50)
+- **Tier auto-promotion**: Shallow (0) → Coastal (100) → Pelagic (500) → Abyssal (1500) → Hadal (5000+)
+- **DepthScoreMeter component**: progress bar, tier badge, expandable event history, "What is Depth Score?" explainer
+- **Tier privileges API**: graduated permissions (post insights, create schools, give audits, mentor, host tides, moderate)
+- **Anti-gaming Edge Function** (`anti-gaming`): detects mutual upvote rings, 24h score spikes from single source, high-activity zero-engagement accounts
+
+### Poseidon Social AI (Tasks 48-49, 51-53)
+- **Reef Digest** (`reef-digest`): weekly personalized digest for each active user — tankmate highlights, trending insights, upcoming tides. Gemini-generated, stored as Sonar notification.
+- **Breeder Summary** (`breeder-summary`): weekly 2-sentence AI profile blurb based on species focus, audits, schools, activity. Stored in `profiles.poseidon_summary`.
+- **Tide Narration** (`tide-narration`): two modes — live narration (posts system messages every 15 min during active tides) and post-event recap (structured JSON with stats + AI summary).
+- **Content Moderation** (`content-moderation`): spam pattern matching + Gemini text/image classification. Auto-hides flagged content, creates moderation_flags entry with AI confidence score.
+- **Mentor Matching** (`mentor-match`): AI-powered pairing — analyzes user species/struggles vs. mentor expertise/availability/depth score. Heuristic fallback when Gemini unavailable.
+
+### Edge Functions Deployed (8 total, all ACTIVE)
+| Function | Schedule | Purpose |
+|----------|----------|---------|
+| `send-push` | On demand | VAPID push delivery |
+| `tide-lifecycle` | Every minute | Status transitions + XP + chat purge |
+| `reef-digest` | Sunday 9am UTC | Weekly personalized digest |
+| `breeder-summary` | Monday 3am UTC | AI profile summaries |
+| `content-moderation` | On content insert | Auto-flag inappropriate content |
+| `tide-narration` | During live tides | Live narrator + recap generation |
+| `mentor-match` | On demand | AI mentor pairing |
+| `anti-gaming` | Daily 4am UTC | Reputation fraud detection |
+
+### Files Created
+| File | Purpose |
+|------|---------|
+| `supabase/migrations/004_depth_score_and_moderation.sql` | Depth Score + moderation tables |
+| `supabase/functions/reef-digest/index.ts` | Weekly Reef Digest |
+| `supabase/functions/breeder-summary/index.ts` | AI profile summaries |
+| `supabase/functions/content-moderation/index.ts` | Text + image moderation |
+| `supabase/functions/tide-narration/index.ts` | Live narration + recaps |
+| `supabase/functions/mentor-match/index.ts` | AI mentor pairing |
+| `supabase/functions/anti-gaming/index.ts` | Reputation fraud detection |
+| `frontend/src/services/depthScoreApi.js` | Depth Score API + privileges |
+| `frontend/src/hooks/useDepthScore.js` | Depth Score React hooks |
+| `frontend/src/components/reef/DepthScoreMeter.jsx` | Score visualization component |
+
+---
+
 ## June 6, 2026 — The Reef: Phase 3 — Tides (Events) + Web Push Notifications
 
 Complete events system ("Tides") with real-time social interaction, GPS-gated check-ins, live auctions, and push notification infrastructure. All deployed and live on aquacellum.com.

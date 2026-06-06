@@ -137,7 +137,10 @@ All contracts deployed on **Base Sepolia (Chain ID 84532)**.
 - **Expert Audits (Phase 2)**: Scorecard reviews (4 categories), request flow, XP distribution.
 - **Mentorship (Phase 2)**: Master+ pairing with 1.5× XP multiplier.
 - **Web Push (Phase 3)**: VAPID-authenticated push notifications, per-category preferences, quiet hours.
-- **Planned (Phase 4+)**: Poseidon social AI (Reef Digest, mentor matching, moderation), Depth Score reputation, full-text search (Typesense).
+- **Depth Score (Phase 4)**: Full reputation system — Shallow→Hadal tiers, auto-calculated from audits/insights/spawns/moderation. Tier-gated privileges. Anti-gaming detection (mutual upvote rings, score spikes, zero-engagement accounts).
+- **Poseidon Social AI (Phase 4)**: Weekly Reef Digest, Breeder Summary auto-generation, Tide live narration + post-event recaps, AI content moderation (text + image via Gemini), Poseidon mentor matching.
+- **Edge Functions (8 deployed)**: `send-push`, `tide-lifecycle`, `reef-digest`, `breeder-summary`, `content-moderation`, `tide-narration`, `mentor-match`, `anti-gaming`.
+- **Planned (Phase 5)**: Full-text search (Typesense), Virtual Tide streaming, rate limiting, GDPR export, accessibility audit, load testing.
 
 ---
 
