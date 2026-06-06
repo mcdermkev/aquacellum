@@ -129,6 +129,29 @@ Tailored for commercial hatcheries, scientific curators, and veteran breeders wh
 
 ## 4. Changelog
 
+### v1.5.0 — Beta Readiness: Legal, Privacy & About (June 6, 2026)
+
+All legal and informational pages required for beta tester distribution. Covers Terms of Service, Privacy & Data Collection Policy, Beta Program Terms, Community Guidelines, and About Aquacellum.
+
+#### New Pages
+| Page | Route | Content |
+|------|-------|---------|
+| About | `/about` | Mission, team, values, contact |
+| Legal | `/legal` | ToS, Privacy, Beta Terms, Community Guidelines |
+
+#### Key Policy Points
+- Age requirement: 13+
+- Governing law: State of New York, USA
+- Zero analytics — no tracking scripts of any kind
+- COPPA compliant
+- Data deletion rights via email request
+- Beta data wipe disclaimer
+- Community enforcement ladder: warning → mute → suspend → ban
+- Team: GGSteve92 (Founder), McDermKev81 (Founder)
+- Contact: kevin@aquacellum.com
+
+---
+
 ### v1.4.0 — The Reef: Social Layer MVP (June 3-4, 2026)
 
 The Reef is Aquacellum's social layer — a living, activity-driven social graph where every interaction is connected to real aquaculture activity. Replaces traditional blogs and forums with data-enriched content tied to tanks, species, and breeding records. Phase 1 fully complete (20/20 tasks).

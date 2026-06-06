@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Legal — Aquacellum</title>
+  <meta name="description" content="Terms of Service, Privacy Policy, Beta Program Terms, and Community Guidelines for Aquacellum.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-void:      #060814;
+      --bg-deep:      #080c1a;
+      --bg-surface:   #0d1229;
+      --teal-100:     #ccfbf1;
+      --teal-300:     #5eead4;
+      --teal-400:     #2dd4bf;
+      --teal-500:     #14b8a6;
+      --teal-600:     #0d9488;
+      --cyan-300:     #67e8f9;
+      --cyan-400:     #22d3ee;
+      --cyan-500:     #06b6d4;
+      --violet-400:   #a78bfa;
+      --violet-500:   #8b5cf6;
+      --violet-600:   #7c3aed;
+      --amber-300:    #fcd34d;
+      --amber-400:    #fbbf24;
+      --emerald-400:  #34d399;
+      --emerald-500:  #10b981;
+      --text-primary: #f0f4ff;
+      --text-secondary: #94a3b8;
+      --text-muted:   #475569;
+      --glass-bg:     rgba(13, 18, 41, 0.6);
+      --glass-border: rgba(255,255,255,0.07);
+      --radius-sm: 12px;
+      --radius-md: 18px;
+      --radius-lg: 24px;
+      --radius-xl: 32px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-void);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: inherit; border: none; background: none; }
+
+    /* Ambient */
+    .ambient-layer { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(120px); animation: orb-drift 18s ease-in-out infinite; }
+    .orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, rgba(20,184,166,0.08) 0%, transparent 70%); top: -200px; left: -100px; }
+    .orb-2 { width: 700px; height: 700px; background: radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 70%); top: 50%; right: -200px; animation-delay: 6s; }
+    @keyframes orb-drift { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(40px,-30px) scale(1.08); } 66% { transform: translate(-20px,25px) scale(0.95); } }
+
+    /* Nav */
+    .nav { position: sticky; top: 0; z-index: 100; background: rgba(6,8,20,0.8); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { display: flex; align-items: center; gap: 12px; }
+    .nav-logo-mark { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--teal-400), var(--violet-500)); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(20,184,166,0.3); }
+    .nav-logo-text { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.1rem; letter-spacing: 0.12em; color: #fff; }
+    .nav-logo-sub { display: block; font-size: 9px; letter-spacing: 0.18em; color: var(--teal-400); font-weight: 600; text-transform: uppercase; margin-top: -3px; }
+    .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+    .nav-links a { font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); transition: var(--transition); }
+    .nav-links a:hover { color: var(--text-primary); }
+    .nav-cta { display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: var(--radius-sm); background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.3); font-size: 0.85rem; font-weight: 600; color: var(--teal-300); transition: var(--transition); }
+    .nav-cta:hover { background: rgba(20,184,166,0.2); border-color: rgba(20,184,166,0.5); }
+    .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--emerald-400); }
+
+    /* Layout */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    /* Page header */
+    .page-header { text-align: center; padding: 80px 0 40px; }
+    .page-header h1 { font-family: 'Outfit', sans-serif; font-weight: 900; font-size: clamp(2.2rem, 5vw, 3rem); color: #fff; margin-bottom: 16px; }
+    .page-header p { font-size: 1rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto; line-height: 1.7; }
+
+    /* Section navigation */
+    .section-nav { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 48px; }
+    .section-nav a {
+      padding: 8px 18px;
+      border-radius: 100px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      background: rgba(13,18,41,0.6);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+    .section-nav a:hover { color: var(--teal-300); border-color: rgba(20,184,166,0.3); background: rgba(20,184,166,0.08); }
+
+    /* Legal content */
+    .legal-content { max-width: 800px; margin: 0 auto; padding-bottom: 80px; }
+    .legal-section { margin-bottom: 72px; scroll-margin-top: 100px; }
+    .legal-section h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .legal-meta { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 28px; }
+    .legal-section h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--teal-300);
+      margin-top: 32px;
+      margin-bottom: 12px;
+    }
+    .legal-section p, .legal-section li {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.8;
+      margin-bottom: 12px;
+    }
+    .legal-section ul, .legal-section ol {
+      padding-left: 20px;
+      margin-bottom: 16px;
+    }
+    .legal-section li { margin-bottom: 8px; }
+    .legal-section strong { color: var(--text-primary); }
+    .legal-section a { color: var(--teal-300); text-decoration: underline; text-underline-offset: 3px; }
+
+    .legal-callout {
+      padding: 20px 24px;
+      border-radius: var(--radius-sm);
+      background: rgba(20,184,166,0.04);
+      border: 1px solid rgba(20,184,166,0.12);
+      margin: 24px 0;
+    }
+    .legal-callout p { margin-bottom: 0; }
+
+    .legal-warning {
+      padding: 20px 24px;
+      border-radius: var(--radius-sm);
+      background: rgba(251,191,36,0.04);
+      border: 1px solid rgba(251,191,36,0.15);
+      margin: 24px 0;
+    }
+    .legal-warning p { color: var(--amber-300); margin-bottom: 0; }
+
+    /* Footer */
+    .footer { border-top: 1px solid rgba(255,255,255,0.05); padding: 48px 0; background: rgba(6,8,20,0.8); }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); transition: color 0.2s; }
+    .footer-links a:hover { color: var(--text-secondary); }
+    .footer-copy { font-size: 0.78rem; color: var(--text-muted); }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .legal-content { padding: 0 8px 80px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="ambient-layer">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+  </div>
+
+  <!-- Navigation -->
+  <header class="nav">
+    <nav class="nav-inner">
+      <a href="/" class="nav-logo">
+        <div class="nav-logo-mark">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+        </div>
+        <div>
+          <span class="nav-logo-text">AQUACELLUM</span>
+          <span class="nav-logo-sub">Living Aquatic Registry</span>
+        </div>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/database">Database</a></li>
+        <li><a href="/reef">The Reef</a></li>
+        <li><a href="/about">About</a></li>
+        <li><a href="/legal">Legal</a></li>
+      </ul>
+      <a href="/app.html" class="nav-cta">
+        <div class="pulse-dot"></div>
+        Open Logbook
+      </a>
+    </nav>
+  </header>
+
+  <!-- Page Header -->
+  <section class="page-header">
+    <div class="container">
+      <h1 class="font-display">Legal & Policies</h1>
+      <p>Everything you need to know about using Aquacellum, how we handle your data, and what we expect from our community.</p>
+    </div>
+  </section>
+
+  <!-- Section Navigation -->
+  <div class="container">
+    <div class="section-nav">
+      <a href="#terms">Terms of Service</a>
+      <a href="#privacy">Privacy & Data Collection</a>
+      <a href="#beta">Beta Program Terms</a>
+      <a href="#community">Community Guidelines</a>
+    </div>
+  </div>
+
+  <!-- Legal Content -->
+  <div class="container">
+    <div class="legal-content">
+
+      <!-- ========== TERMS OF SERVICE ========== -->
+      <section class="legal-section" id="terms">
+        <h2>Terms of Service</h2>
+        <p class="legal-meta">Effective Date: June 6, 2026 · Last Updated: June 6, 2026</p>
+
+        <p>Welcome to Aquacellum ("we," "us," "our"). By accessing or using the Aquacellum platform at <strong>aquacellum.com</strong> (the "Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the Service.</p>
+
+        <h3>1. Eligibility</h3>
+        <p>You must be at least <strong>13 years of age</strong> to use Aquacellum. If you are between 13 and 18, you represent that your parent or legal guardian has reviewed and agreed to these Terms on your behalf. We do not knowingly collect personal information from children under 13.</p>
+
+        <h3>2. Account & Wallet Responsibility</h3>
+        <p>When you connect a wallet or create an account through our embedded wallet provider (Privy), you are responsible for:</p>
+        <ul>
+          <li>Maintaining the security of your login credentials, passkeys, and wallet recovery methods.</li>
+          <li>All activity that occurs under your account or wallet address.</li>
+          <li>Notifying us immediately if you suspect unauthorized access.</li>
+        </ul>
+        <p>We are not responsible for any loss resulting from unauthorized use of your account or wallet.</p>
+
+        <h3>3. Beta Disclaimer</h3>
+        <div class="legal-warning">
+          <p><strong>⚠️ Aquacellum is currently in beta testing on the Base Sepolia testnet.</strong> All tokens, transactions, and marketplace activity use testnet ETH with no real-world monetary value. Features may change, break, or be removed without notice. Data collected during beta may be wiped before mainnet launch.</p>
+        </div>
+
+        <h3>4. Acceptable Use</h3>
+        <p>You agree not to:</p>
+        <ul>
+          <li>Create fraudulent specimen listings or falsify lineage/pedigree data.</li>
+          <li>Use the marketplace to sell non-aquatic goods or services.</li>
+          <li>Harass, threaten, or abuse other users on The Reef social layer.</li>
+          <li>Attempt to exploit, reverse-engineer, or attack the smart contracts or platform infrastructure.</li>
+          <li>Use automated bots or scripts to manipulate XP, badges, voting, or marketplace behavior.</li>
+          <li>Post content that violates any applicable law or regulation.</li>
+          <li>Impersonate other users, curators, or team members.</li>
+        </ul>
+
+        <h3>5. Intellectual Property</h3>
+        <p>The Aquacellum brand, logo, UI design system, smart contract architecture, species catalog data, and all original content are the property of Aquacellum and its founders. You may not reproduce, distribute, or create derivative works from our proprietary materials without written permission.</p>
+        <p>Content you create (posts, photos, species insights, comments) remains yours. By posting on The Reef, you grant Aquacellum a non-exclusive, worldwide, royalty-free license to display, distribute, and store that content within the platform.</p>
+
+        <h3>6. Marketplace & Transactions</h3>
+        <p>Aquacellum provides a peer-to-peer marketplace for aquatic specimens. We are a platform facilitator, not a party to any transaction between users. We do not guarantee:</p>
+        <ul>
+          <li>The health, quality, or genetic accuracy of any listed specimen.</li>
+          <li>Successful delivery of shipped specimens.</li>
+          <li>The behavior or reliability of any buyer or seller.</li>
+        </ul>
+        <p>Disputes between users are handled through our escrow and transit safety window systems. We reserve the right to mediate disputes at our discretion but are not obligated to do so.</p>
+
+        <h3>7. Protocol Fees</h3>
+        <p>Marketplace transactions are subject to a <strong>4% protocol fee</strong> (2% during active expo events). Fee splits are outlined publicly and may change with advance notice. During beta, all fees are collected in testnet ETH with no real value.</p>
+
+        <h3>8. Limitation of Liability</h3>
+        <p>To the maximum extent permitted by law:</p>
+        <ul>
+          <li>Aquacellum is provided "as is" and "as available" without warranties of any kind.</li>
+          <li>We are not liable for any loss of data, tokens, or digital assets.</li>
+          <li>We are not liable for livestock health outcomes, breeding results, or environmental conditions in your aquarium.</li>
+          <li>We do not provide veterinary, financial, or legal advice. Poseidon AI outputs are informational only.</li>
+          <li>Our total liability for any claim shall not exceed $100 USD.</li>
+        </ul>
+
+        <h3>9. Termination</h3>
+        <p>We may suspend or terminate your access to the Service at any time, with or without cause, including for violation of these Terms or our Community Guidelines. Upon termination:</p>
+        <ul>
+          <li>Your access to the platform will be revoked.</li>
+          <li>On-chain records (specimen registrations, transactions) remain immutable on the blockchain.</li>
+          <li>Off-chain data (profile, posts, photos) may be deleted at our discretion.</li>
+        </ul>
+
+        <h3>10. Governing Law</h3>
+        <p>These Terms are governed by the laws of the <strong>State of New York, United States</strong>, without regard to conflict of law principles. Any disputes shall be resolved in the state or federal courts located in New York County, NY.</p>
+
+        <h3>11. Changes to Terms</h3>
+        <p>We may update these Terms at any time. Material changes will be communicated via the platform or email. Continued use after changes constitutes acceptance of the revised Terms.</p>
+
+        <h3>12. Contact</h3>
+        <p>Questions about these Terms? Contact us at <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a>.</p>
+      </section>
+
+      <!-- ========== PRIVACY & DATA COLLECTION ========== -->
+      <section class="legal-section" id="privacy">
+        <h2>Privacy Policy & Data Collection</h2>
+        <p class="legal-meta">Effective Date: June 6, 2026 · Last Updated: June 6, 2026</p>
+
+        <p>This Privacy Policy explains what information Aquacellum collects, how we use it, and your rights regarding your data.</p>
+
+        <h3>1. Information We Collect</h3>
+
+        <p><strong>Information you provide directly:</strong></p>
+        <ul>
+          <li>Display name and bio (chosen during onboarding)</li>
+          <li>Email address (if provided for waitlist or account recovery)</li>
+          <li>Profile avatar photos</li>
+          <li>Tank data, water parameters, action logs, and specimen records</li>
+          <li>Posts, comments, species insights, and photos shared on The Reef</li>
+          <li>Marketplace listings and transaction details</li>
+        </ul>
+
+        <p><strong>Information collected automatically:</strong></p>
+        <ul>
+          <li>Wallet address (via Privy embedded wallet or MetaMask connection)</li>
+          <li>Device type and browser information (for responsive rendering)</li>
+          <li>Approximate geographic location (for Tides event proximity and marketplace radar — fuzzed to a 1–3 mile radius, never exact)</li>
+          <li>Push notification subscription tokens (if you opt in to Web Push)</li>
+        </ul>
+
+        <p><strong>Information we do NOT collect:</strong></p>
+        <ul>
+          <li>We do not run any analytics or tracking scripts (no Google Analytics, no Plausible, no Vercel Analytics).</li>
+          <li>We do not use cookies for advertising or cross-site tracking.</li>
+          <li>We do not collect your exact home or facility address.</li>
+          <li>We do not sell, rent, or share your personal data with advertisers.</li>
+        </ul>
+
+        <h3>2. How We Use Your Information</h3>
+        <ul>
+          <li><strong>Platform operation:</strong> To display your profile, render your tanks and species data, process marketplace transactions, and deliver notifications.</li>
+          <li><strong>AI features:</strong> Your tank data and text inputs may be processed by Gemini AI (via Google Cloud) to provide Poseidon responses, alt-text generation, and species suggestions. We do not send your personal identity to AI services — only operational data like species names, water parameters, and your natural-language queries.</li>
+          <li><strong>Social features:</strong> To display your posts, comments, and profile on The Reef to other users based on your visibility settings.</li>
+          <li><strong>Security:</strong> To detect and prevent fraud, abuse, and unauthorized access.</li>
+        </ul>
+
+        <h3>3. Data Storage & Third-Party Services</h3>
+        <p>Your data is stored across the following services:</p>
+        <ul>
+          <li><strong>Local device (Dexie.js / localStorage):</strong> Tank data, action logs, species cache, companion state. This data never leaves your device unless you explicitly publish to the blockchain or post to The Reef.</li>
+          <li><strong>Supabase (PostgreSQL):</strong> Social layer data — profiles, posts, comments, reactions, notifications, media URLs. Hosted in the US. Protected by Row-Level Security policies.</li>
+          <li><strong>Supabase Storage:</strong> Uploaded photos (profile avatars, tank photos, Reef post images). Delivered via CDN.</li>
+          <li><strong>Base Sepolia blockchain:</strong> On-chain specimen registrations, species catalog entries, and marketplace transactions. Blockchain data is public and immutable.</li>
+          <li><strong>Privy:</strong> Wallet creation and authentication session management. See <a href="https://www.privy.io/privacy" target="_blank" rel="noopener">Privy's Privacy Policy</a>.</li>
+          <li><strong>Vercel:</strong> Frontend hosting and serverless API functions. See <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">Vercel's Privacy Policy</a>.</li>
+          <li><strong>Google Cloud (Gemini AI):</strong> AI query processing for Poseidon, search parsing, and alt-text generation. No personal data is sent — only operational queries.</li>
+        </ul>
+
+        <h3>4. Local Storage & Browser Data</h3>
+        <p>Aquacellum uses browser <strong>localStorage</strong> and <strong>IndexedDB</strong> (via Dexie.js) to store your operational data locally. This includes:</p>
+        <ul>
+          <li>Your tank configurations, action logs, and species data</li>
+          <li>Companion (Echo) state and XP progress</li>
+          <li>Cached species manifest for offline use</li>
+          <li>Draft social posts and notification state</li>
+        </ul>
+        <p>This data is stored only on your device and is not transmitted to our servers unless you take an explicit action (like publishing a specimen on-chain or posting to The Reef). You can clear this data at any time through your browser settings or the in-app data export/delete tools.</p>
+
+        <h3>5. Data Retention & Deletion</h3>
+        <ul>
+          <li><strong>Local data:</strong> Persists until you clear your browser data or use the in-app export/delete function.</li>
+          <li><strong>Supabase data:</strong> Retained as long as your account is active. You may request deletion of your profile, posts, and social data by emailing <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a>.</li>
+          <li><strong>Blockchain data:</strong> On-chain records (specimen registrations, transactions) are <strong>immutable and cannot be deleted</strong>. This is a fundamental property of blockchain technology.</li>
+          <li><strong>Beta wipe:</strong> All off-chain data (profiles, social posts, local caches) may be wiped before mainnet launch. On-chain testnet data will be abandoned when we migrate to Base mainnet.</li>
+        </ul>
+
+        <h3>6. Children's Privacy (COPPA)</h3>
+        <p>Aquacellum is not directed at children under 13. We do not knowingly collect personal information from children under 13 years of age. If we discover that a child under 13 has provided us with personal information, we will promptly delete it. If you believe a child under 13 is using the platform, please contact us at <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a>.</p>
+
+        <h3>7. Your Rights</h3>
+        <p>Depending on your jurisdiction, you may have the right to:</p>
+        <ul>
+          <li>Access the personal data we hold about you.</li>
+          <li>Request correction of inaccurate data.</li>
+          <li>Request deletion of your off-chain data.</li>
+          <li>Export your data in a portable format (JSON export is available in-app).</li>
+          <li>Opt out of push notifications at any time via your browser or in-app settings.</li>
+        </ul>
+        <p>To exercise any of these rights, email <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a>.</p>
+
+        <h3>8. Security</h3>
+        <p>We implement reasonable security measures including:</p>
+        <ul>
+          <li>Row-Level Security (RLS) on all Supabase database tables.</li>
+          <li>JWT-based authentication bridging Privy wallet sessions to Supabase.</li>
+          <li>Server-side API keys for AI services (never exposed to the client).</li>
+          <li>Location fuzzing (1–3 mile radius) to protect facility addresses.</li>
+          <li>Commit-reveal cryptographic schemes for in-person transaction verification.</li>
+        </ul>
+        <p>No system is 100% secure. We cannot guarantee absolute security of your data but will notify affected users promptly in the event of a breach.</p>
+
+        <h3>9. Changes to This Policy</h3>
+        <p>We may update this Privacy Policy periodically. Material changes will be communicated via the platform. The "Last Updated" date at the top reflects the most recent revision.</p>
+
+        <h3>10. Contact</h3>
+        <p>Privacy questions or data requests: <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a></p>
+      </section>
+
+      <!-- ========== BETA PROGRAM TERMS ========== -->
+      <section class="legal-section" id="beta">
+        <h2>Beta Program Terms</h2>
+        <p class="legal-meta">Effective Date: June 6, 2026 · Last Updated: June 6, 2026</p>
+
+        <p>Thank you for participating in the Aquacellum Beta Program. By using the platform during beta, you acknowledge and agree to the following additional terms.</p>
+
+        <h3>1. Testnet Only</h3>
+        <p>All blockchain activity occurs on <strong>Base Sepolia testnet</strong>. Testnet ETH has no monetary value. Specimen tokens, marketplace transactions, and protocol fees during beta are simulations for testing purposes only.</p>
+
+        <div class="legal-callout">
+          <p><strong>How to get testnet ETH:</strong> Visit the <a href="https://www.coinbase.com/faucet" target="_blank" rel="noopener">Coinbase Faucet</a>, select "Base Sepolia," and request free testnet tokens. These have no real-world value.</p>
+        </div>
+
+        <h3>2. Data Persistence</h3>
+        <ul>
+          <li>Off-chain data (profiles, social posts, photos, local storage) <strong>may be wiped</strong> before mainnet launch without prior notice.</li>
+          <li>On-chain testnet data will be <strong>abandoned</strong> when we deploy to Base mainnet. Testnet tokens and registrations will not carry over.</li>
+          <li>We recommend using the in-app data export feature periodically if you want to preserve your records.</li>
+        </ul>
+
+        <h3>3. Feature Instability</h3>
+        <p>During beta:</p>
+        <ul>
+          <li>Features may break, behave unexpectedly, or become temporarily unavailable.</li>
+          <li>UI elements, terminology, and workflows may change between sessions.</li>
+          <li>Smart contract upgrades may reset on-chain state.</li>
+          <li>The species catalog may be modified (species added, removed, or corrected).</li>
+          <li>API rate limits and AI availability may fluctuate.</li>
+        </ul>
+
+        <h3>4. Feedback & Bug Reports</h3>
+        <p>We welcome and encourage feedback during beta. You can report bugs, suggest features, or share observations by emailing <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a>.</p>
+        <p>By submitting feedback, you grant Aquacellum the right to use, implement, and modify your suggestions without compensation or attribution, unless otherwise agreed in writing.</p>
+
+        <h3>5. No Guarantees</h3>
+        <ul>
+          <li>Participation in beta does not guarantee early access, priority status, or rewards on mainnet.</li>
+          <li>Beta participation does not constitute a financial relationship, investment, or equity stake in Aquacellum.</li>
+          <li>We reserve the right to end the beta program, restrict access, or modify these terms at any time.</li>
+        </ul>
+
+        <h3>6. Gasless Transactions (Beta Relayer)</h3>
+        <p>During beta, on-chain transactions are submitted through a server-side relayer that covers gas fees. This is a beta convenience only. On mainnet, users may be responsible for their own gas fees (or gas sponsorship will be provided via Base Paymaster — to be determined).</p>
+
+        <h3>7. Embedded Wallets</h3>
+        <p>Beta testers are onboarded via Privy embedded wallets (email, Google, or passkey login). You do not need MetaMask or prior crypto experience. Your embedded wallet is managed by Privy's MPC infrastructure. If Privy's service becomes unavailable, your embedded wallet may be temporarily inaccessible. We are not liable for service interruptions from third-party providers.</p>
+      </section>
+
+      <!-- ========== COMMUNITY GUIDELINES ========== -->
+      <section class="legal-section" id="community">
+        <h2>Community Guidelines</h2>
+        <p class="legal-meta">Effective Date: June 6, 2026 · Last Updated: June 6, 2026</p>
+
+        <p>The Reef is Aquacellum's social layer — a space for sharing tank updates, connecting with fellow fishkeepers, and building trust through genuine aquaculture activity. These guidelines exist to keep that space healthy.</p>
+
+        <h3>1. Be Respectful</h3>
+        <ul>
+          <li>Treat every community member with basic courtesy, regardless of experience level.</li>
+          <li>No harassment, personal attacks, hate speech, discrimination, or threats of any kind.</li>
+          <li>Disagreements about care practices are welcome — frame them as learning opportunities, not attacks.</li>
+          <li>Don't spam, flood the feed, or use the platform for self-promotion unrelated to aquaculture.</li>
+        </ul>
+
+        <h3>2. Keep It Honest</h3>
+        <ul>
+          <li><strong>No fraudulent listings:</strong> Do not create marketplace listings for specimens you don't own or species you've misidentified.</li>
+          <li><strong>No falsified lineage:</strong> Pedigree records must accurately reflect actual breeding pairs. Fabricating ancestry is a bannable offense.</li>
+          <li><strong>No misleading photos:</strong> Photos should accurately represent the specimen or tank being discussed. Heavy color grading, filters that misrepresent species coloration, or using others' photos without credit is prohibited.</li>
+          <li><strong>Species Insights accuracy:</strong> Tips and breeding notes should be based on personal experience or established sources. Don't post unverified medical advice.</li>
+        </ul>
+
+        <h3>3. Content Standards</h3>
+        <ul>
+          <li>All content must be related to aquaculture, fishkeeping, or the Aquacellum platform.</li>
+          <li>No explicit, violent, or disturbing content.</li>
+          <li>No illegal content or promotion of illegal activities (including illegal wildlife trade).</li>
+          <li>Respect intellectual property — don't post content you don't have rights to share.</li>
+        </ul>
+
+        <h3>4. Marketplace Conduct</h3>
+        <ul>
+          <li>List only specimens you currently own and can fulfil.</li>
+          <li>Accurately describe species, health conditions, and care requirements.</li>
+          <li>Honor committed transactions — backing out after a buyer locks escrow damages community trust.</li>
+          <li>Do not use the platform to facilitate trades of endangered species protected by CITES or local law.</li>
+          <li>Cash handshake bypass (Expo Mode) is intended for legitimate swap meets only. Abuse of this feature will result in suspension.</li>
+        </ul>
+
+        <h3>5. AI Interactions</h3>
+        <ul>
+          <li>Poseidon and Echo are AI assistants, not veterinarians. Do not rely on AI outputs for medical treatment decisions.</li>
+          <li>Do not attempt to manipulate AI responses for harmful purposes or to generate inappropriate content.</li>
+          <li>Report any AI outputs that seem harmful, inaccurate, or inappropriate.</li>
+        </ul>
+
+        <h3>6. Reporting & Enforcement</h3>
+        <p>If you encounter content or behavior that violates these guidelines:</p>
+        <ul>
+          <li>Email <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a> with a description and, if possible, a screenshot or link.</li>
+        </ul>
+        <p><strong>Enforcement escalation:</strong></p>
+        <ol>
+          <li><strong>Warning:</strong> First offense or minor violations receive a direct warning.</li>
+          <li><strong>Temporary mute:</strong> Repeated violations or moderate offenses result in temporary restriction from posting on The Reef (24h–7 days).</li>
+          <li><strong>Suspension:</strong> Serious violations (fraud, harassment, repeated abuse) result in account suspension.</li>
+          <li><strong>Permanent ban:</strong> Egregious or repeat offenses result in permanent removal from the platform.</li>
+        </ol>
+        <p>We reserve the right to skip escalation steps for severe violations. All enforcement decisions are final during beta.</p>
+
+        <h3>7. Schools & Tides Events</h3>
+        <ul>
+          <li>School founders are responsible for maintaining a welcoming environment in their club channels.</li>
+          <li>Tides events (expos, virtual meetups, auctions) follow all standard community guidelines.</li>
+          <li>Auction bidding must be genuine — shill bidding or bid manipulation will result in immediate suspension.</li>
+        </ul>
+
+        <h3>8. Updates</h3>
+        <p>These guidelines may be updated as the community grows. We'll announce material changes on The Reef. Continued use of the platform constitutes acceptance of the current guidelines.</p>
+
+        <div class="legal-callout">
+          <p>💡 <strong>The short version:</strong> Be kind, be honest, keep it about fish, and help us build something we're all proud of.</p>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-links">
+        <a href="/about">About</a>
+        <a href="/legal#terms">Terms of Service</a>
+        <a href="/legal#privacy">Privacy Policy</a>
+        <a href="/legal#beta">Beta Terms</a>
+        <a href="/legal#community">Community Guidelines</a>
+      </div>
+      <div class="footer-copy">&copy; 2026 Aquacellum. All rights reserved.</div>
+    </div>
+  </footer>
+
+</body>
+</html>

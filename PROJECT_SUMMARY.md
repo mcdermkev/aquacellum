@@ -148,6 +148,8 @@ All contracts deployed on **Base Sepolia (Chain ID 84532)**.
 - **The Reef** (`reef.html`): Social layer landing — coral/ocean-blue palette, mock feed UI, Depth Score tier ladder, Schools showcase, Tides with expanded expo map + auction/leaderboard previews.
 - **For Hobbyists** (`hobbyist.html`): Casual-mode pitch, sky-blue palette.
 - **For Breeders** (`breeder.html`): Pro-mode pitch, neon-purple palette.
+- **About** (`about.html`): Mission, team (GGSteve92 & McDermKev81), values, contact.
+- **Legal** (`legal.html`): Terms of Service, Privacy & Data Collection Policy, Beta Program Terms, Community Guidelines — all in one page with anchor navigation.
 
 ---
 

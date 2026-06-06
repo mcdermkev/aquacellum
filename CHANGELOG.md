@@ -5,6 +5,35 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 6, 2026 — Beta Readiness: Legal, Privacy & About Pages
+
+Added all legal and informational pages required for beta tester distribution. Full glassmorphic design system integration, responsive layouts, and Vercel routing.
+
+### New Pages
+- **`/about`** (`about.html`): Mission statement, "What We're Building" cards (Hobbyists, Breeders, The Reef, AI), team section (GGSteve92 & McDermKev81, Founders), values grid (Privacy First, Conservation Backed, Community Driven, Local-First, Fun Not Friction, Open & Transparent), contact section (kevin@aquacellum.com)
+- **`/legal`** (`legal.html`): Single-page hub with anchor navigation across 4 sections:
+  - **Terms of Service** (`#terms`): 13+ age requirement, wallet responsibility, beta disclaimer, acceptable use policy, IP rights, marketplace disclaimer (platform facilitator not party), 4% fee disclosure, liability cap ($100 USD), NY governing law, termination policy
+  - **Privacy & Data Collection** (`#privacy`): Full data inventory (collected vs. not collected), zero analytics disclosure, storage breakdown (Dexie local, Supabase, blockchain), third-party services (Privy, Vercel, Gemini AI, Supabase), COPPA compliance, data retention & deletion rights, security measures (RLS, JWT auth, location fuzzing, commit-reveal)
+  - **Beta Program Terms** (`#beta`): Testnet-only disclaimer, data wipe warning, feature instability notice, feedback IP grant, no mainnet guarantees, gasless relayer explanation, embedded wallet caveats
+  - **Community Guidelines** (`#community`): Respect standards, fraud/lineage honesty rules, content standards, marketplace conduct, AI usage expectations, enforcement escalation (warning → mute → suspend → ban), Schools/Tides event conduct
+
+### Infrastructure Updates
+- `vite.config.js`: Added `about` and `legal` to multi-page build inputs
+- `vercel.json`: Added `/about` and `/legal` rewrites for clean URLs
+- `index.html`: Footer updated with About, Terms, and Privacy links
+
+### Files Created/Modified
+| File | Change |
+|------|--------|
+| `frontend/about.html` | New — About page |
+| `frontend/legal.html` | New — Legal hub (ToS, Privacy, Beta Terms, Community Guidelines) |
+| `frontend/vite.config.js` | Added 2 new build entries |
+| `frontend/vercel.json` | Added 2 new rewrites |
+| `frontend/index.html` | Footer links updated |
+| `PROJECT_SUMMARY.md` | Landing Pages section updated |
+
+---
+
 ## June 6, 2026 — The Reef Landing Page
 
 Dedicated static landing page for the Social Reef feature at `/reef`. Coral/ocean-blue palette, distinct from all other pages.

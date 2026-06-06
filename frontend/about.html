@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About — Aquacellum</title>
+  <meta name="description" content="Learn about the team and mission behind Aquacellum, the living aquatic registry built for hobbyists and professional breeders.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* =========================================
+       DESIGN SYSTEM — ROOT TOKENS
+    ========================================= */
+    :root {
+      --bg-void:      #060814;
+      --bg-deep:      #080c1a;
+      --bg-surface:   #0d1229;
+      --teal-100:     #ccfbf1;
+      --teal-300:     #5eead4;
+      --teal-400:     #2dd4bf;
+      --teal-500:     #14b8a6;
+      --teal-600:     #0d9488;
+      --cyan-300:     #67e8f9;
+      --cyan-400:     #22d3ee;
+      --cyan-500:     #06b6d4;
+      --violet-400:   #a78bfa;
+      --violet-500:   #8b5cf6;
+      --violet-600:   #7c3aed;
+      --amber-300:    #fcd34d;
+      --amber-400:    #fbbf24;
+      --emerald-400:  #34d399;
+      --emerald-500:  #10b981;
+      --text-primary: #f0f4ff;
+      --text-secondary: #94a3b8;
+      --text-muted:   #475569;
+      --glass-bg:     rgba(13, 18, 41, 0.6);
+      --glass-border: rgba(255,255,255,0.07);
+      --radius-sm: 12px;
+      --radius-md: 18px;
+      --radius-lg: 24px;
+      --radius-xl: 32px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-void);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: inherit; border: none; background: none; }
+
+    /* Ambient */
+    .ambient-layer { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(120px); animation: orb-drift 18s ease-in-out infinite; }
+    .orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, rgba(20,184,166,0.12) 0%, transparent 70%); top: -200px; left: -100px; }
+    .orb-2 { width: 700px; height: 700px; background: radial-gradient(circle, rgba(139,92,246,0.10) 0%, transparent 70%); top: 30%; right: -200px; animation-delay: 6s; }
+    @keyframes orb-drift { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(40px,-30px) scale(1.08); } 66% { transform: translate(-20px,25px) scale(0.95); } }
+
+    /* Nav */
+    .nav { position: sticky; top: 0; z-index: 100; background: rgba(6,8,20,0.8); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { display: flex; align-items: center; gap: 12px; }
+    .nav-logo-mark { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--teal-400), var(--violet-500)); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(20,184,166,0.3); }
+    .nav-logo-text { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.1rem; letter-spacing: 0.12em; color: #fff; }
+    .nav-logo-sub { display: block; font-size: 9px; letter-spacing: 0.18em; color: var(--teal-400); font-weight: 600; text-transform: uppercase; margin-top: -3px; }
+    .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+    .nav-links a { font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); transition: var(--transition); }
+    .nav-links a:hover { color: var(--text-primary); }
+    .nav-cta { display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: var(--radius-sm); background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.3); font-size: 0.85rem; font-weight: 600; color: var(--teal-300); transition: var(--transition); }
+    .nav-cta:hover { background: rgba(20,184,166,0.2); border-color: rgba(20,184,166,0.5); }
+    .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--emerald-400); }
+
+    /* Layout */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+    .section { padding: 100px 0; }
+
+    /* Typography */
+    .font-display { font-family: 'Outfit', sans-serif; }
+    .text-gradient-teal { background: linear-gradient(135deg, var(--teal-300) 0%, var(--cyan-300) 50%, var(--teal-400) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .text-gradient-violet { background: linear-gradient(135deg, var(--violet-400) 0%, var(--cyan-400) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    /* Glass cards */
+    .glass-card { background: rgba(13,18,41,0.55); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-lg); transition: var(--transition); }
+
+    /* Page content */
+    .page-header { text-align: center; padding: 80px 0 40px; }
+    .page-header h1 { font-family: 'Outfit', sans-serif; font-weight: 900; font-size: clamp(2.4rem, 5vw, 3.5rem); color: #fff; margin-bottom: 16px; }
+    .page-header p { font-size: 1.1rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto; line-height: 1.7; }
+
+    .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 48px; }
+    .about-card { padding: 40px; }
+    .about-card h3 { font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 700; color: #fff; margin-bottom: 12px; }
+    .about-card p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7; }
+
+    .mission-section { max-width: 800px; margin: 0 auto; text-align: center; }
+    .mission-section h2 { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 20px; }
+    .mission-section p { font-size: 1rem; color: var(--text-secondary); line-height: 1.8; margin-bottom: 16px; }
+
+    .team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-top: 48px; }
+    .team-card { padding: 32px; text-align: center; }
+    .team-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, var(--teal-400), var(--violet-500)); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 1.8rem; }
+    .team-name { font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .team-role { font-size: 0.8rem; color: var(--text-secondary); letter-spacing: 0.06em; text-transform: uppercase; }
+
+    .values-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 48px; }
+    .value-card { padding: 32px; text-align: center; }
+    .value-icon { font-size: 2rem; margin-bottom: 16px; }
+    .value-card h4 { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .value-card p { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; }
+
+    .contact-section { text-align: center; margin-top: 60px; padding: 48px; border-radius: var(--radius-lg); background: rgba(20,184,166,0.04); border: 1px solid rgba(20,184,166,0.12); }
+    .contact-section h3 { font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 12px; }
+    .contact-section p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7; }
+    .contact-section a { color: var(--teal-300); text-decoration: underline; text-underline-offset: 3px; }
+
+    /* Footer */
+    .footer { border-top: 1px solid rgba(255,255,255,0.05); padding: 48px 0; background: rgba(6,8,20,0.8); }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); transition: color 0.2s; }
+    .footer-links a:hover { color: var(--text-secondary); }
+    .footer-copy { font-size: 0.78rem; color: var(--text-muted); }
+
+    @media (max-width: 768px) {
+      .about-grid, .values-grid { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="ambient-layer">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+  </div>
+
+  <!-- Navigation -->
+  <header class="nav">
+    <nav class="nav-inner">
+      <a href="/" class="nav-logo">
+        <div class="nav-logo-mark">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+        </div>
+        <div>
+          <span class="nav-logo-text">AQUACELLUM</span>
+          <span class="nav-logo-sub">Living Aquatic Registry</span>
+        </div>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/database">Database</a></li>
+        <li><a href="/reef">The Reef</a></li>
+        <li><a href="/about">About</a></li>
+        <li><a href="/legal">Legal</a></li>
+      </ul>
+      <a href="/app.html" class="nav-cta">
+        <div class="pulse-dot"></div>
+        Open Logbook
+      </a>
+    </nav>
+  </header>
+
+  <!-- Page Header -->
+  <section class="page-header">
+    <div class="container">
+      <h1 class="font-display">About <span class="text-gradient-teal">Aquacellum</span></h1>
+      <p>Built by fishkeepers, for fishkeepers. We're building the platform we wished existed when we started keeping tanks.</p>
+    </div>
+  </section>
+
+  <!-- Mission -->
+  <section class="section" style="padding-top: 20px;">
+    <div class="container">
+      <div class="mission-section">
+        <h2 class="font-display">Our Mission</h2>
+        <p>Aquacellum exists to bridge the gap between casual aquarium hobbyists and professional breeders through transparent record-keeping, verified lineage tracking, and a community built on trust.</p>
+        <p>We believe that every fishkeeper — from the person with a single betta on their desk to the operator running a multi-rack hatchery — deserves tools that respect their time, protect their data, and make the hobby more enjoyable.</p>
+        <p>A portion of every marketplace transaction is directed toward marine conservation initiatives, because preserving aquatic biodiversity in captivity only matters if we're also protecting it in the wild.</p>
+      </div>
+
+      <!-- What We're Building -->
+      <div class="about-grid">
+        <div class="about-card glass-card">
+          <h3>🐠 For Hobbyists</h3>
+          <p>A digital logbook that feels like a game, not a chore. Track your tanks, log water parameters with a single tap, discover compatible species, find trusted local sellers, and watch your companion Echo evolve alongside your care streak.</p>
+        </div>
+        <div class="about-card glass-card">
+          <h3>🔬 For Breeders</h3>
+          <p>An operational terminal built for serious aquaculture. Encrypted pedigree records, facility-wide metrics, batch shipping logistics, fraud-resistant handshake verification, and expo-mode tools for high-volume swap meets.</p>
+        </div>
+        <div class="about-card glass-card">
+          <h3>🌊 The Reef — Social Layer</h3>
+          <p>A living social network where every post, reaction, and conversation is tied to real aquaculture data. Share your tank updates, connect with local breeders, join Schools, attend Tides events, and build your reputation through genuine care.</p>
+        </div>
+        <div class="about-card glass-card">
+          <h3>🧠 AI-Powered Intelligence</h3>
+          <p>Poseidon parses your natural-language notes into structured data. Echo responds emotionally to your tank's state. Together they make your aquarium feel genuinely alive — without requiring you to fill out forms or learn blockchain terminology.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Team -->
+  <section class="section" style="padding-top: 0;">
+    <div class="container">
+      <div style="text-align: center;">
+        <h2 class="font-display" style="font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 8px;">The Team</h2>
+        <p style="font-size: 0.95rem; color: var(--text-secondary);">Small team. Big tanks. Building in public.</p>
+      </div>
+
+      <div class="team-grid">
+        <div class="team-card glass-card">
+          <div class="team-avatar">🐟</div>
+          <div class="team-name">GGSteve92</div>
+          <div class="team-role">Founder</div>
+        </div>
+        <div class="team-card glass-card">
+          <div class="team-avatar">🧬</div>
+          <div class="team-name">McDermKev81</div>
+          <div class="team-role">Founder</div>
+        </div>
+        <div class="team-card glass-card" style="opacity: 0.5;">
+          <div class="team-avatar" style="background: rgba(255,255,255,0.1);">?</div>
+          <div class="team-name" style="color: var(--text-secondary);">TBD</div>
+          <div class="team-role">Third Co-Founder</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Values -->
+  <section class="section" style="padding-top: 0;">
+    <div class="container">
+      <div style="text-align: center; margin-bottom: 8px;">
+        <h2 class="font-display" style="font-size: 2rem; font-weight: 800; color: #fff;">What We Stand For</h2>
+      </div>
+      <div class="values-grid">
+        <div class="value-card glass-card">
+          <div class="value-icon">🔒</div>
+          <h4>Privacy First</h4>
+          <p>Your facility location is fuzzed. Your data stays local until you choose to publish. No tracking, no analytics, no selling your information.</p>
+        </div>
+        <div class="value-card glass-card">
+          <div class="value-icon">🌍</div>
+          <h4>Conservation Backed</h4>
+          <p>A portion of marketplace fees funds marine conservation initiatives. Preserving captive biodiversity means protecting wild populations too.</p>
+        </div>
+        <div class="value-card glass-card">
+          <div class="value-icon">🤝</div>
+          <h4>Community Driven</h4>
+          <p>Species catalog additions are community-proposed and AI-audited. The platform grows with its users, not ahead of them.</p>
+        </div>
+        <div class="value-card glass-card">
+          <div class="value-icon">⚡</div>
+          <h4>Local-First</h4>
+          <p>Everything works offline. Your tanks, logs, and species data live on your device first. The network is a bonus, not a requirement.</p>
+        </div>
+        <div class="value-card glass-card">
+          <div class="value-icon">🎮</div>
+          <h4>Fun, Not Friction</h4>
+          <p>Logging a water change should feel rewarding, not tedious. We build tools that make good husbandry habits feel like second nature.</p>
+        </div>
+        <div class="value-card glass-card">
+          <div class="value-icon">🔓</div>
+          <h4>Open & Transparent</h4>
+          <p>Open-source protocol. Public smart contracts. Verifiable on-chain records. Trust through transparency, not authority.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section class="section" style="padding-top: 0; padding-bottom: 80px;">
+    <div class="container">
+      <div class="contact-section">
+        <h3>Get in Touch</h3>
+        <p>Questions, feedback, partnership inquiries, or just want to talk fish?</p>
+        <p style="margin-top: 12px;">
+          Email us at <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a>
+        </p>
+        <p style="margin-top: 8px; font-size: 0.82rem; color: var(--text-muted);">
+          Bug reports and feature requests are also welcome at that address during beta.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-links">
+        <a href="/about">About</a>
+        <a href="/legal#terms">Terms of Service</a>
+        <a href="/legal#privacy">Privacy Policy</a>
+        <a href="/legal#beta">Beta Terms</a>
+        <a href="/legal#community">Community Guidelines</a>
+      </div>
+      <div class="footer-copy">&copy; 2026 Aquacellum. All rights reserved.</div>
+    </div>
+  </footer>
+
+</body>
+</html>

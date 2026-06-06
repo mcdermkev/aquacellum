@@ -13,6 +13,8 @@
     { "source": "/hobbyist", "destination": "/hobbyist.html" },
     { "source": "/breeder", "destination": "/breeder.html" },
     { "source": "/database", "destination": "/database.html" },
-    { "source": "/reef", "destination": "/reef.html" }
+    { "source": "/reef", "destination": "/reef.html" },
+    { "source": "/about", "destination": "/about.html" },
+    { "source": "/legal", "destination": "/legal.html" }
   ]
 }
