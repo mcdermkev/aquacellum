@@ -36,3 +36,6 @@ export { SwapSheet } from "./SwapSheet";
 export { AuctionPanel } from "./AuctionPanel";
 export { CreateTide } from "./CreateTide";
 export { SonarPreferences } from "./SonarPreferences";
+
+// Phase 4: Depth Score & Reputation
+export { DepthScoreMeter } from "./DepthScoreMeter";
