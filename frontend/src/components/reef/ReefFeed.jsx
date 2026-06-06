@@ -15,6 +15,9 @@ import { PublicProfile } from "./PublicProfile";
 import { SchoolDirectory } from "./SchoolDirectory";
 import { SchoolPage } from "./SchoolPage";
 import { CreateSchool } from "./CreateSchool";
+import { TideCalendar } from "./TideCalendar";
+import { TidePage } from "./TidePage";
+import { CreateTide } from "./CreateTide";
 import { useFollowingFeed, useDiscoverFeed } from "../../hooks/useReefFeed";
 import { useEnsureProfile } from "../../hooks/useReefProfile";
 import { getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
@@ -27,6 +30,9 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
   const [viewingSchools, setViewingSchools] = useState(false);
   const [viewingSchool, setViewingSchool] = useState(null);
   const [creatingSchool, setCreatingSchool] = useState(false);
+  const [viewingTides, setViewingTides] = useState(false);
+  const [viewingTide, setViewingTide] = useState(null);
+  const [creatingTide, setCreatingTide] = useState(false);
   const queryClient = useQueryClient();
 
   // Ensure profile exists on load
@@ -117,6 +123,60 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
     );
   }
 
+  // If viewing a specific tide
+  if (viewingTide) {
+    return (
+      <TidePage
+        tideId={viewingTide}
+        onBack={() => setViewingTide(null)}
+      />
+    );
+  }
+
+  // If browsing tides
+  if (viewingTides) {
+    return (
+      <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <button
+            onClick={() => setViewingTides(false)}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--text-secondary)",
+              fontSize: "0.8rem",
+              cursor: "pointer",
+              padding: "0.3rem 0",
+            }}
+          >
+            ← Back to Feed
+          </button>
+          {walletAddress && (
+            <button
+              onClick={() => setCreatingTide(true)}
+              className="btn btn--primary btn--sm"
+            >
+              + Create Tide
+            </button>
+          )}
+        </div>
+        {creatingTide ? (
+          <CreateTide
+            onSuccess={(tide) => {
+              setCreatingTide(false);
+              setViewingTide(tide.id);
+            }}
+            onCancel={() => setCreatingTide(false)}
+          />
+        ) : (
+          <TideCalendar
+            onSelectTide={(tideId) => setViewingTide(tideId)}
+          />
+        )}
+      </div>
+    );
+  }
+
   // If browsing schools
   if (viewingSchools) {
     return (
@@ -173,6 +233,26 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          {walletAddress && (
+            <button
+              onClick={() => setViewingTides(true)}
+              style={{
+                padding: "0.4rem 0.7rem",
+                borderRadius: "8px",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                background: "rgba(255, 255, 255, 0.03)",
+                color: "var(--text-muted)",
+                cursor: "pointer",
+                fontSize: "0.7rem",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
+              title="Browse Tides (Events)"
+            >
+              🌊 {casualModeActive ? "Events" : "Tides"}
+            </button>
+          )}
           {walletAddress && (
             <button
               onClick={() => setViewingSchools(true)}

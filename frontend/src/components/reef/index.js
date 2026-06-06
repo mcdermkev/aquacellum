@@ -25,3 +25,14 @@ export { ChallengeCard } from "./ChallengeCard";
 export { ExpertAuditForm } from "./ExpertAuditForm";
 export { ExpertAuditCard } from "./ExpertAuditCard";
 export { MentorshipPanel } from "./MentorshipPanel";
+
+// Phase 3: Tides (Events) & Notifications
+export { TideCalendar } from "./TideCalendar";
+export { TidePage } from "./TidePage";
+export { TideLiveFeed } from "./TideLiveFeed";
+export { TideChat } from "./TideChat";
+export { TideMap } from "./TideMap";
+export { SwapSheet } from "./SwapSheet";
+export { AuctionPanel } from "./AuctionPanel";
+export { CreateTide } from "./CreateTide";
+export { SonarPreferences } from "./SonarPreferences";
