@@ -9,6 +9,7 @@ import React, { useState, useRef } from "react";
 import { useUpdateProfile } from "../../hooks/useReefProfile";
 import { uploadImage, createPreviewUrl, revokePreviewUrl } from "../../services/mediaUpload";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import { DataPrivacySettings } from "./DataPrivacySettings";
 
 export function ProfileEdit({ profile, onSave, onCancel, casualModeActive = false }) {
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
@@ -259,6 +260,11 @@ export function ProfileEdit({ profile, onSave, onCancel, casualModeActive = fals
         >
           {saving ? "Saving..." : casualModeActive ? "Save ✨" : "Save Changes"}
         </button>
+      </div>
+
+      {/* Data & Privacy Section */}
+      <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid rgba(255, 255, 255, 0.05)" }}>
+        <DataPrivacySettings casualModeActive={casualModeActive} />
       </div>
     </div>
   );

@@ -140,7 +140,14 @@ All contracts deployed on **Base Sepolia (Chain ID 84532)**.
 - **Depth Score (Phase 4)**: Full reputation system — Shallow→Hadal tiers, auto-calculated from audits/insights/spawns/moderation. Tier-gated privileges. Anti-gaming detection (mutual upvote rings, score spikes, zero-engagement accounts).
 - **Poseidon Social AI (Phase 4)**: Weekly Reef Digest, Breeder Summary auto-generation, Tide live narration + post-event recaps, AI content moderation (text + image via Gemini), Poseidon mentor matching.
 - **Edge Functions (8 deployed)**: `send-push`, `tide-lifecycle`, `reef-digest`, `breeder-summary`, `content-moderation`, `tide-narration`, `mentor-match`, `anti-gaming`.
-- **Planned (Phase 5)**: Full-text search (Typesense), Virtual Tide streaming, rate limiting, GDPR export, accessibility audit, load testing.
+- **Search (Phase 5)**: Supabase full-text search across profiles, currents, schools, tides, and insights. Global search bar with keyboard shortcut (/), grouped results dropdown, mobile-responsive. Poseidon NL search for species via Gemini.
+- **Rate Limiting (Phase 5)**: Client-side throttle (localStorage) — 10 posts/hr, 50 comments/hr, 100 reactions/hr, 3 audits/day, 1 school/day, 20 Poseidon/hr. Wired into all social API mutations.
+- **Moderation (Phase 5)**: Admin panel for Hadal-tier curators — flagged content queue with dismiss/hide/warn/mute/ban actions, Poseidon AI case summaries, escalation history.
+- **GDPR (Phase 5)**: Data export (parallel fetch across 9 tables → JSON download) and account deletion (soft-delete with 30-day grace, cancellation, countdown). Integrated into profile settings.
+- **Performance (Phase 5)**: Reef social layer code-split via React.lazy + Suspense (~157 kB off main bundle).
+- **Accessibility (Phase 5)**: Focus trap, screen reader announcements, keyboard helpers, WCAG AA contrast checker, reduced-motion detection. ARIA attributes on all interactive social components.
+- **Integration Tests (Phase 5)**: 17-test suite covering rate limiter, profile CRUD, content lifecycle, social connections, GDPR export, notifications. Vitest runner.
+- **Planned (Phase 5)**: Virtual Tide streaming (built, coming-soon gated), Poseidon auto-transcription (deferred until livestream live).
 
 ### Landing Pages
 - **Main** (`index.html`): Platform overview, dual-mode explainer, Spec-Dex preview, marketplace, Poseidon & Echo companion.

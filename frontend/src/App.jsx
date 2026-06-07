@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
 import "./styles/index.css";
 import { ConnectWallet } from "./components/ConnectWallet";
 import { TankList } from "./components/TankList";
@@ -22,8 +22,12 @@ import { LandingBreeder } from "./components/LandingBreeder";
 import { DataPortabilityWidget } from "./components/DataPortabilityWidget";
 import { ModeSegmentedControl } from "./components/ModeSegmentedControl";
 import { OnboardingWizard } from "./components/OnboardingWizard";
-import { ReefFeed } from "./components/reef";
 import { useAuth } from "./contexts/AuthContext";
+
+// Lazy-load The Reef social layer (code-split for performance)
+const ReefFeed = lazy(() =>
+  import("./components/reef").then((m) => ({ default: m.ReefFeed }))
+);
 
 
 // Deployed contract addresses — Base Sepolia Testnet
@@ -377,11 +381,19 @@ export default function App() {
         );
       case "reef":
         return (
-          <ReefFeed 
-            casualModeActive={casualModeActive}
-            walletAccount={account}
-            walletAddress={account}
-          />
+          <Suspense fallback={
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: "640px", margin: "0 auto", padding: "2rem 0" }}>
+              {[1, 2, 3].map((i) => (
+                <div key={i} style={{ height: "180px", borderRadius: "12px", background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255, 255, 255, 0.05)", animation: "pulse 1.5s ease-in-out infinite" }} />
+              ))}
+            </div>
+          }>
+            <ReefFeed 
+              casualModeActive={casualModeActive}
+              walletAccount={account}
+              walletAddress={account}
+            />
+          </Suspense>
         );
       case "settings":
         return (

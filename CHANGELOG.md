@@ -5,6 +5,83 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 7, 2026 — Social Reef Phase 5 Complete: Search, Production Hardening & Launch Prep
+
+Completed the final phase of The Reef social layer. All 70 tasks across 5 phases are now shipped (except auto-transcription, deferred until Virtual Tides go live).
+
+### Search — Supabase Full-Text (Tasks 60-61)
+- **`useReefSearch.js`**: Debounced ilike queries across 5 content types (profiles, currents, schools, tides, insights) in parallel. TanStack Query caching (30s stale).
+- **`ReefSearchBar.jsx`**: Expandable search trigger in ReefFeed header. Dropdown results grouped by type with counts. Keyboard shortcut (`/` to focus, `Escape` to dismiss). Mobile-responsive fixed overlay.
+- Integrated into existing global navigation flow — click results navigate to profiles, schools, or tides.
+- Decision: Supabase ilike over Typesense. No external search dependency needed for current scale.
+
+### Virtual Tides — Coming Soon Gate (Task 63)
+- **CreateTide.jsx**: Virtual tide type disabled with purple "Coming Soon" badge. Users cannot select it.
+- **TidePage.jsx**: Virtual tides show informational panel instead of stream link.
+- All underlying infrastructure stays intact (stream_url field, realtime channels, TideChat, TideLiveFeed).
+
+### Rate Limiting (Task 65)
+- **`rateLimiter.js`**: Client-side throttle using localStorage with pruning. Limits: 10 posts/hr, 50 comments/hr, 100 reactions/hr, 3 audits/day, 1 school/day, 20 Poseidon/hr.
+- Wired into `reefApi.js`: `createCurrent`, `postComment`, `toggleReaction` all check limits before hitting Supabase.
+- User-friendly error messages with retry-after time formatting.
+- `withRateLimit()` higher-order function for wrapping any async action.
+
+### Moderation Admin Panel (Task 66)
+- **`ModerationPanel.jsx`**: Curator-accessible flagged content queue.
+- Actions: dismiss, hide content, warn user, mute 24h/7d, ban.
+- Fetches from `moderation_flags` table with reporter profile joins.
+- Poseidon AI summary display, escalation history viewer, prior warnings indicator.
+- Filter tabs: Pending / Resolved / All with live counts.
+
+### GDPR Data Export & Deletion (Task 67)
+- **`gdprService.js`**: `exportUserData()` — parallel fetch across 9 tables → structured JSON. `requestAccountDeletion()` — soft-delete with 30-day grace. `cancelAccountDeletion()` — reversal during grace period.
+- **`DataPrivacySettings.jsx`**: Export button, deletion confirmation (typed "DELETE MY ACCOUNT"), grace period countdown banner with cancel option.
+- Integrated into ProfileEdit component as a collapsible section at the bottom.
+
+### Performance Optimization (Task 68)
+- **Code-splitting**: ReefFeed lazy-loaded via `React.lazy()` + Suspense with skeleton placeholder.
+- Reef social chunk now separate (~21 kB gzipped) — main bundle reduced by ~157 kB.
+- Existing optimizations verified: WebP uploads, client-side resize, Supabase Realtime connection pooling (10 events/sec).
+
+### Accessibility (Task 69)
+- **`a11y.js`**: Focus trap utility, `announce()` for live region screen reader messages, `handleKeyActivate()` for keyboard interaction, `reactionAriaLabel()` for descriptive labels.
+- `prefersReducedMotion()` detection, WCAG AA color contrast checker utility.
+- Verified existing ARIA: ReactionBar has `role="group"`, `aria-pressed`, `aria-label`; SearchBar has `role="listbox"`, keyboard shortcut.
+
+### Integration Testing (Task 70)
+- **`reef-integration.test.js`**: 17 tests covering the critical social path.
+- Rate limiter: allow within limits, record actions, block at ceiling, daily limits, unknown actions graceful.
+- Profile CRUD, content lifecycle (create → feed → react → comment), social connections, GDPR export shape validation, notification retrieval.
+- All 17 passing via `vitest run`.
+
+### Files Created
+| File | Purpose |
+|------|---------|
+| `frontend/src/hooks/useReefSearch.js` | Supabase social search hook |
+| `frontend/src/components/reef/ReefSearchBar.jsx` | Global search UI component |
+| `frontend/src/services/rateLimiter.js` | Client-side rate limiting service |
+| `frontend/src/services/gdprService.js` | Data export & account deletion |
+| `frontend/src/components/reef/ModerationPanel.jsx` | Admin moderation panel |
+| `frontend/src/components/reef/DataPrivacySettings.jsx` | GDPR settings UI |
+| `frontend/src/utils/a11y.js` | Accessibility utility functions |
+| `frontend/src/__tests__/reef-integration.test.js` | Integration test suite |
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `frontend/src/components/reef/CreateTide.jsx` | Virtual type gated with Coming Soon |
+| `frontend/src/components/reef/TidePage.jsx` | Virtual tide Coming Soon panel |
+| `frontend/src/components/reef/ReefFeed.jsx` | Search bar integrated in header |
+| `frontend/src/components/reef/ProfileEdit.jsx` | DataPrivacySettings section added |
+| `frontend/src/components/reef/index.js` | New component exports |
+| `frontend/src/services/reefApi.js` | Rate limiting wired into mutations |
+| `frontend/src/App.jsx` | React.lazy code-splitting for ReefFeed |
+| `frontend/src/styles/index.css` | Search bar + Coming Soon badge styles |
+| `.kiro/specs/social-reef/tasks.md` | Phase 5 tasks marked complete |
+| `PROJECT_SUMMARY.md` | Phase 5 features documented |
+
+---
+
 ## June 6, 2026 — Beta Readiness: Legal, Privacy & About Pages
 
 Added all legal and informational pages required for beta tester distribution. Full glassmorphic design system integration, responsive layouts, and Vercel routing.

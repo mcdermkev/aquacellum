@@ -18,6 +18,7 @@ import { CreateSchool } from "./CreateSchool";
 import { TideCalendar } from "./TideCalendar";
 import { TidePage } from "./TidePage";
 import { CreateTide } from "./CreateTide";
+import { ReefSearchBar } from "./ReefSearchBar";
 import { useFollowingFeed, useDiscoverFeed } from "../../hooks/useReefFeed";
 import { useEnsureProfile } from "../../hooks/useReefProfile";
 import { getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
@@ -233,6 +234,26 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          {walletAddress && (
+            <ReefSearchBar
+              onNavigateProfile={handleProfileClick}
+              onNavigateCurrent={(current) => {
+                // Navigate to the author's profile to see their posts
+                if (current?.author?.wallet_address) {
+                  handleProfileClick(current.author.wallet_address);
+                }
+              }}
+              onNavigateSchool={(school) => setViewingSchool(school)}
+              onNavigateTide={(tide) => setViewingTide(tide.id)}
+              onNavigateInsight={(insight) => {
+                // Navigate to the insight author's profile
+                if (insight?.author?.wallet_address) {
+                  handleProfileClick(insight.author.wallet_address);
+                }
+              }}
+              casualModeActive={casualModeActive}
+            />
+          )}
           {walletAddress && (
             <button
               onClick={() => setViewingTides(true)}

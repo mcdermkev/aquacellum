@@ -236,13 +236,22 @@ export function TidePage({ tideId, onBack }) {
               )}
             </section>
 
-            {/* Stream URL for Virtual Tides */}
-            {tide.tide_type === "virtual" && tide.stream_url && isLive && (
-              <section aria-label="Stream">
-                <h3>🎥 Live Stream</h3>
-                <a href={tide.stream_url} target="_blank" rel="noopener noreferrer" className="btn btn--primary">
-                  Watch Stream ↗
-                </a>
+            {/* Virtual Tides — Coming Soon notice */}
+            {tide.tide_type === "virtual" && (
+              <section aria-label="Virtual Stream" className="tide-page__virtual-coming-soon">
+                <div style={{
+                  padding: "1.5rem",
+                  borderRadius: "12px",
+                  background: "rgba(99, 102, 241, 0.08)",
+                  border: "1px solid rgba(99, 102, 241, 0.2)",
+                  textAlign: "center",
+                }}>
+                  <p style={{ fontSize: "2rem", margin: "0 0 0.5rem" }}>🎥</p>
+                  <h3 style={{ margin: "0 0 0.5rem", color: "#fff" }}>Livestream — Coming Soon</h3>
+                  <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                    Virtual Tides with live video streaming, real-time chat overlay, and Poseidon narration are under development. Stay tuned!
+                  </p>
+                </div>
               </section>
             )}
           </div>

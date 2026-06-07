@@ -9,6 +9,7 @@
  */
 
 import { supabase, getCurrentWallet, isSupabaseConfigured } from "./supabaseClient";
+import { checkRateLimit, recordAction } from "./rateLimiter";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROFILES
@@ -99,6 +100,10 @@ export async function createCurrent({
 }) {
   if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
 
+  // Client-side rate limit check
+  const rateCheck = checkRateLimit("post");
+  if (!rateCheck.allowed) return { data: null, error: rateCheck.message };
+
   const { data, error } = await supabase
     .from("currents")
     .insert({
@@ -116,6 +121,7 @@ export async function createCurrent({
     .select()
     .single();
 
+  if (!error) recordAction("post");
   return { data, error };
 }
 
@@ -298,6 +304,9 @@ export async function toggleReaction(currentId, emoji) {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { data: null, error: "Not connected" };
 
+  // Client-side rate limit check (only for adding, not removing)
+  const rateCheck = checkRateLimit("reaction");
+
   // Check if reaction exists
   const { data: existing } = await supabase
     .from("reactions")
@@ -308,13 +317,16 @@ export async function toggleReaction(currentId, emoji) {
     .single();
 
   if (existing) {
-    // Remove reaction
+    // Remove reaction (no rate limit on removal)
     const { error } = await supabase
       .from("reactions")
       .delete()
       .eq("id", existing.id);
     return { data: { action: "removed" }, error };
   } else {
+    // Check rate limit for adding
+    if (!rateCheck.allowed) return { data: null, error: rateCheck.message };
+
     // Add reaction
     const { data, error } = await supabase
       .from("reactions")
@@ -325,6 +337,8 @@ export async function toggleReaction(currentId, emoji) {
       })
       .select()
       .single();
+
+    if (!error) recordAction("reaction");
     return { data: { action: "added", ...data }, error };
   }
 }
@@ -371,6 +385,10 @@ export async function postComment(currentId, body, parentCommentId = null) {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { data: null, error: "Not connected" };
 
+  // Client-side rate limit check
+  const rateCheck = checkRateLimit("comment");
+  if (!rateCheck.allowed) return { data: null, error: rateCheck.message };
+
   const { data, error } = await supabase
     .from("comments")
     .insert({
@@ -390,6 +408,7 @@ export async function postComment(currentId, body, parentCommentId = null) {
     `)
     .single();
 
+  if (!error) recordAction("comment");
   return { data, error };
 }
 

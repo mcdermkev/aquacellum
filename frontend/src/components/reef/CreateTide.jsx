@@ -22,6 +22,7 @@ const TIDE_TYPES = [
     icon: "🎥",
     label: "Virtual",
     desc: "Livestream event — breeding demos, Q&A, species spotlights.",
+    comingSoon: true,
   },
   {
     key: "challenge",
@@ -173,12 +174,17 @@ export function CreateTide({ onSuccess, onCancel, preselectedSchoolId = null }) 
                 key={type.key}
                 className={`create-tide__type-card ${
                   formData.tideType === type.key ? "create-tide__type-card--selected" : ""
-                }`}
-                onClick={() => updateField("tideType", type.key)}
+                }${type.comingSoon ? " create-tide__type-card--coming-soon" : ""}`}
+                onClick={() => !type.comingSoon && updateField("tideType", type.key)}
                 aria-pressed={formData.tideType === type.key}
+                aria-disabled={type.comingSoon}
+                disabled={type.comingSoon}
               >
                 <span className="create-tide__type-icon">{type.icon}</span>
                 <strong>{type.label}</strong>
+                {type.comingSoon && (
+                  <span className="create-tide__coming-soon-badge">Coming Soon</span>
+                )}
                 <p>{type.desc}</p>
               </button>
             ))}
