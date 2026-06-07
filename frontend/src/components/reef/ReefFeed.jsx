@@ -19,6 +19,7 @@ import { TideCalendar } from "./TideCalendar";
 import { TidePage } from "./TidePage";
 import { CreateTide } from "./CreateTide";
 import { ReefSearchBar } from "./ReefSearchBar";
+import { DiscoveryPanel } from "./DiscoveryPanel";
 import { useFollowingFeed, useDiscoverFeed } from "../../hooks/useReefFeed";
 import { useEnsureProfile } from "../../hooks/useReefProfile";
 import { getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
@@ -387,6 +388,14 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
       {/* Pending Tankmate Requests */}
       {activeTab === "following" && (
         <TankmateRequests onNavigateProfile={handleProfileClick} casualModeActive={casualModeActive} />
+      )}
+
+      {/* Discovery features — Discover tab only */}
+      {activeTab === "discover" && walletAddress && (
+        <DiscoveryPanel
+          onProfileClick={handleProfileClick}
+          casualModeActive={casualModeActive}
+        />
       )}
 
       {/* Not configured notice */}

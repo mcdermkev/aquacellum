@@ -141,6 +141,7 @@ All contracts deployed on **Base Sepolia (Chain ID 84532)**.
 - **Poseidon Social AI (Phase 4)**: Weekly Reef Digest, Breeder Summary auto-generation, Tide live narration + post-event recaps, AI content moderation (text + image via Gemini), Poseidon mentor matching.
 - **Edge Functions (8 deployed)**: `send-push`, `tide-lifecycle`, `reef-digest`, `breeder-summary`, `content-moderation`, `tide-narration`, `mentor-match`, `anti-gaming`.
 - **Search (Phase 5)**: Supabase full-text search across profiles, currents, schools, tides, and insights. Global search bar with keyboard shortcut (/), grouped results dropdown, mobile-responsive. Poseidon NL search for species via Gemini.
+- **Discovery (Phase 1)**: Three sub-features in the Discover tab — Nearby Breeders (zoneHash regional grouping), Breeders Who Keep [Species] (species-tag search), and Top Contributors This Week (Insights + Audits leaderboard).
 - **Rate Limiting (Phase 5)**: Client-side throttle (localStorage) — 10 posts/hr, 50 comments/hr, 100 reactions/hr, 3 audits/day, 1 school/day, 20 Poseidon/hr. Wired into all social API mutations.
 - **Moderation (Phase 5)**: Admin panel for Hadal-tier curators — flagged content queue with dismiss/hide/warn/mute/ban actions, Poseidon AI case summaries, escalation history.
 - **GDPR (Phase 5)**: Data export (parallel fetch across 9 tables → JSON download) and account deletion (soft-delete with 30-day grace, cancellation, countdown). Integrated into profile settings.

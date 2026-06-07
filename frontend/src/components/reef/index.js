@@ -40,6 +40,9 @@ export { SonarPreferences } from "./SonarPreferences";
 // Phase 4: Depth Score & Reputation
 export { DepthScoreMeter } from "./DepthScoreMeter";
 
+// Phase 1 — Discovery
+export { DiscoveryPanel } from "./DiscoveryPanel";
+
 // Phase 5: Search & Production
 export { ReefSearchBar } from "./ReefSearchBar";
 export { ModerationPanel } from "./ModerationPanel";

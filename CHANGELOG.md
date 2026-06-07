@@ -5,6 +5,42 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 7, 2026 — Discovery Features (Task 17) — Social Reef 70/70 Complete
+
+Built the three remaining discovery sub-features for the Discover tab. All 70 Social Reef tasks are now complete.
+
+### Nearby Breeders
+- **`useNearbyBreeders()` hook**: Queries profiles by shared `zone_hash` prefix (first 4 chars = same region). Fallback: shows recently-active breeders if the current user has no zone set.
+- Displays up to 10 regional breeders sorted by XP.
+
+### Breeders Who Keep [Species]
+- **`useBreedersForSpecies(query)` hook**: Searches `currents.species_tags` for matching species, deduplicates by wallet, returns breeder profiles (max 15).
+- Search input with real-time results; fallback to client-side filter if Supabase `cs` operator fails.
+
+### Top Contributors This Week
+- **`useTopContributors()` hook**: Tallies `species_insights` posts + `expert_audits` given since Monday 00:00 UTC. Ranks top 10 by combined activity score.
+- Leaderboard with medal ranks (🥇🥈🥉), insight/audit count badges, profile navigation.
+
+### Integration
+- **`DiscoveryPanel.jsx`**: Collapsible three-section panel with accessible keyboard navigation, mode-aware copy (casual/pro), and responsive layout.
+- Rendered at the top of the Discover tab in `ReefFeed.jsx` — visible when users switch to "Explore".
+- Build passes clean; no new dependencies.
+
+### Files Created
+| File | Purpose |
+|------|---------|
+| `frontend/src/hooks/useDiscovery.js` | Discovery query hooks (nearby, species, contributors) |
+| `frontend/src/components/reef/DiscoveryPanel.jsx` | Discovery UI component |
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `frontend/src/components/reef/ReefFeed.jsx` | Imported DiscoveryPanel, renders on Discover tab |
+| `frontend/src/components/reef/index.js` | Added DiscoveryPanel export |
+| `.kiro/specs/social-reef/tasks.md` | Task 17 marked complete (70/70) |
+
+---
+
 ## June 7, 2026 — Social Reef Phase 5 Complete: Search, Production Hardening & Launch Prep
 
 Completed the final phase of The Reef social layer. All 70 tasks across 5 phases are now shipped (except auto-transcription, deferred until Virtual Tides go live).

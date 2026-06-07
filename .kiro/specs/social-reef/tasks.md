@@ -109,7 +109,7 @@
   - Accept/decline flow for Tankmate requests (TankmateRequests panel)
   - Mutual detection: creates bidirectional follow rows on accept
 
-- [ ] 17. Build discovery features
+- [x] 17. Build discovery features
   - "Nearby Breeders" list using existing zoneHash grouping
   - "Breeders Who Keep [Species]" query on profiles + Dexie tank data
   - "Top Contributors This Week" leaderboard (Insights posted, Audits given)
