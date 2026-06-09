@@ -36,5 +36,16 @@ migration_errors.log
 .DS_Store
 Thumbs.db
 
+# One-time migration data (large binaries, not app source)
+migration_assets/
+local_data/
+
 # Kiro internal
 .kiro/
+
+# FishBase data extraction (large parquet files, intermediate data)
+*.parquet
+fishbase_verified_data.json
+seriously_fish_data.json
+frontend/public/fishbase_master_proposed_backup.json
+frontend/public/fishbase_master_proposed_v2.json

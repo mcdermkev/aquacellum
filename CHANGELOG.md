@@ -5,6 +5,154 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 9, 2026 — Species Database Enrichment (FishBase v25.04 Verified Data)
+
+Complete overhaul of the species catalog data layer — replaced LLM-generated placeholder values with verified data extracted directly from the FishBase v25.04 MySQL backend (via HuggingFace parquet dataset) and Seriously Fish species profiles.
+
+### Data Pipeline Built
+- **FishBase parquet extraction**: Downloaded 6 tables from `cboettig/fishbase` HuggingFace dataset (species, ecology, reproduc, spawning, fooditems, estimate) — 36,132 species, 59,152 food item records
+- **Species matching**: Matched 279/316 catalog species against FishBase by scientific name and SpecCode
+- **Seriously Fish scraper**: Built and ran automated scraper for 172 species, successfully extracted diet and reproduction data for 135 species
+- **Manual verification**: 46 species with known tank size overrides, trophic corrections, and taxonomy fixes
+
+### Data Corrections (from FishBase verified)
+- **276 maxLengthCm values corrected** using FishBase Total Length (TL) measurements
+- **19 significant size discrepancies fixed** (e.g., Goldfish 30→48cm, Neon Tetra 4→2.7cm, Discus 20→16.7cm)
+- **70 trophicLevel classifications corrected** using FishBase DietTroph and FeedingType fields
+- **Trophic overrides**: Oscar→Carnivore, Kuhli Loach→Omnivore, Discus→Omnivore (from numeric trophic levels)
+
+### Data Gaps Filled
+- **minVolumeGallons**: 0/316 → **316/316** (100%) — calculated from verified TL with behavior-based adjustments and expert overrides
+- **ecology.biotope**: 283/316 → **316/316** (100%) — plants/inverts filled with Tropica/aquarium sourced descriptions
+- **diet.fooditems**: 28/316 → **292/292 fish** (100%) — FishBase food items + Seriously Fish diet text
+- **reproduction.spawningTrait**: 29/316 → **292/292 fish** (100%) — FishBase RepGuild + Seriously Fish reproduction profiles
+- **ecology.socialBehavior**: 283/316 → **316/316** (100%)
+
+### Accuracy Validation
+- Tank size spot-check: **26/29 correct** within 5gal of Seriously Fish/aquarium consensus
+- Trophic level check: **18/18 correct** against known classifications
+- Spawning method check: **9/10 correct** keyword match against known breeding methods
+
+### Scripts Created
+| Script | Purpose |
+|--------|---------|
+| `scripts/extract-fishbase-data.mjs` | Reads FishBase parquet files, extracts verified data for 279 species |
+| `scripts/merge-verified-data.mjs` | Merges FishBase data into proposed JSON with tank size calculation |
+| `scripts/scrape-seriously-fish.mjs` | Scrapes seriouslyfish.com for diet/reproduction (135 species) |
+| `scripts/merge-seriously-fish.mjs` | Integrates Seriously Fish data into master file |
+| `scripts/fill-remaining-gaps.mjs` | Plants, invertebrates, and final fish ecology data |
+| `scripts/fill-final-gaps.mjs` | Last 45 species manual fill |
+
+### Data Files
+| File | Size | Content |
+|------|------|---------|
+| `fishbase_verified_data.json` | ~800 KB | Raw FishBase extraction for 279 species |
+| `seriously_fish_data.json` | ~400 KB | Scraped diet/reproduction for 135 species |
+| `fishbase_species.parquet` | 5.0 MB | FishBase species table (36,132 species) |
+| `fishbase_ecology.parquet` | 1.4 MB | FishBase ecology table |
+| `fishbase_spawning.parquet` | 0.5 MB | FishBase spawning table |
+| `fishbase_fooditems.parquet` | 1.9 MB | FishBase food items (59,152 records) |
+| `fishbase_reproduc.parquet` | 0.6 MB | FishBase reproduction table |
+| `fishbase_estimate.parquet` | 2.6 MB | FishBase estimates (TL, trophic, temp prefs) |
+
+### Production File Updated
+- `frontend/public/fishbase_master_proposed.json` — 316 species, 713 KB, schema-validated, JSON round-trip verified
+
+---
+
+## June 9, 2026 — 3D Model Pipeline & Immersive Reef Improvements
+
+Set up local 3D fish model generation using TripoSR on RTX 5080, generated Echo companion models, and iterated on reef rendering quality.
+
+### 3D Model Generation Pipeline
+- **Miniconda installed** with Python 3.10 conda env (`trellis`)
+- **PyTorch 2.11.0+cu128** installed — fully compatible with RTX 5080 (sm_120, 17.1 GB VRAM)
+- **TRELLIS attempted** — patched sparse attention modules for SDPA support, but the sparse diffusion step is incompatible with sm_120 without flash_attn/xformers kernels (deferred until those ship sm_120 support)
+- **TripoSR deployed** — Stability AI's feedforward image-to-3D model, runs at ~2 seconds per fish with zero compatibility issues
+- **26 fish GLB models generated** (26.5 MB total) including all priority species
+- **4 Echo evolution models generated**: `echo-fry.glb`, `echo-silver.glb`, `echo-mid.glb`, `echo-evolved.glb`
+- **Batch script**: `frontend/scripts/trellis_generate.py` — processes all 311 species images locally
+
+### Reef Rendering Fixes
+- **Vertex color support**: TripoSR GLBs export COLOR_0 without normals — added `computeVertexNormals()` and gamma correction (power 0.55) for proper display
+- **Sprite-first rendering**: Disabled GLB loading in favor of sprite billboards (TripoSR blob quality not production-ready). GLB code preserved for future high-quality models
+- **Fish movement**: Slowed boid velocities ~4x, added Y-axis damping and depth clamping to prevent fish floating up
+- **Scene lighting**: Boosted ambient + added hemisphere light + secondary directional for better 3D model visibility
+- **Content-type check**: Fixed Vite SPA fallback false-positive on GLB HEAD requests
+
+### Echo Companion — 3D Model Integration
+- **CompanionGuide.jsx** rewritten to load tier-specific Echo GLB models (Bronze→Fry, Silver→Silver, Gold→Mid, Master→Evolved)
+- Procedural swim animation applied to Echo's mesh (spine undulation, vertical bob)
+- Suspense fallback to procedural geometry if GLB fails to load
+
+### Files Created
+| File | Purpose |
+|------|---------|
+| `frontend/scripts/trellis_generate.py` | TripoSR batch generation script |
+| `frontend/scripts/generate_fish_models.py` | Multi-backend generation (Tripo API + HF Space) |
+| `frontend/public/models/fish/*.glb` (26 files) | Generated 3D fish models |
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `frontend/src/reef/CompanionGuide.jsx` | Rewritten: loads Echo GLB by tier, swim animation |
+| `frontend/src/reef/ProceduralSwim.jsx` | computeVertexNormals, gamma correction, reduced model scale |
+| `frontend/src/reef/FishSchool.jsx` | Sprite-first mode, slower movement, Y-axis damping |
+| `frontend/src/reef/ReefEnvironment.jsx` | Brighter lighting (hemisphere + boosted directional) |
+| `frontend/scripts/TRELLIS_SETUP.md` | Rewritten for TripoSR local workflow |
+
+### Next Steps (3D Models)
+- Re-generate with `--bake-texture` for UV-mapped textures (much better than vertex colors)
+- Investigate Rodin Gen-2 / InstantMesh for better fish topology
+- Consider parametric fish mesh generator (body profile + projected texture)
+
+---
+
+## June 8, 2026 — Technical Debt Audit & Codebase Cleanup
+
+Performed a full staff-level codebase audit against `PROJECT_SUMMARY.md` specification. Eliminated dead weight, consolidated scattered assets, unified backend migrations, and decomposed oversized components.
+
+### Files & Folders Removed (~150+ files)
+- **14 debug/scratch scripts** deleted from `frontend/`: `trace-error[1-6].mjs`, `__tmp_frag_*.json`, `_sanity_personality.mjs`, `tmp-personality-check.mjs`, `scan_emoji_tmp.cjs`, `check-bundle.js`
+- **3 build-dir pollutants** deleted: `_emoji_scan.cjs`, `_nonascii_scan.cjs`, `__t7_master_backup.json` from `frontend/dist/`
+- **Stale root `dist/`** directory removed entirely (orphaned build artifacts from pre-Vite era)
+- **6 root-level migration artifacts** deleted: `_gen_progress.cjs`, `generate_final_list.py`, `antigravity_master_pipeline.py`, `species_rows.csv`, `final_output.json`, `migration_errors.log`
+- **`Poseidon/` folder eliminated**: planning docs moved to `docs/`, `prep_ai_context.py` moved to `scripts/`, duplicate echo images removed
+- **`__pycache__/`** removed
+- **`migration_assets/` (107 PNGs)** + **`local_data/` (6 files)** untracked from git via `git rm --cached` and added to `.gitignore`
+
+### Supabase Migrations Consolidated
+- Unified two conflicting migration directories (`supabase/migrations/` and `frontend/supabase/migrations/`) into a single canonical sequence:
+  - `001_reef_mvp_schema.sql` through `010_depth_score_and_moderation.sql`
+- Deleted `frontend/supabase/` entirely — root `supabase/` is now the single source of truth
+- Resolved version-number collision (both dirs previously had conflicting `003`/`004` files)
+
+### Documentation Consolidated
+- Moved 5 root-level markdown docs into `docs/`: `BASE_GRANT_OVERVIEW.md`, `BASE_TESTNET_DEPLOYMENT_CHECKLIST.md`, `CURATION_STANDARD.md`, `PROPOSAL.md`, `ONBOARDING_WIZARD_TASKS.md`
+- Moved 3 Poseidon planning docs into `docs/`: `POSEIDON_ECHO_BRAINSTORM.md`, `POSEIDON_ECHO_LIGHT_V1_BETA_PLAN.md`, `POSEIDON_ECHO_V1_ONE_PAGE_SUMMARY.md`
+- Root now has only: `README.md`, `CHANGELOG.md`, `PROJECT_SUMMARY.md`
+
+### Component Decomposition
+| Extracted File | Lines | Source |
+|---|---|---|
+| `CompanionFishEntity.jsx` | 275 | Was inline in `TankList.jsx` — animated companion fish with tier evolution |
+| `TankQRCode.jsx` | 24 | Was inline in `TankList.jsx` — QR code canvas renderer |
+| `CurationQueuePanel.jsx` | 162 | Was inline in `BreedGallery.jsx` — curator approval/reject panel |
+
+- `TankList.jsx`: ~2,800 → 2,495 lines (–305)
+- `BreedGallery.jsx`: ~2,957 → 2,810 lines (–147)
+- Consolidated scattered mid-file imports to top of `TankList.jsx`
+
+### PROJECT_SUMMARY.md Updates
+- Updated Social Backend description to reflect 8 Edge Functions (was incorrectly listed as 2)
+- Added canonical project structure tree to Section 7
+- Added migration consolidation note
+
+### .gitignore Updates
+- Added `migration_assets/` and `local_data/` exclusions
+
+---
+
 ## June 7, 2026 — Discovery Features (Task 17) — Social Reef 70/70 Complete
 
 Built the three remaining discovery sub-features for the Discover tab. All 70 Social Reef tasks are now complete.
