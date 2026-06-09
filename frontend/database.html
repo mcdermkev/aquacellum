@@ -389,6 +389,7 @@
       position: absolute;
       top: 10px;
       right: 10px;
+      z-index: 2;
       padding: 4px 10px;
       border-radius: 20px;
       font-size: 0.65rem;
@@ -474,7 +475,6 @@
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
       border-radius: var(--radius-lg);
-      overflow: hidden;
       border: 2px solid rgba(52, 211, 153, 0.25);
       box-shadow: 0 24px 80px rgba(16, 185, 129, 0.15), 0 0 60px rgba(16, 185, 129, 0.05);
     }
@@ -484,6 +484,7 @@
       display: flex;
       flex-direction: column;
       background: var(--bg-surface);
+      overflow: hidden;
     }
     .flip-front-image {
       flex: 1;
@@ -580,7 +581,14 @@
       background: var(--bg-surface);
       display: flex;
       flex-direction: column;
+      overflow: hidden;
+      border-radius: var(--radius-lg);
+    }
+    .flip-back-scroll {
+      flex: 1;
       overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
     }
     .flip-back-header {
       padding: 20px 20px 12px;
@@ -985,6 +993,7 @@
       const ph = sp.tankMetrics?.phRange;
 
       let backHtml = `
+        <div class="flip-back-scroll">
         <div class="flip-back-header">
           <div class="flip-back-title">${sp.commonName || 'Unknown'}</div>
           <div class="flip-back-sci">${sp.scientificName}</div>
@@ -1020,31 +1029,34 @@
             </div>
           </div>`;
 
-      if (sp.ecology?.biotope || sp.ecology?.socialBehavior) {
+      // Helper: filter out placeholder text
+      const real = (val) => val && val !== 'Information arriving soon' && val !== 'Generic Biotope Details' ? val : null;
+
+      if (real(sp.ecology?.biotope) || real(sp.ecology?.socialBehavior)) {
         backHtml += `
           <div class="back-section">
             <div class="back-section-title">Ecology</div>
-            ${sp.ecology.biotope ? `<p class="back-text">${sp.ecology.biotope}</p>` : ''}
-            ${sp.ecology.socialBehavior ? `<p class="back-text" style="margin-top:6px;"><strong>Social:</strong> ${sp.ecology.socialBehavior}</p>` : ''}
+            ${real(sp.ecology.biotope) ? `<p class="back-text">${sp.ecology.biotope}</p>` : ''}
+            ${real(sp.ecology.socialBehavior) ? `<p class="back-text" style="margin-top:6px;"><strong>Social:</strong> ${sp.ecology.socialBehavior}</p>` : ''}
           </div>`;
       }
 
-      if (sp.diet) {
+      if (sp.diet && (real(sp.diet.fooditems) || real(sp.diet.feedingPlaybook))) {
         backHtml += `
           <div class="back-section">
             <div class="back-section-title">Diet</div>
-            <p class="back-text"><strong>${sp.diet.trophicLevel || ''}</strong>${sp.diet.fooditems ? ' — ' + sp.diet.fooditems : ''}</p>
-            ${sp.diet.feedingPlaybook ? `<p class="back-text" style="margin-top:6px;">${sp.diet.feedingPlaybook}</p>` : ''}
+            <p class="back-text"><strong>${sp.diet.trophicLevel || ''}</strong>${real(sp.diet.fooditems) ? ' — ' + sp.diet.fooditems : ''}</p>
+            ${real(sp.diet.feedingPlaybook) ? `<p class="back-text" style="margin-top:6px;">${sp.diet.feedingPlaybook}</p>` : ''}
           </div>`;
       }
 
-      if (sp.reproduction) {
+      if (sp.reproduction && (real(sp.reproduction.spawningTrait) || real(sp.reproduction.layoutRequirement) || real(sp.reproduction.comments))) {
         backHtml += `
           <div class="back-section">
             <div class="back-section-title">Reproduction</div>
-            <p class="back-text"><strong>${sp.reproduction.spawningTrait || ''}</strong></p>
-            ${sp.reproduction.layoutRequirement ? `<p class="back-text" style="margin-top:6px;">${sp.reproduction.layoutRequirement}</p>` : ''}
-            ${sp.reproduction.comments ? `<p class="back-text" style="margin-top:6px;">${sp.reproduction.comments}</p>` : ''}
+            ${real(sp.reproduction.spawningTrait) ? `<p class="back-text"><strong>${sp.reproduction.spawningTrait}</strong></p>` : ''}
+            ${real(sp.reproduction.layoutRequirement) ? `<p class="back-text" style="margin-top:6px;">${sp.reproduction.layoutRequirement}</p>` : ''}
+            ${real(sp.reproduction.comments) ? `<p class="back-text" style="margin-top:6px;">${sp.reproduction.comments}</p>` : ''}
           </div>`;
       }
 
@@ -1057,6 +1069,7 @@
       }
 
       backHtml += `</div>
+        </div>
         <div class="flip-back-hint">Tap to flip back · Click outside to close</div>`;
 
       document.getElementById('flipBack').innerHTML = backHtml;
@@ -1079,9 +1092,30 @@
     }
 
     // ---- Event Listeners ----
-    document.getElementById('flipCardContainer').addEventListener('click', function(e) {
+    let flipMouseDownY = 0;
+    let flipMouseMoved = false;
+
+    document.getElementById('flipCardContainer').addEventListener('mousedown', function(e) {
+      flipMouseDownY = e.clientY;
+      flipMouseMoved = false;
+    });
+
+    document.getElementById('flipCardContainer').addEventListener('mousemove', function(e) {
+      if (Math.abs(e.clientY - flipMouseDownY) > 5) flipMouseMoved = true;
+    });
+
+    document.getElementById('flipCardContainer').addEventListener('mouseup', function(e) {
+      // If user scrolled (moved mouse vertically), don't flip
+      if (flipMouseMoved) return;
+      // Don't flip when clicking inside scrollable back content
+      if (isFlipped && (e.target.closest('.flip-back-content') || e.target.closest('.flip-back-scroll'))) return;
       e.stopPropagation();
       flipCard();
+    });
+
+    // Also prevent the click from bubbling so overlay doesn't close
+    document.getElementById('flipCardContainer').addEventListener('click', function(e) {
+      e.stopPropagation();
     });
 
     document.getElementById('popupOverlay').addEventListener('click', function(e) {

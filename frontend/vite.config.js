@@ -26,6 +26,7 @@ export default defineConfig({
         breeder: resolve(__dirname, 'breeder.html'),   // Breeder landing
         database: resolve(__dirname, 'database.html'), // Species database page
         reef: resolve(__dirname, 'reef.html'),         // The Reef social landing
+        reefXr: resolve(__dirname, 'reef-xr.html'),   // Immersive 3D reef (WebXR)
         about: resolve(__dirname, 'about.html'),       // About page
         legal: resolve(__dirname, 'legal.html'),       // Legal & policies page
         app: resolve(__dirname, 'app.html')            // React dashboard app

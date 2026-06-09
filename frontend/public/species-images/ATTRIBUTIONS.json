@@ -1306,5 +1306,17 @@
     "source": "inaturalist",
     "license": "cc-by-sa",
     "attribution": "(c) Juan Cruzado Cortés, some rights reserved (CC BY-SA)"
+  },
+  {
+    "species": "Geophagus brasiliensis",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) Roxanne Lazarus, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Gymnarchus niloticus",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) AMADOU BAHLEMAN FARID, some rights reserved (CC BY-NC)"
   }
 ]
