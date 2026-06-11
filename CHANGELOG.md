@@ -5,6 +5,12 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 11, 2026 — Merged to Production (master)
+
+All changes from `feat/social-reef-phase5-complete` merged to master and deployed to aquacellum.com via Vercel. Includes: onboarding revamp, immersive reef XR biomes/cutouts/planted environments, Vertex AI migration, display name uniqueness, Echo companion art, 13 new 3D fish models, 280+ species cutout sprites, sponsorship scaffolding, and internal docs/scripts excluded from repo.
+
+---
+
 ## June 11, 2026 — Onboarding Revamp: Cinematic Dual-Pane Wizard & Guided Spotlight Tour
 
 Complete rewrite of the onboarding experience from a flat chat-bubble card into a dual-pane, stage-driven wizard that culminates in a guided spotlight tour of the real application.
