@@ -1,166 +1,70 @@
 /**
  * SpotlightTour.jsx
  *
- * Orchestrates the guided tour phase of onboarding: tank registration → add fish →
- * profile picture nudge. Each step uses SpotlightOverlay + TourCoachmark + useTourStep.
+ * Thin orchestrator for the guided-tour phases of onboarding. It selects the
+ * dedicated step component for the current onboarding phase and renders it over
+ * the live dashboard:
  *
- * Tasks covered: 8.1, 8.2, 8.3
- * Requirements: 3.1–3.6, 4.1–4.5, 7.3–7.5
+ *   tourTank      → <TankTourStep />     (task 8.1)
+ *   tourFish      → <FishTourStep />     (task 8.2)
+ *   profileNudge  → <ProfileTourStep />  (task 8.3)
+ *
+ * Each dedicated step owns its own SpotlightOverlay + TourCoachmark + completion
+ * detection (`useTourStep`) and advances the onboarding phase itself, so this
+ * orchestrator holds NO step config of its own — the dedicated components are the
+ * single source of truth (task 9.1 reconciliation; this replaces the earlier
+ * inline `TOUR_STEPS` config whose fish-step `verify` incorrectly polled the
+ * `db.species` *catalog* count instead of the user's specimens).
+ *
+ * When the phase machine advances past the last tour step to `complete`, no step
+ * matches and `onAllComplete` fires once. In the assembled wizard the parent also
+ * watches for the `complete` phase directly, so completion is handled even though
+ * this component unmounts on that transition; `onAllComplete` is kept as a
+ * best-effort signal for standalone use.
+ *
+ * Tasks covered: 9.1 (compose the tour hand-off from the dedicated steps)
+ * Requirements: 1.1, 3.1–3.6, 4.1–4.5, 7.3–7.5
  */
 
-import React, { useState, useCallback } from "react";
-import { SpotlightOverlay } from "./SpotlightOverlay";
-import { TourCoachmark } from "./TourCoachmark";
-import { useTourStep } from "../../hooks/useTourStep";
-import { useOnboarding } from "../../contexts/OnboardingContext";
-import { addXp } from "../../utils/xp";
-import { db } from "../../db";
+import React, { useEffect, useRef } from "react";
+import { useOnboarding, PHASES } from "../../contexts/OnboardingContext";
+import { TankTourStep } from "./TankTourStep.jsx";
+import { FishTourStep } from "./FishTourStep.jsx";
+import { ProfileTourStep } from "./ProfileTourStep.jsx";
 
-// ─── Tour step configurations ────────────────────────────────────────────────
-
-const TOUR_STEPS = [
-  {
-    id: "tour-tank",
-    phase: "tourTank",
-    targetId: "aquariums-tab",
-    completeOn: "aquadex:tank_registered",
-    verify: async () => (await db.tanks.count()) > 0,
-    skippable: false,
-    xpReward: 15,
-    xpLabel: "first_tank_tour",
-    copy: {
-      casual: "Tap the Aquariums tab and register your first tank. I'll walk you through it!",
-      pro: "Select the Aquariums tab and initialize your primary containment unit.",
-    },
-    title: {
-      casual: "Set up your first tank",
-      pro: "Register containment unit",
-    },
-  },
-  {
-    id: "tour-fish",
-    phase: "tourFish",
-    targetId: "add-fish-tab",
-    completeOn: "aquadex:specimen_added",
-    verify: async () => {
-      const count = await db.species.count();
-      // Check specimens via listings or a simple count
-      return count > 0;
-    },
-    skippable: true,
-    copy: {
-      casual: "Now add your first fish! Tap 'Add a Fish' and pick a species from the catalog.",
-      pro: "Register your first specimen via the catalog. Select the species and confirm.",
-    },
-    title: {
-      casual: "Add your first fish",
-      pro: "Register specimen",
-    },
-  },
-  {
-    id: "profile-nudge",
-    phase: "profileNudge",
-    targetId: "profile-widget",
-    completeOn: "aquadex:avatar_set",
-    verify: null, // No poll for avatar — event or skip only
-    skippable: true,
-    copy: {
-      casual: "One last thing — tap your profile to set a picture so others can recognize you!",
-      pro: "Set your operator avatar via the profile widget for community identification.",
-    },
-    title: {
-      casual: "Add a profile picture",
-      pro: "Set operator avatar",
-    },
-  },
-];
+// Map each tour phase to its dedicated step component (single source of truth).
+const PHASE_TO_STEP = Object.freeze({
+  [PHASES.TOUR_TANK]: TankTourStep,
+  [PHASES.TOUR_FISH]: FishTourStep,
+  [PHASES.PROFILE_NUDGE]: ProfileTourStep,
+});
 
 /**
- * SpotlightTour — overlay rendered above the live dashboard during tour phases.
+ * SpotlightTour — renders the dedicated tour step for the current phase over the
+ * live dashboard. The dashboard itself must be mounted beneath this overlay by
+ * the App (see the App-contract note in `OnboardingWizard.jsx`).
  *
- * Advances through tour steps and calls `onComplete` when done or all steps
- * are skipped/completed.
+ * @param {object} props
+ * @param {() => void} [props.onAllComplete] Fired once when no tour step matches
+ *        the current phase (i.e. the tour has finished and the phase is `complete`).
  */
-export function SpotlightTour({ onStepComplete, onAllComplete }) {
-  const { phase, casualMode, advance } = useOnboarding();
-  const [targetRect, setTargetRect] = useState(null);
+export function SpotlightTour({ onAllComplete }) {
+  const { phase } = useOnboarding();
+  const StepComponent = PHASE_TO_STEP[phase] || null;
+  const firedRef = useRef(false);
 
-  // Find the current step config based on the onboarding phase
-  const currentStep = TOUR_STEPS.find((s) => s.phase === phase) || null;
-
-  const handleComplete = useCallback(
-    (info) => {
-      if (currentStep?.xpReward) {
-        addXp(currentStep.xpLabel, currentStep.xpReward);
-      }
-      onStepComplete?.(currentStep?.id, info);
-      advance();
-    },
-    [currentStep, advance, onStepComplete]
-  );
-
-  const handleTimeout = useCallback(() => {
-    // Graceful skip — advance anyway for skippable steps
-    if (currentStep?.skippable) {
-      advance();
+  // Best-effort completion signal for standalone use: once we've run out of tour
+  // steps, notify the parent exactly once.
+  useEffect(() => {
+    if (!StepComponent && !firedRef.current) {
+      firedRef.current = true;
+      if (typeof onAllComplete === "function") onAllComplete();
     }
-  }, [currentStep, advance]);
+  }, [StepComponent, onAllComplete]);
 
-  const handleSkip = useCallback(() => {
-    advance();
-  }, [advance]);
+  if (!StepComponent) return null;
 
-  // useTourStep drives completion detection
-  const { dismiss } = useTourStep(
-    currentStep
-      ? {
-          id: currentStep.id,
-          completeOn: currentStep.completeOn,
-          verify: currentStep.verify,
-        }
-      : null,
-    {
-      onComplete: handleComplete,
-      onTimeout: handleTimeout,
-      enabled: !!currentStep,
-      timeout: 60000,
-    }
-  );
-
-  // No active tour step → we're done
-  if (!currentStep) {
-    // Signal completion on first render with no step
-    if (typeof onAllComplete === "function") {
-      // Defer to avoid calling during render
-      setTimeout(onAllComplete, 0);
-    }
-    return null;
-  }
-
-  return (
-    <>
-      <SpotlightOverlay
-        targetId={currentStep.targetId}
-        onRectChange={setTargetRect}
-        onTargetMissing={() => {
-          // If the target can't be found, allow skip for non-skippable too
-          // (fallback behavior per Req 3.5)
-          if (currentStep.skippable) {
-            advance();
-          }
-        }}
-      />
-      <TourCoachmark
-        targetRect={targetRect}
-        copy={currentStep.copy}
-        title={currentStep.title}
-        casualMode={casualMode}
-        skippable={currentStep.skippable}
-        onSkip={currentStep.skippable ? handleSkip : undefined}
-        skipLabel="Skip for now"
-      />
-    </>
-  );
+  return <StepComponent />;
 }
 
 export default SpotlightTour;

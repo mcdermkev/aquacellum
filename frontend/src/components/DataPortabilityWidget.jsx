@@ -2,9 +2,13 @@ import React, { useState } from "react";
 import { exportLocalDatabase, importLocalDatabase, db } from "../db";
 import { useQueryClient } from "@tanstack/react-query";
 import { generateFacilitySummary } from "../utils/pdfExport";
+import { useAuth } from "../contexts/AuthContext";
+import { ONBOARDING_CACHE_KEY } from "../hooks/useOnboardingGate";
+import { setOnboardingComplete } from "../services/reefApi";
 
 export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
   const queryClient = useQueryClient();
+  const { account } = useAuth();
   const [importStatus, setImportStatus] = useState({ type: "", message: "" });
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -88,6 +92,56 @@ export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
     };
 
     reader.readAsText(file);
+  };
+
+  /**
+   * Replay onboarding (Requirement 6.5).
+   *
+   * Resets ONLY the onboarding flags so `useOnboardingGate(account)` re-resolves to
+   * show onboarding again. Deliberately does NOT touch tanks, specimens, or the user's
+   * profile (display_name/avatar) — replaying the intro must never clear existing data.
+   *
+   * Reset surfaces, in order:
+   *   1. localStorage fast-path cache (`ONBOARDING_CACHE_KEY`) — removed so the gate
+   *      stops short-circuiting to "complete".
+   *   2. Dexie `userProfile.onboardingComplete=false` + `onboardingPhase=null` for the
+   *      current account (account-gated; only when an account exists).
+   *   3. Supabase `onboarding_complete=false` via reefApi (account-gated, no-op when
+   *      Supabase is unconfigured) so the server source of truth also replays.
+   *
+   * The gate reads on account/mount, so after resetting the flags we reload the route.
+   * `window.location.reload()` is the minimal robust trigger: it remounts `App`, which
+   * calls `useOnboardingGate(account)` fresh and resolves to show onboarding. All data
+   * lives in Dexie/Supabase and survives the reload.
+   */
+  const handleReplayOnboarding = async () => {
+    // 1. Clear the local fast-path cache (use the exported constant, not a literal).
+    try {
+      localStorage.removeItem(ONBOARDING_CACHE_KEY);
+    } catch (err) {
+      console.warn("[replay] localStorage clear failed:", err);
+    }
+
+    // 2 & 3. Reset the per-account flags only when an account exists — never wipe data.
+    if (account) {
+      try {
+        await db.userProfile.update(account, {
+          onboardingComplete: false,
+          onboardingPhase: null,
+        });
+      } catch (err) {
+        console.warn("[replay] Dexie onboarding reset failed:", err);
+      }
+
+      try {
+        await setOnboardingComplete(account, false);
+      } catch (err) {
+        console.warn("[replay] Supabase onboarding reset failed:", err);
+      }
+    }
+
+    // Re-resolve the gate by remounting the app; Dexie/Supabase data persists.
+    window.location.reload();
   };
 
   return (
@@ -390,25 +444,7 @@ export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
           <div style={{ display: "flex", gap: "0.75rem" }}>
             <button
               className="btn-primary"
-              onClick={async () => {
-                // Clear onboarding local cache
-                localStorage.removeItem("aquadex_onboarding_complete");
-                // Reset phase in Dexie without clearing other data (Req 6.5)
-                try {
-                  const { useAuth } = await import("../contexts/AuthContext");
-                  // We can't use hooks here, so access account from db
-                  const profiles = await db.userProfile.toArray();
-                  for (const profile of profiles) {
-                    await db.userProfile.update(profile.walletAddress, {
-                      onboardingComplete: false,
-                      onboardingPhase: null,
-                    });
-                  }
-                } catch (err) {
-                  console.warn("[replay] Dexie reset failed:", err);
-                }
-                window.location.reload();
-              }}
+              onClick={handleReplayOnboarding}
               style={{ padding: "0.6rem 1.25rem", fontSize: "0.8rem" }}
             >
               Replay Now

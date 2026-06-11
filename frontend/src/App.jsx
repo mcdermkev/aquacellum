@@ -123,8 +123,9 @@ export default function App() {
   const [enteredDashboard, setEnteredDashboard] = useState(() => {
     return localStorage.getItem("aquadex_entered_dashboard") === "true";
   });
-  // Per-account onboarding gate (replaces the old localStorage-only check)
-  const { showOnboarding } = useOnboardingGate(account);
+  // Per-account onboarding gate (replaces the old localStorage-only check).
+  // `loading` lets us avoid flashing the wizard before the per-account flag resolves.
+  const { showOnboarding, loading: onboardingLoading } = useOnboardingGate(account);
   const [postedFirstCurrent, setPostedFirstCurrent] = useState(() => {
     return localStorage.getItem("aquadex_posted_first_current") === "true";
   });
@@ -451,21 +452,20 @@ export default function App() {
     }
   }
 
-  // Show onboarding wizard for first-time users (per-account gate)
-  if (showOnboarding) {
-    return (
-      <OnboardingWizard
-        onComplete={(isCasual) => {
-          if (isCasual !== null && isCasual !== undefined) {
-            setCasualModeActive(isCasual);
-            localStorage.setItem("aquadex_casual_mode", isCasual.toString());
-          }
-        }}
-      />
-    );
-  }
+  // Onboarding completion handler. OnboardingWizard's completeOnboarding()
+  // (via OnboardingContext) has ALREADY persisted the per-account flag + Dexie
+  // mirror + refreshed the localStorage cache before firing this exactly once.
+  // App's job is to react: update casual mode here, then let useOnboardingGate
+  // re-resolve and swap to the dashboard.
+  const handleOnboardingComplete = (isCasual) => {
+    if (isCasual !== null && isCasual !== undefined) {
+      setCasualModeActive(isCasual);
+      localStorage.setItem("aquadex_casual_mode", isCasual.toString());
+    }
+  };
 
   return (
+    <>
     <div style={{ padding: "2rem max(2rem, (100vw - 1200px) / 2)", minHeight: "100vh" }}>
       {/* Premium Header Nav Bar — Redesigned v2 */}
       <header 
@@ -925,5 +925,16 @@ export default function App() {
         />
       )}
     </div>
+
+      {/* Per-account onboarding overlay — rendered ABOVE the live dashboard so the
+          spotlight tour phases (tourTank/tourFish/profileNudge) can target the real
+          data-tour-id controls mounted beneath. The wizard's in-card phases
+          (persona/identity/nameConfirm/hatch) render their own full-screen overlay
+          that covers the dashboard. Gating on !onboardingLoading avoids flashing
+          the wizard before the per-account flag resolves. (Req 6.1, 6.2, 6.6, 8.5) */}
+      {!onboardingLoading && showOnboarding && (
+        <OnboardingWizard onComplete={handleOnboardingComplete} />
+      )}
+    </>
   );
 }
