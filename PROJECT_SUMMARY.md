@@ -14,7 +14,7 @@ By bridging hobbyist fishkeeping registries with professional breeding standards
 - **Account Abstraction & Embedded Wallets**: Seamless onboarding via Privy embedded MPC wallets (email/Google login). MetaMask available as fallback for advanced users. Gasless beta via server-side relayer.
 - **Local-First Architecture**: Dexie.js offline database with TanStack Query caching. All operational data (tanks, action logs, grow-out tracking, photos) works without network. On-chain registration deferred to "publish" step.
 - **Dual-Mode Experience**: Casual Hobbyist mode (friendly, gamified) and Pro Breeder mode (operational, de-gamified) driven by a single toggle.
-- **Narrative Onboarding**: 4-step wizard guided by Poseidon (AI assistant) introducing users to their companion (Echo), creating their identity, and registering their first tank — all while the species database loads in the background.
+- **Narrative Onboarding**: Cinematic dual-pane wizard guided by Poseidon (AI assistant) with a living visual stage. Persona selection → Privy-only login → display name confirmation (uniqueness-checked) → Echo egg hatch (real art assets) → guided spotlight tour of real tank/fish registration → profile picture nudge. Per-account completion flag (Supabase + Dexie mirror + localStorage cache) ensures it shows exactly once. Replay available from Settings without data loss.
 - **Poseidon AI Intelligence Layer**: **Vertex AI (Gemini 2.5 Flash)** powered freshwater fish expert, grounded via RAG in the curated 326-species catalog. Provides natural language search, spawn thread narration, species compatibility advice, image alt-text generation, and contextual Q&A — all routed through server-side Edge Functions with structured JSON responses. User-controllable via Settings toggle. Runs on Vertex AI billed to the `aquacellum` Cloud project; simple/high-volume endpoints use the cheaper Gemini 2.5 Flash-Lite.
 - **Social Layer (The Reef)**: Full social backbone with profiles, Tank Currents feed, reactions, comments, Tankmate connections, Schools (clubs), Expert Audits, mentorship pairing, Tides (live events with GPS maps, auctions, real-time chat), and push notifications via Web Push VAPID.
 
@@ -178,12 +178,12 @@ All contracts deployed on **Base Sepolia (Chain ID 84532)**.
 }
 ```
 
-### Dexie.js Schema (v10)
+### Dexie.js Schema (v11)
 - `species`: specCode, commonName, scientificName, type, difficulty
 - `listings`: id, tokenId, seller, price, isBatch, speciesId
 - `tanks`: id, ownerAddress, name, active
 - `actionLogs`: ++id, tankId, actionType, timestamp, details
-- `userProfile`: walletAddress, level, prestigeXp, hobbyistXp, isCouncilMember
+- `userProfile`: walletAddress, level, prestigeXp, hobbyistXp, isCouncilMember, onboardingComplete
 - `breederCompanion`: walletAddress, eggState, companionXp, currentTier, selectedStats, zoneHash
 - `pendingHandshakes`: purchaseId, pin, salt, buyerAddress
 - `speciesManifest`: speciesId, scientificName, commonName, contractAddress, cachedAt
@@ -193,7 +193,7 @@ All contracts deployed on **Base Sepolia (Chain ID 84532)**.
 - `draftContent`: ++id, type, status, createdAt
 
 ### Supabase Schema (Social Layer)
-- `profiles`: wallet_address (PK), display_name, avatar_url, bio, privacy_settings, tank_count, species_count, xp_total, companion_tier, notification_preferences
+- `profiles`: wallet_address (PK), display_name, avatar_url, bio, privacy_settings, tank_count, species_count, xp_total, companion_tier, notification_preferences, onboarding_complete
 - `currents`: id, author_wallet, title, body, media_urls, linked_tank_id, linked_tank_name, species_tags, parameters_snapshot, visibility
 - `reactions`: id, user_wallet, target_id, emoji (UNIQUE per user/target/emoji)
 - `comments`: id, author_wallet, current_id, parent_comment_id, body

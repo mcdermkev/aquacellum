@@ -5,6 +5,77 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 11, 2026 — Onboarding Revamp: Cinematic Dual-Pane Wizard & Guided Spotlight Tour
+
+Complete rewrite of the onboarding experience from a flat chat-bubble card into a dual-pane, stage-driven wizard that culminates in a guided spotlight tour of the real application.
+
+### Dual-Pane Cinematic Layout
+- **`OnboardingLayout.jsx`**: CSS Grid two-column shell (narration | visual stage). Responsive: stacks vertically below 768px with stage on top. Uses new `onboarding-*` class system in `index.css`.
+- **`PoseidonNarrator.jsx`**: Chat-style narrator with `/poseidon-avatar.jpg`, typing-indicator → reveal rhythm, `role="log"` + `aria-live="polite"`. Imperative API via ref (`addMessage`, `say`, `reset`).
+- **Persona-aware dialogue**: Ported full `DIALOGUE` script with `resolveLine()` helper for casual/pro copy selection.
+
+### Echo Egg Hatch Stage
+- **`EchoStage.jsx`**: Real egg art → crack animation → Echo fry (`/echo-fry.png`) revealed in a glass tank-frame backdrop. States: idle (pulse) → cracking (wobble + crack keyframe) → hatched (swim). Keyboard/click activation (Enter/Space), ≥48×48px target, 6s nudge timer.
+- **`persistCompanion.js`**: On hatch, writes `breederCompanion` (eggState hatched, tier Bronze, initial XP) to Dexie. Idempotent guard.
+- **`prefers-reduced-motion`**: Cross-fade instead of crack/shake; opacity-only transitions throughout.
+
+### Guided Spotlight Tour (Real UI)
+- **`SpotlightOverlay.jsx`**: Full-screen dim with box-shadow cutout around `data-tour-id` target. Recomputes on resize/scroll, scrolls target into view, fires `onTargetMissing` for fallback.
+- **`TourCoachmark.jsx`**: Poseidon-styled instruction bubble anchored to target. Focus trap, Esc to skip (where allowed), persona-aware copy. Repositions dynamically.
+- **`SpotlightTour.jsx`**: Orchestrates 3 steps — tank registration → add fish → profile picture nudge. Uses `useTourStep` for dual event+poll detection.
+- **`useTourStep.js`**: Completion watcher with event listener + Dexie `verify()` poll + graceful timeout. Single terminal latch (idempotent advance). Pure `createTourStepWatcher` factory for testability.
+- **Real component events**: `aquadex:tank_registered`, `aquadex:specimen_added`, `aquadex:avatar_set` dispatched on success paths in `FacilityTreeView`, `MintSpecimen`, `ProfileEdit`.
+- **`data-tour-id` anchors**: `aquariums-tab`, `add-fish-tab`, `profile-widget` on real controls in `App.jsx` and `ConnectWallet.jsx`.
+
+### Privy-Only Authentication
+- **`IdentityStep.jsx`**: Single Privy CTA only — MetaMask button and external-wallet link removed from onboarding. Retry on fail (no MetaMask fallback). OAuth-redirect resume preserved.
+- **`NameConfirmStep.jsx`**: Pre-filled alias from `generateAlias(account)`, max 30 chars, Enter-to-submit, disabled when empty. **Uniqueness check**: debounced case-insensitive query against Supabase `profiles.display_name` — shows "name taken" warning and blocks confirm.
+
+### Per-Account Onboarding Gate
+- **`useOnboardingGate.js`**: Resolution order: localStorage fast-path cache → Supabase `profiles.onboarding_complete` → Dexie `userProfile.onboardingComplete` fallback → authenticated-but-no-account ⇒ show.
+- **`OnboardingContext.jsx`**: Phase state machine (persona → identity → nameConfirm → hatch → tourTank → tourFish → profileNudge → complete). Persists phase to Dexie only after account exists. `completeOnboarding()` writes Supabase + Dexie + localStorage cache.
+- **App-level gate**: `App.jsx` replaced localStorage-only boolean with `useOnboardingGate(account)`.
+- **Supabase migration**: `profiles.onboarding_complete BOOLEAN DEFAULT false` column added.
+- **Replay**: Settings "Replay Intro" clears cache + resets Dexie phase without clearing data.
+
+### Display Name Uniqueness
+- **`checkDisplayNameAvailable(name, excludeWallet)`** in `reefApi.js` — case-insensitive `ilike` query against Supabase, excludes user's own wallet. Fails open (never blocks if Supabase is down).
+- **`NameConfirmStep`**: 400ms debounce check as user types. Shows "Checking availability…" and "That name is already taken" states. Confirm button disabled when duplicate found.
+
+### CSS Foundation
+- New class system appended to `index.css`: `onboarding-layout`, `onboarding-pane--*`, `onboarding-card`, `poseidon-bubble`, `poseidon-avatar`, `echo-stage`, `echo-egg`, `echo-egg--cracking`, `echo-fry`, `echo-tank-frame`, `tour-overlay`, `tour-spotlight`, `tour-coachmark`, `tour-skip`.
+- Keyframes: `eggCrack`, `echoSwim`.
+- `@media (max-width:767px)` pane stacking + `@media (prefers-reduced-motion: reduce)` overrides.
+
+### Accessibility
+- Focus management on phase transitions (tabIndex + ref.focus).
+- `aria-live="polite"` on narrator, `role="button"` + focus ring on egg, focus trap in coachmark.
+- Reduced-motion: opacity-only equivalents reach same end states (Property 7).
+
+### Files Created (27 new)
+| Directory | Files |
+|-----------|-------|
+| `frontend/src/components/onboarding/` | OnboardingLayout, PoseidonNarrator, EchoStage, IdentityStep, NameConfirmStep, SpotlightOverlay, TourCoachmark, SpotlightTour, spotlightGeometry, identityCopy, nameConfirmCopy, persistCompanion, tankTourCopy, fishTourCopy, profileTourCopy, firstTankReward + tests |
+| `frontend/src/contexts/` | OnboardingContext.jsx + test |
+| `frontend/src/hooks/` | useOnboardingGate.js + test, useTourStep.js |
+| `frontend/src/utils/` | a11y.js |
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `frontend/src/App.jsx` | useOnboardingGate replaces localStorage gate, data-tour-id on tabs |
+| `frontend/src/components/OnboardingWizard.jsx` | Full rewrite — composes new components |
+| `frontend/src/components/ConnectWallet.jsx` | data-tour-id="profile-widget" |
+| `frontend/src/components/MintSpecimen.jsx` | aquadex:specimen_added event |
+| `frontend/src/components/FacilityTreeView.jsx` | aquadex:tank_registered event |
+| `frontend/src/components/reef/ProfileEdit.jsx` | aquadex:avatar_set event |
+| `frontend/src/components/DataPortabilityWidget.jsx` | Replay resets Dexie phase |
+| `frontend/src/services/reefApi.js` | setOnboardingComplete, checkDisplayNameAvailable, ensureProfile updated |
+| `frontend/src/db.js` | v11 schema — onboardingComplete indexed on userProfile |
+| `frontend/src/styles/index.css` | Onboarding/tour CSS classes + keyframes + media queries |
+
+---
+
 ## June 11, 2026 — Vertex AI Migration, Imagen Asset Pipeline & Reef Environment Textures
 
 Consolidated all Google AI usage onto **Vertex AI** so it bills to the `aquacellum` Cloud project (credits), generated the static reef art with Imagen 4, and wired the generated biome textures into the 3D reef. Also fixed fish clipping through the floor.
