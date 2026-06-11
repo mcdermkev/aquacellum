@@ -3,6 +3,7 @@
 // Runtime: Node.js serverless (needs fs access for species catalog)
 
 import { buildSpeciesContext } from './_lib/speciesIndex.js';
+import { vertexGenerateContent, isVertexConfigured } from './_lib/vertexClient.js';
 
 /**
  * Poseidon System Prompt — encodes the "guide" (Curation Standard, protocol rules, persona behavior)
@@ -115,10 +116,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required field: message' });
   }
 
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-  // Fallback: if no API key, return a structured offline response
-  if (!GEMINI_API_KEY || GEMINI_API_KEY.trim() === '') {
+  // Fallback: if Vertex AI isn't configured, return a structured offline response
+  if (!isVertexConfigured()) {
     return res.status(200).json({
       message: mode === 'pro'
         ? "[POSEIDON OFFLINE] Gemini API key not configured. Operating in local-only mode."
@@ -171,12 +170,7 @@ export default async function handler(req, res) {
   messages.push({ role: "user", parts: [{ text: currentPrompt }] });
 
   try {
-    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-
-    const geminiResponse = await fetch(geminiEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const geminiResponse = await vertexGenerateContent('gemini-2.5-flash', {
         contents: messages,
         generationConfig: {
           responseMimeType: "application/json",
@@ -217,7 +211,6 @@ export default async function handler(req, res) {
           { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
           { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
         ]
-      }),
     });
 
     if (!geminiResponse.ok) {

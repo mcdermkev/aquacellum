@@ -8,8 +8,10 @@ import { NarrationLayer } from "./NarrationLayer";
 import { ReefHUD } from "./ReefHUD";
 import { CompanionGuide } from "./CompanionGuide";
 import { GenerativeReef, BiomeSelector } from "./GenerativeReef";
+import { VoiceSettings } from "./VoiceSettings";
 import { useReefAudio } from "./hooks/useReefAudio";
 import { useTankData, parseReefParams } from "./hooks/useTankData";
+import { useBiomeClassifier, getSpeciesForBiome } from "./hooks/useBiomeClassifier";
 
 /** Error boundary to catch Three.js / R3F crashes */
 class ReefErrorBoundary extends React.Component {
@@ -72,9 +74,16 @@ export function ImmersiveReef() {
   const [biome, setBiome] = useState("default");
   const [showBiomeSelector, setShowBiomeSelector] = useState(false);
   const [companionVisible, setCompanionVisible] = useState(true);
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
 
   // Reef ambient audio
   const { ready: audioReady, muted, initAudio, toggleMute } = useReefAudio({ isSpeaking });
+
+  // Classify species into biomes for count display
+  const { biomeMap } = useBiomeClassifier(speciesData);
+  const biomeSpeciesCount = biome !== "default"
+    ? getSpeciesForBiome(biomeMap, biome).length
+    : speciesData.length;
 
   const handleInspect = useCallback((species) => {
     setInspectedSpecies(species);
@@ -95,8 +104,19 @@ export function ImmersiveReef() {
       ? `🏊 ${ownerName || "Friend"}'s Tank`
       : "🏠 My Tank";
 
+  // Biome label lookup
+  const BIOME_LABELS = {
+    default: "Main Reef",
+    amazon_blackwater: "Amazon Blackwater",
+    dutch_planted: "Dutch Planted",
+    asian_stream: "Asian Stream",
+    rift_lake: "African Rift Lake",
+    iwagumi: "Iwagumi Garden",
+    crystal_spring: "Crystal Spring",
+  };
+
   const subtitle = mode === "master"
-    ? `${speciesData.length} species • Main Reef`
+    ? `${biomeSpeciesCount} species • ${BIOME_LABELS[biome] || "Main Reef"}`
     : tankMeta
       ? `${speciesData.length} species • ${tankMeta.volumeLiters}L ${tankMeta.name || ""}`
       : `${speciesData.length} species`;
@@ -142,7 +162,7 @@ export function ImmersiveReef() {
         camera={{ position: [0, 2, mode === "tank" ? 8 : 12], fov: 60, near: 0.1, far: 200 }}
         style={{ width: "100%", height: "100%" }}
         gl={{ antialias: true, alpha: false }}
-        onCreated={({ gl }) => { gl.setClearColor("#0a1628"); }}
+        onCreated={({ gl }) => { gl.setClearColor("#081a14"); }}
       >
         <Suspense fallback={null}>
           {/* Environment selection */}
@@ -151,7 +171,7 @@ export function ImmersiveReef() {
           ) : biome === "default" ? (
             <ReefEnvironment />
           ) : (
-            <GenerativeReef biomeType={biome} seed={42} />
+            <GenerativeReef key={biome} biomeType={biome} seed={42} />
           )}
 
           {/* Fish schools — uses tank specimens or full catalog */}
@@ -159,6 +179,7 @@ export function ImmersiveReef() {
             speciesData={speciesData}
             onInspect={handleInspect}
             tankMode={mode === "tank"}
+            biome={biome}
           />
 
           {/* Companion Echo fish */}
@@ -202,6 +223,8 @@ export function ImmersiveReef() {
         isVisit={isVisit}
         ownerName={ownerName}
         tankMeta={tankMeta}
+        onToggleVoiceSettings={() => setShowVoiceSettings(s => !s)}
+        voiceSettingsOpen={showVoiceSettings}
       />
 
       {/* Biome selector (master mode only) */}
@@ -230,6 +253,11 @@ export function ImmersiveReef() {
       {/* Narration panel */}
       {inspectedSpecies && (
         <NarrationLayer species={inspectedSpecies} mode={uiMode} onDismiss={handleDismiss} />
+      )}
+
+      {/* Voice Settings panel */}
+      {showVoiceSettings && (
+        <VoiceSettings onClose={() => setShowVoiceSettings(false)} />
       )}
 
       {/* Visit banner */}

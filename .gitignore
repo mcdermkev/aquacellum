@@ -3,6 +3,13 @@
 .env.*
 !.env.example
 
+# Google Cloud service account keys — NEVER commit
+aquacellum-*.json
+*-service-account*.json
+*serviceaccount*.json
+gcp-*.json
+google-credentials*.json
+
 # Hardhat
 cache/
 artifacts/
@@ -42,6 +49,13 @@ local_data/
 
 # Kiro internal
 .kiro/
+
+# Docs — internal planning, keep off GitHub (except XR architecture)
+docs/
+!docs/IMMERSIVE_REEF_ARCHITECTURE.md
+
+# Frontend scripts — internal tooling (image gen, cutouts, etc.)
+frontend/scripts/
 
 # FishBase data extraction (large parquet files, intermediate data)
 *.parquet

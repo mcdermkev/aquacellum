@@ -15,7 +15,7 @@ import { getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseC
 const MAX_PHOTOS = 4;
 const MAX_BODY_LENGTH = 2000;
 
-export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive = false }) {
+export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive = false, preselectedTank = null }) {
   const [tanks, setTanks] = useState([]);
   const [selectedTank, setSelectedTank] = useState(null);
   const [body, setBody] = useState("");
@@ -39,10 +39,26 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
       .equals(walletAddress)
       .toArray()
       .then((userTanks) => {
-        setTanks(userTanks.filter((t) => t.active !== false));
+        const activeTanks = userTanks.filter((t) => t.active !== false);
+        setTanks(activeTanks);
+
+        if (preselectedTank) {
+          const matched = activeTanks.find((t) => t.id === preselectedTank.tankId);
+          if (matched) {
+            setSelectedTank(matched);
+
+            // Pre-populate tone-adapted copy
+            const volumeGal = (matched.volumeLiters * 0.264172).toFixed(0);
+            if (casualModeActive) {
+              setBody(`Just launched my new ${volumeGal} gallon aquarium! Target parameters are looking stable, ready to watch it grow. Happy to join the community! 🐠🌊`);
+            } else {
+              setBody(`Primary Containment Unit (${volumeGal}G) setup complete. Target water chemistry parameters logged. Node operational. 🧬`);
+            }
+          }
+        }
       })
       .catch(() => setTanks([]));
-  }, [isOpen]);
+  }, [isOpen, preselectedTank, casualModeActive]);
 
   // Auto-fetch latest parameters when tank is selected
   useEffect(() => {
@@ -160,6 +176,11 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
       setSpeciesTags([]);
       setVisibility("public");
       setUploadProgress(null);
+
+      // Mark first current posted to hide welcome cues
+      localStorage.setItem("aquadex_posted_first_current", "true");
+      window.dispatchEvent(new CustomEvent("aquadex_first_current_posted"));
+
       onSuccess?.(data);
       onClose();
     } catch (err) {
@@ -232,6 +253,27 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
             ✕
           </button>
         </div>
+
+        {/* First-post pro-tip banner */}
+        {localStorage.getItem("aquadex_posted_first_current") !== "true" && (
+          <div style={{
+            padding: "0.6rem 0.85rem",
+            borderRadius: "8px",
+            border: casualModeActive 
+              ? "1px solid rgba(56, 189, 248, 0.2)" 
+              : "1px solid rgba(168, 85, 247, 0.25)",
+            background: casualModeActive 
+              ? "rgba(56, 189, 248, 0.04)" 
+              : "rgba(168, 85, 247, 0.04)",
+            fontSize: "0.75rem",
+            color: "var(--text-secondary)",
+            lineHeight: "1.4",
+          }}>
+            {casualModeActive
+              ? "✨ Pro-tip: Linking your aquarium automatically attaches your water stats to show other keepers!"
+              : "✨ Pro-tip: Linking a containment unit attaches your water chemistry snapshot to the feed log!"}
+          </div>
+        )}
 
         {/* Tank selector */}
         {tanks.length > 0 && (

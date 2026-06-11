@@ -1,0 +1,30 @@
+{
+  "_comment": "Maps species groups and action contexts to sponsor product recommendations. Keyed by surface → context → speciesGroup or wildcard.",
+  "husbandry_feed": {
+    "*": null,
+    "characidae": null,
+    "cichlidae": null,
+    "poeciliidae": null
+  },
+  "husbandry_treatment": {
+    "*": null
+  },
+  "husbandry_water_change": {
+    "*": null
+  },
+  "alert_high_nitrate": {
+    "*": null
+  },
+  "alert_high_ammonia": {
+    "*": null
+  },
+  "species_detail_temperature": {
+    "*": null
+  },
+  "species_detail_diet": {
+    "*": null
+  },
+  "species_detail_habitat": {
+    "*": null
+  }
+}

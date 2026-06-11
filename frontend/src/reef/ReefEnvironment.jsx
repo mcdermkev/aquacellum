@@ -4,34 +4,34 @@ import * as THREE from "three";
 import { CausticsProjector } from "./CausticsShader";
 import { GodRays } from "./GodRays";
 import { BubbleParticles } from "./BubbleParticles";
+import { PlantedEnvironment } from "./PlantedEnvironment";
+import { BiomeFloor, BiomeBackdrop } from "./GenerativeReef";
 
 /**
- * ReefEnvironment — Underwater scene with caustics, god rays, bubbles,
- * biome terrain, and atmosphere.
+ * ReefEnvironment — Freshwater planted aquarium scene with caustics,
+ * god rays, bubbles, real plant cutouts, rocks, and driftwood.
  */
 export function ReefEnvironment() {
-  // Set fog via useEffect to avoid re-creating every render
   const { scene } = useThree();
   React.useEffect(() => {
-    scene.fog = new THREE.Fog("#0a2a4a", 8, 55);
+    // Warm green-tinted fog for freshwater (not ocean-blue).
+    scene.fog = new THREE.Fog("#0b1f1a", 15, 85);
     return () => { scene.fog = null; };
   }, [scene]);
 
   return (
     <group>
-      {/* Lighting */}
-      <ambientLight intensity={0.8} color="#b8d4e3" />
-      <directionalLight position={[10, 25, 5]} intensity={1.2} color="#ffffff" />
-      <directionalLight position={[-5, 15, -10]} intensity={0.4} color="#87ceeb" />
-      <pointLight position={[-8, 6, -12]} intensity={0.4} color="#00e5ff" />
-      <pointLight position={[12, 3, 8]} intensity={0.3} color="#22c55e" />
-      <hemisphereLight skyColor="#87ceeb" groundColor="#1a4a6a" intensity={0.5} />
+      {/* Lighting — warmer, greener, freshwater feel */}
+      <ambientLight intensity={0.7} color="#d4e8d0" />
+      <directionalLight position={[10, 25, 5]} intensity={1.0} color="#ffe8c0" />
+      <directionalLight position={[-5, 15, -10]} intensity={0.35} color="#a8d8a0" />
+      <pointLight position={[-8, 6, -12]} intensity={0.3} color="#4caf50" />
+      <pointLight position={[12, 3, 8]} intensity={0.25} color="#81c784" />
+      <hemisphereLight skyColor="#b8e0b0" groundColor="#1a3a1a" intensity={0.45} />
 
-      {/* Sand floor */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -3, 0]}>
-        <planeGeometry args={[80, 80, 32, 32]} />
-        <meshStandardMaterial color="#3d2b10" roughness={0.95} metalness={0} />
-      </mesh>
+      {/* Far underwater backdrop + textured substrate (Dutch planted set) */}
+      <BiomeBackdrop biomeType="dutch_planted" />
+      <BiomeFloor biomeType="dutch_planted" />
 
       {/* Caustics */}
       <CausticsProjector />
@@ -42,20 +42,17 @@ export function ReefEnvironment() {
       {/* Bubbles */}
       <BubbleParticles count={100} />
 
-      {/* Rocky zone */}
+      {/* Rocky zone — freshwater Seiryu-style */}
       <RockFormations />
 
-      {/* Plants */}
-      <PlantBed />
+      {/* Real plant cutouts — dense freshwater planting */}
+      <PlantedEnvironment />
 
       {/* Driftwood */}
       <DriftwoodCluster />
 
-      {/* Corals */}
-      <CoralGarden />
-
-      {/* Plankton */}
-      <PlanktonParticles count={1000} />
+      {/* Plankton / detritus */}
+      <PlanktonParticles count={800} />
 
       {/* Water surface */}
       <WaterSurface />
@@ -81,12 +78,17 @@ function WaterSurface() {
 function RockFormations() {
   const rocks = useMemo(() => {
     const items = [];
-    for (let i = 0; i < 15; i++) {
+    // Scatter rocks wider across the world for freshwater aquascape feel.
+    const rng = seededRand(42);
+    for (let i = 0; i < 25; i++) {
+      const angle = rng() * Math.PI * 2;
+      const dist = 5 + rng() * 35;
       items.push({
-        position: [-12 + (Math.random() - 0.5) * 10, -3 + Math.random() * 2, -8 + (Math.random() - 0.5) * 10],
-        scale: [0.6 + Math.random() * 1.8, 0.4 + Math.random() * 1.5, 0.6 + Math.random() * 1.8],
-        rotation: [Math.random() * 0.5, Math.random() * Math.PI, Math.random() * 0.3],
-        color: ["#4a4a4a", "#5c4a3a", "#3a3a3a"][i % 3]
+        position: [Math.cos(angle) * dist, -3 + rng() * 1.2, Math.sin(angle) * dist],
+        scale: [0.5 + rng() * 2.2, 0.4 + rng() * 1.8, 0.5 + rng() * 2.0],
+        rotation: [rng() * 0.4, rng() * Math.PI, rng() * 0.3],
+        // Seiryu / Dragon stone palette: blue-grays and slate.
+        color: ["#5a6a72", "#4a5a60", "#3d4d55", "#6a7a82", "#4d5d65"][i % 5]
       });
     }
     return items;
@@ -96,64 +98,32 @@ function RockFormations() {
     <group>
       {rocks.map((rock, i) => (
         <mesh key={i} position={rock.position} rotation={rock.rotation} scale={rock.scale}>
-          <dodecahedronGeometry args={[1, 1]} />
-          <meshStandardMaterial color={rock.color} roughness={0.92} />
+          <dodecahedronGeometry args={[1, 0]} />
+          <meshStandardMaterial color={rock.color} roughness={0.88} metalness={0.05} flatShading />
         </mesh>
       ))}
     </group>
   );
 }
 
-function PlantBed() {
-  const plants = useMemo(() => {
-    const items = [];
-    for (let i = 0; i < 14; i++) {
-      items.push({
-        x: 10 + (Math.random() - 0.5) * 10,
-        z: -5 + (Math.random() - 0.5) * 10,
-        height: 1.5 + Math.random() * 3,
-        color: ["#1a5c1a", "#2d7a2d", "#0f4f0f"][i % 3],
-        phase: Math.random() * Math.PI * 2
-      });
-    }
-    return items;
-  }, []);
-
-  return (
-    <group>
-      {plants.map((p, i) => (
-        <PlantStalk key={i} x={p.x} z={p.z} height={p.height} color={p.color} phase={p.phase} />
-      ))}
-    </group>
-  );
-}
-
-function PlantStalk({ x, z, height, color, phase }) {
-  const ref = useRef();
-  useFrame((state) => {
-    if (ref.current) {
-      const t = state.clock.elapsedTime;
-      ref.current.rotation.x = Math.sin(t * 0.8 + phase) * 0.1;
-      ref.current.rotation.z = Math.cos(t * 0.6 + phase) * 0.05;
-    }
-  });
-  return (
-    <mesh ref={ref} position={[x, -3 + height / 2, z]}>
-      <cylinderGeometry args={[0.02, 0.05, height, 6]} />
-      <meshStandardMaterial color={color} roughness={0.8} />
-    </mesh>
-  );
+// Deterministic PRNG (same as SpeciesSwarm).
+function seededRand(seed) {
+  let s = seed | 0;
+  return () => { s = (s * 1664525 + 1013904223) | 0; return (s >>> 0) / 4294967296; };
 }
 
 function DriftwoodCluster() {
   const logs = useMemo(() => {
     const items = [];
-    for (let i = 0; i < 5; i++) {
+    const rng = seededRand(1337);
+    for (let i = 0; i < 12; i++) {
+      const angle = rng() * Math.PI * 2;
+      const dist = 3 + rng() * 28;
       items.push({
-        position: [(Math.random() - 0.5) * 8, -3 + Math.random() * 0.3, 8 + (Math.random() - 0.5) * 8],
-        rotation: [Math.random() * 0.3, Math.random() * Math.PI, Math.random() * 0.3],
-        length: 1 + Math.random() * 3,
-        radius: 0.08 + Math.random() * 0.12
+        position: [Math.cos(angle) * dist, -3 + rng() * 0.3, Math.sin(angle) * dist],
+        rotation: [rng() * 0.3, rng() * Math.PI, rng() * 0.3],
+        length: 1.5 + rng() * 4,
+        radius: 0.06 + rng() * 0.14
       });
     }
     return items;
@@ -165,33 +135,6 @@ function DriftwoodCluster() {
         <mesh key={i} position={log.position} rotation={log.rotation}>
           <cylinderGeometry args={[log.radius, log.radius * 1.3, log.length, 8]} />
           <meshStandardMaterial color="#4a3520" roughness={0.95} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function CoralGarden() {
-  const corals = useMemo(() => {
-    const colors = ["#ff6b6b", "#ffa07a", "#9b59b6", "#f39c12", "#e74c3c", "#1abc9c", "#e91e63"];
-    const items = [];
-    for (let i = 0; i < 35; i++) {
-      items.push({
-        position: [(Math.random() - 0.5) * 40, -2.8 + Math.random() * 0.3, (Math.random() - 0.5) * 40],
-        scale: 0.2 + Math.random() * 0.6,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        isBranch: Math.random() > 0.5
-      });
-    }
-    return items;
-  }, []);
-
-  return (
-    <group>
-      {corals.map((c, i) => (
-        <mesh key={i} position={c.position} scale={c.scale}>
-          {c.isBranch ? <coneGeometry args={[0.2, 1.5, 5]} /> : <sphereGeometry args={[0.7, 8, 6]} />}
-          <meshStandardMaterial color={c.color} roughness={0.7} emissive={c.color} emissiveIntensity={0.08} />
         </mesh>
       ))}
     </group>

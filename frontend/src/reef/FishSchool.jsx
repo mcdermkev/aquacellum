@@ -2,6 +2,7 @@ import React, { useRef, useMemo, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { SwimmingFishGLB, getSwimParams } from "./ProceduralSwim";
+import { isHeroSpecies } from "./heroSpecies";
 
 /**
  * FishSchool — A group of fish (single species) swimming with boid-like behavior.
@@ -29,6 +30,10 @@ function getFishColor(species) {
   return FAMILY_COLORS[family] || FAMILY_COLORS.default;
 }
 
+// Substrate sits at y = -3 in the reef scene; keep fish bodies above it.
+const FLOOR_Y = -3;
+const FISH_CLEARANCE = 0.4;
+
 function getSlug(species) {
   return (species.scientificName || "")
     .toLowerCase()
@@ -38,11 +43,19 @@ function getSlug(species) {
 
 // Cache GLB availability checks per slug
 const glbCache = new Map();
+// Cache the resolved sprite URL (cutout preferred, photo fallback) per slug.
+const spriteUrlCache = new Map();
+
+// Hero species have baked-texture GLBs, but the TripoSR meshes read worse than
+// the clean cutout sprites — so we render everything as cutouts for now. Flip
+// this to true to bring the full-3D hero models back.
+const USE_HERO_GLB = false;
 
 /** Single fish — checks for GLB first, then sprite, then procedural */
 function FishVisual({ species, scale = 1 }) {
   const [renderMode, setRenderMode] = useState("checking"); // checking | glb | sprite | procedural
   const [texture, setTexture] = useState(null);
+  const [aspect, setAspect] = useState(1.7); // width / height of the sprite art
   const slug = getSlug(species);
   const color = getFishColor(species);
 
@@ -56,33 +69,71 @@ function FishVisual({ species, scale = 1 }) {
       return;
     }
 
-    // Prefer sprites (look much better than TripoSR blob meshes)
-    checkSprite();
+    // Hero species can render as full-3D GLBs (gated by USE_HERO_GLB); otherwise
+    // everything uses clean cutout sprites.
+    if (USE_HERO_GLB && isHeroSpecies(slug)) {
+      checkGLB();
+    } else {
+      checkSprite();
+    }
 
-    function checkSprite() {
-      return fetch(`/species-images/${slug}.png`, { method: "HEAD" })
+    function checkGLB() {
+      return fetch(`/models/fish/${slug}.glb`, { method: "HEAD" })
         .then((res) => {
           const ct = res.headers.get("content-type") || "";
           if (res.ok && !ct.includes("text/html")) {
-            glbCache.set(slug, "sprite");
-            setRenderMode("sprite");
-            loadTexture();
+            glbCache.set(slug, "glb");
+            setRenderMode("glb");
           } else {
-            glbCache.set(slug, "procedural");
-            setRenderMode("procedural");
+            checkSprite();
           }
         })
-        .catch(() => {
+        .catch(() => checkSprite());
+    }
+
+    // Prefer a transparent cutout; fall back to the original (opaque) photo.
+    function resolveSpriteUrl() {
+      if (spriteUrlCache.has(slug)) return Promise.resolve(spriteUrlCache.get(slug));
+      const cutout = `/species-cutouts/${slug}.png`;
+      const photo = `/species-images/${slug}.png`;
+      const ok = (res) => res.ok && !(res.headers.get("content-type") || "").includes("text/html");
+      return fetch(cutout, { method: "HEAD" })
+        .then((res) => {
+          const url = ok(res) ? cutout : photo;
+          return fetch(url, { method: "HEAD" }).then((r2) => (ok(r2) ? url : null));
+        })
+        .catch(() =>
+          fetch(photo, { method: "HEAD" })
+            .then((r) => (ok(r) ? photo : null))
+            .catch(() => null)
+        )
+        .then((url) => {
+          spriteUrlCache.set(slug, url);
+          return url;
+        });
+    }
+
+    function checkSprite() {
+      return resolveSpriteUrl().then((url) => {
+        if (url) {
+          glbCache.set(slug, "sprite");
+          setRenderMode("sprite");
+          loadTexture();
+        } else {
           glbCache.set(slug, "procedural");
           setRenderMode("procedural");
-        });
+        }
+      });
     }
   }, [slug]);
 
   function loadTexture() {
+    const url = spriteUrlCache.get(slug) || `/species-images/${slug}.png`;
     const loader = new THREE.TextureLoader();
-    loader.load(`/species-images/${slug}.png`, (tex) => {
+    loader.load(url, (tex) => {
       tex.colorSpace = THREE.SRGBColorSpace;
+      const img = tex.image;
+      if (img && img.width && img.height) setAspect(img.width / img.height);
       setTexture(tex);
     }, undefined, () => setTexture(null));
   }
@@ -102,13 +153,13 @@ function FishVisual({ species, scale = 1 }) {
     );
   }
 
-  // Sprite mode: billboard
+  // Sprite mode: billboard sized to the art's real aspect ratio (no stretch).
   if (renderMode === "sprite" && texture) {
-    const width = scale * 0.6;
-    const height = scale * 0.35;
+    const width = scale * 0.9;
+    const height = width / (aspect || 1.7);
     return (
       <sprite scale={[width, height, 1]}>
-        <spriteMaterial map={texture} transparent alphaTest={0.05} />
+        <spriteMaterial map={texture} transparent alphaTest={0.2} depthWrite={false} />
       </sprite>
     );
   }
@@ -138,9 +189,9 @@ export function FishSchool({ species, count, position, onInspect }) {
     for (let i = 0; i < count; i++) {
       data.push({
         pos: new THREE.Vector3(
+          (Math.random() - 0.5) * 4,
           (Math.random() - 0.5) * 2,
-          (Math.random() - 0.5) * 1,
-          (Math.random() - 0.5) * 2
+          (Math.random() - 0.5) * 4
         ),
         vel: new THREE.Vector3(
           (Math.random() - 0.5) * 0.006,
@@ -188,9 +239,17 @@ export function FishSchool({ species, count, position, onInspect }) {
       if (fish.pos.y < -2) fish.vel.y += 0.001;
       fish.vel.y *= 0.95; // dampen vertical movement
 
-      // Bounds: keep within a 4-unit sphere
-      if (fish.pos.length() > 4) {
-        fish.vel.add(fish.pos.clone().negate().multiplyScalar(0.005));
+      // Hard floor: never let a fish sink below the substrate (world space).
+      // world Y = group base (position[1]) + local fish.pos.y
+      const minLocalY = (FLOOR_Y + FISH_CLEARANCE) - position[1];
+      if (fish.pos.y < minLocalY) {
+        fish.pos.y = minLocalY;
+        if (fish.vel.y < 0) fish.vel.y = 0;
+      }
+
+      // Bounds: keep within a 6-unit sphere (wider so the school drifts)
+      if (fish.pos.length() > 6) {
+        fish.vel.add(fish.pos.clone().negate().multiplyScalar(0.003));
       }
 
       // Apply to mesh

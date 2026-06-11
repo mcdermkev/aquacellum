@@ -15,7 +15,7 @@ By bridging hobbyist fishkeeping registries with professional breeding standards
 - **Local-First Architecture**: Dexie.js offline database with TanStack Query caching. All operational data (tanks, action logs, grow-out tracking, photos) works without network. On-chain registration deferred to "publish" step.
 - **Dual-Mode Experience**: Casual Hobbyist mode (friendly, gamified) and Pro Breeder mode (operational, de-gamified) driven by a single toggle.
 - **Narrative Onboarding**: 4-step wizard guided by Poseidon (AI assistant) introducing users to their companion (Echo), creating their identity, and registering their first tank — all while the species database loads in the background.
-- **Poseidon AI Intelligence Layer**: Gemini 2.0 Flash-powered freshwater fish expert, grounded via RAG in the curated 326-species catalog. Provides natural language search, spawn thread narration, species compatibility advice, image alt-text generation, and contextual Q&A — all routed through server-side Edge Functions with structured JSON responses. User-controllable via Settings toggle.
+- **Poseidon AI Intelligence Layer**: **Vertex AI (Gemini 2.5 Flash)** powered freshwater fish expert, grounded via RAG in the curated 326-species catalog. Provides natural language search, spawn thread narration, species compatibility advice, image alt-text generation, and contextual Q&A — all routed through server-side Edge Functions with structured JSON responses. User-controllable via Settings toggle. Runs on Vertex AI billed to the `aquacellum` Cloud project; simple/high-volume endpoints use the cheaper Gemini 2.5 Flash-Lite.
 - **Social Layer (The Reef)**: Full social backbone with profiles, Tank Currents feed, reactions, comments, Tankmate connections, Schools (clubs), Expert Audits, mentorship pairing, Tides (live events with GPS maps, auctions, real-time chat), and push notifications via Web Push VAPID.
 
 ### Protocol Fee Structure (Current — Testnet)
@@ -48,12 +48,12 @@ graph TD
 
 ### Infrastructure Components
 1. **Frontend Client**: Multi-page Vite React app (`index.html` landing, `app.html` dashboard, `database.html` species registry, `reef.html` social landing, `reef-xr.html` immersive 3D reef, `hobbyist.html` + `breeder.html` persona pages) with glassmorphic UI.
-2. **Immersive Reef (WebXR)** *(Coming Soon)*: Three.js/R3F underwater experience with boid-based fish schools (311 species as sprite billboards), biome selection, companion guide (Echo), Poseidon narration, spatial audio, and multiplayer presence. Three modes: Master Reef (full catalog), My Tank (personal), Visit Tank (social tour). 3D model pipeline via TripoSR running locally on RTX 5080. Currently in active development.
+2. **Immersive Reef (WebXR)**: Three.js/R3F freshwater aquarium experience with boid-based fish schools (316 species as transparent cutout billboards), 6 switchable freshwater biomes (Amazon Blackwater, Dutch Planted, Asian Stream, Rift Lake, Iwagumi, Crystal Spring), real plant cutouts scattered in depth layers, companion guide (Echo as cutout sprite), Poseidon narration, spatial audio, and multiplayer presence. Each biome (and the default Main Reef) renders an Imagen-generated substrate texture (`/biomes/{biome}/floor.png`) and a wraparound underwater backdrop (`backdrop.png`). Fish are floor-clamped so they never clip below the substrate. Three modes: Master Reef (full catalog), My Tank (personal), Visit Tank (social tour). Explorable spread layout with deterministic species placement. 3D model pipeline (TripoSR + baked textures on RTX 5080) preserved behind feature flag; cutout sprites are the active visual pass.
 2. **Base L2 Smart Contracts**: Registry transactions, pedigree state transitions, escrow/shipping, batch checkout.
 3. **FishBase Master Catalog**: Offline JSON (`fishbase_master.json`) — 316 species with full taxonomic envelopes (verified temp/pH/volume bounds from FishBase v25.04 parquet, Seriously Fish scrape, and manual curation). 100% coverage on tank metrics, ecology, diet, and reproduction for all fish species.
 4. **Local Database**: Dexie.js v10 schema with tables: `species`, `listings`, `tanks`, `actionLogs`, `userProfile`, `breederCompanion`, `pendingHandshakes`, `speciesManifest`, `spawnGrowout`, `feedCache`, `socialNotifications`, `draftContent`.
 5. **Serverless API**: Vercel serverless functions for species suggestion validation (WoRMS + Gemini AI audit), transaction relayer, and Poseidon AI gateway.
-6. **Poseidon AI Gateway**: `/api/poseidon` (Gemini 2.0 Flash) — structured JSON responses, RAG-grounded in 326-species catalog, multi-turn context, rate-limited (20/hr). Additional endpoints: `/api/parse-search` (NL query parsing), `/api/generate-alt-text` (Gemini Vision for accessibility).
+6. **Poseidon AI Gateway**: `/api/poseidon` (Vertex AI, Gemini 2.5 Flash) — structured JSON responses, RAG-grounded in 326-species catalog, multi-turn context, rate-limited (20/hr). Additional endpoints: `/api/parse-search` (NL query parsing, Gemini 2.5 Flash-Lite), `/api/generate-alt-text` (Gemini 2.5 Flash-Lite vision for accessibility), `/api/suggest-species` (WoRMS + Gemini 2.5 Flash audit). All authenticate to Vertex AI via a service account (`_lib/vertexClient.js`), billed to the `aquacellum` Cloud project. Static reef art is generated with Imagen 4 on Vertex (`scripts/imagen_generate.py`).
 7. **Social Backend**: Supabase Postgres (19 tables with RLS + notification triggers + cron), Supabase Storage (media CDN), Supabase Realtime (live chat + notifications), 8 Edge Functions (`send-push`, `tide-lifecycle`, `reef-digest`, `breeder-summary`, `content-moderation`, `tide-narration`, `mentor-match`, `anti-gaming`), Web Push via VAPID. Migrations consolidated in `supabase/migrations/` (001–010).
 8. **Beta Relayer**: `/api/relay-transaction` — server-side transaction signing for on-chain writes using a single funded deployer wallet. Beta testers never interact with MetaMask.
 
@@ -226,7 +226,9 @@ npx hardhat test                # Contract test suites (from root)
 ### Key Dependencies
 - React 18, Vite 5, TanStack Query/Virtual, Dexie 4, ethers 5, Fuse.js, jsPDF, qrcode
 - Supabase JS (social layer, storage, realtime)
+- google-auth-library (Vertex AI service-account auth for the Poseidon/AI endpoints)
 - Hardhat, OpenZeppelin (AccessControl, ERC721, ReentrancyGuard)
+- Python: google-genai, pillow, rembg (Imagen asset generation + cutouts); TripoSR/PyTorch (local 3D model pipeline)
 
 ### Deployment
 - **Frontend**: Vercel (aquacellum.com)

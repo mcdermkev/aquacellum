@@ -14,15 +14,28 @@ import { checkRateLimit, recordAction } from "./rateLimiter";
 // ─────────────────────────────────────────────────────────────────────────────
 // PROFILES
 // ─────────────────────────────────────────────────────────────────────────────
+//
+// REQUIRED SUPABASE SCHEMA (onboarding-revamp spec):
+//   ALTER TABLE profiles ADD COLUMN onboarding_complete BOOLEAN DEFAULT false;
+//
+// `onboarding_complete` is the server-side source of truth for the first-login-only
+// onboarding gate (Requirements 6.1, 6.2, 6.6). It is mirrored locally to the Dexie
+// `userProfile.onboardingComplete` field for offline-first reads. If the column is not
+// present, these reads/writes degrade gracefully (Supabase returns the row without the
+// field / an error on update) and the gate falls back to the Dexie mirror per-device.
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Get or create a profile for the given wallet address.
  * Called on first login to ensure the profile row exists.
+ *
+ * The returned profile includes `onboarding_complete` (when the column exists), used by
+ * the onboarding gate to decide whether to show the wizard.
  */
 export async function ensureProfile(walletAddress, initialData = {}) {
   if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
 
-  // Check if profile exists
+  // Check if profile exists (select * includes onboarding_complete when the column exists)
   const { data: existing, error: fetchError } = await supabase
     .from("profiles")
     .select("*")
@@ -31,7 +44,8 @@ export async function ensureProfile(walletAddress, initialData = {}) {
 
   if (existing) return { data: existing, error: null };
 
-  // Create new profile
+  // Create new profile. New accounts default to onboarding_complete = false so the
+  // wizard runs exactly once on first login.
   const { data, error } = await supabase
     .from("profiles")
     .insert({
@@ -41,6 +55,7 @@ export async function ensureProfile(walletAddress, initialData = {}) {
       species_count: initialData.species_count || 0,
       xp_total: initialData.xp_total || 0,
       companion_tier: initialData.companion_tier || "Bronze",
+      onboarding_complete: initialData.onboarding_complete ?? false,
     })
     .select()
     .single();
@@ -72,6 +87,31 @@ export async function updateProfile(walletAddress, updates) {
   const { data, error } = await supabase
     .from("profiles")
     .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq("wallet_address", walletAddress)
+    .select()
+    .single();
+
+  return { data, error };
+}
+
+/**
+ * Set the per-account onboarding-complete flag (server source of truth for the
+ * first-login-only gate — Requirements 6.1, 6.2, 6.6).
+ *
+ * Requires the `profiles.onboarding_complete BOOLEAN DEFAULT false` column (see the
+ * PROFILES section header). When Supabase is not configured this is a no-op so callers
+ * can rely solely on the Dexie mirror in offline/local-only mode.
+ *
+ * @param {string} walletAddress - account whose flag is being set.
+ * @param {boolean} [value=true] - the completion state to persist.
+ * @returns {Promise<{ data: object|null, error: any }>}
+ */
+export async function setOnboardingComplete(walletAddress, value = true) {
+  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ onboarding_complete: value, updated_at: new Date().toISOString() })
     .eq("wallet_address", walletAddress)
     .select()
     .single();

@@ -187,6 +187,9 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
 
       addXp(XP_ACTIONS.REGISTER_TANK.points, XP_ACTIONS.REGISTER_TANK.label);
 
+      // Notify onboarding tour / listeners that a tank was registered (no behavioral change)
+      window.dispatchEvent(new CustomEvent("aquadex:tank_registered", { detail: { tankId: newTankId } }));
+
       setRegisterForm({
         name: "",
         tankType: "0",

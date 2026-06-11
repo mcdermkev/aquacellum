@@ -5,6 +5,141 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 11, 2026 — Vertex AI Migration, Imagen Asset Pipeline & Reef Environment Textures
+
+Consolidated all Google AI usage onto **Vertex AI** so it bills to the `aquacellum` Cloud project (credits), generated the static reef art with Imagen 4, and wired the generated biome textures into the 3D reef. Also fixed fish clipping through the floor.
+
+### Vertex AI Migration (Gemini + Imagen → Cloud project billing)
+- **Root cause of prior setup**: all four serverless functions + the Imagen script authenticated with an **AI Studio Developer API key** (`generativelanguage.googleapis.com`), which bills a personal account, not the Cloud project. Credits apply to **Vertex AI**, so usage wasn't drawing from them.
+- **New shared client** `frontend/api/_lib/vertexClient.js`: mints an OAuth token from a service account via `google-auth-library`, calls `{location}-aiplatform.googleapis.com`. `isVertexConfigured()` gates the offline fallbacks. Auth resolves from `GCP_SERVICE_ACCOUNT_JSON` (Vercel) → `GOOGLE_APPLICATION_CREDENTIALS` (local) → ADC.
+- **Migrated all four functions** off the API key: `poseidon.js`, `parse-search.js`, `generate-alt-text.js`, `suggest-species.js`. Prompts, JSON schemas, safety settings, and fallback branches preserved unchanged.
+- **Model update**: Gemini 2.0 and 1.5 are **retired** on Vertex (return `404 NOT_FOUND`). Standardized on Gemini 2.5, with a cost-aware split:
+  - `gemini-2.5-flash` → `poseidon.js` (chat quality) + `suggest-species.js` (taxonomic accuracy)
+  - `gemini-2.5-flash-lite` → `parse-search.js` + `generate-alt-text.js` (simple, high-volume)
+- **Env config**: added `GCP_PROJECT_ID`, `GCP_LOCATION`, `GCP_SERVICE_ACCOUNT_JSON` to `.env.example` and local `.env` files; installed `google-auth-library` in `frontend`.
+- **Verified end-to-end**: authenticated Vertex calls return HTTP 200 for Gemini 2.5 Flash / Flash-Lite / Pro on the `aquacellum` project.
+- **Security**: the downloaded service-account key was moved out of the repo to `%USERPROFILE%\.gcp\` and `.gitignore` patterns added (`aquacellum-*.json`, `*-service-account*.json`, etc.). Key was never committed.
+- **New docs**: `docs/GOOGLE_VERTEX_MIGRATION.md` (full migration guide), `docs/GOOGLE_ACCOUNT_MANAGER_TALKING_POINTS.md` + `docs/GOOGLE_AM_ONE_PAGER.md` (current usage, services of interest, cost/credit-burn estimates for the account-manager meeting).
+
+### Imagen 4 Reef Asset Generation (Vertex)
+- **`imagen_generate.py` migrated to Vertex**: `genai.Client(vertexai=True, project=..., location=...)`; gating switched from `GEMINI_API_KEY` to `GCP_PROJECT_ID`.
+- **Generated the static reef art** (billed to credits): 12 biome textures (6× floor + backdrop), 36 hardscape cutouts, and 312/316 species sprites.
+- **Robustness fixes**:
+  - Sci-name-only retry fallback for species whose common names trip Imagen's person-safety filter (e.g. "Oscar", the "Julie" cichlids returned empty images).
+  - `FLOOR_STYLE` prompt now includes `no text, no watermark, no labels, no writing, no logo, no UI` — fixes floor textures that hallucinated stock-site chrome (e.g. an Iwagumi floor with a `lexica.art` URL and CSS baked in).
+  - Added `--kind` / `--index` flags to regenerate a single hardscape cutout (e.g. one bad driftwood) without re-rolling a whole biome.
+- **Species sprites are staging-only**: Imagen species accuracy is unreliable (wrong species/morphs, e.g. swordtail → sword-wielding creature), so the 316 sprites were moved out of the repo to `Desktop\review images\` for manual review/approval. The reef continues to use existing `species-cutouts` / `species-images`. Nothing in the app references `species-sprites`.
+
+### Reef Environment Textures (GenerativeReef.jsx + ReefEnvironment.jsx)
+- **Biome floor textures**: substrate plane now maps `/biomes/{biome}/floor.png` (tiled, repeat 5), loaded via R3F `useLoader` (cached, Suspense-backed) to avoid a texture-disposal flicker that briefly blanked the floor.
+- **Underwater backdrop**: `/biomes/{biome}/backdrop.png` wrapped on an open inward-facing cylinder around the scene horizon.
+- **Applied to all six biomes** and the **default Main Reef** (`ReefEnvironment` uses the `dutch_planted` set); `BiomeFloor`/`BiomeBackdrop` exported for reuse.
+- **Hardscape**: tried 2D cutout billboards for rocks/driftwood but they either pivoted with the camera or read as crossed photos — reverted to the procedural 3D dodecahedron rocks + cylinder driftwood (the cutouts can later be lifted to real 3D via the existing TripoSR pipeline).
+
+### Fish Floor Clamp (FishSchool.jsx + SpeciesSwarm.jsx)
+- **Fixed fish clipping below the substrate** (floor at `y = -3`): added a hard world-space floor clamp in the swim loop (fish kept at/above `-2.6`, downward velocity zeroed at the plane). The previous depth check was a soft nudge in local space that let fish sink through.
+- **Bottom-dweller school centers** were being seeded as low as `~-4.1`; now clamped to `≥ -2.4` so schools never start under the floor.
+
+---
+
+## June 10, 2026 — Immersive Reef Visual Overhaul & Freshwater Biomes
+
+Rebuilt the 3D reef from a rough saltwater prototype into a polished freshwater aquarium experience. Migrated from TripoSR GLB models to clean cutout sprites, generated transparent backgrounds for all 313 species, created 6 unique freshwater biomes, and implemented dense real-plant environments.
+
+### 3D Model Pipeline (TripoSR Texture Baking)
+- **Fixed CUDA device mismatch bug** in TripoSR's `bake_texture.py` — added a runtime monkey-patch (`_patch_bake_texture_device`) that moves query positions to the GPU, enabling the bake pass to run successfully on RTX 5080
+- **Regenerated 19 models with `--bake-texture`**: 4 Echo tiers + 15 hero species at 2048px UV-mapped PBR texture atlases
+- **Pivot to cutout sprites**: TripoSR meshes (especially flowing-fin fish like betta/Echo) read as rough foil; clean cutout billboards look uniformly better. GLB path preserved behind `USE_HERO_GLB` flag in FishSchool.jsx
+
+### Species Cutout Generation (313 transparent billboards)
+- **Built `cutout_species_images.py`**: rembg (u2net) background removal pipeline with alpha floor cleanup and tight crop
+- **Processed 313/313 species** — all now render as clean fish silhouettes on transparency
+- **Fixed fish-in-hand photos**: automated skin-suppression for Variatus Platy, manual Paint.NET edits for 8 additional species (devario-aequipinnatus, pangio-oblonga, nomorhamphus-liemi, nannostomus-marginatus, bunocephalus-coracoideus, baryancistrus-xanthellus, botia-almorhae, melanochromis-auratus)
+- **Built detection tools**: `scan_hand_cutouts.py` (scored all 313 by skin-tone × smoothness × blob size), `hand_suspects_contact_sheet.py` (visual review grid)
+
+### Echo Companion (Sprite Rewrite)
+- **Generated 4 Echo cutouts** from source JPGs (echo-fry, echo-silver, echo-mid, echo-evolved) via rembg
+- **Rewrote CompanionGuide.jsx** as a cutout billboard sprite with camera-follow, mood reactions, tier scale-in transition (ease-out-back), and glow point light
+
+### Freshwater Environment Overhaul
+- **Created `PlantedEnvironment.jsx`**: 80 real plant cutout instances scattered in 3 depth layers (carpet: cryptocoryne-parva/bucephalandra; midground: anubias/bacopa/ludwigia/hygrophila/crypts; background: vallisneria/echinodorus). Each instance is a yaw-billboarded, base-anchored plane with a gentle sway animation
+- **Fixed tall plant orientation**: separated billboard yaw from sway pivot into nested groups; `forcePortrait` flips landscape source images to upright for grass-like plants (vallisneria, echinodorus)
+- **Classified aquatic plants in `flora.js`**: 40+ genus prefixes to route plant species to substrate-rooted flora rendering instead of swimming sprites
+- **Built `ReefFlora.jsx`**: individual catalog plant species render as multi-blade swaying clumps on the floor
+
+### Environment Rendering (ReefEnvironment.jsx)
+- **Freshwater lighting**: shifted from ocean-blue to warm amber/green palette (ambient #d4e8d0, directional #ffe8c0, point lights green #4caf50)
+- **Removed saltwater elements**: coral garden deleted, replaced with scattered real plants
+- **Rocks restyled**: Seiryu/dragon stone palette (blue-gray), flat-shaded dodecahedrons, scattered across wider world
+- **Driftwood doubled**: 12 pieces spread across 160-unit world
+- **Substrate**: warm gravel-brown (#4a3a28)
+- **Fog & clear color**: green-tinted freshwater (#0b1f1a fog, #081a14 clear)
+
+### 6 Freshwater Biomes (GenerativeReef.jsx)
+Complete rewrite of the biome system from 5 saltwater templates to 6 unique freshwater aquascape styles:
+
+| Biome | Signature | Plants | Hardscape |
+|-------|-----------|--------|-----------|
+| 🌑 Amazon Blackwater | Tannin-dark, dim amber, falling leaf detritus | Swords + crypts | 22 driftwood pieces, leaf litter |
+| 🌿 Dutch Planted | Lush jungle, pearling oxygen bubbles | 110 plants (7 species, layered) | Light rocks |
+| 🏞️ Asian Stream | Clear cool water, sideways-drifting current particles | Vals + crypts | 26 smooth river pebbles |
+| 🪨 African Rift Lake | Bright blue, sandy floor | Sparse vals | 40 ochre rocks in stacked piles |
+| ⛩️ Iwagumi Stone Garden | Minimalist zen, arranged stones, negative space | 70 carpet plants | 7 arranged Seiryu stones |
+| 💎 Crystal Spring | Gin-clear turquoise, brilliant god rays | Tall vals | 14 white limestone rocks |
+
+- Each biome has unique: clear color, fog range, lighting, floor color, rock palette, driftwood density, plant selection, particle behavior (rise/fall/flow), bubble count
+- **Fixed biome switching**: added `key={biome}` to force remount, preventing stale state when switching directly between biomes
+
+### Layout & Exploration
+- **Expanded world 3–4x**: biome zones now radius 16–28 (vs. 8–12), species spread across 160×160 unit floor
+- **Deterministic placement**: seeded PRNG from species slug ensures stable positions between reloads
+- **Wider school spread**: individual fish drift in 6-unit sphere (vs. 4), initial positions 4× wider
+- **Smaller schools**: default 2 fish (vs. 3) for less crowding per encounter
+- **60 species rendered** in master mode (vs. 40)
+
+### Rendering Quality
+- **`enhanceFishMaterials.js`**: added env map support (IBL from `reefEnvMap.js` — procedural underwater gradient cubemap, cached per renderer). Roughness tuned to 0.7/0.75 to avoid foil look
+- **Sprite sizing**: each sprite uses its real aspect ratio (no stretch), `depthWrite: false` for clean layering, `alphaTest: 0.2` for crisp edges
+- **Cutout preference**: `FishSchool.jsx` prefers `/species-cutouts/` (transparent) over `/species-images/` (opaque photo), with fallback chain
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `frontend/scripts/cutout_species_images.py` | rembg batch background removal (313 species) |
+| `frontend/scripts/fix_variatus_hand.py` | Automated hand removal for Variatus Platy |
+| `frontend/scripts/fix_hand_cutouts.py` | Batch skin-suppression for fish-in-hand photos |
+| `frontend/scripts/scan_hand_cutouts.py` | Score all cutouts by smooth skin blob fraction |
+| `frontend/scripts/hand_suspects_contact_sheet.py` | Visual review grid for manual QA |
+| `frontend/scripts/verify_hand_fixes.py` | Post-edit verification of cleaned cutouts |
+| `frontend/public/species-cutouts/*.png` (313 files) | Transparent fish/plant cutouts |
+| `frontend/public/echo-*.png` (4 files) | Echo companion tier cutouts |
+| `frontend/src/reef/PlantedEnvironment.jsx` | Dense real-plant cutout scatter (80 instances) |
+| `frontend/src/reef/ReefFlora.jsx` | Catalog plant species as swaying floor billboards |
+| `frontend/src/reef/flora.js` | Plant genus classifier |
+| `frontend/src/reef/utils/reefEnvMap.js` | Procedural IBL env map for fish materials |
+
+### Modified Files
+| File | Changes |
+|------|---------|
+| `frontend/scripts/trellis_generate.py` | Added `_patch_bake_texture_device()` CUDA fix |
+| `frontend/src/reef/CompanionGuide.jsx` | Rewritten as cutout sprite |
+| `frontend/src/reef/FishSchool.jsx` | Cutout preference, hero GLB flag, wider school spread |
+| `frontend/src/reef/SpeciesSwarm.jsx` | Wide explorable layout, plant routing, deterministic placement |
+| `frontend/src/reef/ReefEnvironment.jsx` | Freshwater lighting, real plants, no coral |
+| `frontend/src/reef/GenerativeReef.jsx` | 6 freshwater biomes (full rewrite) |
+| `frontend/src/reef/ImmersiveReef.jsx` | Freshwater clear color, biome key-remount |
+| `frontend/src/reef/ProceduralSwim.jsx` | IBL env map support |
+| `frontend/src/reef/utils/enhanceFishMaterials.js` | Env map, tuned roughness |
+
+### Next Steps
+- Source 20–30 additional freshwater plant photos for denser variety
+- Download poly.pizza / Sketchfab props (rocks, driftwood GLBs) for the `ReefProps` loader
+- Decimation pass on the 19 hero GLBs (currently 55–125k faces each) for when `USE_HERO_GLB` is re-enabled
+- Clickable environment props (plants/rocks show info cards)
+- Replace procedural driftwood/rocks with real 3D assets
+
+---
+
 ## June 9, 2026 — Species Database Enrichment (FishBase v25.04 Verified Data)
 
 Complete overhaul of the species catalog data layer — replaced LLM-generated placeholder values with verified data extracted directly from the FishBase v25.04 MySQL backend (via HuggingFace parquet dataset) and Seriously Fish species profiles.

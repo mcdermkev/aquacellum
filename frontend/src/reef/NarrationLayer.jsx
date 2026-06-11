@@ -19,6 +19,7 @@ export function NarrationLayer({ species, mode, onDismiss }) {
     aiResponse,
     error,
     sttSupported,
+    speakAs,
     startListening,
     stopListening,
     stopSpeaking,
@@ -35,22 +36,18 @@ export function NarrationLayer({ species, mode, onDismiss }) {
   const mainText = flavorText || fallbackText;
   const tagline = vibeLine || (species.ecology?.socialBehavior || "");
 
-  // TTS: speak the tagline when species changes
+  // TTS: speak the tagline in Echo's voice when species changes
   useEffect(() => {
     if (!tagline || typeof window === "undefined") return;
     if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(tagline);
-    utterance.rate = 0.9;
-    utterance.pitch = 1.0;
-    utterance.volume = 0.8;
-    utterance.onstart = () => setSpeaking(true);
-    utterance.onend = () => setSpeaking(false);
-    utterance.onerror = () => setSpeaking(false);
-
     const timer = setTimeout(() => {
-      window.speechSynthesis.speak(utterance);
+      speakAs("echo", tagline, {
+        onStart: () => setSpeaking(true),
+        onEnd: () => setSpeaking(false),
+        onError: () => setSpeaking(false),
+      });
     }, 300);
 
     return () => {
@@ -58,7 +55,7 @@ export function NarrationLayer({ species, mode, onDismiss }) {
       window.speechSynthesis.cancel();
       setSpeaking(false);
     };
-  }, [tagline, species.specCode]);
+  }, [tagline, species.specCode, speakAs]);
 
   const handleTextSubmit = (e) => {
     e.preventDefault();

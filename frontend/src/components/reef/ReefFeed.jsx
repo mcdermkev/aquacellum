@@ -28,6 +28,7 @@ import { useQueryClient } from "@tanstack/react-query";
 export function ReefFeed({ casualModeActive = false, walletAddress, onNavigateProfile }) {
   const [activeTab, setActiveTab] = useState("following");
   const [composerOpen, setComposerOpen] = useState(false);
+  const [composerPreselectedTank, setComposerPreselectedTank] = useState(null);
   const [viewingProfile, setViewingProfile] = useState(null);
   const [viewingSchools, setViewingSchools] = useState(false);
   const [viewingSchool, setViewingSchool] = useState(null);
@@ -44,6 +45,9 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
   React.useEffect(() => {
     const handleOpenComposer = (e) => {
       setComposerOpen(true);
+      if (e.detail) {
+        setComposerPreselectedTank(e.detail);
+      }
     };
     window.addEventListener("reef_open_composer", handleOpenComposer);
     return () => window.removeEventListener("reef_open_composer", handleOpenComposer);
@@ -385,6 +389,39 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
         </button>
       </div>
 
+      {/* Welcome / First-Post Guidance Banner */}
+      {localStorage.getItem("aquadex_posted_first_current") !== "true" && (
+        <div
+          className="glass-card"
+          style={{
+            padding: "1rem 1.25rem",
+            marginBottom: "1.25rem",
+            borderRadius: "12px",
+            border: casualModeActive 
+              ? "1px solid rgba(56, 189, 248, 0.2)" 
+              : "1px solid rgba(168, 85, 247, 0.25)",
+            background: casualModeActive 
+              ? "rgba(56, 189, 248, 0.04)" 
+              : "rgba(168, 85, 247, 0.04)",
+            display: "flex",
+            alignItems: "center",
+            gap: "1rem"
+          }}
+        >
+          <span style={{ fontSize: "1.75rem", flexShrink: 0 }}>🪸</span>
+          <div>
+            <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: 600, color: "#fff" }}>
+              {casualModeActive ? "Welcome to The Reef!" : "Establish Your Operator Node Connection"}
+            </p>
+            <p style={{ margin: "0.2rem 0 0", fontSize: "0.75rem", color: "var(--text-secondary)", lineHeight: "1.4" }}>
+              {casualModeActive 
+                ? "This is the social layer. Share updates, link your aquariums to show off parameters, and follow fellow keepers. Click '+' or click 'Share' in your Aquariums tab to post your first Current!"
+                : "This is the social layer node feed. Publish status logs, link containment units, and audit parameters. Use the '+' button or post from your Aquarium console."}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Pending Tankmate Requests */}
       {activeTab === "following" && (
         <TankmateRequests onNavigateProfile={handleProfileClick} casualModeActive={casualModeActive} />
@@ -568,9 +605,13 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
       {/* Content Composer Modal */}
       <ContentComposer
         isOpen={composerOpen}
-        onClose={() => setComposerOpen(false)}
+        onClose={() => {
+          setComposerOpen(false);
+          setComposerPreselectedTank(null);
+        }}
         onSuccess={handlePostSuccess}
         casualModeActive={casualModeActive}
+        preselectedTank={composerPreselectedTank}
       />
 
       {/* Pulse animation keyframes */}

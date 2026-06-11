@@ -4,15 +4,17 @@
  * Flow:
  * 1. User presses/holds mic button or says something via STT
  * 2. Transcribed text + species context → /api/poseidon
- * 3. Response text → TTS spoken aloud + displayed in narration panel
+ * 3. Response text → TTS spoken aloud in Poseidon's unique voice + displayed in narration panel
  */
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useVoiceProfiles } from "./useVoiceProfiles";
 
 /**
  * @param {object} species - Currently inspected species (full record from fishbase_master)
  * @param {string} mode - "casual" or "pro"
  */
 export function useNarration(species, mode) {
+  const { speakAs, ready: voicesReady, poseidonProfile, echoProfile } = useVoiceProfiles();
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
@@ -87,21 +89,15 @@ export function useNarration(species, mode) {
     setIsListening(false);
   }, []);
 
-  // Speak text via TTS
-  const speak = useCallback((text) => {
+  // Speak text via TTS — uses Poseidon or Echo voice profile
+  const speak = useCallback((text, character = "poseidon") => {
     if (!ttsSupported || !text) return;
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9;
-    utterance.pitch = 1.0;
-    utterance.volume = 0.85;
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    window.speechSynthesis.speak(utterance);
-  }, [ttsSupported]);
+    speakAs(character, text, {
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => setIsSpeaking(false),
+      onError: () => setIsSpeaking(false),
+    });
+  }, [ttsSupported, speakAs]);
 
   // Stop speaking
   const stopSpeaking = useCallback(() => {
@@ -158,8 +154,8 @@ Answer naturally as if you're a knowledgeable guide narrating their experience i
       setAiResponse(responseText);
       setIsThinking(false);
 
-      // Speak the response
-      speak(responseText);
+      // Speak the response in Poseidon's voice
+      speak(responseText, "poseidon");
 
     } catch (err) {
       if (err.name === "AbortError") return;
@@ -196,6 +192,11 @@ Answer naturally as if you're a knowledgeable guide narrating their experience i
     // Capabilities
     sttSupported,
     ttsSupported,
+    voicesReady,
+    // Voice profiles
+    speakAs,
+    poseidonProfile,
+    echoProfile,
     // Actions
     startListening,
     stopListening,

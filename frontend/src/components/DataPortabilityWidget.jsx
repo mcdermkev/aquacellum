@@ -390,8 +390,23 @@ export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
           <div style={{ display: "flex", gap: "0.75rem" }}>
             <button
               className="btn-primary"
-              onClick={() => {
+              onClick={async () => {
+                // Clear onboarding local cache
                 localStorage.removeItem("aquadex_onboarding_complete");
+                // Reset phase in Dexie without clearing other data (Req 6.5)
+                try {
+                  const { useAuth } = await import("../contexts/AuthContext");
+                  // We can't use hooks here, so access account from db
+                  const profiles = await db.userProfile.toArray();
+                  for (const profile of profiles) {
+                    await db.userProfile.update(profile.walletAddress, {
+                      onboardingComplete: false,
+                      onboardingPhase: null,
+                    });
+                  }
+                } catch (err) {
+                  console.warn("[replay] Dexie reset failed:", err);
+                }
                 window.location.reload();
               }}
               style={{ padding: "0.6rem 1.25rem", fontSize: "0.8rem" }}

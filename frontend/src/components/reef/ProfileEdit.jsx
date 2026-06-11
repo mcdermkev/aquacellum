@@ -63,6 +63,8 @@ export function ProfileEdit({ profile, onSave, onCancel, casualModeActive = fals
           return;
         }
         updates.avatar_url = url;
+        // Notify onboarding tour / listeners that an avatar was set (no behavioral change)
+        window.dispatchEvent(new CustomEvent("aquadex:avatar_set", { detail: { avatarUrl: url } }));
       }
 
       if (Object.keys(updates).length > 0) {

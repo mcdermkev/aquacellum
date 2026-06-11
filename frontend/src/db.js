@@ -114,6 +114,32 @@ db.version(10).stores({
   draftContent: "++id, type, status, createdAt"
 });
 
+// Version 11: Add per-account onboarding state to userProfile (onboarding-revamp spec).
+// ADDITIVE / NON-DESTRUCTIVE: only the userProfile index list changes; existing records are
+// preserved by Dexie's upgrade path and existing rows simply lack the new fields (treated as
+// undefined/false until written). Dexie stores non-indexed fields automatically, so indexing
+// is optional here — `onboardingComplete` is indexed to allow gate queries, while
+// `onboardingPhase` is stored as a plain (non-indexed) field on the record.
+//   - `onboardingComplete` (boolean): offline-first mirror of the Supabase
+//       `profiles.onboarding_complete` flag; the source of truth for the first-login-only gate.
+//       Defaults to undefined (falsy) for pre-existing accounts.
+//   - `onboardingPhase` (string|null): resume point for an interrupted onboarding session
+//       (e.g., "identity" | "nameConfirm" | "hatch" | "tourTank" | ...). Defaults to undefined.
+db.version(11).stores({
+  species: "specCode, commonName, scientificName, type, difficulty",
+  listings: "id, tokenId, seller, price, isBatch, speciesId",
+  tanks: "id, ownerAddress, name, active",
+  userProfile: "walletAddress, level, prestigeXp, hobbyistXp, isCouncilMember, onboardingComplete",
+  breederCompanion: "walletAddress, eggState, companionXp, currentTier, selectedStats, zoneHash",
+  pendingHandshakes: "purchaseId, pin, salt, buyerAddress",
+  speciesManifest: "speciesId, scientificName, commonName, contractAddress, cachedAt",
+  actionLogs: "++id, tankId, actionType, timestamp, details",
+  spawnGrowout: "++id, spawnId, timestamp, type",
+  feedCache: "++id, contentId, authorWallet, createdAt, [authorWallet+createdAt]",
+  socialNotifications: "++id, category, isRead, createdAt",
+  draftContent: "++id, type, status, createdAt"
+});
+
 /**
  * 1. FULL LEXICAL JSON DATA EXPORT:
  * Interfaces directly with our Dexie.js database layers.

@@ -101,6 +101,7 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
       <div style={{ position: "relative" }}>
         {/* Profile Chip — clickable */}
         <button
+          data-tour-id="profile-widget"
           onClick={() => setMenuOpen(!menuOpen)}
           style={{
             display: "flex",

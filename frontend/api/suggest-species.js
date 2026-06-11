@@ -1,5 +1,7 @@
 // Vercel serverless function: frontend/api/suggest-species.js
 
+import { vertexGenerateContent, isVertexConfigured } from './_lib/vertexClient.js';
+
 export default async function handler(req, res) {
   // Enforce POST method
   if (req.method !== 'POST') {
@@ -38,10 +40,9 @@ export default async function handler(req, res) {
       taxonomicNotes = "Registry lookup bypassed due to network timeout.";
     }
 
-    // 2. Call Gemini AI API for ecological & husbandry parameters check
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-    if (!GEMINI_API_KEY || GEMINI_API_KEY.trim() === '') {
-      console.log("[Aquadex Dev] Gemini API Key missing. Running in Deterministic Mock Mode.");
+    // 2. Call Vertex AI Gemini for ecological & husbandry parameters check
+    if (!isVertexConfigured()) {
+      console.log("[Aquadex Dev] Vertex AI not configured. Running in Deterministic Mock Mode.");
       
       const minT = Number(minTemp);
       const maxT = Number(maxTemp);
@@ -64,8 +65,6 @@ export default async function handler(req, res) {
       }
     }
 
-    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-    
     const prompt = `
       You are the lead taxonomic curator for Aquadex Protocol.
       Analyze the proposed species catalog entry:
@@ -85,10 +84,7 @@ export default async function handler(req, res) {
       Determine if it isApproved and provide explanation in auditNotes.
     `;
 
-    const geminiResponse = await fetch(geminiEndpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const geminiResponse = await vertexGenerateContent('gemini-2.5-flash', {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           responseMimeType: "application/json",
@@ -101,7 +97,6 @@ export default async function handler(req, res) {
             required: ["isApproved", "auditNotes"]
           }
         }
-      })
     });
 
     if (!geminiResponse.ok) {

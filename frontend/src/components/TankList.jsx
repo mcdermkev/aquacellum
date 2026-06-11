@@ -55,6 +55,14 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const loading = tanksLoading;
   const error = tanksError ? (tanksError.message || "Failed to fetch tank systems from the secure registry.") : null;
 
+  const [showWelcomeModal, setShowWelcomeModal] = useState(() => {
+    const show = localStorage.getItem("aquadex_show_welcome_guidance") === "true";
+    if (show) {
+      localStorage.removeItem("aquadex_show_welcome_guidance");
+    }
+    return show;
+  });
+  const [userAlias, setUserAlias] = useState("");
   const [draggedOverTankId, setDraggedOverTankId] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
   const [localActionLogs, setLocalActionLogs] = useState([]);
@@ -119,6 +127,12 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       setCompanionData(data || null);
     };
     fetchCompanion();
+
+    db.userProfile.get(walletAccount).then((profile) => {
+      if (profile && profile.alias) {
+        setUserAlias(profile.alias);
+      }
+    }).catch(() => {});
 
     window.addEventListener("aquadex_xp_added", fetchCompanion);
     return () => {
@@ -790,8 +804,120 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     );
   };
 
+  const handleWelcomeShare = () => {
+    setShowWelcomeModal(false);
+    const targetTank = tanks.find(t => t.active) || tanks[0];
+    if (targetTank) {
+      window.dispatchEvent(new CustomEvent("reef_share_tank", {
+        detail: { tankId: targetTank.id, tankName: targetTank.name || `Tank ${targetTank.id}` }
+      }));
+    } else {
+      window.dispatchEvent(new CustomEvent("reef_share_tank", {
+        detail: { tankId: null, tankName: "" }
+      }));
+    }
+  };
+
   return (
     <div style={{ position: "relative" }}>
+      {/* 0. WELCOME OVERLAY FOR GUIDED ONBOARDING */}
+      {showWelcomeModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 99999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0, 0, 0, 0.75)",
+            backdropFilter: "blur(12px)",
+            padding: "1rem"
+          }}
+        >
+          <div
+            className="glass-card"
+            style={{
+              width: "100%",
+              maxWidth: "500px",
+              padding: "2rem",
+              borderRadius: "16px",
+              border: casualModeActive 
+                ? "1px solid rgba(56, 189, 248, 0.25)" 
+                : "1px solid rgba(168, 85, 247, 0.25)",
+              boxShadow: "0 24px 80px rgba(0, 0, 0, 0.8)",
+              textAlign: "center",
+              display: "flex",
+              flexDirection: "column",
+              gap: "1.5rem",
+              background: "rgba(15, 23, 42, 0.95)",
+              color: "#fff",
+              position: "relative"
+            }}
+          >
+            <div>
+              <span style={{ fontSize: "3rem", display: "block", marginBottom: "0.5rem" }}>🪸</span>
+              <h3 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700 }}>
+                {casualModeActive 
+                  ? `Welcome aboard, ${userAlias || "Keeper"}!` 
+                  : `Operator Call Sign Confirmed: ${userAlias || "Operator"}`}
+              </h3>
+              <p style={{ 
+                margin: "0.75rem 0 0", 
+                fontSize: "0.9rem", 
+                color: "var(--text-secondary)", 
+                lineHeight: "1.6" 
+              }}>
+                {casualModeActive 
+                  ? "Your display tank is officially set up! Let's introduce your new aquarium to the community on The Reef. Sharing publishes your initial water stats and unlocks early loyalty achievements!"
+                  : "Primary Containment Unit registered on local registry. Let's establish your node connection by publishing your setup parameters to The Reef database."}
+              </p>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <button
+                type="button"
+                onClick={handleWelcomeShare}
+                style={{
+                  width: "100%",
+                  padding: "0.85rem",
+                  borderRadius: "10px",
+                  border: "none",
+                  background: casualModeActive
+                    ? "linear-gradient(135deg, #0ea5e9, #0369a1)"
+                    : "linear-gradient(135deg, #a855f7, #7c3aed)",
+                  color: "#fff",
+                  fontSize: "0.9rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow: casualModeActive 
+                    ? "0 4px 15px rgba(14, 165, 233, 0.3)" 
+                    : "0 4px 15px rgba(168, 85, 247, 0.3)"
+                }}
+              >
+                {casualModeActive ? "Share Tank & Visit The Reef" : "Publish Setup to The Reef"}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setShowWelcomeModal(false)}
+                style={{
+                  width: "100%",
+                  padding: "0.85rem",
+                  borderRadius: "10px",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  background: "rgba(255, 255, 255, 0.03)",
+                  color: "var(--text-muted)",
+                  fontSize: "0.85rem",
+                  cursor: "pointer"
+                }}
+              >
+                {casualModeActive ? "Explore Dashboard first" : "Go to Operator Console"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* 1. STICKY ACTION HEADER BAR */}
       <div className="sticky-scanner-header glass-card" style={{ borderRadius: "var(--radius-sm)" }}>
         <button className="btn-primary scanner-btn" onClick={triggerScan}>

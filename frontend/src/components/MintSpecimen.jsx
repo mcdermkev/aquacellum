@@ -188,6 +188,8 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
       }
 
       setSuccessId(mintedTokenId || "Success!");
+      // Notify onboarding tour / listeners that a specimen was added (no behavioral change)
+      window.dispatchEvent(new CustomEvent("aquadex:specimen_added", { detail: { tokenId: mintedTokenId } }));
       // Reset form variables
       setFormData((prev) => ({
         ...prev,

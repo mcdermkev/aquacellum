@@ -22,6 +22,7 @@ import { LandingBreeder } from "./components/LandingBreeder";
 import { DataPortabilityWidget } from "./components/DataPortabilityWidget";
 import { ModeSegmentedControl } from "./components/ModeSegmentedControl";
 import { OnboardingWizard } from "./components/OnboardingWizard";
+import { useOnboardingGate } from "./hooks/useOnboardingGate";
 import { useAuth } from "./contexts/AuthContext";
 
 // Lazy-load The Reef social layer (code-split for performance)
@@ -122,9 +123,19 @@ export default function App() {
   const [enteredDashboard, setEnteredDashboard] = useState(() => {
     return localStorage.getItem("aquadex_entered_dashboard") === "true";
   });
-  const [onboardingComplete, setOnboardingComplete] = useState(() => {
-    return localStorage.getItem("aquadex_onboarding_complete") === "true";
+  // Per-account onboarding gate (replaces the old localStorage-only check)
+  const { showOnboarding } = useOnboardingGate(account);
+  const [postedFirstCurrent, setPostedFirstCurrent] = useState(() => {
+    return localStorage.getItem("aquadex_posted_first_current") === "true";
   });
+
+  useEffect(() => {
+    const handleFirstCurrentPosted = () => {
+      setPostedFirstCurrent(true);
+    };
+    window.addEventListener("aquadex_first_current_posted", handleFirstCurrentPosted);
+    return () => window.removeEventListener("aquadex_first_current_posted", handleFirstCurrentPosted);
+  }, []);
   const [triggerLoginOnEntry, setTriggerLoginOnEntry] = useState(false);
   const [viewParam, setViewParam] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -219,12 +230,10 @@ export default function App() {
   // Listen for "Share on Reef" events from tank detail panels
   useEffect(() => {
     const handleShareOnReef = (e) => {
-      // Navigate to reef tab — the composer will detect the pre-selected tank
+      // Navigate to reef tab
       setActiveTab("reef");
       window.history.pushState({ tab: "reef" }, "", "#reef");
-      // Store the tank info so ReefFeed can open the composer pre-filled
-      window.__reefShareTank = e.detail;
-      // Dispatch a secondary event for ReefFeed to pick up
+      // Dispatch event with the tank detail for ReefFeed to capture in React state
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent("reef_open_composer", { detail: e.detail }));
       }, 300);
@@ -442,12 +451,11 @@ export default function App() {
     }
   }
 
-  // Show onboarding wizard for first-time users who haven't completed it
-  if (!onboardingComplete) {
+  // Show onboarding wizard for first-time users (per-account gate)
+  if (showOnboarding) {
     return (
       <OnboardingWizard
         onComplete={(isCasual) => {
-          setOnboardingComplete(true);
           if (isCasual !== null && isCasual !== undefined) {
             setCasualModeActive(isCasual);
             localStorage.setItem("aquadex_casual_mode", isCasual.toString());
@@ -713,6 +721,7 @@ export default function App() {
           }}
         >
           <button 
+            data-tour-id="aquariums-tab"
             className={activeTab === "tanks" ? "btn-primary" : "btn-secondary"} 
             onClick={() => handleTabChange("tanks")}
             style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
@@ -727,6 +736,7 @@ export default function App() {
             {casualModeActive ? "🔍 Fish Finder" : "Breed Gallery"}
           </button>
           <button 
+            data-tour-id="add-fish-tab"
             className={activeTab === "mint" ? "btn-primary" : "btn-secondary"} 
             onClick={() => handleTabChange("mint")}
             style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
@@ -775,9 +785,31 @@ export default function App() {
           <button 
             className={activeTab === "reef" ? "btn-primary" : "btn-secondary"} 
             onClick={() => handleTabChange("reef")}
-            style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
+            style={{ 
+              padding: "0.5rem 1.25rem", 
+              fontSize: "0.875rem",
+              position: "relative"
+            }}
           >
             {casualModeActive ? "🪸 The Reef" : "Social"}
+            {!postedFirstCurrent && (
+              <span 
+                className="pulse-dot"
+                style={{
+                  position: "absolute",
+                  top: "4px",
+                  right: "4px",
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "50%",
+                  background: casualModeActive ? "#38bdf8" : "#a855f7",
+                  boxShadow: casualModeActive 
+                    ? "0 0 8px #38bdf8" 
+                    : "0 0 8px #a855f7",
+                  animation: "pulse-glow 1.5s infinite ease-in-out"
+                }}
+              />
+            )}
           </button>
           <button 
             className={activeTab === "settings" ? "btn-primary" : "btn-secondary"} 
@@ -793,6 +825,10 @@ export default function App() {
       <main style={{ perspective: "1000px" }}>
         <style>
           {`
+            @keyframes pulse-glow {
+              0%, 100% { transform: scale(0.8); opacity: 0.5; }
+              50% { transform: scale(1.2); opacity: 1; }
+            }
             @keyframes crossfadeScale {
               0% { opacity: 0; transform: scale(0.99); }
               100% { opacity: 1; transform: scale(1); }

@@ -1,0 +1,25 @@
+{
+  "_comment": "Time-bound XP challenges and promotional campaigns funded by sponsors.",
+  "campaigns": [],
+  "schema": {
+    "id": "string — unique campaign identifier",
+    "sponsorId": "string — references sponsors.json entry",
+    "title": "string — user-facing campaign name",
+    "description": "string — brief explanation of the challenge",
+    "surface": "string — which app surface this campaign targets",
+    "xpMultiplier": "number — XP multiplier during campaign (e.g. 2 for double)",
+    "bonusXp": "number — flat bonus XP on completion",
+    "requirements": {
+      "actionType": "string — feed | water_change | treatment | water_test | spawn",
+      "count": "number — how many times the action must be performed",
+      "windowDays": "number — time window to complete"
+    },
+    "reward": {
+      "type": "string — badge | discount_code | xp_boost",
+      "value": "string — badge name, code, or boost description"
+    },
+    "startDate": "ISO 8601 date string",
+    "endDate": "ISO 8601 date string",
+    "active": "boolean"
+  }
+}

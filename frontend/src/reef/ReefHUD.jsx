@@ -21,7 +21,9 @@ export function ReefHUD({
   reefMode,
   isVisit,
   ownerName,
-  tankMeta
+  tankMeta,
+  onToggleVoiceSettings,
+  voiceSettingsOpen
 }) {
   return (
     <div
@@ -92,6 +94,17 @@ export function ReefHUD({
             inactiveColor="#64748b"
             label={companionVisible ? "🐟 Echo" : "🐟 Off"}
           />
+
+          {/* Voice settings toggle */}
+          {onToggleVoiceSettings && (
+            <HudButton
+              active={voiceSettingsOpen}
+              onClick={onToggleVoiceSettings}
+              activeColor="#f59e0b"
+              inactiveColor="#64748b"
+              label="🎙️ Voices"
+            />
+          )}
 
           {/* Link back to master reef when in tank mode */}
           {reefMode === "tank" && (

@@ -26,6 +26,7 @@ On desktop/mobile: orbit camera, click-to-inspect, same data and narration.
 | WebXR | `@react-three/xr` | Adds VR/AR session management to R3F with one `<XR>` wrapper |
 | Physics/interaction | `@react-three/drei` | Pre-built helpers: environment maps, text, gaze cursors, sky, water shader |
 | AI narration | Existing **Poseidon** serverless endpoint + Web Speech API | You already have an AI chat backend; reuse it with a voice layer |
+| Voice profiles | **Cloud TTS Custom Voice** (founder-trained) + `useVoiceProfiles` fallback | Founder-owned voices: Echo (playful male, in awe) and Poseidon (deep male, knower of truth), trained on real recordings so they scale to all species and live answers |
 | Species data | Existing `fishbase_master.json` + `useSpeciesData` hook | Zero new data needed — the reef reads what you already built |
 | Audio | Web Audio API + spatial positioning | Ambient reef sounds, directional narration |
 
@@ -131,37 +132,43 @@ Each species is spawned into its correct biome based on existing data fields.
 
 ### 2. SpeciesSwarm — living fish from your database
 
-```jsx
-function SpeciesSwarm({ speciesData, onInspect }) {
-  // Group species by biome zone using ecology data
-  const biomes = useBiomeClassifier(speciesData);
+Each biome has its own unique population. When you switch biomes, you get a
+completely different set of species — classified by taxonomy, water chemistry,
+habitat keywords, body size, and behavior.
 
-  return (
-    <>
-      {biomes.map(biome => (
-        <BiomeZone key={biome.id} position={biome.worldPos}>
-          {biome.species.map(sp => (
-            <FishSchool
-              key={sp.specCode}
-              species={sp}
-              count={getSchoolSize(sp)}  // from ecology.socialBehavior
-              behavior="boid"             // schooling AI
-              onGaze={() => onInspect(sp)} // trigger narration
-            />
-          ))}
-        </BiomeZone>
-      ))}
-    </>
-  );
-}
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  useBiomeClassifier(speciesData)                                │
+│                                                                 │
+│  Scores each species against 6 biomes using:                    │
+│    • Family taxonomy (Cichlidae→rift, Loricariidae→blackwater)  │
+│    • Biotope keywords ("stream"→asian, "rift"→rift_lake)        │
+│    • pH preference (acidic→blackwater, alkaline→rift)           │
+│    • Temperature (cool→stream, warm→blackwater/planted)         │
+│    • Body size (tiny→iwagumi, large→rift/blackwater)            │
+│    • Social behavior (territorial→rift, peaceful→iwagumi)       │
+│    • Genus splits (Danio→stream, Boraras→iwagumi, Betta→iwagumi)│
+│                                                                 │
+│  Returns: biomeMap { biome → species[] }                        │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-**Fish rendering options (progressive fidelity):**
-1. **Phase 1 (MVP):** Stylized SVG-to-3D extrusions using your existing fish SVGs from CompanionFishEntity, or low-poly procedural fish meshes colored per species.
-2. **Phase 2:** AI-generated 3D fish models (Hunyuan3D / TRELLIS from a reference photo → GLTF).
-3. **Phase 3:** Full photorealistic fish with skeletal animation, per-species.
+**Biome → Species mapping:**
 
-**Schooling behavior:** A simple boid system (separation, alignment, cohesion) gives convincing schooling. The `socialBehavior` field tells you school size — "must be kept in a school of 5+" → spawn 6–8 instances.
+| Biome | Typical residents |
+|-------|-------------------|
+| Amazon Blackwater 🌑 | Plecos, corydoras, larger tetras, South American cichlids, doradids |
+| Dutch Planted 🌿 | Livebearers, gouramis, small tetras, rasboras, community fish |
+| Asian Stream 🏞️ | Danios, barbs, hillstream loaches, puntius, devario |
+| African Rift Lake 🪨 | African cichlids, high-pH species, territorial large fish |
+| Iwagumi Garden ⛩️ | Nano rasboras, bettas, tiny peaceful species, shrimp-safe fish |
+| Crystal Spring 💎 | Rainbowfish, killifish, fundulids, clear-water livebearers |
+
+If a biome has fewer than 8 species, the system borrows from adjacent biomes
+to ensure a minimum population (e.g., iwagumi borrows from dutch_planted).
+
+When biome = "default" (master reef), all 60 species render across the classic
+4 positional zones (rocky, planted, bottom, open) for full-catalog exploration.
 
 ### 3. NarrationLayer — the AI guide
 
@@ -171,10 +178,73 @@ This is the "holographic archive" piece. Two tiers of narration:
 When you look at / click a fish, immediately show:
 - `personality.vibeLine[mode]` as floating 3D text
 - `commonName` + `scientificName`
-- TTS reads the vibeLine aloud (Web Speech API, zero latency)
+- TTS reads the vibeLine aloud **in Echo's voice** (Web Speech API, zero latency)
 
 **Tier 2 — Deep dive (Poseidon call):**
-If the user asks a question (voice or text), route it to your existing `/api/poseidon` endpoint with the species context:
+If the user asks a question (voice or text), route it to your existing `/api/poseidon` endpoint with the species context. Response is spoken back **in Poseidon's voice**.
+
+### 3b. Voice Profiles — Character-Specific TTS
+
+Each AI character has a distinct voice identity. The two voices are **founder-owned**:
+the founder voices Echo, and co-founder Steve voices Poseidon. To make those voices
+scale across all 326 species *and* across dynamically generated answers, we train a
+**Cloud Text-to-Speech Custom Voice** model on each founder's recordings. The trained
+models then speak every line — authored and AI-generated — in the founders' real voices.
+
+#### Character Bible
+
+| Character | Identity | Personality | Vocal Direction |
+|-----------|----------|-------------|-----------------|
+| **Echo** | The playful companion fish. Always at your side, always in awe. | Male. Curious, warm, perpetually amazed by everything in the reef. The "whoa — look at THIS one!" energy. Never condescending, never technical. | Bright, energetic **male** voice. Higher energy and faster cadence than Poseidon, but unmistakably male. Lots of wonder and upward inflection. |
+| **Poseidon** | The knower of truth. The deep authority beneath the reef. | Male. Calm, grounded, certain. Speaks facts plainly. Never hypes, never guesses — when he doesn't know, he says so. | Deep, resonant **male** voice. Slow, deliberate cadence. Measured and authoritative, like a narrator you instinctively trust. |
+
+> Note: Echo was previously specced as a bright/female-leaning voice. That is now
+> incorrect. **Echo is male** — bright and playful, but a male voice throughout.
+
+#### Voice Pipeline (3 tiers)
+
+1. **Custom Voice (primary)** — Cloud TTS Custom Voice models trained on the founders.
+   Used for all narration: species vibeLines and live Poseidon answers. Consistent
+   on every device, no per-browser drift.
+2. **Hand-recorded hero lines (optional)** — A handful of signature moments (intro,
+   first-fish reaction, biome transitions) recorded directly by the founders for extra
+   soul. These play as static audio files; the custom voice carries the long tail.
+3. **Browser Web Speech API (fallback only)** — Retained via `useVoiceProfiles` for
+   offline/degraded mode. Pitch/rate differentiation only; not the intended experience.
+
+**How custom voice assignment works at runtime:**
+1. Narration text (vibeLine or Poseidon response) is sent to the Cloud TTS endpoint with
+   the character's custom voice name (`echo-custom`, `poseidon-custom`).
+2. For fixed vibeLines, audio is **pre-baked once** into `public/audio/narration/` so
+   playback is instant and costs nothing at runtime.
+3. For dynamic Poseidon answers, TTS is synthesized on demand in Poseidon's custom voice.
+4. If Cloud TTS is unavailable, `useVoiceProfiles` falls back to browser voices.
+
+**Persistence:** User playback prefs (volume, captions on/off) stored in `localStorage`.
+
+**Voice Settings UI** lets users:
+- Toggle narration audio on/off per character
+- Adjust volume
+- Enable captions (always-on accessibility text regardless of audio)
+
+```
+┌─────────────────────────────────┐
+│  useVoiceProfiles               │
+│                                 │
+│  ┌─── Auto-detect ───┐         │
+│  │ SpeechSynthesis    │         │
+│  │ .getVoices()       │         │
+│  └────────┬───────────┘         │
+│           ▼                     │
+│  ┌─── Score + Assign ─┐        │
+│  │ Poseidon → deep     │        │
+│  │ Echo → bright       │        │
+│  └────────┬────────────┘        │
+│           ▼                     │
+│  speakAs("poseidon", text)      │
+│  speakAs("echo", text)          │
+└─────────────────────────────────┘
+```
 
 ```js
 async function askAboutSpecies(species, question) {
@@ -248,16 +318,19 @@ fishbase_master.json (326 species, ecology, personality)
 useSpeciesData() hook (already exists)
         │
         ▼
-useBiomeClassifier() — NEW hook, groups by habitat
+useBiomeClassifier() — classifies all species into 6 biomes
         │
         ▼
-<SpeciesSwarm> renders fish in correct zones
+getSpeciesForBiome(biomeMap, activeBiome) — selects biome population
+        │
+        ▼
+<SpeciesSwarm biome={activeBiome}> renders only that biome's fish
         │
         ▼ (on gaze/click)
 getPersonality(species, mode) — already exists in utils/personality.js
         │
         ▼
-<NarrationLayer> displays + speaks
+<NarrationLayer> displays + speaks (Echo voice for taglines, Poseidon for answers)
         │
         ▼ (if user asks deeper)
 /api/poseidon — already deployed
@@ -281,10 +354,12 @@ frontend/
 │   │   ├── ReefHUD.jsx             ← 2D/spatial overlay UI
 │   │   ├── BiomeZone.jsx           ← habitat region wrapper
 │   │   ├── CausticsProjector.jsx   ← light caustics shader
+│   │   ├── VoiceSettings.jsx       ← character voice configuration panel
 │   │   └── hooks/
 │   │       ├── useBiomeClassifier.js  ← groups species by habitat
 │   │       ├── useBoidSwim.js         ← schooling behavior
-│   │       ├── useNarration.js        ← TTS + STT + Poseidon bridge
+│   │       ├── useNarration.js        ← TTS + STT + Poseidon bridge (uses voice profiles)
+│   │       ├── useVoiceProfiles.js    ← character-specific TTS voice assignment
 │   │       └── useReefAudio.js        ← spatial audio management
 │   └── ...existing src/
 └── public/

@@ -1,6 +1,8 @@
 // Vercel serverless function: frontend/api/generate-alt-text.js
 // Generates accessible alt-text for user-uploaded aquarium photos via Gemini Vision.
 
+import { vertexGenerateContent, isVertexConfigured } from './_lib/vertexClient.js';
+
 /**
  * Accepts either:
  * - { imageUrl: "https://..." } — CDN URL of an already-uploaded image
@@ -22,10 +24,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ altText: null, error: 'Provide imageUrl or imageBase64' });
   }
 
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-  if (!GEMINI_API_KEY || GEMINI_API_KEY.trim() === '') {
-    return res.status(200).json({ altText: "Aquarium photo", error: "API key not configured" });
+  if (!isVertexConfigured()) {
+    return res.status(200).json({ altText: "Aquarium photo", error: "Vertex AI not configured" });
   }
 
   try {
@@ -81,12 +81,7 @@ export default async function handler(req, res) {
 Respond with ONLY the alt-text string, nothing else.`
     };
 
-    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-
-    const geminiResponse = await fetch(geminiEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const geminiResponse = await vertexGenerateContent('gemini-2.5-flash-lite', {
         contents: [{
           parts: [imagePart, prompt]
         }],
@@ -100,7 +95,6 @@ Respond with ONLY the alt-text string, nothing else.`
           { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
           { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
         ]
-      }),
     });
 
     if (!geminiResponse.ok) {

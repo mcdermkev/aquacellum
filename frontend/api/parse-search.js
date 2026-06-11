@@ -8,6 +8,7 @@
 // "What cichlids can live in pH 7.5?" → { searchTerm: "cichlid", phMin: 7.0, phMax: 8.0 }
 
 import { buildSpeciesContext, findSpeciesInQuery } from './_lib/speciesIndex.js';
+import { vertexGenerateContent, isVertexConfigured } from './_lib/vertexClient.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -23,10 +24,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing query field' });
   }
 
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-  // If no API key, attempt basic local parsing
-  if (!GEMINI_API_KEY || GEMINI_API_KEY.trim() === '') {
+  // If Vertex AI isn't configured, attempt basic local parsing
+  if (!isVertexConfigured()) {
     const localResult = parseQueryLocally(query);
     return res.status(200).json(localResult);
   }
@@ -69,12 +68,7 @@ Rules:
 
     const userPrompt = `Parse this search query: "${query}"${tankContext ? `\n\nUser's tank: ${tankContext.volume}gal, ${tankContext.temp}°C, pH ${tankContext.ph}` : ''}${mentionedSpecies.length > 0 ? `\n\nSpecies detected in catalog: ${mentionedSpecies.map(s => `${s.commonName} (${s.scientificName})`).join(', ')}` : ''}`;
 
-    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
-
-    const geminiResponse = await fetch(geminiEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const geminiResponse = await vertexGenerateContent('gemini-2.5-flash-lite', {
         contents: [
           { role: "user", parts: [{ text: systemPrompt }] },
           { role: "model", parts: [{ text: "Understood. I will parse natural language aquarium search queries into structured filter JSON." }] },
@@ -109,7 +103,6 @@ Rules:
           temperature: 0.2,
           maxOutputTokens: 512,
         }
-      }),
     });
 
     if (!geminiResponse.ok) {

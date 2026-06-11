@@ -1,0 +1,6 @@
+{
+  "sponsors": [],
+  "version": "1.0.0",
+  "lastUpdated": null,
+  "_comment": "Master sponsor registry. Populated when sponsor agreements are active. Each entry: { id, brand, logo, tier, surfaces[], active, campaignWindow? }"
+}

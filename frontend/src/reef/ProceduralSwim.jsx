@@ -1,7 +1,9 @@
 import React, { useRef, useEffect, useMemo } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
+import { enhanceFishMaterials } from "./utils/enhanceFishMaterials";
+import { getReefEnvMap } from "./utils/reefEnvMap";
 
 /**
  * ProceduralSwim — Loads a static GLB fish model and applies
@@ -30,41 +32,20 @@ export function ProceduralSwim({
 
   // Load GLB model
   const { scene } = useGLTF(src);
+  const { gl } = useThree();
 
-  // Clone the scene and extract meshes
+  // Clone the scene, normalise materials, and extract meshes for animation
   const clonedScene = useMemo(() => {
     const clone = scene.clone(true);
-    // Store references to all meshes for vertex animation
+    enhanceFishMaterials(clone, { renderer: gl, envMap: getReefEnvMap(gl) });
+
     const meshes = [];
     clone.traverse((child) => {
-      if (child.isMesh && child.geometry) {
-        meshes.push(child);
-        if (!child.geometry.attributes.normal) {
-          child.geometry.computeVertexNormals();
-        }
-        if (child.geometry.attributes.color) {
-          // Fix color space: TripoSR vertex colors are sRGB but Three.js reads as linear
-          // Convert from linear to sRGB-like brightness to compensate
-          const colorAttr = child.geometry.attributes.color;
-          const arr = colorAttr.array;
-          for (let i = 0; i < arr.length; i += colorAttr.itemSize) {
-            // Gamma correction (linear → sRGB perception boost)
-            arr[i] = Math.pow(arr[i], 0.55);
-            arr[i+1] = Math.pow(arr[i+1], 0.55);
-            arr[i+2] = Math.pow(arr[i+2], 0.55);
-          }
-          colorAttr.needsUpdate = true;
-          child.material = new THREE.MeshStandardMaterial({
-            vertexColors: true,
-            roughness: 0.6,
-            metalness: 0.0,
-          });
-        }
-      }
+      if (child.isMesh && child.geometry) meshes.push(child);
     });
     meshRefs.current = meshes;
     return clone;
-  }, [scene]);
+  }, [scene, gl]);
 
   // Store original vertex positions on first load
   useEffect(() => {

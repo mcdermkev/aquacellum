@@ -783,27 +783,27 @@
         8
       ],
       "difficulty": "Beginner",
-      "minVolumeGallons": 30
+      "minVolumeGallons": 20
     },
-    "family": "Information arriving soon",
+    "family": "Characidae",
     "ecology": {
-      "comments": "Information arriving soon",
-      "biotope": "Generic Biotope Details",
+      "comments": "The Buenos Aires Tetra is a hardy and active schooling fish, well-suited for beginner aquarists. While generally peaceful, they can be notorious fin-nippers if not kept in a sufficiently large group (6+ individuals) or if housed with slow-moving, long-finned tank mates. They appreciate a well-planted aquarium with open swimming spaces.",
+      "biotope": "Native to the Paraná River basin in South America, including Argentina, Uruguay, Paraguay, and Brazil. They inhabit slow-moving rivers, streams, and floodplains, often found among dense vegetation.",
       "phMin": 6,
       "phMax": 8,
-      "hardnessRange": "5 - 15 dGH",
+      "hardnessRange": "Soft to moderately hard (5-19 dGH)",
       "tempCeiling": 26,
-      "socialBehavior": "Information arriving soon"
+      "socialBehavior": "Highly social schooling fish. Must be kept in groups of at least 6, preferably 10 or more, to reduce stress and fin-nipping tendencies. They are active swimmers and will utilize all levels of the aquarium."
     },
     "diet": {
       "trophicLevel": "Omnivore",
-      "fooditems": "plants (unspecified plants); zoobenthos (unspecified insects, unspecified crustaceans, unspecified worms)",
-      "feedingPlaybook": "Information arriving soon"
+      "fooditems": "High-quality flake food, small pellets, frozen bloodworms, brine shrimp, daphnia, and occasional vegetable matter like blanched spinach or spirulina flakes. They are not picky eaters.",
+      "feedingPlaybook": "Offer a varied diet two to three times daily in small portions that can be consumed within a few minutes. A mix of dry, frozen, and occasional live foods will ensure optimal health and coloration."
     },
     "reproduction": {
-      "spawningTrait": "Open-water egg scatterer no parental care",
-      "layoutRequirement": "Information arriving soon",
-      "comments": "Information arriving soon"
+      "spawningTrait": "Egg scatterer",
+      "layoutRequirement": "A separate breeding tank with fine-leaved plants (e.g., Java moss), a spawning mop, or a spawning grid to protect eggs from being eaten by parents. Dim lighting is preferred. Water should be slightly acidic to neutral (pH 6.5-7.0) and soft, with a temperature around 24-26°C (75-79°F).",
+      "comments": "Buenos Aires Tetras are relatively easy to breed. Condition a pair or a small group with plenty of live and frozen foods. Spawning typically occurs in the morning. After eggs are laid and fertilized, remove the adult fish as they will consume the eggs. Eggs usually hatch within 24-36 hours. Fry are very small and require infusoria or liquid fry food initially, transitioning to newly hatched brine shrimp after a few days."
     },
     "masterPhotoUrl": "/species-images/psalidodon-anisitsi.png",
     "personality": {
@@ -816,7 +816,9 @@
         "pro": "Psalidodon anisitsi tolerates a wide temperature range (18–26°C) and variable water chemistry, making it extremely hardy. Voracious plant consumer — plastic or robust plants like Java fern only. Egg-scattering spawner; prolific in well-conditioned pairs separated then reunited. Keep in groups of six-plus."
       }
     },
-    "maxLengthCm": 13.2
+    "maxLengthCm": 7.5,
+    "genus": "Psalidodon",
+    "species": "anisitsi"
   },
   {
     "specCode": 4717,
@@ -934,27 +936,27 @@
         7
       ],
       "difficulty": "Beginner",
-      "minVolumeGallons": 5
+      "minVolumeGallons": 10
     },
-    "family": "Information arriving soon",
+    "family": "Cyprinidae",
     "ecology": {
-      "comments": "Information arriving soon",
-      "biotope": "Generic Biotope Details",
+      "comments": "The Cherry Barb is a peaceful and hardy species, making it an excellent choice for community aquariums. They thrive in well-planted tanks with subdued lighting and plenty of hiding spots. Males display vibrant red coloration, especially during breeding.",
+      "biotope": "Native to shaded, slow-moving streams and rivers with dense vegetation in Sri Lanka. They prefer areas with leaf litter and submerged roots.",
       "phMin": 6,
       "phMax": 7,
-      "hardnessRange": "5 - 15 dGH",
+      "hardnessRange": "Soft to medium (5-15 dGH)",
       "tempCeiling": 27,
-      "socialBehavior": "Information arriving soon"
+      "socialBehavior": "Highly social schooling fish. Should be kept in groups of 6 or more to reduce stress and encourage natural behavior. Males will often spar playfully without harm."
     },
     "diet": {
       "trophicLevel": "Omnivore",
-      "fooditems": "Omnivore in nature feeding on detritus, algae, small invertebrates and insect larvae. In aquaria accepts flakes, micro pellets, frozen daphnia, brine shrimp, and bloodworm.",
-      "feedingPlaybook": "Information arriving soon"
+      "fooditems": "High-quality flake food, micro pellets, frozen or live brine shrimp, daphnia, and small bloodworms. Vegetable matter like blanched spinach or spirulina flakes can also be offered.",
+      "feedingPlaybook": "Feed small amounts 2-3 times a day, ensuring all food is consumed within a few minutes. A varied diet is crucial for optimal health and coloration."
     },
     "reproduction": {
-      "spawningTrait": "Open-water egg scatterer no parental care",
-      "layoutRequirement": "Information arriving soon",
-      "comments": "Information arriving soon"
+      "spawningTrait": "Egg scatterer",
+      "layoutRequirement": "A separate breeding tank with fine-leaved plants (like Java moss) or a spawning mop is ideal. Dim lighting and soft, slightly acidic water encourage spawning.",
+      "comments": "Cherry Barbs are relatively easy to breed. The pair will scatter adhesive eggs among the plants. Parents should be removed immediately after spawning to prevent them from eating the eggs. Fry hatch in 24-48 hours and can be fed infusoria or liquid fry food, then newly hatched brine shrimp."
     },
     "masterPhotoUrl": "/species-images/puntius-titteya.png",
     "personality": {
@@ -967,7 +969,9 @@
         "pro": "Puntius titteya is a peaceful exception among barbs. Males intensify to deep red during courtship and competition. Hardy and adaptable; a small group keeps them confident and colorful."
       }
     },
-    "maxLengthCm": 5
+    "maxLengthCm": 5,
+    "genus": "Puntius",
+    "species": "titteya"
   },
   {
     "specCode": 2389,
@@ -983,27 +987,27 @@
         7.5
       ],
       "difficulty": "Beginner",
-      "minVolumeGallons": 55
+      "minVolumeGallons": 30
     },
-    "family": "Information arriving soon",
+    "family": "Cichlidae",
     "ecology": {
-      "comments": "Information arriving soon",
-      "biotope": "Generic Biotope Details",
+      "comments": "The Jewel Cichlid is a strikingly beautiful and active fish, known for its vibrant red coloration and iridescent blue spots. While captivating, they are highly territorial and can be aggressive, especially during breeding. They require a well-established aquarium with robust filtration and consistent water quality. Provide plenty of hiding spots and visual barriers to reduce aggression.",
+      "biotope": "Native to West Africa, found in various freshwater habitats including rivers, streams, and lagoons. They typically inhabit areas with rocky substrates, driftwood, and dense vegetation.",
       "phMin": 6.5,
       "phMax": 7.5,
-      "hardnessRange": "5 - 15 dGH",
+      "hardnessRange": "Soft to medium hard (5-15 dGH)",
       "tempCeiling": 28,
-      "socialBehavior": "Information arriving soon"
+      "socialBehavior": "Highly territorial and aggressive, particularly when breeding. Best kept as a single pair in a dedicated species tank. If attempting a community setup, a very large aquarium (75+ gallons) with robust, similarly sized, and semi-aggressive tank mates is necessary. Avoid keeping with smaller, docile fish."
     },
     "diet": {
-      "trophicLevel": "Carnivore / Piscivore",
-      "fooditems": "nekton (unidentified); zoobenthos (unidentified)",
-      "feedingPlaybook": "Information arriving soon"
+      "trophicLevel": "Omnivore",
+      "fooditems": "High-quality cichlid pellets or flakes, frozen foods such as bloodworms, brine shrimp, and mysis shrimp. They also appreciate live foods like earthworms and small insects. Supplement with blanched vegetables like spinach or spirulina flakes.",
+      "feedingPlaybook": "Feed small amounts 2-3 times daily. Ensure a varied diet to promote optimal health and coloration. Watch for uneaten food and remove it promptly to maintain water quality."
     },
     "reproduction": {
-      "spawningTrait": "Substrate spawner",
-      "layoutRequirement": "Information arriving soon",
-      "comments": "Information arriving soon"
+      "spawningTrait": "Substrate spawner with biparental care. The pair will clean a flat surface (rock, slate, or flowerpot) and lay eggs, which both parents guard fiercely.",
+      "layoutRequirement": "Provide several flat rocks, pieces of slate, or ceramic flowerpots to serve as potential spawning sites. Dense planting, driftwood, and rock caves should also be included to offer hiding places and visual barriers, which can help reduce aggression between the pair or from other tank mates.",
+      "comments": "Jewel Cichlids are relatively easy to breed in the home aquarium. The pair will become intensely colored and highly aggressive when ready to spawn. Once eggs are laid, both parents will fan and guard them. Fry hatch in about 2-3 days and become free-swimming a few days later. Feed newly hatched brine shrimp or finely crushed flake food to the fry."
     },
     "masterPhotoUrl": "/species-images/rubricatochromis-bimaculatus.png",
     "personality": {
@@ -1016,7 +1020,9 @@
         "pro": "Rubricatochromis bimaculatus is a West African substrate spawner that intensifies to vivid red during breeding. Extremely territorial as a pair; best in a species tank or with robust, fast tankmates. Hardy and prolific once paired."
       }
     },
-    "maxLengthCm": 16.6
+    "maxLengthCm": 15,
+    "genus": "Rubricatochromis",
+    "species": "bimaculatus"
   },
   {
     "specCode": 11201,
@@ -1034,25 +1040,25 @@
       "difficulty": "Beginner",
       "minVolumeGallons": 10
     },
-    "family": "Information arriving soon",
+    "family": "Osphronemidae",
     "ecology": {
-      "comments": "Information arriving soon",
-      "biotope": "Generic Biotope Details",
+      "comments": "The Honey Gourami is a peaceful and shy labyrinth fish, known for its vibrant coloration, especially in males during breeding. They are relatively hardy and adaptable, making them suitable for beginner aquarists. They prefer a well-planted aquarium with plenty of hiding spots and subdued lighting.",
+      "biotope": "Native to slow-moving, densely vegetated waters such as ponds, ditches, and rice paddies in India and Bangladesh. They thrive in environments with abundant aquatic plants and leaf litter.",
       "phMin": 6,
       "phMax": 7.5,
-      "hardnessRange": "5 - 15 dGH",
+      "hardnessRange": "Soft to medium (2-15 dGH)",
       "tempCeiling": 28,
-      "socialBehavior": "Information arriving soon"
+      "socialBehavior": "Generally peaceful and can be kept in pairs or small groups. Males may display mild territoriality towards each other during breeding but are usually not aggressive. They are excellent community fish for tanks with other small, peaceful species."
     },
     "diet": {
       "trophicLevel": "Omnivore",
-      "fooditems": "Likely to prey on insects and other small invertebrates in nature. Captive fish will accept dried products but should also be offered plenty of small live or frozen foods such as Daphnia , Artemia , or bloodworm regularly to ensure development of optimal colour and condition. Small insects such as m",
-      "feedingPlaybook": "Information arriving soon"
+      "fooditems": "Small insects, larvae, zooplankton, algae, and some plant matter.",
+      "feedingPlaybook": "Offer a varied diet of high-quality flake food, micro-pellets, and small live or frozen foods such as daphnia, brine shrimp, and finely chopped bloodworms. Ensure food items are small enough for their mouths. Feed small amounts multiple times a day."
     },
     "reproduction": {
-      "spawningTrait": "Nest builder",
-      "layoutRequirement": "Information arriving soon",
-      "comments": "This species is a bubblenester which forms temporary pair bonds. Some hobbyists prefer to isolate individual pairs for spawning purposes whereas others may maintain a small group. Either way the tank to be used for spawning should be furnish it with plenty of floating and/or stem plants with leaves reaching the surface. Gentle filtration via an air-powered sponge filter is the best option, as it will not break up the bubblenest of the male or suck up fry. The tank should have the tightest-fittin"
+      "spawningTrait": "Bubblenester",
+      "layoutRequirement": "To encourage breeding, provide a densely planted tank with floating plants (e.g., Salvinia, Frogbit) to serve as anchor points for the male's bubble nest. A slightly lower water level (around 6-8 inches) can also stimulate spawning.",
+      "comments": "The male builds a small bubble nest at the water surface. After spawning, the female should be removed as the male will guard the eggs and fry. Fry are very small and require infusoria or liquid fry food for the first few days, followed by newly hatched brine shrimp."
     },
     "masterPhotoUrl": "/species-images/trichogaster-chuna.png",
     "personality": {
@@ -1065,7 +1071,9 @@
         "pro": "Trichogaster chuna is a peaceful labyrinth fish that breathes surface air and prefers calm, planted water. Hardier and less disease-prone than Trichogaster lalius. Males build bubblenests and color up deep amber when breeding."
       }
     },
-    "maxLengthCm": 5
+    "maxLengthCm": 5,
+    "genus": "Trichogaster",
+    "species": "chuna"
   },
   {
     "specCode": 4774,
@@ -1081,27 +1089,27 @@
         7.5
       ],
       "difficulty": "Beginner",
-      "minVolumeGallons": 20
+      "minVolumeGallons": 10
     },
-    "family": "Information arriving soon",
+    "family": "Osphronemidae",
     "ecology": {
-      "comments": "Information arriving soon",
-      "biotope": "Generic Biotope Details",
+      "comments": "The Dwarf Gourami is a generally peaceful and shy fish, making it an excellent choice for community aquariums with other docile species. Males can be territorial towards each other, especially in smaller tanks, so it's often best to keep only one male or a single male with multiple females. They appreciate a well-planted tank with plenty of hiding spots.",
+      "biotope": "Native to slow-moving waters, rice paddies, and densely vegetated ditches and ponds in South Asia, particularly India, Bangladesh, and Pakistan. They thrive in environments with abundant aquatic plants and minimal water flow.",
       "phMin": 6,
       "phMax": 7.5,
-      "hardnessRange": "5 - 15 dGH",
+      "hardnessRange": "Soft to medium hard (5-15 dGH)",
       "tempCeiling": 28,
-      "socialBehavior": "Information arriving soon"
+      "socialBehavior": "Generally peaceful with other species, but males can be aggressive towards other male Dwarf Gouramis. Best kept singly, in a pair, or as a trio with one male and two females. Avoid housing with fin-nippers or overly boisterous tank mates that might stress them."
     },
     "diet": {
       "trophicLevel": "Omnivore",
-      "fooditems": "Thought to be omnivorous in nature, feeding on small invertebrates, algae and other aufwuchs . It accepts most foods offered in the aquarium , and a good quality dried food is acceptable as the staple diet. Supplement this with regular meals of small live and frozen foods such as bloodworm for the f",
-      "feedingPlaybook": "Information arriving soon"
+      "fooditems": "In their natural habitat, they consume small insects, insect larvae, algae, and other plant matter. In captivity, they readily accept high-quality flake food, small pellets, frozen or live brine shrimp, bloodworms, daphnia, and spirulina flakes.",
+      "feedingPlaybook": "Offer a varied diet 2-3 times daily in small amounts that can be consumed within a few minutes. Ensure food items are small enough for their mouths. A mix of high-quality dry foods and occasional frozen or live treats will keep them healthy and vibrant."
     },
     "reproduction": {
-      "spawningTrait": "Nest builder with paternal care",
-      "layoutRequirement": "Information arriving soon",
-      "comments": "Like many anabantoids, it’s a bubble-nesting species . Breeding is not too difficult, although the males can be somewhat unpredictable in terms of behaviour. You’ll need to set up a separate tank for spawning purposes. Something around 18″-24″ in length is fine. There’s no need to use a substrate , but a handful or two of peat fibre may be beneficial. Also add some good sized clumps of hornwort or other fine-leaved plant and some floating plants such as Riccia . A small air-driven sponge filter "
+      "spawningTrait": "Bubble nester",
+      "layoutRequirement": "To encourage spawning, provide a calm water surface with floating plants (e.g., Salvinia, Riccia) or broad-leaved plants that reach the surface. The male will construct a bubble nest among these plants. A slightly higher temperature (around 26-28°C) and a varied diet can also stimulate breeding.",
+      "comments": "The male builds a bubble nest, often incorporating plant material. After the female lays eggs in the nest, the male fertilizes and guards them. It is advisable to remove the female after spawning to prevent potential aggression from the male. Once the fry hatch, the male can also be removed. Fry are very small and require infusoria or liquid fry food for their initial days."
     },
     "masterPhotoUrl": "/species-images/trichogaster-lalius.png",
     "personality": {
@@ -1114,7 +1122,9 @@
         "pro": "Trichogaster lalius is a labyrinth fish that breathes atmospheric air and prefers calm, warm water. Source carefully, as farmed stock is prone to Dwarf Gourami Iridovirus and bacterial infections. One male per tank avoids conflict."
       }
     },
-    "maxLengthCm": 9.5
+    "maxLengthCm": 6,
+    "genus": "Trichogaster",
+    "species": "lalius"
   },
   {
     "specCode": 10881,
@@ -1130,27 +1140,27 @@
         7.5
       ],
       "difficulty": "Beginner",
-      "minVolumeGallons": 5
+      "minVolumeGallons": 10
     },
-    "family": "Information arriving soon",
+    "family": "Cyprinidae",
     "ecology": {
-      "comments": "Information arriving soon",
-      "biotope": "Generic Biotope Details",
+      "comments": "The Harlequin Rasbora is a peaceful and hardy schooling fish, making it an excellent choice for community aquariums. They thrive in well-planted tanks that mimic their natural, densely vegetated habitats. Providing dim lighting and a dark substrate can enhance their vibrant coloration.",
+      "biotope": "Native to slow-moving blackwater streams, peat swamps, and forest streams in Southeast Asia (Thailand, Malaysia, Singapore, Sumatra). These environments typically feature dense vegetation, leaf litter, and soft, acidic water.",
       "phMin": 6,
       "phMax": 7.5,
-      "hardnessRange": "5 - 15 dGH",
+      "hardnessRange": "Soft (1-12 dGH)",
       "tempCeiling": 28,
-      "socialBehavior": "Information arriving soon"
+      "socialBehavior": "Highly social and peaceful schooling fish. They must be kept in groups of at least 6-10 individuals to exhibit natural behavior and reduce stress. They are excellent tank mates for other small, peaceful community fish."
     },
     "diet": {
       "trophicLevel": "Omnivore",
-      "fooditems": "zoobenthos (unspecified insects, unspecified crustaceans, unspecified worms)",
-      "feedingPlaybook": "Information arriving soon"
+      "fooditems": "In the wild, they feed on small insects, larvae, and zooplankton. In the aquarium, they readily accept high-quality flake food, micro-pellets, and a variety of frozen or live foods such as brine shrimp, daphnia, and small bloodworms.",
+      "feedingPlaybook": "Offer small amounts of food two to three times a day. A varied diet is crucial for their health and coloration. Ensure food items are small enough for their mouths."
     },
     "reproduction": {
-      "spawningTrait": "Open-water egg scatterer no parental care",
-      "layoutRequirement": "Information arriving soon",
-      "comments": "Information arriving soon"
+      "spawningTrait": "Egg scatterer with adhesive eggs. They typically lay their eggs on the underside of broad leaves.",
+      "layoutRequirement": "For breeding, a dedicated tank with soft, acidic water (pH 5.5-6.5, GH 1-5) and dense broad-leaved plants (e.g., Cryptocoryne, Anubias) is ideal. Dim lighting encourages spawning. A spawning mop or fine-leaved plants can also be used.",
+      "comments": "Breeding Harlequin Rasboras can be achieved in a well-prepared breeding tank. Condition a pair or a small group with high-quality live and frozen foods. After spawning, the adult fish should be removed to prevent them from eating the eggs. Fry are very small and require infusoria or specialized liquid fry food initially."
     },
     "masterPhotoUrl": "/species-images/trigonostigma-heteromorpha.png",
     "personality": {
@@ -1163,7 +1173,9 @@
         "pro": "Trigonostigma heteromorpha is a hardy, peaceful staple with its distinctive black triangle. Keeps best in groups of eight or more in soft to neutral water. Reliable and undemanding in planted community tanks."
       }
     },
-    "maxLengthCm": 5
+    "maxLengthCm": 4.5,
+    "genus": "Trigonostigma",
+    "species": "heteromorpha"
   },
   {
     "specCode": 3231,
@@ -1232,25 +1244,25 @@
       "difficulty": "Beginner",
       "minVolumeGallons": 10
     },
-    "family": "Information arriving soon",
+    "family": "Poeciliidae",
     "ecology": {
-      "comments": "Information arriving soon",
-      "biotope": "Generic Biotope Details",
+      "comments": "A highly adaptable and peaceful livebearer, excellent for community tanks. They are active swimmers and appreciate planted tanks with open swimming spaces.",
+      "biotope": "Slow-moving freshwater streams, canals, and ditches in Central America, often with dense vegetation.",
       "phMin": 7,
       "phMax": 8,
-      "hardnessRange": "5 - 15 dGH",
+      "hardnessRange": "Moderately hard to hard (10-25 dGH)",
       "tempCeiling": 26,
-      "socialBehavior": "Information arriving soon"
+      "socialBehavior": "Peaceful and social, best kept in groups of 6 or more. Males can be territorial towards each other if not enough females are present; a ratio of 1 male to 2-3 females is ideal."
     },
     "diet": {
       "trophicLevel": "Omnivore",
-      "fooditems": "zoobenthos (mayflies, unidentified, midges)",
-      "feedingPlaybook": "Information arriving soon"
+      "fooditems": "Algae, detritus, small invertebrates, and plant matter in the wild. In captivity, high-quality flake food, spirulina flakes, brine shrimp, daphnia, and bloodworms.",
+      "feedingPlaybook": "Feed small amounts 2-3 times daily. Offer a varied diet to ensure optimal health and coloration. They are not picky eaters."
     },
     "reproduction": {
-      "spawningTrait": "Livebearer with maternal care",
-      "layoutRequirement": "Information arriving soon",
-      "comments": "Information arriving soon"
+      "spawningTrait": "Livebearer",
+      "layoutRequirement": "Dense planting, especially fine-leaved plants or floating plants, to provide hiding places for fry. A breeding box can be used to protect fry from adults.",
+      "comments": "Southern Platies are prolific livebearers, giving birth to fully formed fry every 28-30 days. Females can store sperm for several months, allowing for multiple batches of fry from a single mating. Fry are relatively large and can eat crushed flake food immediately."
     },
     "masterPhotoUrl": "/species-images/xiphophorus-maculatus.png",
     "personality": {
@@ -1263,7 +1275,9 @@
         "pro": "Xiphophorus maculatus is a forgiving, peaceful livebearer available in countless line-bred colors. Prefers harder, alkaline water. Breeds readily, so expect fry in any mixed-sex group."
       }
     },
-    "maxLengthCm": 6
+    "maxLengthCm": 6,
+    "genus": "Xiphophorus",
+    "species": "maculatus"
   },
   {
     "specCode": 3233,
@@ -1281,25 +1295,25 @@
       "difficulty": "Beginner",
       "minVolumeGallons": 10
     },
-    "family": "Information arriving soon",
+    "family": "Poeciliidae",
     "ecology": {
-      "comments": "Information arriving soon",
-      "biotope": "Generic Biotope Details",
+      "comments": "The Variatus Platy is a hardy and adaptable species, making it an excellent choice for beginner aquarists. They are peaceful and active, spending their time exploring all levels of the aquarium. They thrive in well-maintained tanks with stable water parameters and appreciate plenty of live plants for cover and grazing.",
+      "biotope": "Native to slow-moving rivers, streams, and canals in Mexico and Central America, often found in areas with dense vegetation.",
       "phMin": 7,
-      "phMax": 8.2,
-      "hardnessRange": "5 - 15 dGH",
+      "phMax": 8,
+      "hardnessRange": "Moderately hard to hard (10-25 dGH)",
       "tempCeiling": 25,
-      "socialBehavior": "Information arriving soon"
+      "socialBehavior": "Peaceful and social, Variatus Platies should be kept in groups of at least six individuals. A ratio of two to three females per male is recommended to prevent excessive harassment of females by males."
     },
     "diet": {
       "trophicLevel": "Omnivore",
-      "fooditems": "detritus (unspecified plant matter); zoobenthos (unspecified insects, unspecified worms); zooplankton (unspecified crustaceans)",
-      "feedingPlaybook": "Information arriving soon"
+      "fooditems": "Primarily consumes algae, plant matter, and small invertebrates in the wild. In an aquarium, they readily accept high-quality flake food, micro-pellets, spirulina flakes, and occasional live or frozen foods like brine shrimp, daphnia, and bloodworms.",
+      "feedingPlaybook": "Feed small amounts two to three times daily, only what they can consume within a few minutes. A varied diet is crucial for their health and vibrant coloration."
     },
     "reproduction": {
       "spawningTrait": "Livebearer",
-      "layoutRequirement": "Information arriving soon",
-      "comments": "Information arriving soon"
+      "layoutRequirement": "A heavily planted tank with fine-leaved plants (e.g., Java moss, hornwort) or floating plants provides essential hiding spots for fry to escape predation from adult fish. A breeding box or separate fry tank can also be used.",
+      "comments": "Variatus Platies are prolific livebearers, meaning females give birth to fully formed, free-swimming fry. Breeding is relatively easy in a community tank, but many fry may be eaten by adults if sufficient hiding places are not provided. Gestation typically lasts 24-30 days, with females producing 20-50 fry per brood."
     },
     "masterPhotoUrl": "/species-images/xiphophorus-variatus.png",
     "personality": {
@@ -1312,7 +1326,9 @@
         "pro": "Xiphophorus variatus is a hardy platy tolerant of cooler temperatures, down toward 18°C. Equally colorful and prolific as its cousin. Suits unheated or temperate community setups."
       }
     },
-    "maxLengthCm": 7
+    "maxLengthCm": 6,
+    "genus": "Xiphophorus",
+    "species": "variatus"
   },
   {
     "specCode": 12104,
@@ -1381,25 +1397,25 @@
       "difficulty": "Advanced",
       "minVolumeGallons": 75
     },
-    "family": "Information arriving soon",
+    "family": "Cichlidae",
     "ecology": {
-      "comments": "Information arriving soon",
-      "biotope": "Generic Biotope Details",
+      "comments": "The Midas Cichlid is a robust and highly intelligent Central American cichlid known for its aggressive and territorial nature. It is a powerful digger and can rearrange aquarium decor significantly. Its vibrant coloration can vary greatly, from dull grey to brilliant orange or yellow, often developing black blotches.",
+      "biotope": "Naturally found in the large, turbid lakes of Nicaragua (e.g., Lake Nicaragua, Lake Managua) and Costa Rica, inhabiting areas with rocky substrates, submerged wood, and open sandy patches. They are often found near the shorelines where they can forage and establish territories.",
       "phMin": 7,
       "phMax": 8,
-      "hardnessRange": "5 - 15 dGH",
+      "hardnessRange": "Moderately hard to hard (10-20 dGH)",
       "tempCeiling": 30,
-      "socialBehavior": "Information arriving soon"
+      "socialBehavior": "Extremely aggressive and highly territorial, especially towards conspecifics and similar-looking fish. Best kept as a single specimen in a species-specific tank. If attempting a community setup, it requires a very large aquarium (150+ gallons) with robust, similarly sized, and equally aggressive tankmates. Pair bonding can be intense and often violent, requiring careful monitoring."
     },
     "diet": {
-      "trophicLevel": "Omnivore",
-      "fooditems": "nekton (small fishes); plants (periphyton); zoobenthos (snails, unidentified worms, insects)",
-      "feedingPlaybook": "Information arriving soon"
+      "trophicLevel": "Omnivore/Carnivore",
+      "fooditems": "In the wild, they consume a varied diet of insects, small fish, crustaceans, and plant matter. In captivity, they readily accept high-quality cichlid pellets and flakes, frozen foods such as bloodworms, brine shrimp, mysis shrimp, and krill. Occasional offerings of live foods like earthworms or feeder fish (fed sparingly due to disease risk) can be provided. Blanched vegetables can also be offered.",
+      "feedingPlaybook": "Offer a varied diet of high-quality prepared foods, ensuring a good balance of protein and vegetable matter. Supplement with occasional frozen or live protein sources. Feed 2-3 times daily in small portions that can be consumed within a few minutes to prevent overfeeding and water quality issues. Avoid foods high in fat."
     },
     "reproduction": {
-      "spawningTrait": "Nest builder with biparental care",
-      "layoutRequirement": "Information arriving soon",
-      "comments": "Information arriving soon"
+      "spawningTrait": "Open substrate spawner with biparental care. They form strong pair bonds, though these can be aggressive.",
+      "layoutRequirement": "For breeding, a large aquarium with several large, flat rocks, slate, or ceramic tiles should be provided as potential spawning sites. Ample open space is necessary, along with some robust hiding spots (e.g., large caves, driftwood) for the female to retreat if the male becomes overly aggressive. Substrate should be present as they will dig extensively.",
+      "comments": "Breeding Midas Cichlids can be challenging due to their aggression. Introduce a male and female carefully, ideally growing them up together or introducing them to a very large tank simultaneously. Provide plenty of visual barriers. The pair will clean a flat surface, lay eggs, and both parents will guard the eggs and fry intensely. Fry are free-swimming within a week and can be fed newly hatched brine shrimp."
     },
     "masterPhotoUrl": "/species-images/amphilophus-citrinellus.png",
     "personality": {
@@ -1412,7 +1428,9 @@
         "pro": "Amphilophus citrinellus is a large, aggressive Central American cichlid reaching over a foot. Males develop a pronounced nuchal hump. A substrate spawner with fierce parental care. Needs a very large tank; often kept as a wet pet."
       }
     },
-    "maxLengthCm": 29.8
+    "maxLengthCm": 30,
+    "genus": "Amphilophus",
+    "species": "citrinellus"
   },
   {
     "specCode": 28238,
@@ -1428,27 +1446,27 @@
         8
       ],
       "difficulty": "Advanced",
-      "minVolumeGallons": 75
+      "minVolumeGallons": 125
     },
-    "family": "Information arriving soon",
+    "family": "Cichlidae",
     "ecology": {
-      "comments": "Information arriving soon",
-      "biotope": "Generic Biotope Details",
+      "comments": "The Red Devil Cichlid is a large, highly territorial, and aggressive species native to Central America. They are known for their robust build, powerful jaws, and often vibrant coloration, which can range from red, orange, yellow, to white, often with black markings. Their temperament necessitates careful consideration of tank mates and ample space.",
+      "biotope": "Naturally found in the large, volcanic lakes of Nicaragua, such as Lake Managua and Lake Nicaragua. They inhabit rocky areas, often near submerged logs and root structures, where they can establish territories and find shelter. The substrate is typically sandy or rocky.",
       "phMin": 7,
       "phMax": 8,
-      "hardnessRange": "5 - 15 dGH",
+      "hardnessRange": "Moderately hard to hard (10-20 dGH)",
       "tempCeiling": 30,
-      "socialBehavior": "Information arriving soon"
+      "socialBehavior": "Extremely aggressive and highly territorial. Best kept as a solitary specimen in a species-specific tank. If attempting to keep with other fish, only very large, equally robust, and aggressive cichlids or armored catfish should be considered, and only in exceptionally large aquariums with abundant visual barriers."
     },
     "diet": {
-      "trophicLevel": "Carnivore",
-      "fooditems": "nekton (small fishes); zoobenthos (snails, unidentified worms, insects larvae)",
-      "feedingPlaybook": "Information arriving soon"
+      "trophicLevel": "Omnivore (predominantly carnivorous)",
+      "fooditems": "In the wild, they feed on small fish, insects, crustaceans, and plant matter. In captivity, a high-quality cichlid pellet or stick should form the staple diet, supplemented with frozen foods such as krill, mysis shrimp, bloodworms, and earthworms. Vegetable matter like blanched peas or spirulina flakes can also be offered.",
+      "feedingPlaybook": "Feed once or twice daily, offering only what can be consumed within a few minutes. Overfeeding can lead to poor water quality and health issues. A varied diet is crucial for optimal health and coloration. Avoid feeding feeder fish due to disease risks and nutritional deficiencies."
     },
     "reproduction": {
-      "spawningTrait": "Nest builder with maternal care",
-      "layoutRequirement": "Information arriving soon",
-      "comments": "Information arriving soon"
+      "spawningTrait": "Substrate spawner",
+      "layoutRequirement": "For breeding, a large, flat rock, slate, or a ceramic tile should be provided as a spawning site. Caves or overturned flowerpots can offer additional security. The tank should be sparsely decorated to allow for clear territories, but with enough visual breaks to reduce aggression between a pair. Excellent filtration and pristine water conditions are paramount.",
+      "comments": "Red Devil Cichlids are relatively easy to breed given suitable conditions and a compatible pair. Sexing is difficult outside of spawning, though males are often larger and may develop a nuchal hump. The pair will clean a chosen spawning site, and the female will lay hundreds of eggs, which the male then fertilizes. Both parents guard the eggs and fry fiercely. Fry are free-swimming within a few days and can be fed newly hatched brine shrimp or finely crushed flake food."
     },
     "masterPhotoUrl": "/species-images/amphilophus-labiatus.png",
     "personality": {
@@ -1461,7 +1479,9 @@
         "pro": "Amphilophus labiatus is one of the most aggressive cichlids in the hobby, often best kept alone or as a bonded pair. A substrate spawner with intense parental defense. Needs a very large tank and heavy filtration."
       }
     },
-    "maxLengthCm": 28.3
+    "maxLengthCm": 35,
+    "genus": "Amphilophus",
+    "species": "labiatus"
   },
   {
     "specCode": 4727,
@@ -1477,27 +1497,27 @@
         8
       ],
       "difficulty": "Beginner",
-      "minVolumeGallons": 55
+      "minVolumeGallons": 30
     },
-    "family": "Information arriving soon",
+    "family": "Cichlidae",
     "ecology": {
-      "comments": "Information arriving soon",
-      "biotope": "Generic Biotope Details",
+      "comments": "The Blue Acara is a relatively peaceful and hardy cichlid, making it an excellent choice for beginner aquarists interested in South American cichlids. They are known for their vibrant coloration and engaging personalities. While generally docile, they can become territorial during spawning.",
+      "biotope": "Native to Central and South America, specifically Trinidad and Tobago, Venezuela, and Colombia. They inhabit slow-moving rivers, streams, and canals with sandy or muddy substrates, often found among roots and submerged vegetation.",
       "phMin": 6.5,
       "phMax": 8,
-      "hardnessRange": "5 - 15 dGH",
+      "hardnessRange": "Soft to medium hard (5-20 dGH)",
       "tempCeiling": 28,
-      "socialBehavior": "Information arriving soon"
+      "socialBehavior": "Generally peaceful, especially outside of breeding. Can be kept in pairs or small groups. Compatible with other similarly sized, non-aggressive fish. During spawning, they will defend their territory vigorously."
     },
     "diet": {
       "trophicLevel": "Omnivore",
-      "fooditems": "zoobenthos (unidentified)",
-      "feedingPlaybook": "Information arriving soon"
+      "fooditems": "In the wild, they feed on small invertebrates, insects, and plant matter. In the aquarium, they readily accept high-quality flake food, cichlid pellets, frozen bloodworms, brine shrimp, and spirulina flakes. Live foods like daphnia or small earthworms are also appreciated.",
+      "feedingPlaybook": "Feed small amounts 2-3 times daily, ensuring a varied diet to promote optimal health and coloration. Avoid overfeeding, which can lead to water quality issues."
     },
     "reproduction": {
-      "spawningTrait": "Substrate spawner with biparental care",
-      "layoutRequirement": "Information arriving soon",
-      "comments": "Information arriving soon"
+      "spawningTrait": "Substrate spawner with biparental care. They lay eggs on flat surfaces such as rocks, slate, or broad plant leaves.",
+      "layoutRequirement": "Provide several flat rocks, pieces of slate, or broad-leafed plants (like Anubias or Amazon Swords) to serve as potential spawning sites. Caves or driftwood offer additional security and cover for the pair.",
+      "comments": "Blue Acaras are relatively easy to breed in a home aquarium. The pair will clean a chosen spawning site, lay eggs, and both parents will guard the eggs and fry diligently. Fry are free-swimming within a few days and can be fed newly hatched brine shrimp or finely crushed flake food."
     },
     "masterPhotoUrl": "/species-images/andinoacara-pulcher.png",
     "personality": {
@@ -1510,7 +1530,9 @@
         "pro": "Andinoacara pulcher is a hardy, moderately peaceful cichlid that pairs off and spawns on flat surfaces with devoted parental care. Tolerant of a broad parameter range; one of the safer cichlid choices for mixed communities."
       }
     },
-    "maxLengthCm": 16
+    "maxLengthCm": 18,
+    "genus": "Andinoacara",
+    "species": "pulcher"
   },
   {
     "specCode": 12209,
