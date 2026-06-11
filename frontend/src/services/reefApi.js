@@ -95,6 +95,35 @@ export async function updateProfile(walletAddress, updates) {
 }
 
 /**
+ * Check if a display_name is already in use by another account.
+ *
+ * @param {string} displayName - the name to check.
+ * @param {string} [excludeWallet] - wallet to exclude (the user's own account).
+ * @returns {Promise<{ available: boolean, error: any }>}
+ */
+export async function checkDisplayNameAvailable(displayName, excludeWallet) {
+  if (!isSupabaseConfigured()) return { available: true, error: null };
+
+  const trimmed = (displayName || "").trim().toLowerCase();
+  if (!trimmed) return { available: true, error: null };
+
+  let query = supabase
+    .from("profiles")
+    .select("wallet_address")
+    .ilike("display_name", trimmed)
+    .limit(1);
+
+  if (excludeWallet) {
+    query = query.neq("wallet_address", excludeWallet);
+  }
+
+  const { data, error } = await query;
+
+  if (error) return { available: true, error }; // fail open — don't block the user
+  return { available: !data || data.length === 0, error: null };
+}
+
+/**
  * Set the per-account onboarding-complete flag (server source of truth for the
  * first-login-only gate — Requirements 6.1, 6.2, 6.6).
  *

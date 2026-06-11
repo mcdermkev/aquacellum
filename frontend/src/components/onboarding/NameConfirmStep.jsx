@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useOnboarding } from "../../contexts/OnboardingContext";
 import { generateAlias } from "../../utils/generateAlias";
 import { db } from "../../db";
-import { ensureProfile, updateProfile } from "../../services/reefApi";
+import { ensureProfile, updateProfile, checkDisplayNameAvailable } from "../../services/reefApi";
 import { isSupabaseConfigured } from "../../services/supabaseClient";
 import {
   NAME_CONFIRM_COPY,
@@ -152,6 +152,9 @@ export function NameConfirmStep({ narrate, className = "" }) {
     normalizeName(displayName || suggestedAlias)
   );
   const [busy, setBusy] = useState(false);
+  const [nameTaken, setNameTaken] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const checkTimerRef = useRef(null);
 
   // Guard so the one-time prefill effect only seeds the field once per account
   // and never stomps a value the user has started editing.
@@ -175,6 +178,28 @@ export function NameConfirmStep({ narrate, className = "" }) {
     setValue(seed);
   }, [displayName, suggestedAlias]);
 
+  // Debounced name-availability check (400ms after the user stops typing).
+  useEffect(() => {
+    const trimmed = (value || "").trim();
+    if (!trimmed || trimmed.length < 2) {
+      setNameTaken(false);
+      setChecking(false);
+      return;
+    }
+    setChecking(true);
+    if (checkTimerRef.current) clearTimeout(checkTimerRef.current);
+    checkTimerRef.current = setTimeout(async () => {
+      const { available } = await checkDisplayNameAvailable(trimmed, account);
+      if (mountedRef.current) {
+        setNameTaken(!available);
+        setChecking(false);
+      }
+    }, 400);
+    return () => {
+      if (checkTimerRef.current) clearTimeout(checkTimerRef.current);
+    };
+  }, [value, account]);
+
   // Push Poseidon's name prompt into the shared transcript once on mount.
   const narratedRef = useRef(false);
   useEffect(() => {
@@ -185,7 +210,7 @@ export function NameConfirmStep({ narrate, className = "" }) {
     );
   }, [narrate, isCasual]);
 
-  const valid = isNameValid(value);
+  const valid = isNameValid(value) && !nameTaken;
 
   const handleChange = useCallback((e) => {
     // Clamp to the max length as the user types (Req 7.6).
@@ -252,7 +277,23 @@ export function NameConfirmStep({ narrate, className = "" }) {
         autoFocus
         autoComplete="off"
         aria-label={resolvePersonaCopy(NAME_CONFIRM_COPY.prompt, isCasual)}
+        aria-invalid={nameTaken}
       />
+
+      {nameTaken && (
+        <p className="onboarding-name-taken" style={{
+          fontSize: "0.75rem",
+          color: "var(--accent-red, #f87171)",
+          margin: "0.25rem 0 0",
+        }}>
+          That name is already taken. Try something else!
+        </p>
+      )}
+      {checking && !nameTaken && (
+        <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", margin: "0.25rem 0 0" }}>
+          Checking availability…
+        </p>
+      )}
 
       <button
         type="button"
