@@ -5,6 +5,22 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 12, 2026 — UI Fix: Breeder Store Card Redirection & Aquarium Water Care Timers
+
+Fixed breeder store card redirection bugs and resolved stale/inactive water chemistry parameters timers.
+
+### Changes
+- **Breeder Store / Marketplace (`MarketplaceBoard.jsx`)**:
+  - Removed the card-level `onClick` handler from the listing cards which incorrectly took users to the "My Orders" tab with non-existent shipping/batch order IDs.
+  - Removed the `cursor: "pointer"` style from the listing cards.
+- **Aquarium Water Care Timers (`useUserTanks.js` & `TankList.jsx`)**:
+  - Updated `useUserTanks.js` to query local `db.actionLogs` dynamically for each tank, computing the actual latest water test (🧪) and water change (💧) timestamps.
+  - Replaced the single relative timer with separate `latestTestTime` and `latestChangeTime` states for each tank.
+  - Redesigned the right-hand card telemetry grid block into a structured, symmetric **Water Care** panel showing both the last water test time (🧪) and the last water change time (💧).
+  - Configured logging handlers (Quick Feed, Quick Clean, Quick Water Test, bulk loggers, inline details, and Poseidon AI actions listener) to call `fetchDashboardData()` immediately after writes, ensuring relative timers update in real-time.
+
+---
+
 ## June 12, 2026 — Feature: Premium Social Reef, Profile Metrics, Catalog Filters, and Breeder Store (Casual Mode)
 
 Redesigned multiple key screens in the application under Casual Mode to declutter the interface, refine terminology, and elevate the design to a premium, modern aesthetic.

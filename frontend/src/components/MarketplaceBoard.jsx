@@ -1023,22 +1023,12 @@ export function MarketplaceBoard({
                         <div 
                           key={item.isBatch ? `batch-${item.listingId}` : `spec-${item.tokenId}`} 
                           className={`glass-card ${pedigreeClass}`} 
-                          onClick={() => {
-                            if (onSelectCheckoutOrder) {
-                              if (item.isBatch) {
-                                onSelectCheckoutOrder("batch", item.listingId);
-                              } else {
-                                onSelectCheckoutOrder("shipping", item.tokenId);
-                              }
-                            }
-                          }}
                           style={{ 
                             padding: "1.5rem", 
                             display: "flex", 
                             flexDirection: "column", 
                             gap: "1rem",
                             background: "rgba(255,255,255,0.01)",
-                            cursor: "pointer",
                             ...(compatBorderColor && {
                               borderColor: compatBorderColor,
                               boxShadow: compatGlow,

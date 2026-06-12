@@ -372,9 +372,14 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       }
     }).catch(() => {});
 
-    window.addEventListener("aquadex_xp_added", fetchCompanion);
+    const handleXpAdded = async () => {
+      fetchCompanion();
+      await fetchDashboardData();
+    };
+
+    window.addEventListener("aquadex_xp_added", handleXpAdded);
     return () => {
-      window.removeEventListener("aquadex_xp_added", fetchCompanion);
+      window.removeEventListener("aquadex_xp_added", handleXpAdded);
     };
   }, [walletAccount]);
 
@@ -516,6 +521,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       setBulkLogResult({ count: targets.length, action: BULK_ACTION_LABELS[bulkLogAction].label });
       setBulkLogDetail("");
       fetchLocalActionLogs();
+      await fetchDashboardData();
       showToast(`${BULK_ACTION_LABELS[bulkLogAction].emoji} ${BULK_ACTION_LABELS[bulkLogAction].label} logged for ${targets.length} unit${targets.length !== 1 ? "s" : ""}`);
     } catch (err) {
       console.error("Bulk log failed:", err);
@@ -722,6 +728,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       : "🥣 Feeding logged"
     );
     fetchLocalActionLogs();
+    await fetchDashboardData();
   };
 
   const logFeedLongPress = async () => {
@@ -744,6 +751,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       : "🧹 Maintenance logged"
     );
     fetchLocalActionLogs();
+    await fetchDashboardData();
   };
 
   const logAlgaeLongPress = async () => {
@@ -808,6 +816,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     setInlineDetailOpen(false);
     setInlineDetailText("");
     fetchLocalActionLogs();
+    await fetchDashboardData();
   };
 
   const logTestClick = async () => {
@@ -823,6 +832,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       : "🧪 Water test recorded"
     );
     fetchLocalActionLogs();
+    await fetchDashboardData();
   };
 
   const logTestLongPress = () => {
@@ -1508,7 +1518,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                 topLevelTanks.map((tank) => {
                   const alerts = getChemistryAlerts(tank);
                   const hasAlert = alerts.length > 0;
-                  const latestLogTime = tank.latestLog ? getRelativeTime(tank.latestLog.timestamp) : "Never tested";
+                  const latestTestTime = tank.latestTestTimestamp ? getRelativeTime(tank.latestTestTimestamp) : "Never tested";
+                  const latestChangeTime = tank.latestChangeTimestamp ? getRelativeTime(tank.latestChangeTimestamp) : "Never changed";
                   const speciesName = tank.specimens.map(s => s.commonName).filter((v, i, a) => a.indexOf(v) === i).join(", ") || "No inhabitants";
 
                   return (
@@ -1604,9 +1615,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           </span>
                         </div>
                         <div style={{ textAlign: "right" }}>
-                          <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", display: "block" }}>Relative Timer</span>
-                          <strong style={{ color: "var(--text-primary)" }}>{latestLogTime}</strong>
-                          <span style={{ color: "var(--text-secondary)", fontSize: "0.75rem", display: "block" }}>Last Water Change</span>
+                          <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", display: "block" }}>Water Care</span>
+                          <strong style={{ color: "var(--text-primary)", fontSize: "0.85rem", display: "block", marginTop: "0.15rem" }}>
+                            🧪 Test: {latestTestTime}
+                          </strong>
+                          <span style={{ color: "var(--text-secondary)", fontSize: "0.75rem", display: "block", marginTop: "0.15rem" }}>
+                            💧 Change: {latestChangeTime}
+                          </span>
                         </div>
                       </div>
 

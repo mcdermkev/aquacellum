@@ -122,6 +122,41 @@ export function useUserTanks(contractAddress, walletAccount) {
         }
       }
 
+      // Populate latest test and change timestamps from actionLogs
+      for (const tank of allTanks) {
+        try {
+          const actionLogs = await db.actionLogs.where("tankId").equals(tank.id).toArray();
+          
+          // Latest Water Test
+          const testLogs = actionLogs.filter(
+            (l) => l.actionType === "Quick Water Test" || l.actionType === "Water Test" || l.actionType === "Detailed Test"
+          );
+          let latestTest = null;
+          if (testLogs.length > 0) {
+            testLogs.sort((a, b) => b.timestamp - a.timestamp);
+            latestTest = testLogs[0].timestamp;
+          }
+          if (tank.latestLog && (!latestTest || tank.latestLog.timestamp > latestTest)) {
+            latestTest = tank.latestLog.timestamp;
+          }
+          
+          // Latest Water Change
+          const changeLogs = actionLogs.filter(
+            (l) => l.actionType === "Water Change" || l.actionType === "Log Immediate Water Change" || (l.details && l.details.toLowerCase().includes("water change"))
+          );
+          let latestChange = null;
+          if (changeLogs.length > 0) {
+            changeLogs.sort((a, b) => b.timestamp - a.timestamp);
+            latestChange = changeLogs[0].timestamp;
+          }
+          
+          tank.latestTestTimestamp = latestTest;
+          tank.latestChangeTimestamp = latestChange;
+        } catch (e) {
+          console.warn("Failed to populate latest timestamps for tank:", tank.id, e);
+        }
+      }
+
       return allTanks;
     },
     staleTime: 1000 * 60 * 2,
