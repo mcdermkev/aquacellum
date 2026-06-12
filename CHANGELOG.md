@@ -5,6 +5,36 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 11, 2026 — Fix: Full Local-First Beta — Remove MetaMask From All Flows
+
+Extended the local-first relayer pattern to the entire app. No user action triggers MetaMask anymore — listings, purchases, escrow/handshake settlement, breeding/spawning, and species curation all run through Dexie. The only remaining wallet prompt is the explicit "Connect MetaMask" login choice.
+
+### Relayer (`relayer.js`) — new local-first functions
+- Listings: `relayCreateListing`, `relayCancelListing`, `relayCancelBatchListing`, `getLocalListings`.
+- Purchases: `relayPurchaseSpecimen`, `relayPurchaseMultiple`, `relayPurchaseBatch`.
+- Orders/escrow: `relayGetOrders`, `relayUpdateShippingOrder`, `relayUpdateBatchOrder`, `relaySettleHandshake`.
+- Breeding/curation: `relaySpawn`, `relayAddSpecies`.
+
+### Components converted (no more `getSigner()` writes)
+- `MarketplaceBoard.jsx`: buy / batch buy / cancel listing / cancel batch.
+- `CheckoutSummary.jsx`: consolidated checkout, in-person release, dispatch/release/dispute/resolve shipping, release/refund batch; `fetchOrders` and `loadAllListings` now merge local orders/listings.
+- `HandshakeVerification.jsx`: lock escrow, verify release, settle cash handshake.
+- `ListSpecimenModal.jsx`: approve (now no-op) + list; `verifyToken` falls back to local specimens.
+- `HatcheryLogs.jsx`: buy juveniles.
+- `SpawningWizard.jsx`: spawn + offspring minting.
+- `CurationQueuePanel.jsx`: species approval.
+- Removed unused `getSigner` imports from `BreedGallery.jsx`, `LocalBreederMap.jsx`, `FacilityTreeView.jsx`.
+
+### Data layer
+- `db.js` (schema v13): added `localListings`, `marketOrders`, `spawns` tables.
+- `useMarketplaceListings.js`: merges local beta listings so they survive the on-chain cache refresh.
+
+### Notes
+- Read paths still use read-only RPC (never prompt MetaMask) with local data merged in.
+- On-chain publishing is deferred to a future flow once meta-transaction/ownership delegation is added to the contracts.
+
+---
+
 ## June 11, 2026 — Fix: Remove MetaMask Popup from Tank Operations (Local-First Relayer)
 
 Routine tank operations (adding fish, moving specimens, logging water parameters) no longer trigger MetaMask. All day-to-day writes are now routed through the local-first Dexie relayer, matching the existing tank registration pattern.

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ethers, Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { addXp, XP_ACTIONS } from "../utils/xp";
-import { getProvider, getSigner } from "../utils/smartAccount";
+import { getProvider } from "../utils/smartAccount";
 import { compressImage } from "../utils/imageCompression";
 import { relayRegisterTank } from "../services/relayer";
 import { db } from "../db";

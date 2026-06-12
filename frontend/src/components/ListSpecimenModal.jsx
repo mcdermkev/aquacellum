@@ -3,7 +3,9 @@ import { ethers, Contract, parseEther } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
 import { addXp, XP_ACTIONS } from "../utils/xp";
-import { getProvider, getSigner } from "../utils/smartAccount";
+import { getProvider } from "../utils/smartAccount";
+import { relayCreateListing } from "../services/relayer";
+import { db } from "../db";
 import { Modal } from "./Modal";
 
 export function ListSpecimenModal({ 
@@ -85,6 +87,7 @@ export function ListSpecimenModal({
 
       setSpecimenInfo({
         id: Number(data.specimenId),
+        speciesId: Number(data.speciesId),
         commonName: speciesInfo.commonName,
         scientificName: speciesInfo.scientificName,
         sireId: Number(data.sireId),
@@ -102,6 +105,26 @@ export function ListSpecimenModal({
         setStep(2); // Go to approval step
       }
     } catch (err) {
+      // Beta fallback: check local-first specimens (Dexie) before failing
+      try {
+        const local = await db.specimens.get(Number(idToVerify));
+        if (local && (local.ownerAddress || "").toLowerCase() === walletAccount.toLowerCase()) {
+          setSpecimenInfo({
+            id: local.id,
+            speciesId: Number(local.speciesId),
+            commonName: local.commonName,
+            scientificName: local.scientificName,
+            sireId: Number(local.sireId || 0),
+            damId: Number(local.damId || 0),
+          });
+          setIsApproved(false);
+          setStep(2);
+          setChecking(false);
+          return;
+        }
+      } catch (localErr) {
+        console.warn("Local specimen lookup failed:", localErr);
+      }
       console.error("Verification failed:", err);
       setError(err.reason || err.message || "Failed to verify birth certificate ownership.");
     } finally {
@@ -121,18 +144,12 @@ export function ListSpecimenModal({
     setTxHash(null);
 
     try {
-      const signer = await getSigner();
-      const contract = new Contract(contractAddress, aquadexAbi, signer);
-
-      const tx = await contract.approve(marketplaceAddress, Number(tokenId));
-      setTxHash(tx.hash);
-      await tx.wait();
-
+      // Beta: no on-chain ERC-721 approval needed for local-first listings.
       setIsApproved(true);
       setStep(3);
     } catch (err) {
-      console.error("Approval transaction failed:", err);
-      setError(err.reason || err.message || "Approval transaction failed.");
+      console.error("Approval failed:", err);
+      setError(err.message || "Approval failed.");
     } finally {
       setSubmitting(false);
       setTxHash(null);
@@ -154,23 +171,26 @@ export function ListSpecimenModal({
     setTxHash(null);
 
     try {
-      const signer = await getSigner();
-      const marketContract = new Contract(marketplaceAddress, marketplaceAbi, signer);
-
       const priceEth = (parseFloat(price) / 1000).toString();
-      const priceWei = parseEther(priceEth);
-      let tx;
+      const shippingFeeEth = isShipping ? (parseFloat(shippingFee) / 1000).toString() : "0";
 
-      if (isShipping) {
-        const shippingFeeEth = (parseFloat(shippingFee) / 1000).toString();
-        const shippingFeeWei = parseEther(shippingFeeEth);
-        tx = await marketContract.createShippingListing(Number(tokenId), priceWei, shippingFeeWei);
-      } else {
-        tx = await marketContract.listSpecimen(Number(tokenId), priceWei);
+      // Beta: store listing locally (no MetaMask, no gas)
+      const result = await relayCreateListing({
+        tokenId: Number(tokenId),
+        priceEth,
+        shippingFeeEth,
+        isShipping,
+        seller: walletAccount,
+        speciesId: specimenInfo?.speciesId || 0,
+        commonName: specimenInfo?.commonName || "Specimen",
+        scientificName: specimenInfo?.scientificName || "Unknown",
+        sireId: specimenInfo?.sireId || 0,
+        damId: specimenInfo?.damId || 0,
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || "Listing failed");
       }
-
-      setTxHash(tx.hash);
-      await tx.wait();
 
       // Trigger XP Telemetry & Toast
       addXp(XP_ACTIONS.LIST_DIRECTORY?.points, XP_ACTIONS.LIST_DIRECTORY?.label);
@@ -178,8 +198,8 @@ export function ListSpecimenModal({
       if (onSuccess) onSuccess();
       onClose();
     } catch (err) {
-      console.error("Listing transaction failed:", err);
-      setError(err.reason || err.message || "Listing transaction failed.");
+      console.error("Listing failed:", err);
+      setError(err.message || "Listing failed.");
     } finally {
       setSubmitting(false);
       setTxHash(null);

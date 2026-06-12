@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { ethers, Contract, formatEther } from "ethers";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
 import { HandshakeVerification } from "./HandshakeVerification";
-import { getProvider, getSigner } from "../utils/smartAccount";
+import { getProvider } from "../utils/smartAccount";
+import { relayPurchaseBatch } from "../services/relayer";
 import { db } from "../db";
 import { addXp } from "../utils/xp";
 import { generateSpawnNarration } from "../utils/spawnNarration";
@@ -418,15 +419,17 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
 
     try {
       setBuyingMap(prev => ({ ...prev, [listing.listingId]: true }));
-      const signer = await getSigner();
-      const marketplaceContract = new Contract(marketplaceAddress, marketplaceAbi, signer);
 
-      const totalPrice = BigInt(quantity) * BigInt(listing.pricePerFish);
-
-      const tx = await marketplaceContract.purchaseBatch(listing.listingId, quantity, {
-        value: totalPrice
+      // Beta: purchase batch locally (no MetaMask, no gas)
+      const result = await relayPurchaseBatch({
+        listingId: listing.listingId,
+        quantity,
+        buyer: walletAccount,
+        seller: listing.seller || "",
+        pricePerFishEth: listing.price || "0",
+        commonName: listing.commonName || "Juvenile Fry Batch",
       });
-      await tx.wait();
+      if (!result.success) throw new Error(result.error || "Purchase failed");
 
       showToast(`✅ Successfully purchased ${quantity} juveniles!`);
       setRefreshTrigger(prev => prev + 1);

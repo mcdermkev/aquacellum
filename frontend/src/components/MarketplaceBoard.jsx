@@ -5,7 +5,8 @@ import aquadexAbi from "../abi/AquadexManager.json";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
 import { ListSpecimenModal } from "./ListSpecimenModal";
 import { addXp, XP_ACTIONS } from "../utils/xp";
-import { getProvider, getSigner } from "../utils/smartAccount";
+import { getProvider } from "../utils/smartAccount";
+import { relayPurchaseSpecimen, relayPurchaseBatch, relayCancelListing, relayCancelBatchListing } from "../services/relayer";
 import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";
 import { fetchListingsByBreed } from "../utils/listingManager";
 import { useSpeciesSearch } from "../hooks/useSpeciesSearch";
@@ -240,23 +241,19 @@ export function MarketplaceBoard({
     setActionTxHash((prev) => ({ ...prev, [tokenId]: null }));
 
     try {
-      const signer = await getSigner();
-      const marketContract = new Contract(marketplaceAddress, marketplaceAbi, signer);
+      const listing = listings.find(l => Number(l.tokenId) === Number(tokenId)) || {};
 
-      let tx;
-      if (isShipping) {
-        const totalWei = parseEther(priceEther) + parseEther(shippingFeeEther);
-        tx = await marketContract.purchaseShippingListing(tokenId, {
-          value: totalWei,
-        });
-      } else {
-        tx = await marketContract.purchaseSpecimen(tokenId, {
-          value: parseEther(priceEther),
-        });
-      }
-
-      setActionTxHash((prev) => ({ ...prev, [tokenId]: tx.hash }));
-      const receipt = await tx.wait();
+      // Beta: purchase locally (no MetaMask, no gas)
+      const result = await relayPurchaseSpecimen({
+        tokenId,
+        buyer: walletAccount,
+        seller: listing.seller || "",
+        priceEth: priceEther,
+        shippingFeeEth: shippingFeeEther || "0",
+        isShipping,
+        commonName: listing.commonName || "Specimen",
+      });
+      if (!result.success) throw new Error(result.error || "Purchase failed");
 
       // Trigger XP Telemetry & Toast
       addXp(XP_ACTIONS.CLAIM_EXCHANGE?.points, XP_ACTIONS.CLAIM_EXCHANGE?.label);
@@ -268,7 +265,7 @@ export function MarketplaceBoard({
         await fetchListings();
       }
     } catch (err) {
-      console.error("Exchange transaction failed:", err);
+      console.error("Exchange failed:", err);
       setActionError(mapContractError(err, casualModeActive));
     } finally {
       setActionLoading((prev) => ({ ...prev, [tokenId]: false }));
@@ -282,47 +279,29 @@ export function MarketplaceBoard({
     setActionTxHash(prev => ({ ...prev, [`batch-${listingId}`]: null }));
     
     try {
-      const signer = await getSigner();
-      const marketContract = new Contract(marketplaceAddress, marketplaceAbi, signer);
-      
-      const priceWei = parseEther(pricePerFishEther) * BigInt(quantity);
-      
-      const tx = await marketContract.purchaseBatch(listingId, quantity, {
-        value: priceWei
-      });
-      
-      setActionTxHash(prev => ({ ...prev, [`batch-${listingId}`]: tx.hash }));
-      const receipt = await tx.wait();
-      
-      addXp(XP_ACTIONS.CLAIM_EXCHANGE?.points, XP_ACTIONS.CLAIM_EXCHANGE?.label);
-      
-      // Parse purchaseId from logs
-      let purchaseId = null;
-      try {
-        const event = receipt.logs
-          .map(log => {
-            try {
-              return marketContract.interface.parseLog(log);
-            } catch (e) {
-              return null;
-            }
-          })
-          .find(parsed => parsed && parsed.name === "BatchPurchased");
+      const listing = listings.find(l => Number(l.listingId || l.id) === Number(listingId)) || {};
 
-        if (event) {
-          purchaseId = Number(event.args.purchaseId);
-        }
-      } catch (err) {
-        console.warn("Could not parse BatchPurchased log details:", err);
-      }
-      
+      // Beta: purchase batch locally (no MetaMask, no gas)
+      const result = await relayPurchaseBatch({
+        listingId,
+        quantity,
+        buyer: walletAccount,
+        seller: listing.seller || "",
+        pricePerFishEth: pricePerFishEther,
+        commonName: listing.commonName || "Juvenile Fry Batch",
+      });
+      if (!result.success) throw new Error(result.error || "Batch purchase failed");
+
+      addXp(XP_ACTIONS.CLAIM_EXCHANGE?.points, XP_ACTIONS.CLAIM_EXCHANGE?.label);
+
+      const purchaseId = result.purchaseId;
       if (onSelectCheckoutOrder && purchaseId) {
         onSelectCheckoutOrder("batch", purchaseId);
       } else {
         await fetchListings();
       }
     } catch (err) {
-      console.error("Batch purchase transaction failed:", err);
+      console.error("Batch purchase failed:", err);
       setActionError(mapContractError(err, casualModeActive));
     } finally {
       setActionLoading(prev => ({ ...prev, [`batch-${listingId}`]: false }));
@@ -336,12 +315,8 @@ export function MarketplaceBoard({
     setActionTxHash((prev) => ({ ...prev, [tokenId]: null }));
 
     try {
-      const signer = await getSigner();
-      const marketContract = new Contract(marketplaceAddress, marketplaceAbi, signer);
-
-      const tx = await marketContract.cancelListing(tokenId);
-      setActionTxHash((prev) => ({ ...prev, [tokenId]: tx.hash }));
-      await tx.wait();
+      const result = await relayCancelListing(tokenId);
+      if (!result.success) throw new Error(result.error || "Cancel failed");
 
       await fetchListings();
     } catch (err) {
@@ -359,12 +334,8 @@ export function MarketplaceBoard({
     setActionTxHash((prev) => ({ ...prev, [`batch-${listingId}`]: null }));
 
     try {
-      const signer = await getSigner();
-      const marketContract = new Contract(marketplaceAddress, marketplaceAbi, signer);
-
-      const tx = await marketContract.cancelBatchListing(listingId);
-      setActionTxHash((prev) => ({ ...prev, [`batch-${listingId}`]: tx.hash }));
-      await tx.wait();
+      const result = await relayCancelBatchListing(listingId);
+      if (!result.success) throw new Error(result.error || "Cancel failed");
 
       await fetchListings();
     } catch (err) {

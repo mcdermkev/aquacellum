@@ -160,6 +160,31 @@ db.version(12).stores({
   specimens: "id, ownerAddress, speciesId, currentTankId, status, createdAt"
 });
 
+// Version 13: Add marketplace local-first tables (beta relayer).
+// Makes listings, purchases, escrow orders, and spawn records work without MetaMask.
+//   - localListings: user-created beta listings (persistent; survives the on-chain
+//       listings cache clear in useMarketplaceListings). Merged into board reads.
+//   - marketOrders: purchase/escrow orders (shipping + batch) with status state machine.
+//   - spawns: spawn records with offspring specimen IDs.
+db.version(13).stores({
+  species: "specCode, commonName, scientificName, type, difficulty",
+  listings: "id, tokenId, seller, price, isBatch, speciesId",
+  tanks: "id, ownerAddress, name, active",
+  userProfile: "walletAddress, level, prestigeXp, hobbyistXp, isCouncilMember, onboardingComplete",
+  breederCompanion: "walletAddress, eggState, companionXp, currentTier, selectedStats, zoneHash",
+  pendingHandshakes: "purchaseId, pin, salt, buyerAddress",
+  speciesManifest: "speciesId, scientificName, commonName, contractAddress, cachedAt",
+  actionLogs: "++id, tankId, actionType, timestamp, details",
+  spawnGrowout: "++id, spawnId, timestamp, type",
+  feedCache: "++id, contentId, authorWallet, createdAt, [authorWallet+createdAt]",
+  socialNotifications: "++id, category, isRead, createdAt",
+  draftContent: "++id, type, status, createdAt",
+  specimens: "id, ownerAddress, speciesId, currentTankId, status, createdAt",
+  localListings: "id, seller, speciesId, isBatch, listingId, tokenId",
+  marketOrders: "++key, orderType, status, state, buyer, seller, tokenId, purchaseId, listingId",
+  spawns: "spawnId, sireId, damId, tankId, speciesId, status, timestamp"
+});
+
 /**
  * 1. FULL LEXICAL JSON DATA EXPORT:
  * Interfaces directly with our Dexie.js database layers.

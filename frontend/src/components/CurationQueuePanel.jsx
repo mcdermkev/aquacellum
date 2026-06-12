@@ -1,10 +1,10 @@
 import React from "react";
-import { getSigner } from "../utils/smartAccount";
+import { relayAddSpecies } from "../services/relayer";
 
 /**
  * CurationQueuePanel — Curator review panel for off-chain species proposals.
- * Displays pending species suggestions and allows curator approval (on-chain tx)
- * or rejection.
+ * Displays pending species suggestions and allows curator approval (local-first
+ * in beta — no MetaMask) or rejection.
  */
 export function CurationQueuePanel({ 
   contractInstance, 
@@ -17,36 +17,26 @@ export function CurationQueuePanel({
   const { data: suggestions = [], isLoading } = suggestionsQuery;
 
   const handleApprove = async (item) => {
-    if (!contractInstance) return;
     try {
-      const signer = await getSigner();
-      const contractWithSigner = contractInstance.connect(signer);
-      
-      const minTempX10 = Math.round(Number(item.minTemp) * 10);
-      const maxTempX10 = Math.round(Number(item.maxTemp) * 10);
-      const minPhX10 = Math.round(Number(item.minPh) * 10);
-      const maxPhX10 = Math.round(Number(item.maxPh) * 10);
-      
-      const ipfsUri = item.proofUrl || `ipfs://QmSpeciesCanonicalMetadataReferenceHash_${item.scientificName.replace(" ", "_")}`;
+      // Beta: register species locally (no MetaMask, no gas)
+      const result = await relayAddSpecies({
+        scientificName: item.scientificName,
+        commonName: item.commonName,
+        ipfsUri: item.proofUrl || `ipfs://QmSpeciesCanonicalMetadataReferenceHash_${item.scientificName.replace(" ", "_")}`,
+        careLevel: Number(item.careLevel),
+        minTemp: Number(item.minTemp),
+        maxTemp: Number(item.maxTemp),
+        minPh: Number(item.minPh),
+        maxPh: Number(item.maxPh),
+      });
+      if (!result.success) throw new Error(result.error || "Species registration failed");
 
-      const tx = await contractWithSigner.addSpecies(
-        item.scientificName,
-        item.commonName,
-        ipfsUri,
-        Number(item.careLevel),
-        minTempX10,
-        maxTempX10,
-        minPhX10,
-        maxPhX10
-      );
-      await tx.wait();
-
-      await updateSuggestionStatus({ id: item.id, status: "Approved (Registered on Base L2)" });
+      await updateSuggestionStatus({ id: item.id, status: "Approved (Local Beta Registry)" });
       await refetchContractSpecies();
       if (showToast) showToast(`✅ Species "${item.commonName}" successfully registered!`);
     } catch (err) {
-      console.error("Failed to approve species transaction:", err);
-      if (showToast) showToast(`❌ Transaction failed: ${err.message || err}`);
+      console.error("Failed to approve species:", err);
+      if (showToast) showToast(`❌ Registration failed: ${err.message || err}`);
     }
   };
 

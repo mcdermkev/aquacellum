@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ethers, Contract, ZeroAddress } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
-import { getProvider, getSigner } from "../utils/smartAccount";
+import { getProvider } from "../utils/smartAccount";
 import { HatcheryLogs } from "./HatcheryLogs";
 import { MarketplaceBoard } from "./MarketplaceBoard";
 import { useSpeciesSearch } from "../hooks/useSpeciesSearch";
