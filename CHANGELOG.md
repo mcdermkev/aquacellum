@@ -5,6 +5,20 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 11, 2026 — Feature: Inline "Add Fish" Button on Tank View
+
+Added a one-click "Add Fish" action directly in the tank detail Fish tab, so users no longer need to navigate out to the separate registration page.
+
+### Changes (`TankList.jsx`)
+- "+ Add Fish" button in the Fish sub-tab header, plus a prominent CTA in the empty state ("+ Add your first fish").
+- New inline Add Fish sliding drawer: searchable species picker (from the on-chain catalog via `useContractSpecies`), one-tap select, and submit.
+- Uses `relayMintSpecimen` (local-first, no MetaMask). On success: awards XP, shows a toast, dispatches `aquadex:specimen_added`, and refreshes the active tank.
+- Escape-to-close wired into the existing drawer keyboard handler.
+
+The standalone "Add Fish" tab remains for the onboarding tour and as an alternate path.
+
+---
+
 ## June 11, 2026 — Fix: Full Local-First Beta — Remove MetaMask From All Flows
 
 Extended the local-first relayer pattern to the entire app. No user action triggers MetaMask anymore — listings, purchases, escrow/handshake settlement, breeding/spawning, and species curation all run through Dexie. The only remaining wallet prompt is the explicit "Connect MetaMask" login choice.
