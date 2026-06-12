@@ -4,17 +4,20 @@ import aquadexAbi from "../abi/AquadexManager.json";
 import { addXp, XP_ACTIONS } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
 import { compressImage } from "../utils/imageCompression";
-import { relayRegisterTank } from "../services/relayer";
+import { relayRegisterTank, relayMintSpecimen } from "../services/relayer";
 import { db } from "../db";
+import { useContractSpecies } from "../hooks/useSpeciesData";
 
 const TANK_TYPES = ["Freshwater", "Saltwater", "Brackish", "Pond"];
 const CONTAINMENT_TYPES = ["Tank", "Tub", "Basket"];
 
-export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank, onReload, openRegisterOnTreeMount, onCloseRegister }) {
+export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank, onReload, openRegisterOnTreeMount, onCloseRegister, casualModeActive = false }) {
   const [tanks, setTanks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
+
+  const { data: contractSpecies = [] } = useContractSpecies(contractAddress);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -26,17 +29,20 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
   const [registerForm, setRegisterForm] = useState({
     name: "",
     tankType: "0",
-    volumeLiters: "50",
+    volumeLiters: "13", // Represents volume in gallons in the form state
     containment: "0",
     parentUnitId: "0",
-    facility: "Main Room",
-    room: "Aisle 1",
-    rack: "Tier 2"
+    facility: casualModeActive ? "" : "Main Room",
+    room: casualModeActive ? "" : "Aisle 1",
+    rack: casualModeActive ? "" : "Tier 2"
   });
   const [registering, setRegistering] = useState(false);
   const [registerError, setRegisterError] = useState(null);
   const [registerTx, setRegisterTx] = useState(null);
   const [selectedPhoto, setSelectedPhoto] = useState("");
+  const [currentSelectSpeciesId, setCurrentSelectSpeciesId] = useState("");
+  const [currentSelectQty, setCurrentSelectQty] = useState(1);
+  const [addedFishList, setAddedFishList] = useState([]);
 
   const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
@@ -64,9 +70,42 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
     }
   }, [openRegisterOnTreeMount]);
 
+  const handleAddFishToList = () => {
+    if (!currentSelectSpeciesId) return;
+    const species = contractSpecies.find(s => String(s.speciesId) === String(currentSelectSpeciesId));
+    if (!species) return;
+
+    setAddedFishList(prev => {
+      const idx = prev.findIndex(item => String(item.speciesId) === String(currentSelectSpeciesId));
+      if (idx > -1) {
+        const copy = [...prev];
+        copy[idx].quantity += currentSelectQty;
+        return copy;
+      } else {
+        return [...prev, {
+          speciesId: species.speciesId,
+          commonName: species.commonName,
+          scientificName: species.scientificName,
+          canonicalIpfsUri: species.canonicalIpfsUri,
+          quantity: currentSelectQty
+        }];
+      }
+    });
+
+    setCurrentSelectSpeciesId("");
+    setCurrentSelectQty(1);
+  };
+
+  const handleRemoveFishFromList = (index) => {
+    setAddedFishList(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleCloseRegisterModal = () => {
     setIsRegisterOpen(false);
     setSelectedPhoto("");
+    setCurrentSelectSpeciesId("");
+    setCurrentSelectQty(1);
+    setAddedFishList([]);
     if (onCloseRegister) onCloseRegister();
   };
 
@@ -81,60 +120,88 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
       setLoading(true);
       setError(null);
 
-      const provider = getProvider();
-      const contract = new Contract(contractAddress, aquadexAbi, provider);
+      // Beta: Read from Dexie first (local-first approach)
+      const localTanks = await db.tanks.where("ownerAddress").equals(walletAccount).toArray();
+      const formattedLocalTanks = localTanks.map(t => ({
+        ...t,
+        logs: t.logs || [],
+        latestLog: t.latestLog || null,
+        specimens: t.specimens || []
+      }));
 
-      // 1. Discover all tank IDs
-      const tankIds = [];
-      let index = 0;
-      while (true) {
-        try {
-          const id = await contract.ownerTanks(walletAccount, index);
-          tankIds.push(Number(id));
-          index++;
-        } catch (e) {
-          break;
+      // Also try on-chain for any historically registered tanks
+      let onChainTanks = [];
+      try {
+        const provider = getProvider();
+        const contract = new Contract(contractAddress, aquadexAbi, provider);
+
+        // 1. Discover all tank IDs
+        const tankIds = [];
+        let index = 0;
+        while (true) {
+          try {
+            const id = await contract.ownerTanks(walletAccount, index);
+            tankIds.push(Number(id));
+            index++;
+          } catch (e) {
+            break;
+          }
+        }
+
+        // 2. Query details in parallel
+        if (tankIds.length > 0) {
+          onChainTanks = await Promise.all(
+            tankIds.map(async (id) => {
+              const tankData = await contract.tanks(id);
+              
+              // Latest parameter log
+              let latestLog = null;
+              try {
+                let logIndex = 0;
+                while (true) {
+                  try {
+                    const log = await contract.tankParameterLogs(id, logIndex);
+                    latestLog = log;
+                    logIndex++;
+                  } catch (e) {
+                    break;
+                  }
+                }
+              } catch (e) {}
+
+              return {
+                id,
+                name: tankData.name,
+                tankType: Number(tankData.tankType),
+                volumeLiters: Number(tankData.volumeLiters),
+                creationTimestamp: Number(tankData.creationTimestamp),
+                active: tankData.active,
+                containment: Number(tankData.containment),
+                parentUnitId: Number(tankData.parentUnitId),
+                facility: tankData.facility || "Main Room",
+                room: tankData.room || "Garage Rack",
+                rack: tankData.rack || "Outdoor Ponds",
+                latestLog,
+                logs: [],
+                specimens: []
+              };
+            })
+          );
+          onChainTanks = onChainTanks.filter((t) => t.active);
+        }
+      } catch (chainErr) {
+        console.warn("On-chain query failed inside tree view:", chainErr.message);
+      }
+
+      // Merge: local + on-chain (deduplicate by id)
+      const allTanks = [...formattedLocalTanks];
+      for (const oct of onChainTanks) {
+        if (!allTanks.some((t) => t.id === oct.id)) {
+          allTanks.push(oct);
         }
       }
 
-      // 2. Query details in parallel
-      const tankDetails = await Promise.all(
-        tankIds.map(async (id) => {
-          const tankData = await contract.tanks(id);
-          
-          // Latest parameter log
-          let latestLog = null;
-          try {
-            let logIndex = 0;
-            while (true) {
-              try {
-                const log = await contract.tankParameterLogs(id, logIndex);
-                latestLog = log;
-                logIndex++;
-              } catch (e) {
-                break;
-              }
-            }
-          } catch (e) {}
-
-          return {
-            id,
-            name: tankData.name,
-            tankType: Number(tankData.tankType),
-            volumeLiters: Number(tankData.volumeLiters),
-            creationTimestamp: Number(tankData.creationTimestamp),
-            active: tankData.active,
-            containment: Number(tankData.containment),
-            parentUnitId: Number(tankData.parentUnitId),
-            facility: tankData.facility || "Main Room",
-            room: tankData.room || "Garage Rack",
-            rack: tankData.rack || "Outdoor Ponds",
-            latestLog
-          };
-        })
-      );
-
-      setTanks(tankDetails.filter((t) => t.active));
+      setTanks(allTanks.filter((t) => t.active));
     } catch (err) {
       console.error("Error fetching tanks for tree view:", err);
       setError("Failed to query facility containment units.");
@@ -160,7 +227,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
       const result = await relayRegisterTank({
         name: registerForm.name,
         tankType: Number(registerForm.tankType),
-        volumeLiters: Number(registerForm.volumeLiters),
+        volumeLiters: Math.round(Number(registerForm.volumeLiters) * 3.78541),
         containment: Number(registerForm.containment),
         parentUnitId: Number(registerForm.parentUnitId),
         facility: registerForm.facility || "Main Room",
@@ -202,6 +269,30 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
         }
       }
 
+      if (casualModeActive && addedFishList.length > 0) {
+        try {
+          for (const fish of addedFishList) {
+            for (let q = 0; q < fish.quantity; q++) {
+              await relayMintSpecimen({
+                speciesId: Number(fish.speciesId),
+                birthTimestamp: Math.floor(Date.now() / 1000),
+                breeder: walletAccount,
+                currentTankId: Number(newTankId),
+                sireId: 0,
+                damId: 0,
+                ipfsMetadataUri: fish.canonicalIpfsUri || "",
+                ownerAddress: walletAccount,
+                commonName: fish.commonName || "Specimen",
+                scientificName: fish.scientificName || "Unknown",
+              });
+            }
+          }
+        } catch (specErr) {
+          console.error("Optional fish minting failed:", specErr);
+          showToast("⚠️ Tank added, but failed to automatically add some fish.");
+        }
+      }
+
       addXp(XP_ACTIONS.REGISTER_TANK.points, XP_ACTIONS.REGISTER_TANK.label);
 
       // Notify onboarding tour / listeners that a tank was registered (no behavioral change)
@@ -210,14 +301,17 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
       setRegisterForm({
         name: "",
         tankType: "0",
-        volumeLiters: "50",
+        volumeLiters: "13",
         containment: "0",
         parentUnitId: "0",
-        facility: "Main Room",
-        room: "Aisle 1",
-        rack: "Tier 2"
+        facility: casualModeActive ? "" : "Main Room",
+        room: casualModeActive ? "" : "Aisle 1",
+        rack: casualModeActive ? "" : "Tier 2"
       });
       setSelectedPhoto("");
+      setCurrentSelectSpeciesId("");
+      setCurrentSelectQty(1);
+      setAddedFishList([]);
       handleCloseRegisterModal();
       await fetchTanksData();
       if (onReload) onReload();
@@ -478,9 +572,13 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
             background: "var(--bg-secondary)",
             border: "1px solid var(--glass-border-hover)"
           }}>
-            <h3 style={{ fontSize: "1.5rem", marginBottom: "0.25rem" }}>Register Containment Unit</h3>
+            <h3 style={{ fontSize: "1.5rem", marginBottom: "0.25rem" }}>
+              {casualModeActive ? "Add New Tank" : "Register Containment Unit"}
+            </h3>
             <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
-              Define locations and nesting containment structures in the registry.
+              {casualModeActive 
+                ? "Create a new aquarium system to start tracking your fish and water parameters."
+                : "Define locations and nesting containment structures in the registry."}
             </p>
 
             {registerError && (
@@ -513,18 +611,22 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
             <form onSubmit={handleRegisterSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "1rem", alignItems: "end" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Unit Name</label>
+                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>
+                    {casualModeActive ? "Tank Name" : "Unit Name"}
+                  </label>
                   <input 
                     type="text" 
                     value={registerForm.name}
                     onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
-                    placeholder="e.g. Rack A - Basket 4"
+                    placeholder={casualModeActive ? "e.g. My Living Room Tank" : "e.g. Rack A - Basket 4"}
                     required
                     style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Unit Photo</label>
+                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>
+                    {casualModeActive ? "Photo" : "Unit Photo"}
+                  </label>
                   <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
                     <label style={{ 
                       flex: 1, 
@@ -574,11 +676,15 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                     onChange={(e) => setRegisterForm({ ...registerForm, tankType: e.target.value })}
                     style={{ width: "100%", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
                   >
-                    {TANK_TYPES.map((t, idx) => <option key={idx} value={idx}>{t}</option>)}
+                    {[
+                      { label: "Freshwater", value: "0" },
+                      { label: "Brackish", value: "2" },
+                      { label: "Pond", value: "3" }
+                    ].map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Volume (Liters)</label>
+                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Volume (Gallons)</label>
                   <input 
                     type="number" 
                     value={registerForm.volumeLiters}
@@ -589,64 +695,147 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Containment Type</label>
-                  <select 
-                    value={registerForm.containment}
-                    onChange={(e) => setRegisterForm({ ...registerForm, containment: e.target.value })}
-                    style={{ width: "100%", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
-                  >
-                    {CONTAINMENT_TYPES.map((c, idx) => <option key={idx} value={idx}>{c}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Parent Unit</label>
-                  <select 
-                    value={registerForm.parentUnitId}
-                    onChange={(e) => setRegisterForm({ ...registerForm, parentUnitId: e.target.value })}
-                    style={{ width: "100%", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
-                  >
-                    <option value="0">None (Top-Level)</option>
-                    {possibleParents.map(parent => (
-                      <option key={parent.id} value={parent.id}>{parent.name} (ID: {parent.id})</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              {casualModeActive && (
+                <div style={{ marginTop: "1.25rem", borderTop: "1px solid var(--glass-border)", paddingTop: "1rem" }}>
+                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
+                    🐠 Add Fish to Tank (Optional)
+                  </label>
+                  
+                  <div style={{ display: "flex", gap: "0.5rem", alignItems: "end" }}>
+                    <div style={{ flex: 2 }}>
+                      <span style={{ display: "block", fontSize: "0.65rem", color: "var(--text-muted)", marginBottom: "0.2rem" }}>Select Fish</span>
+                      <select 
+                        value={currentSelectSpeciesId}
+                        onChange={(e) => setCurrentSelectSpeciesId(e.target.value)}
+                        style={{ width: "100%", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.8rem" }}
+                      >
+                        <option value="">-- Choose Fish --</option>
+                        {contractSpecies.map(s => (
+                          <option key={s.speciesId} value={s.speciesId}>
+                            {s.commonName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div style={{ width: "80px" }}>
+                      <span style={{ display: "block", fontSize: "0.65rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>Qty</span>
+                      <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", borderRadius: "4px", height: "35px" }}>
+                        <button 
+                          type="button" 
+                          onClick={() => setCurrentSelectQty(prev => Math.max(1, prev - 1))}
+                          style={{ background: "none", border: "none", color: "#fff", width: "26px", height: "100%", cursor: "pointer", fontSize: "0.95rem", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
+                        >
+                          -
+                        </button>
+                        <span style={{ flex: 1, textAlign: "center", fontSize: "0.85rem", color: "#fff", minWidth: "20px", fontWeight: "600" }}>
+                          {currentSelectQty}
+                        </span>
+                        <button 
+                          type="button" 
+                          onClick={() => setCurrentSelectQty(prev => prev + 1)}
+                          style={{ background: "none", border: "none", color: "#fff", width: "26px", height: "100%", cursor: "pointer", fontSize: "0.95rem", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddFishToList}
+                      className="btn-secondary"
+                      style={{ padding: "0.5rem 0.75rem", fontSize: "0.8rem", borderRadius: "4px" }}
+                    >
+                      + Add
+                    </button>
+                  </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Facility</label>
-                  <input 
-                    type="text" 
-                    value={registerForm.facility}
-                    onChange={(e) => setRegisterForm({ ...registerForm, facility: e.target.value })}
-                    placeholder="e.g. Main Room"
-                    style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
-                  />
+                  {/* List of Added Fish */}
+                  {addedFishList.length > 0 && (
+                    <div style={{ marginTop: "0.75rem", background: "rgba(0,0,0,0.2)", borderRadius: "6px", padding: "0.5rem", border: "1px dashed var(--glass-border)" }}>
+                      <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginBottom: "0.25rem", fontWeight: "600" }}>Selected Fish to Add:</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                        {addedFishList.map((f, idx) => (
+                          <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.02)", padding: "0.25rem 0.5rem", borderRadius: "4px", fontSize: "0.85rem" }}>
+                            <span style={{ color: "#fff" }}>
+                              <strong style={{ color: "var(--accent-blue)" }}>{f.quantity}x</strong> {f.commonName}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveFishFromList(idx)}
+                              style={{ background: "none", border: "none", color: "var(--accent-red)", cursor: "pointer", fontSize: "0.85rem", fontWeight: "bold" }}
+                            >
+                              &times;
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Room</label>
-                  <input 
-                    type="text" 
-                    value={registerForm.room}
-                    onChange={(e) => setRegisterForm({ ...registerForm, room: e.target.value })}
-                    placeholder="e.g. Room B"
-                    style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Rack</label>
-                  <input 
-                    type="text" 
-                    value={registerForm.rack}
-                    onChange={(e) => setRegisterForm({ ...registerForm, rack: e.target.value })}
-                    placeholder="e.g. Rack 3"
-                    style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
-                  />
-                </div>
-              </div>
+              )}
+
+              {!casualModeActive && (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Containment Type</label>
+                      <select 
+                        value={registerForm.containment}
+                        onChange={(e) => setRegisterForm({ ...registerForm, containment: e.target.value })}
+                        style={{ width: "100%", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                      >
+                        {CONTAINMENT_TYPES.map((c, idx) => <option key={idx} value={idx}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Parent Unit</label>
+                      <select 
+                        value={registerForm.parentUnitId}
+                        onChange={(e) => setRegisterForm({ ...registerForm, parentUnitId: e.target.value })}
+                        style={{ width: "100%", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                      >
+                        <option value="0">None (Top-Level)</option>
+                        {possibleParents.map(parent => (
+                          <option key={parent.id} value={parent.id}>{parent.name} (ID: {parent.id})</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Facility</label>
+                      <input 
+                        type="text" 
+                        value={registerForm.facility}
+                        onChange={(e) => setRegisterForm({ ...registerForm, facility: e.target.value })}
+                        placeholder="e.g. Main Room"
+                        style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Room</label>
+                      <input 
+                        type="text" 
+                        value={registerForm.room}
+                        onChange={(e) => setRegisterForm({ ...registerForm, room: e.target.value })}
+                        placeholder="e.g. Room B"
+                        style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Rack</label>
+                      <input 
+                        type="text" 
+                        value={registerForm.rack}
+                        onChange={(e) => setRegisterForm({ ...registerForm, rack: e.target.value })}
+                        placeholder="e.g. Rack 3"
+                        style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
                 <button 

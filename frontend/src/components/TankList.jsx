@@ -49,6 +49,242 @@ const getTrackBackground = (minVal, maxVal, safeMin, safeMax) => {
   return `linear-gradient(to right, rgba(239, 68, 68, 0.45) 0%, rgba(239, 68, 68, 0.45) ${pctMin}%, rgba(34, 197, 94, 0.65) ${pctMin}%, rgba(34, 197, 94, 0.65) ${pctMax}%, rgba(239, 68, 68, 0.45) ${pctMax}%, rgba(239, 68, 68, 0.45) 100%)`;
 };
 
+/* ─── ActivityLog ────────────────────────────────────────────── */
+const ACTION_COLORS = {
+  "Water Change": "#38bdf8",
+  "Fed Fish": "#34d399",
+  "Cleaned Filter": "#a78bfa",
+  "Tested Water": "#fbbf24",
+  "Added Fertilizer": "#6ee7b7",
+  "Dosed Medication": "#f87171",
+};
+
+function ActivityLog({ onChainLogs, actionLogs, casualModeActive }) {
+  // Safely extract primitive values from ethers.js Result objects (never spread them)
+  const safeOnChain = Array.isArray(onChainLogs) ? onChainLogs : [];
+  const safeAction  = Array.isArray(actionLogs)  ? actionLogs  : [];
+
+  const waterItems = safeOnChain.map((l, i) => {
+    const ts        = Number(l.timestamp || 0) * 1000;
+    const tempRaw   = l.tempCelsiusX10 !== undefined ? Number(l.tempCelsiusX10) : (l.temp !== undefined ? Number(l.temp) : 0);
+    const phRaw     = l.phX10          !== undefined ? Number(l.phX10)          : (l.ph   !== undefined ? Number(l.ph)   : 0);
+    const notesStr  = typeof l.notes === "string" ? l.notes : "";
+    return { _type: "water", _ts: ts, _id: i, tempRaw, phRaw, notesStr };
+  });
+
+  const actionItems = safeAction.map((l, i) => ({
+    _type:      "action",
+    _ts:        Number(l.timestamp || 0) * 1000,
+    _id:        i,
+    actionType: typeof l.actionType === "string" ? l.actionType : "Care Log",
+    details:    typeof l.details    === "string" ? l.details    : "",
+  }));
+
+  const merged = [...waterItems, ...actionItems].sort((a, b) => b._ts - a._ts);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "280px", overflowY: "auto" }}>
+      <strong style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+        {casualModeActive ? "Activity Log" : "Environmental Logs History"}
+      </strong>
+      {merged.length === 0 ? (
+        <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", padding: "2rem", textAlign: "center" }}>
+          No activity logged yet. Use Quick Actions to log care tasks!
+        </p>
+      ) : merged.map((log) =>
+        log._type === "action" ? (
+          <div key={`a-${log._id}`} style={{
+            padding: "0.65rem 0.85rem",
+            background: "rgba(56,189,248,0.04)",
+            border: `1px solid ${(ACTION_COLORS[log.actionType] || "#38bdf8")}33`,
+            borderLeft: `3px solid ${ACTION_COLORS[log.actionType] || "#38bdf8"}`,
+            borderRadius: "8px",
+            fontSize: "0.8rem",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
+              <strong style={{ color: ACTION_COLORS[log.actionType] || "#38bdf8" }}>{log.actionType}</strong>
+              <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>{new Date(log._ts).toLocaleString()}</span>
+            </div>
+            {log.details ? <span style={{ color: "var(--text-secondary)" }}>{log.details}</span> : null}
+          </div>
+        ) : (
+          <div key={`w-${log._id}`} style={{
+            padding: "0.65rem 0.85rem",
+            background: "rgba(255,255,255,0.01)",
+            border: "1px solid var(--glass-border)",
+            borderLeft: "3px solid var(--accent-green)",
+            borderRadius: "8px",
+            fontSize: "0.75rem",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.2rem" }}>
+              <strong style={{ color: "var(--accent-green)" }}>💧 Water Parameters</strong>
+              <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>{new Date(log._ts).toLocaleString()}</span>
+            </div>
+            <span style={{ color: "var(--accent-blue)" }}>
+              Temp: {(log.tempRaw / 10).toFixed(1)}°C ({((log.tempRaw / 10) * 9 / 5 + 32).toFixed(1)}°F) | pH: {(log.phRaw / 10).toFixed(1)}
+            </span>
+            {log.notesStr ? <p style={{ color: "var(--text-secondary)", marginTop: "0.25rem", margin: 0 }}>"{log.notesStr}"</p> : null}
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+/* ──────────────────────────────────────────────────────────── */
+
+
+/* ─── NotesTab ──────────────────────────────────────────────── */
+function NotesTab({ tankId }) {
+  const [notes, setNotes] = useState([]);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [dbReady, setDbReady] = useState(true);
+
+  const loadNotes = async () => {
+    try {
+      const rows = await db.tankNotes.where("tankId").equals(tankId).toArray();
+      setNotes(rows.sort((a, b) => b.createdAt - a.createdAt));
+    } catch (e) {
+      console.warn("tankNotes not ready:", e);
+      setDbReady(false);
+      setNotes([]);
+    }
+  };
+
+  useEffect(() => { loadNotes(); }, [tankId]);
+
+  const saveNote = async () => {
+    if (!draft.trim()) return;
+    setSaving(true);
+    try {
+      await db.tankNotes.add({ tankId, text: draft.trim(), createdAt: Date.now() });
+      setDraft("");
+      await loadNotes();
+    } catch (e) {
+      console.warn("Failed to save note:", e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteNote = async (id) => {
+    try {
+      await db.tankNotes.delete(id);
+      await loadNotes();
+    } catch (e) {
+      console.warn("Failed to delete note:", e);
+    }
+  };
+
+  if (!dbReady) {
+    return (
+      <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+        📝 Notes are upgrading… Please refresh the page once.
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <span style={{ fontSize: "1rem" }}>📝</span>
+        <strong style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Tank Notes</strong>
+      </div>
+
+      {/* Compose area */}
+      <div style={{
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid var(--glass-border)",
+        borderRadius: "10px",
+        padding: "0.75rem",
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.5rem",
+      }}>
+        <textarea
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          placeholder="Write a note about water changes, feeding, observations..."
+          rows={3}
+          style={{
+            width: "100%",
+            background: "rgba(0,0,0,0.25)",
+            border: "1px solid var(--glass-border)",
+            borderRadius: "6px",
+            color: "#fff",
+            fontSize: "0.8rem",
+            padding: "0.6rem 0.75rem",
+            resize: "vertical",
+            outline: "none",
+            fontFamily: "inherit",
+            boxSizing: "border-box",
+          }}
+          onKeyDown={e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) saveNote(); }}
+        />
+        <button
+          onClick={saveNote}
+          disabled={saving || !draft.trim()}
+          style={{
+            alignSelf: "flex-end",
+            padding: "0.4rem 1.1rem",
+            background: draft.trim() ? "linear-gradient(135deg,#38bdf8,#6366f1)" : "rgba(255,255,255,0.08)",
+            border: "none",
+            borderRadius: "6px",
+            color: draft.trim() ? "#fff" : "var(--text-muted)",
+            fontWeight: "600",
+            fontSize: "0.78rem",
+            cursor: draft.trim() ? "pointer" : "not-allowed",
+            transition: "all 0.2s",
+          }}
+        >
+          {saving ? "Saving…" : "Save Note"}
+        </button>
+      </div>
+
+      {/* Notes list */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "220px", overflowY: "auto" }}>
+        {notes.length === 0 ? (
+          <p style={{ color: "var(--text-muted)", fontSize: "0.82rem", textAlign: "center", padding: "1.5rem 0" }}>
+            No notes yet. Add your first observation above!
+          </p>
+        ) : notes.map(note => (
+          <div key={note.id} style={{
+            background: "rgba(56,189,248,0.04)",
+            border: "1px solid rgba(56,189,248,0.15)",
+            borderRadius: "8px",
+            padding: "0.65rem 0.85rem",
+            display: "flex",
+            gap: "0.5rem",
+            alignItems: "flex-start",
+          }}>
+            <div style={{ flex: 1 }}>
+              <p style={{ color: "#fff", fontSize: "0.8rem", margin: 0, lineHeight: 1.5 }}>{note.text}</p>
+              <span style={{ color: "var(--text-muted)", fontSize: "0.68rem" }}>
+                {new Date(note.createdAt).toLocaleString()}
+              </span>
+            </div>
+            <button
+              onClick={() => deleteNote(note.id)}
+              title="Delete note"
+              style={{
+                background: "none",
+                border: "none",
+                color: "rgba(239,68,68,0.6)",
+                cursor: "pointer",
+                fontSize: "0.9rem",
+                padding: "0.1rem 0.2rem",
+                lineHeight: 1,
+                flexShrink: 0,
+              }}
+            >✕</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function TankList({ contractAddress, walletAccount, onViewLineage, onListOnMarketplace, onSelectSpecimen, casualModeActive = false }) {
   const queryClient = useQueryClient();
   const { data: fishbaseData = [] } = useSpeciesData();
@@ -156,6 +392,16 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
   // Filter & Search states
   const [selectedLocation, setSelectedLocation] = useState("All");
+  const [locationsFilterOpen, setLocationsFilterOpen] = useState(false);
+
+  // Reset selected location when switching back to casual mode
+  useEffect(() => {
+    if (casualModeActive) {
+      setSelectedLocation("All");
+      setLocationsFilterOpen(false);
+      setViewMode("list");
+    }
+  }, [casualModeActive]);
 
   // Scanner Simulator State
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -173,8 +419,15 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const [addFishSearch, setAddFishSearch] = useState("");
   const [addFishSubmitting, setAddFishSubmitting] = useState(false);
   const [addFishError, setAddFishError] = useState(null);
+  const [addFishQty, setAddFishQty] = useState(1);
+  const [addFishGender, setAddFishGender] = useState("Not Sure");
   const { data: contractSpecies = [] } = useContractSpecies(contractAddress);
   const [poseidonChatOpen, setPoseidonChatOpen] = useState(false);
+  const [quickActionsOpen, setQuickActionsOpen] = useState(false);
+  const photoInputRef = useRef(null);
+  const [uploadingSpecimenId, setUploadingSpecimenId] = useState(null);
+  const specimenPhotoInputRef = useRef(null);
+  const [farewellSpecimen, setFarewellSpecimen] = useState(null);
 
   // Bulk / Rack-Level Logging State (Phase 1)
   const [bulkLogScope, setBulkLogScope] = useState("single"); // "single" | "rack" | "room"
@@ -366,6 +619,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     setAddFishTankId(tank.id);
     setAddFishSpeciesId("");
     setAddFishSearch("");
+    setAddFishQty(1);
+    setAddFishGender("Not Sure");
     setAddFishError(null);
     setAddFishOpen(true);
   };
@@ -380,25 +635,35 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     setAddFishError(null);
     try {
       const species = contractSpecies.find(s => String(s.speciesId) === String(addFishSpeciesId)) || {};
-      const result = await relayMintSpecimen({
-        speciesId: Number(addFishSpeciesId),
-        birthTimestamp: 0,
-        breeder: walletAccount,
-        currentTankId: Number(addFishTankId),
-        ownerAddress: walletAccount,
-        commonName: species.commonName || "Specimen",
-        scientificName: species.scientificName || "Unknown",
-      });
-      if (!result.success) throw new Error(result.error || "Failed to add fish");
+      const count = Number(addFishQty) || 1;
 
-      addXp(XP_ACTIONS.MINT_SPECIMEN?.points, XP_ACTIONS.MINT_SPECIMEN?.label);
+      for (let i = 0; i < count; i++) {
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, 5));
+        }
+        const result = await relayMintSpecimen({
+          speciesId: Number(addFishSpeciesId),
+          birthTimestamp: 0,
+          breeder: walletAccount,
+          currentTankId: Number(addFishTankId),
+          ownerAddress: walletAccount,
+          commonName: species.commonName || "Specimen",
+          scientificName: species.scientificName || "Unknown",
+          gender: addFishGender,
+        });
+        if (!result.success) throw new Error(result.error || "Failed to add fish");
+
+        if (i === 0) {
+          // Notify onboarding tour / listeners
+          window.dispatchEvent(new CustomEvent("aquadex:specimen_added", { detail: { tokenId: result.specimenId } }));
+        }
+      }
+
+      addXp(XP_ACTIONS.MINT_SPECIMEN?.points * count, XP_ACTIONS.MINT_SPECIMEN?.label);
       showToast(casualModeActive
-        ? `🐟 ${species.commonName || "Fish"} added to your tank!`
-        : `✅ Birth certificate registered for ${species.commonName || "specimen"}`
+        ? `🐟 ${count > 1 ? `${count} ` : ""}${species.commonName || "Fish"} added to your tank!`
+        : `✅ ${count} birth certificate${count > 1 ? "s" : ""} registered for ${species.commonName || "specimen"}`
       );
-
-      // Notify onboarding tour / listeners
-      window.dispatchEvent(new CustomEvent("aquadex:specimen_added", { detail: { tokenId: result.specimenId } }));
 
       setAddFishOpen(false);
       await fetchDashboardData();
@@ -782,6 +1047,48 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     );
   }
 
+  // Determine safe parameters based on selected quick log tank or active tank
+  const selectedLogTank = tanks.find(t => t.id.toString() === quickLogTankId.toString()) || activeTank || tanks[0];
+  let minSafeTemp = 22.0;
+  let maxSafeTemp = 28.0;
+  let minSafePh = 6.5;
+  let maxSafePh = 8.2;
+  let minSafeSalinity = 1.0000;
+  let maxSafeSalinity = 1.0250;
+
+  if (selectedLogTank) {
+    const typeIdx = selectedLogTank.tankType;
+    if (typeIdx === 1) { // Saltwater
+      minSafeTemp = 24.0;
+      maxSafeTemp = 27.0;
+      minSafePh = 8.0;
+      maxSafePh = 8.4;
+      minSafeSalinity = 1.0200;
+      maxSafeSalinity = 1.0260;
+    } else if (typeIdx === 2) { // Brackish
+      minSafeTemp = 22.0;
+      maxSafeTemp = 28.0;
+      minSafePh = 7.2;
+      maxSafePh = 8.2;
+      minSafeSalinity = 1.0050;
+      maxSafeSalinity = 1.0150;
+    } else if (typeIdx === 3) { // Pond
+      minSafeTemp = 10.0;
+      maxSafeTemp = 28.0;
+      minSafePh = 6.8;
+      maxSafePh = 8.0;
+      minSafeSalinity = 1.0000;
+      maxSafeSalinity = 1.0010;
+    } else { // Freshwater (0)
+      minSafeTemp = 22.0;
+      maxSafeTemp = 26.0;
+      minSafePh = 6.5;
+      maxSafePh = 7.8;
+      minSafeSalinity = 1.0000;
+      maxSafeSalinity = 1.0020;
+    }
+  }
+
   // Location filter setup
   const locations = ["All", "Main Room", "Garage Rack", "Outdoor Ponds"];
   
@@ -990,22 +1297,24 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         </button>
 
         {/* List / Tree toggler */}
-        <div style={{ display: "flex", gap: "0.25rem", background: "rgba(255,255,255,0.02)", padding: "0.25rem", borderRadius: "8px", border: "1px solid var(--glass-border)" }}>
-          <button 
-            className="btn-secondary" 
-            onClick={() => setViewMode("list")}
-            style={{ padding: "0.35rem 0.75rem", fontSize: "0.75rem", border: "none", background: viewMode === "list" ? "rgba(255,255,255,0.08)" : "none" }}
-          >
-            📋 Grid list
-          </button>
-          <button 
-            className="btn-secondary" 
-            onClick={() => setViewMode("tree")}
-            style={{ padding: "0.35rem 0.75rem", fontSize: "0.75rem", border: "none", background: viewMode === "tree" ? "rgba(255,255,255,0.08)" : "none" }}
-          >
-            🏢 Facility Tree
-          </button>
-        </div>
+        {!casualModeActive && (
+          <div style={{ display: "flex", gap: "0.25rem", background: "rgba(255,255,255,0.02)", padding: "0.25rem", borderRadius: "8px", border: "1px solid var(--glass-border)" }}>
+            <button 
+              className="btn-secondary" 
+              onClick={() => setViewMode("list")}
+              style={{ padding: "0.35rem 0.75rem", fontSize: "0.75rem", border: "none", background: viewMode === "list" ? "rgba(255,255,255,0.08)" : "none" }}
+            >
+              📋 Grid list
+            </button>
+            <button 
+              className="btn-secondary" 
+              onClick={() => setViewMode("tree")}
+              style={{ padding: "0.35rem 0.75rem", fontSize: "0.75rem", border: "none", background: viewMode === "tree" ? "rgba(255,255,255,0.08)" : "none" }}
+            >
+              🏢 Facility Tree
+            </button>
+          </div>
+        )}
 
         <button className="btn-secondary" onClick={() => setQuickLogOpen(true)}>
           {casualModeActive ? "✍️ Quick Log" : "✍️ [ + Quick Log ]"}
@@ -1021,18 +1330,112 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         </button>
       </div>
 
-      {/* 2. DYNAMIC LOCATION CAROUSEL FILTER */}
-      <div className="location-carousel" style={{ marginBottom: "2rem" }}>
-        {locations.map((loc) => (
-          <button 
-            key={loc}
-            className={`location-chip ${selectedLocation === loc ? "active" : ""}`}
-            onClick={() => setSelectedLocation(loc)}
+      {/* 2. DYNAMIC LOCATION FILTER (Pro Mode Only) */}
+      {!casualModeActive && (
+        <div style={{ marginBottom: "2.5rem" }}>
+          {/* Dropdown Toggle Button */}
+          <button
+            onClick={() => setLocationsFilterOpen(!locationsFilterOpen)}
+            className="glass-card breed-filter-toggle"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "0.75rem 1.25rem",
+              background: locationsFilterOpen ? "rgba(56, 189, 248, 0.06)" : "rgba(255,255,255,0.02)",
+              border: locationsFilterOpen ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid rgba(255,255,255,0.08)",
+              borderRadius: "var(--radius-sm)",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              width: "100%",
+            }}
           >
-            📍 {loc}
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <span style={{ fontSize: "1.1rem" }}>📍</span>
+              <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#fff", letterSpacing: "0.03em" }}>
+                Filter Locations
+              </span>
+              {selectedLocation !== "All" && (
+                <span style={{
+                  background: "var(--accent-blue)",
+                  color: "#fff",
+                  fontSize: "0.65rem",
+                  fontWeight: "700",
+                  padding: "0.15rem 0.5rem",
+                  borderRadius: "50px",
+                  marginLeft: "0.5rem"
+                }}>
+                  {selectedLocation.toUpperCase()}
+                </span>
+              )}
+            </div>
+            <span style={{ 
+              color: "var(--text-muted)", 
+              fontSize: "0.8rem",
+              transform: locationsFilterOpen ? "rotate(180deg)" : "rotate(0deg)",
+              transition: "transform 0.3s ease",
+            }}>
+              ▼
+            </span>
           </button>
-        ))}
-      </div>
+
+          {/* Expandable Location Filter Panel */}
+          <div style={{
+            maxHeight: locationsFilterOpen ? "250px" : "0px",
+            overflow: "hidden",
+            transition: "max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease",
+            opacity: locationsFilterOpen ? 1 : 0,
+            marginTop: "0.5rem",
+          }}>
+            <div 
+              className="glass-card" 
+              style={{ 
+                padding: "1.25rem", 
+                background: "rgba(255,255,255,0.01)",
+                border: "1px solid var(--glass-border)",
+                borderRadius: "var(--radius-sm)"
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                <span style={{ fontSize: "0.75rem", fontWeight: "700", color: "var(--text-muted)", letterSpacing: "0.05em" }}>
+                  LOCATION FILTERS
+                </span>
+                {selectedLocation !== "All" && (
+                  <button 
+                    type="button"
+                    onClick={() => setSelectedLocation("All")} 
+                    style={{ 
+                      background: "none", 
+                      border: "none", 
+                      color: "var(--accent-blue)", 
+                      fontSize: "0.75rem", 
+                      fontWeight: "600",
+                      cursor: "pointer", 
+                      textDecoration: "underline",
+                      padding: 0 
+                    }}
+                  >
+                    Reset All
+                  </button>
+                )}
+              </div>
+              
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                {locations.map((loc) => (
+                  <button 
+                    key={loc}
+                    className={`location-chip ${selectedLocation === loc ? "active" : ""}`}
+                    onClick={() => setSelectedLocation(loc)}
+                    style={{ minHeight: "44px" }}
+                  >
+                    📍 {loc}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: activeTank ? "1.2fr 1fr" : "1fr", gap: "2rem", alignItems: "start" }}>
         {/* LEFT VIEW COMPONENT */}
@@ -1041,13 +1444,20 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             <FacilityTreeView 
               contractAddress={contractAddress} 
               walletAccount={walletAccount} 
+              casualModeActive={casualModeActive}
               onSelectTank={(t) => {
                 const fullTank = tanks.find(x => x.id === t.id) || t;
                 setActiveTank(fullTank);
               }}
-              onReload={fetchDashboardData}
+              onReload={() => {
+                fetchDashboardData();
+                if (casualModeActive) setViewMode("grid");
+              }}
               openRegisterOnTreeMount={openRegisterOnTreeMount}
-              onCloseRegister={() => setOpenRegisterOnTreeMount(false)}
+              onCloseRegister={() => {
+                setOpenRegisterOnTreeMount(false);
+                if (casualModeActive) setViewMode("grid");
+              }}
             />
           ) : (
             <div className="vertical-tank-rows">
@@ -1157,16 +1567,29 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             <h4 style={{ color: "#fff", fontSize: "1.1rem" }}>{tank.name}</h4>
                             {!casualModeActive && <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>ID: {tank.id}</span>}
                           </div>
-                          <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", display: "block", marginTop: "0.15rem" }}>
-                            📍 {tank.facility} › {tank.room} › {tank.rack}
-                          </span>
+                          {!casualModeActive && (
+                            <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", display: "block", marginTop: "0.15rem" }}>
+                              📍 {tank.facility} › {tank.room} › {tank.rack}
+                            </span>
+                          )}
                         </div>
 
                         <div style={{ textAlign: "right" }}>
-                          <strong style={{ fontSize: "1.05rem", color: "#fff" }}>{tank.volumeLiters}L</strong>
-                          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block" }}>
-                            ({toGallons(tank.volumeLiters)} gal)
-                          </span>
+                          {casualModeActive ? (
+                            <>
+                              <strong style={{ fontSize: "1.05rem", color: "#fff" }}>{toGallons(tank.volumeLiters)} gal</strong>
+                              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block" }}>
+                                (approx {tank.volumeLiters}L)
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <strong style={{ fontSize: "1.05rem", color: "#fff" }}>{tank.volumeLiters}L</strong>
+                              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block" }}>
+                                ({toGallons(tank.volumeLiters)} gal)
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
 
@@ -1232,6 +1655,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               background: casualModeActive
                 ? "rgba(8, 25, 48, 0.98)"
                 : "rgba(14, 8, 30, 0.98)",
+              "--sheet-bg": casualModeActive
+                ? "rgba(8, 25, 48, 0.95)"
+                : "rgba(14, 8, 30, 0.95)",
               position: "sticky",
               top: "1rem",
               maxHeight: "calc(100vh - 2rem)",
@@ -1397,12 +1823,14 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
               <div style={{ position: "absolute", bottom: "1rem", left: "1rem", zIndex: "2" }}>
                 <span className={`badge ${activeTank.tankType === 1 ? "badge-blue" : "badge-green"}`} style={{ marginBottom: "0.25rem" }}>
-                  {TANK_TYPES[activeTank.tankType]} {CONTAINMENT_TYPES[activeTank.containment]}
+                  {TANK_TYPES[activeTank.tankType]} {casualModeActive ? "Tank" : CONTAINMENT_TYPES[activeTank.containment]}
                 </span>
                 <h3 style={{ color: "#fff", fontSize: "1.5rem" }}>{activeTank.name}</h3>
-                <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                  📍 {activeTank.facility} › {activeTank.room} › {activeTank.rack}
-                </span>
+                {!casualModeActive && (
+                  <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                    📍 {activeTank.facility} › {activeTank.room} › {activeTank.rack}
+                  </span>
+                )}
               </div>
               {poseidonChatOpen && (
                 <PoseidonChatConsole
@@ -1426,114 +1854,177 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               margin: "1rem 0"
             }}>
               <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Quick Actions:</span>
-              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                <div style={{ display: "flex", gap: "2px" }}>
-                  <button
-                    {...feedEvents}
-                    className="btn-secondary"
-                    title="Tap to log routine feeding"
-                    style={{ padding: "0.35rem 0.75rem", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "0.25rem", borderRadius: "var(--radius-sm) 0 0 var(--radius-sm)" }}
-                  >
-                    🥣 Feed
-                  </button>
-                  <button
-                    onClick={logFeedLongPress}
-                    className="btn-secondary"
-                    title="Add feeding note"
-                    style={{ padding: "0.35rem 0.4rem", fontSize: "0.7rem", borderRadius: "0 var(--radius-sm) var(--radius-sm) 0", color: "var(--text-muted)" }}
-                  >
-                    ⋯
-                  </button>
-                </div>
-                <div style={{ display: "flex", gap: "2px" }}>
-                  <button
-                    {...testEvents}
-                    className="btn-secondary"
-                    title="Tap to log baseline water test"
-                    style={{ padding: "0.35rem 0.75rem", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "0.25rem", borderRadius: "var(--radius-sm) 0 0 var(--radius-sm)" }}
-                  >
-                    🧪 Test
-                  </button>
-                  <button
-                    onClick={logTestLongPress}
-                    className="btn-secondary"
-                    title="Open detailed water log"
-                    style={{ padding: "0.35rem 0.4rem", fontSize: "0.7rem", borderRadius: "0 var(--radius-sm) var(--radius-sm) 0", color: "var(--text-muted)" }}
-                  >
-                    ⋯
-                  </button>
-                </div>
-                <div style={{ display: "flex", gap: "2px" }}>
-                  <button
-                    {...algaeEvents}
-                    className="btn-secondary"
-                    title="Tap to log routine algae scraping"
-                    style={{ padding: "0.35rem 0.75rem", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "0.25rem", borderRadius: "var(--radius-sm) 0 0 var(--radius-sm)" }}
-                  >
-                    🧹 Clean
-                  </button>
-                  <button
-                    onClick={logAlgaeLongPress}
-                    className="btn-secondary"
-                    title="Add cleaning note"
-                    style={{ padding: "0.35rem 0.4rem", fontSize: "0.7rem", borderRadius: "0 var(--radius-sm) var(--radius-sm) 0", color: "var(--text-muted)" }}
-                  >
-                    ⋯
-                  </button>
-                </div>
+              
+              {/* Invisible Photo Input */}
+              <input
+                type="file"
+                ref={photoInputRef}
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    const { compressImage } = await import("../utils/imageCompression");
+                    const compressed = await compressImage(file, { maxWidth: 1200, quality: 0.8 });
+                    localStorage.setItem(`aquadex_tank_photo_${activeTank.id}`, compressed);
+                    setActiveTank({ ...activeTank });
+                  } catch (err) {
+                    console.error("Photo upload failed:", err);
+                  }
+                }}
+              />
+
+              {/* Invisible Specimen Photo Input */}
+              <input
+                type="file"
+                ref={specimenPhotoInputRef}
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !uploadingSpecimenId) return;
+                  try {
+                    const { compressImage } = await import("../utils/imageCompression");
+                    const compressed = await compressImage(file, { maxWidth: 1200, quality: 0.8 });
+                    localStorage.setItem(`aquadex_specimen_photo_${uploadingSpecimenId}`, compressed);
+                    setActiveTank({ ...activeTank });
+                    showToast("Specimen photo updated!");
+                  } catch (err) {
+                    console.error("Specimen photo upload failed:", err);
+                  }
+                }}
+              />
+
+              <div style={{ position: "relative" }}>
                 <button
-                  onClick={() => setPoseidonChatOpen(!poseidonChatOpen)}
+                  onClick={() => setQuickActionsOpen(!quickActionsOpen)}
                   className="btn-secondary"
-                  title="Talk to Poseidon AI Assistant to log care or setup systems"
                   style={{
-                    padding: "0.35rem 0.75rem",
-                    fontSize: "0.8rem",
                     display: "flex",
                     alignItems: "center",
-                    gap: "0.25rem",
-                    border: poseidonChatOpen ? "1px solid var(--accent-blue)" : "none",
-                    boxShadow: poseidonChatOpen ? "0 0 8px var(--accent-blue-glow)" : "none"
+                    gap: "0.5rem",
+                    padding: "0.4rem 1rem",
+                    fontSize: "0.8rem",
+                    background: "rgba(255, 255, 255, 0.03)",
+                    border: "1px solid var(--glass-border)",
+                    borderRadius: "6px",
+                    color: "#fff",
+                    cursor: "pointer"
                   }}
                 >
-                  💬 Ask Poseidon
+                  ⚡ Log Care / Actions <span style={{ fontSize: "0.6rem", transition: "transform 0.2s", display: "inline-block", transform: quickActionsOpen ? "rotate(180deg)" : "rotate(0deg)" }}>▼</span>
                 </button>
-                <button
-                  onClick={() => {
-                    setInlineDetailType("population");
-                    setInlineDetailText(getSpecimenCount(activeTank).toString());
-                    setInlineDetailOpen(true);
-                    setTimeout(() => inlineDetailRef.current?.focus(), 100);
-                  }}
-                  className="btn-secondary"
-                  title="Update population count"
-                  style={{ padding: "0.35rem 0.75rem", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: "0.25rem" }}
-                >
-                  🐟 Count
-                </button>
-                <label
-                  className="btn-secondary"
-                  title="Take a tank photo"
-                  style={{ padding: "0.35rem 0.75rem", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", gap: "0.25rem", cursor: "pointer" }}
-                >
-                  📷 Photo
-                  <input
-                    type="file"
-                    accept="image/*"
-                    style={{ display: "none" }}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      try {
-                        const { compressImage } = await import("../utils/imageCompression");
-                        const compressed = await compressImage(file, { maxWidth: 1200, quality: 0.8 });
-                        localStorage.setItem(`aquadex_tank_photo_${activeTank.id}`, compressed);
-                        setActiveTank({ ...activeTank });
-                      } catch (err) {
-                        console.error("Photo upload failed:", err);
-                      }
-                    }}
-                  />
-                </label>
+
+                {quickActionsOpen && (
+                  <>
+                    {/* Click-away backdrop overlay */}
+                    <div 
+                      onClick={() => setQuickActionsOpen(false)}
+                      style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 99
+                      }}
+                    />
+                    <div style={{
+                      position: "absolute",
+                      top: "calc(100% + 0.5rem)",
+                      left: 0,
+                      zIndex: 100,
+                      width: "240px",
+                      background: casualModeActive ? "rgba(8, 25, 48, 0.98)" : "rgba(14, 8, 30, 0.98)",
+                      backdropFilter: "blur(20px)",
+                      border: "1px solid var(--glass-border-hover)",
+                      borderRadius: "8px",
+                      boxShadow: "0 10px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(56, 189, 248, 0.05)",
+                      padding: "0.4rem 0",
+                      display: "flex",
+                      flexDirection: "column"
+                    }}>
+                      <div style={{ padding: "0.4rem 1rem 0.2rem", fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Log Husbandry</div>
+                      
+                      <button
+                        type="button"
+                        onClick={() => { logFeedClick(); setQuickActionsOpen(false); }}
+                        className="dropdown-action-item"
+                      >
+                        <span style={{ marginRight: "0.25rem" }}>🥣</span> Quick Feed
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { logFeedLongPress(); setQuickActionsOpen(false); }}
+                        className="dropdown-action-item"
+                      >
+                        <span style={{ marginRight: "0.25rem" }}>🥣</span> Detailed Feed...
+                      </button>
+
+                      <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.05)", margin: "0.3rem 0" }} />
+                      <div style={{ padding: "0.4rem 1rem 0.2rem", fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Log Environment</div>
+
+                      <button
+                        type="button"
+                        onClick={() => { logTestClick(); setQuickActionsOpen(false); }}
+                        className="dropdown-action-item"
+                      >
+                        <span style={{ marginRight: "0.25rem" }}>🧪</span> Quick Water Test
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { logTestLongPress(); setQuickActionsOpen(false); }}
+                        className="dropdown-action-item"
+                      >
+                        <span style={{ marginRight: "0.25rem" }}>🧪</span> Detailed Test...
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => { logAlgaeClick(); setQuickActionsOpen(false); }}
+                        className="dropdown-action-item"
+                      >
+                        <span style={{ marginRight: "0.25rem" }}>🧹</span> Quick Clean
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { logAlgaeLongPress(); setQuickActionsOpen(false); }}
+                        className="dropdown-action-item"
+                      >
+                        <span style={{ marginRight: "0.25rem" }}>🧹</span> Detailed Clean...
+                      </button>
+
+                      <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.05)", margin: "0.3rem 0" }} />
+                      <div style={{ padding: "0.4rem 1rem 0.2rem", fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Tank Operations</div>
+
+                      <button
+                        type="button"
+                        onClick={() => { setPoseidonChatOpen(!poseidonChatOpen); setQuickActionsOpen(false); }}
+                        className="dropdown-action-item"
+                      >
+                        <span style={{ marginRight: "0.25rem" }}>💬</span> Ask Poseidon AI
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setInlineDetailType("population");
+                          setInlineDetailText(getSpecimenCount(activeTank).toString());
+                          setInlineDetailOpen(true);
+                          setTimeout(() => inlineDetailRef.current?.focus(), 100);
+                          setQuickActionsOpen(false);
+                        }}
+                        className="dropdown-action-item"
+                      >
+                        <span style={{ marginRight: "0.25rem" }}>🐟</span> {casualModeActive ? "Update Fish Count" : "Update Population Count"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { photoInputRef.current?.click(); setQuickActionsOpen(false); }}
+                        className="dropdown-action-item"
+                      >
+                        <span style={{ marginRight: "0.25rem" }}>📷</span> Upload Photo
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -1558,173 +2049,242 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             {/* Detail Content rendering */}
             <div style={{ minHeight: "220px" }}>
               
-              {/* 2.1 OVERVIEW SUB-TAB: 2x2 Telemetry Grid */}
+              {/* 2.1 OVERVIEW SUB-TAB: Telemetry Grid or Casual System Specs */}
               {detailSubTab === "overview" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                  <div className="telemetry-2x2-grid">
-                    
-                    {/* Thermal */}
-                    <div className="telemetry-tile-premium" style={{ borderLeft: `3px solid ${activeTank.latestLog ? getHslColor(activeTank.latestLog.tempCelsiusX10/10, 22.0, 27.0, 5) : "var(--glass-border)"}` }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>🌡️ Thermal Chemistry</span>
-                        {activeTank.latestLog && (
-                          <span className="badge" style={{ 
-                            fontSize: "0.55rem", 
-                            padding: "0.1rem 0.4rem", 
-                            background: `${getHslColor(activeTank.latestLog.tempCelsiusX10/10, 22.0, 27.0, 5)}15`, 
-                            color: getHslColor(activeTank.latestLog.tempCelsiusX10/10, 22.0, 27.0, 5),
-                            borderColor: getHslColor(activeTank.latestLog.tempCelsiusX10/10, 22.0, 27.0, 5)
-                          }}>
-                            {activeTank.latestLog.tempCelsiusX10/10 >= 22.0 && activeTank.latestLog.tempCelsiusX10/10 <= 27.0 ? "Ideal" : "Warning"}
-                          </span>
-                        )}
-                      </div>
-                      <strong style={{ fontSize: "1.25rem", color: "#fff" }}>
-                        {activeTank.latestLog ? (
-                          <>
-                            {(activeTank.latestLog.tempCelsiusX10 / 10).toFixed(1)}°C
-                            <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginLeft: "0.4rem" }}>
-                              / {((activeTank.latestLog.tempCelsiusX10 / 10) * 9 / 5 + 32).toFixed(1)}°F
-                            </span>
-                          </>
-                        ) : "N/A"}
-                      </strong>
-                      <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Ideal range: 22.0°C - 27.0°C</span>
-                    </div>
-
-                    {/* pH */}
-                    <div className="telemetry-tile-premium" style={{ borderLeft: `3px solid ${activeTank.latestLog ? getHslColor(activeTank.latestLog.phX10/10, 6.5, 8.0, 1.5) : "var(--glass-border)"}` }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>🧪 Acidic Level (pH)</span>
-                        {activeTank.latestLog && (
-                          <span className="badge" style={{ 
-                            fontSize: "0.55rem", 
-                            padding: "0.1rem 0.4rem", 
-                            background: `${getHslColor(activeTank.latestLog.phX10/10, 6.5, 8.0, 1.5)}15`, 
-                            color: getHslColor(activeTank.latestLog.phX10/10, 6.5, 8.0, 1.5),
-                            borderColor: getHslColor(activeTank.latestLog.phX10/10, 6.5, 8.0, 1.5)
-                          }}>
-                            {activeTank.latestLog.phX10/10 >= 6.5 && activeTank.latestLog.phX10/10 <= 8.0 ? "Ideal" : "Warning"}
-                          </span>
-                        )}
-                      </div>
-                      <strong style={{ fontSize: "1.25rem", color: "#fff" }}>
-                        {activeTank.latestLog ? (activeTank.latestLog.phX10 / 10).toFixed(1) : "N/A"}
-                      </strong>
-                      <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Ideal range: 6.5 - 8.0 pH</span>
-                    </div>
-
-                    {/* Salinity */}
-                    <div className="telemetry-tile-premium" style={{ borderLeft: `3px solid ${activeTank.latestLog ? getHslColor(activeTank.latestLog.salinitySgX10000/10000, 1.000, 1.026, 0.01) : "var(--glass-border)"}` }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>🌊 Specific Gravity</span>
-                        {activeTank.latestLog && (
-                          <span className="badge" style={{ 
-                            fontSize: "0.55rem", 
-                            padding: "0.1rem 0.4rem", 
-                            background: `${getHslColor(activeTank.latestLog.salinitySgX10000/10000, 1.000, 1.026, 0.01)}15`, 
-                            color: getHslColor(activeTank.latestLog.salinitySgX10000/10000, 1.000, 1.026, 0.01),
-                            borderColor: getHslColor(activeTank.latestLog.salinitySgX10000/10000, 1.000, 1.026, 0.01)
-                          }}>
-                            {activeTank.latestLog.salinitySgX10000/10000 >= 1.000 && activeTank.latestLog.salinitySgX10000/10000 <= 1.026 ? "Ideal" : "Warning"}
-                          </span>
-                        )}
-                      </div>
-                      <strong style={{ fontSize: "1.25rem", color: "#fff" }}>
-                        {activeTank.latestLog ? (activeTank.latestLog.salinitySgX10000 / 10000).toFixed(4) : "N/A"}
-                      </strong>
-                      <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Saltwater standard: 1.025 SG</span>
-                    </div>
-
-                    {/* Nitrogen */}
-                    <div className="telemetry-tile-premium" style={{ 
-                      position: "relative",
-                      borderLeft: `3px solid ${activeTank.latestLog ? (
-                        (Number(activeTank.latestLog.ammoniaPpmX100)/100 > 0.05 || Number(activeTank.latestLog.nitritePpmX100)/100 > 0.05) 
-                          ? "var(--accent-red)" 
-                          : Number(activeTank.latestLog.nitratePpmX100)/100 > 20.0 
-                            ? "var(--accent-amber)" 
-                            : "var(--accent-green)"
-                      ) : "var(--glass-border)"}`
-                    }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>🧬 Nitrogen Cycle</span>
-                        {activeTank.latestLog && (Number(activeTank.latestLog.ammoniaPpmX100)/100 > 0.05 || Number(activeTank.latestLog.nitritePpmX100)/100 > 0.05) ? (
-                          <span className="badge pulsate-red-badge" style={{ fontSize: "0.55rem", padding: "0.1rem 0.4rem" }}>
-                            CRITICAL
-                          </span>
-                        ) : activeTank.latestLog && Number(activeTank.latestLog.nitratePpmX100)/100 > 20.0 ? (
-                          <span className="badge badge-amber" style={{ fontSize: "0.55rem", padding: "0.1rem 0.4rem" }}>
-                            HIGH NO₃
-                          </span>
-                        ) : activeTank.latestLog ? (
-                          <span className="badge badge-green" style={{ fontSize: "0.55rem", padding: "0.1rem 0.4rem" }}>
-                            Safe
-                          </span>
-                        ) : null}
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem", fontSize: "0.75rem", color: "var(--text-primary)", marginTop: "0.25rem" }}>
+                  {casualModeActive ? (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                      {/* Water Type */}
+                      <div className="telemetry-tile-premium" style={{ borderLeft: "3px solid var(--accent-blue)" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span>Ammonia:</span>
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                            <strong style={{ color: activeTank.latestLog && (activeTank.latestLog.ammoniaPpmX100/100) > 0.05 ? "var(--accent-red)" : "var(--accent-green)" }}>
-                              {activeTank.latestLog ? (activeTank.latestLog.ammoniaPpmX100/100).toFixed(2) : "0.00"} ppm
-                            </strong>
-                            {activeTank.latestLog && (activeTank.latestLog.ammoniaPpmX100/100) > 0.05 && (
-                              <span className="badge pulsate-red-badge" style={{ fontSize: "0.5rem", padding: "0.05rem 0.25rem" }}>Critical NH₃</span>
-                            )}
-                          </div>
+                          <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>💧 Water Type</span>
                         </div>
+                        <strong style={{ fontSize: "1.25rem", color: "#fff", display: "block", marginTop: "0.5rem" }}>
+                          {TANK_TYPES[activeTank.tankType]}
+                        </strong>
+                        <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Freshwater ecosystem</span>
+                      </div>
+
+                      {/* Volume */}
+                      <div className="telemetry-tile-premium" style={{ borderLeft: "3px solid var(--accent-green)" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span>Nitrite:</span>
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                            <strong style={{ color: activeTank.latestLog && (activeTank.latestLog.nitritePpmX100/100) > 0.05 ? "var(--accent-red)" : "var(--accent-green)" }}>
-                              {activeTank.latestLog ? (activeTank.latestLog.nitritePpmX100/100).toFixed(2) : "0.00"} ppm
-                            </strong>
-                            {activeTank.latestLog && (activeTank.latestLog.nitritePpmX100/100) > 0.05 && (
-                              <span className="badge pulsate-red-badge" style={{ fontSize: "0.5rem", padding: "0.05rem 0.25rem" }}>Critical NO₂</span>
-                            )}
-                          </div>
+                          <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>📐 Tank Volume</span>
                         </div>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span>Nitrate:</span>
-                          <strong style={{ color: activeTank.latestLog && (activeTank.latestLog.nitratePpmX100/100) > 20 ? "var(--accent-amber)" : "var(--text-primary)" }}>
-                            {activeTank.latestLog ? (activeTank.latestLog.nitratePpmX100/100).toFixed(1) : "0.0"} ppm
+                        <strong style={{ fontSize: "1.25rem", color: "#fff", display: "block", marginTop: "0.5rem" }}>
+                          {toGallons(activeTank.volumeLiters)} gal
+                        </strong>
+                        <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Approx. {activeTank.volumeLiters} Liters</span>
+                      </div>
+
+                      {/* Population */}
+                      <div className="telemetry-tile-premium" style={{ borderLeft: "3px solid var(--accent-amber)", gridColumn: "span 2", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>🐠 Current Population</span>
+                          <strong style={{ fontSize: "1.25rem", color: "#fff", display: "block", marginTop: "0.4rem" }}>
+                            {getSpecimenCount(activeTank)} Fish
                           </strong>
+                          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.15rem" }}>Total specimens in this tank</span>
                         </div>
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          onClick={() => openAddFish(activeTank)}
+                          style={{
+                            padding: "0.5rem 1rem",
+                            fontSize: "0.82rem",
+                            fontWeight: "600",
+                            borderRadius: "8px",
+                            background: "linear-gradient(135deg, var(--accent-amber), #d97706)",
+                            border: "none",
+                            color: "#fff",
+                            boxShadow: "0 4px 12px rgba(245, 158, 11, 0.2)",
+                            transition: "all 0.2s ease",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.4rem"
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = "translateY(-1px)";
+                            e.currentTarget.style.boxShadow = "0 6px 16px rgba(245, 158, 11, 0.4)";
+                            e.currentTarget.style.background = "linear-gradient(135deg, #d97706, #b45309)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = "translateY(0)";
+                            e.currentTarget.style.boxShadow = "0 4px 12px rgba(245, 158, 11, 0.2)";
+                            e.currentTarget.style.background = "linear-gradient(135deg, var(--accent-amber), #d97706)";
+                          }}
+                        >
+                          + Add Fish
+                        </button>
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="telemetry-2x2-grid">
+                        {/* Thermal */}
+                        <div className="telemetry-tile-premium" style={{ borderLeft: `3px solid ${activeTank.latestLog ? getHslColor(activeTank.latestLog.tempCelsiusX10/10, 22.0, 27.0, 5) : "var(--glass-border)"}` }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>🌡️ Thermal Chemistry</span>
+                            {activeTank.latestLog && (
+                              <span className="badge" style={{ 
+                                fontSize: "0.55rem", 
+                                padding: "0.1rem 0.4rem", 
+                                background: `${getHslColor(activeTank.latestLog.tempCelsiusX10/10, 22.0, 27.0, 5)}15`, 
+                                color: getHslColor(activeTank.latestLog.tempCelsiusX10/10, 22.0, 27.0, 5),
+                                borderColor: getHslColor(activeTank.latestLog.tempCelsiusX10/10, 22.0, 27.0, 5)
+                              }}>
+                                {activeTank.latestLog.tempCelsiusX10/10 >= 22.0 && activeTank.latestLog.tempCelsiusX10/10 <= 27.0 ? "Ideal" : "Warning"}
+                              </span>
+                            )}
+                          </div>
+                          <strong style={{ fontSize: "1.25rem", color: "#fff" }}>
+                            {activeTank.latestLog ? (
+                              <>
+                                {(activeTank.latestLog.tempCelsiusX10 / 10).toFixed(1)}°C
+                                <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginLeft: "0.4rem" }}>
+                                  / {((activeTank.latestLog.tempCelsiusX10 / 10) * 9 / 5 + 32).toFixed(1)}°F
+                                </span>
+                              </>
+                            ) : "N/A"}
+                          </strong>
+                          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Ideal range: 22.0°C - 27.0°C</span>
+                        </div>
 
-                  {getChemistryAlerts(activeTank).length > 0 && (
-                    <div className="glass-card" style={{ padding: "0.75rem 1rem", border: "1px solid rgba(248, 113, 113, 0.3)", background: "rgba(248, 113, 113, 0.05)", borderRadius: "var(--radius-sm)" }}>
-                      <h4 style={{ color: "var(--accent-red)", fontSize: "0.85rem", marginBottom: "0.25rem" }}>⚠️ Chemistry Safety Warning</h4>
-                      <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                        One or more nitrogen compounds exceed safe husbandry levels. High ammonia/nitrites can be fatal to specimens. Perform an immediate 25% water change.
-                      </p>
-                      <button
-                        className="btn-primary"
-                        style={{ marginTop: "0.5rem", fontSize: "0.75rem", padding: "0.35rem 0.75rem" }}
-                        onClick={() => {
-                          setFormData({
-                            temp: activeTank.latestLog ? (activeTank.latestLog.tempCelsiusX10/10).toString() : "24.5",
-                            ph: activeTank.latestLog ? (activeTank.latestLog.phX10/10).toString() : "7.2",
-                            salinity: activeTank.latestLog ? (activeTank.latestLog.salinitySgX10000/10000).toString() : "1.0000",
-                            ammonia: "0.0",
-                            nitrite: "0.0",
-                            nitrate: "0.0",
-                            notes: "Immediate water change performed."
-                          });
-                          setQuickLogTankId(activeTank.id.toString());
-                          setQuickLogOpen(true);
-                        }}
-                      >
-                        [ Log Immediate Water Change ]
-                      </button>
-                    </div>
+                        {/* pH */}
+                        <div className="telemetry-tile-premium" style={{ borderLeft: `3px solid ${activeTank.latestLog ? getHslColor(activeTank.latestLog.phX10/10, 6.5, 8.0, 1.5) : "var(--glass-border)"}` }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>🧪 Acidic Level (pH)</span>
+                            {activeTank.latestLog && (
+                              <span className="badge" style={{ 
+                                fontSize: "0.55rem", 
+                                padding: "0.1rem 0.4rem", 
+                                background: `${getHslColor(activeTank.latestLog.phX10/10, 6.5, 8.0, 1.5)}15`, 
+                                color: getHslColor(activeTank.latestLog.phX10/10, 6.5, 8.0, 1.5),
+                                borderColor: getHslColor(activeTank.latestLog.phX10/10, 6.5, 8.0, 1.5)
+                              }}>
+                                {activeTank.latestLog.phX10/10 >= 6.5 && activeTank.latestLog.phX10/10 <= 8.0 ? "Ideal" : "Warning"}
+                              </span>
+                            )}
+                          </div>
+                          <strong style={{ fontSize: "1.25rem", color: "#fff" }}>
+                            {activeTank.latestLog ? (activeTank.latestLog.phX10 / 10).toFixed(1) : "N/A"}
+                          </strong>
+                          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Ideal range: 6.5 - 8.0 pH</span>
+                        </div>
+
+                        {/* Salinity */}
+                        <div className="telemetry-tile-premium" style={{ borderLeft: `3px solid ${activeTank.latestLog ? getHslColor(activeTank.latestLog.salinitySgX10000/10000, 1.000, 1.026, 0.01) : "var(--glass-border)"}` }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>🌊 Specific Gravity</span>
+                            {activeTank.latestLog && (
+                              <span className="badge" style={{ 
+                                fontSize: "0.55rem", 
+                                padding: "0.1rem 0.4rem", 
+                                background: `${getHslColor(activeTank.latestLog.salinitySgX10000/10000, 1.000, 1.026, 0.01)}15`, 
+                                color: getHslColor(activeTank.latestLog.salinitySgX10000/10000, 1.000, 1.026, 0.01),
+                                borderColor: getHslColor(activeTank.latestLog.salinitySgX10000/10000, 1.000, 1.026, 0.01)
+                              }}>
+                                {activeTank.latestLog.salinitySgX10000/10000 >= 1.000 && activeTank.latestLog.salinitySgX10000/10000 <= 1.026 ? "Ideal" : "Warning"}
+                              </span>
+                            )}
+                          </div>
+                          <strong style={{ fontSize: "1.25rem", color: "#fff" }}>
+                            {activeTank.latestLog ? (activeTank.latestLog.salinitySgX10000 / 10000).toFixed(4) : "N/A"}
+                          </strong>
+                          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Saltwater standard: 1.025 SG</span>
+                        </div>
+
+                        {/* Nitrogen */}
+                        <div className="telemetry-tile-premium" style={{ 
+                          position: "relative",
+                          borderLeft: `3px solid ${activeTank.latestLog ? (
+                            (Number(activeTank.latestLog.ammoniaPpmX100)/100 > 0.05 || Number(activeTank.latestLog.nitritePpmX100)/100 > 0.05) 
+                              ? "var(--accent-red)" 
+                              : Number(activeTank.latestLog.nitratePpmX100)/100 > 20.0 
+                                ? "var(--accent-amber)" 
+                                : "var(--accent-green)"
+                          ) : "var(--glass-border)"}`
+                        }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>🧬 Nitrogen Cycle</span>
+                            {activeTank.latestLog && (Number(activeTank.latestLog.ammoniaPpmX100)/100 > 0.05 || Number(activeTank.latestLog.nitritePpmX100)/100 > 0.05) ? (
+                              <span className="badge pulsate-red-badge" style={{ fontSize: "0.55rem", padding: "0.1rem 0.4rem" }}>
+                                CRITICAL
+                              </span>
+                            ) : activeTank.latestLog && Number(activeTank.latestLog.nitratePpmX100)/100 > 20.0 ? (
+                              <span className="badge badge-amber" style={{ fontSize: "0.55rem", padding: "0.1rem 0.4rem" }}>
+                                HIGH NO₃
+                              </span>
+                            ) : activeTank.latestLog ? (
+                              <span className="badge badge-green" style={{ fontSize: "0.55rem", padding: "0.1rem 0.4rem" }}>
+                                Safe
+                              </span>
+                            ) : null}
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem", fontSize: "0.75rem", color: "var(--text-primary)", marginTop: "0.25rem" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span>Ammonia:</span>
+                              <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                                <strong style={{ color: activeTank.latestLog && (activeTank.latestLog.ammoniaPpmX100/100) > 0.05 ? "var(--accent-red)" : "var(--accent-green)" }}>
+                                  {activeTank.latestLog ? (activeTank.latestLog.ammoniaPpmX100/100).toFixed(2) : "0.00"} ppm
+                                </strong>
+                                {activeTank.latestLog && (activeTank.latestLog.ammoniaPpmX100/100) > 0.05 && (
+                                  <span className="badge pulsate-red-badge" style={{ fontSize: "0.5rem", padding: "0.05rem 0.25rem" }}>Critical NH₃</span>
+                                )}
+                              </div>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span>Nitrite:</span>
+                              <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                                <strong style={{ color: activeTank.latestLog && (activeTank.latestLog.nitritePpmX100/100) > 0.05 ? "var(--accent-red)" : "var(--accent-green)" }}>
+                                  {activeTank.latestLog ? (activeTank.latestLog.nitritePpmX100/100).toFixed(2) : "0.00"} ppm
+                                </strong>
+                                {activeTank.latestLog && (activeTank.latestLog.nitritePpmX100/100) > 0.05 && (
+                                  <span className="badge pulsate-red-badge" style={{ fontSize: "0.5rem", padding: "0.05rem 0.25rem" }}>Critical NO₂</span>
+                                )}
+                              </div>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span>Nitrate:</span>
+                              <strong style={{ color: activeTank.latestLog && (activeTank.latestLog.nitratePpmX100/100) > 20 ? "var(--accent-amber)" : "var(--text-primary)" }}>
+                                {activeTank.latestLog ? (activeTank.latestLog.nitratePpmX100/100).toFixed(1) : "0.0"} ppm
+                              </strong>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {getChemistryAlerts(activeTank).length > 0 && (
+                        <div className="glass-card" style={{ padding: "0.75rem 1rem", border: "1px solid rgba(248, 113, 113, 0.3)", background: "rgba(248, 113, 113, 0.05)", borderRadius: "var(--radius-sm)" }}>
+                          <h4 style={{ color: "var(--accent-red)", fontSize: "0.85rem", marginBottom: "0.25rem" }}>⚠️ Chemistry Safety Warning</h4>
+                          <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                            One or more nitrogen compounds exceed safe husbandry levels. High ammonia/nitrites can be fatal to specimens. Perform an immediate 25% water change.
+                          </p>
+                          <button
+                            className="btn-primary"
+                            style={{ marginTop: "0.5rem", fontSize: "0.75rem", padding: "0.35rem 0.75rem" }}
+                            onClick={() => {
+                              setFormData({
+                                temp: activeTank.latestLog ? (activeTank.latestLog.tempCelsiusX10/10).toString() : "24.5",
+                                ph: activeTank.latestLog ? (activeTank.latestLog.phX10/10).toString() : "7.2",
+                                salinity: activeTank.latestLog ? (activeTank.latestLog.salinitySgX10000/10000).toString() : "1.0000",
+                                ammonia: "0.0",
+                                nitrite: "0.0",
+                                nitrate: "0.0",
+                                notes: "Immediate water change performed."
+                              });
+                              setQuickLogTankId(activeTank.id.toString());
+                              setQuickLogOpen(true);
+                            }}
+                          >
+                            [ Log Immediate Water Change ]
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
-              )}
+              ) }
 
               {/* 2.2 FISH SUB-TAB: Fish inside tank — consumer label in Casual mode */}
               {detailSubTab === "fish" && (
@@ -1755,138 +2315,243 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       </button>
                     </div>
                   ) : (
-                    activeTank.specimens.map(spec => (
-                      <div 
-                        key={spec.id} 
-                        onClick={() => onSelectSpecimen && onSelectSpecimen(spec.id)}
-                        draggable="true"
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData("application/aquadex-specimen", spec.id.toString());
-                          e.dataTransfer.effectAllowed = "move";
-                          e.currentTarget.style.opacity = "0.5";
-                        }}
-                        onDragEnd={(e) => {
-                          e.currentTarget.style.opacity = "1";
-                        }}
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "0.6rem 0.75rem",
-                          background: casualModeActive ? "rgba(14, 165, 233, 0.04)" : "rgba(0,0,0,0.2)",
-                          borderRadius: "6px",
-                          border: casualModeActive ? "1px solid rgba(56,189,248,0.15)" : "1px solid var(--glass-border)",
-                          fontSize: "0.85rem",
-                          cursor: "grab",
-                          transition: "opacity 0.2s ease"
-                        }}
-                      >
-                        <div>
-                          {!casualModeActive && (
-                            <strong style={{ color: "var(--accent-blue)" }}>Cert. Serial No. {spec.id.toString().padStart(3, "0")}</strong>
-                          )}
-                          <span style={{ color: "#fff", marginLeft: casualModeActive ? 0 : "0.5rem" }}>{spec.commonName}</span>
-                          <span style={{ display: "block", fontSize: "0.7rem", color: "var(--text-muted)" }}>
-                            {casualModeActive ? spec.commonName : spec.scientificName}
-                          </span>
-                          {casualModeActive && spec.careLevel !== undefined && (
-                            <span style={{
-                              display: "inline-block",
-                              marginTop: "0.25rem",
-                              fontSize: "0.65rem",
-                              padding: "0.1rem 0.45rem",
-                              borderRadius: "20px",
-                              background: "rgba(34, 197, 94, 0.12)",
-                              border: "1px solid rgba(34, 197, 94, 0.3)",
-                              color: "#4ade80"
-                            }}>
-                              ✓ Registry Verified
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
-                          {!casualModeActive && (
-                            <button 
-                              className="btn-secondary"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onViewLineage(spec.id);
-                              }}
-                              style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem" }}
-                            >
-                              Ancestry
-                            </button>
-                          )}
-                          {onListOnMarketplace && (
-                            <button 
-                              className="btn-primary"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onListOnMarketplace(activeTank, spec);
-                              }}
-                              style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem" }}
-                            >
-                              {casualModeActive ? "List for Sale" : "Sell"}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
+                    activeTank.specimens.map(spec => {
+                      const matchedSpecies = fishbaseData.find(f => Number(f.speciesId) === Number(spec.speciesId));
+                      const masterPhotoUrl = matchedSpecies?.masterPhotoUrl || "";
+                      const customPhoto = localStorage.getItem(`aquadex_specimen_photo_${spec.id}`);
+                      const finalImgSrc = customPhoto || masterPhotoUrl;
 
-              {/* 2.3 HISTORY SUB-TAB: Water quality logging lists */}
-              {detailSubTab === "history" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "250px", overflowY: "auto" }}>
-                  <strong style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Environmental Logs History</strong>
-                  {activeTank.logs.length === 0 ? (
-                    <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", padding: "2rem", textAlign: "center" }}>No logs registered for this system yet.</p>
-                  ) : (
-                    [...activeTank.logs].reverse().map((log, idx) => (
-                      <div key={idx} style={{ padding: "0.75rem", background: "rgba(255,255,255,0.01)", border: "1px solid var(--glass-border)", borderRadius: "4px", fontSize: "0.75rem" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
-                          <strong>{new Date(log.timestamp * 1000).toLocaleString()}</strong>
-                          <span style={{ color: "var(--accent-blue)" }}>
-                            Temp: {log.tempCelsiusX10/10}°C ({((log.tempCelsiusX10/10)*9/5 + 32).toFixed(1)}°F) | pH: {log.phX10/10}
-                          </span>
-                        </div>
-                        {log.notes && <p style={{ color: "var(--text-secondary)" }}>"{log.notes}"</p>}
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-
-              {/* 2.4 NOTES SUB-TAB: Dosing & Water changes notes */}
-              {detailSubTab === "notes" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "250px", overflowY: "auto" }}>
-                  <strong style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Husbandry Activity & Observations</strong>
-                  {activeTank.logs.filter(l => l.notes).length === 0 && localActionLogs.length === 0 ? (
-                    <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", padding: "2rem", textAlign: "center" }}>No activity logs found.</p>
-                  ) : (
-                    <>
-                      {/* Render Dexie Action Logs */}
-                      {localActionLogs.map((log) => (
-                        <div key={`local-${log.id}`} style={{ padding: "0.75rem", background: "rgba(56, 189, 248, 0.04)", borderRadius: "4px", fontSize: "0.8rem", borderLeft: "2px solid var(--accent-blue)" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.25rem" }}>
-                            <strong style={{ color: "#38bdf8" }}>{log.actionType}</strong>
-                            <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>{new Date(log.timestamp * 1000).toLocaleString()}</span>
+                      return (
+                        <div 
+                          key={spec.id} 
+                          onClick={() => onSelectSpecimen && onSelectSpecimen(spec.id)}
+                          draggable="true"
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData("application/aquadex-specimen", spec.id.toString());
+                            e.dataTransfer.effectAllowed = "move";
+                            e.currentTarget.style.opacity = "0.5";
+                          }}
+                          onDragEnd={(e) => {
+                            e.currentTarget.style.opacity = "1";
+                          }}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "0.6rem 0.75rem",
+                            background: casualModeActive ? "rgba(14, 165, 233, 0.04)" : "rgba(0,0,0,0.2)",
+                            borderRadius: "8px",
+                            border: casualModeActive ? "1px solid rgba(56,189,248,0.15)" : "1px solid var(--glass-border)",
+                            fontSize: "0.85rem",
+                            cursor: "grab",
+                            transition: "all 0.2s ease",
+                            gap: "0.75rem",
+                            marginBottom: "0.4rem"
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1, minWidth: 0 }}>
+                            {/* Fish Avatar / Image */}
+                            {finalImgSrc ? (
+                              <img 
+                                src={finalImgSrc} 
+                                alt={spec.commonName}
+                                style={{
+                                  width: "44px",
+                                  height: "44px",
+                                  borderRadius: "8px",
+                                  objectFit: "cover",
+                                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                                  flexShrink: 0
+                                }}
+                              />
+                            ) : (
+                              <div style={{
+                                width: "44px",
+                                height: "44px",
+                                borderRadius: "8px",
+                                background: "linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(14, 165, 233, 0.2))",
+                                border: "1px solid rgba(56, 189, 248, 0.2)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: "1.2rem",
+                                flexShrink: 0
+                              }}>
+                                🐠
+                              </div>
+                            )}
+                            
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              {!casualModeActive && (
+                                <strong style={{ color: "var(--accent-blue)", display: "block", fontSize: "0.75rem" }}>
+                                  Cert. Serial No. {spec.id.toString().padStart(3, "0")}
+                                </strong>
+                              )}
+                              <span style={{ color: "#fff", fontWeight: "600", display: "inline-flex", alignItems: "center", gap: "0.4rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>
+                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{spec.commonName}</span>
+                                {spec.gender && spec.gender !== "Not Sure" && (
+                                  <span style={{
+                                    fontSize: "0.6rem",
+                                    padding: "0.05rem 0.35rem",
+                                    borderRadius: "4px",
+                                    background: spec.gender === "Male" ? "rgba(56, 189, 248, 0.15)" : "rgba(244, 63, 94, 0.15)",
+                                    color: spec.gender === "Male" ? "#38bdf8" : "#f43f5e",
+                                    border: spec.gender === "Male" ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid rgba(244, 63, 94, 0.25)",
+                                    fontWeight: "600",
+                                    flexShrink: 0
+                                  }}>
+                                    {spec.gender === "Male" ? "♂" : "♀"}
+                                  </span>
+                                )}
+                              </span>
+                              <span style={{ display: "block", fontSize: "0.7rem", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {casualModeActive ? spec.commonName : spec.scientificName}
+                              </span>
+                              {casualModeActive && spec.careLevel !== undefined && (
+                                <span style={{
+                                  display: "inline-block",
+                                  marginTop: "0.2rem",
+                                  fontSize: "0.6rem",
+                                  padding: "0.05rem 0.35rem",
+                                  borderRadius: "20px",
+                                  background: "rgba(34, 197, 94, 0.12)",
+                                  border: "1px solid rgba(34, 197, 94, 0.3)",
+                                  color: "#4ade80"
+                                }}>
+                                  ✓ Registry Verified
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <span style={{ color: "#fff" }}>{log.details}</span>
+
+                          {/* Action buttons */}
+                          <div style={{ display: "flex", gap: "0.4rem", alignItems: "center", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                            {casualModeActive ? (
+                              <>
+                                {/* Add/Update Photo Button */}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setUploadingSpecimenId(spec.id);
+                                    setTimeout(() => specimenPhotoInputRef.current?.click(), 50);
+                                  }}
+                                  style={{
+                                    background: "rgba(255, 255, 255, 0.03)",
+                                    border: "1px solid var(--glass-border)",
+                                    borderRadius: "6px",
+                                    color: "#fff",
+                                    padding: "0.35rem 0.6rem",
+                                    fontSize: "0.75rem",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s ease",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "0.25rem",
+                                    minHeight: "32px"
+                                  }}
+                                  title={customPhoto ? "Update Photo" : "Add Photo"}
+                                >
+                                  📷 {customPhoto ? "Update" : "Photo"}
+                                </button>
+
+                                {/* List for Sale Button */}
+                                {onListOnMarketplace && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onListOnMarketplace(activeTank, spec);
+                                    }}
+                                    style={{
+                                      background: "linear-gradient(135deg, #0ea5e9, #0284c7)",
+                                      border: "none",
+                                      borderRadius: "6px",
+                                      color: "#fff",
+                                      padding: "0.35rem 0.75rem",
+                                      fontSize: "0.75rem",
+                                      fontWeight: "600",
+                                      cursor: "pointer",
+                                      boxShadow: "0 0 10px rgba(14, 165, 233, 0.1)",
+                                      transition: "all 0.2s ease",
+                                      minHeight: "32px"
+                                    }}
+                                  >
+                                    List for Sale
+                                  </button>
+                                )}
+
+                                 <button
+                                   type="button"
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     setFarewellSpecimen(spec);
+                                   }}
+                                   style={{
+                                     background: "rgba(56, 189, 248, 0.04)",
+                                     border: "1px solid rgba(56, 189, 248, 0.15)",
+                                     borderRadius: "6px",
+                                     color: "#38bdf8",
+                                     padding: "0.35rem 0.5rem",
+                                     fontSize: "0.75rem",
+                                     cursor: "pointer",
+                                     transition: "all 0.2s ease",
+                                     display: "flex",
+                                     alignItems: "center",
+                                     justifyContent: "center",
+                                     minHeight: "32px"
+                                   }}
+                                   title="Say Farewell / Release"
+                                 >
+                                   🌊
+                                 </button>
+                              </>
+                            ) : (
+                              <>
+                                <button 
+                                  className="btn-secondary"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onViewLineage(spec.id);
+                                  }}
+                                  style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", minHeight: "32px" }}
+                                >
+                                  Ancestry
+                                </button>
+                                {onListOnMarketplace && (
+                                  <button 
+                                    className="btn-primary"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onListOnMarketplace(activeTank, spec);
+                                    }}
+                                    style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", minHeight: "32px" }}
+                                  >
+                                    Sell
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </div>
-                      ))}
-                      
-                      {/* Render Contract logs */}
-                      {[...activeTank.logs].filter(l => l.notes).reverse().map((log, idx) => (
-                        <div key={`contract-${idx}`} style={{ padding: "0.75rem", background: "rgba(0,0,0,0.15)", borderRadius: "4px", fontSize: "0.8rem", borderLeft: "2px solid var(--accent-green)" }}>
-                          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block" }}>{new Date(log.timestamp * 1000).toLocaleDateString()}</span>
-                          <span style={{ color: "#fff" }}>{log.notes}</span>
-                        </div>
-                      ))}
-                    </>
+                      );
+                    })
                   )}
                 </div>
+              )}
+
+              {/* 2.3 ACTIVITY / HISTORY SUB-TAB: Action logs + water parameter logs */}
+              {detailSubTab === "history" && (
+                <ActivityLog
+                  onChainLogs={activeTank.logs || []}
+                  actionLogs={localActionLogs}
+                  casualModeActive={casualModeActive}
+                />
+              )}
+
+              {/* 2.4 NOTES SUB-TAB: Freeform tank notes editor */}
+              {detailSubTab === "notes" && (
+                <NotesTab tankId={activeTank.id} />
               )}
 
               {/* 2.5 SOCIAL SUB-TAB: Tank Progress Social Feed */}
@@ -2230,6 +2895,109 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       );
                     })
                 )}
+              </div>
+
+              <div style={{ display: "flex", gap: "1rem", marginTop: "0.25rem" }}>
+                {/* Quantity */}
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                    Quantity
+                  </label>
+                  <div style={{ display: "flex", alignItems: "center", background: "rgba(0,0,0,0.2)", border: "1px solid var(--glass-border)", borderRadius: "6px", overflow: "hidden", height: "42px" }}>
+                    <button
+                      type="button"
+                      onClick={() => setAddFishQty(prev => Math.max(1, prev - 1))}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#fff",
+                        width: "36px",
+                        height: "100%",
+                        cursor: "pointer",
+                        fontSize: "1.1rem",
+                        fontWeight: "600",
+                        transition: "background 0.2s"
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      value={addFishQty}
+                      onChange={(e) => setAddFishQty(Math.max(1, parseInt(e.target.value) || 1))}
+                      style={{
+                        flex: 1,
+                        background: "none",
+                        border: "none",
+                        color: "#fff",
+                        textAlign: "center",
+                        fontSize: "0.9rem",
+                        fontWeight: "600",
+                        outline: "none",
+                        width: "100%"
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setAddFishQty(prev => prev + 1)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#fff",
+                        width: "36px",
+                        height: "100%",
+                        cursor: "pointer",
+                        fontSize: "1.1rem",
+                        fontWeight: "600",
+                        transition: "background 0.2s"
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Gender */}
+                <div style={{ flex: 1.2 }}>
+                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                    Gender
+                  </label>
+                  <div style={{ display: "flex", background: "rgba(0,0,0,0.2)", border: "1px solid var(--glass-border)", borderRadius: "6px", padding: "2px", height: "42px" }}>
+                    {["Male", "Female", "Not Sure"].map((g) => {
+                      const sel = addFishGender === g;
+                      return (
+                        <button
+                          type="button"
+                          key={g}
+                          onClick={() => setAddFishGender(g)}
+                          style={{
+                            flex: 1,
+                            background: sel ? (g === "Male" ? "rgba(56, 189, 248, 0.18)" : g === "Female" ? "rgba(244, 63, 94, 0.18)" : "rgba(255, 255, 255, 0.1)") : "none",
+                            border: "none",
+                            borderRadius: "4px",
+                            color: sel ? (g === "Male" ? "#38bdf8" : g === "Female" ? "#f43f5e" : "#fff") : "var(--text-secondary)",
+                            fontSize: "0.72rem",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "0.2rem"
+                          }}
+                        >
+                          <span>{g === "Male" ? "♂" : g === "Female" ? "♀" : "⚪"}</span>
+                          <span>{g}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
               <button
@@ -2759,6 +3527,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#fff" }}>
                 {inlineDetailType === "feed" 
                   ? (casualModeActive ? "🥣 What did you feed?" : "🥣 Custom Feeding Details")
+                  : inlineDetailType === "population"
+                  ? (casualModeActive ? "🐠 Which fish do you want to remove?" : "🐠 Update Population Count")
                   : (casualModeActive ? "🧹 What did you clean?" : "🧹 Maintenance Details")}
               </span>
               <button
@@ -2769,31 +3539,316 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                 &times;
               </button>
             </div>
-            <input
-              ref={inlineDetailRef}
-              type="text"
-              value={inlineDetailText}
-              onChange={(e) => setInlineDetailText(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleInlineDetailSubmit(); }}
-              placeholder={inlineDetailType === "feed" ? "e.g. Frozen brine shrimp, flakes..." : inlineDetailType === "population" ? "Enter specimen count..." : "e.g. Scraped algae, wiped glass..."}
+            {inlineDetailType === "population" && casualModeActive ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "250px", overflowY: "auto", paddingRight: "4px", margin: "0.5rem 0" }}>
+                {(!activeTank.specimens || activeTank.specimens.length === 0) ? (
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", textAlign: "center", padding: "1.5rem" }}>
+                    No fish in this tank to remove.
+                  </p>
+                ) : (
+                  activeTank.specimens.map(spec => (
+                    <div 
+                      key={spec.id} 
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "0.6rem 0.75rem",
+                        background: "rgba(239, 68, 68, 0.04)",
+                        borderRadius: "8px",
+                        border: "1px solid rgba(239, 68, 68, 0.15)",
+                        fontSize: "0.85rem"
+                      }}
+                    >
+                      <span style={{ color: "#fff", fontWeight: "500", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+                        🐠 {spec.commonName}
+                        {spec.gender && spec.gender !== "Not Sure" && (
+                          <span style={{
+                            fontSize: "0.6rem",
+                            padding: "0.02rem 0.25rem",
+                            borderRadius: "4px",
+                            background: spec.gender === "Male" ? "rgba(56, 189, 248, 0.15)" : "rgba(244, 63, 94, 0.15)",
+                            color: spec.gender === "Male" ? "#38bdf8" : "#f43f5e",
+                            border: spec.gender === "Male" ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid rgba(244, 63, 94, 0.25)",
+                            fontWeight: "600",
+                          }}>
+                            {spec.gender === "Male" ? "♂" : "♀"}
+                          </span>
+                        )}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setFarewellSpecimen(spec)}
+                        style={{
+                          background: "rgba(56, 189, 248, 0.08)",
+                          border: "1px solid rgba(56, 189, 248, 0.25)",
+                          color: "#38bdf8",
+                          padding: "0.25rem 0.65rem",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          fontSize: "0.75rem",
+                          fontWeight: "600",
+                          transition: "all 0.2s"
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(239, 68, 68, 0.22)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "rgba(239, 68, 68, 0.12)";
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : (
+              <>
+                <input
+                  ref={inlineDetailRef}
+                  type="text"
+                  value={inlineDetailText}
+                  onChange={(e) => setInlineDetailText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleInlineDetailSubmit(); }}
+                  placeholder={inlineDetailType === "feed" ? "e.g. Frozen brine shrimp, flakes..." : inlineDetailType === "population" ? "Enter specimen count..." : "e.g. Scraped algae, wiped glass..."}
+                  style={{
+                    width: "100%",
+                    padding: "0.75rem 1rem",
+                    background: "rgba(0, 0, 0, 0.3)",
+                    border: "1px solid var(--glass-border)",
+                    borderRadius: "8px",
+                    color: "#fff",
+                    fontSize: "0.9rem",
+                    outline: "none",
+                    minHeight: "48px"
+                  }}
+                />
+                <button
+                  onClick={handleInlineDetailSubmit}
+                  className="btn-primary"
+                  style={{ width: "100%", padding: "0.75rem", fontSize: "0.9rem", minHeight: "48px" }}
+                >
+                  {casualModeActive ? "Save" : "Log Entry"}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Farewell Modal */}
+      {farewellSpecimen && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0, 0, 0, 0.75)",
+          backdropFilter: "blur(8px)",
+          zIndex: 20000,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "1rem",
+        }}
+          onClick={() => setFarewellSpecimen(null)}
+        >
+          <div style={{
+            width: "100%",
+            maxWidth: "400px",
+            background: "rgba(10, 15, 30, 0.95)",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            borderRadius: "16px",
+            padding: "1.5rem",
+            display: "flex",
+            flexDirection: "column",
+            gap: "1rem",
+            boxShadow: "0 10px 40px rgba(0, 0, 0, 0.8)",
+            textAlign: "center"
+          }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <span style={{ fontSize: "2.5rem", display: "block", marginBottom: "0.5rem" }}>👋</span>
+              <h3 style={{ color: "#fff", fontSize: "1.2rem", margin: "0 0 0.25rem 0" }}>Say Farewell to {farewellSpecimen.commonName}</h3>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: 0 }}>
+                Choose how you would like to record the departure of this fish.
+              </p>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "0.5rem" }}>
+              {/* Option 1: Rehomed */}
+              <button
+                type="button"
+                onClick={async () => {
+                  const spec = farewellSpecimen;
+                  await db.specimens.update(spec.id, { status: 2 });
+                  const updatedSpecimens = (activeTank.specimens || []).filter(s => s.id !== spec.id);
+                  await db.tanks.update(activeTank.id, { specimens: updatedSpecimens });
+                  setMockPopulationCounts(prev => ({
+                    ...prev,
+                    [activeTank.id]: updatedSpecimens.length
+                  }));
+                  showToast(`Rehomed ${spec.commonName} successfully.`);
+                  await fetchDashboardData();
+                  const fresh = await refetchTanks();
+                  const updated = fresh.data?.find(t => t.id === activeTank.id);
+                  if (updated) {
+                    setActiveTank(updated);
+                  }
+                  setFarewellSpecimen(null);
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-start",
+                  gap: "0.75rem",
+                  padding: "0.85rem 1rem",
+                  background: "rgba(59, 130, 246, 0.06)",
+                  border: "1px solid rgba(59, 130, 246, 0.25)",
+                  borderRadius: "10px",
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  fontWeight: "600",
+                  textAlign: "left",
+                  transition: "all 0.2s"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(59, 130, 246, 0.15)";
+                  e.currentTarget.style.borderColor = "rgba(59, 130, 246, 0.45)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(59, 130, 246, 0.06)";
+                  e.currentTarget.style.borderColor = "rgba(59, 130, 246, 0.25)";
+                }}
+              >
+                <span style={{ fontSize: "1.2rem" }}>🏠</span>
+                <div>
+                  <span style={{ display: "block" }}>Rehomed / Sold</span>
+                  <span style={{ display: "block", fontSize: "0.68rem", fontWeight: "normal", color: "var(--text-muted)" }}>Fish has been moved to a new home.</span>
+                </div>
+              </button>
+
+              {/* Option 2: Deceased */}
+              <button
+                type="button"
+                onClick={async () => {
+                  const spec = farewellSpecimen;
+                  await db.specimens.update(spec.id, { status: 1 });
+                  const updatedSpecimens = (activeTank.specimens || []).filter(s => s.id !== spec.id);
+                  await db.tanks.update(activeTank.id, { specimens: updatedSpecimens });
+                  setMockPopulationCounts(prev => ({
+                    ...prev,
+                    [activeTank.id]: updatedSpecimens.length
+                  }));
+                  showToast(`Recorded memorial for ${spec.commonName}. 🕊️`);
+                  await fetchDashboardData();
+                  const fresh = await refetchTanks();
+                  const updated = fresh.data?.find(t => t.id === activeTank.id);
+                  if (updated) {
+                    setActiveTank(updated);
+                  }
+                  setFarewellSpecimen(null);
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-start",
+                  gap: "0.75rem",
+                  padding: "0.85rem 1rem",
+                  background: "rgba(239, 68, 68, 0.06)",
+                  border: "1px solid rgba(239, 68, 68, 0.25)",
+                  borderRadius: "10px",
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  fontWeight: "600",
+                  textAlign: "left",
+                  transition: "all 0.2s"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(239, 68, 68, 0.15)";
+                  e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.45)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(239, 68, 68, 0.06)";
+                  e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.25)";
+                }}
+              >
+                <span style={{ fontSize: "1.2rem" }}>🕊️</span>
+                <div>
+                  <span style={{ display: "block" }}>Passed Away</span>
+                  <span style={{ display: "block", fontSize: "0.68rem", fontWeight: "normal", color: "var(--text-muted)" }}>Record as deceased to preserve history.</span>
+                </div>
+              </button>
+
+              {/* Option 3: Released / Other */}
+              <button
+                type="button"
+                onClick={async () => {
+                  const spec = farewellSpecimen;
+                  await db.specimens.delete(spec.id);
+                  const updatedSpecimens = (activeTank.specimens || []).filter(s => s.id !== spec.id);
+                  await db.tanks.update(activeTank.id, { specimens: updatedSpecimens });
+                  setMockPopulationCounts(prev => ({
+                    ...prev,
+                    [activeTank.id]: updatedSpecimens.length
+                  }));
+                  showToast(`Removed ${spec.commonName} from the tank.`);
+                  await fetchDashboardData();
+                  const fresh = await refetchTanks();
+                  const updated = fresh.data?.find(t => t.id === activeTank.id);
+                  if (updated) {
+                    setActiveTank(updated);
+                  }
+                  setFarewellSpecimen(null);
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-start",
+                  gap: "0.75rem",
+                  padding: "0.85rem 1rem",
+                  background: "rgba(255, 255, 255, 0.02)",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  borderRadius: "10px",
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  fontWeight: "600",
+                  textAlign: "left",
+                  transition: "all 0.2s"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
+                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.25)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.02)";
+                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.12)";
+                }}
+              >
+                <span style={{ fontSize: "1.2rem" }}>🌊</span>
+                <div>
+                  <span style={{ display: "block" }}>Released / Other</span>
+                  <span style={{ display: "block", fontSize: "0.68rem", fontWeight: "normal", color: "var(--text-muted)" }}>Completely delete from local registry.</span>
+                </div>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setFarewellSpecimen(null)}
+              className="btn-secondary"
               style={{
                 width: "100%",
-                padding: "0.75rem 1rem",
-                background: "rgba(0, 0, 0, 0.3)",
-                border: "1px solid var(--glass-border)",
-                borderRadius: "8px",
-                color: "#fff",
-                fontSize: "0.9rem",
-                outline: "none",
-                minHeight: "48px"
+                padding: "0.75rem",
+                fontSize: "0.85rem",
+                borderRadius: "10px",
+                marginTop: "0.5rem"
               }}
-            />
-            <button
-              onClick={handleInlineDetailSubmit}
-              className="btn-primary"
-              style={{ width: "100%", padding: "0.75rem", fontSize: "0.9rem", minHeight: "48px" }}
             >
-              {casualModeActive ? "Save" : "Log Entry"}
+              Cancel
             </button>
           </div>
         </div>

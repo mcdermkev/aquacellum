@@ -80,7 +80,7 @@ export function TankTourStep({
   const [tankName, setTankName] = useState(
     resolveTankCopy(DEFAULT_TANK_NAME, personaValue)
   );
-  const [tankVolume, setTankVolume] = useState("75");
+  const [tankVolume, setTankVolume] = useState("20");
   // Registration in-flight + friendly error (Req 3.6).
   const [registering, setRegistering] = useState(false);
   const [registerError, setRegisterError] = useState("");
@@ -154,7 +154,7 @@ export function TankTourStep({
       setRegisterError("");
 
       try {
-        const litres = Math.max(1, Math.round(Number(tankVolume) || 75));
+        const litres = Math.max(1, Math.round((Number(tankVolume) || 20) * 3.78541));
         const result = await relayRegisterTank({
           name,
           tankType: 0,

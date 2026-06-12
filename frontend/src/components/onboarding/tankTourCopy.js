@@ -43,7 +43,7 @@ export const TANK_TOUR_COPY = Object.freeze({
   },
   // Field labels for the fallback form.
   nameLabel: { casual: "Tank name", pro: "Unit designation" },
-  volumeLabel: { casual: "Size (litres)", pro: "Volume (L)" },
+  volumeLabel: { casual: "Size (gallons)", pro: "Volume (gallons)" },
   // Submit button on the fallback form.
   submit: { casual: "Create my tank", pro: "Register unit" },
   submitBusy: { casual: "Setting it up…", pro: "Registering…" },

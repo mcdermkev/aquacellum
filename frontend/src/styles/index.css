@@ -42,6 +42,16 @@
   padding: 0;
 }
 
+/* Disable default number input arrows globally */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
@@ -314,6 +324,8 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  --sheet-pad-top: 1.5rem;
+  --sheet-pad-side: 1.5rem;
 }
 
 .biotope-banner {
@@ -349,10 +361,22 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Sub-Tab Menu styling */
 .horizontal-subtabs {
+  position: sticky;
+  top: calc(-1 * var(--sheet-pad-top, 1.5rem));
+  margin-left: calc(-1 * var(--sheet-pad-side, 1.5rem));
+  margin-right: calc(-1 * var(--sheet-pad-side, 1.5rem));
+  padding-left: var(--sheet-pad-side, 1.5rem);
+  padding-right: var(--sheet-pad-side, 1.5rem);
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+  z-index: 10;
   display: flex;
   gap: 1rem;
   border-bottom: 1px solid var(--glass-border);
-  padding-bottom: 0.5rem;
+  background: var(--sheet-bg, rgba(8, 25, 48, 0.95));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .subtab-item {
@@ -1066,7 +1090,9 @@ input[type="range"] {
     -webkit-overflow-scrolling: touch;
     max-height: 98vh !important;
     animation: sheetSlideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards;
-    padding: 1rem 1.25rem 2rem !important;
+    --sheet-pad-top: 1rem;
+    --sheet-pad-side: 1.25rem;
+    padding: var(--sheet-pad-top) var(--sheet-pad-side) 2rem !important;
     margin: 0 !important;
     width: 100% !important;
   }
@@ -1100,16 +1126,8 @@ input[type="range"] {
 /* Fix tank detail sheet footer buttons overlapping fish list on mobile */
 @media (max-width: 768px) {
   .tank-detail-sheet > div:last-child {
-    position: sticky;
-    bottom: 0;
-    background: rgba(8, 12, 20, 0.95);
-    backdrop-filter: blur(12px);
+    /* removed sticky positioning and background color to fix content area overlap bugs */
     padding: 0.75rem 0 !important;
-    margin: 1rem -1.25rem 0 !important;
-    padding-left: 1.25rem !important;
-    padding-right: 1.25rem !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    z-index: 5;
   }
 
   /* Ensure fish list has bottom padding so last item isn't hidden behind sticky footer */
@@ -3864,4 +3882,26 @@ textarea:focus:not(:focus-visible) {
   background: rgba(99, 102, 241, 0.15);
   color: #a5b4fc;
   border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+/* Premium Quick Actions Dropdown Items */
+.dropdown-action-item {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.dropdown-action-item:hover {
+  background: rgba(56, 189, 248, 0.08);
+  color: #fff;
+  padding-left: 1.25rem;
 }

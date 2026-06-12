@@ -72,6 +72,7 @@ export async function relayMintSpecimen({
   ownerAddress = "",
   commonName = "",
   scientificName = "",
+  gender = "Unsexed",
 } = {}) {
   try {
     const specimenId = Date.now();
@@ -89,6 +90,7 @@ export async function relayMintSpecimen({
       commonName,
       scientificName,
       status: 0, // Active
+      gender,
       createdAt: Math.floor(Date.now() / 1000),
     };
 
@@ -106,6 +108,7 @@ export async function relayMintSpecimen({
           commonName,
           scientificName,
           status: 0,
+          gender,
         });
         await db.tanks.update(Number(currentTankId), { specimens });
       }
