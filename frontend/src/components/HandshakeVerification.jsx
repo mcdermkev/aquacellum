@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { ethers, Contract, formatEther } from "ethers";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
 import managerAbi from "../abi/AquadexManager.json";
-import { getProvider, getSigner } from "../utils/smartAccount";
+import { getProvider } from "../utils/smartAccount";
+import { relayPurchaseBatch, relaySettleHandshake } from "../services/relayer";
 import { useHandshake } from "../hooks/useHandshake";
 import { db } from "../db";
 import { addXp, XP_ACTIONS } from "../utils/xp";
@@ -156,33 +157,28 @@ export function HandshakeVerification({
 
       setStep("locking");
 
-      const signer = await getSigner();
-      const marketplaceContract = new Contract(marketplaceAddress, marketplaceAbi, signer);
-
-      const price = BigInt(listing.pricePerFish);
-      const qty = BigInt(quantity);
-      const totalCost = price * qty;
+      const price = Number(listing.price || 0);
+      const qty = Number(quantity);
 
       // Generate the commitment hash and store the pre-image in Dexie using a temporary ID (listingId)
       const { commitmentHash, salt: generatedSalt } = await generateCommitment(listing.listingId, pin, walletAccount);
       setSalt(generatedSalt);
 
-      const tx = await marketplaceContract.purchaseInPerson(listing.listingId, qty, commitmentHash, {
-        value: totalCost
+      // Beta: lock in-person batch order locally (no MetaMask, no gas)
+      const result = await relayPurchaseBatch({
+        listingId: listing.listingId,
+        quantity: qty,
+        buyer: walletAccount,
+        seller: listing.seller || "",
+        pricePerFishEth: listing.price || "0",
+        commonName: listing.commonName || "Juvenile Fry Batch",
+        fulfillmentType: 1, // in-person handshake
       });
-      const receipt = await tx.wait();
-
-      // Find the BatchPurchased event to extract the purchaseId
-      const event = receipt.logs
-        .map(log => {
-          try { return marketplaceContract.interface.parseLog(log); } catch (err) { return null; }
-        })
-        .find(e => e && e.name === "BatchPurchased");
-
-      const pId = event ? Number(event.args.purchaseId) : null;
-      if (!pId) {
-        throw new Error("Could not parse Order ID from transaction events.");
+      if (!result.success) {
+        throw new Error(result.error || "Could not lock holding deposit.");
       }
+
+      const pId = result.purchaseId;
 
       // Update the cached pre-image in Dexie with the actual purchaseId
       await updatePurchaseId(listing.listingId, pId);
@@ -230,9 +226,6 @@ export function HandshakeVerification({
       setScanError("");
       setScanSuccess("");
 
-      const signer = await getSigner();
-      const marketplaceContract = new Contract(marketplaceAddress, marketplaceAbi, signer);
-
       // Resolve the salt either from the scanSalt state or by querying local Dexie store
       let finalSalt = scanSalt;
       if (!finalSalt) {
@@ -246,8 +239,9 @@ export function HandshakeVerification({
         throw new Error("Handshake salt not found in local cache. Please scan the QR code containing the pre-image.");
       }
 
-      const tx = await marketplaceContract.secureInPersonRelease(Number(scanPurchaseId), Number(scanPin), finalSalt);
-      await tx.wait();
+      // Beta: settle handshake locally (no MetaMask, no gas)
+      const result = await relaySettleHandshake({ purchaseId: Number(scanPurchaseId) });
+      if (!result.success) throw new Error(result.error || "Settlement failed");
 
       setScanSuccess(`Order Serial No. ${scanPurchaseId.padStart(3, "0")} settled successfully!`);
       setToast({ message: "Handshake verified and funds released!", type: "success" });
@@ -289,12 +283,7 @@ export function HandshakeVerification({
       setScanError("");
       setScanSuccess("");
 
-      const signer = await getSigner();
-      const marketplaceContract = new Contract(marketplaceAddress, marketplaceAbi, signer);
-      const managerAddress = await marketplaceContract.aquadexManager();
-      const managerContract = new Contract(managerAddress, managerAbi, signer);
-
-      let spawnId, speciesId, listingId, quantityToSettle;
+      let quantityToSettle;
       let isBatch = false;
       let tokenIds = [];
 
@@ -302,60 +291,17 @@ export function HandshakeVerification({
         tokenIds = scannedPayload.tokenIds;
       } else {
         isBatch = true;
-        listingId = scannedPayload.listingId;
         quantityToSettle = scannedPayload.quantity;
-        
-        // Fetch listing info from registry
-        const batch = await marketplaceContract.batchListings(listingId);
-        spawnId = Number(batch.spawnId);
-        const spawn = await managerContract.spawnLogs(spawnId);
-        speciesId = Number(spawn.speciesId);
       }
 
+      // Beta: settle cash handshake locally + mint lineage specimen (no MetaMask, no gas)
       if (isBatch) {
-        // Breeder first registers spawn offspring on AquadexManager to mint
-        const birthTimestamp = Math.round(Date.now() / 1000);
-        const ipfsMetadataUri = `ipfs://cash-spawn-${spawnId}-${Date.now()}`;
-        
         setToast({ message: "Registering specimen birth certificate for cash lineage...", type: "success" });
-        const mintTx = await managerContract.registerSpawnOffspring(spawnId, speciesId, birthTimestamp, ipfsMetadataUri);
-        const mintReceipt = await mintTx.wait();
-        
-        const mintEvent = mintReceipt.logs
-          .map(log => {
-            try { return managerContract.interface.parseLog(log); } catch (e) { return null; }
-          })
-          .find(e => e && e.name === "SpecimenRegistered");
-          
-        const tokenId = mintEvent ? Number(mintEvent.args.tokenId) : null;
-        if (!tokenId) {
-          throw new Error("Could not parse Certified Registry Serial Number from specimen registration event.");
-        }
-        
-        setToast({ message: `Minted specimen Token #${tokenId}. Settling cash handshake...`, type: "success" });
-        const tx = await marketplaceContract.fulfillCashHandshake(
-          tokenId,
-          scannedPayload.buyer,
-          Number(scannedPayload.eventId || 1),
-          false, // fromEscrow = false
-          listingId,
-          quantityToSettle
-        );
-        await tx.wait();
+        const result = await relaySettleHandshake({ purchaseId: Number(scannedPayload.listingId) });
+        if (!result.success) throw new Error(result.error || "Settlement failed");
       } else {
-        // Single specimen listings
-        for (const tokenId of tokenIds) {
-          setToast({ message: `Settling cash handshake for Token #${tokenId}...`, type: "success" });
-          const tx = await marketplaceContract.fulfillCashHandshake(
-            tokenId,
-            scannedPayload.buyer,
-            Number(scannedPayload.eventId || 1),
-            true, // fromEscrow = true
-            0,
-            0
-          );
-          await tx.wait();
-        }
+        const result = await relaySettleHandshake({ tokenIds });
+        if (!result.success) throw new Error(result.error || "Settlement failed");
       }
 
       setScanSuccess("Cash handshake settled and lineage provenance securely recorded!");

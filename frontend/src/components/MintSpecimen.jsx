@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { ethers, Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { addXp, XP_ACTIONS } from "../utils/xp";
-import { getProvider, getSigner } from "../utils/smartAccount";
+import { getProvider } from "../utils/smartAccount";
 import { compressImage } from "../utils/imageCompression";
 import { mapContractError } from "../utils/errorHandler";
+import { relayMintSpecimen } from "../services/relayer";
+import { db } from "../db";
 
 export function MintSpecimen({ contractAddress, walletAccount }) {
   const [speciesList, setSpeciesList] = useState([]);
@@ -80,8 +82,10 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
         setFormData((prev) => ({ ...prev, speciesId: tempSpecies[0].id.toString() }));
       }
 
-      // 2. Fetch owner's tanks (sequential — typically few tanks, bounded by user ownership)
+      // 2. Fetch owner's tanks — merge on-chain + local Dexie tanks
       const tempTanks = [];
+
+      // On-chain tanks (may exist from before beta local-first switch)
       let idx = 0;
       while (true) {
         try {
@@ -98,6 +102,33 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
           break; // Out of bounds reached
         }
       }
+
+      // Local Dexie tanks (beta mode) — match owner case-insensitively
+      try {
+        const acct = (walletAccount || "").toLowerCase();
+        const allLocalTanks = await db.tanks.toArray();
+        let localTanks = allLocalTanks.filter(t => {
+          if (t.active === false) return false;
+          const owner = (t.ownerAddress || "").toLowerCase();
+          // Match this user, or include legacy tanks with no owner recorded
+          return owner === acct || owner === "";
+        });
+
+        // Beta single-device fallback: if nothing matched the current account but
+        // local tanks exist, surface them anyway so the user's tank is selectable.
+        if (localTanks.length === 0 && allLocalTanks.length > 0) {
+          localTanks = allLocalTanks.filter(t => t.active !== false);
+        }
+
+        for (const lt of localTanks) {
+          if (!tempTanks.some(t => Number(t.id) === Number(lt.id))) {
+            tempTanks.push({ id: lt.id, name: lt.name });
+          }
+        }
+      } catch (e) {
+        console.warn("Could not load local tanks for mint form:", e);
+      }
+
       setTankList(tempTanks);
     } catch (err) {
       console.error("Error loading mint form metadata:", err);
@@ -115,26 +146,34 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
     setSubmitting(true);
 
     try {
-      const signer = await getSigner();
-      const contract = new Contract(contractAddress, aquadexAbi, signer);
-
       const birthTimestamp = formData.birthDate 
         ? Math.round(new Date(formData.birthDate).getTime() / 1000) 
         : 0;
 
-      const tx = await contract.mintSpecimen(
-        Number(formData.speciesId),
-        birthTimestamp,
-        formData.breeder || "0x0000000000000000000000000000000000000000",
-        Number(formData.currentTankId),
-        Number(formData.sireId),
-        Number(formData.damId),
-        formData.ipfsMetadataUri
-      );
+      const speciesMatch = speciesList.find(s => s.id.toString() === formData.speciesId);
+      const commonName = speciesMatch?.commonName || "Unknown";
+      const scientificName = speciesMatch?.scientificName || "Unknown";
 
-      setTxHash(tx.hash);
-      const receipt = await tx.wait();
-      
+      // Beta: store locally via relayer (no MetaMask, no gas)
+      const result = await relayMintSpecimen({
+        speciesId: Number(formData.speciesId),
+        birthTimestamp,
+        breeder: formData.breeder || walletAccount,
+        currentTankId: Number(formData.currentTankId),
+        sireId: Number(formData.sireId),
+        damId: Number(formData.damId),
+        ipfsMetadataUri: formData.ipfsMetadataUri,
+        ownerAddress: walletAccount,
+        commonName,
+        scientificName,
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || "Failed to register specimen");
+      }
+
+      const mintedTokenId = result.specimenId;
+
       // Trigger Breeding telemetry
       const isSpawn = Number(formData.sireId) > 0 || Number(formData.damId) > 0;
       if (isSpawn) {
@@ -143,33 +182,13 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
         addXp(XP_ACTIONS.MINT_SPECIMEN?.points, XP_ACTIONS.MINT_SPECIMEN?.label);
       }
 
-      // Try to parse token ID from SpecimenRegistered event
-      let mintedTokenId = null;
-      try {
-        const event = receipt.logs
-          .map(log => {
-            try {
-              return contract.interface.parseLog(log);
-            } catch (e) {
-              return null;
-            }
-          })
-          .find(parsed => parsed && parsed.name === "SpecimenRegistered");
-
-        if (event) {
-          mintedTokenId = Number(event.args.specimenId);
-        }
-      } catch (err) {
-        console.warn("Could not parse SpecimenRegistered log details:", err);
-      }
-
       if (mintedTokenId) {
         try {
           if (selectedPhoto) {
             localStorage.setItem(`aquadex_specimen_photo_${mintedTokenId}`, selectedPhoto);
           }
           
-          const speciesName = speciesList.find(s => s.id.toString() === formData.speciesId)?.commonName || "Specimen";
+          const speciesName = commonName;
           const metadata = {
             name: `${speciesName} Specimen`,
             description: `Registered Birth Certificate. Species ID: ${formData.speciesId}.`,

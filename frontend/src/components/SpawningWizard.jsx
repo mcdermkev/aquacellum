@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { ethers, Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { addXp, XP_ACTIONS } from "../utils/xp";
-import { getProvider, getSigner } from "../utils/smartAccount";
+import { getProvider } from "../utils/smartAccount";
+import { relaySpawn } from "../services/relayer";
 import { compressImage } from "../utils/imageCompression";
 import { db } from "../db";
 
@@ -261,9 +262,6 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
   const handleSpawningExecution = async () => {
     setTxState({ status: "initiating", message: "Initiating Spawn Record in secure registry...", txHash: "" });
     try {
-      const signer = await getSigner();
-      const contract = new Contract(contractAddress, aquadexAbi, signer);
-
       // Sire/Dam species ID verification
       const sire = specimens.find(s => s.id === Number(selectedSireId));
       if (!sire) throw new Error("Please select a valid Sire.");
@@ -292,92 +290,46 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
         ]
       };
 
-      const metaString = JSON.stringify(mockMetadata);
       const ipfsHash = "ipfs://bafkreispawnlogscompiledmetadata" + Math.random().toString(36).substring(2, 7);
 
-      // 1. Call initiateSpawn
-      const spawnTx = await contract.initiateSpawn(
-        Number(selectedSireId),
-        Number(selectedDamId),
-        Number(selectedTankId),
-        ipfsHash
-      );
-      setTxState({ status: "initiating", message: "Spawn transaction pending validation...", txHash: spawnTx.hash });
-      const spawnReceipt = await spawnTx.wait();
+      // Beta: register spawn + mint offspring locally (no MetaMask, no gas)
+      setTxState({ status: "minting", message: `Registering ${offspringCount} offspring birth certificates...`, txHash: "" });
+      const result = await relaySpawn({
+        sireId: Number(selectedSireId),
+        damId: Number(selectedDamId),
+        tankId: Number(selectedTankId),
+        speciesId,
+        offspringCount: Number(offspringCount),
+        ownerAddress: walletAccount,
+        commonName: speciesCatalog[speciesId]?.commonName || "Specimen",
+        scientificName: speciesCatalog[speciesId]?.scientificName || "Unknown",
+        ipfsMetadataUri: ipfsHash,
+        metadata: mockMetadata,
+      });
 
-      // Find spawnId from SpawnLogged event
-      let spawnId = null;
-      try {
-        const parsedLogs = spawnReceipt.logs
-          .map(log => {
-            try { return contract.interface.parseLog(log); } catch (e) { return null; }
-          })
-          .find(parsed => parsed && parsed.name === "SpawnLogged");
-        if (parsedLogs) {
-          spawnId = Number(parsedLogs.args.spawnId);
-        }
-      } catch (e) {}
-
-      if (!spawnId) {
-        // Fallback: fetch nextSpawnId - 1 from contract
-        spawnId = Number(await contract.nextSpawnId()) - 1;
+      if (!result.success) {
+        throw new Error(result.error || "Breeding registration failed.");
       }
 
-      setTxState({ status: "minting", message: `Spawn Serial No. ${spawnId.toString().padStart(3, "0")} logged! Advancing status to Fry...`, txHash: "" });
-      
-      // 2. Advance status to Fry
-      const updateTx = await contract.updateSpawnStatus(spawnId, 1, Math.round(Date.now() / 1000));
-      await updateTx.wait();
+      const spawnId = result.spawnId;
 
-      // 3. Mint offspring tokens in bulk loop (up to offspringCount)
-      setTxState({ status: "minting", message: `Registering ${offspringCount} offspring birth certificates...`, txHash: "" });
-      for (let i = 1; i <= offspringCount; i++) {
-        setTxState({ status: "minting", message: `Registering offspring birth certificate ${i} of ${offspringCount}...`, txHash: "" });
-        const mintTx = await contract.registerSpawnOffspring(
-          spawnId,
-          speciesId,
-          Math.round(Date.now() / 1000),
-          ipfsHash
-        );
-        const receipt = await mintTx.wait();
-
-        // Parse offspring token ID from log events
-        let offspringId = null;
+      // Persist offspring photos/metadata locally
+      for (const offspringId of result.offspringIds) {
         try {
-          const event = receipt.logs
-            .map(log => {
-              try {
-                return contract.interface.parseLog(log);
-              } catch (e) {
-                return null;
-              }
-            })
-            .find(parsed => parsed && parsed.name === "SpecimenRegistered");
-
-          if (event) {
-            offspringId = Number(event.args.specimenId);
+          if (selectedCohortPhoto) {
+            localStorage.setItem(`aquadex_specimen_photo_${offspringId}`, selectedCohortPhoto);
           }
-        } catch (err) {
-          console.warn(`Could not parse offspring token ID for child ${i}:`, err);
-        }
-
-        if (offspringId) {
-          try {
-            if (selectedCohortPhoto) {
-              localStorage.setItem(`aquadex_specimen_photo_${offspringId}`, selectedCohortPhoto);
-            }
-            localStorage.setItem(`aquadex_specimen_metadata_${offspringId}`, JSON.stringify(mockMetadata));
-          } catch (storageErr) {
-            console.error("Storage quota error:", storageErr);
-            showToast("⚠️ Storage Quota Exceeded! Offspring registered, but device is out of space for local photos/metadata.");
-          }
+          localStorage.setItem(`aquadex_specimen_metadata_${offspringId}`, JSON.stringify(mockMetadata));
+        } catch (storageErr) {
+          console.error("Storage quota error:", storageErr);
+          showToast("⚠️ Storage Quota Exceeded! Offspring registered, but device is out of space for local photos/metadata.");
         }
       }
 
       // Add Breeder XP points
       addXp(XP_ACTIONS.SPAWN_BREED.points, XP_ACTIONS.SPAWN_BREED.label);
 
-      setTxState({ status: "success", message: `Successfully registered Spawn Record Serial No. ${spawnId.toString().padStart(3, "0")} with ${offspringCount} birth certificates!`, txHash: "" });
+      setTxState({ status: "success", message: `Successfully registered Spawn Record Serial No. ${spawnId.toString().slice(-3)} with ${offspringCount} birth certificates!`, txHash: "" });
     } catch (err) {
       console.error(err);
       setTxState({ status: "error", message: err.reason || err.message || "Breeding registration failed.", txHash: "" });

@@ -166,6 +166,22 @@ export function TankTourStep({
           throw new Error(result?.error || "Registration failed");
         }
 
+        // Log the initial parameters so the Reef Composer can pick them up automatically
+        await db.actionLogs.add({
+          tankId: result.tankId,
+          actionType: "ParameterLog",
+          timestamp: Math.round(Date.now() / 1000),
+          details: {
+            temp: 24.5,
+            ph: 7.2,
+            salinity: 1.0,
+            ammonia: 0,
+            nitrite: 0,
+            nitrate: 5,
+            notes: "System initialized via tutorial fallback"
+          }
+        });
+
         // Mirror the real registration components: award the generic tank XP and
         // notify the tour. The dispatched event is caught by `useTourStep`, which
         // runs `handleComplete` (first-tank bonus + advance) — keeping a single

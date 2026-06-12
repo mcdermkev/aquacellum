@@ -3,7 +3,7 @@ import { ethers, Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { addXp, XP_ACTIONS } from "../utils/xp";
 import { FacilityTreeView } from "./FacilityTreeView";
-import { getProvider, getSigner } from "../utils/smartAccount";
+import { getProvider } from "../utils/smartAccount";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import { db } from "../db";
 import { PoseidonChatConsole } from "./PoseidonChatConsole";
@@ -12,7 +12,9 @@ import { TankQRCode } from "./TankQRCode";
 import { CompanionFishEntity } from "./CompanionFishEntity";
 import { useUserTanks } from "../hooks/useUserTanks";
 import { useSpeciesData } from "../hooks/useSpeciesData";
+import { useContractSpecies } from "../hooks/useSpeciesData";
 import { useQueryClient } from "@tanstack/react-query";
+import { relayMoveSpecimen, relayLogWaterParameters, relayMintSpecimen } from "../services/relayer";
 
 const TANK_TYPES = ["Freshwater", "Saltwater", "Brackish", "Pond"];
 const CONTAINMENT_TYPES = ["Tank", "Tub", "Basket"];
@@ -163,6 +165,15 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   // Quick Log Drawer State
   const [quickLogOpen, setQuickLogOpen] = useState(false);
   const [quickLogTankId, setQuickLogTankId] = useState("");
+
+  // Add Fish Drawer State (inline, no navigation)
+  const [addFishOpen, setAddFishOpen] = useState(false);
+  const [addFishTankId, setAddFishTankId] = useState(null);
+  const [addFishSpeciesId, setAddFishSpeciesId] = useState("");
+  const [addFishSearch, setAddFishSearch] = useState("");
+  const [addFishSubmitting, setAddFishSubmitting] = useState(false);
+  const [addFishError, setAddFishError] = useState(null);
+  const { data: contractSpecies = [] } = useContractSpecies(contractAddress);
   const [poseidonChatOpen, setPoseidonChatOpen] = useState(false);
 
   // Bulk / Rack-Level Logging State (Phase 1)
@@ -270,6 +281,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === "Escape") {
+        if (addFishOpen) { setAddFishOpen(false); return; }
         if (quickLogOpen) { setQuickLogOpen(false); return; }
         if (inlineDetailOpen) { setInlineDetailOpen(false); setInlineDetailText(""); return; }
         if (activeTank) { setActiveTank(null); return; }
@@ -277,7 +289,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     };
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  }, [quickLogOpen, inlineDetailOpen, activeTank]);
+  }, [quickLogOpen, inlineDetailOpen, activeTank, addFishOpen]);
 
   // Detailed Tank View State
   const [detailSubTab, setDetailSubTab] = useState("overview"); // "overview" | "fish" | "history" | "notes"
@@ -350,14 +362,68 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     };
   };
 
+  const openAddFish = (tank) => {
+    setAddFishTankId(tank.id);
+    setAddFishSpeciesId("");
+    setAddFishSearch("");
+    setAddFishError(null);
+    setAddFishOpen(true);
+  };
+
+  const handleAddFishSubmit = async (e) => {
+    if (e) e.preventDefault();
+    if (!addFishSpeciesId) {
+      setAddFishError("Please select a species first.");
+      return;
+    }
+    setAddFishSubmitting(true);
+    setAddFishError(null);
+    try {
+      const species = contractSpecies.find(s => String(s.speciesId) === String(addFishSpeciesId)) || {};
+      const result = await relayMintSpecimen({
+        speciesId: Number(addFishSpeciesId),
+        birthTimestamp: 0,
+        breeder: walletAccount,
+        currentTankId: Number(addFishTankId),
+        ownerAddress: walletAccount,
+        commonName: species.commonName || "Specimen",
+        scientificName: species.scientificName || "Unknown",
+      });
+      if (!result.success) throw new Error(result.error || "Failed to add fish");
+
+      addXp(XP_ACTIONS.MINT_SPECIMEN?.points, XP_ACTIONS.MINT_SPECIMEN?.label);
+      showToast(casualModeActive
+        ? `🐟 ${species.commonName || "Fish"} added to your tank!`
+        : `✅ Birth certificate registered for ${species.commonName || "specimen"}`
+      );
+
+      // Notify onboarding tour / listeners
+      window.dispatchEvent(new CustomEvent("aquadex:specimen_added", { detail: { tokenId: result.specimenId } }));
+
+      setAddFishOpen(false);
+      await fetchDashboardData();
+
+      // Refresh the active tank view
+      const fresh = await refetchTanks();
+      const updated = fresh.data?.find(t => t.id === Number(addFishTankId));
+      if (updated) setActiveTank(updated);
+    } catch (err) {
+      console.error("Add fish failed:", err);
+      setAddFishError(mapContractError(err, casualModeActive));
+    } finally {
+      setAddFishSubmitting(false);
+    }
+  };
+
   const handleMoveSpecimen = async (specimenId, targetTankId) => {
     try {
       showToast(`🔄 Rehoming specimen #${specimenId} to tank #${targetTankId}...`);
-      const signer = await getSigner();
-      const contract = new Contract(contractAddress, aquadexAbi, signer);
 
-      const tx = await contract.moveSpecimenToTank(specimenId, targetTankId);
-      await tx.wait();
+      // Beta: move locally via relayer (no MetaMask, no gas)
+      const result = await relayMoveSpecimen({ specimenId, targetTankId });
+      if (!result.success) {
+        throw new Error(result.error || "Move failed");
+      }
 
       addXp(10, "Specimen Rehomed");
       showToast(`✅ Specimen #${specimenId} moved successfully!`);
@@ -579,9 +645,6 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     setModalError(null);
     setTxHash(null);
     try {
-      const signer = await getSigner();
-      const contract = new Contract(contractAddress, aquadexAbi, signer);
-
       const tempCelsiusX10 = Math.round(parseFloat(formData.temp) * 10);
       const phX10 = Math.round(parseFloat(formData.ph) * 10);
       const salinitySgX10000 = Math.round(parseFloat(formData.salinity) * 10000);
@@ -589,19 +652,21 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       const nitritePpmX100 = Math.round(parseFloat(formData.nitrite) * 100);
       const nitratePpmX100 = Math.round(parseFloat(formData.nitrate) * 100);
 
-      const tx = await contract.logWaterParameters(
-        Number(targetTankId),
+      // Beta: log locally via relayer (no MetaMask, no gas)
+      const result = await relayLogWaterParameters({
+        tankId: Number(targetTankId),
         tempCelsiusX10,
         phX10,
         salinitySgX10000,
         ammoniaPpmX100,
         nitritePpmX100,
         nitratePpmX100,
-        formData.notes
-      );
+        notes: formData.notes,
+      });
 
-      setTxHash(tx.hash);
-      await tx.wait();
+      if (!result.success) {
+        throw new Error(result.error || "Failed to log parameters");
+      }
 
       addXp(XP_ACTIONS.LOG_PARAMETERS.points, XP_ACTIONS.LOG_PARAMETERS.label);
 
@@ -1664,13 +1729,31 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               {/* 2.2 FISH SUB-TAB: Fish inside tank — consumer label in Casual mode */}
               {detailSubTab === "fish" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <strong style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                    {casualModeActive ? `Fish in this tank (${getSpecimenCount(activeTank)})` : `Registered Birth Certificates (Total: ${getSpecimenCount(activeTank)})`}
-                  </strong>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
+                    <strong style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                      {casualModeActive ? `Fish in this tank (${getSpecimenCount(activeTank)})` : `Registered Birth Certificates (Total: ${getSpecimenCount(activeTank)})`}
+                    </strong>
+                    <button
+                      className="btn-primary"
+                      onClick={() => openAddFish(activeTank)}
+                      style={{ padding: "0.35rem 0.75rem", fontSize: "0.78rem", whiteSpace: "nowrap" }}
+                    >
+                      + Add Fish
+                    </button>
+                  </div>
                   {activeTank.specimens.length === 0 ? (
-                    <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", padding: "2rem", textAlign: "center" }}>
-                      {casualModeActive ? "No fish recorded in this tank yet." : "No birth certificates assigned to this containment unit."}
-                    </p>
+                    <div style={{ padding: "2rem", textAlign: "center" }}>
+                      <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1rem" }}>
+                        {casualModeActive ? "No fish recorded in this tank yet." : "No birth certificates assigned to this containment unit."}
+                      </p>
+                      <button
+                        className="btn-primary"
+                        onClick={() => openAddFish(activeTank)}
+                        style={{ padding: "0.5rem 1rem", fontSize: "0.85rem" }}
+                      >
+                        {casualModeActive ? "+ Add your first fish" : "+ Register first specimen"}
+                      </button>
+                    </div>
                   ) : (
                     activeTank.specimens.map(spec => (
                       <div 
@@ -2061,6 +2144,105 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             >
               Cancel Scan
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 3.5 ADD FISH SLIDING DRAWER */}
+      {addFishOpen && (
+        <div className="sliding-drawer-backdrop" onClick={() => setAddFishOpen(false)}>
+          <div className="sliding-drawer-content" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
+              <h3 style={{ margin: 0, fontSize: "1.05rem", color: "#fff" }}>
+                {casualModeActive ? "🐟 Add Fish to Tank" : "🐟 Register Specimen"}
+              </h3>
+              <button
+                onClick={() => { setAddFishOpen(false); setAddFishError(null); }}
+                style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: "1.5rem", cursor: "pointer", lineHeight: 1 }}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            {addFishError && (
+              <div style={{ padding: "0.6rem 0.75rem", marginBottom: "1rem", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "6px", color: "#fca5a5", fontSize: "0.8rem" }}>
+                {addFishError}
+              </div>
+            )}
+
+            <form onSubmit={handleAddFishSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                  Search species
+                </label>
+                <input
+                  type="text"
+                  value={addFishSearch}
+                  onChange={(e) => setAddFishSearch(e.target.value)}
+                  placeholder="Type a common or scientific name..."
+                  style={{ width: "100%", padding: "0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                />
+              </div>
+
+              <div style={{ maxHeight: "300px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                {contractSpecies.length === 0 ? (
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", padding: "1rem", textAlign: "center" }}>
+                    No registered species found in the catalog yet.
+                  </p>
+                ) : (
+                  contractSpecies
+                    .filter(s => {
+                      const q = addFishSearch.trim().toLowerCase();
+                      if (!q) return true;
+                      return (s.commonName || "").toLowerCase().includes(q) ||
+                             (s.scientificName || "").toLowerCase().includes(q);
+                    })
+                    .slice(0, 50)
+                    .map(s => {
+                      const selected = String(s.speciesId) === String(addFishSpeciesId);
+                      return (
+                        <button
+                          type="button"
+                          key={s.speciesId}
+                          onClick={() => setAddFishSpeciesId(String(s.speciesId))}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            textAlign: "left",
+                            padding: "0.6rem 0.75rem",
+                            background: selected ? "rgba(56,189,248,0.15)" : "rgba(0,0,0,0.2)",
+                            border: selected ? "1px solid var(--accent-blue)" : "1px solid var(--glass-border)",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            color: "#fff"
+                          }}
+                        >
+                          <span>
+                            <strong style={{ fontSize: "0.85rem" }}>{s.commonName}</strong>
+                            <span style={{ display: "block", fontSize: "0.7rem", color: "var(--text-muted)", fontStyle: "italic" }}>
+                              {s.scientificName}
+                            </span>
+                          </span>
+                          {selected && <span style={{ color: "var(--accent-blue)", fontSize: "1.1rem" }}>✓</span>}
+                        </button>
+                      );
+                    })
+                )}
+              </div>
+
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={addFishSubmitting || !addFishSpeciesId}
+                style={{ padding: "0.75rem", fontSize: "0.9rem", opacity: (addFishSubmitting || !addFishSpeciesId) ? 0.6 : 1 }}
+              >
+                {addFishSubmitting
+                  ? (casualModeActive ? "Adding..." : "Registering...")
+                  : (casualModeActive ? "Add to Tank" : "Register Birth Certificate")}
+              </button>
+            </form>
           </div>
         </div>
       )}

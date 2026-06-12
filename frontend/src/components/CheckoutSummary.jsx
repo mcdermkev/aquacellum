@@ -3,8 +3,16 @@ import { ethers, Contract, formatEther, parseEther } from "ethers";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
 import managerAbi from "../abi/AquadexManager.json";
 import { addXp, XP_ACTIONS } from "../utils/xp";
-import { getProvider, getSigner } from "../utils/smartAccount";
+import { getProvider } from "../utils/smartAccount";
 import { fetchListingsByBreed } from "../utils/listingManager";
+import {
+  relayPurchaseMultiple,
+  relayUpdateShippingOrder,
+  relayUpdateBatchOrder,
+  relaySettleHandshake,
+  relayGetOrders,
+  getLocalListings,
+} from "../services/relayer";
 import { useHandshake } from "../hooks/useHandshake";
 import { db } from "../db";
 
@@ -116,8 +124,17 @@ export function CheckoutSummary({
     if (!walletAccount || !marketplaceAddress) return;
     try {
       const provider = getProvider();
-      const listingsData = await fetchListingsByBreed(null, contractAddress, marketplaceAddress, provider);
-      setAllActiveListings(listingsData);
+      let listingsData = [];
+      try {
+        listingsData = await fetchListingsByBreed(null, contractAddress, marketplaceAddress, provider);
+      } catch (e) {
+        console.warn("On-chain listings read failed, using local only:", e);
+      }
+      // Beta: merge local-first listings
+      const local = await getLocalListings();
+      const ids = new Set(listingsData.map(l => Number(l.id)));
+      const merged = [...listingsData, ...local.filter(l => !ids.has(Number(l.id)))];
+      setAllActiveListings(merged);
     } catch (e) {
       console.error("Failed to load active listings in CheckoutSummary:", e);
     }
@@ -173,34 +190,26 @@ export function CheckoutSummary({
     setActionTx(null);
 
     try {
-      const signer = await getSigner();
-      const marketContract = new Contract(marketplaceAddress, marketplaceAbi, signer);
-
       const firstId = pendingTokenIds[0];
       const firstListing = allActiveListings.find(l => Number(l.tokenId) === firstId);
       if (!firstListing) throw new Error("First listing not found in active listings");
 
       const seller = firstListing.seller;
-      const consolidatedShippingFee = parseEther(firstListing.shippingFee);
-
-      let totalSubtotal = 0n;
       for (const tid of pendingTokenIds) {
         const item = allActiveListings.find(l => Number(l.tokenId) === tid);
         if (!item) throw new Error(`Listing not found for token ${tid}`);
         if (item.seller.toLowerCase() !== seller.toLowerCase()) {
           throw new Error("All items in consolidated checkout must be from the same seller");
         }
-        totalSubtotal += parseEther(item.price);
       }
 
-      const totalCostWei = totalSubtotal + consolidatedShippingFee;
-
-      const tx = await marketContract.purchaseMultipleSpecimens(pendingTokenIds, {
-        value: totalCostWei
+      // Beta: purchase locally (no MetaMask, no gas)
+      const result = await relayPurchaseMultiple({
+        tokenIds: pendingTokenIds,
+        buyer: walletAccount,
+        listings: allActiveListings,
       });
-
-      setActionTx(tx.hash);
-      await tx.wait();
+      if (!result.success) throw new Error(result.error || "Checkout failed");
 
       addXp(XP_ACTIONS.CLAIM_EXCHANGE.points * pendingTokenIds.length, `Consolidated checkout: ${pendingTokenIds.length} specimens`);
 
@@ -366,9 +375,33 @@ export function CheckoutSummary({
 
       setShippingEscrows(fetchedShipping);
       setPurchases(fetchedBatches);
+
+      // Beta: merge local-first orders (purchases made without MetaMask)
+      try {
+        const local = await relayGetOrders(walletAccount);
+        if (local.shippingEscrows.length || local.purchases.length) {
+          setShippingEscrows(prev => {
+            const existing = new Set(prev.map(o => Number(o.tokenId)));
+            return [...prev, ...local.shippingEscrows.filter(o => !existing.has(Number(o.tokenId)))];
+          });
+          setPurchases(prev => {
+            const existing = new Set(prev.map(o => Number(o.purchaseId)));
+            return [...prev, ...local.purchases.filter(o => !existing.has(Number(o.purchaseId)))];
+          });
+        }
+      } catch (e) {
+        console.warn("Failed to merge local orders:", e);
+      }
     } catch (err) {
       console.error("Error reading orders:", err);
-      setError("Failed to fetch order tracking details.");
+      // Beta fallback: show local-first orders even if the chain read fails
+      try {
+        const local = await relayGetOrders(walletAccount);
+        setShippingEscrows(local.shippingEscrows);
+        setPurchases(local.purchases);
+      } catch (e) {
+        setError("Failed to fetch order tracking details.");
+      }
     } finally {
       setLoading(false);
     }
@@ -396,18 +429,15 @@ export function CheckoutSummary({
     setActionTx(null);
 
     try {
-      const signer = await getSigner();
-      const marketContract = new Contract(marketplaceAddress, marketplaceAbi, signer);
-
       const handshake = await getPendingHandshake(selectedOrder.data.purchaseId);
       const salt = handshake ? handshake.salt : null;
       if (!salt) {
         throw new Error("Handshake salt not found in local cache. Breeder must scan the QR code or ensure the pre-image is persisted.");
       }
 
-      const tx = await marketContract.secureInPersonRelease(selectedOrder.data.purchaseId, Number(pinInput), salt);
-      setActionTx(tx.hash);
-      await tx.wait();
+      // Beta: settle handshake locally (no MetaMask, no gas)
+      const result = await relaySettleHandshake({ purchaseId: selectedOrder.data.purchaseId });
+      if (!result.success) throw new Error(result.error || "Settlement failed");
 
       const baseXp = XP_ACTIONS.CLAIM_EXCHANGE.points;
       const isInsideEventZone = insideEventZone === true || !!currentEventId;
@@ -423,16 +453,7 @@ export function CheckoutSummary({
       await fetchOrders();
     } catch (err) {
       console.error("PIN release failed:", err);
-      const isInvalidCredentials = 
-        (err.message && err.message.includes("Invalid verification credentials")) || 
-        (err.reason && err.reason.includes("Invalid verification credentials")) ||
-        (err.data && err.data.message && err.data.message.includes("Invalid verification credentials"));
-        
-      if (isInvalidCredentials) {
-        setActionError("Invalid verification credentials: The PIN or salt does not match the buyer's commitment.");
-      } else {
-        setActionError(mapContractError(err, casualModeActive));
-      }
+      setActionError(mapContractError(err, casualModeActive));
     } finally {
       setActionLoading(false);
       setActionTx(null);
@@ -447,12 +468,12 @@ export function CheckoutSummary({
     setActionTx(null);
 
     try {
-      const signer = await getSigner();
-      const marketContract = new Contract(marketplaceAddress, marketplaceAbi, signer);
-
-      const tx = await marketContract.dispatchShipping(selectedOrder.data.tokenId, trackingInput);
-      setActionTx(tx.hash);
-      await tx.wait();
+      const result = await relayUpdateShippingOrder(selectedOrder.data.tokenId, {
+        status: 1, // DISPATCHED
+        trackingNumber: trackingInput,
+        dispatchTimestamp: Math.floor(Date.now() / 1000),
+      });
+      if (!result.success) throw new Error(result.error || "Dispatch failed");
 
       setTrackingInput("");
       setSelectedOrder(null);
@@ -473,18 +494,14 @@ export function CheckoutSummary({
     setActionTx(null);
 
     try {
-      const signer = await getSigner();
-      const marketContract = new Contract(marketplaceAddress, marketplaceAbi, signer);
-
-      const tx = await marketContract.releaseShippingEscrow(selectedOrder.data.tokenId);
-      setActionTx(tx.hash);
-      await tx.wait();
+      const result = await relayUpdateShippingOrder(selectedOrder.data.tokenId, { status: 2 }); // RELEASED
+      if (!result.success) throw new Error(result.error || "Release failed");
 
       setSelectedOrder(null);
       await fetchOrders();
     } catch (err) {
       console.error("Release shipping failed:", err);
-      setActionError(err.reason || err.message || "Failed to release shipping escrow.");
+      setActionError(err.message || "Failed to release shipping escrow.");
     } finally {
       setActionLoading(false);
       setActionTx(null);
@@ -498,18 +515,14 @@ export function CheckoutSummary({
     setActionTx(null);
 
     try {
-      const signer = await getSigner();
-      const marketContract = new Contract(marketplaceAddress, marketplaceAbi, signer);
-
-      const tx = await marketContract.disputeShipping(selectedOrder.data.tokenId);
-      setActionTx(tx.hash);
-      await tx.wait();
+      const result = await relayUpdateShippingOrder(selectedOrder.data.tokenId, { status: 3 }); // DISPUTED
+      if (!result.success) throw new Error(result.error || "Dispute failed");
 
       setSelectedOrder(null);
       await fetchOrders();
     } catch (err) {
       console.error("Dispute failed:", err);
-      setActionError(err.reason || err.message || "Failed to initiate shipping dispute.");
+      setActionError(err.message || "Failed to initiate shipping dispute.");
     } finally {
       setActionLoading(false);
       setActionTx(null);
@@ -523,18 +536,16 @@ export function CheckoutSummary({
     setActionTx(null);
 
     try {
-      const signer = await getSigner();
-      const marketContract = new Contract(marketplaceAddress, marketplaceAbi, signer);
-
-      const tx = await marketContract.resolveShippingDispute(selectedOrder.data.tokenId, refundBuyer);
-      setActionTx(tx.hash);
-      await tx.wait();
+      const result = await relayUpdateShippingOrder(selectedOrder.data.tokenId, {
+        status: refundBuyer ? 4 : 2, // REFUNDED or RELEASED
+      });
+      if (!result.success) throw new Error(result.error || "Resolution failed");
 
       setSelectedOrder(null);
       await fetchOrders();
     } catch (err) {
       console.error("Resolve dispute failed:", err);
-      setActionError(err.reason || err.message || "Failed to resolve shipping dispute.");
+      setActionError(err.message || "Failed to resolve shipping dispute.");
     } finally {
       setActionLoading(false);
       setActionTx(null);
@@ -548,18 +559,14 @@ export function CheckoutSummary({
     setActionTx(null);
 
     try {
-      const signer = await getSigner();
-      const marketContract = new Contract(marketplaceAddress, marketplaceAbi, signer);
-
-      const tx = await marketContract.releaseEscrow(selectedOrder.data.purchaseId);
-      setActionTx(tx.hash);
-      await tx.wait();
+      const result = await relayUpdateBatchOrder(selectedOrder.data.purchaseId, { state: 1 }); // RELEASED
+      if (!result.success) throw new Error(result.error || "Release failed");
 
       setSelectedOrder(null);
       await fetchOrders();
     } catch (err) {
       console.error("Release batch failed:", err);
-      setActionError(err.reason || err.message || "Failed to release batch escrow.");
+      setActionError(err.message || "Failed to release batch escrow.");
     } finally {
       setActionLoading(false);
       setActionTx(null);
@@ -573,18 +580,14 @@ export function CheckoutSummary({
     setActionTx(null);
 
     try {
-      const signer = await getSigner();
-      const marketContract = new Contract(marketplaceAddress, marketplaceAbi, signer);
-
-      const tx = await marketContract.refundEscrow(selectedOrder.data.purchaseId);
-      setActionTx(tx.hash);
-      await tx.wait();
+      const result = await relayUpdateBatchOrder(selectedOrder.data.purchaseId, { state: 2 }); // REFUNDED
+      if (!result.success) throw new Error(result.error || "Refund failed");
 
       setSelectedOrder(null);
       await fetchOrders();
     } catch (err) {
       console.error("Refund batch failed:", err);
-      setActionError(err.reason || err.message || "Failed to refund batch escrow.");
+      setActionError(err.message || "Failed to refund batch escrow.");
     } finally {
       setActionLoading(false);
       setActionTx(null);

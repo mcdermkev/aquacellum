@@ -3,7 +3,7 @@ import { ethers, Contract, formatEther } from "ethers";
 import managerAbi from "../abi/AquadexManager.json";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
 import { HandshakeVerification } from "./HandshakeVerification";
-import { getProvider, getSigner } from "../utils/smartAccount";
+import { getProvider } from "../utils/smartAccount";
 
 export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAccount }) {
   const [listings, setListings] = useState([]);
