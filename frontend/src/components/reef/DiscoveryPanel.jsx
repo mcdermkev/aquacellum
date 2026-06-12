@@ -17,25 +17,37 @@ import { useNearbyBreeders, useBreedersForSpecies, useTopContributors } from "..
 // Sub-components
 // ─────────────────────────────────────────────────────────────────────────────
 
-function SectionHeader({ icon, title, subtitle }) {
+function SectionHeader({ icon, title, subtitle, isExpanded }) {
   return (
-    <div style={{ marginBottom: "0.75rem" }}>
-      <h4 style={{
-        margin: 0,
-        fontSize: "0.85rem",
-        fontWeight: 700,
-        color: "#fff",
-        display: "flex",
-        alignItems: "center",
-        gap: "0.4rem",
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: "0.4rem" }}>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <h4 style={{
+          margin: 0,
+          fontSize: "0.85rem",
+          fontWeight: 700,
+          color: "#fff",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.4rem",
+        }}>
+          <span>{icon}</span> {title}
+        </h4>
+        {subtitle && (
+          <p style={{ margin: "0.15rem 0 0", fontSize: "0.65rem", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {subtitle}
+          </p>
+        )}
+      </div>
+      <span style={{
+        fontSize: "0.75rem",
+        color: "var(--text-muted)",
+        transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+        transition: "transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+        marginLeft: "0.5rem",
+        flexShrink: 0
       }}>
-        <span>{icon}</span> {title}
-      </h4>
-      {subtitle && (
-        <p style={{ margin: "0.2rem 0 0", fontSize: "0.65rem", color: "var(--text-muted)" }}>
-          {subtitle}
-        </p>
-      )}
+        ▼
+      </span>
     </div>
   );
 }
@@ -160,7 +172,7 @@ export function DiscoveryPanel({ onProfileClick, casualModeActive = false }) {
           role="button"
           tabIndex={0}
           onKeyDown={(e) => e.key === "Enter" && toggleSection("nearby")}
-          aria-expanded={expandedSection === "nearby" || expandedSection === null}
+          aria-expanded={expandedSection === "nearby"}
         >
           <SectionHeader
             icon="📍"
@@ -169,10 +181,11 @@ export function DiscoveryPanel({ onProfileClick, casualModeActive = false }) {
               ? "People in your area who keep fish"
               : "Breeders in your region (zoneHash proximity)"
             }
+            isExpanded={expandedSection === "nearby"}
           />
         </div>
 
-        {(expandedSection === "nearby" || expandedSection === null) && (
+        {expandedSection === "nearby" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
             {nearbyLoading && <LoadingSkeleton />}
             {!nearbyLoading && nearbyBreeders?.length === 0 && (
@@ -201,16 +214,17 @@ export function DiscoveryPanel({ onProfileClick, casualModeActive = false }) {
           role="button"
           tabIndex={0}
           onKeyDown={(e) => e.key === "Enter" && toggleSection("species")}
-          aria-expanded={expandedSection === "species" || expandedSection === null}
+          aria-expanded={expandedSection === "species"}
         >
           <SectionHeader
             icon="🐠"
             title={casualModeActive ? "Who Keeps This Fish?" : "Breeders By Species"}
             subtitle="Find breeders who keep a specific species"
+            isExpanded={expandedSection === "species"}
           />
         </div>
 
-        {(expandedSection === "species" || expandedSection === null) && (
+        {expandedSection === "species" && (
           <>
             <form
               onSubmit={handleSpeciesSearch}
@@ -291,16 +305,17 @@ export function DiscoveryPanel({ onProfileClick, casualModeActive = false }) {
           role="button"
           tabIndex={0}
           onKeyDown={(e) => e.key === "Enter" && toggleSection("contributors")}
-          aria-expanded={expandedSection === "contributors" || expandedSection === null}
+          aria-expanded={expandedSection === "contributors"}
         >
           <SectionHeader
             icon="🏆"
             title={casualModeActive ? "Top Helpers This Week" : "Top Contributors"}
             subtitle="Most Insights posted and Audits given this week"
+            isExpanded={expandedSection === "contributors"}
           />
         </div>
 
-        {(expandedSection === "contributors" || expandedSection === null) && (
+        {expandedSection === "contributors" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
             {contributorsLoading && <LoadingSkeleton />}
             {!contributorsLoading && topContributors?.length === 0 && (

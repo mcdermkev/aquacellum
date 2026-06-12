@@ -428,6 +428,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const [uploadingSpecimenId, setUploadingSpecimenId] = useState(null);
   const specimenPhotoInputRef = useRef(null);
   const [farewellSpecimen, setFarewellSpecimen] = useState(null);
+  const [activeMenuSpecimenId, setActiveMenuSpecimenId] = useState(null);
 
   // Bulk / Rack-Level Logging State (Phase 1)
   const [bulkLogScope, setBulkLogScope] = useState("single"); // "single" | "rack" | "room"
@@ -2263,8 +2264,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   )}
                 </div>
               ) }
-
-              {/* 2.2 FISH SUB-TAB: Fish inside tank — consumer label in Casual mode */}
+{/* 2.2 FISH SUB-TAB: Fish inside tank — consumer label in Casual mode */}
               {detailSubTab === "fish" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
@@ -2293,227 +2293,354 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       </button>
                     </div>
                   ) : (
-                    activeTank.specimens.map(spec => {
-                      const matchedSpecies = fishbaseData.find(f => Number(f.speciesId) === Number(spec.speciesId));
-                      const masterPhotoUrl = matchedSpecies?.masterPhotoUrl || "";
-                      const customPhoto = localStorage.getItem(`aquadex_specimen_photo_${spec.id}`);
-                      const finalImgSrc = customPhoto || masterPhotoUrl;
-
-                      return (
+                    <>
+                      {/* Click interceptor to dismiss the dropdown when clicking outside */}
+                      {activeMenuSpecimenId && (
                         <div 
-                          key={spec.id} 
-                          onClick={() => onSelectSpecimen && onSelectSpecimen(spec.id)}
-                          draggable="true"
-                          onDragStart={(e) => {
-                            e.dataTransfer.setData("application/aquadex-specimen", spec.id.toString());
-                            e.dataTransfer.effectAllowed = "move";
-                            e.currentTarget.style.opacity = "0.5";
-                          }}
-                          onDragEnd={(e) => {
-                            e.currentTarget.style.opacity = "1";
-                          }}
                           style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            padding: "0.6rem 0.75rem",
-                            background: casualModeActive ? "rgba(14, 165, 233, 0.04)" : "rgba(0,0,0,0.2)",
-                            borderRadius: "8px",
-                            border: casualModeActive ? "1px solid rgba(56,189,248,0.15)" : "1px solid var(--glass-border)",
-                            fontSize: "0.85rem",
-                            cursor: "grab",
-                            transition: "all 0.2s ease",
-                            gap: "0.75rem",
-                            marginBottom: "0.4rem"
+                            position: "fixed",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            zIndex: 998,
+                            background: "transparent",
+                            cursor: "default"
                           }}
-                        >
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1, minWidth: 0 }}>
-                            {/* Fish Avatar / Image */}
-                            {finalImgSrc ? (
-                              <img 
-                                src={finalImgSrc} 
-                                alt={spec.commonName}
-                                style={{
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuSpecimenId(null);
+                          }}
+                        />
+                      )}
+
+                      {activeTank.specimens.map(spec => {
+                        const matchedSpecies = fishbaseData.find(f => Number(f.speciesId) === Number(spec.speciesId));
+                        const masterPhotoUrl = matchedSpecies?.masterPhotoUrl || "";
+                        const customPhoto = localStorage.getItem(`aquadex_specimen_photo_${spec.id}`);
+                        const finalImgSrc = customPhoto || masterPhotoUrl;
+                        const displayScientificName = spec.scientificName || matchedSpecies?.scientificName || "";
+
+                        return (
+                          <div 
+                            key={spec.id} 
+                            onClick={() => onSelectSpecimen && onSelectSpecimen(spec.id)}
+                            draggable="true"
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData("application/aquadex-specimen", spec.id.toString());
+                              e.dataTransfer.effectAllowed = "move";
+                              e.currentTarget.style.opacity = "0.5";
+                            }}
+                            onDragEnd={(e) => {
+                              e.currentTarget.style.opacity = "1";
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.transform = "translateY(-1px)";
+                              e.currentTarget.style.background = casualModeActive 
+                                ? "linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(14, 165, 233, 0.02) 100%)" 
+                                : "rgba(255, 255, 255, 0.04)";
+                              e.currentTarget.style.borderColor = casualModeActive 
+                                ? "rgba(56, 189, 248, 0.3)" 
+                                : "rgba(255, 255, 255, 0.15)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.transform = "translateY(0)";
+                              e.currentTarget.style.background = casualModeActive 
+                                ? "linear-gradient(135deg, rgba(14, 165, 233, 0.04) 0%, rgba(14, 165, 233, 0.01) 100%)" 
+                                : "rgba(0,0,0,0.2)";
+                              e.currentTarget.style.borderColor = casualModeActive 
+                                ? "rgba(56, 189, 248, 0.15)" 
+                                : "var(--glass-border)";
+                            }}
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              padding: casualModeActive ? "0.75rem 1rem" : "0.6rem 0.75rem",
+                              background: casualModeActive 
+                                ? "linear-gradient(135deg, rgba(14, 165, 233, 0.04) 0%, rgba(14, 165, 233, 0.01) 100%)" 
+                                : "rgba(0,0,0,0.2)",
+                              borderRadius: casualModeActive ? "12px" : "8px",
+                              border: casualModeActive ? "1px solid rgba(56,189,248,0.15)" : "1px solid var(--glass-border)",
+                              fontSize: "0.85rem",
+                              cursor: "grab",
+                              transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                              gap: "0.75rem",
+                              marginBottom: "0.5rem",
+                              position: "relative"
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1, minWidth: 0 }}>
+                              {/* Fish Avatar / Image */}
+                              {finalImgSrc ? (
+                                <img 
+                                  src={finalImgSrc} 
+                                  alt={spec.commonName}
+                                  style={{
+                                    width: "44px",
+                                    height: "44px",
+                                    borderRadius: "8px",
+                                    objectFit: "cover",
+                                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                                    flexShrink: 0
+                                  }}
+                                />
+                              ) : (
+                                <div style={{
                                   width: "44px",
                                   height: "44px",
                                   borderRadius: "8px",
-                                  objectFit: "cover",
-                                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                                  background: "linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(14, 165, 233, 0.2))",
+                                  border: "1px solid rgba(56, 189, 248, 0.2)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: "1.2rem",
                                   flexShrink: 0
-                                }}
-                              />
-                            ) : (
-                              <div style={{
-                                width: "44px",
-                                height: "44px",
-                                borderRadius: "8px",
-                                background: "linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(14, 165, 233, 0.2))",
-                                border: "1px solid rgba(56, 189, 248, 0.2)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontSize: "1.2rem",
-                                flexShrink: 0
-                              }}>
-                                🐠
-                              </div>
-                            )}
-                            
-                            <div style={{ minWidth: 0, flex: 1 }}>
-                              {!casualModeActive && (
-                                <strong style={{ color: "var(--accent-blue)", display: "block", fontSize: "0.75rem" }}>
-                                  Cert. Serial No. {spec.id.toString().padStart(3, "0")}
-                                </strong>
+                                }}>
+                                  🐠
+                                </div>
                               )}
-                              <span style={{ color: "#fff", fontWeight: "600", display: "inline-flex", alignItems: "center", gap: "0.4rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>
-                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{spec.commonName}</span>
-                                {spec.gender && spec.gender !== "Not Sure" && (
+                              
+                              <div style={{ minWidth: 0, flex: 1 }}>
+                                {!casualModeActive && (
+                                  <strong style={{ color: "var(--accent-blue)", display: "block", fontSize: "0.75rem" }}>
+                                    Cert. Serial No. {spec.id.toString().padStart(3, "0")}
+                                  </strong>
+                                )}
+                                <span style={{ color: "#fff", fontWeight: "600", display: "inline-flex", alignItems: "center", gap: "0.4rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>
+                                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{spec.commonName}</span>
+                                  {spec.gender && spec.gender !== "Not Sure" && (
+                                    <span style={{
+                                      fontSize: "0.6rem",
+                                      padding: "0.05rem 0.35rem",
+                                      borderRadius: "4px",
+                                      background: spec.gender === "Male" ? "rgba(56, 189, 248, 0.15)" : "rgba(244, 63, 94, 0.15)",
+                                      color: spec.gender === "Male" ? "#38bdf8" : "#f43f5e",
+                                      border: spec.gender === "Male" ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid rgba(244, 63, 94, 0.25)",
+                                      fontWeight: "600",
+                                      flexShrink: 0
+                                    }}>
+                                      {spec.gender === "Male" ? "♂" : "♀"}
+                                    </span>
+                                  )}
+                                </span>
+                                <span style={{ display: "block", fontSize: "0.7rem", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontStyle: displayScientificName ? "italic" : "normal" }}>
+                                  {casualModeActive ? (displayScientificName || "Unknown species") : displayScientificName}
+                                </span>
+                                {casualModeActive && spec.careLevel !== undefined && (
                                   <span style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "0.2rem",
+                                    marginTop: "0.25rem",
                                     fontSize: "0.6rem",
                                     padding: "0.05rem 0.35rem",
-                                    borderRadius: "4px",
-                                    background: spec.gender === "Male" ? "rgba(56, 189, 248, 0.15)" : "rgba(244, 63, 94, 0.15)",
-                                    color: spec.gender === "Male" ? "#38bdf8" : "#f43f5e",
-                                    border: spec.gender === "Male" ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid rgba(244, 63, 94, 0.25)",
-                                    fontWeight: "600",
-                                    flexShrink: 0
+                                    borderRadius: "20px",
+                                    background: "rgba(34, 197, 94, 0.12)",
+                                    border: "1px solid rgba(34, 197, 94, 0.3)",
+                                    color: "#4ade80"
                                   }}>
-                                    {spec.gender === "Male" ? "♂" : "♀"}
+                                    ✓ Registry Verified
                                   </span>
                                 )}
-                              </span>
-                              <span style={{ display: "block", fontSize: "0.7rem", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {casualModeActive ? spec.commonName : spec.scientificName}
-                              </span>
-                              {casualModeActive && spec.careLevel !== undefined && (
-                                <span style={{
-                                  display: "inline-block",
-                                  marginTop: "0.2rem",
-                                  fontSize: "0.6rem",
-                                  padding: "0.05rem 0.35rem",
-                                  borderRadius: "20px",
-                                  background: "rgba(34, 197, 94, 0.12)",
-                                  border: "1px solid rgba(34, 197, 94, 0.3)",
-                                  color: "#4ade80"
-                                }}>
-                                  ✓ Registry Verified
-                                </span>
-                              )}
+                              </div>
                             </div>
-                          </div>
 
-                          {/* Action buttons */}
-                          <div style={{ display: "flex", gap: "0.4rem", alignItems: "center", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-                            {casualModeActive ? (
-                              <>
-                                {/* Add/Update Photo Button */}
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setUploadingSpecimenId(spec.id);
-                                    setTimeout(() => specimenPhotoInputRef.current?.click(), 50);
-                                  }}
-                                  style={{
-                                    background: "rgba(255, 255, 255, 0.03)",
-                                    border: "1px solid var(--glass-border)",
-                                    borderRadius: "6px",
-                                    color: "#fff",
-                                    padding: "0.35rem 0.6rem",
-                                    fontSize: "0.75rem",
-                                    cursor: "pointer",
-                                    transition: "all 0.2s ease",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "0.25rem",
-                                    minHeight: "32px"
-                                  }}
-                                  title={customPhoto ? "Update Photo" : "Add Photo"}
-                                >
-                                  📷 {customPhoto ? "Update" : "Photo"}
-                                </button>
-
-                                {/* List for Sale Button */}
-                                {onListOnMarketplace && (
+                            {/* Action buttons */}
+                            <div style={{ display: "flex", gap: "0.4rem", alignItems: "center", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                              {casualModeActive ? (
+                                <div style={{ position: "relative" }} onClick={(e) => e.stopPropagation()}>
                                   <button
                                     type="button"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      onListOnMarketplace(activeTank, spec);
+                                      setActiveMenuSpecimenId(activeMenuSpecimenId === spec.id ? null : spec.id);
                                     }}
                                     style={{
-                                      background: "linear-gradient(135deg, #0ea5e9, #0284c7)",
-                                      border: "none",
-                                      borderRadius: "6px",
-                                      color: "#fff",
-                                      padding: "0.35rem 0.75rem",
-                                      fontSize: "0.75rem",
-                                      fontWeight: "600",
+                                      background: activeMenuSpecimenId === spec.id ? "rgba(56, 189, 248, 0.15)" : "rgba(255, 255, 255, 0.05)",
+                                      border: activeMenuSpecimenId === spec.id ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid rgba(255, 255, 255, 0.08)",
+                                      borderRadius: "8px",
+                                      width: "32px",
+                                      height: "32px",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      color: activeMenuSpecimenId === spec.id ? "#38bdf8" : "rgba(255, 255, 255, 0.8)",
                                       cursor: "pointer",
-                                      boxShadow: "0 0 10px rgba(14, 165, 233, 0.1)",
-                                      transition: "all 0.2s ease",
-                                      minHeight: "32px"
+                                      fontSize: "0.85rem",
+                                      transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                                      padding: 0
+                                    }}
+                                    title="Actions"
+                                    onMouseEnter={(e) => {
+                                      if (activeMenuSpecimenId !== spec.id) {
+                                        e.currentTarget.style.background = "rgba(56, 189, 248, 0.15)";
+                                        e.currentTarget.style.borderColor = "rgba(56, 189, 248, 0.3)";
+                                        e.currentTarget.style.color = "#38bdf8";
+                                      }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if (activeMenuSpecimenId !== spec.id) {
+                                        e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+                                        e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.08)";
+                                        e.currentTarget.style.color = "rgba(255, 255, 255, 0.8)";
+                                      }
                                     }}
                                   >
-                                    List for Sale
+                                    •••
                                   </button>
-                                )}
 
-                                 <button
-                                   type="button"
-                                   onClick={(e) => {
-                                     e.stopPropagation();
-                                     setFarewellSpecimen(spec);
-                                   }}
-                                   style={{
-                                     background: "rgba(56, 189, 248, 0.04)",
-                                     border: "1px solid rgba(56, 189, 248, 0.15)",
-                                     borderRadius: "6px",
-                                     color: "#38bdf8",
-                                     padding: "0.35rem 0.5rem",
-                                     fontSize: "0.75rem",
-                                     cursor: "pointer",
-                                     transition: "all 0.2s ease",
-                                     display: "flex",
-                                     alignItems: "center",
-                                     justifyContent: "center",
-                                     minHeight: "32px"
-                                   }}
-                                   title="Say Farewell / Release"
-                                 >
-                                   🌊
-                                 </button>
-                              </>
-                            ) : (
-                              <>
-                                <button 
-                                  className="btn-secondary"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onViewLineage(spec.id);
-                                  }}
-                                  style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", minHeight: "32px" }}
-                                >
-                                  Ancestry
-                                </button>
-                                {onListOnMarketplace && (
+                                  {activeMenuSpecimenId === spec.id && (
+                                    <div style={{
+                                      position: "absolute",
+                                      right: 0,
+                                      top: "calc(100% + 6px)",
+                                      background: "rgba(10, 25, 47, 0.96)",
+                                      backdropFilter: "blur(16px)",
+                                      WebkitBackdropFilter: "blur(16px)",
+                                      border: "1px solid rgba(56, 189, 248, 0.25)",
+                                      borderRadius: "10px",
+                                      padding: "0.4rem",
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: "0.2rem",
+                                      boxShadow: "0 12px 30px -4px rgba(0, 0, 0, 0.7), 0 0 15px rgba(56, 189, 248, 0.15)",
+                                      zIndex: 1000,
+                                      minWidth: "160px"
+                                    }}>
+                                      {/* Add/Update Photo Button */}
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setActiveMenuSpecimenId(null);
+                                          setUploadingSpecimenId(spec.id);
+                                          setTimeout(() => specimenPhotoInputRef.current?.click(), 50);
+                                        }}
+                                        style={{
+                                          background: "none",
+                                          border: "none",
+                                          borderRadius: "6px",
+                                          color: "#fff",
+                                          padding: "0.5rem 0.6rem",
+                                          fontSize: "0.78rem",
+                                          textAlign: "left",
+                                          cursor: "pointer",
+                                          transition: "all 0.15s ease",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "0.5rem"
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.currentTarget.style.background = "none";
+                                        }}
+                                      >
+                                        <span style={{ fontSize: "0.95rem" }}>📷</span> {customPhoto ? "Update Photo" : "Add Photo"}
+                                      </button>
+
+                                      {/* List for Sale Button */}
+                                      {onListOnMarketplace && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setActiveMenuSpecimenId(null);
+                                            onListOnMarketplace(activeTank, spec);
+                                          }}
+                                          style={{
+                                            background: "none",
+                                            border: "none",
+                                            borderRadius: "6px",
+                                            color: "#38bdf8",
+                                            padding: "0.5rem 0.6rem",
+                                            fontSize: "0.78rem",
+                                            textAlign: "left",
+                                            cursor: "pointer",
+                                            transition: "all 0.15s ease",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "0.5rem"
+                                          }}
+                                          onMouseEnter={(e) => {
+                                            e.currentTarget.style.background = "rgba(56, 189, 248, 0.12)";
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            e.currentTarget.style.background = "none";
+                                          }}
+                                        >
+                                          <span style={{ fontSize: "0.95rem" }}>💼</span> List for Sale
+                                        </button>
+                                      )}
+
+                                      {/* Say Farewell Button */}
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setActiveMenuSpecimenId(null);
+                                          setFarewellSpecimen(spec);
+                                        }}
+                                        style={{
+                                          background: "none",
+                                          border: "none",
+                                          borderRadius: "6px",
+                                          color: "#f43f5e",
+                                          padding: "0.5rem 0.6rem",
+                                          fontSize: "0.78rem",
+                                          textAlign: "left",
+                                          cursor: "pointer",
+                                          transition: "all 0.15s ease",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "0.5rem"
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          e.currentTarget.style.background = "rgba(244, 63, 94, 0.12)";
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.currentTarget.style.background = "none";
+                                        }}
+                                      >
+                                        <span style={{ fontSize: "0.95rem" }}>🌊</span> Farewell / Release
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <>
                                   <button 
-                                    className="btn-primary"
+                                    className="btn-secondary"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      onListOnMarketplace(activeTank, spec);
+                                      onViewLineage(spec.id);
                                     }}
                                     style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", minHeight: "32px" }}
                                   >
-                                    Sell
+                                    Ancestry
                                   </button>
-                                )}
-                              </>
-                            )}
+                                  {onListOnMarketplace && (
+                                    <button 
+                                      className="btn-primary"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onListOnMarketplace(activeTank, spec);
+                                      }}
+                                      style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", minHeight: "32px" }}
+                                    >
+                                      Sell
+                                    </button>
+                                  )}
+                                </>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })
+                        );
+                      })}
+                    </>
                   )}
                 </div>
               )}

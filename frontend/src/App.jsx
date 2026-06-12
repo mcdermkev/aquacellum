@@ -735,14 +735,16 @@ export default function App() {
           >
             {casualModeActive ? "🔍 Fish Finder" : "Breed Gallery"}
           </button>
-          <button 
-            data-tour-id="add-fish-tab"
-            className={activeTab === "mint" ? "btn-primary" : "btn-secondary"} 
-            onClick={() => handleTabChange("mint")}
-            style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
-          >
-            {casualModeActive ? "➕ Add a Fish" : "Register"}
-          </button>
+          {!casualModeActive && (
+            <button 
+              data-tour-id="add-fish-tab"
+              className={activeTab === "mint" ? "btn-primary" : "btn-secondary"} 
+              onClick={() => handleTabChange("mint")}
+              style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
+            >
+              Register
+            </button>
+          )}
           {!casualModeActive && (
             <button 
               className={activeTab === "lineage" ? "btn-primary" : "btn-secondary"} 
@@ -766,7 +768,7 @@ export default function App() {
             onClick={() => handleTabChange("directory")}
             style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
           >
-            {casualModeActive ? "🛒 Browse Fish" : "Marketplace"}
+            {casualModeActive ? "🛒 Breeder Store" : "Marketplace"}
           </button>
           <button 
             className={activeTab === "map" ? "btn-primary" : "btn-secondary"} 

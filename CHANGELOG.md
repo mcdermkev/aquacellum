@@ -5,6 +5,37 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 12, 2026 — Feature: Premium Social Reef, Profile Metrics, Catalog Filters, and Breeder Store (Casual Mode)
+
+Redesigned multiple key screens in the application under Casual Mode to declutter the interface, refine terminology, and elevate the design to a premium, modern aesthetic.
+
+### Changes
+- **Social Reef (`ReefFeed.jsx`, `ReefSearchBar.jsx`, `DiscoveryPanel.jsx`, `SonarBell.jsx`)**:
+  - Cleaned up and decluttered the top community section header.
+  - Replaced native tooltips with premium custom glassmorphic HTML tooltips.
+  - Configured labels to transition into view smoothly when hovering over the icons.
+- **Profile Page & Achievements (`TankList.jsx`, `BadgeShelf.jsx`, `PublicProfile.jsx`)**:
+  - Hidden locked achievements by default to reduce clutter on the achievement shelf.
+  - Added dynamic background synchronization inside `TankList.jsx` that queries local Dexie tables (`db.tanks` and `db.specimens`) to auto-sync the user's active species and tank metrics, correcting stale counts.
+  - Upgraded the stats row to glassmorphic cards with cyan glows and custom metric icons.
+- **Fish Finder / Breed Gallery (`BreedGallery.jsx`)**:
+  - Filtered the "My Collection" view to display only species currently residing in the user's local tanks.
+  - Synced specimens tracking with both the local `db.tanks` arrays and the standalone `db.specimens` table.
+  - Fixed search scope bugs, enabling dynamic searches in both the global catalog and owned collections.
+  - Redesigned quick-tap species tag pills as compact glass capsules with interactive hover floats and glows.
+- **Add a Fish Tab & Onboarding (`App.jsx`, `FishTourStep.jsx`, `fishTourCopy.js`)**:
+  - Hidden the "Add a Fish" tab in Casual Mode to prevent duplication (as casual users add fish directly within tank lists).
+  - Updated the guided onboarding tour step `tour_fish` to spotlight `"aquariums-tab"` instead of the hidden `"add-fish-tab"`, and updated the instructional copy accordingly to prevent spotlight errors.
+- **Breeder Store / Marketplace (`App.jsx` & `MarketplaceBoard.jsx`)**:
+  - Renamed the tab from `"🛒 Browse Fish"` to `"🛒 Breeder Store"` in Casual Mode to align with marketplace/store branding.
+  - Hidden the breeder analytics sub-tabs and the "Publish Entry" button for casual users.
+  - Redesigned the text-heavy trust banner into a compact glass guarantee ribbon displaying: `🛡️ Escrow Health Guarantee`, `📦 3-Day Safe Arrival`, and `🤝 Verified Local Breeders`.
+  - Added a `"Price: High to Low"` sort option and implemented `price-desc` sorting logic.
+  - Styled card badges as beautiful HTML capsule pills (e.g. `🏠 Tank-Bred`, `🚚 Shipping`, `📍 Local Pickup`, `✨ Beginner Friendly`) with icons and custom background tints.
+  - Re-worded card actions to `"Purchase"` (or `"Purchasing..."`) and `"Remove Listing"` in Casual Mode.
+
+---
+
 ## June 12, 2026 — UI Fix: Remove Saltwater Specific Gravity / Salinity Telemetry
 
 Removed all Specific Gravity (Salinity) parameter inputs and telemetry displays from the application as the system is freshwater-focused.

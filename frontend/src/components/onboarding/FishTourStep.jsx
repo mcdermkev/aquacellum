@@ -86,12 +86,14 @@ export function countLocalSpecimens() {
 }
 
 export function FishTourStep({
-  targetId = "add-fish-tab",
+  targetId,
   pollInterval,
   timeout,
 }) {
   const { persona, casualMode, advance } = useOnboarding();
   const personaValue = casualMode ?? persona ?? null;
+  const isCasual = personaValue === true || personaValue === "casual";
+  const finalTargetId = targetId || (isCasual ? "aquariums-tab" : "add-fish-tab");
 
   // Kick off / observe background species-catalog hydration. We only READ its
   // readiness to tailor copy — we never gate progress on it (Req 4.4).
@@ -180,7 +182,7 @@ export function FishTourStep({
 
   return (
     <SpotlightOverlay
-      targetId={targetId}
+      targetId={finalTargetId}
       onTargetMissing={handleTargetMissing}
     >
       {(rect) => (

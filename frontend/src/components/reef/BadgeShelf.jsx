@@ -153,39 +153,48 @@ function Badge({ badge, unlocked = true, size = "default" }) {
   const s = sizes[size] || sizes.default;
 
   return (
-    <div
-      title={unlocked ? `${badge.name}: ${badge.description}` : `🔒 ${badge.name}: ${badge.description}`}
-      style={{
-        width: s.box,
-        height: s.box,
-        borderRadius: "10px",
-        background: unlocked ? "rgba(255, 255, 255, 0.04)" : "rgba(255, 255, 255, 0.02)",
-        border: unlocked
-          ? "1px solid rgba(56, 189, 248, 0.2)"
-          : "1px solid rgba(255, 255, 255, 0.04)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: s.icon,
-        opacity: unlocked ? 1 : 0.3,
-        cursor: "default",
-        transition: "all 0.2s ease",
-        position: "relative",
-        flexShrink: 0,
-      }}
-      aria-label={`Badge: ${badge.name}${unlocked ? "" : " (locked)"}`}
-    >
-      {badge.icon}
-      {!unlocked && (
-        <span style={{
-          position: "absolute",
-          bottom: "-1px",
-          right: "-1px",
-          fontSize: "0.45rem",
-        }}>
-          🔒
+    <div className="badge-tooltip-container">
+      <div
+        style={{
+          width: s.box,
+          height: s.box,
+          borderRadius: "10px",
+          background: unlocked ? "rgba(255, 255, 255, 0.04)" : "rgba(255, 255, 255, 0.02)",
+          border: unlocked
+            ? "1px solid rgba(56, 189, 248, 0.2)"
+            : "1px solid rgba(255, 255, 255, 0.04)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: s.icon,
+          opacity: unlocked ? 1 : 0.3,
+          cursor: "default",
+          transition: "all 0.2s ease",
+          position: "relative",
+          flexShrink: 0,
+        }}
+        aria-label={`Badge: ${badge.name}${unlocked ? "" : " (locked)"}`}
+      >
+        {badge.icon}
+        {!unlocked && (
+          <span style={{
+            position: "absolute",
+            bottom: "-1px",
+            right: "-1px",
+            fontSize: "0.45rem",
+          }}>
+            🔒
+          </span>
+        )}
+      </div>
+      <div className="badge-tooltip-text">
+        <span className="badge-tooltip-title">
+          {unlocked ? "" : "🔒 "}{badge.name}
         </span>
-      )}
+        <span className="badge-tooltip-desc">
+          {badge.description}
+        </span>
+      </div>
     </div>
   );
 }
@@ -220,6 +229,54 @@ export function BadgeShelf({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+      <style>{`
+        .badge-tooltip-container {
+          position: relative;
+          display: inline-block;
+        }
+        .badge-tooltip-text {
+          visibility: hidden;
+          width: 180px;
+          background: rgba(8, 12, 20, 0.95);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          color: #fff;
+          text-align: center;
+          border-radius: 8px;
+          padding: 0.5rem 0.6rem;
+          position: absolute;
+          z-index: 100;
+          bottom: 125%;
+          left: 50%;
+          transform: translateX(-50%) translateY(4px);
+          opacity: 0;
+          transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+          pointer-events: none;
+        }
+        .badge-tooltip-title {
+          font-family: 'Outfit', sans-serif;
+          font-weight: 700;
+          font-size: 0.75rem;
+          color: #38bdf8;
+          margin-bottom: 2px;
+          display: block;
+        }
+        .badge-tooltip-desc {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 0.65rem;
+          color: #94a3b8;
+          display: block;
+          line-height: 1.3;
+        }
+        .badge-tooltip-container:hover .badge-tooltip-text {
+          visibility: visible;
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+      `}</style>
+
       {/* Unlocked badges */}
       {unlockedBadges.length > 0 && (
         <div>

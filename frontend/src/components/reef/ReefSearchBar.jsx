@@ -242,7 +242,25 @@ export function ReefSearchBar({
         <button
           className="reef-search__trigger"
           onClick={handleExpand}
-          title="Search The Reef (press /)"
+          style={{
+            width: "34px",
+            height: "34px",
+            borderRadius: "8px",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            background: "rgba(255, 255, 255, 0.03)",
+            color: "var(--text-muted)",
+            cursor: "pointer",
+            fontSize: "0.95rem",
+            transition: "all 0.15s ease",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 0,
+            minHeight: "unset"
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
+          title="Search"
           aria-label="Search The Reef"
         >
           🔍

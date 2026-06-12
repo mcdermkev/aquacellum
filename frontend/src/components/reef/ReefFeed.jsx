@@ -263,75 +263,98 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
             <button
               onClick={() => setViewingTides(true)}
               style={{
-                padding: "0.4rem 0.7rem",
+                width: "34px",
+                height: "34px",
                 borderRadius: "8px",
                 border: "1px solid rgba(255, 255, 255, 0.08)",
                 background: "rgba(255, 255, 255, 0.03)",
                 color: "var(--text-muted)",
                 cursor: "pointer",
-                fontSize: "0.7rem",
+                fontSize: "1rem",
                 transition: "all 0.15s ease",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 0
               }}
               onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
-              title="Browse Tides (Events)"
+              title={casualModeActive ? "Events" : "Tides (Events)"}
             >
-              🌊 {casualModeActive ? "Events" : "Tides"}
+              🌊
             </button>
           )}
           {walletAddress && (
             <button
               onClick={() => setViewingSchools(true)}
               style={{
-                padding: "0.4rem 0.7rem",
+                width: "34px",
+                height: "34px",
                 borderRadius: "8px",
                 border: "1px solid rgba(255, 255, 255, 0.08)",
                 background: "rgba(255, 255, 255, 0.03)",
                 color: "var(--text-muted)",
                 cursor: "pointer",
-                fontSize: "0.7rem",
+                fontSize: "1rem",
                 transition: "all 0.15s ease",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 0
               }}
               onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
-              title="Browse Schools"
+              title="Schools (Groups)"
             >
-              🏫 {casualModeActive ? "Schools" : "Schools"}
+              🏫
             </button>
           )}
           {walletAddress && (
             <button
               onClick={() => handleProfileClick(walletAddress)}
               style={{
-                padding: "0.4rem 0.7rem",
+                width: "34px",
+                height: "34px",
                 borderRadius: "8px",
                 border: "1px solid rgba(255, 255, 255, 0.08)",
                 background: "rgba(255, 255, 255, 0.03)",
                 color: "var(--text-muted)",
                 cursor: "pointer",
-                fontSize: "0.7rem",
+                fontSize: "1rem",
                 transition: "all 0.15s ease",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 0
               }}
               onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
-              title="View my profile"
+              title={casualModeActive ? "Me (Profile)" : "Profile"}
             >
-              👤 {casualModeActive ? "Me" : "Profile"}
+              👤
             </button>
           )}
           <SonarBell />
           <button
             onClick={handleRefresh}
             style={{
-              padding: "0.4rem",
+              width: "34px",
+              height: "34px",
               borderRadius: "8px",
               border: "1px solid rgba(255, 255, 255, 0.08)",
               background: "rgba(255, 255, 255, 0.03)",
               color: "var(--text-muted)",
               cursor: "pointer",
-              fontSize: "0.9rem",
+              fontSize: "0.95rem",
+              transition: "all 0.15s ease",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 0
             }}
-            title="Refresh feed"
+            onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
+            title="Refresh Feed"
             aria-label="Refresh feed"
           >
             🔄
@@ -348,7 +371,7 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
         borderRadius: "10px",
         background: "rgba(255, 255, 255, 0.03)",
         border: "1px solid rgba(255, 255, 255, 0.06)",
-      }} className="reef-feed-tabs">>
+      }} className="reef-feed-tabs">
         <button
           onClick={() => setActiveTab("following")}
           style={{

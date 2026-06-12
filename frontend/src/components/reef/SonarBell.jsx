@@ -57,15 +57,23 @@ export function SonarBell() {
         onClick={() => setIsOpen(!isOpen)}
         style={{
           position: "relative",
-          padding: "0.4rem",
+          width: "34px",
+          height: "34px",
           borderRadius: "8px",
-          border: "1px solid rgba(255, 255, 255, 0.08)",
+          border: isOpen ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid rgba(255, 255, 255, 0.08)",
           background: isOpen ? "rgba(56, 189, 248, 0.08)" : "rgba(255, 255, 255, 0.03)",
           color: "var(--text-muted)",
           cursor: "pointer",
           fontSize: "1rem",
           transition: "all 0.15s ease",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 0
         }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = isOpen ? "rgba(56, 189, 248, 0.25)" : "rgba(255,255,255,0.08)"; }}
+        title="Notifications"
         aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ""}`}
         aria-expanded={isOpen}
       >

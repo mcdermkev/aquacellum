@@ -28,7 +28,7 @@ export const FISH_TOUR_COPY = Object.freeze({
   // Spotlight instruction anchored to the highlighted "Add a Fish" control.
   instruction: {
     casual:
-      "Tap the highlighted Add a Fish area, pick a species, and confirm — Echo's been waiting for a tank-mate!",
+      "Go to your My Aquariums tab, select a tank, and add a fish to it — Echo's been waiting for a tank-mate!",
     pro: "Open the highlighted specimen panel, select a species from the catalog, and register the birth certificate to populate your facility.",
   },
   // Non-blocking note shown WHILE the species catalog is still hydrating in the
@@ -46,7 +46,7 @@ export const FISH_TOUR_COPY = Object.freeze({
   // Offered when the step times out — lets the user proceed (Req 4.5).
   timeoutHelp: {
     casual:
-      "No rush at all — you can add a fish any time from the Add a Fish tab. Shall we carry on for now?",
+      "No rush at all — you can add a fish any time from your Aquariums list. Shall we carry on for now?",
     pro: "No specimen detected yet. You can register one later from the specimen panel — continue for now?",
   },
   // Heading for the graceful timeout / skip card.

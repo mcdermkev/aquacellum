@@ -6,14 +6,15 @@
  * their Currents, and a Tankmate request button.
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ProfileCard } from "./ProfileCard";
 import { CurrentCard } from "./CurrentCard";
 import { ProfileEdit } from "./ProfileEdit";
 import { BadgeShelf } from "./BadgeShelf";
-import { useProfile, useTankmates, useRelationshipStatus, useSendTankmateRequest } from "../../hooks/useReefProfile";
+import { useProfile, useTankmates, useRelationshipStatus, useSendTankmateRequest, useUpdateProfile } from "../../hooks/useReefProfile";
 import { useUserCurrents } from "../../hooks/useReefFeed";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import { db } from "../../db";
 
 const TIER_COLORS = {
   Bronze: "#cd7f32",
@@ -175,6 +176,99 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
   const currentWallet = getCurrentWallet();
   const isOwnProfile = currentWallet && currentWallet.toLowerCase() === walletAddress?.toLowerCase();
 
+  const updateProfileMutation = useUpdateProfile();
+
+  useEffect(() => {
+    if (!isOwnProfile || !profile) return;
+
+    let active = true;
+
+    async function syncLocalStats() {
+      try {
+        // Fetch local tanks matching user wallet
+        const localTanks = await db.tanks.toArray();
+        const userTanks = localTanks.filter(
+          (t) => t.ownerAddress?.toLowerCase() === walletAddress?.toLowerCase()
+        );
+        const tankCount = userTanks.length;
+
+        // Fetch local specimens matching user wallet
+        const localSpecimens = await db.specimens.toArray();
+        const userSpecimens = localSpecimens.filter(
+          (s) => s.ownerAddress?.toLowerCase() === walletAddress?.toLowerCase() && s.status === 0
+        );
+
+        // Extract unique speciesIds
+        const speciesIds = new Set();
+        userSpecimens.forEach((s) => {
+          if (s.speciesId) speciesIds.add(Number(s.speciesId));
+        });
+        userTanks.forEach((t) => {
+          if (t.specimens) {
+            t.specimens.forEach((s) => {
+              if (s.speciesId) speciesIds.add(Number(s.speciesId));
+            });
+          }
+        });
+        const speciesCount = speciesIds.size;
+
+        // Fetch local userProfile and companion tier
+        const localProfiles = await db.userProfile.toArray();
+        const uProfile = localProfiles.find(
+          (p) => p.walletAddress?.toLowerCase() === walletAddress?.toLowerCase()
+        );
+        const xpTotal = uProfile
+          ? (uProfile.prestigeXp || 0) + (uProfile.hobbyistXp || 0)
+          : 0;
+
+        const localCompanions = await db.breederCompanion.toArray();
+        const uCompanion = localCompanions.find(
+          (c) => c.walletAddress?.toLowerCase() === walletAddress?.toLowerCase()
+        );
+        const companionTier = uCompanion?.currentTier || "Bronze";
+
+        // Check if anything differs
+        if (
+          profile.tank_count !== tankCount ||
+          profile.species_count !== speciesCount ||
+          profile.xp_total !== xpTotal ||
+          profile.companion_tier !== companionTier
+        ) {
+          if (!active) return;
+          console.log("[Reef Profile Sync] Local stats differ from Supabase, updating...", {
+            local: { tankCount, speciesCount, xpTotal, companionTier },
+            supabase: {
+              tank_count: profile.tank_count,
+              species_count: profile.species_count,
+              xp_total: profile.xp_total,
+              companion_tier: profile.companion_tier,
+            },
+          });
+
+          await updateProfileMutation.mutateAsync({
+            walletAddress,
+            updates: {
+              tank_count: tankCount,
+              species_count: speciesCount,
+              xp_total: xpTotal,
+              companion_tier: companionTier,
+            },
+          });
+          
+          refetch();
+        }
+      } catch (err) {
+        console.error("[Reef Profile Sync] Error syncing local stats:", err);
+      }
+    }
+
+    syncLocalStats();
+
+    return () => {
+      active = false;
+    };
+  }, [walletAddress, isOwnProfile, profile, refetch]);
+
   if (isLoading) {
     return (
       <div style={{ maxWidth: "640px", margin: "0 auto", padding: "2rem" }}>
@@ -226,13 +320,28 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
       <div
         className="glass-card"
         style={{
-          padding: "1.5rem",
-          borderRadius: "16px",
+          padding: "1.75rem",
+          borderRadius: "20px",
           border: "1px solid rgba(255, 255, 255, 0.06)",
-          background: "rgba(255, 255, 255, 0.02)",
+          background: "linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)",
           marginBottom: "1.5rem",
+          position: "relative",
+          overflow: "hidden",
+          boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.3)",
         }}
       >
+        {/* Decorative subtle tier glow in background */}
+        <div style={{
+          position: "absolute",
+          top: "-50px",
+          right: "-50px",
+          width: "150px",
+          height: "150px",
+          borderRadius: "50%",
+          background: `${tierColor}11`,
+          filter: "blur(40px)",
+          pointerEvents: "none",
+        }} />
         {/* Avatar + Name row */}
         <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" }} className="reef-profile-header-row">
           <div
@@ -301,37 +410,100 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
         )}
 
         {/* Stats row */}
-        <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }} className="reef-profile-stats">
-          <div style={{ textAlign: "center" }}>
-            <p style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#fff" }}>
+        <div 
+          style={{ 
+            display: "grid", 
+            gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", 
+            gap: "0.75rem", 
+            marginTop: "1.25rem" 
+          }} 
+          className="reef-profile-stats"
+        >
+          {/* XP/Points */}
+          <div style={{
+            background: "rgba(255, 255, 255, 0.02)",
+            border: "1px solid rgba(255, 255, 255, 0.04)",
+            borderRadius: "12px",
+            padding: "0.85rem 0.5rem",
+            textAlign: "center",
+            boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.02)",
+            transition: "all 0.2s ease",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center"
+          }}>
+            <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#fff", display: "block", marginBottom: "0.2rem" }}>
               {profile.xp_total || 0}
             </p>
-            <p style={{ margin: 0, fontSize: "0.6rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              {casualModeActive ? "Points" : "XP"}
+            <p style={{ margin: 0, fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              ⚡ {casualModeActive ? "Points" : "XP"}
             </p>
           </div>
-          <div style={{ textAlign: "center" }}>
-            <p style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#fff" }}>
+          
+          {/* Tanks */}
+          <div style={{
+            background: "rgba(255, 255, 255, 0.02)",
+            border: "1px solid rgba(255, 255, 255, 0.04)",
+            borderRadius: "12px",
+            padding: "0.85rem 0.5rem",
+            textAlign: "center",
+            boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.02)",
+            transition: "all 0.2s ease",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center"
+          }}>
+            <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#fff", display: "block", marginBottom: "0.2rem" }}>
               {profile.tank_count || 0}
             </p>
-            <p style={{ margin: 0, fontSize: "0.6rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Tanks
+            <p style={{ margin: 0, fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              🏠 Tanks
             </p>
           </div>
-          <div style={{ textAlign: "center" }}>
-            <p style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: "#fff" }}>
+
+          {/* Species */}
+          <div style={{
+            background: "rgba(255, 255, 255, 0.02)",
+            border: "1px solid rgba(255, 255, 255, 0.04)",
+            borderRadius: "12px",
+            padding: "0.85rem 0.5rem",
+            textAlign: "center",
+            boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.02)",
+            transition: "all 0.2s ease",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center"
+          }}>
+            <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#fff", display: "block", marginBottom: "0.2rem" }}>
               {profile.species_count || 0}
             </p>
-            <p style={{ margin: 0, fontSize: "0.6rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Species
+            <p style={{ margin: 0, fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              🐟 Species
             </p>
           </div>
-          <div style={{ textAlign: "center" }}>
-            <p style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700, color: tierColor }}>
+
+          {/* Tier */}
+          <div style={{
+            background: "rgba(255, 255, 255, 0.02)",
+            border: `1px solid ${tierColor}33`,
+            borderRadius: "12px",
+            padding: "0.85rem 0.5rem",
+            textAlign: "center",
+            boxShadow: `inset 0 1px 1px ${tierColor}11`,
+            transition: "all 0.2s ease",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center"
+          }}>
+            <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: tierColor, display: "block", marginBottom: "0.2rem" }}>
               {profile.companion_tier}
             </p>
-            <p style={{ margin: 0, fontSize: "0.6rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Tier
+            <p style={{ margin: 0, fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              👑 Tier
             </p>
           </div>
         </div>
@@ -349,7 +521,7 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
             insightCount: 0, // TODO: query from species_insights
             tankmateCount: tankmates?.length || 0,
           }}
-          showLocked={isOwnProfile}
+          showLocked={false}
           casualModeActive={casualModeActive}
         />
       </div>

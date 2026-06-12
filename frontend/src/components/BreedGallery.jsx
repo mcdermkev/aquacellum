@@ -8,7 +8,7 @@ import { MarketplaceBoard } from "./MarketplaceBoard";
 import { useSpeciesSearch } from "../hooks/useSpeciesSearch";
 import { useNaturalSearch } from "../hooks/useNaturalSearch";
 import { LazyImage } from "./LazyImage";
-import { useContractSpecies } from "../hooks/useSpeciesData";
+import { useContractSpecies, useSpeciesData } from "../hooks/useSpeciesData";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import SuggestSpeciesModal from "./SuggestSpeciesModal";
 import { useSuggestSpecies } from "../hooks/useSuggestSpecies";
@@ -133,6 +133,18 @@ export function BreedGallery({
             }
           }
         }
+        
+        // Also fetch from standalone specimens table
+        const localSpecimens = await db.specimens.toArray();
+        const userSpecimens = localSpecimens.filter(
+          (s) => s.ownerAddress?.toLowerCase() === walletAccount?.toLowerCase() && s.status === 0
+        );
+        for (const spec of userSpecimens) {
+          if (spec.speciesId) {
+            speciesMap[spec.speciesId] = spec.commonName || `Species ID ${spec.speciesId}`;
+          }
+        }
+
         setResidingSpecies(Object.entries(speciesMap).map(([id, name]) => ({
           id: Number(id),
           name
@@ -145,8 +157,10 @@ export function BreedGallery({
       getResiding();
     }
   }, [walletAccount]);
+
   const [viewMode, setViewMode] = useState("contract"); // "contract" | "global" — must be declared before use
   const { data: contractSpeciesList = [], isLoading: isContractSpeciesLoading, error: contractSpeciesError, refetch: refetchContractSpecies } = useContractSpecies(contractAddress);
+  const { data: globalData = [] } = useSpeciesData();
   const speciesList = contractSpeciesList;
   const loading = (viewMode === "contract" && isContractSpeciesLoading);
   const [specsLoading, setSpecsLoading] = useState(false);
@@ -187,6 +201,62 @@ export function BreedGallery({
 
   const CARE_LEVEL_STRINGS = ["Easy", "Medium", "Difficult", "Expert"];
 
+  const globalRefList = useMemo(() => {
+    if (!globalData || globalData.length === 0) return [];
+    const seenNames = new Set();
+    const seenCodes = new Set();
+    const catalog = [];
+    
+    const DIFFICULTY_MAP = {
+      "easy": 0,
+      "beginner": 0,
+      "intermediate": 1,
+      "medium": 1,
+      "difficult": 2,
+      "advanced": 2,
+      "expert": 3
+    };
+    
+    for (const item of globalData) {
+      const scientificNameLower = item.scientificName.toLowerCase();
+      if (seenNames.has(scientificNameLower) || seenCodes.has(item.specCode)) {
+        continue;
+      }
+      seenNames.add(scientificNameLower);
+      seenCodes.add(item.specCode);
+      
+      const diffStr = (item.tankMetrics?.difficulty || "easy").toLowerCase();
+      const careLevel = DIFFICULTY_MAP[diffStr] ?? 1;
+      
+      catalog.push({
+        speciesId: item.specCode,
+        allSpeciesIds: [item.specCode],
+        scientificName: item.scientificName,
+        commonName: item.commonName,
+        canonicalIpfsUri: "ipfs://placeholder",
+        careLevel: careLevel,
+        minTemp: item.tankMetrics?.tempRangeCelsius?.[0] ?? 22.0,
+        maxTemp: item.tankMetrics?.tempRangeCelsius?.[1] ?? 28.0,
+        minPh: item.tankMetrics?.phRange?.[0] ?? 6.5,
+        maxPh: item.tankMetrics?.phRange?.[1] ?? 7.5,
+        specimenCount: 0,
+        isGlobal: true,
+      });
+    }
+    return catalog;
+  }, [globalData]);
+
+  const searchList = useMemo(() => {
+    if (viewMode === "global") {
+      return globalRefList;
+    }
+    if (casualModeActive && viewMode === "contract") {
+      const residingIds = new Set(residingSpecies.map((s) => Number(s.id)));
+      return speciesList.filter((s) => residingIds.has(Number(s.speciesId)));
+    }
+    return speciesList;
+  }, [viewMode, speciesList, globalRefList, residingSpecies, casualModeActive]);
+
   // useSpeciesSearch MUST be called before any useEffect/code that references searchTerm or globalData
   const {
     results: filteredSpecies,
@@ -196,9 +266,8 @@ export function BreedGallery({
     setFilters,
     facets,
     availableFacets,
-    globalData,
     resetFilters
-  } = useSpeciesSearch(speciesList);
+  } = useSpeciesSearch(searchList);
 
   // Natural language search — parses queries like "beginner fish for warm water"
   const { isParsing, explanation: nlExplanation, parseQuery: nlParseQuery, clearParsed } = useNaturalSearch({
@@ -248,50 +317,7 @@ export function BreedGallery({
     }
   }, [searchTerm, simTemp]);
 
-  const globalRefList = useMemo(() => {
-    if (!globalData) return [];
-    const seenNames = new Set();
-    const seenCodes = new Set();
-    const catalog = [];
-    
-    const DIFFICULTY_MAP = {
-      "easy": 0,
-      "beginner": 0,
-      "intermediate": 1,
-      "medium": 1,
-      "difficult": 2,
-      "advanced": 2,
-      "expert": 3
-    };
-    
-    for (const item of globalData) {
-      const scientificNameLower = item.scientificName.toLowerCase();
-      if (seenNames.has(scientificNameLower) || seenCodes.has(item.specCode)) {
-        continue;
-      }
-      seenNames.add(scientificNameLower);
-      seenCodes.add(item.specCode);
-      
-      const diffStr = (item.tankMetrics?.difficulty || "easy").toLowerCase();
-      const careLevel = DIFFICULTY_MAP[diffStr] ?? 1;
-      
-      catalog.push({
-        speciesId: item.specCode,
-        allSpeciesIds: [item.specCode],
-        scientificName: item.scientificName,
-        commonName: item.commonName,
-        canonicalIpfsUri: "ipfs://placeholder",
-        careLevel: careLevel,
-        minTemp: item.tankMetrics?.tempRangeCelsius?.[0] ?? 22.0,
-        maxTemp: item.tankMetrics?.tempRangeCelsius?.[1] ?? 28.0,
-        minPh: item.tankMetrics?.phRange?.[0] ?? 6.5,
-        maxPh: item.tankMetrics?.phRange?.[1] ?? 7.5,
-        specimenCount: 0,
-        isGlobal: true,
-      });
-    }
-    return catalog;
-  }, [globalData]);
+
 
   const [visibleCount, setVisibleCount] = useState(24);
   const [containerWidth, setContainerWidth] = useState(1200);
@@ -1725,49 +1751,65 @@ export function BreedGallery({
           gap: "0.5rem",
           flexWrap: "wrap",
           marginBottom: "1.5rem",
-          background: "rgba(255, 255, 255, 0.02)",
-          padding: "0.75rem 1rem",
-          borderRadius: "8px",
-          border: "1px solid rgba(255, 255, 255, 0.05)"
+          padding: "0.25rem 0.5rem"
         }}>
-          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase" }}>
-            🐠 My Tank Species:
+          <span style={{ 
+            fontSize: "0.65rem", 
+            color: "var(--text-muted)", 
+            fontWeight: "700", 
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.25rem"
+          }}>
+            🐠 My Tank Species
           </span>
-          {residingSpecies.map((item) => (
-            <button
-              key={`badge-${item.id}`}
-              onClick={() => {
-                const breed = speciesList.find(s => Number(s.speciesId) === Number(item.id)) ||
-                              globalRefList.find(s => Number(s.speciesId) === Number(item.id));
-                if (breed) {
-                  setSelectedBreed(breed);
-                  if (viewMode !== "global") {
-                    loadBreedSpecimens(breed);
+          <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+            {residingSpecies.map((item) => (
+              <button
+                key={`badge-${item.id}`}
+                onClick={() => {
+                  const breed = speciesList.find(s => Number(s.speciesId) === Number(item.id)) ||
+                                globalRefList.find(s => Number(s.speciesId) === Number(item.id));
+                  if (breed) {
+                    setSelectedBreed(breed);
+                    if (viewMode !== "global") {
+                      loadBreedSpecimens(breed);
+                    }
                   }
-                }
-              }}
-              style={{
-                background: "rgba(56, 189, 248, 0.08)",
-                border: "1px solid rgba(56, 189, 248, 0.3)",
-                color: "#7dd3fc",
-                padding: "0.3rem 0.75rem",
-                borderRadius: "20px",
-                fontSize: "0.75rem",
-                cursor: "pointer",
-                transition: "all 0.2s ease"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(56, 189, 248, 0.15)";
-                e.currentTarget.style.transform = "scale(1.05)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(56, 189, 248, 0.08)";
-                e.currentTarget.style.transform = "scale(1)";
-              }}
-            >
-              {item.name}
-            </button>
-          ))}
+                }}
+                style={{
+                  background: "rgba(255, 255, 255, 0.03)",
+                  border: "1px solid rgba(255, 255, 255, 0.06)",
+                  color: "var(--text-secondary)",
+                  padding: "0.25rem 0.65rem",
+                  borderRadius: "50px",
+                  fontSize: "0.7rem",
+                  fontWeight: "500",
+                  cursor: "pointer",
+                  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(56, 189, 248, 0.08)";
+                  e.currentTarget.style.borderColor = "rgba(56, 189, 248, 0.3)";
+                  e.currentTarget.style.color = "#7dd3fc";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(56, 189, 248, 0.15)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
+                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.06)";
+                  e.currentTarget.style.color = "var(--text-secondary)";
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
+                }}
+              >
+                {item.name}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

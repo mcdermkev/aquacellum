@@ -129,6 +129,12 @@ export function MarketplaceBoard({
   }, []);
 
   useEffect(() => {
+    if (casualModeActive) {
+      setActiveSubTab("listings");
+    }
+  }, [casualModeActive]);
+
+  useEffect(() => {
     if (cachedGlobalData) {
       const lookup = {};
       cachedGlobalData.forEach((item) => {
@@ -369,6 +375,9 @@ export function MarketplaceBoard({
     .sort((a, b) => {
       if (sortBy === "price-asc") {
         return parseFloat(a.price) - parseFloat(b.price);
+      }
+      if (sortBy === "price-desc") {
+        return parseFloat(b.price) - parseFloat(a.price);
       }
       if (sortBy === "tier-purebred") {
         const aPure = (!a.isBatch && a.sireId !== 0 && a.damId !== 0) ? 1 : 0;
@@ -624,50 +633,52 @@ export function MarketplaceBoard({
   return (
     <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
       {/* Sub-Tab Navigation Bar */}
-      <div style={{
-        display: "flex",
-        background: "rgba(30, 41, 59, 0.4)",
-        border: "1px solid rgba(255, 255, 255, 0.05)",
-        borderRadius: "8px",
-        padding: "0.4rem",
-        marginBottom: "2rem",
-        gap: "0.5rem"
-      }}>
-        <button
-          onClick={() => setActiveSubTab("listings")}
-          style={{
-            flex: 1,
-            padding: "0.6rem",
-            fontSize: "0.85rem",
-            fontWeight: "600",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            background: activeSubTab === "listings" ? "rgba(56, 189, 248, 0.15)" : "transparent",
-            color: activeSubTab === "listings" ? "var(--accent-blue)" : "var(--text-muted)",
-            transition: "all 0.2s"
-          }}
-        >
-          🗂️ Active Directory Listings
-        </button>
-        <button
-          onClick={() => setActiveSubTab("analytics")}
-          style={{
-            flex: 1,
-            padding: "0.6rem",
-            fontSize: "0.85rem",
-            fontWeight: "600",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            background: activeSubTab === "analytics" ? "rgba(16, 185, 129, 0.15)" : "transparent",
-            color: activeSubTab === "analytics" ? "var(--accent-green)" : "var(--text-muted)",
-            transition: "all 0.2s"
-          }}
-        >
-          📊 Event Sales & Inventory Analytics
-        </button>
-      </div>
+      {!casualModeActive && (
+        <div style={{
+          display: "flex",
+          background: "rgba(30, 41, 59, 0.4)",
+          border: "1px solid rgba(255, 255, 255, 0.05)",
+          borderRadius: "8px",
+          padding: "0.4rem",
+          marginBottom: "2rem",
+          gap: "0.5rem"
+        }}>
+          <button
+            onClick={() => setActiveSubTab("listings")}
+            style={{
+              flex: 1,
+              padding: "0.6rem",
+              fontSize: "0.85rem",
+              fontWeight: "600",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              background: activeSubTab === "listings" ? "rgba(56, 189, 248, 0.15)" : "transparent",
+              color: activeSubTab === "listings" ? "var(--accent-blue)" : "var(--text-muted)",
+              transition: "all 0.2s"
+            }}
+          >
+            🗂️ Active Directory Listings
+          </button>
+          <button
+            onClick={() => setActiveSubTab("analytics")}
+            style={{
+              flex: 1,
+              padding: "0.6rem",
+              fontSize: "0.85rem",
+              fontWeight: "600",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              background: activeSubTab === "analytics" ? "rgba(16, 185, 129, 0.15)" : "transparent",
+              color: activeSubTab === "analytics" ? "var(--accent-green)" : "var(--text-muted)",
+              transition: "all 0.2s"
+            }}
+          >
+            📊 Event Sales & Inventory Analytics
+          </button>
+        </div>
+      )}
 
       {activeSubTab === "analytics" ? (
         renderEventAnalytics()
@@ -720,13 +731,16 @@ export function MarketplaceBoard({
         <div className="glass-card" style={{ padding: "2rem", marginBottom: "2rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1.5rem" }}>
           <div>
             <h2 style={{ fontSize: "1.75rem", marginBottom: "0.25rem", color: "#fff" }}>
-              Available Local Livestock Directory
+              {casualModeActive ? "Local Breeder Store" : "Available Local Livestock Directory"}
             </h2>
             <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
-              Zero-cost peer-to-peer exchange catalog. Browse and share documented specimens with verified ancestry.
+              {casualModeActive 
+                ? "Purchase healthy, tank-raised specimens directly from verified local hobbyists. Supported by escrow-backed health & live-arrival guarantees."
+                : "Zero-cost peer-to-peer exchange catalog. Browse and share documented specimens with verified ancestry."
+              }
             </p>
           </div>
-          {walletAccount && (
+          {!casualModeActive && walletAccount && (
             <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 12h14M12 5v14"/>
@@ -739,33 +753,62 @@ export function MarketplaceBoard({
 
       {/* Trust Assurance Glassmorphic Banner */}
       {activeSubTab === "listings" && (
-        <div style={{
-          padding: "1rem 1.5rem",
-          marginBottom: "1.5rem",
-          background: "linear-gradient(135deg, rgba(34, 197, 94, 0.06) 0%, rgba(56, 189, 248, 0.04) 100%)",
-          border: "1px solid rgba(34, 197, 94, 0.22)",
-          borderRadius: "var(--radius-md)",
-          backdropFilter: "blur(12px)",
-          display: "flex",
-          alignItems: "center",
-          gap: "1.25rem",
-          flexWrap: "wrap"
-        }}>
-          <span style={{ fontSize: "1.75rem", lineHeight: 1 }}>🛡️</span>
-          <div style={{ flex: 1, minWidth: "220px" }}>
-            <strong style={{ color: "#34d399", fontSize: "0.85rem", display: "block", marginBottom: "0.2rem" }}>
-              Safe & Trusted Peer-to-Peer Exchange
-            </strong>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", margin: 0, lineHeight: 1.5 }}>
-              Every transaction is protected by a <strong style={{ color: "#fff" }}>smart-contract escrow lock</strong> — funds are only released after you confirm receipt. Local pickups use a <strong style={{ color: "#fff" }}>secure handshake PIN</strong> and shipping orders carry a <strong style={{ color: "#fff" }}>3-day delivery safety window</strong> before any funds clear. Fraud protection is built-in.
+        casualModeActive ? (
+          <div style={{
+            padding: "1rem 1.5rem",
+            marginBottom: "1.5rem",
+            background: "linear-gradient(135deg, rgba(34, 197, 94, 0.04) 0%, rgba(56, 189, 248, 0.02) 100%)",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            borderRadius: "var(--radius-md)",
+            backdropFilter: "blur(12px)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.75rem"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+              <span style={{ fontSize: "1.2rem", lineHeight: 1 }}>🛡️</span>
+              <strong style={{ color: "#34d399", fontSize: "0.85rem" }}>
+                Breeder Store Guarantee
+              </strong>
+              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginLeft: "auto" }}>
+                <span style={{ fontSize: "0.7rem", padding: "0.25rem 0.65rem", borderRadius: "20px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", color: "#34d399", textShadow: "0 0 6px rgba(34,197,94,0.2)", whiteSpace: "nowrap" }}>🛡️ Escrow Health Guarantee</span>
+                <span style={{ fontSize: "0.7rem", padding: "0.25rem 0.65rem", borderRadius: "20px", background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.25)", color: "#7dd3fc", textShadow: "0 0 6px rgba(56,189,248,0.2)", whiteSpace: "nowrap" }}>📦 3-Day Safe Arrival</span>
+                <span style={{ fontSize: "0.7rem", padding: "0.25rem 0.65rem", borderRadius: "20px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.25)", color: "#fbbf24", textShadow: "0 0 6px rgba(251,191,36,0.2)", whiteSpace: "nowrap" }}>🤝 Verified Local Breeders</span>
+              </div>
+            </div>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", margin: 0, lineHeight: 1.4 }}>
+              Every purchase is protected by smart-contract escrow. Funds are released only after you confirm safe arrival.
             </p>
           </div>
-          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "0.7rem", padding: "0.3rem 0.75rem", borderRadius: "20px", background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.35)", color: "#34d399", whiteSpace: "nowrap" }}>🔒 Escrow Protected</span>
-            <span style={{ fontSize: "0.7rem", padding: "0.3rem 0.75rem", borderRadius: "20px", background: "rgba(56,189,248,0.10)", border: "1px solid rgba(56,189,248,0.3)", color: "#7dd3fc", whiteSpace: "nowrap" }}>📦 3-Day Safety Window</span>
-            <span style={{ fontSize: "0.7rem", padding: "0.3rem 0.75rem", borderRadius: "20px", background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.3)", color: "#fbbf24", whiteSpace: "nowrap" }}>🤝 Handshake Verified</span>
+        ) : (
+          <div style={{
+            padding: "1rem 1.5rem",
+            marginBottom: "1.5rem",
+            background: "linear-gradient(135deg, rgba(34, 197, 94, 0.06) 0%, rgba(56, 189, 248, 0.04) 100%)",
+            border: "1px solid rgba(34, 197, 94, 0.22)",
+            borderRadius: "var(--radius-md)",
+            backdropFilter: "blur(12px)",
+            display: "flex",
+            alignItems: "center",
+            gap: "1.25rem",
+            flexWrap: "wrap"
+          }}>
+            <span style={{ fontSize: "1.75rem", lineHeight: 1 }}>🛡️</span>
+            <div style={{ flex: 1, minWidth: "220px" }}>
+              <strong style={{ color: "#34d399", fontSize: "0.85rem", display: "block", marginBottom: "0.2rem" }}>
+                Safe & Trusted Peer-to-Peer Exchange
+              </strong>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", margin: 0, lineHeight: 1.5 }}>
+                Every transaction is protected by a <strong style={{ color: "#fff" }}>smart-contract escrow lock</strong> — funds are only released after you confirm receipt. Local pickups use a <strong style={{ color: "#fff" }}>secure handshake PIN</strong> and shipping orders carry a <strong style={{ color: "#fff" }}>3-day delivery safety window</strong> before any funds clear. Fraud protection is built-in.
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+              <span style={{ fontSize: "0.7rem", padding: "0.3rem 0.75rem", borderRadius: "20px", background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.35)", color: "#34d399", whiteSpace: "nowrap" }}>🔒 Escrow Protected</span>
+              <span style={{ fontSize: "0.7rem", padding: "0.3rem 0.75rem", borderRadius: "20px", background: "rgba(56,189,248,0.10)", border: "1px solid rgba(56,189,248,0.3)", color: "#7dd3fc", whiteSpace: "nowrap" }}>📦 3-Day Safety Window</span>
+              <span style={{ fontSize: "0.7rem", padding: "0.3rem 0.75rem", borderRadius: "20px", background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.3)", color: "#fbbf24", whiteSpace: "nowrap" }}>🤝 Handshake Verified</span>
+            </div>
           </div>
-        </div>
+        )
       )}
 
       {/* Controls Bar */}
@@ -812,8 +855,13 @@ export function MarketplaceBoard({
         >
           <option value="none">Sort By: Default</option>
           <option value="price-asc">Price: Low to High</option>
-          <option value="tier-purebred">Pedigree Tier: Purebred First</option>
-          <option value="tier-wild">Pedigree Tier: Wild Caught First</option>
+          <option value="price-desc">Price: High to Low</option>
+          {!casualModeActive && (
+            <>
+              <option value="tier-purebred">Pedigree Tier: Purebred First</option>
+              <option value="tier-wild">Pedigree Tier: Wild Caught First</option>
+            </>
+          )}
           <option value="closest">Closest to Me</option>
         </select>
 
@@ -1106,15 +1154,51 @@ export function MarketplaceBoard({
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.5rem", flexWrap: "wrap", gap: "0.5rem" }}>
                               {casualModeActive ? (
                                 <>
-                                  <span className="badge badge-green" style={{ fontSize: "0.6rem", padding: "0.15rem 0.5rem" }}>
-                                    [ Tank-Bred Premium Stock ]
+                                  <span style={{
+                                    fontSize: "0.65rem",
+                                    fontWeight: "600",
+                                    padding: "0.2rem 0.5rem",
+                                    borderRadius: "12px",
+                                    background: "rgba(34, 197, 94, 0.08)",
+                                    border: "1px solid rgba(34, 197, 94, 0.2)",
+                                    color: "#34d399",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "0.25rem",
+                                    whiteSpace: "nowrap"
+                                  }}>
+                                    🏠 Tank-Bred
                                   </span>
-                                  <span className="badge badge-blue" style={{ fontSize: "0.6rem", padding: "0.15rem 0.5rem" }}>
-                                    {item.isShipping ? "[ Shipping Available ]" : "[ Local Pickup Available ]"}
+                                  <span style={{
+                                    fontSize: "0.65rem",
+                                    fontWeight: "600",
+                                    padding: "0.2rem 0.5rem",
+                                    borderRadius: "12px",
+                                    background: item.isShipping ? "rgba(56, 189, 248, 0.08)" : "rgba(251, 191, 36, 0.08)",
+                                    border: item.isShipping ? "1px solid rgba(56, 189, 248, 0.2)" : "1px solid rgba(251, 191, 36, 0.2)",
+                                    color: item.isShipping ? "#7dd3fc" : "#fbbf24",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "0.25rem",
+                                    whiteSpace: "nowrap"
+                                  }}>
+                                    {item.isShipping ? "🚚 Shipping" : "📍 Local Pickup"}
                                   </span>
                                   {item.careLevel === 0 && (
-                                    <span className="badge badge-amber" style={{ fontSize: "0.6rem", padding: "0.15rem 0.5rem" }}>
-                                      [ Beginner Friendly ]
+                                    <span style={{
+                                      fontSize: "0.65rem",
+                                      fontWeight: "600",
+                                      padding: "0.2rem 0.5rem",
+                                      borderRadius: "12px",
+                                      background: "rgba(34, 211, 238, 0.08)",
+                                      border: "1px solid rgba(34, 211, 238, 0.2)",
+                                      color: "#22d3ee",
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "0.25rem",
+                                      whiteSpace: "nowrap"
+                                    }}>
+                                      ✨ Beginner Friendly
                                     </span>
                                   )}
                                 </>
@@ -1248,7 +1332,7 @@ export function MarketplaceBoard({
                                   disabled={claiming}
                                   style={{ flex: 1, padding: "0.4rem", fontSize: "0.75rem", justifyContent: "center" }}
                                 >
-                                  {claiming ? "Withdrawing..." : "Withdraw Entry"}
+                                  {claiming ? (casualModeActive ? "Removing..." : "Withdrawing...") : (casualModeActive ? "Remove Listing" : "Withdraw Entry")}
                                 </button>
                               </div>
                             ) : (
@@ -1267,7 +1351,7 @@ export function MarketplaceBoard({
                                 disabled={claiming || !walletAccount}
                                 style={{ width: "100%", padding: "0.4rem 1rem", fontSize: "0.75rem", justifyContent: "center" }}
                               >
-                                {claiming ? "Securing..." : "Secure Livestock"}
+                                {claiming ? (casualModeActive ? "Purchasing..." : "Securing...") : (casualModeActive ? "Purchase" : "Secure Livestock")}
                               </button>
                             )}
                           </div>
@@ -1281,7 +1365,7 @@ export function MarketplaceBoard({
 
                           {/* Seller info row — masked in Casual Mode */}
                           <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.25rem" }}>
-                            <span>🧑‍🌾 Listed by:</span>
+                            <span>{casualModeActive ? "🧑‍🌾 Breeder:" : "🧑‍🌾 Listed by:"}</span>
                             {casualModeActive ? (
                               <span style={{ color: "#34d399", fontWeight: "600" }}>✅ Verified Local Breeder</span>
                             ) : (
