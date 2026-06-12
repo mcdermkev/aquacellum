@@ -103,11 +103,25 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
         }
       }
 
-      // Local Dexie tanks (beta mode)
+      // Local Dexie tanks (beta mode) — match owner case-insensitively
       try {
-        const localTanks = await db.tanks.where("ownerAddress").equals(walletAccount).toArray();
+        const acct = (walletAccount || "").toLowerCase();
+        const allLocalTanks = await db.tanks.toArray();
+        let localTanks = allLocalTanks.filter(t => {
+          if (t.active === false) return false;
+          const owner = (t.ownerAddress || "").toLowerCase();
+          // Match this user, or include legacy tanks with no owner recorded
+          return owner === acct || owner === "";
+        });
+
+        // Beta single-device fallback: if nothing matched the current account but
+        // local tanks exist, surface them anyway so the user's tank is selectable.
+        if (localTanks.length === 0 && allLocalTanks.length > 0) {
+          localTanks = allLocalTanks.filter(t => t.active !== false);
+        }
+
         for (const lt of localTanks) {
-          if (lt.active && !tempTanks.some(t => t.id === lt.id)) {
+          if (!tempTanks.some(t => Number(t.id) === Number(lt.id))) {
             tempTanks.push({ id: lt.id, name: lt.name });
           }
         }
