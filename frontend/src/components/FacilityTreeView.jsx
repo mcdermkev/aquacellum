@@ -5,6 +5,7 @@ import { addXp, XP_ACTIONS } from "../utils/xp";
 import { getProvider, getSigner } from "../utils/smartAccount";
 import { compressImage } from "../utils/imageCompression";
 import { relayRegisterTank } from "../services/relayer";
+import { db } from "../db";
 
 const TANK_TYPES = ["Freshwater", "Saltwater", "Brackish", "Pond"];
 const CONTAINMENT_TYPES = ["Tank", "Tub", "Basket"];
@@ -175,6 +176,22 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
       setRegisterTx(result.txHash);
 
       const newTankId = result.tankId;
+
+      // Log the initial parameters so the Reef Composer can pick them up automatically
+      await db.actionLogs.add({
+        tankId: newTankId,
+        actionType: "ParameterLog",
+        timestamp: Math.round(Date.now() / 1000),
+        details: {
+          temp: 24.5,
+          ph: 7.2,
+          salinity: registerForm.tankType === "2" ? 1.025 : 1.0,
+          ammonia: 0,
+          nitrite: 0,
+          nitrate: 5,
+          notes: "System initialized via registration console"
+        }
+      });
 
       if (newTankId && selectedPhoto) {
         try {

@@ -338,6 +338,9 @@ export function OnboardingProvider({ children, account: accountProp }) {
 
     // Fast-path cache so the gate doesn't flash onboarding on the next load.
     refreshOnboardingCache();
+
+    // Set flag for main dashboard welcome modal guidance
+    localStorage.setItem("aquadex_show_welcome_guidance", "true");
   }, [account]);
 
   const value = {

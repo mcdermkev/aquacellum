@@ -3,7 +3,7 @@ import { ethers, Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { addXp, XP_ACTIONS } from "../utils/xp";
 import { FacilityTreeView } from "./FacilityTreeView";
-import { getProvider, getSigner } from "../utils/smartAccount";
+import { getProvider } from "../utils/smartAccount";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import { db } from "../db";
 import { PoseidonChatConsole } from "./PoseidonChatConsole";
@@ -13,6 +13,7 @@ import { CompanionFishEntity } from "./CompanionFishEntity";
 import { useUserTanks } from "../hooks/useUserTanks";
 import { useSpeciesData } from "../hooks/useSpeciesData";
 import { useQueryClient } from "@tanstack/react-query";
+import { relayMoveSpecimen, relayLogWaterParameters } from "../services/relayer";
 
 const TANK_TYPES = ["Freshwater", "Saltwater", "Brackish", "Pond"];
 const CONTAINMENT_TYPES = ["Tank", "Tub", "Basket"];
@@ -353,11 +354,12 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const handleMoveSpecimen = async (specimenId, targetTankId) => {
     try {
       showToast(`🔄 Rehoming specimen #${specimenId} to tank #${targetTankId}...`);
-      const signer = await getSigner();
-      const contract = new Contract(contractAddress, aquadexAbi, signer);
 
-      const tx = await contract.moveSpecimenToTank(specimenId, targetTankId);
-      await tx.wait();
+      // Beta: move locally via relayer (no MetaMask, no gas)
+      const result = await relayMoveSpecimen({ specimenId, targetTankId });
+      if (!result.success) {
+        throw new Error(result.error || "Move failed");
+      }
 
       addXp(10, "Specimen Rehomed");
       showToast(`✅ Specimen #${specimenId} moved successfully!`);
@@ -579,9 +581,6 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     setModalError(null);
     setTxHash(null);
     try {
-      const signer = await getSigner();
-      const contract = new Contract(contractAddress, aquadexAbi, signer);
-
       const tempCelsiusX10 = Math.round(parseFloat(formData.temp) * 10);
       const phX10 = Math.round(parseFloat(formData.ph) * 10);
       const salinitySgX10000 = Math.round(parseFloat(formData.salinity) * 10000);
@@ -589,19 +588,21 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       const nitritePpmX100 = Math.round(parseFloat(formData.nitrite) * 100);
       const nitratePpmX100 = Math.round(parseFloat(formData.nitrate) * 100);
 
-      const tx = await contract.logWaterParameters(
-        Number(targetTankId),
+      // Beta: log locally via relayer (no MetaMask, no gas)
+      const result = await relayLogWaterParameters({
+        tankId: Number(targetTankId),
         tempCelsiusX10,
         phX10,
         salinitySgX10000,
         ammoniaPpmX100,
         nitritePpmX100,
         nitratePpmX100,
-        formData.notes
-      );
+        notes: formData.notes,
+      });
 
-      setTxHash(tx.hash);
-      await tx.wait();
+      if (!result.success) {
+        throw new Error(result.error || "Failed to log parameters");
+      }
 
       addXp(XP_ACTIONS.LOG_PARAMETERS.points, XP_ACTIONS.LOG_PARAMETERS.label);
 

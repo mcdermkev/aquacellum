@@ -5,6 +5,22 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 11, 2026 — Fix: Remove MetaMask Popup from Tank Operations (Local-First Relayer)
+
+Routine tank operations (adding fish, moving specimens, logging water parameters) no longer trigger MetaMask. All day-to-day writes are now routed through the local-first Dexie relayer, matching the existing tank registration pattern.
+
+### Changes
+- **`relayer.js`**: Added `relayMintSpecimen()`, `relayMoveSpecimen()`, `relayLogWaterParameters()` — store specimens and logs locally in Dexie with no wallet interaction.
+- **`MintSpecimen.jsx`**: `handleMintSubmit` now uses `relayMintSpecimen()` instead of direct contract call. `loadMetadata()` merges local Dexie tanks into the tank dropdown.
+- **`TankList.jsx`**: `handleMoveSpecimen` and `handleLogSubmit` use local relayer functions instead of `getSigner()` → contract calls.
+- **`db.js`**: Added `specimens` table (schema version 12) for standalone specimen queries by owner, species, or tank.
+
+### Notes
+- Marketplace/trading operations (buy, sell, handshake) still go on-chain intentionally.
+- On-chain minting deferred to a future "publish" flow once meta-transaction or ownership delegation support is added to the contract.
+
+---
+
 ## June 11, 2026 — Merged to Production (master)
 
 All changes from `feat/social-reef-phase5-complete` merged to master and deployed to aquacellum.com via Vercel. Includes: onboarding revamp, immersive reef XR biomes/cutouts/planted environments, Vertex AI migration, display name uniqueness, Echo companion art, 13 new 3D fish models, 280+ species cutout sprites, sponsorship scaffolding, and internal docs/scripts excluded from repo.
