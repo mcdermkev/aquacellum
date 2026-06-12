@@ -622,36 +622,36 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                   </div>
 
                   {snappedParameters ? (
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
-                      <div className="telemetry-tile-premium">
-                        <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Temp</span>
-                        <strong style={{ fontSize: "1.2rem", color: "#fff" }}>{snappedParameters.temp}°C</strong>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                        <div className="telemetry-tile-premium">
+                          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Temp</span>
+                          <strong style={{ fontSize: "1.2rem", color: "#fff" }}>{snappedParameters.temp}°C</strong>
+                        </div>
+                        <div className="telemetry-tile-premium">
+                          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>pH</span>
+                          <strong style={{ fontSize: "1.2rem", color: "#fff" }}>{snappedParameters.ph}</strong>
+                        </div>
                       </div>
-                      <div className="telemetry-tile-premium">
-                        <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>pH</span>
-                        <strong style={{ fontSize: "1.2rem", color: "#fff" }}>{snappedParameters.ph}</strong>
-                      </div>
-                      <div className="telemetry-tile-premium">
-                        <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Salinity</span>
-                        <strong style={{ fontSize: "1.2rem", color: "#fff" }}>{snappedParameters.salinity}</strong>
-                      </div>
-                      <div className="telemetry-tile-premium">
-                        <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Ammonia</span>
-                        <strong style={{ fontSize: "1.2rem", color: Number(snappedParameters.ammonia) > 0.05 ? "var(--accent-red)" : "#fff" }}>
-                          {snappedParameters.ammonia} ppm
-                        </strong>
-                      </div>
-                      <div className="telemetry-tile-premium">
-                        <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Nitrite</span>
-                        <strong style={{ fontSize: "1.2rem", color: Number(snappedParameters.nitrite) > 0.05 ? "var(--accent-red)" : "#fff" }}>
-                          {snappedParameters.nitrite} ppm
-                        </strong>
-                      </div>
-                      <div className="telemetry-tile-premium">
-                        <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Nitrate</span>
-                        <strong style={{ fontSize: "1.2rem", color: Number(snappedParameters.nitrate) > 20.0 ? "var(--accent-amber)" : "#fff" }}>
-                          {snappedParameters.nitrate} ppm
-                        </strong>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
+                        <div className="telemetry-tile-premium">
+                          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Ammonia</span>
+                          <strong style={{ fontSize: "1.2rem", color: Number(snappedParameters.ammonia) > 0.05 ? "var(--accent-red)" : "#fff" }}>
+                            {snappedParameters.ammonia} ppm
+                          </strong>
+                        </div>
+                        <div className="telemetry-tile-premium">
+                          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Nitrite</span>
+                          <strong style={{ fontSize: "1.2rem", color: Number(snappedParameters.nitrite) > 0.05 ? "var(--accent-red)" : "#fff" }}>
+                            {snappedParameters.nitrite} ppm
+                          </strong>
+                        </div>
+                        <div className="telemetry-tile-premium">
+                          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Nitrate</span>
+                          <strong style={{ fontSize: "1.2rem", color: Number(snappedParameters.nitrate) > 20.0 ? "var(--accent-amber)" : "#fff" }}>
+                            {snappedParameters.nitrate} ppm
+                          </strong>
+                        </div>
                       </div>
                     </div>
                   ) : (

@@ -5,6 +5,22 @@ For the current project specification, see [PROJECT_SUMMARY.md](./PROJECT_SUMMAR
 
 ---
 
+## June 12, 2026 — UI Fix: Remove Saltwater Specific Gravity / Salinity Telemetry
+
+Removed all Specific Gravity (Salinity) parameter inputs and telemetry displays from the application as the system is freshwater-focused.
+
+### Changes
+- **`TankList.jsx`**:
+  - Removed the "Specific Gravity" telemetry tile from the Pro mode dashboard overview grid.
+  - Adjusted the layout of the "Nitrogen Cycle" telemetry tile to span 2 columns (`gridColumn: "span 2"`), maintaining a balanced and clean grid.
+  - Removed the "Salinity (SG)" slider field from the quick log water parameter form.
+  - Reorganized the Ammonia, Nitrite, and Nitrate inputs into a single clean 3-column row layout.
+- **`SpawningWizard.jsx`**:
+  - Removed the "Salinity" card from the environmental chemistry snapshot view.
+  - Organized the remaining 5 tiles into a 2-column grid (Temp, pH) and a 3-column grid (Ammonia, Nitrite, Nitrate).
+
+---
+
 ## June 11, 2026 — Feature: Inline "Add Fish" Button on Tank View
 
 Added a one-click "Add Fish" action directly in the tank detail Fish tab, so users no longer need to navigate out to the separate registration page.

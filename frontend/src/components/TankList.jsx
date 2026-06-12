@@ -2171,32 +2171,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           </strong>
                           <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Ideal range: 6.5 - 8.0 pH</span>
                         </div>
-
-                        {/* Salinity */}
-                        <div className="telemetry-tile-premium" style={{ borderLeft: `3px solid ${activeTank.latestLog ? getHslColor(activeTank.latestLog.salinitySgX10000/10000, 1.000, 1.026, 0.01) : "var(--glass-border)"}` }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>🌊 Specific Gravity</span>
-                            {activeTank.latestLog && (
-                              <span className="badge" style={{ 
-                                fontSize: "0.55rem", 
-                                padding: "0.1rem 0.4rem", 
-                                background: `${getHslColor(activeTank.latestLog.salinitySgX10000/10000, 1.000, 1.026, 0.01)}15`, 
-                                color: getHslColor(activeTank.latestLog.salinitySgX10000/10000, 1.000, 1.026, 0.01),
-                                borderColor: getHslColor(activeTank.latestLog.salinitySgX10000/10000, 1.000, 1.026, 0.01)
-                              }}>
-                                {activeTank.latestLog.salinitySgX10000/10000 >= 1.000 && activeTank.latestLog.salinitySgX10000/10000 <= 1.026 ? "Ideal" : "Warning"}
-                              </span>
-                            )}
-                          </div>
-                          <strong style={{ fontSize: "1.25rem", color: "#fff" }}>
-                            {activeTank.latestLog ? (activeTank.latestLog.salinitySgX10000 / 10000).toFixed(4) : "N/A"}
-                          </strong>
-                          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Saltwater standard: 1.025 SG</span>
-                        </div>
-
                         {/* Nitrogen */}
                         <div className="telemetry-tile-premium" style={{ 
                           position: "relative",
+                          gridColumn: "span 2",
                           borderLeft: `3px solid ${activeTank.latestLog ? (
                             (Number(activeTank.latestLog.ammoniaPpmX100)/100 > 0.05 || Number(activeTank.latestLog.nitritePpmX100)/100 > 0.05) 
                               ? "var(--accent-red)" 
@@ -3369,32 +3347,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.25rem" }}>
-                    <span style={{ color: "var(--text-secondary)" }}>Salinity (SG)</span>
-                    <strong style={{ color: isInsideEnvelope(Number(formData.salinity), minSafeSalinity, maxSafeSalinity) ? "#4ade80" : "#f87171" }}>
-                      {formData.salinity} {isInsideEnvelope(Number(formData.salinity), minSafeSalinity, maxSafeSalinity) ? "(Ideal)" : "(Warning)"}
-                    </strong>
-                  </div>
-                  <input 
-                    type="range" 
-                    min="1.0000" 
-                    max="1.0300" 
-                    step="0.0001" 
-                    value={formData.salinity}
-                    onChange={(e) => setFormData({ ...formData, salinity: e.target.value })}
-                    style={{
-                      width: "100%",
-                      height: "6px",
-                      borderRadius: "3px",
-                      background: getTrackBackground(1.0000, 1.0300, minSafeSalinity, maxSafeSalinity),
-                      outline: "none",
-                      accentColor: isInsideEnvelope(Number(formData.salinity), minSafeSalinity, maxSafeSalinity) ? "#22c55e" : "#ef4444",
-                      cursor: "pointer"
-                    }}
-                  />
-                </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
                 <div>
                   <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Ammonia (ppm)</label>
                   <input 
@@ -3406,9 +3359,6 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
                   />
                 </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                 <div>
                   <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Nitrite (ppm)</label>
                   <input 
