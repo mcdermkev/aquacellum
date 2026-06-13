@@ -691,136 +691,71 @@ export default function App() {
         </div>
       </header>
 
-      {/* Tabs Subnavigation */}
+      {/* Tabs Subnavigation — Premium Glassmorphic Pill Bar */}
       {account && (
-        <div 
-          className="glass-card tabs-scroll-container" 
+        <nav
+          aria-label="Main navigation"
           ref={(el) => {
             if (!el) return;
             const handleScroll = () => {
-              el.classList.toggle("scrolled-start", el.scrollLeft > 10);
-              el.classList.toggle("scrolled-end", el.scrollLeft >= el.scrollWidth - el.clientWidth - 10);
+              el.classList.toggle("aquadex-nav--scrolled-start", el.scrollLeft > 10);
+              el.classList.toggle("aquadex-nav--scrolled-end", el.scrollLeft >= el.scrollWidth - el.clientWidth - 10);
             };
             el.addEventListener("scroll", handleScroll, { passive: true });
             handleScroll();
           }}
-          style={{ 
-            display: "flex", 
-            gap: "0.5rem", 
-            padding: "0.5rem", 
-            marginBottom: "3rem", 
-            borderRadius: "var(--radius-sm)",
-            maxWidth: "100%",
-            overflowX: "auto",
-            overflowY: "hidden",
-            WebkitOverflowScrolling: "touch",
-            scrollbarWidth: "none",
-            msOverflowStyle: "none",
-            position: "relative",
-            zIndex: 1,
-          }}
+          className={`aquadex-nav glass-card ${casualModeActive ? "aquadex-nav--casual" : "aquadex-nav--pro"}`}
+          style={{ marginBottom: "2rem" }}
         >
-          <button 
-            data-tour-id="aquariums-tab"
-            className={activeTab === "tanks" ? "btn-primary" : "btn-secondary"} 
-            onClick={() => handleTabChange("tanks")}
-            style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
-          >
-            {casualModeActive ? "🐠 My Aquariums" : "Aquariums"}
-          </button>
-          <button 
-            className={activeTab === "gallery" ? "btn-primary" : "btn-secondary"} 
-            onClick={() => handleTabChange("gallery")}
-            style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
-          >
-            {casualModeActive ? "🔍 Fish Finder" : "Breed Gallery"}
-          </button>
-          {!casualModeActive && (
-            <button 
-              data-tour-id="add-fish-tab"
-              className={activeTab === "mint" ? "btn-primary" : "btn-secondary"} 
-              onClick={() => handleTabChange("mint")}
-              style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
-            >
-              Register
-            </button>
-          )}
-          {!casualModeActive && (
-            <button 
-              className={activeTab === "lineage" ? "btn-primary" : "btn-secondary"} 
-              onClick={() => handleTabChange("lineage")}
-              style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
-            >
-              Lineage
-            </button>
-          )}
-          {!casualModeActive && (
-            <button 
-              className={activeTab === "spawning" ? "btn-primary" : "btn-secondary"} 
-              onClick={() => handleTabChange("spawning")}
-              style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
-            >
-              Spawning
-            </button>
-          )}
-          <button 
-            className={activeTab === "directory" ? "btn-primary" : "btn-secondary"} 
-            onClick={() => handleTabChange("directory")}
-            style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
-          >
-            {casualModeActive ? "🛒 Breeder Store" : "Marketplace"}
-          </button>
-          <button 
-            className={activeTab === "map" ? "btn-primary" : "btn-secondary"} 
-            onClick={() => handleTabChange("map")}
-            style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
-          >
-            🗺️ {casualModeActive ? "Find Local Sellers" : "Local Map"}
-          </button>
-          <button 
-            className={activeTab === "orders" ? "btn-primary" : "btn-secondary"} 
-            onClick={() => handleTabChange("orders")}
-            style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
-          >
-            {casualModeActive ? "📦 My Orders" : "📦 Orders"}
-          </button>
-          <button 
-            className={activeTab === "reef" ? "btn-primary" : "btn-secondary"} 
-            onClick={() => handleTabChange("reef")}
-            style={{ 
-              padding: "0.5rem 1.25rem", 
-              fontSize: "0.875rem",
-              position: "relative"
-            }}
-          >
-            {casualModeActive ? "🪸 The Reef" : "Social"}
-            {!postedFirstCurrent && (
-              <span 
-                className="pulse-dot"
-                style={{
-                  position: "absolute",
-                  top: "4px",
-                  right: "4px",
-                  width: "8px",
-                  height: "8px",
-                  borderRadius: "50%",
-                  background: casualModeActive ? "#38bdf8" : "#a855f7",
-                  boxShadow: casualModeActive 
-                    ? "0 0 8px #38bdf8" 
-                    : "0 0 8px #a855f7",
-                  animation: "pulse-glow 1.5s infinite ease-in-out"
-                }}
-              />
-            )}
-          </button>
-          <button 
-            className={activeTab === "settings" ? "btn-primary" : "btn-secondary"} 
-            onClick={() => handleTabChange("settings")}
-            style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
-          >
-            ⚙️ Settings
-          </button>
-        </div>
+          {/* Tab helper: render a single pill button */}
+          {[
+            { id: "tanks",     icon: "🐠",  label: casualModeActive ? "My Aquariums"  : "Aquariums",    tourId: "aquariums-tab", alwaysShow: true  },
+            { id: "gallery",   icon: "🔍",  label: casualModeActive ? "Fish Finder"   : "Breed Gallery", alwaysShow: true  },
+            { id: "mint",      icon: "✦",   label: "Register",                                           alwaysShow: !casualModeActive },
+            { id: "lineage",   icon: "🌿",  label: "Lineage",                                            alwaysShow: !casualModeActive },
+            { id: "spawning",  icon: "🥚",  label: "Spawning",                                           alwaysShow: !casualModeActive },
+            { id: "directory", icon: "🛒",  label: casualModeActive ? "Breeder Store" : "Marketplace",  alwaysShow: true  },
+            { id: "map",       icon: "🗺️", label: casualModeActive ? "Local Sellers" : "Local Map",     alwaysShow: true  },
+            { id: "orders",    icon: "📦",  label: "My Orders",                                          alwaysShow: true  },
+            { id: "reef",      icon: "🪸",  label: casualModeActive ? "The Reef"      : "Social",        alwaysShow: true, badge: !postedFirstCurrent },
+            { id: "settings",  icon: "⚙️", label: "Settings",                                           alwaysShow: true  },
+          ]
+            .filter((t) => t.alwaysShow)
+            .map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  data-tour-id={tab.tourId || undefined}
+                  onClick={() => handleTabChange(tab.id)}
+                  className={`aquadex-nav-tab${isActive ? " aquadex-nav-tab--active" : ""}`}
+                  aria-current={isActive ? "page" : undefined}
+                  style={{ position: "relative" }}
+                >
+                  <span className="aquadex-nav-tab-icon">{tab.icon}</span>
+                  <span className="aquadex-nav-tab-label">{tab.label}</span>
+                  {tab.badge && (
+                    <span
+                      className="pulse-dot"
+                      style={{
+                        position: "absolute",
+                        top: "6px",
+                        right: "6px",
+                        width: "7px",
+                        height: "7px",
+                        borderRadius: "50%",
+                        background: casualModeActive ? "#38bdf8" : "#a855f7",
+                        boxShadow: casualModeActive
+                          ? "0 0 7px #38bdf8"
+                          : "0 0 7px #a855f7",
+                        animation: "pulse-glow 1.5s infinite ease-in-out",
+                      }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+        </nav>
       )}
 
       {/* Main Content Area */}

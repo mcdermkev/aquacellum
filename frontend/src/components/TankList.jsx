@@ -15,6 +15,8 @@ import { useSpeciesData } from "../hooks/useSpeciesData";
 import { useContractSpecies } from "../hooks/useSpeciesData";
 import { useQueryClient } from "@tanstack/react-query";
 import { relayMoveSpecimen, relayLogWaterParameters, relayMintSpecimen } from "../services/relayer";
+import { createCurrent } from "../services/reefApi";
+import { isSupabaseConfigured } from "../services/supabaseClient";
 
 const TANK_TYPES = ["Freshwater", "Saltwater", "Brackish", "Pond"];
 const CONTAINMENT_TYPES = ["Tank", "Tub", "Basket"];
@@ -537,6 +539,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const [inlineDetailText, setInlineDetailText] = useState("");
   const inlineDetailRef = useRef(null);
 
+  // Pro Mode quick log population states
+  const [proPopAction, setProPopAction] = useState("add"); // "add" | "remove"
+  const [proPopSpeciesId, setProPopSpeciesId] = useState("");
+  const [proPopGender, setProPopGender] = useState("Not Sure");
+  const [proPopQty, setProPopQty] = useState(1);
+  const [proPopSubmitting, setProPopSubmitting] = useState(false);
+
   // Quick Win 7: Escape key closes overlays
   useEffect(() => {
     const handleEscape = (e) => {
@@ -555,6 +564,19 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const [detailSubTab, setDetailSubTab] = useState("overview"); // "overview" | "fish" | "history" | "notes"
   const [commentText, setCommentText] = useState("");
   const [commenterRole, setCommenterRole] = useState("hobbyist");
+  const [composerCategory, setComposerCategory] = useState("observation"); // "observation" | "telemetry" | "spawning" | "lab-audit"
+  const [broadcastToReef, setBroadcastToReef] = useState(false);
+  const [spawnClutchSize, setSpawnClutchSize] = useState("");
+  const [spawnStage, setSpawnStage] = useState("Eggs");
+  const commentInputRef = useRef(null);
+
+  useEffect(() => {
+    if (detailSubTab === "social") {
+      const isHatched = companionData && companionData.eggState >= 2;
+      setCommenterRole(casualModeActive || !isHatched ? "hobbyist" : "breeder");
+      setComposerCategory("observation");
+    }
+  }, [detailSubTab, casualModeActive, companionData]);
   const [tankComments, setTankComments] = useState(() => {
     const cached = localStorage.getItem("aquadex_tank_comments");
     if (cached) {
@@ -819,6 +841,56 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     await fetchDashboardData();
   };
 
+  const handleProPopAddSubmit = async () => {
+    if (!proPopSpeciesId) {
+      showToast("⚠️ Please select a species");
+      return;
+    }
+    setProPopSubmitting(true);
+    try {
+      const species = contractSpecies.find(s => String(s.speciesId) === String(proPopSpeciesId)) || {};
+      const count = Number(proPopQty) || 1;
+
+      for (let i = 0; i < count; i++) {
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, 5));
+        }
+        const result = await relayMintSpecimen({
+          speciesId: Number(proPopSpeciesId),
+          birthTimestamp: 0,
+          breeder: walletAccount,
+          currentTankId: Number(activeTank.id),
+          ownerAddress: walletAccount,
+          commonName: species.commonName || "Specimen",
+          scientificName: species.scientificName || "Unknown",
+          gender: proPopGender,
+        });
+        if (!result.success) throw new Error(result.error || "Failed to add fish");
+
+        if (i === 0) {
+          window.dispatchEvent(new CustomEvent("aquadex:specimen_added", { detail: { tokenId: result.specimenId } }));
+        }
+      }
+
+      addXp(XP_ACTIONS.MINT_SPECIMEN?.points * count, XP_ACTIONS.MINT_SPECIMEN?.label);
+      showToast(`✅ ${count} birth certificate${count > 1 ? "s" : ""} registered for ${species.commonName || "specimen"}`);
+
+      setInlineDetailOpen(false);
+      await fetchDashboardData();
+
+      // Refresh the active tank view
+      const fresh = await refetchTanks();
+      const updated = fresh.data?.find(t => t.id === Number(activeTank.id));
+      if (updated) setActiveTank(updated);
+    } catch (err) {
+      console.error("Pro population add failed:", err);
+      showToast(`❌ Add failed: ${err.message || err}`);
+    } finally {
+      setProPopSubmitting(false);
+    }
+  };
+
+
   const logTestClick = async () => {
     await db.actionLogs.add({
       tankId: activeTank.id,
@@ -859,10 +931,17 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
     const tankId = activeTank.id;
     const author = walletAccount || "0x0000000000000000000000000000000000000000";
-    const role = commenterRole;
+    let role = commenterRole;
+
+    // Normalize to current breeder tier if posted as a Breeder in Pro Mode
+    if (!casualModeActive && role === "breeder") {
+      const userTier = companionData?.currentTier || "Bronze";
+      const normalizedTier = userTier.toLowerCase().replace("-tier", "");
+      role = `${normalizedTier}-breeder`;
+    }
+
     const text = commentText.trim();
-    
-    const isExpertAudit = role === "master-breeder" && text.length >= 60;
+    const isExpertAudit = (role === "master-breeder" || composerCategory === "lab-audit") && text.length >= 60;
 
     if (isExpertAudit) {
       addXp(25, "Mentor XP (Expert Comment)");
@@ -871,12 +950,34 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       addXp(5, "Posted Tank Observation Comment");
     }
 
+    const safeLogs = Array.isArray(activeTank.logs) ? activeTank.logs : [];
+    let tempVal = "24.5°C";
+    let phVal = "7.2 pH";
+    if (safeLogs.length > 0) {
+      const lastLog = [...safeLogs].sort((a,b) => Number(b.timestamp || 0) - Number(a.timestamp || 0))[0];
+      const tempRaw = lastLog.tempCelsiusX10 !== undefined ? Number(lastLog.tempCelsiusX10) : (lastLog.temp !== undefined ? Number(lastLog.temp) : 245);
+      const phRaw = lastLog.phX10 !== undefined ? Number(lastLog.phX10) : (lastLog.ph !== undefined ? Number(lastLog.ph) : 72);
+      tempVal = `${(tempRaw / 10).toFixed(1)}°C`;
+      phVal = `${(phRaw / 10).toFixed(1)} pH`;
+    }
+    const specCount = getSpecimenCount(activeTank);
+
     const newComment = {
       author,
       role,
       text,
       timestamp: Math.floor(Date.now() / 1000),
-      isExpertAudit
+      isExpertAudit,
+      category: composerCategory,
+      telemetry: composerCategory === "telemetry" ? {
+        temp: tempVal,
+        ph: phVal,
+        specimens: specCount
+      } : null,
+      spawning: composerCategory === "spawning" ? {
+        clutchSize: spawnClutchSize || "N/A",
+        stage: spawnStage
+      } : null
     };
 
     setTankComments(prev => ({
@@ -884,7 +985,49 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       [tankId]: [...(prev[tankId] || []), newComment]
     }));
 
+    // Broadcast to the Reef if toggled
+    if (broadcastToReef) {
+      if (isSupabaseConfigured()) {
+        let snap = null;
+        if (safeLogs.length > 0) {
+          const lastLog = [...safeLogs].sort((a,b) => Number(b.timestamp || 0) - Number(a.timestamp || 0))[0];
+          const tempRaw = lastLog.tempCelsiusX10 !== undefined ? Number(lastLog.tempCelsiusX10) : (lastLog.temp !== undefined ? Number(lastLog.temp) : 245);
+          const phRaw = lastLog.phX10 !== undefined ? Number(lastLog.phX10) : (lastLog.ph !== undefined ? Number(lastLog.ph) : 72);
+          snap = {
+            temp: tempRaw / 10,
+            ph: phRaw / 10
+          };
+        }
+        createCurrent({
+          authorWallet: author,
+          title: activeTank.name || `Tank ${activeTank.id.slice(0, 8)}`,
+          body: text,
+          linkedTankId: activeTank.id,
+          linkedTankName: activeTank.name,
+          speciesTags: residingSpecies.map(s => s.commonName),
+          parametersSnapshot: snap,
+          visibility: "public"
+        }).then(({ data, error }) => {
+          if (error) {
+            console.error("Failed to broadcast current to the Reef:", error);
+            showToast(`⚠️ Stored locally. Reef broadcast failed: ${error}`);
+          } else {
+            showToast("🚀 Broadcasted update to The Reef feed!");
+          }
+        }).catch(err => {
+          console.error("Reef broadcast error:", err);
+          showToast("⚠️ Stored locally. Reef connection issue.");
+        });
+      } else {
+        showToast("💾 Saved locally (Reef broadcast in preview mode).");
+      }
+    } else {
+      showToast("💾 Observation logged successfully!");
+    }
+
     setCommentText("");
+    setSpawnClutchSize("");
+    setSpawnStage("Eggs");
   };
 
   // Parameter Logging Form State (inside Quick Log or Detail panel)
@@ -1301,149 +1444,131 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
           </div>
         </div>
       )}
-      {/* 1. STICKY ACTION HEADER BAR */}
-      <div className="sticky-scanner-header glass-card" style={{ borderRadius: "var(--radius-sm)" }}>
-        <button className="btn-primary scanner-btn" onClick={triggerScan}>
-          {casualModeActive ? "📸 Scan Tank" : "📸 [ ↓ Scan Tank ]"}
+      {/* 1. STICKY ACTION HEADER BAR — Premium Glassmorphic */}
+      <div
+        className={`tank-action-bar glass-card ${casualModeActive ? "tank-action-bar--casual" : "tank-action-bar--pro"}`}
+        style={{ marginBottom: "1.5rem" }}
+      >
+        {/* Primary CTA: Scan */}
+        <button
+          className={`tank-action-pill tank-action-pill--scan${casualModeActive ? " tank-action-pill--casual" : " tank-action-pill--pro"}`}
+          onClick={triggerScan}
+          aria-label={casualModeActive ? "Scan Tank" : "Scan Unit"}
+        >
+          <span>📸</span>
+          <span>{casualModeActive ? "Scan Tank" : "Scan Unit"}</span>
         </button>
 
-        {/* List / Tree toggler */}
+        {/* View mode toggler (Pro only) */}
         {!casualModeActive && (
-          <div style={{ display: "flex", gap: "0.25rem", background: "rgba(255,255,255,0.02)", padding: "0.25rem", borderRadius: "8px", border: "1px solid var(--glass-border)" }}>
-            <button 
-              className="btn-secondary" 
+          <div
+            className="tank-view-toggle"
+            role="radiogroup"
+            aria-label="View mode"
+          >
+            <button
+              className={`tank-view-btn${viewMode === "list" ? " tank-view-btn--active" : ""}`}
               onClick={() => setViewMode("list")}
-              style={{ padding: "0.35rem 0.75rem", fontSize: "0.75rem", border: "none", background: viewMode === "list" ? "rgba(255,255,255,0.08)" : "none" }}
+              role="radio"
+              aria-checked={viewMode === "list"}
             >
-              📋 Grid list
+              <span>📋</span>
+              <span>Grid list</span>
             </button>
-            <button 
-              className="btn-secondary" 
+            <button
+              className={`tank-view-btn${viewMode === "tree" ? " tank-view-btn--active" : ""}`}
               onClick={() => setViewMode("tree")}
-              style={{ padding: "0.35rem 0.75rem", fontSize: "0.75rem", border: "none", background: viewMode === "tree" ? "rgba(255,255,255,0.08)" : "none" }}
+              role="radio"
+              aria-checked={viewMode === "tree"}
             >
-              🏢 Facility Tree
+              <span>🏢</span>
+              <span>Facility Tree</span>
             </button>
           </div>
         )}
 
-        <button className="btn-secondary" onClick={() => setQuickLogOpen(true)}>
-          {casualModeActive ? "✍️ Quick Log" : "✍️ [ + Quick Log ]"}
+        {/* Spacer pushes Quick Log + Register to the right */}
+        <div style={{ flex: 1 }} />
+
+        {/* Quick Log */}
+        <button
+          className={`tank-action-pill tank-action-pill--secondary${casualModeActive ? " tank-action-pill--casual-secondary" : " tank-action-pill--pro-secondary"}`}
+          onClick={() => setQuickLogOpen(true)}
+          aria-label="Quick Log"
+        >
+          <span>✍️</span>
+          <span>Quick Log</span>
         </button>
-        <button 
-          className="btn-primary" 
+
+        {/* Register / Add Tank */}
+        <button
+          className={`tank-action-pill tank-action-pill--register${casualModeActive ? " tank-action-pill--casual" : " tank-action-pill--pro"}`}
           onClick={() => {
             setViewMode("tree");
             setOpenRegisterOnTreeMount(true);
           }}
+          aria-label={casualModeActive ? "Add Tank" : "Register Unit"}
         >
-          {casualModeActive ? "➕ Add Tank" : "➕ [ + Register Unit ]"}
+          <span>+</span>
+          <span>{casualModeActive ? "Add Tank" : "Register Unit"}</span>
         </button>
       </div>
 
-      {/* 2. DYNAMIC LOCATION FILTER (Pro Mode Only) */}
+      {/* 2. DYNAMIC LOCATION CAROUSEL (Pro Mode Only) */}
       {!casualModeActive && (
-        <div style={{ marginBottom: "2.5rem" }}>
-          {/* Dropdown Toggle Button */}
-          <button
-            onClick={() => setLocationsFilterOpen(!locationsFilterOpen)}
-            className="glass-card breed-filter-toggle"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "0.75rem 1.25rem",
-              background: locationsFilterOpen ? "rgba(56, 189, 248, 0.06)" : "rgba(255,255,255,0.02)",
-              border: locationsFilterOpen ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "var(--radius-sm)",
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-              width: "100%",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              <span style={{ fontSize: "1.1rem" }}>📍</span>
-              <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#fff", letterSpacing: "0.03em" }}>
-                Filter Locations
-              </span>
-              {selectedLocation !== "All" && (
-                <span style={{
-                  background: "var(--accent-blue)",
-                  color: "#fff",
-                  fontSize: "0.65rem",
-                  fontWeight: "700",
-                  padding: "0.15rem 0.5rem",
-                  borderRadius: "50px",
-                  marginLeft: "0.5rem"
-                }}>
-                  {selectedLocation.toUpperCase()}
-                </span>
-              )}
-            </div>
-            <span style={{ 
-              color: "var(--text-muted)", 
-              fontSize: "0.8rem",
-              transform: locationsFilterOpen ? "rotate(180deg)" : "rotate(0deg)",
-              transition: "transform 0.3s ease",
-            }}>
-              ▼
+        <div style={{ marginBottom: "2rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+            <span style={{ fontSize: "0.7rem", fontWeight: "700", color: "var(--text-muted)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+              📍 Filter by Location
             </span>
-          </button>
-
-          {/* Expandable Location Filter Panel */}
-          <div style={{
-            maxHeight: locationsFilterOpen ? "250px" : "0px",
-            overflow: "hidden",
-            transition: "max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease",
-            opacity: locationsFilterOpen ? 1 : 0,
-            marginTop: "0.5rem",
-          }}>
-            <div 
-              className="glass-card" 
-              style={{ 
-                padding: "1.25rem", 
-                background: "rgba(255,255,255,0.01)",
-                border: "1px solid var(--glass-border)",
-                borderRadius: "var(--radius-sm)"
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                <span style={{ fontSize: "0.75rem", fontWeight: "700", color: "var(--text-muted)", letterSpacing: "0.05em" }}>
-                  LOCATION FILTERS
-                </span>
-                {selectedLocation !== "All" && (
-                  <button 
-                    type="button"
-                    onClick={() => setSelectedLocation("All")} 
-                    style={{ 
-                      background: "none", 
-                      border: "none", 
-                      color: "var(--accent-blue)", 
-                      fontSize: "0.75rem", 
-                      fontWeight: "600",
-                      cursor: "pointer", 
-                      textDecoration: "underline",
-                      padding: 0 
-                    }}
-                  >
-                    Reset All
-                  </button>
-                )}
-              </div>
+            {selectedLocation !== "All" && (
+              <button 
+                type="button"
+                onClick={() => setSelectedLocation("All")} 
+                style={{ 
+                  background: "none", 
+                  border: "none", 
+                  color: "var(--accent-blue)", 
+                  fontSize: "0.75rem", 
+                  fontWeight: "600",
+                  cursor: "pointer", 
+                  textDecoration: "underline",
+                  padding: 0 
+                }}
+              >
+                Reset Filter
+              </button>
+            )}
+          </div>
+          <div className="location-carousel-container">
+            {locations.map((loc) => {
+              // Calculate how many tanks match this location
+              const count = loc === "All" 
+                ? tanks.length 
+                : tanks.filter(t => t.facility === loc || t.room === loc || t.rack === loc).length;
               
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-                {locations.map((loc) => (
-                  <button 
-                    key={loc}
-                    className={`location-chip ${selectedLocation === loc ? "active" : ""}`}
-                    onClick={() => setSelectedLocation(loc)}
-                    style={{ minHeight: "44px" }}
-                  >
-                    📍 {loc}
-                  </button>
-                ))}
-              </div>
-            </div>
+              return (
+                <button 
+                  key={loc}
+                  className={`location-chip-premium ${selectedLocation === loc ? "active" : ""}`}
+                  onClick={() => setSelectedLocation(loc)}
+                >
+                  <span>📍</span>
+                  <span>{loc}</span>
+                  <span style={{ 
+                    fontSize: "0.65rem", 
+                    opacity: 0.8,
+                    background: selectedLocation === loc ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.06)",
+                    padding: "0.05rem 0.35rem",
+                    borderRadius: "10px",
+                    marginLeft: "0.25rem",
+                    fontWeight: "700"
+                  }}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -1577,12 +1702,17 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               {TANK_TYPES[tank.tankType]}
                             </span>
                             <h4 style={{ color: "#fff", fontSize: "1.1rem" }}>{tank.name}</h4>
-                            {!casualModeActive && <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>ID: {tank.id}</span>}
+                            {!casualModeActive && <span className="mono-id-chip">UNIT #{tank.id}</span>}
                           </div>
                           {!casualModeActive && (
-                            <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", display: "block", marginTop: "0.15rem" }}>
-                              📍 {tank.facility} › {tank.room} › {tank.rack}
-                            </span>
+                            <div className="micro-breadcrumbs" style={{ marginTop: "0.25rem" }}>
+                              <span>📍</span>
+                              <span>{tank.facility}</span>
+                              <span className="micro-breadcrumbs-separator">›</span>
+                              <span>{tank.room}</span>
+                              <span className="micro-breadcrumbs-separator">›</span>
+                              <span>{tank.rack}</span>
+                            </div>
                           )}
                         </div>
 
@@ -1606,24 +1736,73 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       </div>
 
                       {/* Middle grid */}
-                      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "1rem", fontSize: "0.85rem", background: "rgba(0,0,0,0.15)", padding: "0.75rem", borderRadius: "8px" }}>
-                        <div>
-                          <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", display: "block" }}>Inhabitants</span>
-                          <strong style={{ color: "var(--accent-green)" }}>{getSpecimenCount(tank)} {casualModeActive ? "Fish" : "Birth Certificates"}</strong>
-                          <span style={{ color: "var(--text-secondary)", fontSize: "0.75rem", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {speciesName}
-                          </span>
+                      {casualModeActive ? (
+                        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "1rem", fontSize: "0.85rem", background: "rgba(0,0,0,0.15)", padding: "0.75rem", borderRadius: "8px" }}>
+                          <div>
+                            <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", display: "block" }}>Inhabitants</span>
+                            <strong style={{ color: "var(--accent-green)" }}>{getSpecimenCount(tank)} Fish</strong>
+                            <span style={{ color: "var(--text-secondary)", fontSize: "0.75rem", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {speciesName}
+                            </span>
+                          </div>
+                          <div style={{ textAlign: "right" }}>
+                            <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", display: "block" }}>Water Care</span>
+                            <strong style={{ color: "var(--text-primary)", fontSize: "0.85rem", display: "block", marginTop: "0.15rem" }}>
+                              🧪 Test: {latestTestTime}
+                            </strong>
+                            <span style={{ color: "var(--text-secondary)", fontSize: "0.75rem", display: "block", marginTop: "0.15rem" }}>
+                              💧 Change: {latestChangeTime}
+                            </span>
+                          </div>
                         </div>
-                        <div style={{ textAlign: "right" }}>
-                          <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", display: "block" }}>Water Care</span>
-                          <strong style={{ color: "var(--text-primary)", fontSize: "0.85rem", display: "block", marginTop: "0.15rem" }}>
-                            🧪 Test: {latestTestTime}
-                          </strong>
-                          <span style={{ color: "var(--text-secondary)", fontSize: "0.75rem", display: "block", marginTop: "0.15rem" }}>
-                            💧 Change: {latestChangeTime}
-                          </span>
+                      ) : (
+                        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "1rem", marginTop: "1.0rem", borderTop: "1px solid rgba(255, 255, 255, 0.04)", paddingTop: "0.75rem" }}>
+                          <div>
+                            <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "0.4rem" }}>Inhabitants</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
+                              <span className="specimen-tag-glass" style={{ fontWeight: "700", color: "var(--accent-green)", borderColor: "rgba(52, 211, 153, 0.2)" }}>
+                                👥 {getSpecimenCount(tank)} Certificates
+                              </span>
+                              {tank.specimens.length > 0 ? (
+                                tank.specimens.map(s => s.commonName)
+                                  .filter((v, i, a) => a.indexOf(v) === i)
+                                  .slice(0, 2)
+                                  .map(name => (
+                                    <span key={name} className="specimen-tag-glass">{name}</span>
+                                  ))
+                              ) : (
+                                <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Empty Unit</span>
+                              )}
+                              {tank.specimens.map(s => s.commonName).filter((v, i, a) => a.indexOf(v) === i).length > 2 && (
+                                <span className="specimen-tag-glass" style={{ fontSize: "0.65rem" }}>+ more</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                            <div className="telemetry-indicator-group">
+                              <div className="telemetry-row">
+                                <span className="telemetry-status-label">Water Test:</span>
+                                <span className="telemetry-status-value">
+                                  <span className={`status-light-pulse ${
+                                    hasAlert ? "red" : (latestTestTime.includes("h ago") || latestTestTime.includes("m ago") || latestTestTime.includes("s ago")) ? "green" : "orange"
+                                  }`} />
+                                  {latestTestTime}
+                                </span>
+                              </div>
+                              <div className="telemetry-row">
+                                <span className="telemetry-status-label">Water Change:</span>
+                                <span className="telemetry-status-value">
+                                  <span className={`status-light-pulse ${
+                                    latestChangeTime.includes("Never") ? "red" : (latestChangeTime.includes("day") || latestChangeTime.includes("h ago") || latestChangeTime.includes("m ago") || latestChangeTime.includes("s ago")) ? "green" : "orange"
+                                  }`} />
+                                  {latestChangeTime}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       {/* Alerts panel */}
                       {hasAlert && (
@@ -1943,102 +2122,282 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                         zIndex: 99
                       }}
                     />
-                    <div style={{
-                      position: "absolute",
-                      top: "calc(100% + 0.5rem)",
-                      left: 0,
-                      zIndex: 100,
-                      width: "240px",
-                      background: casualModeActive ? "rgba(8, 25, 48, 0.98)" : "rgba(14, 8, 30, 0.98)",
-                      backdropFilter: "blur(20px)",
-                      border: "1px solid var(--glass-border-hover)",
-                      borderRadius: "8px",
-                      boxShadow: "0 10px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(56, 189, 248, 0.05)",
-                      padding: "0.4rem 0",
-                      display: "flex",
-                      flexDirection: "column"
-                    }}>
-                      <div style={{ padding: "0.4rem 1rem 0.2rem", fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Log Husbandry</div>
-                      
-                      <button
-                        type="button"
-                        onClick={() => { logFeedClick(); setQuickActionsOpen(false); }}
-                        className="dropdown-action-item"
-                      >
-                        <span style={{ marginRight: "0.25rem" }}>🥣</span> Quick Feed
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { logFeedLongPress(); setQuickActionsOpen(false); }}
-                        className="dropdown-action-item"
-                      >
-                        <span style={{ marginRight: "0.25rem" }}>🥣</span> Detailed Feed...
-                      </button>
+                    {casualModeActive ? (
+                      <div style={{
+                        position: "absolute",
+                        top: "calc(100% + 0.5rem)",
+                        left: 0,
+                        zIndex: 100,
+                        width: "240px",
+                        background: "rgba(8, 25, 48, 0.98)",
+                        backdropFilter: "blur(20px)",
+                        border: "1px solid var(--glass-border-hover)",
+                        borderRadius: "8px",
+                        boxShadow: "0 10px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(56, 189, 248, 0.05)",
+                        padding: "0.4rem 0",
+                        display: "flex",
+                        flexDirection: "column"
+                      }}>
+                        <div style={{ padding: "0.4rem 1rem 0.2rem", fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Log Husbandry</div>
+                        
+                        <button
+                          type="button"
+                          onClick={() => { logFeedClick(); setQuickActionsOpen(false); }}
+                          className="dropdown-action-item"
+                        >
+                          <span style={{ marginRight: "0.25rem" }}>🥣</span> Quick Feed
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { logFeedLongPress(); setQuickActionsOpen(false); }}
+                          className="dropdown-action-item"
+                        >
+                          <span style={{ marginRight: "0.25rem" }}>🥣</span> Detailed Feed...
+                        </button>
 
-                      <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.05)", margin: "0.3rem 0" }} />
-                      <div style={{ padding: "0.4rem 1rem 0.2rem", fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Log Environment</div>
+                        <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.05)", margin: "0.3rem 0" }} />
+                        <div style={{ padding: "0.4rem 1rem 0.2rem", fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Log Environment</div>
 
-                      <button
-                        type="button"
-                        onClick={() => { logTestClick(); setQuickActionsOpen(false); }}
-                        className="dropdown-action-item"
-                      >
-                        <span style={{ marginRight: "0.25rem" }}>🧪</span> Quick Water Test
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { logTestLongPress(); setQuickActionsOpen(false); }}
-                        className="dropdown-action-item"
-                      >
-                        <span style={{ marginRight: "0.25rem" }}>🧪</span> Detailed Test...
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => { logTestClick(); setQuickActionsOpen(false); }}
+                          className="dropdown-action-item"
+                        >
+                          <span style={{ marginRight: "0.25rem" }}>🧪</span> Quick Water Test
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { logTestLongPress(); setQuickActionsOpen(false); }}
+                          className="dropdown-action-item"
+                        >
+                          <span style={{ marginRight: "0.25rem" }}>🧪</span> Detailed Test...
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => { logAlgaeClick(); setQuickActionsOpen(false); }}
-                        className="dropdown-action-item"
-                      >
-                        <span style={{ marginRight: "0.25rem" }}>🧹</span> Quick Clean
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { logAlgaeLongPress(); setQuickActionsOpen(false); }}
-                        className="dropdown-action-item"
-                      >
-                        <span style={{ marginRight: "0.25rem" }}>🧹</span> Detailed Clean...
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => { logAlgaeClick(); setQuickActionsOpen(false); }}
+                          className="dropdown-action-item"
+                        >
+                          <span style={{ marginRight: "0.25rem" }}>🧹</span> Quick Clean
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { logAlgaeLongPress(); setQuickActionsOpen(false); }}
+                          className="dropdown-action-item"
+                        >
+                          <span style={{ marginRight: "0.25rem" }}>🧹</span> Detailed Clean...
+                        </button>
 
-                      <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.05)", margin: "0.3rem 0" }} />
-                      <div style={{ padding: "0.4rem 1rem 0.2rem", fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Tank Operations</div>
+                        <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.05)", margin: "0.3rem 0" }} />
+                        <div style={{ padding: "0.4rem 1rem 0.2rem", fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Tank Operations</div>
 
-                      <button
-                        type="button"
-                        onClick={() => { setPoseidonChatOpen(!poseidonChatOpen); setQuickActionsOpen(false); }}
-                        className="dropdown-action-item"
-                      >
-                        <span style={{ marginRight: "0.25rem" }}>💬</span> Ask Poseidon AI
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setInlineDetailType("population");
-                          setInlineDetailText(getSpecimenCount(activeTank).toString());
-                          setInlineDetailOpen(true);
-                          setTimeout(() => inlineDetailRef.current?.focus(), 100);
-                          setQuickActionsOpen(false);
-                        }}
-                        className="dropdown-action-item"
-                      >
-                        <span style={{ marginRight: "0.25rem" }}>🐟</span> {casualModeActive ? "Update Fish Count" : "Update Population Count"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { photoInputRef.current?.click(); setQuickActionsOpen(false); }}
-                        className="dropdown-action-item"
-                      >
-                        <span style={{ marginRight: "0.25rem" }}>📷</span> Upload Photo
-                      </button>
-                    </div>
+                        <button
+                          type="button"
+                          onClick={() => { setPoseidonChatOpen(!poseidonChatOpen); setQuickActionsOpen(false); }}
+                          className="dropdown-action-item"
+                        >
+                          <span style={{ marginRight: "0.25rem" }}>💬</span> Ask Poseidon AI
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setInlineDetailType("population");
+                            setInlineDetailText(getSpecimenCount(activeTank).toString());
+                            setInlineDetailOpen(true);
+                            setTimeout(() => inlineDetailRef.current?.focus(), 100);
+                            setQuickActionsOpen(false);
+                          }}
+                          className="dropdown-action-item"
+                        >
+                          <span style={{ marginRight: "0.25rem" }}>🐟</span> Update Fish Count
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { photoInputRef.current?.click(); setQuickActionsOpen(false); }}
+                          className="dropdown-action-item"
+                        >
+                          <span style={{ marginRight: "0.25rem" }}>📷</span> Upload Photo
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="command-console-panel">
+                        <div className="console-header">
+                          <span className="console-title">
+                            ⚡ Command Console
+                          </span>
+                          <span className="console-pulse-dot" />
+                        </div>
+                        
+                        <div>
+                          <div className="console-category-header">Husbandry</div>
+                          <div className="console-grid">
+                            <button
+                              type="button"
+                              onClick={() => { logFeedClick(); setQuickActionsOpen(false); }}
+                              className="console-tile tile-husbandry"
+                            >
+                              <span className="console-tile-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M2 12h20a10 10 0 0 1-20 0z" />
+                                  <circle cx="8" cy="7" r="1.2" fill="currentColor"/>
+                                  <circle cx="12" cy="5" r="1.2" fill="currentColor"/>
+                                  <circle cx="16" cy="7" r="1.2" fill="currentColor"/>
+                                </svg>
+                              </span>
+                              <span className="console-tile-label">Quick Feed</span>
+                              <span className="console-tile-desc">Standard dose</span>
+                            </button>
+                            
+                            <button
+                              type="button"
+                              onClick={() => { logFeedLongPress(); setQuickActionsOpen(false); }}
+                              className="console-tile tile-husbandry"
+                            >
+                              <span className="console-tile-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M2 12h20a10 10 0 0 1-20 0z" />
+                                  <circle cx="8" cy="7" r="1.2" fill="currentColor"/>
+                                  <circle cx="12" cy="5" r="1.2" fill="currentColor"/>
+                                  <circle cx="16" cy="7" r="1.2" fill="currentColor"/>
+                                </svg>
+                              </span>
+                              <span className="console-tile-label">Detailed Feed</span>
+                              <span className="console-tile-desc">Log details</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="console-category-header">Environment</div>
+                          <div className="console-grid">
+                            <button
+                              type="button"
+                              onClick={() => { logTestClick(); setQuickActionsOpen(false); }}
+                              className="console-tile tile-environment"
+                            >
+                              <span className="console-tile-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M6 3h12M9 3v8L4 19A2 2 0 0 0 6 22h12a2 2 0 0 0 2-3L15 11V3" />
+                                  <path d="M6 18h12" />
+                                </svg>
+                              </span>
+                              <span className="console-tile-label">Quick Test</span>
+                              <span className="console-tile-desc">Nominal parameters</span>
+                            </button>
+                            
+                            <button
+                              type="button"
+                              onClick={() => { logTestLongPress(); setQuickActionsOpen(false); }}
+                              className="console-tile tile-environment"
+                            >
+                              <span className="console-tile-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M6 3h12M9 3v8L4 19A2 2 0 0 0 6 22h12a2 2 0 0 0 2-3L15 11V3" />
+                                  <path d="M6 18h12" />
+                                </svg>
+                              </span>
+                              <span className="console-tile-label">Detailed Test</span>
+                              <span className="console-tile-desc">Enter measurements</span>
+                            </button>
+                            
+                            <button
+                              type="button"
+                              onClick={() => { logAlgaeClick(); setQuickActionsOpen(false); }}
+                              className="console-tile tile-environment"
+                            >
+                              <span className="console-tile-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8" />
+                                </svg>
+                              </span>
+                              <span className="console-tile-label">Quick Clean</span>
+                              <span className="console-tile-desc">Algae sweep</span>
+                            </button>
+                            
+                            <button
+                              type="button"
+                              onClick={() => { logAlgaeLongPress(); setQuickActionsOpen(false); }}
+                              className="console-tile tile-environment"
+                            >
+                              <span className="console-tile-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8" />
+                                </svg>
+                              </span>
+                              <span className="console-tile-label">Detailed Clean</span>
+                              <span className="console-tile-desc">Water change & filters</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="console-category-header">System Operations</div>
+                          <div className="console-grid">
+                            <button
+                              type="button"
+                              onClick={() => { setPoseidonChatOpen(!poseidonChatOpen); setQuickActionsOpen(false); }}
+                              className="console-tile tile-system console-span-2"
+                            >
+                              <span className="console-tile-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                                  <path d="M13 8l-3 4h3l-1 4 3-4h-3z" fill="currentColor" />
+                                </svg>
+                              </span>
+                              <span className="console-tile-text">
+                                <span className="console-tile-label">Ask Poseidon AI</span>
+                                <span className="console-tile-desc">Diagnose anomalies & check parameters</span>
+                              </span>
+                            </button>
+                                                        <button
+                              type="button"
+                              onClick={() => {
+                                setInlineDetailType("population");
+                                setInlineDetailText(getSpecimenCount(activeTank).toString());
+                                setInlineDetailOpen(true);
+                                setProPopAction("add");
+                                if (contractSpecies.length > 0) {
+                                  setProPopSpeciesId(String(contractSpecies[0].speciesId));
+                                } else {
+                                  setProPopSpeciesId("");
+                                }
+                                setProPopGender("Not Sure");
+                                setProPopQty(1);
+                                setTimeout(() => inlineDetailRef.current?.focus(), 100);
+                                setQuickActionsOpen(false);
+                              }}
+                              className="console-tile tile-system"
+                            >
+                              <span className="console-tile-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M20 12c0-3.5-3-6-7-6-3 0-6 2-8 5 2 3 5 5 8 5 4 0 7-2.5 7-6z"/>
+                                  <path d="M2 12c1.5-2 3.5-3 6-3M2 12c1.5 2 3.5 3 6 3"/>
+                                  <path d="M12 10a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" fill="currentColor"/>
+                                  <path d="M20 12l2 2v-4l-2 2z"/>
+                                </svg>
+                              </span>
+                              <span className="console-tile-label">Population</span>
+                              <span className="console-tile-desc">Update specimen count</span>
+                            </button>
+                            
+                            <button
+                              type="button"
+                              onClick={() => { photoInputRef.current?.click(); setQuickActionsOpen(false); }}
+                              className="console-tile tile-system"
+                            >
+                              <span className="console-tile-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                  <circle cx="12" cy="13" r="4"/>
+                                </svg>
+                              </span>
+                              <span className="console-tile-label">Upload Photo</span>
+                              <span className="console-tile-desc">Attach visual log</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -2256,7 +2615,15 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           </p>
                           <button
                             className="btn-primary"
-                            style={{ marginTop: "0.5rem", fontSize: "0.75rem", padding: "0.35rem 0.75rem" }}
+                            style={{ 
+                              marginTop: "0.5rem", 
+                              fontSize: "0.75rem", 
+                              padding: "0.4rem 0.85rem",
+                              background: "linear-gradient(135deg, var(--accent-amber) 0%, #d97706 100%)",
+                              border: "none",
+                              boxShadow: "0 4px 12px rgba(251, 191, 36, 0.2)",
+                              color: "#fff"
+                            }}
                             onClick={() => {
                               setFormData({
                                 temp: activeTank.latestLog ? (activeTank.latestLog.tempCelsiusX10/10).toString() : "24.5",
@@ -2271,7 +2638,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               setQuickLogOpen(true);
                             }}
                           >
-                            [ Log Immediate Water Change ]
+                            Log Immediate Water Change
                           </button>
                         </div>
                       )}
@@ -2675,183 +3042,445 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               )}
 
               {/* 2.5 SOCIAL SUB-TAB: Tank Progress Social Feed */}
-              {detailSubTab === "social" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                  {/* Share on The Reef CTA */}
-                  <div style={{
-                    padding: "0.75rem 1rem",
-                    borderRadius: "10px",
-                    background: "rgba(56, 189, 248, 0.04)",
-                    border: "1px solid rgba(56, 189, 248, 0.12)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "0.75rem",
-                  }}>
-                    <div>
-                      <p style={{ margin: 0, fontSize: "0.8rem", color: "#fff", fontWeight: 500 }}>
-                        {casualModeActive ? "🪸 Share this tank on The Reef" : "Post to Social Feed"}
-                      </p>
-                      <p style={{ margin: "0.15rem 0 0", fontSize: "0.65rem", color: "var(--text-muted)" }}>
-                        {casualModeActive ? "Show other fishkeepers your setup" : "Publish a Tank Current with parameters"}
-                      </p>
+              {detailSubTab === "social" && (() => {
+                const isHatched = companionData && companionData.eggState >= 2;
+                const safeLogs = Array.isArray(activeTank.logs) ? activeTank.logs : [];
+                let tempVal = "24.5°C";
+                let phVal = "7.2 pH";
+                if (safeLogs.length > 0) {
+                  const lastLog = [...safeLogs].sort((a,b) => Number(b.timestamp || 0) - Number(a.timestamp || 0))[0];
+                  const tempRaw = lastLog.tempCelsiusX10 !== undefined ? Number(lastLog.tempCelsiusX10) : (lastLog.temp !== undefined ? Number(lastLog.temp) : 245);
+                  const phRaw = lastLog.phX10 !== undefined ? Number(lastLog.phX10) : (lastLog.ph !== undefined ? Number(lastLog.ph) : 72);
+                  tempVal = `${(tempRaw / 10).toFixed(1)}°C`;
+                  phVal = `${(phRaw / 10).toFixed(1)} pH`;
+                }
+                const specCount = getSpecimenCount(activeTank);
+
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    {/* Share on The Reef CTA */}
+                    <div style={{
+                      padding: "0.75rem 1rem",
+                      borderRadius: "10px",
+                      background: "rgba(56, 189, 248, 0.04)",
+                      border: "1px solid rgba(56, 189, 248, 0.12)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "0.75rem",
+                    }}>
+                      <div>
+                        <p style={{ margin: 0, fontSize: "0.8rem", color: "#fff", fontWeight: 500 }}>
+                          {casualModeActive ? "🪸 Share this tank on The Reef" : "Post to Social Feed"}
+                        </p>
+                        <p style={{ margin: "0.15rem 0 0", fontSize: "0.65rem", color: "var(--text-muted)" }}>
+                          {casualModeActive ? "Show other fishkeepers your setup" : "Publish a Tank Current with parameters"}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          // In both modes, clicking "Post Current" sets category to Telemetry
+                          setComposerCategory("telemetry");
+                          
+                          // Pre-fill telemetry report
+                          const reportText = `📊 TELEMETRY Snapshot: Operating stable. Parameters: Temp: ${tempVal}, pH: ${phVal}. Total specimens registered: ${specCount}.`;
+                          setCommentText(reportText);
+                          setCommenterRole(casualModeActive || !isHatched ? "hobbyist" : "breeder");
+                          
+                          showToast("📋 Pre-filled parameter snapshot in telemetry deck!");
+                          setTimeout(() => commentInputRef.current?.focus(), 100);
+                        }}
+                        style={{
+                          padding: "0.4rem 0.8rem",
+                          borderRadius: "8px",
+                          border: "none",
+                          background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
+                          color: "#fff",
+                          fontSize: "0.7rem",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                          flexShrink: 0,
+                        }}
+                      >
+                        Post Current
+                      </button>
                     </div>
-                    <button
-                      onClick={() => {
-                        // Store tank info for the composer to pick up
-                        window.dispatchEvent(new CustomEvent("reef_share_tank", {
-                          detail: { tankId: activeTank.id, tankName: activeTank.name || `Tank ${activeTank.id.slice(0, 8)}` }
-                        }));
-                      }}
-                      style={{
-                        padding: "0.4rem 0.8rem",
-                        borderRadius: "8px",
-                        border: "none",
-                        background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
-                        color: "#fff",
-                        fontSize: "0.7rem",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        whiteSpace: "nowrap",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {casualModeActive ? "Share 🪸" : "Post Current"}
-                    </button>
-                  </div>
 
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <strong style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Tank Progress Social Feed</strong>
-                    <span className="badge badge-blue">{(tankComments[activeTank.id] || []).length} Updates</span>
-                  </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <strong style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Tank Progress Social Feed</strong>
+                      <span className="badge badge-blue">{(tankComments[activeTank.id] || []).length} Updates</span>
+                    </div>
 
-                  {/* Comment list */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", maxHeight: "250px", overflowY: "auto", paddingRight: "4px" }}>
-                    {(!tankComments[activeTank.id] || tankComments[activeTank.id].length === 0) ? (
-                      <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", padding: "2rem", textAlign: "center" }}>No social updates or expert audits yet.</p>
-                    ) : (
-                      tankComments[activeTank.id].map((comment, idx) => {
-                        const isExpert = comment.isExpertAudit;
-                        const cardStyle = isExpert ? {
-                          padding: "0.85rem",
-                          borderRadius: "8px",
-                          background: "rgba(255, 215, 0, 0.03)",
-                          border: "1px solid #ffd700",
-                          boxShadow: "0 0 10px #ffd700, inset 0 0 5px #ffd700",
-                          transition: "all 0.3s ease"
-                        } : {
-                          padding: "0.75rem",
-                          borderRadius: "8px",
-                          background: "rgba(255, 255, 255, 0.02)",
-                          border: "1px solid var(--glass-border)"
-                        };
+                    {/* Comment list */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", maxHeight: "250px", overflowY: "auto", paddingRight: "4px" }}>
+                      {(!tankComments[activeTank.id] || tankComments[activeTank.id].length === 0) ? (
+                        <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", padding: "2rem", textAlign: "center" }}>No social updates or expert audits yet.</p>
+                      ) : (
+                        tankComments[activeTank.id].map((comment, idx) => {
+                          const isExpert = comment.isExpertAudit || comment.category === "lab-audit";
+                          
+                          let badgeColor = "var(--text-secondary)";
+                          let badgeBg = "rgba(255, 255, 255, 0.05)";
+                          let badgeBorder = "1px solid var(--glass-border)";
+                          let badgeLabel = "Hobbyist";
 
-                        return (
-                          <div key={idx} style={cardStyle}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                                <strong style={{ fontSize: "0.8rem", color: isExpert ? "#ffd700" : "var(--accent-blue)" }}>
-                                  {comment.author.slice(0, 6)}...{comment.author.slice(-4)}
-                                </strong>
-                                <span className="badge" style={{
-                                  fontSize: "0.6rem",
-                                  padding: "0.1rem 0.35rem",
-                                  background: isExpert ? "rgba(255, 215, 0, 0.15)" : "rgba(255, 255, 255, 0.05)",
-                                  color: isExpert ? "#ffd700" : "var(--text-secondary)",
-                                  border: isExpert ? "1px solid #ffd700" : "1px solid var(--glass-border)"
-                                }}>
-                                  {isExpert ? "⭐ Verified Master Breeder" : "Hobbyist"}
+                          if (isExpert) {
+                            badgeColor = "#ffd700";
+                            badgeBg = "rgba(255, 215, 0, 0.15)";
+                            badgeBorder = "1px solid #ffd700";
+                            badgeLabel = "⭐ Verified Master Breeder";
+                          } else if (comment.role === "hobbyist") {
+                            badgeColor = "var(--text-secondary)";
+                            badgeBg = "rgba(255, 255, 255, 0.05)";
+                            badgeBorder = "1px solid var(--glass-border)";
+                            badgeLabel = "Hobbyist";
+                          } else {
+                            // Breeder tiers
+                            let tier = "bronze";
+                            if (typeof comment.role === "string" && comment.role.endsWith("-breeder")) {
+                              tier = comment.role.split("-")[0];
+                            }
+                            const colorMap = {
+                              bronze: "#cd7f32",
+                              silver: "#c0c0c0",
+                              gold: "#ffd700",
+                              master: "#a855f7",
+                              god: "#f43f5e"
+                            };
+                            const bgMap = {
+                              bronze: "rgba(205, 127, 50, 0.15)",
+                              silver: "rgba(192, 192, 192, 0.15)",
+                              gold: "rgba(255, 215, 0, 0.15)",
+                              master: "rgba(168, 85, 247, 0.15)",
+                              god: "rgba(244, 63, 94, 0.15)"
+                            };
+                            const color = colorMap[tier] || "#a855f7";
+                            badgeColor = color;
+                            badgeBg = bgMap[tier] || "rgba(168, 85, 247, 0.15)";
+                            badgeBorder = `1px solid ${color}44`;
+                            badgeLabel = `${tier.charAt(0).toUpperCase() + tier.slice(1)} Breeder`;
+                          }
+
+                          const cardStyle = isExpert ? {
+                            padding: "0.85rem",
+                            borderRadius: "8px",
+                            background: "rgba(255, 215, 0, 0.03)",
+                            border: "1px solid #ffd700",
+                            boxShadow: "0 0 10px #ffd700, inset 0 0 5px #ffd700",
+                            transition: "all 0.3s ease"
+                          } : {
+                            padding: "0.75rem",
+                            borderRadius: "8px",
+                            background: "rgba(255, 255, 255, 0.02)",
+                            border: "1px solid var(--glass-border)"
+                          };
+
+                          return (
+                            <div key={idx} style={cardStyle}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                  <strong style={{ fontSize: "0.8rem", color: isExpert ? "#ffd700" : "var(--accent-blue)" }}>
+                                    {comment.author.slice(0, 6)}...{comment.author.slice(-4)}
+                                  </strong>
+                                  <span className="badge" style={{
+                                    fontSize: "0.6rem",
+                                    padding: "0.1rem 0.35rem",
+                                    background: badgeBg,
+                                    color: badgeColor,
+                                    border: badgeBorder
+                                  }}>
+                                    {badgeLabel}
+                                  </span>
+                                  {comment.category && comment.category !== "observation" && (
+                                    <span style={{
+                                      fontSize: "0.6rem",
+                                      padding: "0.1rem 0.35rem",
+                                      borderRadius: "4px",
+                                      background: "rgba(255,255,255,0.03)",
+                                      border: "1px solid rgba(255,255,255,0.08)",
+                                      color: "var(--text-muted)",
+                                      textTransform: "uppercase"
+                                    }}>
+                                      {comment.category === "telemetry" ? "🌡️ Telemetry" : comment.category === "spawning" ? "🍼 Spawn" : "🔬 Audit"}
+                                    </span>
+                                  )}
+                                </div>
+                                <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
+                                  {getRelativeTime(comment.timestamp)}
                                 </span>
                               </div>
-                              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
-                                {getRelativeTime(comment.timestamp)}
-                              </span>
+                              <p style={{ fontSize: "0.85rem", color: isExpert ? "#fff" : "var(--text-primary)", lineHeight: "1.35", margin: 0 }}>
+                                {comment.text}
+                              </p>
+                              {comment.telemetry && (
+                                <div className="feed-telemetry-badge" style={{ marginTop: "0.5rem" }}>
+                                  <span>🌡️ Temp: {comment.telemetry.temp}</span>
+                                  <span style={{ opacity: 0.3 }}>|</span>
+                                  <span>🧪 pH: {comment.telemetry.ph}</span>
+                                  <span style={{ opacity: 0.3 }}>|</span>
+                                  <span>🐟 Population: {comment.telemetry.specimens}</span>
+                                </div>
+                              )}
+                              {comment.spawning && (
+                                <div className="feed-spawn-badge" style={{ marginTop: "0.5rem" }}>
+                                  <span>🥚 Spawning Log: {comment.spawning.clutchSize} Eggs / Fry</span>
+                                  <span style={{ opacity: 0.3 }}>|</span>
+                                  <span>Stage: {comment.spawning.stage}</span>
+                                </div>
+                              )}
                             </div>
-                            <p style={{ fontSize: "0.85rem", color: isExpert ? "#fff" : "var(--text-primary)", lineHeight: "1.35", margin: 0 }}>
-                              {comment.text}
-                            </p>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-
-                  {/* Comment input form */}
-                  <form onSubmit={handleCommentSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.75rem", borderTop: "1px solid var(--glass-border)", paddingTop: "0.75rem" }}>
-                    {residingSpecies.length > 0 && (
-                      <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", marginBottom: "0.25rem", alignItems: "center" }}>
-                        <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Tap to add species:</span>
-                        {residingSpecies.map(sp => (
-                          <button
-                            key={sp.speciesId}
-                            type="button"
-                            onClick={() => {
-                              setCommentText(prev => prev ? `${prev} ${sp.commonName}` : sp.commonName);
-                            }}
-                            style={{
-                              padding: "0.2rem 0.5rem",
-                              fontSize: "0.65rem",
-                              background: "rgba(168, 85, 247, 0.12)",
-                              border: "1px solid rgba(168, 85, 247, 0.3)",
-                              color: "#a855f7",
-                              borderRadius: "20px",
-                              cursor: "pointer"
-                            }}
-                          >
-                            🐠 {sp.commonName}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    <div>
-                      <textarea
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        placeholder="Share progress update or ask for an expert audit..."
-                        rows="2"
-                        required
-                        style={{
-                          width: "100%",
-                          padding: "0.5rem",
-                          background: "rgba(255, 255, 255, 0.03)",
-                          border: "1px solid var(--glass-border)",
-                          color: "#fff",
-                          borderRadius: "4px",
-                          fontSize: "0.8rem",
-                          resize: "none"
-                        }}
-                      />
+                          );
+                        })
+                      )}
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Post as:</span>
-                        <select
-                          value={commenterRole}
-                          onChange={(e) => setCommenterRole(e.target.value)}
+
+                    {/* Comment input form */}
+                    <form onSubmit={handleCommentSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.75rem", borderTop: "1px solid var(--glass-border)", paddingTop: "0.75rem" }}>
+                      
+                      {/* Composer Category Tabs */}
+                      <div className="composer-category-tabs">
+                        <button
+                          type="button"
+                          className={`composer-tab-btn ${composerCategory === "observation" ? "active" : ""}`}
+                          onClick={() => {
+                            setComposerCategory("observation");
+                            setCommentText("");
+                          }}
+                        >
+                          📝 Note
+                        </button>
+                        <button
+                          type="button"
+                          className={`composer-tab-btn ${composerCategory === "telemetry" ? "active" : ""}`}
+                          onClick={() => {
+                            setComposerCategory("telemetry");
+                            const reportText = `📊 TELEMETRY Snapshot: Operating stable. Parameters: Temp: ${tempVal}, pH: ${phVal}. Total specimens registered: ${specCount}.`;
+                            setCommentText(reportText);
+                          }}
+                        >
+                          🌡️ Telemetry
+                        </button>
+                        <button
+                          type="button"
+                          className={`composer-tab-btn ${composerCategory === "spawning" ? "active" : ""}`}
+                          onClick={() => {
+                            setComposerCategory("spawning");
+                            const spText = `🥚 SPAWNING EVENT: Spawn log recorded.`;
+                            setCommentText(spText);
+                          }}
+                        >
+                          🍼 Spawning
+                        </button>
+                        <button
+                          type="button"
+                          className={`composer-tab-btn ${composerCategory === "lab-audit" ? "active" : ""} ${(!casualModeActive && (companionData?.currentTier === "Master" || companionData?.currentTier === "God-Tier")) ? "" : "disabled"}`}
+                          onClick={() => {
+                            if (!casualModeActive && (companionData?.currentTier === "Master" || companionData?.currentTier === "God-Tier")) {
+                              setComposerCategory("lab-audit");
+                              const auditText = `🔬 EXPERT LAB AUDIT: Verified water parameter chemistry. Parameters are stable. Spawning conditions optimized.`;
+                              setCommentText(auditText);
+                            } else {
+                              showToast("🔒 Lab Audit requires Master Breeder Rank!");
+                            }
+                          }}
+                        >
+                          {(!casualModeActive && (companionData?.currentTier === "Master" || companionData?.currentTier === "God-Tier")) ? "🔬 Lab Audit" : "🔒 Lab Audit"}
+                        </button>
+                      </div>
+
+                      {/* Telemetry Live Preview Widget */}
+                      {composerCategory === "telemetry" && (
+                        <div className="telemetry-preview-card">
+                          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 500 }}>
+                            📊 Parameter Attachment Preview
+                          </span>
+                          <div className="telemetry-preview-pills">
+                            <span className="telemetry-preview-pill">🌡️ Temp: {tempVal}</span>
+                            <span className="telemetry-preview-pill">🧪 pH: {phVal}</span>
+                            <span className="telemetry-preview-pill">🐟 Pop: {specCount} Specimens</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Spawning Milestone Widget */}
+                      {composerCategory === "spawning" && (
+                        <div style={{
+                          display: "flex",
+                          gap: "0.75rem",
+                          alignItems: "center",
+                          padding: "0.5rem 0.75rem",
+                          background: "rgba(168, 85, 247, 0.03)",
+                          border: "1px dashed rgba(168, 85, 247, 0.25)",
+                          borderRadius: "6px"
+                        }}>
+                          <div style={{ display: "flex", gap: "0.35rem", alignItems: "center" }}>
+                            <label style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Clutch Size:</label>
+                            <input
+                              type="number"
+                              value={spawnClutchSize}
+                              onChange={(e) => setSpawnClutchSize(e.target.value)}
+                              placeholder="e.g. 150"
+                              style={{
+                                width: "65px",
+                                padding: "0.2rem 0.4rem",
+                                background: "rgba(0,0,0,0.35)",
+                                border: "1px solid var(--glass-border)",
+                                color: "#fff",
+                                borderRadius: "4px",
+                                fontSize: "0.75rem",
+                                outline: "none"
+                              }}
+                            />
+                          </div>
+                          <div style={{ display: "flex", gap: "0.35rem", alignItems: "center" }}>
+                            <label style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Stage:</label>
+                            <select
+                              value={spawnStage}
+                              onChange={(e) => setSpawnStage(e.target.value)}
+                              style={{
+                                padding: "0.2rem 0.4rem",
+                                background: "rgba(0,0,0,0.35)",
+                                border: "1px solid var(--glass-border)",
+                                color: "#fff",
+                                borderRadius: "4px",
+                                fontSize: "0.75rem",
+                                outline: "none",
+                                cursor: "pointer"
+                              }}
+                            >
+                              <option value="Eggs">🥚 Eggs</option>
+                              <option value="Fry">🍼 Fry</option>
+                              <option value="Juveniles">🐠 Juveniles</option>
+                              <option value="Evolved">🧬 Evolved</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+
+                      {residingSpecies.length > 0 && (
+                        <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", marginBottom: "0.15rem", alignItems: "center" }}>
+                          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Tap to add species:</span>
+                          {residingSpecies.map(sp => (
+                            <button
+                              key={sp.speciesId}
+                              type="button"
+                              onClick={() => {
+                                setCommentText(prev => prev ? `${prev} ${sp.commonName}` : sp.commonName);
+                              }}
+                              style={{
+                                padding: "0.2rem 0.5rem",
+                                fontSize: "0.65rem",
+                                background: "rgba(168, 85, 247, 0.12)",
+                                border: "1px solid rgba(168, 85, 247, 0.3)",
+                                color: "#a855f7",
+                                borderRadius: "20px",
+                                cursor: "pointer"
+                              }}
+                            >
+                              🐠 {sp.commonName}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      <div>
+                        <textarea
+                          ref={commentInputRef}
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          placeholder={composerCategory === "telemetry" ? "Describe your parameters stability..." : composerCategory === "spawning" ? "Describe spawning details..." : "Share a progress update or observation..."}
+                          rows="2"
+                          required
                           style={{
-                            padding: "0.25rem 0.5rem",
-                            background: "rgba(8, 12, 20, 0.9)",
+                            width: "100%",
+                            padding: "0.5rem",
+                            background: "rgba(255, 255, 255, 0.03)",
                             border: "1px solid var(--glass-border)",
                             color: "#fff",
                             borderRadius: "4px",
-                            fontSize: "0.75rem"
+                            fontSize: "0.8rem",
+                            resize: "none"
                           }}
-                        >
-                          <option value="hobbyist">Casual Hobbyist</option>
-                          <option value="master-breeder">Verified Master Breeder</option>
-                        </select>
+                        />
                       </div>
-                      <button
-                        type="submit"
-                        className="btn-primary"
-                        style={{ padding: "0.35rem 0.85rem", fontSize: "0.75rem" }}
-                      >
-                        [ Publish Update ]
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
+
+                      {/* Broadcast to Reef Toggle */}
+                      <div className="broadcast-toggle-container">
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <span style={{ fontSize: "0.75rem", color: "#fff", fontWeight: 500 }}>Broadcast to The Reef 🪸</span>
+                          <span style={{ fontSize: "0.6rem", color: "var(--text-muted)" }}>Publish globally to other breeders</span>
+                        </div>
+                        <label className="broadcast-switch">
+                          <input
+                            type="checkbox"
+                            checked={broadcastToReef}
+                            onChange={(e) => setBroadcastToReef(e.target.checked)}
+                          />
+                          <span className="broadcast-slider"></span>
+                        </label>
+                      </div>
+
+                      {/* Role selection and publish button */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: "1rem", flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                          <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>Post observation as:</span>
+                          <div className="role-chip-group">
+                            <div
+                              className={`role-chip hobbyist ${commenterRole === "hobbyist" ? "active" : ""}`}
+                              onClick={() => setCommenterRole("hobbyist")}
+                            >
+                              🧑‍🌾 Casual Hobbyist
+                            </div>
+                            
+                            {(!casualModeActive && isHatched) ? (
+                              <div
+                                className={`role-chip ${companionData?.currentTier?.toLowerCase() || "bronze"} ${commenterRole === "breeder" ? "active" : ""}`}
+                                onClick={() => setCommenterRole("breeder")}
+                              >
+                                🧬 {companionData?.currentTier || "Bronze"} Breeder
+                              </div>
+                            ) : (
+                              <div
+                                className="role-chip disabled"
+                                title="Unlocks when companion hatches in Pro Mode"
+                                onClick={() => showToast("🔒 Breeder identity unlocks when your Breeder Companion hatches!")}
+                              >
+                                🔒 Breeder
+                              </div>
+                            )}
+
+                            {(!casualModeActive && (companionData?.currentTier === "Master" || companionData?.currentTier === "God-Tier")) ? (
+                              <div
+                                className={`role-chip master ${commenterRole === "master-breeder" ? "active" : ""}`}
+                                onClick={() => setCommenterRole("master-breeder")}
+                              >
+                                ⭐ Verified Master Breeder
+                              </div>
+                            ) : (
+                              <div
+                                className="role-chip disabled"
+                                title="Requires Master Rank (10,000+ Companion XP)"
+                                onClick={() => showToast("🔒 Verified Master Breeder rank requires 10,000+ Companion XP!")}
+                              >
+                                🔒 Master Breeder
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          type="submit"
+                          className="btn-primary"
+                          style={{ padding: "0.4rem 1rem", fontSize: "0.75rem", borderRadius: "6px", height: "32px" }}
+                        >
+                          Publish Update
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                );
+              })()}
             </div>
           </div>
           </>
@@ -3631,70 +4260,295 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                 &times;
               </button>
             </div>
-            {inlineDetailType === "population" && casualModeActive ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "250px", overflowY: "auto", paddingRight: "4px", margin: "0.5rem 0" }}>
-                {(!activeTank.specimens || activeTank.specimens.length === 0) ? (
-                  <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", textAlign: "center", padding: "1.5rem" }}>
-                    No fish in this tank to remove.
-                  </p>
-                ) : (
-                  activeTank.specimens.map(spec => (
-                    <div 
-                      key={spec.id} 
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "0.6rem 0.75rem",
-                        background: "rgba(239, 68, 68, 0.04)",
-                        borderRadius: "8px",
-                        border: "1px solid rgba(239, 68, 68, 0.15)",
-                        fontSize: "0.85rem"
-                      }}
-                    >
-                      <span style={{ color: "#fff", fontWeight: "500", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
-                        🐠 {spec.commonName}
-                        {spec.gender && spec.gender !== "Not Sure" && (
-                          <span style={{
-                            fontSize: "0.6rem",
-                            padding: "0.02rem 0.25rem",
-                            borderRadius: "4px",
-                            background: spec.gender === "Male" ? "rgba(56, 189, 248, 0.15)" : "rgba(244, 63, 94, 0.15)",
-                            color: spec.gender === "Male" ? "#38bdf8" : "#f43f5e",
-                            border: spec.gender === "Male" ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid rgba(244, 63, 94, 0.25)",
-                            fontWeight: "600",
-                          }}>
-                            {spec.gender === "Male" ? "♂" : "♀"}
-                          </span>
-                        )}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setFarewellSpecimen(spec)}
+            {inlineDetailType === "population" ? (
+              casualModeActive ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "250px", overflowY: "auto", paddingRight: "4px", margin: "0.5rem 0" }}>
+                  {(!activeTank.specimens || activeTank.specimens.length === 0) ? (
+                    <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", textAlign: "center", padding: "1.5rem" }}>
+                      No fish in this tank to remove.
+                    </p>
+                  ) : (
+                    activeTank.specimens.map(spec => (
+                      <div 
+                        key={spec.id} 
                         style={{
-                          background: "rgba(56, 189, 248, 0.08)",
-                          border: "1px solid rgba(56, 189, 248, 0.25)",
-                          color: "#38bdf8",
-                          padding: "0.25rem 0.65rem",
-                          borderRadius: "6px",
-                          cursor: "pointer",
-                          fontSize: "0.75rem",
-                          fontWeight: "600",
-                          transition: "all 0.2s"
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = "rgba(239, 68, 68, 0.22)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = "rgba(239, 68, 68, 0.12)";
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "0.6rem 0.75rem",
+                          background: "rgba(239, 68, 68, 0.04)",
+                          borderRadius: "8px",
+                          border: "1px solid rgba(239, 68, 68, 0.15)",
+                          fontSize: "0.85rem"
                         }}
                       >
-                        Remove
+                        <span style={{ color: "#fff", fontWeight: "500", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+                          🐠 {spec.commonName}
+                          {spec.gender && spec.gender !== "Not Sure" && (
+                            <span style={{
+                              fontSize: "0.6rem",
+                              padding: "0.02rem 0.25rem",
+                              borderRadius: "4px",
+                              background: spec.gender === "Male" ? "rgba(56, 189, 248, 0.15)" : "rgba(244, 63, 94, 0.15)",
+                              color: spec.gender === "Male" ? "#38bdf8" : "#f43f5e",
+                              border: spec.gender === "Male" ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid rgba(244, 63, 94, 0.25)",
+                              fontWeight: "600",
+                            }}>
+                              {spec.gender === "Male" ? "♂" : "♀"}
+                            </span>
+                          )}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setFarewellSpecimen(spec)}
+                          style={{
+                            background: "rgba(56, 189, 248, 0.08)",
+                            border: "1px solid rgba(56, 189, 248, 0.25)",
+                            color: "#38bdf8",
+                            padding: "0.25rem 0.65rem",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            fontSize: "0.75rem",
+                            fontWeight: "600",
+                            transition: "all 0.2s"
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = "rgba(239, 68, 68, 0.22)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = "rgba(239, 68, 68, 0.12)";
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", margin: "0.5rem 0" }}>
+                  {/* Segmented Add / Remove Control */}
+                  <div style={{
+                    display: "flex",
+                    background: "rgba(255, 255, 255, 0.03)",
+                    border: "1px solid var(--glass-border)",
+                    borderRadius: "8px",
+                    padding: "2px"
+                  }}>
+                    <button
+                      type="button"
+                      onClick={() => setProPopAction("add")}
+                      style={{
+                        flex: 1,
+                        background: proPopAction === "add" ? "rgba(52, 211, 153, 0.15)" : "none",
+                        border: "none",
+                        borderRadius: "6px",
+                        color: proPopAction === "add" ? "var(--accent-green)" : "var(--text-secondary)",
+                        fontSize: "0.75rem",
+                        fontWeight: "600",
+                        padding: "0.5rem",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      ➕ Add Specimen
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setProPopAction("remove")}
+                      style={{
+                        flex: 1,
+                        background: proPopAction === "remove" ? "rgba(248, 113, 113, 0.15)" : "none",
+                        border: "none",
+                        borderRadius: "6px",
+                        color: proPopAction === "remove" ? "var(--accent-red)" : "var(--text-secondary)",
+                        fontSize: "0.75rem",
+                        fontWeight: "600",
+                        padding: "0.5rem",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      ➖ Remove Specimen
+                    </button>
+                  </div>
+
+                  {proPopAction === "add" ? (
+                    /* Add Specimen Flow */
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.7rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>
+                          Species to Register
+                        </label>
+                        {contractSpecies.length === 0 ? (
+                          <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", textAlign: "center", padding: "0.5rem" }}>
+                            No species registered in the catalog yet.
+                          </p>
+                        ) : (
+                          <select
+                            value={proPopSpeciesId}
+                            onChange={(e) => setProPopSpeciesId(e.target.value)}
+                            style={{
+                              width: "100%",
+                              padding: "0.6rem 0.75rem",
+                              background: "rgba(0, 0, 0, 0.3)",
+                              border: "1px solid var(--glass-border)",
+                              borderRadius: "6px",
+                              color: "#fff",
+                              fontSize: "0.85rem",
+                              outline: "none"
+                            }}
+                          >
+                            {contractSpecies.map(s => (
+                              <option key={s.speciesId} value={s.speciesId} style={{ background: "#0e1424", color: "#fff" }}>
+                                {s.commonName} ({s.scientificName})
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+
+                      <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+                        {/* Quantity */}
+                        <div style={{ flex: 1 }}>
+                          <label style={{ display: "block", fontSize: "0.7rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>
+                            Quantity
+                          </label>
+                          <div style={{ display: "flex", alignItems: "center", background: "rgba(0,0,0,0.2)", border: "1px solid var(--glass-border)", borderRadius: "6px", overflow: "hidden", height: "36px" }}>
+                            <button
+                              type="button"
+                              onClick={() => setProPopQty(prev => Math.max(1, prev - 1))}
+                              style={{ background: "none", border: "none", color: "#fff", width: "30px", height: "100%", cursor: "pointer", fontSize: "1rem", fontWeight: "600" }}
+                            >
+                              -
+                            </button>
+                            <input
+                              type="number"
+                              min="1"
+                              value={proPopQty}
+                              onChange={(e) => setProPopQty(Math.max(1, parseInt(e.target.value) || 1))}
+                              style={{ flex: 1, background: "none", border: "none", color: "#fff", textAlign: "center", fontSize: "0.85rem", outline: "none", width: "100%" }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setProPopQty(prev => prev + 1)}
+                              style={{ background: "none", border: "none", color: "#fff", width: "30px", height: "100%", cursor: "pointer", fontSize: "1rem", fontWeight: "600" }}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Gender */}
+                        <div style={{ flex: 1.5 }}>
+                          <label style={{ display: "block", fontSize: "0.7rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>
+                            Gender
+                          </label>
+                          <div style={{ display: "flex", background: "rgba(0,0,0,0.2)", border: "1px solid var(--glass-border)", borderRadius: "6px", padding: "2px", height: "36px" }}>
+                            {["Male", "Female", "Not Sure"].map((g) => {
+                              const sel = proPopGender === g;
+                              return (
+                                <button
+                                  type="button"
+                                  key={g}
+                                  onClick={() => setProPopGender(g)}
+                                  style={{
+                                    flex: 1,
+                                    background: sel ? (g === "Male" ? "rgba(56, 189, 248, 0.18)" : g === "Female" ? "rgba(244, 63, 94, 0.18)" : "rgba(255, 255, 255, 0.1)") : "none",
+                                    border: "none",
+                                    borderRadius: "4px",
+                                    color: sel ? (g === "Male" ? "#38bdf8" : g === "Female" ? "#f43f5e" : "#fff") : "var(--text-secondary)",
+                                    fontSize: "0.68rem",
+                                    fontWeight: "600",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s ease"
+                                  }}
+                                >
+                                  {g === "Male" ? "♂" : g === "Female" ? "♀" : "⚪"}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={handleProPopAddSubmit}
+                        className="btn-primary"
+                        disabled={proPopSubmitting || !proPopSpeciesId}
+                        style={{ width: "100%", padding: "0.6rem", fontSize: "0.85rem", minHeight: "40px", marginTop: "0.25rem", opacity: (proPopSubmitting || !proPopSpeciesId) ? 0.6 : 1 }}
+                      >
+                        {proPopSubmitting ? "Registering Specimen..." : "Register Birth Certificate"}
                       </button>
                     </div>
-                  ))
-                )}
-              </div>
+                  ) : (
+                    /* Remove Specimen Flow */
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "200px", overflowY: "auto", paddingRight: "4px" }}>
+                      {(!activeTank.specimens || activeTank.specimens.length === 0) ? (
+                        <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", textAlign: "center", padding: "1rem" }}>
+                          No specimens in this tank to remove.
+                        </p>
+                      ) : (
+                        activeTank.specimens.map(spec => (
+                          <div 
+                            key={spec.id} 
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              padding: "0.5rem 0.65rem",
+                              background: "rgba(255, 255, 255, 0.01)",
+                              borderRadius: "6px",
+                              border: "1px solid var(--glass-border)",
+                              fontSize: "0.8rem"
+                            }}
+                          >
+                            <span style={{ color: "#fff", fontWeight: "500", display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                              🐠 {spec.commonName}
+                              <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>#{spec.id}</span>
+                              {spec.gender && spec.gender !== "Not Sure" && (
+                                <span style={{
+                                  fontSize: "0.55rem",
+                                  padding: "0 0.15rem",
+                                  borderRadius: "3px",
+                                  background: spec.gender === "Male" ? "rgba(56, 189, 248, 0.12)" : "rgba(244, 63, 94, 0.12)",
+                                  color: spec.gender === "Male" ? "#38bdf8" : "#f43f5e",
+                                  border: spec.gender === "Male" ? "1px solid rgba(56, 189, 248, 0.2)" : "1px solid rgba(244, 63, 94, 0.2)"
+                                }}>
+                                  {spec.gender === "Male" ? "♂" : "♀"}
+                                </span>
+                              )}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => { setFarewellSpecimen(spec); setInlineDetailOpen(false); }}
+                              style={{
+                                background: "rgba(239, 68, 68, 0.08)",
+                                border: "1px solid rgba(239, 68, 68, 0.25)",
+                                color: "#f87171",
+                                padding: "0.2rem 0.5rem",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                fontSize: "0.7rem",
+                                fontWeight: "600",
+                                transition: "all 0.2s"
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = "rgba(239, 68, 68, 0.08)";
+                              }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
             ) : (
               <>
                 <input
@@ -3703,7 +4557,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   value={inlineDetailText}
                   onChange={(e) => setInlineDetailText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") handleInlineDetailSubmit(); }}
-                  placeholder={inlineDetailType === "feed" ? "e.g. Frozen brine shrimp, flakes..." : inlineDetailType === "population" ? "Enter specimen count..." : "e.g. Scraped algae, wiped glass..."}
+                  placeholder={inlineDetailType === "feed" ? "e.g. Frozen brine shrimp, flakes..." : "e.g. Scraped algae, wiped glass..."}
                   style={{
                     width: "100%",
                     padding: "0.75rem 1rem",

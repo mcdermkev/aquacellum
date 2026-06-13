@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { ethers, Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { getProvider } from "../utils/smartAccount";
+import { db } from "../db";
+
 
 export function SpecimenLineage({ contractAddress, walletAccount, preselectedTokenId, onSelectBreed }) {
   const [tokenId, setTokenId] = useState("");
@@ -11,36 +13,67 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
 
   const fetchSpecimenNode = useCallback(async (contract, id) => {
     if (!id || Number(id) === 0) return null;
+    
+    // 1. Try contract query first
     try {
       const data = await contract.specimens(id);
-      if (Number(data.specimenId) === 0) return null;
+      if (Number(data.specimenId) !== 0) {
+        // Fetch species name
+        const speciesId = Number(data.speciesId);
+        let speciesInfo = null;
+        try {
+          speciesInfo = await contract.speciesCatalog(speciesId);
+        } catch (err) {
+          console.warn("Failed fetching species catalog entry:", err);
+        }
 
-      // Fetch species name
-      const speciesId = Number(data.speciesId);
-      let speciesInfo = null;
-      try {
-        speciesInfo = await contract.speciesCatalog(speciesId);
-      } catch (err) {
-        console.warn("Failed fetching species catalog entry:", err);
+        return {
+          id: Number(data.specimenId),
+          speciesId,
+          speciesName: speciesInfo ? `${speciesInfo.commonName}` : `Species ID ${speciesId}`,
+          scientificName: speciesInfo ? speciesInfo.scientificName : "",
+          birthTimestamp: Number(data.birthTimestamp),
+          breeder: data.breeder,
+          sireId: Number(data.sireId),
+          damId: Number(data.damId),
+          ipfsMetadataUri: data.ipfsMetadataUri,
+          status: Number(data.status)
+        };
       }
-
-      return {
-        id: Number(data.specimenId),
-        speciesId,
-        speciesName: speciesInfo ? `${speciesInfo.commonName}` : `Species ID ${speciesId}`,
-        scientificName: speciesInfo ? speciesInfo.scientificName : "",
-        birthTimestamp: Number(data.birthTimestamp),
-        breeder: data.breeder,
-        sireId: Number(data.sireId),
-        damId: Number(data.damId),
-        ipfsMetadataUri: data.ipfsMetadataUri,
-        status: Number(data.status)
-      };
     } catch (e) {
-      console.warn(`Failed reading specimen node ID ${id}:`, e);
-      return null;
+      console.warn(`Contract read failed for specimen node ID ${id}, trying local database...`, e);
     }
+
+    // 2. Fallback to local Dexie database
+    try {
+      let local = await db.specimens.get(Number(id));
+      if (!local) {
+        local = await db.specimens.get(id.toString());
+      }
+      if (!local) {
+        local = await db.specimens.filter(s => Number(s.id) === Number(id) || Number(s.specimenId) === Number(id)).first();
+      }
+      if (local) {
+        return {
+          id: Number(local.id || local.specimenId),
+          speciesId: local.speciesId,
+          speciesName: local.commonName || `Species ID ${local.speciesId}`,
+          scientificName: local.scientificName || "",
+          birthTimestamp: local.birthTimestamp || local.createdAt || 0,
+          breeder: local.breeder || "Local Breeder",
+          sireId: Number(local.sireId || 0),
+          damId: Number(local.damId || 0),
+          ipfsMetadataUri: local.ipfsMetadataUri || "",
+          status: local.status ?? 0
+        };
+      }
+    } catch (localErr) {
+      console.warn(`Local Dexie lookup failed for specimen ID ${id}:`, localErr);
+    }
+
+    return null;
   }, []);
+
 
   const fetchLineage = useCallback(async (targetId) => {
     if (!targetId || isNaN(targetId)) return;

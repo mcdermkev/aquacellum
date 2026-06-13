@@ -122,32 +122,74 @@ export function useUserTanks(contractAddress, walletAccount) {
         }
       }
 
-      // Populate latest test and change timestamps from actionLogs
+      // Populate latest test and change timestamps from actionLogs and parameter logs
       for (const tank of allTanks) {
         try {
-          const actionLogs = await db.actionLogs.where("tankId").equals(tank.id).toArray();
+          // Retrieve action logs for this tank (handling type mismatch safely)
+          const actionLogs = await db.actionLogs
+            .where("tankId")
+            .anyOf([tank.id, tank.id.toString(), Number(tank.id)])
+            .toArray();
           
-          // Latest Water Test
-          const testLogs = actionLogs.filter(
+          // Latest Water Test can come from actionLogs OR tank.logs (parameter logs)
+          let latestTest = null;
+
+          // 1. Check actionLogs for tests
+          const testActionLogs = actionLogs.filter(
             (l) => l.actionType === "Quick Water Test" || l.actionType === "Water Test" || l.actionType === "Detailed Test"
           );
-          let latestTest = null;
-          if (testLogs.length > 0) {
-            testLogs.sort((a, b) => b.timestamp - a.timestamp);
-            latestTest = testLogs[0].timestamp;
+          if (testActionLogs.length > 0) {
+            testActionLogs.sort((a, b) => b.timestamp - a.timestamp);
+            latestTest = testActionLogs[0].timestamp;
           }
+
+          // 2. Check tank.logs (parameter logs) for tests
+          const parameterLogs = tank.logs || [];
+          if (parameterLogs.length > 0) {
+            const sortedParams = [...parameterLogs].sort((a, b) => b.timestamp - a.timestamp);
+            const latestParamTime = sortedParams[0].timestamp;
+            if (!latestTest || latestParamTime > latestTest) {
+              latestTest = latestParamTime;
+            }
+          }
+
+          // 3. Fallback to tank.latestLog
           if (tank.latestLog && (!latestTest || tank.latestLog.timestamp > latestTest)) {
             latestTest = tank.latestLog.timestamp;
           }
-          
-          // Latest Water Change
-          const changeLogs = actionLogs.filter(
-            (l) => l.actionType === "Water Change" || l.actionType === "Log Immediate Water Change" || (l.details && l.details.toLowerCase().includes("water change"))
-          );
+
+          // Latest Water Change can come from actionLogs OR tank.logs (where notes/details mention change)
           let latestChange = null;
-          if (changeLogs.length > 0) {
-            changeLogs.sort((a, b) => b.timestamp - a.timestamp);
-            latestChange = changeLogs[0].timestamp;
+
+          // 1. Check actionLogs for changes
+          const changeActionLogs = actionLogs.filter(
+            (l) => l.actionType === "Water Change" || l.actionType === "Log Immediate Water Change" || (l.details && typeof l.details === "string" && l.details.toLowerCase().includes("water change"))
+          );
+          if (changeActionLogs.length > 0) {
+            changeActionLogs.sort((a, b) => b.timestamp - a.timestamp);
+            latestChange = changeActionLogs[0].timestamp;
+          }
+
+          // 2. Check tank.logs (parameter logs) for notes containing "change" or "water change"
+          const waterChangeParams = parameterLogs.filter(
+            (l) => l.notes && typeof l.notes === "string" && (l.notes.toLowerCase().includes("water change") || l.notes.toLowerCase().includes("waterchange") || l.notes.toLowerCase().includes("changed"))
+          );
+          if (waterChangeParams.length > 0) {
+            waterChangeParams.sort((a, b) => b.timestamp - a.timestamp);
+            const latestParamChangeTime = waterChangeParams[0].timestamp;
+            if (!latestChange || latestParamChangeTime > latestChange) {
+              latestChange = latestParamChangeTime;
+            }
+          }
+
+          // 3. Check tank.latestLog notes
+          if (tank.latestLog && tank.latestLog.notes && typeof tank.latestLog.notes === "string") {
+            const notes = tank.latestLog.notes.toLowerCase();
+            if (notes.includes("water change") || notes.includes("waterchange") || notes.includes("changed")) {
+              if (!latestChange || tank.latestLog.timestamp > latestChange) {
+                latestChange = tank.latestLog.timestamp;
+              }
+            }
           }
           
           tank.latestTestTimestamp = latestTest;

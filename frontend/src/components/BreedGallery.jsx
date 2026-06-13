@@ -106,6 +106,7 @@ export function BreedGallery({
   const [selectedBreed, setSelectedBreed] = useState(initialSelectedBreed || null);
   const [selectedBreedSpecs, setSelectedBreedSpecs] = useState([]);
   const [residingSpecies, setResidingSpecies] = useState([]);
+  const [showMyTankSpeciesOnly, setShowMyTankSpeciesOnly] = useState(proMode);
   const [toastMessage, setToastMessage] = useState(null);
 
   const showToast = (msg) => {
@@ -124,12 +125,22 @@ export function BreedGallery({
       try {
         const userTanks = await db.tanks.toArray();
         const speciesMap = {};
+        
+        const addOrUpdate = (speciesId, name) => {
+          if (!speciesId) return;
+          const id = Number(speciesId);
+          if (!speciesMap[id]) {
+            speciesMap[id] = { name: name || `Species ID ${id}`, count: 0 };
+          } else if (name && speciesMap[id].name.startsWith("Species ID ")) {
+            speciesMap[id].name = name;
+          }
+          speciesMap[id].count += 1;
+        };
+
         for (const t of userTanks) {
           if (t.specimens) {
             for (const spec of t.specimens) {
-              if (spec.speciesId) {
-                speciesMap[spec.speciesId] = spec.commonName || `Species ID ${spec.speciesId}`;
-              }
+              addOrUpdate(spec.speciesId, spec.commonName);
             }
           }
         }
@@ -140,14 +151,13 @@ export function BreedGallery({
           (s) => s.ownerAddress?.toLowerCase() === walletAccount?.toLowerCase() && s.status === 0
         );
         for (const spec of userSpecimens) {
-          if (spec.speciesId) {
-            speciesMap[spec.speciesId] = spec.commonName || `Species ID ${spec.speciesId}`;
-          }
+          addOrUpdate(spec.speciesId, spec.commonName);
         }
 
-        setResidingSpecies(Object.entries(speciesMap).map(([id, name]) => ({
+        setResidingSpecies(Object.entries(speciesMap).map(([id, info]) => ({
           id: Number(id),
-          name
+          name: info.name,
+          count: info.count
         })));
       } catch (err) {
         console.warn("Failed to load residing species:", err);
@@ -250,12 +260,14 @@ export function BreedGallery({
     if (viewMode === "global") {
       return globalRefList;
     }
-    if (casualModeActive && viewMode === "contract") {
-      const residingIds = new Set(residingSpecies.map((s) => Number(s.id)));
-      return speciesList.filter((s) => residingIds.has(Number(s.speciesId)));
+    if (viewMode === "contract") {
+      if (casualModeActive || showMyTankSpeciesOnly) {
+        const residingIds = new Set(residingSpecies.map((s) => Number(s.id)));
+        return speciesList.filter((s) => residingIds.has(Number(s.speciesId)));
+      }
     }
     return speciesList;
-  }, [viewMode, speciesList, globalRefList, residingSpecies, casualModeActive]);
+  }, [viewMode, speciesList, globalRefList, residingSpecies, casualModeActive, showMyTankSpeciesOnly]);
 
   // useSpeciesSearch MUST be called before any useEffect/code that references searchTerm or globalData
   const {
@@ -1576,60 +1588,199 @@ export function BreedGallery({
       }}>
         {/* Tabs */}
         <div 
-          className="glass-card" 
           style={{ 
-            display: "flex", 
-            gap: "0.5rem", 
-            padding: "0.5rem", 
-            borderRadius: "var(--radius-sm)",
-            maxWidth: "fit-content",
+            display: "inline-flex", 
+            background: "rgba(0, 0, 0, 0.25)", 
+            border: "1px solid var(--glass-border)", 
+            padding: "0.25rem", 
+            borderRadius: "50px",
+            boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.5)",
             margin: 0
           }}
         >
-          <button 
-            className={viewMode === "contract" ? "btn-primary" : "btn-secondary"} 
-            onClick={() => {
-              setViewMode("contract");
-              setSelectedBreed(null);
-              setSearchTerm("");
-            }}
-            style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
-          >
-            {proMode ? "Registered Breeds" : "My Collection"}
-          </button>
-          <button 
-            className={viewMode === "global" ? "btn-primary" : "btn-secondary"} 
-            onClick={() => {
-              setViewMode("global");
-              setSelectedBreed(null);
-              setSearchTerm("");
-            }}
-            style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
-          >
-            {proMode ? "Global Database" : "All Species"}
-          </button>
-          <button 
-            className={viewMode === "council" ? "btn-primary" : "btn-secondary"} 
-            onClick={() => {
-              setViewMode("council");
-              setSelectedBreed(null);
-              setSearchTerm("");
-            }}
-            style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
-          >
-            {proMode ? "Breeders Council" : "Community"}
-          </button>
+          {proMode ? (
+            <>
+              <button 
+                type="button"
+                onClick={() => {
+                  setViewMode("contract");
+                  setShowMyTankSpeciesOnly(true);
+                  setSelectedBreed(null);
+                  setSearchTerm("");
+                }}
+                style={{ 
+                  background: (viewMode === "contract" && showMyTankSpeciesOnly) 
+                    ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
+                    : "transparent",
+                  border: "none",
+                  outline: "none",
+                  borderRadius: "50px",
+                  color: (viewMode === "contract" && showMyTankSpeciesOnly) ? "#fff" : "var(--text-secondary)",
+                  padding: "0.45rem 1.25rem",
+                  fontSize: "0.78rem",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.25s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  border: (viewMode === "contract" && showMyTankSpeciesOnly) ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
+                  boxShadow: (viewMode === "contract" && showMyTankSpeciesOnly) ? "0 0 10px rgba(56, 189, 248, 0.15)" : "none"
+                }}
+              >
+                🐠 My Tank Species ({residingSpecies.length})
+              </button>
+              <button 
+                type="button"
+                onClick={() => {
+                  setViewMode("contract");
+                  setShowMyTankSpeciesOnly(false);
+                  setSelectedBreed(null);
+                  setSearchTerm("");
+                }}
+                style={{ 
+                  background: (viewMode === "contract" && !showMyTankSpeciesOnly) 
+                    ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
+                    : "transparent",
+                  border: "none",
+                  outline: "none",
+                  borderRadius: "50px",
+                  color: (viewMode === "contract" && !showMyTankSpeciesOnly) ? "#fff" : "var(--text-secondary)",
+                  padding: "0.45rem 1.25rem",
+                  fontSize: "0.78rem",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.25s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  border: (viewMode === "contract" && !showMyTankSpeciesOnly) ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
+                  boxShadow: (viewMode === "contract" && !showMyTankSpeciesOnly) ? "0 0 10px rgba(56, 189, 248, 0.15)" : "none"
+                }}
+              >
+                🌐 All Catalog Breeds ({speciesList.length})
+              </button>
+              <button 
+                type="button"
+                onClick={() => {
+                  setViewMode("global");
+                  setSelectedBreed(null);
+                  setSearchTerm("");
+                }}
+                style={{ 
+                  background: (viewMode === "global") 
+                    ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
+                    : "transparent",
+                  border: "none",
+                  outline: "none",
+                  borderRadius: "50px",
+                  color: (viewMode === "global") ? "#fff" : "var(--text-secondary)",
+                  padding: "0.45rem 1.25rem",
+                  fontSize: "0.78rem",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.25s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  border: (viewMode === "global") ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
+                  boxShadow: (viewMode === "global") ? "0 0 10px rgba(56, 189, 248, 0.15)" : "none"
+                }}
+              >
+                🌍 Global Database
+              </button>
+            </>
+          ) : (
+            <>
+              <button 
+                type="button"
+                onClick={() => {
+                  setViewMode("contract");
+                  setSelectedBreed(null);
+                  setSearchTerm("");
+                }}
+                style={{ 
+                  background: (viewMode === "contract") 
+                    ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
+                    : "transparent",
+                  border: "none",
+                  outline: "none",
+                  borderRadius: "50px",
+                  color: (viewMode === "contract") ? "#fff" : "var(--text-secondary)",
+                  padding: "0.45rem 1.25rem",
+                  fontSize: "0.78rem",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.25s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  border: (viewMode === "contract") ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
+                  boxShadow: (viewMode === "contract") ? "0 0 10px rgba(56, 189, 248, 0.15)" : "none"
+                }}
+              >
+                🐠 My Collection ({residingSpecies.length})
+              </button>
+              <button 
+                type="button"
+                onClick={() => {
+                  setViewMode("global");
+                  setSelectedBreed(null);
+                  setSearchTerm("");
+                }}
+                style={{ 
+                  background: (viewMode === "global") 
+                    ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
+                    : "transparent",
+                  border: "none",
+                  outline: "none",
+                  borderRadius: "50px",
+                  color: (viewMode === "global") ? "#fff" : "var(--text-secondary)",
+                  padding: "0.45rem 1.25rem",
+                  fontSize: "0.78rem",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.25s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  border: (viewMode === "global") ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
+                  boxShadow: (viewMode === "global") ? "0 0 10px rgba(56, 189, 248, 0.15)" : "none"
+                }}
+              >
+                🌐 All Species
+              </button>
+            </>
+          )}
           {isCurator && (
             <button 
-              className={viewMode === "curation" ? "btn-primary" : "btn-secondary"} 
+              type="button"
               onClick={() => {
                 setViewMode("curation");
                 setSelectedBreed(null);
                 setSearchTerm("");
               }}
-              style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
+              style={{ 
+                background: (viewMode === "curation") 
+                  ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
+                  : "transparent",
+                border: "none",
+                outline: "none",
+                borderRadius: "50px",
+                color: (viewMode === "curation") ? "#fff" : "var(--text-secondary)",
+                padding: "0.45rem 1.25rem",
+                fontSize: "0.78rem",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "all 0.25s ease",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+                border: (viewMode === "curation") ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
+                boxShadow: (viewMode === "curation") ? "0 0 10px rgba(56, 189, 248, 0.15)" : "none"
+              }}
             >
-              Curation Queue
+              🛠️ Curation Queue
             </button>
           )}
         </div>
@@ -1766,62 +1917,65 @@ export function BreedGallery({
             🐠 My Tank Species
           </span>
           <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
-            {residingSpecies.map((item) => (
-              <button
-                key={`badge-${item.id}`}
-                onClick={() => {
-                  const breed = speciesList.find(s => Number(s.speciesId) === Number(item.id)) ||
-                                globalRefList.find(s => Number(s.speciesId) === Number(item.id));
-                  if (breed) {
-                    setSelectedBreed(breed);
-                    if (viewMode !== "global") {
-                      loadBreedSpecimens(breed);
+            {residingSpecies.map((item) => {
+              const isBadgeSelected = selectedBreed && Number(selectedBreed.speciesId) === Number(item.id);
+              return (
+                <button
+                  key={`badge-${item.id}`}
+                  onClick={() => {
+                    const breed = speciesList.find(s => Number(s.speciesId) === Number(item.id)) ||
+                                  globalRefList.find(s => Number(s.speciesId) === Number(item.id));
+                    if (breed) {
+                      setSelectedBreed(breed);
+                      if (viewMode !== "global") {
+                        loadBreedSpecimens(breed);
+                      }
                     }
-                  }
-                }}
-                style={{
-                  background: "rgba(255, 255, 255, 0.03)",
-                  border: "1px solid rgba(255, 255, 255, 0.06)",
-                  color: "var(--text-secondary)",
-                  padding: "0.25rem 0.65rem",
-                  borderRadius: "50px",
-                  fontSize: "0.7rem",
-                  fontWeight: "500",
-                  cursor: "pointer",
-                  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(56, 189, 248, 0.08)";
-                  e.currentTarget.style.borderColor = "rgba(56, 189, 248, 0.3)";
-                  e.currentTarget.style.color = "#7dd3fc";
-                  e.currentTarget.style.transform = "translateY(-1px)";
-                  e.currentTarget.style.boxShadow = "0 4px 12px rgba(56, 189, 248, 0.15)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
-                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.06)";
-                  e.currentTarget.style.color = "var(--text-secondary)";
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
-                }}
-              >
-                {item.name}
-              </button>
-            ))}
+                  }}
+                  style={{
+                    background: isBadgeSelected 
+                      ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
+                      : "rgba(255, 255, 255, 0.03)",
+                    border: isBadgeSelected 
+                      ? "1px solid rgba(56, 189, 248, 0.45)" 
+                      : "1px solid rgba(255, 255, 255, 0.06)",
+                    color: isBadgeSelected ? "#fff" : "var(--text-secondary)",
+                    padding: "0.25rem 0.65rem",
+                    borderRadius: "50px",
+                    fontSize: "0.7rem",
+                    fontWeight: "500",
+                    cursor: "pointer",
+                    transition: "all 0.25s ease",
+                    boxShadow: isBadgeSelected ? "0 0 10px rgba(56, 189, 248, 0.2)" : "0 2px 8px rgba(0,0,0,0.1)"
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isBadgeSelected) {
+                      e.currentTarget.style.background = "rgba(56, 189, 248, 0.08)";
+                      e.currentTarget.style.borderColor = "rgba(56, 189, 248, 0.3)";
+                      e.currentTarget.style.color = "#7dd3fc";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(56, 189, 248, 0.15)";
+                    }
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isBadgeSelected) {
+                      e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
+                      e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.06)";
+                      e.currentTarget.style.color = "var(--text-secondary)";
+                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
+                    }
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
+                >
+                  {item.name} ({item.count})
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {viewMode === "council" ? (
-        <BreedersCouncil 
-          walletAccount={walletAccount} 
-          suggestionsQuery={suggestionsQuery}
-          updateSuggestionStatus={updateSuggestionStatus}
-          CARE_LEVEL_STRINGS={CARE_LEVEL_STRINGS}
-          marketplaceAddress={marketplaceAddress}
-        />
-      ) : viewMode === "curation" ? (
+      {viewMode === "curation" ? (
         <CurationQueuePanel 
           contractInstance={contractInstance}
           suggestionsQuery={suggestionsQuery}
@@ -2176,28 +2330,168 @@ export function BreedGallery({
           </div>
           <div style={{ width: "100%" }}>
             {filteredSpecies.length === 0 ? (
-              <div className="glass-card" style={{ padding: "4rem 2rem", textAlign: "center", border: "1px dashed var(--glass-border)", background: "none" }}>
-                <h3 style={{ color: "var(--text-secondary)", marginBottom: "0.5rem" }}>No Species Matches</h3>
-                <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "1.5rem" }}>
-                  No species match the current search query or active filters.
-                </p>
-                <button
-                  onClick={() => setIsSuggestModalOpen(true)}
-                  className="btn-primary"
-                  style={{
-                    padding: "0.5rem 1.5rem",
-                    fontSize: "0.875rem",
-                    borderRadius: "20px",
-                    background: "rgba(56, 189, 248, 0.15)",
-                    border: "1px solid rgba(56, 189, 248, 0.5)",
-                    color: "#38bdf8",
-                    cursor: "pointer",
-                    boxShadow: "0 0 10px rgba(56, 189, 248, 0.1)"
-                  }}
-                >
-                  Propose new species suggestion 🐠
-                </button>
-              </div>
+              showMyTankSpeciesOnly && residingSpecies.length === 0 ? (
+                <div className="glass-card" style={{ 
+                  padding: "5rem 2rem", 
+                  textAlign: "center", 
+                  background: "linear-gradient(135deg, rgba(6, 20, 38, 0.6) 0%, rgba(8, 12, 20, 0.8) 100%)",
+                  border: "1px dashed rgba(16, 185, 129, 0.3)",
+                  borderRadius: "20px",
+                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05)",
+                  maxWidth: "600px",
+                  margin: "2rem auto"
+                }}>
+                  <div style={{
+                    width: "80px",
+                    height: "80px",
+                    borderRadius: "50%",
+                    background: "rgba(16, 185, 129, 0.1)",
+                    border: "1px solid rgba(16, 185, 129, 0.3)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 1.5rem",
+                    boxShadow: "0 0 20px rgba(16, 185, 129, 0.15)"
+                  }}>
+                    <span style={{ fontSize: "2.5rem" }}>🐠</span>
+                  </div>
+                  <h3 style={{ 
+                    color: "#fff", 
+                    fontSize: "1.5rem", 
+                    fontWeight: "700", 
+                    marginBottom: "0.75rem",
+                    letterSpacing: "-0.01em",
+                    background: "linear-gradient(90deg, #10b981, #34d399)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent"
+                  }}>
+                    Breeder's Tank Registry Empty
+                  </h3>
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", lineHeight: "1.5", marginBottom: "2rem", maxWidth: "420px", margin: "0 auto 2rem" }}>
+                    Your local aquariums don't contain any registered species yet. Register your specimens or mint a digital certificate to establish your pedigree lines.
+                  </p>
+                  <button
+                    onClick={() => { window.location.hash = "mint"; }}
+                    className="btn-primary"
+                    style={{
+                      padding: "0.75rem 2rem",
+                      fontSize: "0.9rem",
+                      fontWeight: "600",
+                      borderRadius: "50px",
+                      background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                      border: "1px solid rgba(52, 211, 153, 0.4)",
+                      color: "#fff",
+                      cursor: "pointer",
+                      boxShadow: "0 4px 15px rgba(16, 185, 129, 0.3), 0 0 0 1px rgba(16, 185, 129, 0.2)",
+                      transition: "all 0.25s ease"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 6px 20px rgba(16, 185, 129, 0.45), 0 0 0 2px rgba(16, 185, 129, 0.3)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 4px 15px rgba(16, 185, 129, 0.3), 0 0 0 1px rgba(16, 185, 129, 0.2)";
+                    }}
+                  >
+                    Register First Specimen 🐠
+                  </button>
+                </div>
+              ) : showMyTankSpeciesOnly ? (
+                <div className="glass-card" style={{ 
+                  padding: "4rem 2rem", 
+                  textAlign: "center", 
+                  border: "1px dashed var(--glass-border)", 
+                  background: "none",
+                  borderRadius: "20px",
+                  maxWidth: "600px",
+                  margin: "2rem auto"
+                }}>
+                  <h3 style={{ color: "var(--text-secondary)", marginBottom: "0.5rem", fontSize: "1.25rem", fontWeight: "600" }}>
+                    No Matching Tank Species
+                  </h3>
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "2rem" }}>
+                    None of the species residing in your tanks match the current search query or active filters.
+                  </p>
+                  <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+                    <button
+                      onClick={() => { resetFilters(); clearParsed(); setSearchTerm(""); }}
+                      className="btn-secondary"
+                      style={{
+                        padding: "0.5rem 1.5rem",
+                        fontSize: "0.85rem",
+                        borderRadius: "20px",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Clear Search & Filters
+                    </button>
+                    <button
+                      onClick={() => setShowMyTankSpeciesOnly(false)}
+                      className="btn-primary"
+                      style={{
+                        padding: "0.5rem 1.5rem",
+                        fontSize: "0.85rem",
+                        borderRadius: "20px",
+                        background: "rgba(56, 189, 248, 0.15)",
+                        border: "1px solid rgba(56, 189, 248, 0.5)",
+                        color: "#38bdf8",
+                        cursor: "pointer",
+                        boxShadow: "0 0 10px rgba(56, 189, 248, 0.1)"
+                      }}
+                    >
+                      Browse All Catalog Breeds 🌐
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="glass-card" style={{ 
+                  padding: "4rem 2rem", 
+                  textAlign: "center", 
+                  border: "1px dashed var(--glass-border)", 
+                  background: "none",
+                  borderRadius: "20px",
+                  maxWidth: "600px",
+                  margin: "2rem auto"
+                }}>
+                  <h3 style={{ color: "var(--text-secondary)", marginBottom: "0.5rem", fontSize: "1.25rem", fontWeight: "600" }}>
+                    No Species Matches
+                  </h3>
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "2rem" }}>
+                    No species match the current search query or active filters.
+                  </p>
+                  <div style={{ display: "flex", gap: "1rem", justifyContent: "center" }}>
+                    <button
+                      onClick={() => { resetFilters(); clearParsed(); setSearchTerm(""); }}
+                      className="btn-secondary"
+                      style={{
+                        padding: "0.5rem 1.5rem",
+                        fontSize: "0.85rem",
+                        borderRadius: "20px",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Clear Search & Filters
+                    </button>
+                    <button
+                      onClick={() => setIsSuggestModalOpen(true)}
+                      className="btn-primary"
+                      style={{
+                        padding: "0.5rem 1.5rem",
+                        fontSize: "0.875rem",
+                        borderRadius: "20px",
+                        background: "rgba(56, 189, 248, 0.15)",
+                        border: "1px solid rgba(56, 189, 248, 0.5)",
+                        color: "#38bdf8",
+                        cursor: "pointer",
+                        boxShadow: "0 0 10px rgba(56, 189, 248, 0.1)"
+                      }}
+                    >
+                      Propose new species suggestion 🐠
+                    </button>
+                  </div>
+                </div>
+              )
             ) : (
               <div 
                 ref={parentRefCallback}
@@ -2240,381 +2534,416 @@ export function BreedGallery({
                           gridTemplateColumns: `repeat(${columnsCount}, 1fr)`, 
                           gap: "1.5rem" 
                         }}>
-                          {row.map((breed) => (
-                            <div 
-                              key={breed.speciesId} 
-                              className="glass-card" 
-                              style={{ 
-                                padding: "0", 
-                                cursor: "pointer", 
-                                background: "linear-gradient(145deg, rgba(6, 20, 38, 0.85) 0%, rgba(8, 12, 20, 0.95) 100%)",
-                                border: "1px solid rgba(34, 211, 238, 0.12)",
-                                borderRadius: "16px",
-                                overflow: "hidden",
-                                transition: "transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease" 
-                              }}
-                              onClick={() => {
-                                setSelectedBreed(breed);
-                                if (viewMode !== "global") {
-                                  loadBreedSpecimens(breed);
-                                }
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = "translateY(-4px)";
-                                e.currentTarget.style.boxShadow = "0 8px 40px rgba(34, 211, 238, 0.12), inset 0 1px 0 rgba(34, 211, 238, 0.1)";
-                                e.currentTarget.style.borderColor = "rgba(34, 211, 238, 0.35)";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = "translateY(0)";
-                                e.currentTarget.style.boxShadow = "none";
-                                e.currentTarget.style.borderColor = "rgba(34, 211, 238, 0.12)";
-                              }}
-                            >
-                              {/* Terminal Header Bar */}
-                              <div style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                padding: "0.6rem 1rem",
-                                borderBottom: "1px solid rgba(34, 211, 238, 0.08)",
-                                background: "rgba(0, 0, 0, 0.2)",
-                              }}>
-                                <div style={{ display: "flex", gap: "5px" }}>
-                                  <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ff5f57" }} />
-                                  <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ffbd2e" }} />
-                                  <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#28c840" }} />
-                                </div>
-                                <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontFamily: "monospace" }}>
-                                  spec-dex / entry #{breed.speciesId}
-                                </span>
-                                <span style={{
-                                  fontSize: "0.55rem",
-                                  fontWeight: "700",
-                                  padding: "0.15rem 0.5rem",
-                                  borderRadius: "4px",
-                                  border: "1px solid rgba(255,255,255,0.3)",
-                                  color: "#fff",
-                                  textTransform: "uppercase",
-                                  letterSpacing: "0.05em",
+                          {row.map((breed) => {
+                            const residingInfo = residingSpecies.find(r => Number(r.id) === Number(breed.speciesId));
+                            const ownedCount = residingInfo ? residingInfo.count : 0;
+                            const isOwned = ownedCount > 0;
+
+                            return (
+                              <div 
+                                key={breed.speciesId} 
+                                className="glass-card" 
+                                style={{ 
+                                  padding: "0", 
+                                  cursor: "pointer", 
+                                  background: "linear-gradient(145deg, rgba(6, 20, 38, 0.85) 0%, rgba(8, 12, 20, 0.95) 100%)",
+                                  border: isOwned ? "1px solid rgba(16, 185, 129, 0.25)" : "1px solid rgba(34, 211, 238, 0.12)",
+                                  borderRadius: "16px",
+                                  overflow: "hidden",
+                                  transition: "transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease" 
+                                }}
+                                onClick={() => {
+                                  setSelectedBreed(breed);
+                                  if (viewMode !== "global") {
+                                    loadBreedSpecimens(breed);
+                                  }
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.transform = "translateY(-4px)";
+                                  e.currentTarget.style.boxShadow = isOwned 
+                                    ? "0 8px 40px rgba(16, 185, 129, 0.15), inset 0 1px 0 rgba(16, 185, 129, 0.1)" 
+                                    : "0 8px 40px rgba(34, 211, 238, 0.12), inset 0 1px 0 rgba(34, 211, 238, 0.1)";
+                                  e.currentTarget.style.borderColor = isOwned 
+                                    ? "rgba(16, 185, 129, 0.5)" 
+                                    : "rgba(34, 211, 238, 0.35)";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.transform = "translateY(0)";
+                                  e.currentTarget.style.boxShadow = "none";
+                                  e.currentTarget.style.borderColor = isOwned 
+                                    ? "rgba(16, 185, 129, 0.25)" 
+                                    : "rgba(34, 211, 238, 0.12)";
+                                }}
+                              >
+                                {/* Terminal Header Bar */}
+                                <div style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  padding: "0.6rem 1rem",
+                                  borderBottom: "1px solid rgba(34, 211, 238, 0.08)",
+                                  background: "rgba(0, 0, 0, 0.2)",
                                 }}>
-                                  {CARE_LEVEL_STRINGS[breed.careLevel]}
-                                </span>
-                              </div>
-
-                              {/* Card Body */}
-                              <div style={{ padding: "1rem 1.25rem 1.25rem" }}>
-                              {/* Photo Card Area */}
-                              {(() => {
-                                const matched = fishbaseData.find(
-                                  (f) => f.scientificName.toLowerCase() === breed.scientificName.toLowerCase()
-                                );
-                                const breedImgSrc = matched?.masterPhotoUrl || "";
-                                const isPlant = isPlantEntry(matched || { specCode: breed.speciesId });
-                                const badgeLabel = isPlant ? "🌿 Certified Master Flora" : "🛡️ Breeder-Verified Master Stock";
-                                const badgeBg = isPlant ? "rgba(16,185,129,0.18)" : "rgba(56,189,248,0.12)";
-                                const badgeBorder = isPlant ? "rgba(16,185,129,0.45)" : "rgba(56,189,248,0.35)";
-                                const badgeColor = isPlant ? "#34d399" : "#7dd3fc";
-                                const fallbackSvg = isPlant ? (
-                                  <PlantSilhouetteSVG
-                                    specCode={matched?.specCode || breed.speciesId}
-                                    style={{ width: "100px", height: "100px" }}
-                                  />
-                                ) : (
-                                  <FishSilhouetteSVG 
-                                    specimenId={breed.speciesId} 
-                                    style={{ width: "120px", height: "120px" }} 
-                                  />
-                                );
-                                 const activeEggType = matched?.easterEgg || (Number(breed.speciesId) === 10691 ? "nami_lol" : Number(breed.speciesId) === 271 ? "magikarp_pokemon" : null);
-                                 const eggConfig = activeEggType ? getEasterEggConfig(activeEggType, magikarpEvolved) : null;
-                                 const isEggRevealed = eggConfig && (
-                                   !casualModeActive || 
-                                   eggConfig.keywords.some(w => searchTerm.toLowerCase().includes(w))
-                                 );
-                                return (
-                                  <div style={{ 
-                                     height: "12rem", 
-                                     width: "100%", 
-                                     borderRadius: "0.75rem", 
-                                     background: isPlant 
-                                       ? "linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, rgba(16, 185, 129, 0.02) 100%)" 
-                                       : "linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)",
-                                     backdropFilter: "blur(12px)",
-                                     boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 4px 15px rgba(0, 0, 0, 0.1)",
-                                     marginBottom: "1rem",
-                                     position: "relative",
-                                     overflow: "hidden",
-                                     border: isPlant ? "1px solid rgba(16, 185, 129, 0.15)" : "1px solid rgba(255, 255, 255, 0.08)",
-                                     display: "flex",
-                                     alignItems: "center",
-                                     justifyContent: "center"
+                                  <div style={{ display: "flex", gap: "5px" }}>
+                                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ff5f57" }} />
+                                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ffbd2e" }} />
+                                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#28c840" }} />
+                                  </div>
+                                  <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontFamily: "monospace" }}>
+                                    spec-dex / entry #{breed.speciesId}
+                                  </span>
+                                  <span style={{
+                                    fontSize: "0.55rem",
+                                    fontWeight: "700",
+                                    padding: "0.15rem 0.5rem",
+                                    borderRadius: "4px",
+                                    border: "1px solid rgba(255,255,255,0.3)",
+                                    color: "#fff",
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.05em",
                                   }}>
-                                    <LazyImage
-                                      src={breedImgSrc}
-                                      alt={breed.commonName}
-                                      style={{ width: "100%", height: "100%" }}
-                                      fallbackSvg={fallbackSvg}
+                                    {CARE_LEVEL_STRINGS[breed.careLevel]}
+                                  </span>
+                                </div>
+
+                                {/* Card Body */}
+                                <div style={{ padding: "1rem 1.25rem 1.25rem" }}>
+                                {/* Photo Card Area */}
+                                {(() => {
+                                  const matched = fishbaseData.find(
+                                    (f) => f.scientificName.toLowerCase() === breed.scientificName.toLowerCase()
+                                  );
+                                  const breedImgSrc = matched?.masterPhotoUrl || "";
+                                  const isPlant = isPlantEntry(matched || { specCode: breed.speciesId });
+                                  const badgeLabel = isPlant ? "🌿 Certified Master Flora" : "🛡️ Breeder-Verified Master Stock";
+                                  const badgeBg = isPlant ? "rgba(16,185,129,0.18)" : "rgba(56,189,248,0.12)";
+                                  const badgeBorder = isPlant ? "rgba(16,185,129,0.45)" : "rgba(56,189,248,0.35)";
+                                  const badgeColor = isPlant ? "#34d399" : "#7dd3fc";
+                                  const fallbackSvg = isPlant ? (
+                                    <PlantSilhouetteSVG
+                                      specCode={matched?.specCode || breed.speciesId}
+                                      style={{ width: "100px", height: "100px" }}
                                     />
+                                  ) : (
+                                    <FishSilhouetteSVG 
+                                      specimenId={breed.speciesId} 
+                                      style={{ width: "120px", height: "120px" }} 
+                                    />
+                                  );
+                                   const activeEggType = matched?.easterEgg || (Number(breed.speciesId) === 10691 ? "nami_lol" : Number(breed.speciesId) === 271 ? "magikarp_pokemon" : null);
+                                   const eggConfig = activeEggType ? getEasterEggConfig(activeEggType, magikarpEvolved) : null;
+                                   const isEggRevealed = eggConfig && (
+                                     !casualModeActive || 
+                                     eggConfig.keywords.some(w => searchTerm.toLowerCase().includes(w))
+                                   );
+                                  return (
+                                    <div style={{ 
+                                       height: "12rem", 
+                                       width: "100%", 
+                                       borderRadius: "0.75rem", 
+                                       background: isPlant 
+                                         ? "linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, rgba(16, 185, 129, 0.02) 100%)" 
+                                         : "linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)",
+                                       backdropFilter: "blur(12px)",
+                                       boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 4px 15px rgba(0, 0, 0, 0.1)",
+                                       marginBottom: "1rem",
+                                       position: "relative",
+                                       overflow: "hidden",
+                                       border: isPlant ? "1px solid rgba(16, 185, 129, 0.15)" : "1px solid rgba(255, 255, 255, 0.08)",
+                                       display: "flex",
+                                       alignItems: "center",
+                                       justifyContent: "center"
+                                    }}>
+                                      <LazyImage
+                                        src={breedImgSrc}
+                                        alt={breed.commonName}
+                                        style={{ width: "100%", height: "100%" }}
+                                        fallbackSvg={fallbackSvg}
+                                      />
 
-                                    {isEggRevealed && eggConfig && (
-                                       <span 
-                                         onClick={(e) => {
-                                           e.stopPropagation();
-                                           setActiveLoreEgg(eggConfig);
-                                         }}
-                                         style={{
-                                           position: "absolute",
-                                           top: "0.6rem",
-                                           left: "0.6rem",
-                                           fontSize: "0.6rem",
-                                           fontWeight: "800",
-                                           padding: "0.22rem 0.65rem",
-                                           borderRadius: "20px",
-                                           whiteSpace: "nowrap",
-                                           color: eggConfig.color,
-                                           background: eggConfig.bg,
-                                           border: `1px solid ${eggConfig.border}`,
-                                           backdropFilter: "blur(8px)",
-                                           boxShadow: `0 0 10px ${eggConfig.glow}`,
-                                           cursor: "pointer",
-                                           transition: "all 0.2s ease",
-                                           zIndex: 10,
-                                           letterSpacing: "0.03em"
-                                         }}
-                                         onMouseEnter={(e) => {
-                                           e.currentTarget.style.transform = "scale(1.05)";
-                                           e.currentTarget.style.boxShadow = `0 0 15px ${eggConfig.glow}`;
-                                         }}
-                                         onMouseLeave={(e) => {
-                                           e.currentTarget.style.transform = "scale(1)";
-                                           e.currentTarget.style.boxShadow = `0 0 10px ${eggConfig.glow}`;
-                                         }}
-                                       >
-                                         {eggConfig.label}
-                                       </span>
-                                     )}
+                                      {isEggRevealed && eggConfig && (
+                                         <span 
+                                           onClick={(e) => {
+                                             e.stopPropagation();
+                                             setActiveLoreEgg(eggConfig);
+                                           }}
+                                           style={{
+                                             position: "absolute",
+                                             top: "0.6rem",
+                                             left: "0.6rem",
+                                             fontSize: "0.6rem",
+                                             fontWeight: "800",
+                                             padding: "0.22rem 0.65rem",
+                                             borderRadius: "20px",
+                                             whiteSpace: "nowrap",
+                                             color: eggConfig.color,
+                                             background: eggConfig.bg,
+                                             border: `1px solid ${eggConfig.border}`,
+                                             backdropFilter: "blur(8px)",
+                                             boxShadow: `0 0 10px ${eggConfig.glow}`,
+                                             cursor: "pointer",
+                                             transition: "all 0.25s ease",
+                                             zIndex: 10,
+                                             letterSpacing: "0.03em"
+                                           }}
+                                           onMouseEnter={(e) => {
+                                             e.currentTarget.style.transform = "scale(1.05)";
+                                             e.currentTarget.style.boxShadow = `0 0 15px ${eggConfig.glow}`;
+                                           }}
+                                           onMouseLeave={(e) => {
+                                             e.currentTarget.style.transform = "scale(1)";
+                                             e.currentTarget.style.boxShadow = `0 0 10px ${eggConfig.glow}`;
+                                           }}
+                                         >
+                                           {eggConfig.label}
+                                         </span>
+                                       )}
 
-                                    {/* Pro-only breeding method badge (top-right) */}
-                                    {proMode && matched?.reproduction?.spawningTrait &&
-                                      matched.reproduction.spawningTrait !== "Information arriving soon" && (
+                                      {/* Pro-only breeding method badge (top-right) */}
+                                      {proMode && matched?.reproduction?.spawningTrait &&
+                                        matched.reproduction.spawningTrait !== "Information arriving soon" && (
+                                        <span style={{
+                                          position: "absolute",
+                                          top: "0.6rem",
+                                          right: "0.6rem",
+                                          fontSize: "0.6rem",
+                                          fontWeight: "700",
+                                          padding: "0.22rem 0.65rem",
+                                          borderRadius: "20px",
+                                          whiteSpace: "nowrap",
+                                          color: "#fcd34d",
+                                          background: "rgba(251, 191, 36, 0.16)",
+                                          border: "1px solid rgba(251, 191, 36, 0.4)",
+                                          backdropFilter: "blur(8px)",
+                                          letterSpacing: "0.03em",
+                                          zIndex: 3
+                                        }}>
+                                          🥚 {matched.reproduction.spawningTrait}
+                                        </span>
+                                      )}
+
+                                      {/* Glassmorphic Verified Master Badge */}
                                       <span style={{
                                         position: "absolute",
-                                        top: "0.6rem",
-                                        right: "0.6rem",
+                                        bottom: "0.6rem",
+                                        left: "50%",
+                                        transform: "translateX(-50%)",
                                         fontSize: "0.6rem",
                                         fontWeight: "700",
                                         padding: "0.22rem 0.65rem",
                                         borderRadius: "20px",
                                         whiteSpace: "nowrap",
-                                        color: "#fcd34d",
-                                        background: "rgba(251, 191, 36, 0.16)",
-                                        border: "1px solid rgba(251, 191, 36, 0.4)",
+                                        color: badgeColor,
+                                        background: badgeBg,
+                                        border: `1px solid ${badgeBorder}`,
                                         backdropFilter: "blur(8px)",
                                         letterSpacing: "0.03em",
-                                        zIndex: 3
+                                        zIndex: 2
                                       }}>
-                                        🥚 {matched.reproduction.spawningTrait}
+                                        {badgeLabel}
                                       </span>
-                                    )}
 
-                                    {/* Glassmorphic Verified Master Badge */}
-                                    <span style={{
-                                      position: "absolute",
-                                      bottom: "0.6rem",
-                                      left: "50%",
-                                      transform: "translateX(-50%)",
-                                      fontSize: "0.6rem",
-                                      fontWeight: "700",
-                                      padding: "0.22rem 0.65rem",
-                                      borderRadius: "20px",
-                                      whiteSpace: "nowrap",
-                                      color: badgeColor,
-                                      background: badgeBg,
-                                      border: `1px solid ${badgeBorder}`,
-                                      backdropFilter: "blur(8px)",
-                                      letterSpacing: "0.03em",
-                                      zIndex: 2
-                                    }}>
-                                      {badgeLabel}
+                                      {/* Glassmorphic Owned Count Badge */}
+                                      {isOwned && (
+                                        <span style={{
+                                          position: "absolute",
+                                          bottom: "0.6rem",
+                                          left: "0.6rem",
+                                          fontSize: "0.58rem",
+                                          fontWeight: "800",
+                                          padding: "0.22rem 0.6rem",
+                                          borderRadius: "20px",
+                                          whiteSpace: "nowrap",
+                                          color: "#10b981",
+                                          background: "rgba(6, 78, 59, 0.8)",
+                                          border: "1px solid rgba(16, 185, 129, 0.4)",
+                                          backdropFilter: "blur(8px)",
+                                          boxShadow: "0 0 10px rgba(16, 185, 129, 0.25)",
+                                          letterSpacing: "0.03em",
+                                          zIndex: 3
+                                        }}>
+                                          👑 Owned: {ownedCount}
+                                        </span>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
+
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.25rem" }}>
+                                  <h3 style={{ fontSize: "1.15rem", fontWeight: "700", color: "#fff", margin: 0, letterSpacing: "-0.01em" }}>
+                                    {breed.commonName}
+                                  </h3>
+                                  {viewMode === "contract" && (
+                                    <span style={{ fontSize: "0.7rem", color: proMode ? "#67e8f9" : "var(--accent-green)", fontWeight: "600", fontFamily: "monospace" }}>
+                                      {proMode ? `${breed.specimenCount} Certs` : breed.specimenCount > 0 ? `${breed.specimenCount} Available` : ""}
                                     </span>
-                                  </div>
-                                );
-                              })()}
+                                  )}
+                                  {proMode && (
+                                    <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontFamily: "monospace", opacity: 0.7 }}>
+                                      #{breed.speciesId}
+                                    </span>
+                                  )}
+                                </div>
 
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.25rem" }}>
-                                <h3 style={{ fontSize: "1.15rem", fontWeight: "700", color: "#fff", margin: 0, letterSpacing: "-0.01em" }}>
-                                  {breed.commonName}
-                                </h3>
-                                {viewMode === "contract" && (
-                                  <span style={{ fontSize: "0.7rem", color: proMode ? "#67e8f9" : "var(--accent-green)", fontWeight: "600", fontFamily: "monospace" }}>
-                                    {proMode ? `${breed.specimenCount} Certs` : breed.specimenCount > 0 ? `${breed.specimenCount} Available` : ""}
-                                  </span>
-                                )}
-                                {proMode && (
-                                  <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontFamily: "monospace", opacity: 0.7 }}>
-                                    #{breed.speciesId}
-                                  </span>
-                                )}
-                              </div>
+                                <p style={{ fontSize: "0.78rem", color: proMode ? "#67e8f9" : "var(--text-secondary)", fontStyle: "italic", margin: "0 0 0.75rem 0", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                                  {breed.scientificName}
+                                </p>
 
-                              <p style={{ fontSize: "0.78rem", color: proMode ? "#67e8f9" : "var(--text-secondary)", fontStyle: "italic", margin: "0 0 0.75rem 0", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                                {breed.scientificName}
-                              </p>
+                                {/* Casual Mode: Personality tagline + behavior tags */}
+                                {casualModeActive && (() => {
+                                  const profile = fishbaseData.find(f => f.scientificName.toLowerCase() === breed.scientificName.toLowerCase());
+                                  const tagline = getPersonality(profile, "casual").vibeLine || profile?.ecology?.socialBehavior || profile?.ecology?.comments || "";
+                                  const tags = [];
+                                  if (profile?.ecology?.socialBehavior?.toLowerCase().includes("school")) tags.push("Schooling Fish");
+                                  if (profile?.diet?.trophicLevel === "Omnivore") tags.push("Easy Feeder");
+                                  if (breed.careLevel === 0) tags.push("Beginner Friendly");
+                                  if (profile?.reproduction?.spawningTrait) tags.push("Tank-Bred Available");
+                                  const displayTags = tags.slice(0, 3);
+                                  
+                                  return (
+                                    <div style={{ marginBottom: "1rem" }}>
+                                      {tagline && (
+                                        <p style={{
+                                          fontSize: "0.72rem",
+                                          color: "var(--text-secondary)",
+                                          fontStyle: "italic",
+                                          margin: "0 0 0.75rem 0",
+                                          paddingLeft: "0.75rem",
+                                          borderLeft: "2px solid rgba(34, 211, 238, 0.4)",
+                                          lineHeight: "1.4",
+                                          display: "-webkit-box",
+                                          WebkitLineClamp: 2,
+                                          WebkitBoxOrient: "vertical",
+                                          overflow: "hidden",
+                                        }}>
+                                          "{tagline}"
+                                        </p>
+                                      )}
+                                      {displayTags.length > 0 && (
+                                        <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+                                          {displayTags.map(tag => (
+                                            <span key={tag} style={{
+                                              fontSize: "0.58rem",
+                                              fontWeight: "700",
+                                              padding: "0.2rem 0.55rem",
+                                              borderRadius: "20px",
+                                              color: "#34d399",
+                                              background: "rgba(16, 185, 129, 0.1)",
+                                              border: "1px solid rgba(16, 185, 129, 0.3)",
+                                              textTransform: "uppercase",
+                                              letterSpacing: "0.04em",
+                                            }}>
+                                              {tag}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
 
-                              {/* Casual Mode: Personality tagline + behavior tags */}
-                              {casualModeActive && (() => {
-                                const profile = fishbaseData.find(f => f.scientificName.toLowerCase() === breed.scientificName.toLowerCase());
-                                const tagline = getPersonality(profile, "casual").vibeLine || profile?.ecology?.socialBehavior || profile?.ecology?.comments || "";
-                                const tags = [];
-                                if (profile?.ecology?.socialBehavior?.toLowerCase().includes("school")) tags.push("Schooling Fish");
-                                if (profile?.diet?.trophicLevel === "Omnivore") tags.push("Easy Feeder");
-                                if (breed.careLevel === 0) tags.push("Beginner Friendly");
-                                if (profile?.reproduction?.spawningTrait) tags.push("Tank-Bred Available");
-                                const displayTags = tags.slice(0, 3);
-                                
-                                return (
-                                  <div style={{ marginBottom: "1rem" }}>
-                                    {tagline && (
-                                      <p style={{
-                                        fontSize: "0.72rem",
-                                        color: "var(--text-secondary)",
-                                        fontStyle: "italic",
-                                        margin: "0 0 0.75rem 0",
-                                        paddingLeft: "0.75rem",
-                                        borderLeft: "2px solid rgba(34, 211, 238, 0.4)",
-                                        lineHeight: "1.4",
-                                        display: "-webkit-box",
-                                        WebkitLineClamp: 2,
-                                        WebkitBoxOrient: "vertical",
-                                        overflow: "hidden",
-                                      }}>
-                                        "{tagline}"
-                                      </p>
-                                    )}
-                                    {displayTags.length > 0 && (
-                                      <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
-                                        {displayTags.map(tag => (
-                                          <span key={tag} style={{
-                                            fontSize: "0.58rem",
-                                            fontWeight: "700",
-                                            padding: "0.2rem 0.55rem",
-                                            borderRadius: "20px",
-                                            color: "#34d399",
-                                            background: "rgba(16, 185, 129, 0.1)",
-                                            border: "1px solid rgba(16, 185, 129, 0.3)",
-                                            textTransform: "uppercase",
-                                            letterSpacing: "0.04em",
-                                          }}>
-                                            {tag}
-                                          </span>
-                                        ))}
+                                {/* Pro Mode: Full technical data block */}
+                                {proMode && (() => {
+                                  const profile = fishbaseData.find(f => f.scientificName.toLowerCase() === breed.scientificName.toLowerCase());
+                                  const minVol = profile?.tankMetrics?.minVolumeGallons ?? profile?.tankMetrics?.minVolume ?? 30;
+                                  return (
+                                    <div style={{ marginBottom: "0.75rem" }}>
+                                      {/* 2x2 Parameter Grid matching landing page */}
+                                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                                        <div style={{ padding: "0.5rem 0.6rem", background: "rgba(6, 20, 38, 0.7)", borderRadius: "6px", border: "1px solid rgba(34, 211, 238, 0.1)", position: "relative", overflow: "hidden" }}>
+                                          <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>Temp Range</span>
+                                          <strong style={{ fontSize: "0.9rem", color: "#67e8f9", fontFamily: "monospace" }}>{breed.minTemp} – {breed.maxTemp}°C</strong>
+                                          <div style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: "2px", background: "linear-gradient(90deg, transparent, #22d3ee, transparent)" }} />
+                                        </div>
+                                        <div style={{ padding: "0.5rem 0.6rem", background: "rgba(6, 20, 38, 0.7)", borderRadius: "6px", border: "1px solid rgba(34, 211, 238, 0.1)", position: "relative", overflow: "hidden" }}>
+                                          <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>pH Range</span>
+                                          <strong style={{ fontSize: "0.9rem", color: "#67e8f9", fontFamily: "monospace" }}>{breed.minPh} – {breed.maxPh}</strong>
+                                          <div style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: "2px", background: "linear-gradient(90deg, transparent, #22d3ee, transparent)" }} />
+                                        </div>
+                                        <div style={{ padding: "0.5rem 0.6rem", background: "rgba(6, 20, 38, 0.7)", borderRadius: "6px", border: "1px solid rgba(34, 211, 238, 0.1)", position: "relative", overflow: "hidden" }}>
+                                          <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>Min. Volume</span>
+                                          <strong style={{ fontSize: "0.9rem", color: "#67e8f9", fontFamily: "monospace" }}>{Math.round(minVol * 3.785)}L / {minVol} gal</strong>
+                                          <div style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: "2px", background: "linear-gradient(90deg, transparent, #22d3ee, transparent)" }} />
+                                        </div>
+                                        <div style={{ padding: "0.5rem 0.6rem", background: "rgba(6, 20, 38, 0.7)", borderRadius: "6px", border: "1px solid rgba(34, 211, 238, 0.1)", position: "relative", overflow: "hidden" }}>
+                                          <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>Care Level</span>
+                                          <strong style={{ fontSize: "0.9rem", color: "#67e8f9", fontFamily: "monospace" }}>{CARE_LEVEL_STRINGS[breed.careLevel]}</strong>
+                                          <div style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: "2px", background: "linear-gradient(90deg, transparent, #22d3ee, transparent)" }} />
+                                        </div>
                                       </div>
-                                    )}
-                                  </div>
-                                );
-                              })()}
-
-                              {/* Pro Mode: Full technical data block */}
-                              {proMode && (() => {
-                                const profile = fishbaseData.find(f => f.scientificName.toLowerCase() === breed.scientificName.toLowerCase());
-                                const minVol = profile?.tankMetrics?.minVolumeGallons ?? profile?.tankMetrics?.minVolume ?? 30;
-                                return (
-                                  <div style={{ marginBottom: "0.75rem" }}>
-                                    {/* 2x2 Parameter Grid matching landing page */}
-                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                                      <div style={{ padding: "0.5rem 0.6rem", background: "rgba(6, 20, 38, 0.7)", borderRadius: "6px", border: "1px solid rgba(34, 211, 238, 0.1)", position: "relative", overflow: "hidden" }}>
-                                        <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>Temp Range</span>
-                                        <strong style={{ fontSize: "0.9rem", color: "#67e8f9", fontFamily: "monospace" }}>{breed.minTemp} – {breed.maxTemp}°C</strong>
-                                        <div style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: "2px", background: "linear-gradient(90deg, transparent, #22d3ee, transparent)" }} />
-                                      </div>
-                                      <div style={{ padding: "0.5rem 0.6rem", background: "rgba(6, 20, 38, 0.7)", borderRadius: "6px", border: "1px solid rgba(34, 211, 238, 0.1)", position: "relative", overflow: "hidden" }}>
-                                        <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>pH Range</span>
-                                        <strong style={{ fontSize: "0.9rem", color: "#67e8f9", fontFamily: "monospace" }}>{breed.minPh} – {breed.maxPh}</strong>
-                                        <div style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: "2px", background: "linear-gradient(90deg, transparent, #22d3ee, transparent)" }} />
-                                      </div>
-                                      <div style={{ padding: "0.5rem 0.6rem", background: "rgba(6, 20, 38, 0.7)", borderRadius: "6px", border: "1px solid rgba(34, 211, 238, 0.1)", position: "relative", overflow: "hidden" }}>
-                                        <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>Min. Volume</span>
-                                        <strong style={{ fontSize: "0.9rem", color: "#67e8f9", fontFamily: "monospace" }}>{Math.round(minVol * 3.785)}L / {minVol} gal</strong>
-                                        <div style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: "2px", background: "linear-gradient(90deg, transparent, #22d3ee, transparent)" }} />
-                                      </div>
-                                      <div style={{ padding: "0.5rem 0.6rem", background: "rgba(6, 20, 38, 0.7)", borderRadius: "6px", border: "1px solid rgba(34, 211, 238, 0.1)", position: "relative", overflow: "hidden" }}>
-                                        <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>Care Level</span>
-                                        <strong style={{ fontSize: "0.9rem", color: "#67e8f9", fontFamily: "monospace" }}>{CARE_LEVEL_STRINGS[breed.careLevel]}</strong>
-                                        <div style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: "2px", background: "linear-gradient(90deg, transparent, #22d3ee, transparent)" }} />
+                                      {/* Raw on-chain values */}
+                                      <div style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontFamily: "monospace", marginBottom: "0.5rem", lineHeight: "1.6", opacity: 0.8 }}>
+                                        FishBase SpecCode: {profile?.specCode || breed.speciesId} · WoRMS Validated · Updated May 2026<br/>
+                                        tempX10: [{breed.minTemp * 10}, {breed.maxTemp * 10}] · phX10: [{breed.minPh * 10}, {breed.maxPh * 10}] · salX10000: 10000
                                       </div>
                                     </div>
-                                    {/* Raw on-chain values */}
-                                    <div style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontFamily: "monospace", marginBottom: "0.5rem", lineHeight: "1.6", opacity: 0.8 }}>
-                                      FishBase SpecCode: {profile?.specCode || breed.speciesId} · WoRMS Validated · Updated May 2026<br/>
-                                      tempX10: [{breed.minTemp * 10}, {breed.maxTemp * 10}] · phX10: [{breed.minPh * 10}, {breed.maxPh * 10}] · salX10000: 10000
-                                    </div>
+                                  );
+                                })()}
+
+                                {/* Casual Mode: Friendly parameter tiles */}
+                                {casualModeActive && (
+                                <div style={{ 
+                                  display: "grid", 
+                                  gridTemplateColumns: "repeat(3, 1fr)", 
+                                  gap: "0.75rem", 
+                                  marginBottom: "1rem"
+                                }}>
+                                  <div style={{
+                                    padding: "0.6rem 0.5rem",
+                                    background: "rgba(6, 20, 38, 0.7)",
+                                    borderRadius: "8px",
+                                    border: "1px solid rgba(56, 189, 248, 0.1)",
+                                    textAlign: "center",
+                                    position: "relative",
+                                    overflow: "hidden",
+                                  }}>
+                                    <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                      {casualModeActive ? "Difficulty" : "Care"}
+                                    </span>
+                                    <strong style={{ fontSize: "0.85rem", color: casualModeActive ? (breed.careLevel === 0 ? "#34d399" : breed.careLevel === 1 ? "#fbbf24" : "#f87171") : "#67e8f9", fontWeight: "700" }}>
+                                      {casualModeActive ? (breed.careLevel === 0 ? "Easy!" : breed.careLevel === 1 ? "Medium" : "Hard") : CARE_LEVEL_STRINGS[breed.careLevel]}
+                                    </strong>
+                                    <div style={{ position: "absolute", bottom: 0, left: "15%", right: "15%", height: "2px", background: casualModeActive ? `linear-gradient(90deg, transparent, ${breed.careLevel === 0 ? "#34d399" : breed.careLevel === 1 ? "#fbbf24" : "#f87171"}, transparent)` : "linear-gradient(90deg, transparent, #22d3ee, transparent)", borderRadius: "2px" }} />
                                   </div>
-                                );
-                              })()}
+                                  <div style={{
+                                    padding: "0.6rem 0.5rem",
+                                    background: "rgba(6, 20, 38, 0.7)",
+                                    borderRadius: "8px",
+                                    border: "1px solid rgba(56, 189, 248, 0.1)",
+                                    textAlign: "center",
+                                    position: "relative",
+                                    overflow: "hidden",
+                                  }}>
+                                    <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Temp</span>
+                                    <strong style={{ fontSize: "0.85rem", color: "#67e8f9", fontWeight: "700" }}>{breed.minTemp}–{breed.maxTemp}°C</strong>
+                                    <div style={{ position: "absolute", bottom: 0, left: "15%", right: "15%", height: "2px", background: "linear-gradient(90deg, transparent, #22d3ee, transparent)", borderRadius: "2px" }} />
+                                  </div>
+                                  <div style={{
+                                    padding: "0.6rem 0.5rem",
+                                    background: "rgba(6, 20, 38, 0.7)",
+                                    borderRadius: "8px",
+                                    border: "1px solid rgba(56, 189, 248, 0.1)",
+                                    textAlign: "center",
+                                    position: "relative",
+                                    overflow: "hidden",
+                                  }}>
+                                    <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>pH</span>
+                                    <strong style={{ fontSize: "0.85rem", color: "#67e8f9", fontWeight: "700" }}>{breed.minPh}–{breed.maxPh}</strong>
+                                    <div style={{ position: "absolute", bottom: 0, left: "15%", right: "15%", height: "2px", background: "linear-gradient(90deg, transparent, #22d3ee, transparent)", borderRadius: "2px" }} />
+                                  </div>
+                                </div>
+                                )}
 
-                              {/* Casual Mode: Friendly parameter tiles */}
-                              {casualModeActive && (
-                              <div style={{ 
-                                display: "grid", 
-                                gridTemplateColumns: "repeat(3, 1fr)", 
-                                gap: "0.75rem", 
-                                marginBottom: "1rem"
-                              }}>
-                                <div style={{
-                                  padding: "0.6rem 0.5rem",
-                                  background: "rgba(6, 20, 38, 0.7)",
-                                  borderRadius: "8px",
-                                  border: "1px solid rgba(56, 189, 248, 0.1)",
-                                  textAlign: "center",
-                                  position: "relative",
-                                  overflow: "hidden",
-                                }}>
-                                  <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                                    {casualModeActive ? "Difficulty" : "Care"}
-                                  </span>
-                                  <strong style={{ fontSize: "0.85rem", color: casualModeActive ? (breed.careLevel === 0 ? "#34d399" : breed.careLevel === 1 ? "#fbbf24" : "#f87171") : "#67e8f9", fontWeight: "700" }}>
-                                    {casualModeActive ? (breed.careLevel === 0 ? "Easy!" : breed.careLevel === 1 ? "Medium" : "Hard") : CARE_LEVEL_STRINGS[breed.careLevel]}
-                                  </strong>
-                                  <div style={{ position: "absolute", bottom: 0, left: "15%", right: "15%", height: "2px", background: casualModeActive ? `linear-gradient(90deg, transparent, ${breed.careLevel === 0 ? "#34d399" : breed.careLevel === 1 ? "#fbbf24" : "#f87171"}, transparent)` : "linear-gradient(90deg, transparent, #22d3ee, transparent)", borderRadius: "2px" }} />
+                                <div style={{ fontSize: "0.72rem", color: "#22d3ee", textAlign: "right", fontWeight: "600", letterSpacing: "0.02em" }}>
+                                  {casualModeActive 
+                                    ? (breed.specimenCount > 0 ? "🛒 Browse Available →" : "Learn More →")
+                                    : (viewMode === "global" ? "Propose Breed to Catalog" : "View Certificates →")
+                                  }
                                 </div>
-                                <div style={{
-                                  padding: "0.6rem 0.5rem",
-                                  background: "rgba(6, 20, 38, 0.7)",
-                                  borderRadius: "8px",
-                                  border: "1px solid rgba(56, 189, 248, 0.1)",
-                                  textAlign: "center",
-                                  position: "relative",
-                                  overflow: "hidden",
-                                }}>
-                                  <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Temp</span>
-                                  <strong style={{ fontSize: "0.85rem", color: "#67e8f9", fontWeight: "700" }}>{breed.minTemp}–{breed.maxTemp}°C</strong>
-                                  <div style={{ position: "absolute", bottom: 0, left: "15%", right: "15%", height: "2px", background: "linear-gradient(90deg, transparent, #22d3ee, transparent)", borderRadius: "2px" }} />
-                                </div>
-                                <div style={{
-                                  padding: "0.6rem 0.5rem",
-                                  background: "rgba(6, 20, 38, 0.7)",
-                                  borderRadius: "8px",
-                                  border: "1px solid rgba(56, 189, 248, 0.1)",
-                                  textAlign: "center",
-                                  position: "relative",
-                                  overflow: "hidden",
-                                }}>
-                                  <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>pH</span>
-                                  <strong style={{ fontSize: "0.85rem", color: "#67e8f9", fontWeight: "700" }}>{breed.minPh}–{breed.maxPh}</strong>
-                                  <div style={{ position: "absolute", bottom: 0, left: "15%", right: "15%", height: "2px", background: "linear-gradient(90deg, transparent, #22d3ee, transparent)", borderRadius: "2px" }} />
-                                </div>
+                                </div>{/* end card body */}
                               </div>
-                              )}
-
-                              <div style={{ fontSize: "0.72rem", color: "#22d3ee", textAlign: "right", fontWeight: "600", letterSpacing: "0.02em" }}>
-                                {casualModeActive 
-                                  ? (breed.specimenCount > 0 ? "🛒 Browse Available →" : "Learn More →")
-                                  : (viewMode === "global" ? "Propose Breed to Catalog" : "View Certificates →")
-                                }
-                              </div>
-                              </div>{/* end card body */}
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     );
@@ -2846,6 +3175,11 @@ export function BreedGallery({
           });
           setTimeout(() => setNotification(null), 5000);
         }}
+        walletAccount={walletAccount}
+        suggestionsQuery={suggestionsQuery}
+        updateSuggestionStatus={updateSuggestionStatus}
+        CARE_LEVEL_STRINGS={CARE_LEVEL_STRINGS}
+        marketplaceAddress={marketplaceAddress}
       />
     </div>
   );

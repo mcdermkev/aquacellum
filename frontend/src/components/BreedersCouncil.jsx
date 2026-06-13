@@ -97,7 +97,7 @@ const GENESIS_COUNCIL = [
 
 const TARGET_XP = 5000;
 
-export function BreedersCouncil({ walletAccount, suggestionsQuery, updateSuggestionStatus, CARE_LEVEL_STRINGS, marketplaceAddress }) {
+export function BreedersCouncil({ walletAccount, suggestionsQuery, updateSuggestionStatus, CARE_LEVEL_STRINGS, marketplaceAddress, isModalView }) {
   const [profile, setProfile] = useState({ level: 1, prestigeXp: 1850, hobbyistXp: 950, isCouncilMember: false });
   const [stats, setStats] = useState({ totalSpecies: 0, totalListings: 0, totalTanks: 0 });
   const [marketplaceContract, setMarketplaceContract] = useState(null);
@@ -172,7 +172,15 @@ export function BreedersCouncil({ walletAccount, suggestionsQuery, updateSuggest
   // Render Operational Curation Queue Dashboard & Database Analytics Grid for Council Members
   if (isCouncil) {
     return (
-      <div className="glass-card" style={{ width: "100%", padding: "2.5rem", borderRadius: "12px", color: "#fff" }}>
+      <div style={{ 
+        width: "100%", 
+        padding: isModalView ? "0.5rem 0" : "2.5rem", 
+        borderRadius: "12px", 
+        color: "#fff",
+        background: isModalView ? "none" : "",
+        border: isModalView ? "none" : "",
+        boxShadow: isModalView ? "none" : ""
+      }}>
         
         {/* Breeder moniker card (if unlocked) */}
         {companionData && companionData.eggState >= 2 && (
@@ -289,7 +297,16 @@ export function BreedersCouncil({ walletAccount, suggestionsQuery, updateSuggest
   const progressPercent = Math.min((profile.prestigeXp / TARGET_XP) * 100, 100);
 
   return (
-    <div className="glass-card" style={{ width: "100%", padding: "3rem", borderRadius: "12px", color: "#fff", textAlign: "center" }}>
+    <div style={{ 
+      width: "100%", 
+      padding: isModalView ? "1rem 0" : "3rem", 
+      borderRadius: "12px", 
+      color: "#fff", 
+      textAlign: "center",
+      background: isModalView ? "none" : "",
+      border: isModalView ? "none" : "",
+      boxShadow: isModalView ? "none" : ""
+    }}>
       
       {/* Breeder moniker card (if unlocked) */}
       {companionData && companionData.eggState >= 2 && (

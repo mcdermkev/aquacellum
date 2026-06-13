@@ -8,6 +8,12 @@ import { relayCreateListing } from "../services/relayer";
 import { db } from "../db";
 import { Modal } from "./Modal";
 
+const getSpecimenPhotoUrl = (commonName) => {
+  if (!commonName) return "";
+  const formatted = commonName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return `https://oexctbbybpfvslgxlscg.supabase.co/storage/v1/object/public/fish-photos/${formatted}.jpg?width=150&height=150&resize=contain&quality=80`;
+};
+
 export function ListSpecimenModal({ 
   isOpen, 
   onClose, 
@@ -47,13 +53,14 @@ export function ListSpecimenModal({
 
   useEffect(() => {
     if (isOpen && preselectedListSpecimen) {
-      const tid = preselectedListSpecimen.id || preselectedListSpecimen.tokenId;
+      const tid = preselectedListSpecimen.id || preselectedListSpecimen.specimenId || preselectedListSpecimen.tokenId;
       if (tid) {
         setTokenId(tid.toString());
         verifyToken(Number(tid));
       }
     }
   }, [isOpen, preselectedListSpecimen]);
+
 
   const verifyToken = async (idToVerify) => {
     if (!idToVerify || isNaN(idToVerify)) return;
@@ -232,10 +239,10 @@ export function ListSpecimenModal({
         </button>
 
         <h3 style={{ fontSize: "1.5rem", color: "#fff", marginTop: "1rem" }}>
-          Publish Directory Entry
+          List Specimen for Sale
         </h3>
         <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
-          Share your certificate listing with the local directory. The registry entry will be securely managed in the cloud.
+          List your verified specimen in the marketplace catalog. Other breeders will be able to discover and purchase it.
         </p>
 
         {error && (
@@ -261,57 +268,142 @@ export function ListSpecimenModal({
             fontSize: "0.8rem",
             wordBreak: "break-all"
           }}>
-            <strong>Transaction Sent:</strong> Waiting for block confirmation...
-            <div style={{ fontSize: "0.7rem", marginTop: "0.25rem", fontFamily: "monospace" }}>{txHash}</div>
+            <strong>Creating Listing:</strong> Syncing listing entry to directory catalog...
           </div>
         )}
 
         {step === 1 && (
-          <form onSubmit={verifyAndCheckApproval} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            <div>
-              <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>
-                Certificate Serial No.
-              </label>
-              <input 
-                type="number"
-                value={tokenId}
-                onChange={(e) => setTokenId(e.target.value)}
-                placeholder="e.g. 001"
-                required
-                style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
-              />
+          preselectedListSpecimen ? (
+            <div style={{ textAlign: "center", padding: "2.5rem 1rem", display: "flex", flexDirection: "column", gap: "0.75rem", alignItems: "center" }}>
+              <div style={{ width: "24px", height: "24px", border: "2px solid rgba(255,255,255,0.1)", borderTopColor: "var(--accent-blue)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+              <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                Retrieving registry certificate details...
+              </span>
             </div>
-            <button 
-              type="submit" 
-              className="btn-primary" 
-              disabled={checking}
-              style={{ justifyContent: "center" }}
-            >
-              {checking ? "Verifying Access..." : "Verify Ownership"}
-            </button>
-          </form>
+          ) : (
+            <form onSubmit={verifyAndCheckApproval} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>
+                  Certificate Serial No.
+                </label>
+                <input 
+                  type="number"
+                  value={tokenId}
+                  onChange={(e) => setTokenId(e.target.value)}
+                  placeholder="e.g. 001"
+                  required
+                  style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                />
+              </div>
+              <button 
+                type="submit" 
+                className="btn-primary" 
+                disabled={checking}
+                style={{ justifyContent: "center" }}
+              >
+                {checking ? "Verifying Access..." : "Verify Ownership"}
+              </button>
+            </form>
+          )
         )}
+
 
         {step > 1 && specimenInfo && (
           <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-            <div style={{
-              padding: "0.75rem",
-              background: "rgba(255,255,255,0.02)",
-              border: "1px solid var(--glass-border)",
-              borderRadius: "4px"
-            }}>
-              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", display: "block" }}>Verified Certificate</span>
-              <strong style={{ color: "#fff" }}>{specimenInfo.commonName}</strong>
-              <span style={{ fontSize: "0.75rem", fontStyle: "italic", color: "var(--text-secondary)", display: "block" }}>
-                {specimenInfo.scientificName} (Cert. Serial No. {specimenInfo.id.toString().padStart(3, "0")})
-              </span>
+            
+            {/* Step Progress Timeline */}
+            <div className="listing-timeline">
+              <div className="listing-timeline-line">
+                <div 
+                  className="listing-timeline-line-fill" 
+                  style={{ width: step === 2 ? "0%" : step === 3 ? "50%" : "100%" }}
+                />
+              </div>
+              <div className="listing-timeline-node completed">
+                <div className="listing-timeline-circle">✓</div>
+                <div className="listing-timeline-label">Verify</div>
+              </div>
+              <div className={`listing-timeline-node ${step === 2 ? "active" : "completed"}`}>
+                <div className="listing-timeline-circle">{step > 2 ? "✓" : "2"}</div>
+                <div className="listing-timeline-label">Confirm</div>
+              </div>
+              <div className={`listing-timeline-node ${step === 3 ? "active" : ""}`}>
+                <div className="listing-timeline-circle">3</div>
+                <div className="listing-timeline-label">List</div>
+              </div>
             </div>
 
+
+            {/* Digital Collector's Certificate Card */}
+            {(() => {
+              const sireId = Number(specimenInfo.sireId || 0);
+              const damId = Number(specimenInfo.damId || 0);
+              let pedigreeClass = "pedigree-wild";
+              let pedigreeLabel = "Wild Caught";
+              
+              if (sireId === 0 && damId === 0) {
+                pedigreeClass = "pedigree-wild";
+                pedigreeLabel = "Wild Caught";
+              } else if ((sireId !== 0 && damId === 0) || (sireId === 0 && damId !== 0)) {
+                pedigreeClass = "pedigree-f1";
+                pedigreeLabel = "Ancestral F1";
+              } else {
+                pedigreeClass = "pedigree-purebred";
+                pedigreeLabel = "Purebred Pedigree";
+              }
+
+              const photoUrl = getSpecimenPhotoUrl(specimenInfo.commonName);
+
+              return (
+                <div className={`registry-cert-card ${pedigreeClass}`}>
+                  <img 
+                    src={photoUrl} 
+                    alt={specimenInfo.commonName} 
+                    className="registry-cert-img" 
+                    onError={(e) => {
+                      e.target.src = "https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?auto=format&fit=crop&w=150&h=150&q=80";
+                    }}
+                  />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem", flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>
+                        Verified Birth Certificate
+                      </span>
+
+                      <span className={`badge ${pedigreeClass === "pedigree-wild" ? "badge-amber" : pedigreeClass === "pedigree-f1" ? "badge-blue" : "badge-green"}`} style={{ fontSize: "0.55rem" }}>
+                        {pedigreeLabel}
+                      </span>
+                    </div>
+                    <strong style={{ color: "#fff", fontSize: "0.95rem" }}>{specimenInfo.commonName}</strong>
+                    <span style={{ fontSize: "0.7rem", fontStyle: "italic", color: "var(--text-secondary)" }}>
+                      {specimenInfo.scientificName}
+                    </span>
+                    <div style={{ display: "flex", gap: "0.35rem", marginTop: "0.25rem", alignItems: "center" }}>
+                      <span style={{ fontSize: "0.55rem", padding: "0.1rem 0.35rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "var(--text-muted)", fontFamily: "monospace" }}>
+                        CERT #{specimenInfo.id.toString().padStart(3, "0")}
+                      </span>
+                      {sireId > 0 && (
+                        <span style={{ fontSize: "0.55rem", padding: "0.1rem 0.35rem", background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.15)", borderRadius: "4px", color: "var(--accent-blue)" }}>
+                          Sire: #{sireId}
+                        </span>
+                      )}
+                      {damId > 0 && (
+                        <span style={{ fontSize: "0.55rem", padding: "0.1rem 0.35rem", background: "rgba(244,63,94,0.06)", border: "1px solid rgba(244,63,94,0.15)", borderRadius: "4px", color: "#fda4af" }}>
+                          Dam: #{damId}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Step 2 Render */}
             {step === 2 && (
               <div>
                 <p style={{ fontSize: "0.825rem", color: "var(--text-secondary)", marginBottom: "1rem" }}>
-                  <strong>Step 1 of 2: Authorize Directory</strong><br />
-                  Authorize the Local Directory to manage your birth certificate.
+                  <strong>Step 2 of 3: Confirm Listing Rights</strong><br />
+                  Confirm your permission to list this specimen certificate in the public directory catalog.
                 </p>
                 <button 
                   onClick={handleApprove} 
@@ -319,178 +411,227 @@ export function ListSpecimenModal({
                   disabled={submitting}
                   style={{ width: "100%", justifyContent: "center" }}
                 >
-                  {submitting ? "Authorizing..." : "Authorize Directory"}
+                  {submitting ? "Confirming..." : "Confirm Listing Rights"}
                 </button>
+
               </div>
             )}
 
-            {step === 3 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                {/* Delivery Selector Toggle */}
-                <div>
-                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
-                    Delivery Method
-                  </label>
-                  <div style={{ display: "flex", gap: "0.5rem", background: "rgba(255,255,255,0.02)", padding: "0.25rem", borderRadius: "8px", border: "1px solid var(--glass-border)" }}>
-                    <button 
-                      type="button"
-                      className="btn-secondary" 
-                      onClick={() => setIsShipping(false)}
-                      style={{ 
-                        flex: 1, 
-                        padding: "0.5rem", 
-                        fontSize: "0.8rem", 
-                        border: "none", 
-                        borderRadius: "6px",
-                        background: !isShipping ? "var(--accent-blue-glow)" : "none", 
-                        color: !isShipping ? "#fff" : "var(--text-secondary)" 
-                      }}
-                    >
-                      📍 Local Pickup Only
-                    </button>
-                    <button 
-                      type="button"
-                      className="btn-secondary" 
-                      onClick={() => setIsShipping(true)}
-                      style={{ 
-                        flex: 1, 
-                        padding: "0.5rem", 
-                        fontSize: "0.8rem", 
-                        border: "none", 
-                        borderRadius: "6px",
-                        background: isShipping ? "var(--accent-blue-glow)" : "none", 
-                        color: isShipping ? "#fff" : "var(--text-secondary)" 
-                      }}
-                    >
-                      🚚 Shipping Available
-                    </button>
-                  </div>
-                </div>
+            {/* Step 3 Render */}
+            {step === 3 && (() => {
+              const sireId = Number(specimenInfo.sireId || 0);
+              const damId = Number(specimenInfo.damId || 0);
+              let globalAvg = "$50.00";
+              let lineageVal = "$48.00";
 
-                {/* Price field */}
-                <div>
-                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>
-                    Price per fish ($)
-                  </label>
-                  <input 
-                    type="number"
-                    step="0.01"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    placeholder="e.g. 50.00"
-                    required
-                    style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
-                  />
-                  <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>
-                    * Protocol rules apply: A 2% fee will be routed to the DAO Treasury upon successful exchange.
-                  </span>
-                </div>
+              if (sireId === 0 && damId === 0) {
+                globalAvg = "$35.00";
+                lineageVal = "$32.00";
+              } else if ((sireId !== 0 && damId === 0) || (sireId === 0 && damId !== 0)) {
+                globalAvg = "$50.00";
+                lineageVal = "$48.00";
+              } else {
+                globalAvg = "$75.00";
+                lineageVal = "$72.00";
+              }
 
-                {/* Shipping Fee field if shipping is enabled */}
-                {isShipping && (
+              const parseVal = parseFloat(price) || 0;
+              const feeVal = parseVal * 0.04;
+              const payoutVal = Math.max(0, parseVal - feeVal);
+
+              const maxScale = parseFloat(globalAvg.replace("$", "")) * 2;
+              const markerPercent = Math.min(100, Math.max(0, (parseVal / maxScale) * 100));
+
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                  {/* Delivery Method selector */}
                   <div>
                     <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>
-                      Shipping Fee ($)
+                      Delivery Method
+                    </label>
+                    <div className="delivery-tile-group">
+                      <div 
+                        className={`delivery-tile ${!isShipping ? "active" : ""}`}
+                        onClick={() => setIsShipping(false)}
+                      >
+                        <span className="delivery-tile-icon">📍</span>
+                        <span className="delivery-tile-label">Local Pickup Only</span>
+                      </div>
+                      <div 
+                        className={`delivery-tile ${isShipping ? "active" : ""}`}
+                        onClick={() => setIsShipping(true)}
+                      >
+                        <span className="delivery-tile-icon">🚚</span>
+                        <span className="delivery-tile-label">Shipping Available</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Price fields */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                      Price per fish ($)
                     </label>
                     <input 
                       type="number"
                       step="0.01"
-                      value={shippingFee}
-                      onChange={(e) => setShippingFee(e.target.value)}
-                      placeholder="e.g. 5.00"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      placeholder="e.g. 50.00"
                       required
-                      style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                      style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none" }}
                     />
                   </div>
-                )}
 
-                {/* Market Intelligence Block */}
-                {(() => {
-                  const sireId = Number(specimenInfo.sireId || 0);
-                  const damId = Number(specimenInfo.damId || 0);
-                  let pedigreeClass = "";
-                  let pedigreeLabel = "";
-                  let pedigreeGlowClass = "";
-                  let pedigreeBadgeClass = "";
-                  let globalAvg = "$50.00";
-                  let lineageVal = "$48.00";
+                  {/* Shipping Fee field if shipping is enabled */}
+                  {isShipping && (
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                        Shipping Fee ($)
+                      </label>
+                      <input 
+                        type="number"
+                        step="0.01"
+                        value={shippingFee}
+                        onChange={(e) => setShippingFee(e.target.value)}
+                        placeholder="e.g. 5.00"
+                        required
+                        style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none" }}
+                      />
+                    </div>
+                  )}
 
-                  if (sireId === 0 && damId === 0) {
-                    pedigreeClass = "pedigree-wild";
-                    pedigreeLabel = "Wild Caught";
-                    pedigreeBadgeClass = "badge-amber";
-                    globalAvg = "$35.00";
-                    lineageVal = "$32.00 (Parent Wild-Caught base)";
-                  } else if ((sireId !== 0 && damId === 0) || (sireId === 0 && damId !== 0)) {
-                    pedigreeClass = "pedigree-f1";
-                    pedigreeLabel = "Ancestral F1";
-                    pedigreeBadgeClass = "badge-blue";
-                    globalAvg = "$50.00";
-                    lineageVal = "$48.00 (F1 sibling average)";
-                  } else {
-                    pedigreeClass = "pedigree-purebred";
-                    pedigreeLabel = "Purebred Pedigree";
-                    pedigreeGlowClass = "pedigree-purebred-glow";
-                    pedigreeBadgeClass = "badge-green";
-                    globalAvg = "$75.00";
-                    lineageVal = "$72.00 (Purebred pedigree track)";
-                  }
-
-                  return (
-                    <div 
-                      className={`glass-card ${pedigreeClass}`} 
-                      style={{ 
-                        padding: "1rem", 
-                        display: "flex", 
-                        flexDirection: "column", 
-                        gap: "0.5rem", 
-                        background: "rgba(255,255,255,0.015)"
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)", fontWeight: "600", textTransform: "uppercase" }}>
-                          📊 Market Intelligence
-                        </span>
-                        <span className={`badge ${pedigreeBadgeClass} ${pedigreeGlowClass}`} style={{ fontSize: "0.6rem" }}>
-                          {pedigreeLabel}
+                  {/* Dynamic Pricing Calculator Ledger */}
+                  {parseVal > 0 && (
+                    <div className="receipt-ledger">
+                      <div className="receipt-row">
+                        <span>List Price:</span>
+                        <span className="receipt-val-usd">
+                          ${parseVal.toFixed(2)} USD
                         </span>
                       </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.75rem" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span style={{ color: "var(--text-muted)" }}>Global Platform Avg:</span>
-                          <strong style={{ color: "#fff", fontFamily: "monospace" }}>{globalAvg}</strong>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span style={{ color: "var(--text-muted)" }}>Lineage Valuation Track:</span>
-                          <strong style={{ color: "var(--accent-blue)", fontFamily: "monospace" }}>{lineageVal}</strong>
-                        </div>
+                      <div className="receipt-row">
+                        <span>Marketplace Fee (4%):</span>
+                        <span className="receipt-val-usd" style={{ color: "var(--accent-red)" }}>
+                          -${feeVal.toFixed(2)} USD
+                        </span>
+                      </div>
+                      <div className="receipt-row total">
+                        <span>Est. Net Payout:</span>
+                        <span className="receipt-val-usd">
+                          ${payoutVal.toFixed(2)} USD
+                        </span>
                       </div>
                     </div>
-                  );
-                })()}
+                  )}
 
-                <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <button 
-                    type="button"
-                    onClick={() => setStep(1)} 
-                    className="btn-secondary" 
-                    disabled={submitting}
-                    style={{ flex: 1 }}
-                  >
-                    Back
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={handleList} 
-                    className="btn-primary" 
-                    disabled={submitting}
-                    style={{ flex: 2, justifyContent: "center" }}
-                  >
-                    {submitting ? "Publishing..." : "Publish Entry"}
-                  </button>
+
+                  {/* Market Intelligence Block */}
+                  {(() => {
+                    let pedigreeClass = "pedigree-wild";
+                    let pedigreeLabel = "Wild Caught";
+                    let pedigreeGlowClass = "";
+                    let pedigreeBadgeClass = "badge-amber";
+
+                    if (sireId === 0 && damId === 0) {
+                      pedigreeClass = "pedigree-wild";
+                      pedigreeLabel = "Wild Caught";
+                      pedigreeBadgeClass = "badge-amber";
+                    } else if ((sireId !== 0 && damId === 0) || (sireId === 0 && damId !== 0)) {
+                      pedigreeClass = "pedigree-f1";
+                      pedigreeLabel = "Ancestral F1";
+                      pedigreeBadgeClass = "badge-blue";
+                    } else {
+                      pedigreeClass = "pedigree-purebred";
+                      pedigreeLabel = "Purebred Pedigree";
+                      pedigreeGlowClass = "pedigree-purebred-glow";
+                      pedigreeBadgeClass = "badge-green";
+                    }
+
+                    return (
+                      <div 
+                        className={`glass-card ${pedigreeClass}`} 
+                        style={{ 
+                          padding: "1rem", 
+                          display: "flex", 
+                          flexDirection: "column", 
+                          gap: "0.5rem", 
+                          background: "rgba(255,255,255,0.015)"
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)", fontWeight: "600", textTransform: "uppercase" }}>
+                            📊 Market Intelligence
+                          </span>
+                          <span className={`badge ${pedigreeBadgeClass} ${pedigreeGlowClass}`} style={{ fontSize: "0.6rem" }}>
+                            {pedigreeLabel}
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.75rem" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <span style={{ color: "var(--text-muted)" }}>Global Platform Avg:</span>
+                            <strong style={{ color: "#fff", fontFamily: "monospace" }}>{globalAvg}</strong>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <span style={{ color: "var(--text-muted)" }}>Lineage Valuation Track:</span>
+                            <strong style={{ color: "var(--accent-blue)", fontFamily: "monospace" }}>{lineageVal}</strong>
+                          </div>
+                        </div>
+
+                        {/* Visual valuation slider */}
+                        <div style={{ marginTop: "0.25rem" }}>
+                          <div className="price-valuation-bar">
+                            <div className="price-valuation-fill" style={{ width: `${markerPercent}%` }} />
+                            {parseVal > 0 && (
+                              <div className="price-valuation-marker" style={{ left: `${markerPercent}%` }} />
+                            )}
+                          </div>
+                          <div className="price-valuation-labels">
+                            <span>$0</span>
+                            <span>Avg: {globalAvg}</span>
+                            <span>Premium: ${maxScale.toFixed(0)}</span>
+                          </div>
+                          {parseVal > 0 && (
+                            <span style={{ 
+                              fontSize: "0.6rem", 
+                              color: parseVal < parseFloat(lineageVal.replace("$","")) ? "var(--accent-green)" : parseVal > parseFloat(globalAvg.replace("$","")) ? "#c084fc" : "var(--accent-blue)",
+                              display: "block",
+                              marginTop: "0.3rem",
+                              fontWeight: "600",
+                              textAlign: "center"
+                            }}>
+                              {parseVal < parseFloat(lineageVal.replace("$","")) ? "🔥 Undervalued / Deal Price" : parseVal > parseFloat(globalAvg.replace("$","")) ? "📈 Premium Breed Pricing" : "⚖️ Solid Market Average"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.25rem" }}>
+                    <button 
+                      type="button"
+                      onClick={() => setStep(1)} 
+                      className="btn-secondary" 
+                      disabled={submitting}
+                      style={{ flex: 1 }}
+                    >
+                      Back
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={handleList} 
+                      className="btn-primary" 
+                      disabled={submitting}
+                      style={{ flex: 2, justifyContent: "center" }}
+                    >
+                      {submitting ? "Listing..." : "Create Listing"}
+
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         )}
     </Modal>

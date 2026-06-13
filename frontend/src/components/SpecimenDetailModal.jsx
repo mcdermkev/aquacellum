@@ -6,6 +6,8 @@ import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";
 import { Modal } from "./Modal";
 import { db } from "../db";
 import { generatePedigreeCertificate } from "../utils/pdfExport";
+import { getProfile } from "../services/reefApi";
+
 
 // Helper: detect if a fishbase record or specCode is a plant entry
 const isPlantEntry = (specCodeOrItem) => {
@@ -34,6 +36,9 @@ export function SpecimenDetailModal({
   const [fishbaseData, setFishbaseData] = useState([]);
   const [lineageTree, setLineageTree] = useState(null);
   const [activeUserTank, setActiveUserTank] = useState(null);
+  const [ownerDisplayName, setOwnerDisplayName] = useState("");
+  const [showPedigreeTree, setShowPedigreeTree] = useState(false);
+
 
   // (Escape key handling is now provided by the Modal component)
 
@@ -139,30 +144,55 @@ export function SpecimenDetailModal({
       const contract = new Contract(contractAddress, aquadexAbi, provider);
 
       // 1. Fetch specimen registry
-      const rawSpec = await contract.specimens(activeId);
-      if (Number(rawSpec.specimenId) === 0) {
-        throw new Error("Specimen certificate does not exist in registry.");
-      }
-
+      let resolvedSpec = null;
       let owner = ZeroAddress;
+      let rawSpec = null;
+
       try {
-        owner = await contract.ownerOf(activeId);
+        rawSpec = await contract.specimens(activeId);
       } catch (e) {
-        console.warn("Could not fetch owner, token might be burned/deprecated:", e);
+        console.warn("Contract query failed for specimenId:", activeId, e);
       }
 
-      const resolvedSpec = {
-        specimenId: Number(rawSpec.specimenId),
-        speciesId: Number(rawSpec.speciesId),
-        birthTimestamp: Number(rawSpec.birthTimestamp),
-        breeder: rawSpec.breeder,
-        currentTankId: Number(rawSpec.currentTankId),
-        sireId: Number(rawSpec.sireId),
-        damId: Number(rawSpec.damId),
-        ipfsMetadataUri: rawSpec.ipfsMetadataUri,
-        status: Number(rawSpec.status),
-        owner
-      };
+      if (rawSpec && Number(rawSpec.specimenId) !== 0) {
+        try {
+          owner = await contract.ownerOf(activeId);
+        } catch (e) {
+          console.warn("Could not fetch owner, token might be burned/deprecated:", e);
+        }
+        resolvedSpec = {
+          specimenId: Number(rawSpec.specimenId),
+          speciesId: Number(rawSpec.speciesId),
+          birthTimestamp: Number(rawSpec.birthTimestamp),
+          breeder: rawSpec.breeder,
+          currentTankId: Number(rawSpec.currentTankId),
+          sireId: Number(rawSpec.sireId),
+          damId: Number(rawSpec.damId),
+          ipfsMetadataUri: rawSpec.ipfsMetadataUri,
+          status: Number(rawSpec.status),
+          owner
+        };
+      } else {
+        // Fallback to local Dexie database
+        const localSpec = await db.specimens.get(Number(activeId));
+        if (!localSpec) {
+          throw new Error("Specimen certificate does not exist in registry.");
+        }
+        resolvedSpec = {
+          specimenId: localSpec.id,
+          speciesId: localSpec.speciesId,
+          birthTimestamp: localSpec.birthTimestamp || localSpec.createdAt || 0,
+          breeder: localSpec.breeder || walletAccount || "Local Breeder",
+          currentTankId: localSpec.currentTankId || 0,
+          sireId: localSpec.sireId || 0,
+          damId: localSpec.damId || 0,
+          ipfsMetadataUri: localSpec.ipfsMetadataUri || "",
+          status: localSpec.status ?? 0,
+          owner: localSpec.ownerAddress || walletAccount || ZeroAddress,
+          commonName: localSpec.commonName,
+          scientificName: localSpec.scientificName
+        };
+      }
 
       setSpec(resolvedSpec);
 
@@ -171,13 +201,30 @@ export function SpecimenDetailModal({
         if (!id || Number(id) === 0) return null;
         try {
           const nodeSpec = await contract.specimens(id);
-          if (Number(nodeSpec.specimenId) === 0) return null;
+          if (Number(nodeSpec.specimenId) === 0) {
+            // Check local db
+            const localNode = await db.specimens.get(Number(id));
+            if (!localNode) return null;
+            return {
+              id: localNode.id,
+              speciesId: localNode.speciesId,
+              sireId: localNode.sireId || 0,
+              damId: localNode.damId || 0,
+              commonName: localNode.commonName || "Unknown Breed",
+              status: localNode.status ?? 0,
+            };
+          }
           let commonName = "Unknown Breed";
           try {
             const nodeSpecies = await contract.speciesCatalog(Number(nodeSpec.speciesId));
             commonName = nodeSpecies.commonName || "Unknown Breed";
           } catch (catalogErr) {
             console.warn("Catalog fetch failed for speciesId:", nodeSpec.speciesId, catalogErr);
+            // Fallback to look up in local Dexie
+            const cachedSpecies = await db.speciesManifest.where("speciesId").equals(Number(nodeSpec.speciesId)).first();
+            if (cachedSpecies) {
+              commonName = cachedSpecies.commonName;
+            }
           }
           return {
             id: Number(nodeSpec.specimenId),
@@ -188,7 +235,23 @@ export function SpecimenDetailModal({
             status: Number(nodeSpec.status),
           };
         } catch (e) {
-          console.warn("Failed to fetch lineage node:", id, e);
+          console.warn("Failed to fetch lineage node from contract, trying local...", id, e);
+          // Check local db
+          try {
+            const localNode = await db.specimens.get(Number(id));
+            if (localNode) {
+              return {
+                id: localNode.id,
+                speciesId: localNode.speciesId,
+                sireId: localNode.sireId || 0,
+                damId: localNode.damId || 0,
+                commonName: localNode.commonName || "Unknown Breed",
+                status: localNode.status ?? 0,
+              };
+            }
+          } catch (localErr) {
+            console.warn("Local DB fetch failed for lineage node:", id, localErr);
+          }
           return null;
         }
       };
@@ -238,24 +301,72 @@ export function SpecimenDetailModal({
       };
 
       // 2. Fetch species catalog details
-      const rawSpecies = await contract.speciesCatalog(resolvedSpec.speciesId);
-      setSpeciesInfo({
-        commonName: rawSpecies.commonName,
-        scientificName: rawSpecies.scientificName,
-        careLevel: Number(rawSpecies.careLevel),
-        minTemp: Number(rawSpecies.minTempCelsiusX10) / 10,
-        maxTemp: Number(rawSpecies.maxTempCelsiusX10) / 10,
-        minPh: Number(rawSpecies.minPhX10) / 10,
-        maxPh: Number(rawSpecies.maxPhX10) / 10
-      });
+      let rawSpecies = null;
+      try {
+        rawSpecies = await contract.speciesCatalog(resolvedSpec.speciesId);
+      } catch (e) {
+        console.warn("Contract species catalog fetch failed:", e);
+      }
+
+      if (rawSpecies && rawSpecies.commonName) {
+        setSpeciesInfo({
+          commonName: rawSpecies.commonName,
+          scientificName: rawSpecies.scientificName,
+          careLevel: Number(rawSpecies.careLevel),
+          minTemp: Number(rawSpecies.minTempCelsiusX10) / 10,
+          maxTemp: Number(rawSpecies.maxTempCelsiusX10) / 10,
+          minPh: Number(rawSpecies.minPhX10) / 10,
+          maxPh: Number(rawSpecies.maxPhX10) / 10
+        });
+      } else {
+        // Fallback: search locally
+        let matched = null;
+        try {
+          matched = await db.speciesManifest.where("speciesId").equals(Number(resolvedSpec.speciesId)).first();
+        } catch (manifestErr) {
+          console.warn("Manifest query failed:", manifestErr);
+        }
+
+        if (!matched && fishbaseData && fishbaseData.length > 0) {
+          matched = fishbaseData.find(f => Number(f.speciesId) === Number(resolvedSpec.speciesId));
+        }
+
+        if (matched) {
+          setSpeciesInfo({
+            commonName: matched.commonName,
+            scientificName: matched.scientificName,
+            careLevel: matched.careLevel !== undefined ? Number(matched.careLevel) : 0,
+            minTemp: matched.minTemp !== undefined ? Number(matched.minTemp) : (matched.tankMetrics?.tempRangeCelsius?.[0] ?? 22),
+            maxTemp: matched.maxTemp !== undefined ? Number(matched.maxTemp) : (matched.tankMetrics?.tempRangeCelsius?.[1] ?? 28),
+            minPh: matched.minPh !== undefined ? Number(matched.minPh) : (matched.tankMetrics?.phRange?.[0] ?? 6.5),
+            maxPh: matched.maxPh !== undefined ? Number(matched.maxPh) : (matched.tankMetrics?.phRange?.[1] ?? 7.5)
+          });
+        } else {
+          setSpeciesInfo({
+            commonName: resolvedSpec.commonName || "Unknown Species",
+            scientificName: resolvedSpec.scientificName || "Unknown",
+            careLevel: 0,
+            minTemp: 22,
+            maxTemp: 28,
+            minPh: 6.5,
+            maxPh: 7.5
+          });
+        }
+      }
 
       // Fetch the multi-generational tree
       await loadLineageTree(resolvedSpec.sireId, resolvedSpec.damId);
 
       // 3. Fetch tank parameters if assigned
       if (resolvedSpec.currentTankId > 0) {
+        let rawTank = null;
         try {
-          const rawTank = await contract.tanks(resolvedSpec.currentTankId);
+          rawTank = await contract.tanks(resolvedSpec.currentTankId);
+        } catch (e) {
+          console.warn("Error reading tank details from contract:", e);
+        }
+
+        if (rawTank && rawTank.name) {
           setTankInfo({
             id: resolvedSpec.currentTankId,
             name: rawTank.name,
@@ -263,12 +374,50 @@ export function SpecimenDetailModal({
             room: rawTank.room || "Garage Rack",
             rack: rawTank.rack || "Outdoor Ponds"
           });
-        } catch (e) {
-          console.warn("Error reading tank details from contract:", e);
-          setTankInfo(null);
+        } else {
+          // Fallback to local Dexie database for tank details
+          const localTank = await db.tanks.get(Number(resolvedSpec.currentTankId));
+          if (localTank) {
+            setTankInfo({
+              id: resolvedSpec.currentTankId,
+              name: localTank.name,
+              facility: localTank.facility || "Main Room",
+              room: localTank.room || "",
+              rack: localTank.rack || ""
+            });
+          } else {
+            setTankInfo(null);
+          }
         }
       } else {
         setTankInfo(null);
+      }
+
+      // 5. Resolve breeder/owner profile display name
+      if (resolvedSpec.owner && resolvedSpec.owner !== ZeroAddress) {
+        try {
+          const profile = await getProfile(resolvedSpec.owner);
+          if (profile?.data?.display_name) {
+            setOwnerDisplayName(profile.data.display_name);
+          } else {
+            // Fallback: Check local Dexie userProfile table
+            const localProfile = await db.userProfile.get(resolvedSpec.owner);
+            if (localProfile?.alias) {
+              setOwnerDisplayName(localProfile.alias);
+            } else if (resolvedSpec.owner.toLowerCase() === walletAccount?.toLowerCase()) {
+              // Try local storage for active user display name
+              const activeDisplayName = localStorage.getItem("aquadex_display_name");
+              setOwnerDisplayName(activeDisplayName || `Breeder #${resolvedSpec.owner.slice(2, 6).toUpperCase()}`);
+            } else {
+              setOwnerDisplayName(`Breeder #${resolvedSpec.owner.slice(2, 6).toUpperCase()}`);
+            }
+          }
+        } catch (e) {
+          console.warn("Error fetching owner profile:", e);
+          setOwnerDisplayName(`Breeder #${resolvedSpec.owner.slice(2, 6).toUpperCase()}`);
+        }
+      } else {
+        setOwnerDisplayName("Unknown Breeder");
       }
 
       // 4. Resolve cached spawning metadata
@@ -283,6 +432,7 @@ export function SpecimenDetailModal({
         setMetadata(null);
       }
 
+
     } catch (err) {
       console.error("Error loading registry details for specimen overlay:", err);
       setError(err.reason || err.message || "Failed to load registry details.");
@@ -290,6 +440,7 @@ export function SpecimenDetailModal({
       setLoading(false);
     }
   };
+
 
   const calculateAge = (timestamp) => {
     if (!timestamp || timestamp === 0) return "Wild-Caught / Unknown Age";
@@ -676,11 +827,12 @@ export function SpecimenDetailModal({
                     <span style={{ fontSize: "0.9rem", color: "#fff" }}>{calculateAge(spec.birthTimestamp)}</span>
                   </div>
                   <div>
-                    <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Registry Address</span>
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontFamily: "monospace", wordBreak: "break-all" }}>
-                      {spec.owner}
+                    <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Registered Breeder</span>
+                    <span style={{ fontSize: "0.9rem", color: "#fff", fontWeight: "600" }}>
+                      {ownerDisplayName}
                     </span>
                   </div>
+
                 </div>
               </div>
 
@@ -804,13 +956,56 @@ export function SpecimenDetailModal({
 
               {/* Multi-generational lineage pedigree tree chart (Pro Mode only) */}
               {!casualModeActive && (
-                <div className="glass-card" style={{ padding: "1.25rem", background: "rgba(0,0,0,0.15)" }}>
-                  <h4 style={{ fontSize: "0.85rem", color: "var(--accent-blue)", margin: "0 0 1rem 0", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                    <span>🧬</span> Complete 3-Generation Pedigree Tree
-                  </h4>
-                  {renderPedigreeTree()}
+                <div 
+                  className="glass-card" 
+                  style={{ 
+                    padding: "1rem 1.25rem", 
+                    background: "rgba(0,0,0,0.15)",
+                    border: showPedigreeTree ? "1px solid rgba(56, 189, 248, 0.2)" : "1px solid var(--glass-border)",
+                    boxShadow: showPedigreeTree ? "0 0 15px rgba(56, 189, 248, 0.05)" : "none",
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                  }}
+                >
+                  <button 
+                    type="button"
+                    onClick={() => setShowPedigreeTree(!showPedigreeTree)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      width: "100%",
+                      textAlign: "left",
+                      padding: 0,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      cursor: "pointer",
+                      outline: "none"
+                    }}
+                  >
+                    <h4 style={{ fontSize: "0.85rem", color: "var(--accent-blue)", margin: 0, display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                      <span>🧬</span> Complete 3-Generation Pedigree Tree
+                    </h4>
+                    <span style={{ 
+                      fontSize: "0.8rem", 
+                      color: "var(--text-muted)", 
+                      transform: showPedigreeTree ? "rotate(180deg)" : "rotate(0deg)",
+                      transition: "transform 0.3s ease",
+                      display: "inline-block"
+                    }}>
+                      ▼
+                    </span>
+                  </button>
+                  {showPedigreeTree && (
+                    <div style={{ 
+                      marginTop: "1.25rem",
+                      animation: "fadeIn 0.4s ease-out"
+                    }}>
+                      {renderPedigreeTree()}
+                    </div>
+                  )}
                 </div>
               )}
+
 
               {/* Environmental Chemistry / Genetic Attributes */}
               {metadata && (

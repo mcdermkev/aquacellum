@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
+import { BreedersCouncil } from "./BreedersCouncil";
 
-export default function SuggestSpeciesModal({ isOpen, onClose, casualModeActive, onSubmit }) {
+export default function SuggestSpeciesModal({ 
+  isOpen, 
+  onClose, 
+  casualModeActive, 
+  onSubmit,
+  walletAccount,
+  suggestionsQuery,
+  updateSuggestionStatus,
+  CARE_LEVEL_STRINGS,
+  marketplaceAddress
+}) {
+  const [activeTab, setActiveTab] = useState("council");
   const [formData, setFormData] = useState({
     scientificName: '',
     commonName: '',
@@ -78,7 +90,8 @@ export default function SuggestSpeciesModal({ isOpen, onClose, casualModeActive,
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
       background: 'rgba(5, 8, 20, 0.85)', backdropFilter: 'blur(16px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 30000,
-      padding: '1.5rem'
+      padding: '1.5rem',
+      overflowY: 'auto'
     }}>
       {showNamiAlert ? (
         <div className="glass-card" style={{
@@ -142,158 +155,262 @@ export default function SuggestSpeciesModal({ isOpen, onClose, casualModeActive,
           </button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} style={{
-          background: 'rgba(15, 23, 42, 0.90)',
+        <div style={{
+          background: 'rgba(15, 23, 42, 0.93)',
           border: '1px solid rgba(56, 189, 248, 0.25)',
           borderRadius: '1rem',
           padding: '2rem',
-          maxWidth: '540px',
+          maxWidth: (!casualModeActive && activeTab === 'council') ? '920px' : '540px',
           width: '100%',
           boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(56, 189, 248, 0.1)',
           display: 'flex', flexDirection: 'column', gap: '1.2rem',
           color: '#fff',
-          backdropFilter: 'blur(8px)'
+          backdropFilter: 'blur(12px)',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          position: 'relative'
         }}>
+          {/* Close button in top right */}
+          <button 
+            type="button"
+            onClick={onClose}
+            style={{
+              position: 'absolute',
+              top: '1.5rem',
+              right: '1.5rem',
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              fontSize: '1.25rem',
+              transition: 'color 0.2s',
+              zIndex: 10
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+          >
+            ✕
+          </button>
+
           <div>
             <h2 style={{ fontSize: '1.4rem', fontWeight: '800', margin: 0, color: '#38bdf8' }}>
-              {casualModeActive ? "Suggest a Fish 🐠" : "⚡ Propose Catalog Entry"}
+              {casualModeActive ? "Suggest a Fish 🐠" : "Aquadex Breeders Council Portal"}
             </h2>
-            <p style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.5)', marginTop: '0.2rem' }}>
+            <p style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.5)', marginTop: '0.2rem', marginBottom: '0.5rem' }}>
               {casualModeActive
                 ? "Know a cool fish we're missing? Add it to our community catalog \u2014 it only takes a minute!"
-                : "Help expand the Aquadex. Submissions are processed through our AI curation pipeline."}
+                : "Review active species suggestions, cast curation votes, or propose new entries."}
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>Scientific Name*</label>
-              <input 
-                type="text" 
-                placeholder="e.g. Paracheirodon innesi"
-                value={formData.scientificName}
-                onChange={e => setFormData({ ...formData, scientificName: e.target.value })}
+          {/* Premium Segmented Switcher (Pro Mode only) */}
+          {!casualModeActive && (
+            <div style={{
+              display: "inline-flex",
+              background: "rgba(0, 0, 0, 0.35)",
+              border: "1px solid rgba(56, 189, 248, 0.15)",
+              padding: "0.25rem",
+              borderRadius: "50px",
+              marginBottom: "1rem",
+              width: "fit-content"
+            }}>
+              <button
+                type="button"
+                onClick={() => setActiveTab("council")}
                 style={{
-                  width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
-                  padding: '0.45rem', borderRadius: '6px', color: '#fff', fontSize: '0.85rem', outline: 'none'
-                }}
-              />
-              {errors.scientificName && <span style={{ color: '#ef4444', fontSize: '0.7rem' }}>{errors.scientificName}</span>}
-            </div>
-            <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>Common Name*</label>
-              <input 
-                type="text" 
-                placeholder="e.g. Neon Tetra"
-                value={formData.commonName}
-                onChange={e => setFormData({ ...formData, commonName: e.target.value })}
-                style={{
-                  width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
-                  padding: '0.45rem', borderRadius: '6px', color: '#fff', fontSize: '0.85rem', outline: 'none'
-                }}
-              />
-              {errors.commonName && <span style={{ color: '#ef4444', fontSize: '0.7rem' }}>{errors.commonName}</span>}
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.5rem' }}>
-            <div>
-              <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.15rem' }}>Min Temp (°C)</label>
-              <input type="number" step="0.1" value={formData.minTemp} onChange={e => setFormData({...formData, minTemp: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.3rem', borderRadius: '4px', color: '#fff', fontSize: '0.8rem', outline: 'none' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.15rem' }}>Max Temp (°C)</label>
-              <input type="number" step="0.1" value={formData.maxTemp} onChange={e => setFormData({...formData, maxTemp: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.3rem', borderRadius: '4px', color: '#fff', fontSize: '0.8rem', outline: 'none' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.15rem' }}>Min pH</label>
-              <input type="number" step="0.1" value={formData.minPh} onChange={e => setFormData({...formData, minPh: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.3rem', borderRadius: '4px', color: '#fff', fontSize: '0.8rem', outline: 'none' }} />
-            </div>
-            <div>
-              <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.15rem' }}>Max pH</label>
-              <input type="number" step="0.1" value={formData.maxPh} onChange={e => setFormData({...formData, maxPh: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.3rem', borderRadius: '4px', color: '#fff', fontSize: '0.8rem', outline: 'none' }} />
-            </div>
-          </div>
-          {(errors.temp || errors.ph) && <span style={{ color: '#ef4444', fontSize: '0.7rem' }}>{errors.temp || errors.ph}</span>}
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1rem' }}>
-            <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>Care Level</label>
-              <select 
-                value={formData.careLevel} 
-                onChange={e => setFormData({ ...formData, careLevel: Number(e.target.value) })}
-                style={{
-                  width: '100%', background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)',
-                  padding: '0.45rem', borderRadius: '6px', color: '#fff', fontSize: '0.85rem', outline: 'none'
+                  background: activeTab === "council" 
+                    ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
+                    : "transparent",
+                  border: "none",
+                  outline: "none",
+                  borderRadius: "50px",
+                  color: activeTab === "council" ? "#fff" : "var(--text-secondary)",
+                  padding: "0.45rem 1.25rem",
+                  fontSize: "0.78rem",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.25s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  border: activeTab === "council" ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
+                  boxShadow: activeTab === "council" ? "0 0 10px rgba(56, 189, 248, 0.15)" : "none"
                 }}
               >
-                <option value={0}>Easy</option>
-                <option value={1}>Intermediate</option>
-                <option value={2}>Advanced</option>
-              </select>
-            </div>
-            <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>Reference URL</label>
-              <input 
-                type="url" 
-                placeholder="e.g. FishBase/WoRMS link"
-                value={formData.proofUrl}
-                onChange={e => setFormData({ ...formData, proofUrl: e.target.value })}
+                🏛️ Active Proposals / Votes
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("propose")}
                 style={{
-                  width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
-                  padding: '0.45rem', borderRadius: '6px', color: '#fff', fontSize: '0.85rem', outline: 'none'
+                  background: activeTab === "propose" 
+                    ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
+                    : "transparent",
+                  border: "none",
+                  outline: "none",
+                  borderRadius: "50px",
+                  color: activeTab === "propose" ? "#fff" : "var(--text-secondary)",
+                  padding: "0.45rem 1.25rem",
+                  fontSize: "0.78rem",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                  transition: "all 0.25s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  border: activeTab === "propose" ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid transparent",
+                  boxShadow: activeTab === "propose" ? "0 0 10px rgba(56, 189, 248, 0.15)" : "none"
                 }}
+              >
+                ⚡ Propose Catalog Entry
+              </button>
+            </div>
+          )}
+
+          {!casualModeActive && activeTab === "council" ? (
+            <div style={{ flex: 1, minHeight: '300px' }}>
+              <BreedersCouncil
+                walletAccount={walletAccount}
+                suggestionsQuery={suggestionsQuery}
+                updateSuggestionStatus={updateSuggestionStatus}
+                CARE_LEVEL_STRINGS={CARE_LEVEL_STRINGS}
+                marketplaceAddress={marketplaceAddress}
+                isModalView={true}
               />
             </div>
-          </div>
+          ) : (
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>Scientific Name*</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. Paracheirodon innesi"
+                    value={formData.scientificName}
+                    onChange={e => setFormData({ ...formData, scientificName: e.target.value })}
+                    style={{
+                      width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
+                      padding: '0.45rem', borderRadius: '6px', color: '#fff', fontSize: '0.85rem', outline: 'none'
+                    }}
+                  />
+                  {errors.scientificName && <span style={{ color: '#ef4444', fontSize: '0.7rem' }}>{errors.scientificName}</span>}
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>Common Name*</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. Neon Tetra"
+                    value={formData.commonName}
+                    onChange={e => setFormData({ ...formData, commonName: e.target.value })}
+                    style={{
+                      width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
+                      padding: '0.45rem', borderRadius: '6px', color: '#fff', fontSize: '0.85rem', outline: 'none'
+                    }}
+                  />
+                  {errors.commonName && <span style={{ color: '#ef4444', fontSize: '0.7rem' }}>{errors.commonName}</span>}
+                </div>
+              </div>
 
-          <div>
-            <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>Ecology Notes</label>
-            <textarea 
-              rows="2"
-              placeholder="Habitats, parameters, dietary patterns or compatibility suggestions..."
-              value={formData.notes}
-              onChange={e => setFormData({ ...formData, notes: e.target.value })}
-              style={{
-                width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
-                padding: '0.45rem', borderRadius: '6px', color: '#fff', fontSize: '0.85rem', resize: 'none', outline: 'none'
-              }}
-            />
-          </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.5rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.15rem' }}>Min Temp (°C)</label>
+                  <input type="number" step="0.1" value={formData.minTemp} onChange={e => setFormData({...formData, minTemp: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.3rem', borderRadius: '4px', color: '#fff', fontSize: '0.8rem', outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.15rem' }}>Max Temp (°C)</label>
+                  <input type="number" step="0.1" value={formData.maxTemp} onChange={e => setFormData({...formData, maxTemp: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.3rem', borderRadius: '4px', color: '#fff', fontSize: '0.8rem', outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.15rem' }}>Min pH</label>
+                  <input type="number" step="0.1" value={formData.minPh} onChange={e => setFormData({...formData, minPh: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.3rem', borderRadius: '4px', color: '#fff', fontSize: '0.8rem', outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.7rem', color: '#94a3b8', display: 'block', marginBottom: '0.15rem' }}>Max pH</label>
+                  <input type="number" step="0.1" value={formData.maxPh} onChange={e => setFormData({...formData, maxPh: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.3rem', borderRadius: '4px', color: '#fff', fontSize: '0.8rem', outline: 'none' }} />
+                </div>
+              </div>
+              {(errors.temp || errors.ph) && <span style={{ color: '#ef4444', fontSize: '0.7rem' }}>{errors.temp || errors.ph}</span>}
 
-          {errors.api && <span style={{ color: '#ef4444', fontSize: '0.75rem', textAlign: 'center' }}>{errors.api}</span>}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>Care Level</label>
+                  <select 
+                    value={formData.careLevel} 
+                    onChange={e => setFormData({ ...formData, careLevel: Number(e.target.value) })}
+                    style={{
+                      width: '100%', background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)',
+                      padding: '0.45rem', borderRadius: '6px', color: '#fff', fontSize: '0.85rem', outline: 'none'
+                    }}
+                  >
+                    <option value={0}>Easy</option>
+                    <option value={1}>Intermediate</option>
+                    <option value={2}>Advanced</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>Reference URL</label>
+                  <input 
+                    type="url" 
+                    placeholder="e.g. FishBase/WoRMS link"
+                    value={formData.proofUrl}
+                    onChange={e => setFormData({ ...formData, proofUrl: e.target.value })}
+                    style={{
+                      width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
+                      padding: '0.45rem', borderRadius: '6px', color: '#fff', fontSize: '0.85rem', outline: 'none'
+                    }}
+                  />
+                </div>
+              </div>
 
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-            <button 
-              type="button" 
-              onClick={onClose} 
-              disabled={isSubmitting}
-              style={{ padding: '0.5rem 1.25rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit" 
-              disabled={isSubmitting}
-              style={{
-                padding: '0.5rem 1.5rem',
-                background: '#38bdf8',
-                border: 'none',
-                borderRadius: '6px',
-                color: '#000',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                fontSize: '0.85rem',
-                boxShadow: '0 0 10px rgba(56, 189, 248, 0.25)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}
-            >
-              {isSubmitting ? 'Verifying...' : 'Submit Suggestion'}
-            </button>
-          </div>
-        </form>
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', display: 'block', marginBottom: '0.25rem' }}>Ecology Notes</label>
+                <textarea 
+                  rows="2"
+                  placeholder="Habitats, parameters, dietary patterns or compatibility suggestions..."
+                  value={formData.notes}
+                  onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                  style={{
+                    width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
+                    padding: '0.45rem', borderRadius: '6px', color: '#fff', fontSize: '0.85rem', resize: 'none', outline: 'none'
+                  }}
+                />
+              </div>
+
+              {errors.api && <span style={{ color: '#ef4444', fontSize: '0.75rem', textAlign: 'center' }}>{errors.api}</span>}
+
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                <button 
+                  type="button" 
+                  onClick={onClose} 
+                  disabled={isSubmitting}
+                  style={{ padding: '0.5rem 1.25rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  style={{
+                    padding: '0.5rem 1.5rem',
+                    background: '#38bdf8',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: '#000',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    boxShadow: '0 0 10px rgba(56, 189, 248, 0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  {isSubmitting ? 'Verifying...' : 'Submit Suggestion'}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       )}
     </div>
   );
