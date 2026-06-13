@@ -125,7 +125,10 @@ export default function App() {
   });
   // Per-account onboarding gate (replaces the old localStorage-only check).
   // `loading` lets us avoid flashing the wizard before the per-account flag resolves.
-  const { showOnboarding, loading: onboardingLoading } = useOnboardingGate(account);
+  // TODO: Re-enable once mobile onboarding bug is fixed
+  // const { showOnboarding, loading: onboardingLoading } = useOnboardingGate(account);
+  const showOnboarding = false;
+  const onboardingLoading = false;
   const [postedFirstCurrent, setPostedFirstCurrent] = useState(() => {
     return localStorage.getItem("aquadex_posted_first_current") === "true";
   });
@@ -863,15 +866,12 @@ export default function App() {
       )}
     </div>
 
-      {/* Per-account onboarding overlay — rendered ABOVE the live dashboard so the
-          spotlight tour phases (tourTank/tourFish/profileNudge) can target the real
-          data-tour-id controls mounted beneath. The wizard's in-card phases
-          (persona/identity/nameConfirm/hatch) render their own full-screen overlay
-          that covers the dashboard. Gating on !onboardingLoading avoids flashing
-          the wizard before the per-account flag resolves. (Req 6.1, 6.2, 6.6, 8.5) */}
+      {/* TODO: Onboarding wizard + tour temporarily disabled (mobile bug — step 1 blocks progress).
+           Re-enable by restoring useOnboardingGate above and uncommenting the block below.
       {!onboardingLoading && showOnboarding && (
         <OnboardingWizard onComplete={handleOnboardingComplete} />
       )}
+      */}
     </>
   );
 }
