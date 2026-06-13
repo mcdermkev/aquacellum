@@ -357,6 +357,62 @@ export async function relayCancelBatchListing(listingId) {
 }
 
 /**
+ * Update an existing listing's price, shipping toggle, and shipping fee locally.
+ */
+export async function relayUpdateListing({
+  tokenId,
+  listingId,
+  isBatch,
+  priceEth,
+  shippingFeeEth = "0",
+  isShipping = false,
+  quantity,
+} = {}) {
+  try {
+    if (isBatch) {
+      const idToFind = Number(listingId);
+      const rows = await db.localListings.where("listingId").equals(idToFind).toArray();
+      if (rows.length === 0) {
+        return { success: false, error: "Batch listing not found" };
+      }
+      const updates = {
+        price: String(priceEth),
+        rawPrice: String(priceEth),
+        shippingFee: String(shippingFeeEth),
+        isShipping: !!isShipping,
+      };
+      if (quantity !== undefined) {
+        updates.quantity = Number(quantity);
+      }
+      for (const r of rows) {
+        await db.localListings.update(r.id, updates);
+        try { await db.listings.update(r.id, updates); } catch (e) {}
+      }
+      return { success: true, listingId: idToFind, txHash: null };
+    } else {
+      const idToFind = Number(tokenId);
+      const existing = await db.localListings.get(idToFind);
+      if (!existing) {
+        return { success: false, error: "Listing not found" };
+      }
+      const updates = {
+        price: String(priceEth),
+        rawPrice: String(priceEth),
+        shippingFee: String(shippingFeeEth),
+        isShipping: !!isShipping,
+      };
+      await db.localListings.update(idToFind, updates);
+      try { await db.listings.update(idToFind, updates); } catch (e) {}
+      return { success: true, tokenId: idToFind, txHash: null };
+    }
+  } catch (err) {
+    console.error("[Relayer] Local listing update failed:", err);
+    return { success: false, error: err.message || "Failed to update listing" };
+  }
+}
+
+
+/**
  * Purchase a single specimen locally. Removes the listing and records a
  * shipping order (if shipping) or completes a direct sale.
  */

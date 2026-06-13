@@ -297,7 +297,7 @@ export function ListSpecimenModal({
               </div>
               <button 
                 type="submit" 
-                className="btn-primary" 
+                className="btn-primary-pro" 
                 disabled={checking}
                 style={{ justifyContent: "center" }}
               >
@@ -407,7 +407,7 @@ export function ListSpecimenModal({
                 </p>
                 <button 
                   onClick={handleApprove} 
-                  className="btn-primary" 
+                  className="btn-primary-pro" 
                   disabled={submitting}
                   style={{ width: "100%", justifyContent: "center" }}
                 >
@@ -621,7 +621,7 @@ export function ListSpecimenModal({
                     <button 
                       type="button"
                       onClick={handleList} 
-                      className="btn-primary" 
+                      className="btn-primary-pro" 
                       disabled={submitting}
                       style={{ flex: 2, justifyContent: "center" }}
                     >

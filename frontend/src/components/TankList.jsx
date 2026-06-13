@@ -418,6 +418,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   // Quick Log Drawer State
   const [quickLogOpen, setQuickLogOpen] = useState(false);
   const [quickLogTankId, setQuickLogTankId] = useState("");
+  const [quickLogMode, setQuickLogMode] = useState("water_test"); // "water_test" | "action"
 
   // Add Fish Drawer State (inline, no navigation)
   const [addFishOpen, setAddFishOpen] = useState(false);
@@ -495,6 +496,17 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
   const [bulkRackTarget, setBulkRackTarget] = useState("");
   const [bulkRoomTarget, setBulkRoomTarget] = useState("");
+
+  useEffect(() => {
+    if (quickLogOpen) {
+      if (!bulkRackTarget && uniqueRacks.length > 0) {
+        setBulkRackTarget(uniqueRacks[0]);
+      }
+      if (!bulkRoomTarget && uniqueRooms.length > 0) {
+        setBulkRoomTarget(uniqueRooms[0]);
+      }
+    }
+  }, [quickLogOpen, uniqueRacks, uniqueRooms, bulkRackTarget, bulkRoomTarget]);
 
   const BULK_ACTION_LABELS = {
     feed:         { emoji: "🥣", label: "Feeding",        defaultDetail: "Routine feeding (standard diet)" },
@@ -917,6 +929,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       nitrate: "5.0",
       notes: ""
     });
+    setQuickLogMode("water_test");
+    setBulkLogScope("single");
     setQuickLogTankId(activeTank.id.toString());
     setQuickLogOpen(true);
   };
@@ -1058,7 +1072,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   // Handle Water Parameter Logging
   const handleLogSubmit = async (e, targetTankId) => {
     e.preventDefault();
-    if (!targetTankId) return;
+    const targets = bulkLogScope === "single" 
+      ? (targetTankId ? [tanks.find(t => t.id === Number(targetTankId))] : []) 
+      : getBulkTargetTanks();
+    if (targets.length === 0) return;
 
     setSubmitting(true);
     setModalError(null);
@@ -1071,23 +1088,24 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       const nitritePpmX100 = Math.round(parseFloat(formData.nitrite) * 100);
       const nitratePpmX100 = Math.round(parseFloat(formData.nitrate) * 100);
 
-      // Beta: log locally via relayer (no MetaMask, no gas)
-      const result = await relayLogWaterParameters({
-        tankId: Number(targetTankId),
-        tempCelsiusX10,
-        phX10,
-        salinitySgX10000,
-        ammoniaPpmX100,
-        nitritePpmX100,
-        nitratePpmX100,
-        notes: formData.notes,
-      });
+      for (const tank of targets) {
+        const result = await relayLogWaterParameters({
+          tankId: tank.id,
+          tempCelsiusX10,
+          phX10,
+          salinitySgX10000,
+          ammoniaPpmX100,
+          nitritePpmX100,
+          nitratePpmX100,
+          notes: formData.notes,
+        });
 
-      if (!result.success) {
-        throw new Error(result.error || "Failed to log parameters");
+        if (!result.success) {
+          throw new Error(result.error || `Failed to log parameters for tank ${tank.name || tank.id}`);
+        }
       }
 
-      addXp(XP_ACTIONS.LOG_PARAMETERS.points, XP_ACTIONS.LOG_PARAMETERS.label);
+      addXp(XP_ACTIONS.LOG_PARAMETERS.points * targets.length, XP_ACTIONS.LOG_PARAMETERS.label);
 
       setFormData({
         temp: "24.5",
@@ -1103,13 +1121,16 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
       await fetchDashboardData();
       
-      // If we are currently viewing the updated tank in the detail view, refresh it
-      if (activeTank && activeTank.id === Number(targetTankId)) {
-        const updated = tanks.find(t => t.id === Number(targetTankId));
-        if (updated) {
-          setActiveTank(updated);
+      if (activeTank) {
+        const isTargeted = targets.some(t => t.id === activeTank.id);
+        if (isTargeted) {
+          const updated = tanks.find(t => t.id === activeTank.id);
+          if (updated) {
+            setActiveTank(updated);
+          }
         }
       }
+      showToast(`🧪 Water test logged for ${targets.length} unit${targets.length !== 1 ? "s" : ""}`);
     } catch (err) {
       console.error("Failed to log parameters:", err);
       setModalError(err.reason || err.message || "Failed to execute transaction.");
@@ -1493,7 +1514,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         {/* Quick Log */}
         <button
           className={`tank-action-pill tank-action-pill--secondary${casualModeActive ? " tank-action-pill--casual-secondary" : " tank-action-pill--pro-secondary"}`}
-          onClick={() => setQuickLogOpen(true)}
+          onClick={() => {
+            setQuickLogMode("water_test");
+            setBulkLogScope("single");
+            setQuickLogOpen(true);
+          }}
           aria-label="Quick Log"
         >
           <span>✍️</span>
@@ -2264,6 +2289,29 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               <span className="console-tile-label">Detailed Feed</span>
                               <span className="console-tile-desc">Log details</span>
                             </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setQuickLogMode("action");
+                                setBulkLogScope("rack");
+                                setBulkLogAction("feed");
+                                setBulkLogDetail("Routine feeding (standard diet)");
+                                if (activeTank) {
+                                  setQuickLogTankId(activeTank.id.toString());
+                                  if (activeTank.rack) setBulkRackTarget(activeTank.rack);
+                                  if (activeTank.room) setBulkRoomTarget(activeTank.room);
+                                }
+                                setQuickLogOpen(true);
+                                setQuickActionsOpen(false);
+                              }}
+                              className="console-tile tile-husbandry console-span-2"
+                            >
+                              <span className="console-tile-icon">🥣</span>
+                              <span className="console-tile-text">
+                                <span className="console-tile-label">Bulk Feeding</span>
+                                <span className="console-tile-desc">Log feed for entire rack/room</span>
+                              </span>
+                            </button>
                           </div>
                         </div>
 
@@ -2326,6 +2374,29 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               </span>
                               <span className="console-tile-label">Detailed Clean</span>
                               <span className="console-tile-desc">Water change & filters</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setQuickLogMode("action");
+                                setBulkLogScope("rack");
+                                setBulkLogAction("clean");
+                                setBulkLogDetail("Routine cleaning performed.");
+                                if (activeTank) {
+                                  setQuickLogTankId(activeTank.id.toString());
+                                  if (activeTank.rack) setBulkRackTarget(activeTank.rack);
+                                  if (activeTank.room) setBulkRoomTarget(activeTank.room);
+                                }
+                                setQuickLogOpen(true);
+                                setQuickActionsOpen(false);
+                              }}
+                              className="console-tile tile-environment console-span-2"
+                            >
+                              <span className="console-tile-icon">🧹</span>
+                              <span className="console-tile-text">
+                                <span className="console-tile-label">Bulk Maintenance</span>
+                                <span className="console-tile-desc">Log maintenance for entire rack/room</span>
+                              </span>
                             </button>
                           </div>
                         </div>
@@ -2634,6 +2705,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                                 nitrate: "0.0",
                                 notes: "Immediate water change performed."
                               });
+                              setQuickLogMode("water_test");
+                              setBulkLogScope("single");
                               setQuickLogTankId(activeTank.id.toString());
                               setQuickLogOpen(true);
                             }}
@@ -3770,7 +3843,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
           <div className="sliding-drawer-content" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
               <h3 style={{ fontSize: "1.5rem", color: "#fff" }}>
-                {bulkLogScope === "single" ? "Quick Log Water Test" : `Bulk ${BULK_ACTION_LABELS[bulkLogAction]?.label || "Action"}`}
+                {quickLogMode === "water_test" ? "Quick Log Water Test" : `Bulk ${BULK_ACTION_LABELS[bulkLogAction]?.label || "Action"}`}
               </h3>
               <button 
                 onClick={() => {
@@ -3779,6 +3852,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   setTxHash(null);
                   setBulkLogResult(null);
                   setBulkLogScope("single");
+                  setQuickLogMode("water_test");
                 }} 
                 style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: "1.5rem", cursor: "pointer", minWidth: "44px", minHeight: "44px" }}
                 aria-label="Close quick log"
@@ -3810,8 +3884,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       border: "none",
                       borderRadius: "6px",
                       cursor: "pointer",
-                      background: bulkLogScope === opt.key ? "rgba(56, 189, 248, 0.18)" : "transparent",
-                      color: bulkLogScope === opt.key ? "var(--accent-blue)" : "var(--text-muted)",
+                      background: bulkLogScope === opt.key ? (casualModeActive ? "rgba(56, 189, 248, 0.18)" : "rgba(168, 85, 247, 0.18)") : "transparent",
+                      color: bulkLogScope === opt.key ? (casualModeActive ? "var(--accent-blue)" : "#c084fc") : "var(--text-muted)",
                       transition: "all 0.15s ease"
                     }}
                   >
@@ -3821,24 +3895,41 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               </div>
             </div>
 
-            {/* ── BULK ACTION PANEL (rack / room scope) ── */}
-            {bulkLogScope !== "single" && (
+            {/* ── BULK ACTION PANEL (rack / room / single scope) ── */}
+            {quickLogMode === "action" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
 
                 {/* Target selector */}
                 <div>
-                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-                    {bulkLogScope === "rack" ? "Target Rack" : "Target Room"}
-                  </label>
-                  <select
-                    value={bulkLogScope === "rack" ? bulkRackTarget : bulkRoomTarget}
-                    onChange={(e) => bulkLogScope === "rack" ? setBulkRackTarget(e.target.value) : setBulkRoomTarget(e.target.value)}
-                    style={{ width: "100%", padding: "0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
-                  >
-                    {(bulkLogScope === "rack" ? uniqueRacks : uniqueRooms).map(name => (
-                      <option key={name} value={name}>{name}</option>
-                    ))}
-                  </select>
+                  {bulkLogScope === "single" ? (
+                    <>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>Target System</label>
+                      <select 
+                        value={quickLogTankId} 
+                        onChange={(e) => setQuickLogTankId(e.target.value)}
+                        style={{ width: "100%", padding: "0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                      >
+                        {tanks.map(t => (
+                          <option key={`opt-${t.id}`} value={t.id}>{t.name} (ID: {t.id})</option>
+                        ))}
+                      </select>
+                    </>
+                  ) : (
+                    <>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                        {bulkLogScope === "rack" ? "Target Rack" : "Target Room"}
+                      </label>
+                      <select
+                        value={bulkLogScope === "rack" ? bulkRackTarget : bulkRoomTarget}
+                        onChange={(e) => bulkLogScope === "rack" ? setBulkRackTarget(e.target.value) : setBulkRoomTarget(e.target.value)}
+                        style={{ width: "100%", padding: "0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                      >
+                        {(bulkLogScope === "rack" ? uniqueRacks : uniqueRooms).map(name => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                    </>
+                  )}
                   {/* Affected unit count badge */}
                   {(() => {
                     const count = getBulkTargetTanks().length;
@@ -3871,9 +3962,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           borderRadius: "6px",
                           cursor: "pointer",
                           textAlign: "left",
-                          background: bulkLogAction === key ? "rgba(56, 189, 248, 0.12)" : "rgba(255,255,255,0.02)",
-                          borderColor: bulkLogAction === key ? "rgba(56, 189, 248, 0.4)" : "var(--glass-border)",
-                          color: bulkLogAction === key ? "var(--accent-blue)" : "var(--text-secondary)",
+                          background: bulkLogAction === key ? (casualModeActive ? "rgba(56, 189, 248, 0.12)" : "rgba(168, 85, 247, 0.12)") : "rgba(255,255,255,0.02)",
+                          borderColor: bulkLogAction === key ? (casualModeActive ? "rgba(56, 189, 248, 0.4)" : "rgba(168, 85, 247, 0.4)") : "var(--glass-border)",
+                          color: bulkLogAction === key ? (casualModeActive ? "var(--accent-blue)" : "#c084fc") : "var(--text-secondary)",
                           transition: "all 0.15s ease"
                         }}
                       >
@@ -3947,7 +4038,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             placeholder="Template name…"
                             style={{ flex: 1, padding: "0.35rem 0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.75rem" }}
                           />
-                          <button type="button" onClick={saveTemplate} className="btn-primary" style={{ padding: "0.35rem 0.75rem", fontSize: "0.72rem" }}>Save</button>
+                          <button type="button" onClick={saveTemplate} className={casualModeActive ? "btn-primary" : "btn-primary-pro"} style={{ padding: "0.35rem 0.75rem", fontSize: "0.72rem" }}>Save</button>
                           <button type="button" onClick={() => { setShowSaveTemplate(false); setTemplateName(""); }} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "0.85rem" }}>×</button>
                         </div>
                       )}
@@ -3964,7 +4055,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
                 <button
                   type="button"
-                  className="btn-primary"
+                  className={casualModeActive ? "btn-primary" : "btn-primary-pro"}
                   disabled={bulkLogSubmitting || getBulkTargetTanks().length === 0}
                   onClick={handleBulkLogSubmit}
                   style={{ width: "100%", justifyContent: "center", marginTop: "0.5rem" }}
@@ -3977,204 +4068,244 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               </div>
             )}
 
-            {/* ── SINGLE TANK: on-chain water parameter form (unchanged) ── */}
-            {bulkLogScope === "single" && (
+            {/* ── WATER snaps/telemetry parameter form ── */}
+            {quickLogMode === "water_test" && (
               <>
-            {modalError && (
-              <div style={{ padding: "0.75rem", background: "rgba(248, 113, 113, 0.1)", border: "1px solid rgba(248,113,113,0.3)", color: "var(--accent-red)", fontSize: "0.8rem", borderRadius: "4px", marginBottom: "1rem" }}>
-                {modalError}
-              </div>
-            )}
-
-            {txHash && (
-              <div style={{ padding: "0.75rem", background: "var(--accent-blue-glow)", border: "1px solid rgba(56, 189, 248, 0.3)", color: "var(--accent-blue)", fontSize: "0.8rem", borderRadius: "4px", marginBottom: "1rem", wordBreak: "break-all" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
-                  <div style={{
-                    width: "12px",
-                    height: "12px",
-                    border: "2px solid rgba(56, 189, 248, 0.3)",
-                    borderTopColor: "var(--accent-blue)",
-                    borderRadius: "50%",
-                    animation: "shimmer 1s linear infinite",
-                  }} />
-                  <strong>{casualModeActive ? "Saving your data…" : "Confirming on Base…"}</strong>
-                </div>
-                <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
-                  {casualModeActive ? "This takes a few seconds." : "Usually 5–15 seconds."}
-                </span>
-                {!casualModeActive && (
-                  <>
-                    <br />
-                    <a 
-                      href={`https://sepolia.basescan.org/tx/${txHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ fontSize: "0.65rem", color: "var(--accent-blue)", fontFamily: "monospace", textDecoration: "underline" }}
-                    >
-                      View on BaseScan →
-                    </a>
-                  </>
+                {modalError && (
+                  <div style={{ padding: "0.75rem", background: "rgba(248, 113, 113, 0.1)", border: "1px solid rgba(248,113,113,0.3)", color: "var(--accent-red)", fontSize: "0.8rem", borderRadius: "4px", marginBottom: "1rem" }}>
+                    {modalError}
+                  </div>
                 )}
-              </div>
-            )}
 
-            <form onSubmit={(e) => handleLogSubmit(e, quickLogTankId)} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-              {residingSpecies.length > 0 && (
-                <div style={{ padding: "0.5rem 0.75rem", background: "rgba(255,255,255,0.02)", border: "1px solid var(--glass-border)", borderRadius: "6px" }}>
-                  <span style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.4rem", fontWeight: "600" }}>
-                    Quick-Insert Residing Species:
-                  </span>
-                  <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
-                    {residingSpecies.map(sp => (
-                      <button
-                        key={sp.speciesId}
-                        type="button"
-                        onClick={() => {
-                          setFormData(prev => ({
-                            ...prev,
-                            notes: prev.notes ? `${prev.notes} ${sp.commonName}` : sp.commonName
-                          }));
-                        }}
+                {txHash && (
+                  <div style={{ padding: "0.75rem", background: "var(--accent-blue-glow)", border: "1px solid rgba(56, 189, 248, 0.3)", color: "var(--accent-blue)", fontSize: "0.8rem", borderRadius: "4px", marginBottom: "1rem", wordBreak: "break-all" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
+                      <div style={{
+                        width: "12px",
+                        height: "12px",
+                        border: "2px solid rgba(56, 189, 248, 0.3)",
+                        borderTopColor: "var(--accent-blue)",
+                        borderRadius: "50%",
+                        animation: "shimmer 1s linear infinite",
+                      }} />
+                      <strong>{casualModeActive ? "Saving your data…" : "Confirming on Base…"}</strong>
+                    </div>
+                    <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
+                      {casualModeActive ? "This takes a few seconds." : "Usually 5–15 seconds."}
+                    </span>
+                    {!casualModeActive && (
+                      <>
+                        <br />
+                        <a 
+                          href={`https://sepolia.basescan.org/tx/${txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ fontSize: "0.65rem", color: "var(--accent-blue)", fontFamily: "monospace", textDecoration: "underline" }}
+                        >
+                          View on BaseScan →
+                        </a>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                <form onSubmit={(e) => handleLogSubmit(e, quickLogTankId)} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                  {bulkLogScope === "single" && residingSpecies.length > 0 && (
+                    <div style={{ padding: "0.5rem 0.75rem", background: "rgba(255,255,255,0.02)", border: "1px solid var(--glass-border)", borderRadius: "6px" }}>
+                      <span style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.4rem", fontWeight: "600" }}>
+                        Quick-Insert Residing Species:
+                      </span>
+                      <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+                        {residingSpecies.map(sp => (
+                          <button
+                            key={sp.speciesId}
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                notes: prev.notes ? `${prev.notes} ${sp.commonName}` : sp.commonName
+                              }));
+                            }}
+                            style={{
+                              padding: "0.25rem 0.6rem",
+                              fontSize: "0.7rem",
+                              background: "rgba(56, 189, 248, 0.12)",
+                              border: "1px solid rgba(56, 189, 248, 0.3)",
+                              color: "#38bdf8",
+                              borderRadius: "20px",
+                              cursor: "pointer"
+                            }}
+                          >
+                            🐠 {sp.commonName}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {bulkLogScope === "single" ? (
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>Target System</label>
+                      <select 
+                        value={quickLogTankId} 
+                        onChange={(e) => setQuickLogTankId(e.target.value)}
+                        style={{ width: "100%", padding: "0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                      >
+                        {tanks.map(t => (
+                          <option key={`opt-${t.id}`} value={t.id}>{t.name} (ID: {t.id})</option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                        {bulkLogScope === "rack" ? "Target Rack" : "Target Room"}
+                      </label>
+                      <select
+                        value={bulkLogScope === "rack" ? bulkRackTarget : bulkRoomTarget}
+                        onChange={(e) => bulkLogScope === "rack" ? setBulkRackTarget(e.target.value) : setBulkRoomTarget(e.target.value)}
+                        style={{ width: "100%", padding: "0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                      >
+                        {(bulkLogScope === "rack" ? uniqueRacks : uniqueRooms).map(name => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                      {/* Affected unit count badge */}
+                      {(() => {
+                        const count = getBulkTargetTanks().length;
+                        return count > 0 ? (
+                          <span style={{ display: "inline-block", marginTop: "0.4rem", fontSize: "0.7rem", color: "var(--accent-green)", background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.25)", borderRadius: "20px", padding: "0.1rem 0.6rem" }}>
+                            {count} unit{count !== 1 ? "s" : ""} will be logged
+                          </span>
+                        ) : (
+                          <span style={{ display: "inline-block", marginTop: "0.4rem", fontSize: "0.7rem", color: "var(--text-muted)" }}>
+                            No units found for this selection
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.25rem" }}>
+                        <span style={{ color: "var(--text-secondary)" }}>Temp (°C)</span>
+                        <strong style={{ color: isInsideEnvelope(Number(formData.temp), minSafeTemp, maxSafeTemp) ? "#4ade80" : "#f87171" }}>
+                          {formData.temp}°C {isInsideEnvelope(Number(formData.temp), minSafeTemp, maxSafeTemp) ? "(Ideal)" : "(Warning)"}
+                        </strong>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="10" 
+                        max="35" 
+                        step="0.1" 
+                        value={formData.temp}
+                        onChange={(e) => setFormData({ ...formData, temp: e.target.value })}
                         style={{
-                          padding: "0.25rem 0.6rem",
-                          fontSize: "0.7rem",
-                          background: "rgba(56, 189, 248, 0.12)",
-                          border: "1px solid rgba(56, 189, 248, 0.3)",
-                          color: "#38bdf8",
-                          borderRadius: "20px",
+                          width: "100%",
+                          height: "6px",
+                          borderRadius: "3px",
+                          background: getTrackBackground(10, 35, minSafeTemp, maxSafeTemp),
+                          outline: "none",
+                          accentColor: isInsideEnvelope(Number(formData.temp), minSafeTemp, maxSafeTemp) ? "#22c55e" : "#ef4444",
                           cursor: "pointer"
                         }}
-                      >
-                        🐠 {sp.commonName}
-                      </button>
-                    ))}
+                      />
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.25rem" }}>
+                        <span style={{ color: "var(--text-secondary)" }}>pH Level</span>
+                        <strong style={{ color: isInsideEnvelope(Number(formData.ph), minSafePh, maxSafePh) ? "#4ade80" : "#f87171" }}>
+                          {formData.ph} {isInsideEnvelope(Number(formData.ph), minSafePh, maxSafePh) ? "(Ideal)" : "(Warning)"}
+                        </strong>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="4.5" 
+                        max="9.5" 
+                        step="0.1" 
+                        value={formData.ph}
+                        onChange={(e) => setFormData({ ...formData, ph: e.target.value })}
+                        style={{
+                          width: "100%",
+                          height: "6px",
+                          borderRadius: "3px",
+                          background: getTrackBackground(4.5, 9.5, minSafePh, maxSafePh),
+                          outline: "none",
+                          accentColor: isInsideEnvelope(Number(formData.ph), minSafePh, maxSafePh) ? "#22c55e" : "#ef4444",
+                          cursor: "pointer"
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
 
-              <div>
-                <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>Target System</label>
-                <select 
-                  value={quickLogTankId} 
-                  onChange={(e) => setQuickLogTankId(e.target.value)}
-                  style={{ width: "100%", padding: "0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
-                >
-                  {tanks.map(t => (
-                    <option key={`opt-${t.id}`} value={t.id}>{t.name} (ID: {t.id})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.25rem" }}>
-                    <span style={{ color: "var(--text-secondary)" }}>Temp (°C)</span>
-                    <strong style={{ color: isInsideEnvelope(Number(formData.temp), minSafeTemp, maxSafeTemp) ? "#4ade80" : "#f87171" }}>
-                      {formData.temp}°C {isInsideEnvelope(Number(formData.temp), minSafeTemp, maxSafeTemp) ? "(Ideal)" : "(Warning)"}
-                    </strong>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Ammonia (ppm)</label>
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        value={formData.ammonia}
+                        onChange={(e) => setFormData({ ...formData, ammonia: e.target.value })}
+                        required
+                        style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Nitrite (ppm)</label>
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        value={formData.nitrite}
+                        onChange={(e) => setFormData({ ...formData, nitrite: e.target.value })}
+                        required
+                        style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Nitrate (ppm)</label>
+                      <input 
+                        type="number" 
+                        step="0.1" 
+                        value={formData.nitrate}
+                        onChange={(e) => setFormData({ ...formData, nitrate: e.target.value })}
+                        required
+                        style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                      />
+                    </div>
                   </div>
-                  <input 
-                    type="range" 
-                    min="10" 
-                    max="35" 
-                    step="0.1" 
-                    value={formData.temp}
-                    onChange={(e) => setFormData({ ...formData, temp: e.target.value })}
-                    style={{
-                      width: "100%",
-                      height: "6px",
-                      borderRadius: "3px",
-                      background: getTrackBackground(10, 35, minSafeTemp, maxSafeTemp),
-                      outline: "none",
-                      accentColor: isInsideEnvelope(Number(formData.temp), minSafeTemp, maxSafeTemp) ? "#22c55e" : "#ef4444",
-                      cursor: "pointer"
-                    }}
-                  />
-                </div>
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.25rem" }}>
-                    <span style={{ color: "var(--text-secondary)" }}>pH Level</span>
-                    <strong style={{ color: isInsideEnvelope(Number(formData.ph), minSafePh, maxSafePh) ? "#4ade80" : "#f87171" }}>
-                      {formData.ph} {isInsideEnvelope(Number(formData.ph), minSafePh, maxSafePh) ? "(Ideal)" : "(Warning)"}
-                    </strong>
+
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Observations Notes</label>
+                    <textarea 
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      placeholder="Notes on maintenance, cleaning, behavior..."
+                      rows="3"
+                      style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", resize: "none" }}
+                    />
                   </div>
-                  <input 
-                    type="range" 
-                    min="4.5" 
-                    max="9.5" 
-                    step="0.1" 
-                    value={formData.ph}
-                    onChange={(e) => setFormData({ ...formData, ph: e.target.value })}
-                    style={{
-                      width: "100%",
-                      height: "6px",
-                      borderRadius: "3px",
-                      background: getTrackBackground(4.5, 9.5, minSafePh, maxSafePh),
-                      outline: "none",
-                      accentColor: isInsideEnvelope(Number(formData.ph), minSafePh, maxSafePh) ? "#22c55e" : "#ef4444",
-                      cursor: "pointer"
-                    }}
-                  />
-                </div>
-              </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Ammonia (ppm)</label>
-                  <input 
-                    type="number" 
-                    step="0.01" 
-                    value={formData.ammonia}
-                    onChange={(e) => setFormData({ ...formData, ammonia: e.target.value })}
-                    required
-                    style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Nitrite (ppm)</label>
-                  <input 
-                    type="number" 
-                    step="0.01" 
-                    value={formData.nitrite}
-                    onChange={(e) => setFormData({ ...formData, nitrite: e.target.value })}
-                    required
-                    style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Nitrate (ppm)</label>
-                  <input 
-                    type="number" 
-                    step="0.1" 
-                    value={formData.nitrate}
-                    onChange={(e) => setFormData({ ...formData, nitrate: e.target.value })}
-                    required
-                    style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Observations Notes</label>
-                <textarea 
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Notes on maintenance, cleaning, behavior..."
-                  rows="3"
-                  style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", resize: "none" }}
-                />
-              </div>
-
-              <button 
-                type="submit" 
-                className="btn-primary" 
-                disabled={submitting} 
-                style={{ width: "100%", justifyContent: "center", marginTop: "1rem" }}
-              >
-                {submitting ? (casualModeActive ? "Saving water snapshot..." : "Writing telemetry log...") : (casualModeActive ? "Save Water Reading" : "Confirm Test Results")}
-              </button>
-            </form>
-            </>
+                  <button 
+                    type="submit" 
+                    className={casualModeActive ? "btn-primary" : "btn-primary-pro"} 
+                    disabled={submitting || (bulkLogScope !== "single" && getBulkTargetTanks().length === 0)} 
+                    style={{ width: "100%", justifyContent: "center", marginTop: "1rem" }}
+                  >
+                    {submitting ? (
+                      `Logging ${getBulkTargetTanks().length} units…`
+                    ) : (
+                      bulkLogScope === "single" ? (
+                        casualModeActive ? "Save Water Reading" : "Confirm Test Results"
+                      ) : (
+                        casualModeActive 
+                          ? `Save Water Reading → ${getBulkTargetTanks().length} unit${getBulkTargetTanks().length !== 1 ? "s" : ""}` 
+                          : `Confirm Test Results → ${getBulkTargetTanks().length} unit${getBulkTargetTanks().length !== 1 ? "s" : ""}`
+                      )
+                    )}
+                  </button>
+                </form>
+              </>
             )}
           </div>
         </div>

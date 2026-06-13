@@ -403,6 +403,7 @@ export default function App() {
             contractAddress={CONTRACT_ADDRESS} 
             marketplaceAddress={MARKETPLACE_ADDRESS} 
             walletAccount={account} 
+            casualModeActive={casualModeActive}
           />
         );
       case "orders":

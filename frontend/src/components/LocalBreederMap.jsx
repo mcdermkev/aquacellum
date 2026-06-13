@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ethers, Contract, formatEther } from "ethers";
+import { ethers, Contract, formatEther, parseEther } from "ethers";
 import managerAbi from "../abi/AquadexManager.json";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
 import { HandshakeVerification } from "./HandshakeVerification";
 import { getProvider } from "../utils/smartAccount";
+import { db } from "../db";
 
-export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAccount }) {
+export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAccount, casualModeActive }) {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedListing, setSelectedListing] = useState(null);
@@ -15,6 +16,28 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
   const [checkoutListing, setCheckoutListing] = useState(null);
   const [checkoutQuantity, setCheckoutQuantity] = useState(1);
   const [isHandshakeOpen, setIsHandshakeOpen] = useState(false);
+
+  const isPro = !casualModeActive;
+  
+  // Theme Color Configurations
+  const primaryThemeColor = isPro ? "var(--accent-pro, #a855f7)" : "var(--accent-amber)";
+  const primaryThemeGlow = isPro ? "var(--primary-pro-glow, rgba(168, 85, 247, 0.4))" : "var(--accent-amber-glow)";
+  const themeAccentColor = isPro ? "#c084fc" : "#f59e0b"; // purple-400 vs amber-500
+  const themeCardBorder = isPro ? "rgba(168, 85, 247, 0.22)" : "rgba(251, 191, 36, 0.15)";
+  
+  // Radar Overlay RGB representation (for canvas path rendering)
+  const radarStrokeColor = isPro ? "rgba(168, 85, 247, 0.15)" : "rgba(251, 191, 36, 0.08)";
+  const radarLabelColor = isPro ? "rgba(168, 85, 247, 0.5)" : "rgba(251, 191, 36, 0.4)";
+  const pulseCircleStroke = isPro ? "rgba(168, 85, 247, 0.3)" : "rgba(251, 191, 36, 0.3)";
+  const pulseCircleStrokeInactive = isPro ? "rgba(168, 85, 247, 0.1)" : "rgba(251, 191, 36, 0.1)";
+  const regionFillColor = isPro ? "rgba(168, 85, 247, 0.18)" : "rgba(251, 191, 36, 0.18)";
+  const regionFillColorInactive = isPro ? "rgba(168, 85, 247, 0.08)" : "rgba(251, 191, 36, 0.08)";
+  const regionStrokeColor = isPro ? "rgba(168, 85, 247, 0.7)" : "rgba(251, 191, 36, 0.7)";
+  const regionStrokeColorInactive = isPro ? "rgba(168, 85, 247, 0.3)" : "rgba(251, 191, 36, 0.3)";
+  const sweepGradientStart = isPro ? "rgba(168, 85, 247, 0)" : "rgba(251, 191, 36, 0)";
+  const sweepGradientMid = isPro ? "rgba(168, 85, 247, 0.02)" : "rgba(251, 191, 36, 0.02)";
+  const sweepGradientEnd = isPro ? "rgba(168, 85, 247, 0.15)" : "rgba(251, 191, 36, 0.15)";
+  const sweepLineStroke = isPro ? "rgba(168, 85, 247, 0.25)" : "rgba(251, 191, 36, 0.25)";
 
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
@@ -37,81 +60,71 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
     }
   }, []);
 
-  // Fetch active listings on-chain
+  // Fetch active listings offline-first (beta mode)
   const fetchLocalListings = async () => {
     try {
       setLoading(true);
-      const provider = getProvider();
-      const managerContract = new Contract(contractAddress, managerAbi, provider);
-      const marketplaceContract = new Contract(marketplaceAddress, marketplaceAbi, provider);
+
+      // Fetch listings from local IndexedDB (Dexie)
+      const local = await db.localListings.toArray();
+      const cached = await db.listings.toArray();
+
+      // Deduplicate by ID
+      const merged = [...cached];
+      const cachedIds = new Set(cached.map((l) => Number(l.id)));
+      for (const l of local) {
+        if (!cachedIds.has(Number(l.id))) {
+          merged.push(l);
+        }
+      }
 
       const activeListings = [];
-      let spawnId = 1;
-
-      while (true) {
-        let spawnLog;
-        try {
-          spawnLog = await managerContract.spawnLogs(spawnId);
-        } catch (err) {
-          break;
+      for (const item of merged) {
+        // Generate deterministic fuzzed offset from breeder address hash relative to SF center
+        const sellerAddr = item.seller || "";
+        let hash = 0;
+        for (let i = 0; i < sellerAddr.length; i++) {
+          hash = sellerAddr.charCodeAt(i) + ((hash << 5) - hash);
         }
+        const latOffsetVal = ((hash & 0xFF) / 255 - 0.5) * 0.08;
+        const lngOffsetVal = (((hash >> 8) & 0xFF) / 255 - 0.5) * 0.08;
 
-        if (!spawnLog || spawnLog.spawnId === 0n) {
-          break;
-        }
+        const fuzzedLocation = {
+          lat: 37.7749 + latOffsetVal,
+          lng: -122.4194 + lngOffsetVal
+        };
+        const zoneHash = "0x" + Math.abs(hash).toString(16).padStart(8, "0");
 
-        const listingId = await marketplaceContract.spawnToListing(Number(spawnLog.spawnId));
-        if (listingId > 0n) {
-          const listing = await marketplaceContract.batchListings(listingId);
-          if (listing.isActive) {
-            const species = await managerContract.speciesCatalog(Number(spawnLog.speciesId));
-            
-            // Generate deterministic fuzzed offset from breeder address hash relative to SF center
-            const sellerAddr = listing.seller;
-            let hash = 0;
-            for (let i = 0; i < sellerAddr.length; i++) {
-              hash = sellerAddr.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            const latOffsetVal = ((hash & 0xFF) / 255 - 0.5) * 0.08;
-            const lngOffsetVal = (((hash >> 8) & 0xFF) / 255 - 0.5) * 0.08;
+        // Calculate relative offset and distance from user's location based on fuzzedLocation
+        const latOffset = fuzzedLocation.lat - userLocation.lat;
+        const lngOffset = fuzzedLocation.lng - userLocation.lng;
+        const latMiles = latOffset * 69;
+        const lngMiles = lngOffset * 55;
+        const distance = Math.sqrt(latMiles * latMiles + lngMiles * lngMiles);
 
-            const fuzzedLocation = {
-              lat: 37.7749 + latOffsetVal,
-              lng: -122.4194 + lngOffsetVal
-            };
-            const zoneHash = "0x" + Math.abs(hash).toString(16).padStart(8, "0");
-
-            // Calculate relative offset and distance from user's location based on fuzzedLocation
-            const latOffset = fuzzedLocation.lat - userLocation.lat;
-            const lngOffset = fuzzedLocation.lng - userLocation.lng;
-            const latMiles = latOffset * 69;
-            const lngMiles = lngOffset * 55;
-            const distance = Math.sqrt(latMiles * latMiles + lngMiles * lngMiles);
-
-            activeListings.push({
-              listingId: Number(listing.listingId),
-              spawnId: Number(listing.spawnId),
-              quantity: Number(listing.quantity),
-              pricePerFish: listing.pricePerFish.toString(),
-              seller: sellerAddr,
-              speciesId: Number(spawnLog.speciesId),
-              speciesName: species.commonName || "Unknown Specimen",
-              latOffset,
-              lngOffset,
-              latMiles,
-              lngMiles,
-              distance,
-              fuzzedLocation,
-              zoneHash
-            });
-          }
-        }
-        spawnId++;
+        activeListings.push({
+          listingId: item.isBatch ? Number(item.listingId) : Number(item.tokenId || item.id),
+          spawnId: item.spawnId ? Number(item.spawnId) : 0,
+          quantity: item.quantity ? Number(item.quantity) : 1,
+          pricePerFish: parseEther(item.price || "0").toString(),
+          seller: sellerAddr,
+          speciesId: Number(item.speciesId || 0),
+          speciesName: item.commonName || "Unknown Specimen",
+          latOffset,
+          lngOffset,
+          latMiles,
+          lngMiles,
+          distance,
+          fuzzedLocation,
+          zoneHash,
+          isBatch: !!item.isBatch,
+          tokenId: item.tokenId
+        });
       }
 
       setListings(activeListings);
     } catch (err) {
-      console.error("Failed to fetch map listings:", err);
+      console.error("Failed to fetch map listings from Dexie:", err);
     } finally {
       setLoading(false);
     }
@@ -141,7 +154,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
       const maxRadius = Math.min(centerX, centerY) - 20;
 
       // Draw concentric radar grids
-      ctx.strokeStyle = "rgba(251, 191, 36, 0.08)";
+      ctx.strokeStyle = radarStrokeColor;
       ctx.lineWidth = 1;
       for (let r = 1; r <= 4; r++) {
         ctx.beginPath();
@@ -149,7 +162,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
         ctx.stroke();
 
         // Range labels
-        ctx.fillStyle = "rgba(251, 191, 36, 0.4)";
+        ctx.fillStyle = radarLabelColor;
         ctx.font = "9px monospace";
         ctx.fillText(
           `${Math.round((rangeFilter / 4) * r)} mi`,
@@ -164,6 +177,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
       ctx.lineTo(centerX + maxRadius, centerY);
       ctx.moveTo(centerX, centerY - maxRadius);
       ctx.lineTo(centerX, centerY + maxRadius);
+      ctx.strokeStyle = radarStrokeColor;
       ctx.stroke();
 
       // Pulse calculations for glow effects
@@ -194,8 +208,8 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
         ctx.beginPath();
         ctx.arc(x, y, outerBoundaryRadius * (isHovered ? pulseScale : 1), 0, Math.PI * 2);
         ctx.strokeStyle = isHovered 
-          ? "rgba(251, 191, 36, 0.3)" 
-          : "rgba(251, 191, 36, 0.1)";
+          ? pulseCircleStroke 
+          : pulseCircleStrokeInactive;
         ctx.stroke();
 
         // 2. Draw fuzzy regional location radius ring (1-mile zone) to protect personal address
@@ -203,12 +217,12 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
         ctx.beginPath();
         ctx.arc(x, y, oneMileRadius * (isHovered ? pulseScale : 1), 0, Math.PI * 2);
         ctx.fillStyle = isHovered 
-          ? "rgba(251, 191, 36, 0.18)" 
-          : "rgba(251, 191, 36, 0.08)";
+          ? regionFillColor 
+          : regionFillColorInactive;
         ctx.fill();
         ctx.strokeStyle = isHovered 
-          ? "rgba(251, 191, 36, 0.7)" 
-          : "rgba(251, 191, 36, 0.3)";
+          ? regionStrokeColor 
+          : regionStrokeColorInactive;
         ctx.lineWidth = 1.5;
         ctx.stroke();
         ctx.lineWidth = 1; // reset
@@ -282,9 +296,9 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
       
       // Sweep gradient
       const sweepGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, maxRadius);
-      sweepGrad.addColorStop(0, "rgba(251, 191, 36, 0)");
-      sweepGrad.addColorStop(0.8, "rgba(251, 191, 36, 0.02)");
-      sweepGrad.addColorStop(1, "rgba(251, 191, 36, 0.15)");
+      sweepGrad.addColorStop(0, sweepGradientStart);
+      sweepGrad.addColorStop(0.8, sweepGradientMid);
+      sweepGrad.addColorStop(1, sweepGradientEnd);
       
       ctx.beginPath();
       ctx.moveTo(0, 0);
@@ -297,7 +311,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
       ctx.beginPath();
       ctx.moveTo(0, 0);
       ctx.lineTo(maxRadius, 0);
-      ctx.strokeStyle = "rgba(251, 191, 36, 0.25)";
+      ctx.strokeStyle = sweepLineStroke;
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
@@ -367,7 +381,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
           gap: "1.25rem",
           borderRadius: "var(--radius-md)",
           background: "rgba(15, 23, 42, 0.75)",
-          border: "1px solid rgba(251, 191, 36, 0.15)"
+          border: `1px solid ${themeCardBorder}`
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
@@ -396,8 +410,8 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
                   border: "none",
                   borderRadius: "4px",
                   cursor: "pointer",
-                  background: eventFilter === type ? "var(--accent-blue)" : "transparent",
-                  color: eventFilter === type ? "#0f172a" : "var(--text-muted)",
+                  background: eventFilter === type ? (isPro ? "var(--accent-pro)" : "var(--accent-blue)") : "transparent",
+                  color: eventFilter === type ? (isPro ? "#fff" : "#0f172a") : "var(--text-muted)",
                   textTransform: "capitalize",
                   transition: "all 0.2s"
                 }}
@@ -423,8 +437,8 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
                   border: "none",
                   borderRadius: "4px",
                   cursor: "pointer",
-                  background: rangeFilter === val ? "var(--accent-amber)" : "transparent",
-                  color: rangeFilter === val ? "#0f172a" : "var(--text-muted)",
+                  background: rangeFilter === val ? primaryThemeColor : "transparent",
+                  color: rangeFilter === val ? (isPro ? "#fff" : "#0f172a") : "var(--text-muted)",
                   transition: "all 0.2s"
                 }}
               >
@@ -445,8 +459,8 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
               maxWidth: "100%",
               aspectRatio: "1/1",
               borderRadius: "50%",
-              border: "2px solid rgba(251, 191, 36, 0.15)",
-              boxShadow: "0 0 32px rgba(0, 0, 0, 0.5), inset 0 0 40px rgba(251, 191, 36, 0.02)",
+              border: isPro ? "2px solid rgba(168, 85, 247, 0.25)" : "2px solid rgba(251, 191, 36, 0.15)",
+              boxShadow: isPro ? "0 0 32px rgba(168, 85, 247, 0.15), inset 0 0 40px rgba(168, 85, 247, 0.02)" : "0 0 32px rgba(0, 0, 0, 0.5), inset 0 0 40px rgba(251, 191, 36, 0.02)",
               cursor: "pointer"
             }}
           />
@@ -468,7 +482,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
           style={{
             padding: "1.5rem",
             background: "rgba(15, 23, 42, 0.75)",
-            border: "1px solid rgba(255, 255, 255, 0.05)",
+            border: `1px solid ${themeCardBorder}`,
             borderRadius: "var(--radius-md)",
             minHeight: "300px",
             display: "flex",
@@ -476,7 +490,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
             justifyContent: selectedListing ? "space-between" : "center",
             alignItems: selectedListing ? "stretch" : "center",
             textAlign: selectedListing ? "left" : "center",
-            boxShadow: "0 12px 32px rgba(0,0,0,0.4)"
+            boxShadow: isPro ? "0 0 24px rgba(168, 85, 247, 0.1)" : "0 12px 32px rgba(0,0,0,0.4)"
           }}
         >
           {selectedListing ? (
@@ -531,7 +545,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.04)", paddingBottom: "0.5rem" }}>
                       <span style={{ color: "var(--text-secondary)" }}>Price Per Fish</span>
-                      <strong style={{ color: "var(--accent-amber)" }}>${(parseFloat(formatEther(selectedListing.pricePerFish)) * 1000).toFixed(2)}</strong>
+                      <strong style={{ color: primaryThemeColor }}>${(parseFloat(formatEther(selectedListing.pricePerFish)) * 1000).toFixed(2)}</strong>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.04)", paddingBottom: "0.5rem" }}>
                       <span style={{ color: "var(--text-secondary)" }}>Fuzzed Proximity</span>
@@ -571,8 +585,8 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
                   
                   <button
                     onClick={() => handleCheckoutTrigger(selectedListing)}
-                    className="btn-primary"
-                    style={{
+                    className={isPro ? "btn-primary-pro" : "btn-primary"}
+                    style={isPro ? { width: "100%", justifyContent: "center", padding: "0.75rem" } : {
                       background: "var(--accent-amber)",
                       boxShadow: "0 0 16px var(--accent-amber-glow)",
                       color: "#0f172a",
@@ -581,7 +595,9 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
                       border: "none",
                       borderRadius: "6px",
                       cursor: "pointer",
-                      transition: "all 0.2s"
+                      transition: "all 0.2s",
+                      width: "100%",
+                      justifyContent: "center"
                     }}
                   >
                     🤝 Settle via Local Pickup

@@ -7,8 +7,10 @@ import { compressImage } from "../utils/imageCompression";
 import { mapContractError } from "../utils/errorHandler";
 import { relayMintSpecimen } from "../services/relayer";
 import { db } from "../db";
+import { useProfile } from "../hooks/useReefProfile";
+import { generateAlias } from "../utils/generateAlias";
 
-export function MintSpecimen({ contractAddress, walletAccount }) {
+export function MintSpecimen({ contractAddress, walletAccount, casualModeActive }) {
   const [speciesList, setSpeciesList] = useState([]);
   const [tankList, setTankList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,6 +20,34 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
   const [error, setError] = useState(null);
   const [selectedPhoto, setSelectedPhoto] = useState("");
   const [toastMessage, setToastMessage] = useState(null);
+
+  const { data: reefProfile } = useProfile(walletAccount, !!walletAccount);
+  const displayNameResolved = reefProfile?.display_name || (walletAccount ? generateAlias(walletAccount) : "");
+
+  const inputStyle = {
+    width: "100%",
+    padding: "0.75rem",
+    background: "rgba(255, 255, 255, 0.03)",
+    border: casualModeActive ? "1px solid var(--glass-border)" : "1px solid rgba(168, 85, 247, 0.3)",
+    color: "#fff",
+    borderRadius: "4px",
+    outline: "none",
+    transition: "all 0.2s"
+  };
+
+  const handleInputFocus = (e) => {
+    if (!casualModeActive) {
+      e.target.style.borderColor = "rgba(168, 85, 247, 0.8)";
+      e.target.style.boxShadow = "0 0 8px rgba(168, 85, 247, 0.4)";
+    }
+  };
+
+  const handleInputBlur = (e) => {
+    if (!casualModeActive) {
+      e.target.style.borderColor = "rgba(168, 85, 247, 0.3)";
+      e.target.style.boxShadow = "none";
+    }
+  };
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -41,7 +71,7 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
   const [formData, setFormData] = useState({
     speciesId: "",
     birthDate: "",
-    breeder: walletAccount || "",
+    breeder: "",
     currentTankId: "0",
     sireId: "0",
     damId: "0",
@@ -52,10 +82,11 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
 
   useEffect(() => {
     if (walletAccount) {
-      setFormData((prev) => ({ ...prev, breeder: walletAccount }));
+      const defaultBreeder = (!casualModeActive && displayNameResolved) ? displayNameResolved : walletAccount;
+      setFormData((prev) => ({ ...prev, breeder: defaultBreeder }));
       loadMetadata();
     }
-  }, [walletAccount, contractAddress]);
+  }, [walletAccount, contractAddress, displayNameResolved, casualModeActive]);
 
   const loadMetadata = async () => {
     try {
@@ -146,6 +177,10 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
     setSubmitting(true);
 
     try {
+      if (!casualModeActive && displayNameResolved && formData.breeder.toLowerCase().trim() !== displayNameResolved.toLowerCase().trim()) {
+        throw new Error("you do not have permission");
+      }
+
       const birthTimestamp = formData.birthDate 
         ? Math.round(new Date(formData.birthDate).getTime() / 1000) 
         : 0;
@@ -220,7 +255,11 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
       await loadMetadata();
     } catch (err) {
       console.error("Specimen minting transaction failed:", err);
-      setError(mapContractError(err, false));
+      if (err.message === "you do not have permission") {
+        setError("you do not have permission");
+      } else {
+        setError(mapContractError(err, false));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -242,7 +281,21 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
   }
 
   return (
-    <div className="glass-card" style={{ maxWidth: "600px", margin: "0 auto", padding: "2.5rem" }}>
+    <div 
+      className="glass-card" 
+      style={{ 
+        maxWidth: "600px", 
+        margin: "0 auto", 
+        padding: "2.5rem",
+        border: !casualModeActive 
+          ? "1px solid rgba(168, 85, 247, 0.22)" 
+          : "1px solid var(--glass-border)",
+        boxShadow: !casualModeActive
+          ? "0 8px 32px rgba(0, 0, 0, 0.4), 0 0 15px rgba(168, 85, 247, 0.1)"
+          : "var(--glass-shadow)",
+        transition: "border-color 0.35s ease, box-shadow 0.35s ease"
+      }}
+    >
       <h2 style={{ fontSize: "1.75rem", marginBottom: "0.25rem", color: "#fff" }}>Register Birth Certificate</h2>
       <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "2rem" }}>
         Record a successful birth and register a premium birth certificate linked to the Master Catalog.
@@ -258,7 +311,7 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
           marginBottom: "1.5rem", 
           fontSize: "0.85rem" 
         }}>
-          <strong>Registration Error:</strong> {error}
+          {error === "you do not have permission" ? error : <><strong>Registration Error:</strong> {error}</>}
         </div>
       )}
 
@@ -321,7 +374,9 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
             value={formData.speciesId}
             onChange={(e) => setFormData({ ...formData, speciesId: e.target.value })}
             required
-            style={{ width: "100%", padding: "0.75rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+            style={inputStyle}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
           >
             {speciesList.map((spec) => (
               <option key={spec.id} value={spec.id} style={{ background: "var(--bg-secondary)" }}>
@@ -339,7 +394,9 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
             <select 
               value={formData.currentTankId}
               onChange={(e) => setFormData({ ...formData, currentTankId: e.target.value })}
-              style={{ width: "100%", padding: "0.75rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+              style={inputStyle}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             >
               <option value="0" style={{ background: "var(--bg-secondary)" }}>None (Unassigned)</option>
               {tankList.map((tank) => (
@@ -357,7 +414,9 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
               type="date"
               value={formData.birthDate}
               onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
-              style={{ width: "100%", padding: "0.7rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+              style={inputStyle}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             />
           </div>
         </div>
@@ -371,7 +430,9 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
               type="number"
               value={formData.sireId}
               onChange={(e) => setFormData({ ...formData, sireId: e.target.value })}
-              style={{ width: "100%", padding: "0.75rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+              style={inputStyle}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             />
           </div>
           <div>
@@ -382,38 +443,47 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
               type="number"
               value={formData.damId}
               onChange={(e) => setFormData({ ...formData, damId: e.target.value })}
-              style={{ width: "100%", padding: "0.75rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+              style={inputStyle}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             />
           </div>
         </div>
 
         <div>
           <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-            Breeder Account Address
+            {!casualModeActive ? "Breeder Account Username" : "Breeder Account Address"}
           </label>
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
             <input 
               type="text"
               value={formData.breeder}
               onChange={(e) => setFormData({ ...formData, breeder: e.target.value })}
-              placeholder="0x..."
+              placeholder={!casualModeActive ? "Username" : "0x..."}
               readOnly={!breederEditable}
               style={{ 
+                ...inputStyle,
                 flex: 1, 
-                padding: "0.75rem", 
                 background: breederEditable ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.015)", 
-                border: "1px solid var(--glass-border)", 
                 color: breederEditable ? "#fff" : "var(--text-secondary)", 
-                borderRadius: "4px", 
-                fontFamily: "monospace",
+                fontFamily: !casualModeActive ? "inherit" : "monospace",
                 opacity: breederEditable ? 1 : 0.8,
               }}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
             />
             <button
               type="button"
               onClick={() => setBreederEditable(!breederEditable)}
               className="btn-secondary"
-              style={{ padding: "0.5rem 0.75rem", fontSize: "0.7rem", whiteSpace: "nowrap" }}
+              style={{ 
+                padding: "0.5rem 0.75rem", 
+                fontSize: "0.7rem", 
+                whiteSpace: "nowrap",
+                border: !casualModeActive ? "1px solid rgba(168, 85, 247, 0.3)" : "1px solid var(--glass-border)",
+                background: !casualModeActive ? "rgba(168, 85, 247, 0.05)" : "rgba(255, 255, 255, 0.05)",
+                color: "#fff"
+              }}
             >
               {breederEditable ? "Lock" : "Edit"}
             </button>
@@ -428,8 +498,8 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
             <label style={{ 
               flex: 1, 
               padding: "0.75rem", 
-              background: "rgba(255,255,255,0.03)", 
-              border: "1px dashed var(--glass-border)", 
+              background: "rgba(255, 255, 255, 0.03)", 
+              border: !casualModeActive ? "1px dashed rgba(168, 85, 247, 0.4)" : "1px dashed var(--glass-border)", 
               borderRadius: "4px", 
               fontSize: "0.8rem", 
               color: "var(--text-secondary)", 
@@ -461,52 +531,54 @@ export function MintSpecimen({ contractAddress, walletAccount }) {
           </div>
         </div>
 
-        {/* Advanced section — hidden by default */}
-        <div>
-          <button
-            type="button"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            style={{
-              background: "none",
-              border: "none",
-              color: "var(--text-muted)",
-              fontSize: "0.8rem",
-              cursor: "pointer",
-              padding: "0.25rem 0",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.4rem",
-            }}
-          >
-            <span style={{ 
-              transform: showAdvanced ? "rotate(90deg)" : "rotate(0deg)", 
-              transition: "transform 0.2s ease",
-              display: "inline-block",
-            }}>▶</span>
-            Advanced Options
-          </button>
-          {showAdvanced && (
-            <div style={{ marginTop: "0.75rem" }}>
-              <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-                Metadata URI
-              </label>
-              <input 
-                type="text" 
-                value={formData.ipfsMetadataUri}
-                onChange={(e) => setFormData({ ...formData, ipfsMetadataUri: e.target.value })}
-                required
-                style={{ width: "100%", padding: "0.75rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontFamily: "monospace", fontSize: "0.8rem" }}
-              />
-              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>
-                Auto-generated. Only edit if you have a custom IPFS metadata file.
-              </span>
-            </div>
-          )}
-        </div>
+        {/* Advanced section — hidden in Pro mode */}
+        {casualModeActive && (
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--text-muted)",
+                fontSize: "0.8rem",
+                cursor: "pointer",
+                padding: "0.25rem 0",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+              }}
+            >
+              <span style={{ 
+                transform: showAdvanced ? "rotate(90deg)" : "rotate(0deg)", 
+                transition: "transform 0.2s ease",
+                display: "inline-block",
+              }}>▶</span>
+              Advanced Options
+            </button>
+            {showAdvanced && (
+              <div style={{ marginTop: "0.75rem" }}>
+                <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                  Metadata URI
+                </label>
+                <input 
+                  type="text" 
+                  value={formData.ipfsMetadataUri}
+                  onChange={(e) => setFormData({ ...formData, ipfsMetadataUri: e.target.value })}
+                  required
+                  style={{ width: "100%", padding: "0.75rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontFamily: "monospace", fontSize: "0.8rem" }}
+                />
+                <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>
+                  Auto-generated. Only edit if you have a custom IPFS metadata file.
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         <button 
           type="submit" 
-          className="btn-primary" 
+          className={!casualModeActive ? "btn-primary-pro" : "btn-primary"} 
           disabled={submitting || speciesList.length === 0}
           style={{ justifyContent: "center", width: "100%", marginTop: "1rem" }}
         >

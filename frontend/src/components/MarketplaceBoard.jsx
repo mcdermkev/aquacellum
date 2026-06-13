@@ -4,6 +4,7 @@ import { ethers, Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
 import { ListSpecimenModal } from "./ListSpecimenModal";
+import { EditListingModal } from "./EditListingModal";
 import { addXp, XP_ACTIONS } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
 import { relayPurchaseSpecimen, relayPurchaseBatch, relayCancelListing, relayCancelBatchListing } from "../services/relayer";
@@ -45,6 +46,8 @@ export function MarketplaceBoard({
   const loading = listingsLoading;
   const error = listingsError ? (listingsError.message || "Failed to load listings") : null;
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [cardImageIndexMap, setCardImageIndexMap] = useState({});
   const [activeSubTab, setActiveSubTab] = useState("listings"); // "listings" | "analytics"
   const [actionLoading, setActionLoading] = useState({});
   const [actionTxHash, setActionTxHash] = useState({});
@@ -496,10 +499,11 @@ export function MarketplaceBoard({
         {/* Banner */}
         <div className="glass-card" style={{
           padding: "2rem",
-          background: "linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(56, 189, 248, 0.02) 100%)",
-          border: "1px solid rgba(16, 185, 129, 0.25)",
+          background: "linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, rgba(56, 189, 248, 0.02) 100%)",
+          border: "1px solid rgba(168, 85, 247, 0.25)",
           position: "relative",
-          overflow: "hidden"
+          overflow: "hidden",
+          boxShadow: "0 8px 32px 0 rgba(168, 85, 247, 0.05)"
         }}>
           <h2 style={{ fontSize: "1.75rem", color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <span>📊</span> Live Expo Sales & Inventory Analytics
@@ -515,9 +519,9 @@ export function MarketplaceBoard({
             fontWeight: "700",
             padding: "0.25rem 0.75rem",
             borderRadius: "20px",
-            background: "rgba(16, 185, 129, 0.15)",
-            border: "1px solid rgba(16, 185, 129, 0.4)",
-            color: "var(--accent-green)",
+            background: "rgba(168, 85, 247, 0.15)",
+            border: "1px solid rgba(168, 85, 247, 0.4)",
+            color: "#c084fc",
             letterSpacing: "0.05em",
             textTransform: "uppercase"
           }}>
@@ -529,7 +533,14 @@ export function MarketplaceBoard({
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "1.5rem" }}>
           
           {/* Inventory Velocity Card */}
-          <div className="glass-card" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+          <div className="glass-card" style={{
+            padding: "1.5rem",
+            display: "flex",
+            flexDirection: "column",
+            gap: "1.25rem",
+            border: "1px solid rgba(168, 85, 247, 0.2)",
+            boxShadow: "0 4px 20px rgba(168, 85, 247, 0.05)"
+          }}>
             <h3 style={{ fontSize: "1.1rem", color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span>🚀</span> Inventory Velocity Meters
             </h3>
@@ -556,7 +567,14 @@ export function MarketplaceBoard({
           </div>
 
           {/* Fulfillment Breakdown Card */}
-          <div className="glass-card" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+          <div className="glass-card" style={{
+            padding: "1.5rem",
+            display: "flex",
+            flexDirection: "column",
+            gap: "1.25rem",
+            border: "1px solid rgba(168, 85, 247, 0.2)",
+            boxShadow: "0 4px 20px rgba(168, 85, 247, 0.05)"
+          }}>
             <h3 style={{ fontSize: "1.1rem", color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span>⚖️</span> Fulfillment Splits
             </h3>
@@ -582,9 +600,9 @@ export function MarketplaceBoard({
                   <strong style={{ fontSize: "1.25rem", color: "var(--accent-green)", fontFamily: "monospace" }}>{cashOrders}</strong>
                   <span style={{ fontSize: "0.65rem", color: "var(--text-secondary)", display: "block" }}>Orders Completed</span>
                 </div>
-                <div className="glass-card" style={{ padding: "0.75rem", border: "1px solid rgba(56, 189, 248, 0.15)", background: "rgba(56, 189, 248, 0.02)" }}>
+                <div className="glass-card" style={{ padding: "0.75rem", border: "1px solid rgba(168, 85, 247, 0.25)", background: "rgba(168, 85, 247, 0.02)" }}>
                   <span style={{ display: "block", fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase" }}>🛜 Digital Escrow</span>
-                  <strong style={{ fontSize: "1.25rem", color: "var(--accent-blue)", fontFamily: "monospace" }}>{digitalOrders}</strong>
+                  <strong style={{ fontSize: "1.25rem", color: "rgba(168, 85, 247, 0.8)", fontFamily: "monospace" }}>{digitalOrders}</strong>
                   <span style={{ fontSize: "0.65rem", color: "var(--text-secondary)", display: "block" }}>Orders Completed</span>
                 </div>
               </div>
@@ -592,7 +610,14 @@ export function MarketplaceBoard({
           </div>
 
           {/* XP Telemetry Metrics Card */}
-          <div className="glass-card" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+          <div className="glass-card" style={{
+            padding: "1.5rem",
+            display: "flex",
+            flexDirection: "column",
+            gap: "1.25rem",
+            border: "1px solid rgba(168, 85, 247, 0.2)",
+            boxShadow: "0 4px 20px rgba(168, 85, 247, 0.05)"
+          }}>
             <h3 style={{ fontSize: "1.1rem", color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span>🎖️</span> Double XP Telemetry
             </h3>
@@ -636,12 +661,13 @@ export function MarketplaceBoard({
       {!casualModeActive && (
         <div style={{
           display: "flex",
-          background: "rgba(30, 41, 59, 0.4)",
-          border: "1px solid rgba(255, 255, 255, 0.05)",
-          borderRadius: "8px",
+          background: "rgba(15, 23, 42, 0.6)",
+          border: "1px solid rgba(168, 85, 247, 0.2)",
+          borderRadius: "10px",
           padding: "0.4rem",
           marginBottom: "2rem",
-          gap: "0.5rem"
+          gap: "0.5rem",
+          backdropFilter: "blur(12px)"
         }}>
           <button
             onClick={() => setActiveSubTab("listings")}
@@ -653,8 +679,9 @@ export function MarketplaceBoard({
               border: "none",
               borderRadius: "6px",
               cursor: "pointer",
-              background: activeSubTab === "listings" ? "rgba(56, 189, 248, 0.15)" : "transparent",
-              color: activeSubTab === "listings" ? "var(--accent-blue)" : "var(--text-muted)",
+              background: activeSubTab === "listings" ? "rgba(168, 85, 247, 0.18)" : "transparent",
+              color: activeSubTab === "listings" ? "#c084fc" : "var(--text-muted)",
+              boxShadow: activeSubTab === "listings" ? "0 0 10px rgba(168, 85, 247, 0.15)" : "none",
               transition: "all 0.2s"
             }}
           >
@@ -670,8 +697,9 @@ export function MarketplaceBoard({
               border: "none",
               borderRadius: "6px",
               cursor: "pointer",
-              background: activeSubTab === "analytics" ? "rgba(16, 185, 129, 0.15)" : "transparent",
-              color: activeSubTab === "analytics" ? "var(--accent-green)" : "var(--text-muted)",
+              background: activeSubTab === "analytics" ? "rgba(168, 85, 247, 0.18)" : "transparent",
+              color: activeSubTab === "analytics" ? "#c084fc" : "var(--text-muted)",
+              boxShadow: activeSubTab === "analytics" ? "0 0 10px rgba(168, 85, 247, 0.15)" : "none",
               transition: "all 0.2s"
             }}
           >
@@ -741,7 +769,7 @@ export function MarketplaceBoard({
             </p>
           </div>
           {!casualModeActive && walletAccount && (
-            <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
+            <button className="btn-primary-pro" onClick={() => setIsModalOpen(true)}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 12h14M12 5v14"/>
               </svg>
@@ -782,20 +810,21 @@ export function MarketplaceBoard({
           </div>
         ) : (
           <div style={{
-            padding: "1rem 1.5rem",
+            padding: "1.25rem 1.75rem",
             marginBottom: "1.5rem",
-            background: "linear-gradient(135deg, rgba(34, 197, 94, 0.06) 0%, rgba(56, 189, 248, 0.04) 100%)",
-            border: "1px solid rgba(34, 197, 94, 0.22)",
+            background: "linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, rgba(56, 189, 248, 0.02) 100%)",
+            border: "1px solid rgba(168, 85, 247, 0.25)",
             borderRadius: "var(--radius-md)",
             backdropFilter: "blur(12px)",
             display: "flex",
             alignItems: "center",
             gap: "1.25rem",
-            flexWrap: "wrap"
+            flexWrap: "wrap",
+            boxShadow: "0 8px 32px 0 rgba(168, 85, 247, 0.05)"
           }}>
             <span style={{ fontSize: "1.75rem", lineHeight: 1 }}>🛡️</span>
             <div style={{ flex: 1, minWidth: "220px" }}>
-              <strong style={{ color: "#34d399", fontSize: "0.85rem", display: "block", marginBottom: "0.2rem" }}>
+              <strong style={{ color: "#c084fc", fontSize: "0.85rem", display: "block", marginBottom: "0.2rem" }}>
                 Safe & Trusted Peer-to-Peer Exchange
               </strong>
               <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", margin: 0, lineHeight: 1.5 }}>
@@ -803,7 +832,7 @@ export function MarketplaceBoard({
               </p>
             </div>
             <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-              <span style={{ fontSize: "0.7rem", padding: "0.3rem 0.75rem", borderRadius: "20px", background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.35)", color: "#34d399", whiteSpace: "nowrap" }}>🔒 Escrow Protected</span>
+              <span style={{ fontSize: "0.7rem", padding: "0.3rem 0.75rem", borderRadius: "20px", background: "rgba(168,85,247,0.12)", border: "1px solid rgba(168,85,247,0.35)", color: "#c084fc", whiteSpace: "nowrap" }}>🔒 Escrow Protected</span>
               <span style={{ fontSize: "0.7rem", padding: "0.3rem 0.75rem", borderRadius: "20px", background: "rgba(56,189,248,0.10)", border: "1px solid rgba(56,189,248,0.3)", color: "#7dd3fc", whiteSpace: "nowrap" }}>📦 3-Day Safety Window</span>
               <span style={{ fontSize: "0.7rem", padding: "0.3rem 0.75rem", borderRadius: "20px", background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.3)", color: "#fbbf24", whiteSpace: "nowrap" }}>🤝 Handshake Verified</span>
             </div>
@@ -820,7 +849,11 @@ export function MarketplaceBoard({
         marginBottom: "2rem",
         borderRadius: "var(--radius-sm)",
         flexWrap: "wrap",
-        gap: "1rem"
+        gap: "1rem",
+        ...(!casualModeActive && {
+          border: "1px solid rgba(168, 85, 247, 0.2)",
+          boxShadow: "0 8px 32px 0 rgba(168, 85, 247, 0.05)"
+        })
       }}>
         {/* Search Input */}
         <input
@@ -833,10 +866,24 @@ export function MarketplaceBoard({
             minWidth: "200px",
             padding: "0.5rem 1rem",
             background: "rgba(255, 255, 255, 0.03)",
-            border: "1px solid var(--glass-border)",
+            border: casualModeActive ? "1px solid var(--glass-border)" : "1px solid rgba(168, 85, 247, 0.3)",
             borderRadius: "4px",
             color: "#fff",
-            fontSize: "0.875rem"
+            fontSize: "0.875rem",
+            outline: "none",
+            transition: "all 0.2s"
+          }}
+          onFocus={(e) => {
+            if (!casualModeActive) {
+              e.target.style.borderColor = "rgba(168, 85, 247, 0.8)";
+              e.target.style.boxShadow = "0 0 8px rgba(168, 85, 247, 0.4)";
+            }
+          }}
+          onBlur={(e) => {
+            if (!casualModeActive) {
+              e.target.style.borderColor = "rgba(168, 85, 247, 0.3)";
+              e.target.style.boxShadow = "none";
+            }
           }}
         />
 
@@ -847,10 +894,25 @@ export function MarketplaceBoard({
           style={{
             padding: "0.5rem 1rem",
             background: "rgba(8, 12, 20, 0.9)",
-            border: "1px solid var(--glass-border)",
+            border: casualModeActive ? "1px solid var(--glass-border)" : "1px solid rgba(168, 85, 247, 0.3)",
             borderRadius: "4px",
             color: "#fff",
-            fontSize: "0.875rem"
+            fontSize: "0.875rem",
+            outline: "none",
+            cursor: "pointer",
+            transition: "all 0.2s"
+          }}
+          onFocus={(e) => {
+            if (!casualModeActive) {
+              e.target.style.borderColor = "rgba(168, 85, 247, 0.8)";
+              e.target.style.boxShadow = "0 0 8px rgba(168, 85, 247, 0.4)";
+            }
+          }}
+          onBlur={(e) => {
+            if (!casualModeActive) {
+              e.target.style.borderColor = "rgba(168, 85, 247, 0.3)";
+              e.target.style.boxShadow = "none";
+            }
           }}
         >
           <option value="none">Sort By: Default</option>
@@ -1002,11 +1064,25 @@ export function MarketplaceBoard({
                       }
 
                       const customPhoto = !item.isBatch ? localStorage.getItem(`aquadex_specimen_photo_${item.tokenId}`) : null;
+                      let additionalPhotos = [];
+                      if (!item.isBatch) {
+                        try {
+                          const stored = localStorage.getItem(`aquadex_specimen_photos_${item.tokenId}`);
+                          if (stored) {
+                            additionalPhotos = JSON.parse(stored);
+                          }
+                        } catch (e) {
+                          console.warn("Error parsing additional photos:", e);
+                        }
+                      }
+                      const allPhotos = [customPhoto, ...additionalPhotos].filter(Boolean);
+                      const activePhotoIdx = cardImageIndexMap[identifier] || 0;
+
                       const matchedSpecies = fishbaseData.find(
                         (f) => f.scientificName.toLowerCase() === (item.scientificName || "").toLowerCase()
                       );
                       const masterPhotoUrl = matchedSpecies?.masterPhotoUrl || "";
-                      const finalImgSrc = customPhoto || masterPhotoUrl;
+                      const finalImgSrc = allPhotos.length > 0 ? (allPhotos[activePhotoIdx] || allPhotos[0]) : masterPhotoUrl;
 
                       // Compatibility-based card glow (green/amber/red)
                       const compatScore = displayTank ? calculateCompatibility(item) : null;
@@ -1077,6 +1153,95 @@ export function MarketplaceBoard({
                                   style={{ width: "100%", height: "100%" }}
                                   fallbackSvg={fallbackSvg}
                                 />
+
+                                {allPhotos.length > 1 && (
+                                  <>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const prevIdx = (activePhotoIdx - 1 + allPhotos.length) % allPhotos.length;
+                                        setCardImageIndexMap(prev => ({ ...prev, [identifier]: prevIdx }));
+                                      }}
+                                      style={{
+                                        position: "absolute",
+                                        left: "0.5rem",
+                                        top: "50%",
+                                        transform: "translateY(-50%)",
+                                        background: "rgba(0, 0, 0, 0.5)",
+                                        border: "1px solid rgba(255, 255, 255, 0.2)",
+                                        color: "#fff",
+                                        borderRadius: "50%",
+                                        width: "28px",
+                                        height: "28px",
+                                        cursor: "pointer",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        zIndex: 3,
+                                        transition: "all 0.2s ease",
+                                        backdropFilter: "blur(4px)",
+                                        fontSize: "1rem"
+                                      }}
+                                    >
+                                      &#8249;
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const nextIdx = (activePhotoIdx + 1) % allPhotos.length;
+                                        setCardImageIndexMap(prev => ({ ...prev, [identifier]: nextIdx }));
+                                      }}
+                                      style={{
+                                        position: "absolute",
+                                        right: "0.5rem",
+                                        top: "50%",
+                                        transform: "translateY(-50%)",
+                                        background: "rgba(0, 0, 0, 0.5)",
+                                        border: "1px solid rgba(255, 255, 255, 0.2)",
+                                        color: "#fff",
+                                        borderRadius: "50%",
+                                        width: "28px",
+                                        height: "28px",
+                                        cursor: "pointer",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        zIndex: 3,
+                                        transition: "all 0.2s ease",
+                                        backdropFilter: "blur(4px)",
+                                        fontSize: "1rem"
+                                      }}
+                                    >
+                                      &#8250;
+                                    </button>
+                                    <div style={{
+                                      position: "absolute",
+                                      top: "0.6rem",
+                                      left: "50%",
+                                      transform: "translateX(-50%)",
+                                      display: "flex",
+                                      gap: "4px",
+                                      zIndex: 3,
+                                      background: "rgba(0, 0, 0, 0.3)",
+                                      padding: "0.2rem 0.4rem",
+                                      borderRadius: "10px",
+                                      backdropFilter: "blur(4px)"
+                                    }}>
+                                      {allPhotos.map((_, dotIdx) => (
+                                        <span
+                                          key={dotIdx}
+                                          style={{
+                                            width: "6px",
+                                            height: "6px",
+                                            borderRadius: "50%",
+                                            background: dotIdx === activePhotoIdx ? "var(--accent-pro, #a855f7)" : "rgba(255, 255, 255, 0.35)",
+                                            transition: "background 0.2s ease"
+                                          }}
+                                        />
+                                      ))}
+                                    </div>
+                                  </>
+                                )}
 
                                 {/* Glassmorphic Verified Master Badge */}
                                 <span style={{
@@ -1309,6 +1474,18 @@ export function MarketplaceBoard({
 
                             {isOwner ? (
                               <div style={{ display: "flex", gap: "0.5rem" }}>
+                                {!casualModeActive && (
+                                  <button 
+                                    className="btn-primary-pro" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingItem(item);
+                                    }}
+                                    style={{ flex: 1, padding: "0.4rem", fontSize: "0.75rem", justifyContent: "center" }}
+                                  >
+                                    Edit Listing
+                                  </button>
+                                )}
                                 <button 
                                   className="btn-secondary" 
                                   onClick={(e) => {
@@ -1327,7 +1504,7 @@ export function MarketplaceBoard({
                               </div>
                             ) : (
                               <button 
-                                className="btn-primary" 
+                                className={casualModeActive ? "btn-primary" : "btn-primary-pro"} 
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (item.isBatch) {
@@ -1479,6 +1656,14 @@ export function MarketplaceBoard({
         onSuccess={fetchListings}
         preselectedListSpecimen={preselectedListSpecimen}
         preselectedListTank={preselectedListTank}
+      />
+
+      {/* Edit Modal Integration */}
+      <EditListingModal 
+        isOpen={!!editingItem}
+        onClose={() => setEditingItem(null)}
+        item={editingItem}
+        onSuccess={fetchListings}
       />
     </div>
   );

@@ -6,7 +6,31 @@ All notable changes to AquaDex are documented here.
 
 ## [Unreleased] — 2026-06-13
 
-### Premium UI Overhaul — Full Session Changes
+### Breeder Pro Mode Premium Upgrades & Enhancements
+
+#### 🧪 Husbandry, Detailed Feed, and Bulk Command Upgrades
+- **Interactive Feed Inputs:** Replaced simple input fields in the Feed dialog with interactive selection chips for **Feed Types** (e.g. Brine Shrimp, Mysis, Bloodworms) and **Dosages** (e.g. Pinches, Cubes, Sheets) with dynamic text preview.
+- **Bulk Husbandry & Maintenance Shortcuts:** Added quick-actions to open the Bulk Log console pre-configured to "Entire Rack" or "Entire Room" scope for feeding or cleaning.
+- **Bulk Water Testing:** Fixed bulk water parameter logging (pH, Temp, Nitrite, Nitrate, Ammonia) to apply parameters sequentially across all targeted tanks in a rack or room, keeping the inputs visible when a bulk scope is selected.
+
+#### 🛒 Premium Marketplace & Listing Editing
+- **Marketplace Theme Alignment:** Upgraded sub-tabs, filters, trust banners, analytics dashboards, and submission forms in the Marketplace to use the signature Breeder Pro violet/purple gradient theme.
+- **Self-Listing Editing Drawer:** Added the ability for breeders to edit their own active listings directly from the marketplace grid. Supported updating price, delivery type (local pickup vs. shipping), shipping fee, and managing up to 5 compressed listing images.
+- **Multi-Image Carousel:** Updated listing cards to display dots pagination and left/right navigation arrows for browsing multiple specimen photos on hover.
+
+#### 🗺️ Premium Offline-First Local Breeder Map
+- **IndexedDB Support:** Integrated local Dexie DB stores (`db.localListings` and `db.listings`) to enable offline-first mapping of breeders and listings.
+- **Violet Pro Aesthetic:** Upgraded the radar sweeps, concentric grids, transmitter pulses, range tags, and detail panels with the Breeder Pro violet theme.
+
+#### ✦ Premium Birth Certificate Registration & Breeder Validation
+- **Visual Design:** Redesigned the **Register** tab container and input fields with glowing violet borders, fuzzed focus shadows, and the `.btn-primary-pro` purple gradient button.
+- **Breeder Username Display:** Masked Breeder Account Address behind the Breeder Account Username, defaulting to the profile's resolved name/alias.
+- **Advanced Options:** Completely hid the collapsible advanced options settings from the breeder registration form in Pro mode.
+- **Breeder Ownership Validation:** Enforced breeder name validation on submission. If the input breeder username does not match the active user's resolved profile name, blocked registration and returned the exact error message `"you do not have permission"`.
+
+---
+
+### Premium UI Overhaul — Previous Session Changes
 
 ---
 

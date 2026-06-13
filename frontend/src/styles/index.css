@@ -601,8 +601,15 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Pedigree pricing cards */
 .pedigree-purebred {
-  border: 1px solid rgba(251, 191, 36, 0.4) !important;
-  box-shadow: 0 0 20px rgba(251, 191, 36, 0.1) !important;
+  border: 1px solid rgba(251, 191, 36, 0.3) !important;
+  background: rgba(251, 191, 36, 0.02) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.pedigree-purebred:hover {
+  border-color: rgba(251, 191, 36, 0.7) !important;
+  box-shadow: 0 8px 30px rgba(251, 191, 36, 0.15), 0 0 15px rgba(251, 191, 36, 0.1) !important;
+  transform: translateY(-4px) !important;
 }
 
 .pedigree-purebred-glow {
@@ -612,11 +619,27 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .pedigree-f1 {
-  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+  background: rgba(56, 189, 248, 0.02) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.pedigree-f1:hover {
+  border-color: rgba(56, 189, 248, 0.7) !important;
+  box-shadow: 0 8px 30px rgba(56, 189, 248, 0.15), 0 0 15px rgba(56, 189, 248, 0.1) !important;
+  transform: translateY(-4px) !important;
 }
 
 .pedigree-wild {
-  border: 1px solid rgba(52, 211, 153, 0.4) !important;
+  border: 1px solid rgba(52, 211, 153, 0.3) !important;
+  background: rgba(52, 211, 153, 0.02) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.pedigree-wild:hover {
+  border-color: rgba(52, 211, 153, 0.7) !important;
+  box-shadow: 0 8px 30px rgba(52, 211, 153, 0.15), 0 0 15px rgba(52, 211, 153, 0.1) !important;
+  transform: translateY(-4px) !important;
 }
 
 /* Keypad for PIN verification */
@@ -5097,4 +5120,340 @@ input:checked + .broadcast-slider:before {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+
+/* =========================================================================
+   AQUADEX PRO REDESIGN: QUICK ACTIONS & TELEMETRY DASHBOARD
+   ========================================================================= */
+
+/* Quick Actions Toolbar Container */
+.quick-actions-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-sm);
+  margin: 1rem 0;
+  transition: var(--transition-smooth);
+}
+
+.quick-actions-toolbar--casual {
+  background: rgba(56, 189, 248, 0.02);
+  border: 1px solid rgba(56, 189, 248, 0.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.quick-actions-toolbar--pro {
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.04) 0%, rgba(56, 189, 248, 0.015) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+/* Quick Actions Label */
+.quick-actions-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.quick-actions-label--casual {
+  color: var(--accent-blue);
+}
+
+.quick-actions-label--pro {
+  color: #c084fc;
+}
+
+.quick-actions-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.quick-actions-dot--casual {
+  background: var(--accent-blue);
+  box-shadow: 0 0 8px var(--accent-blue);
+  animation: console-dot-pulse 2s infinite alternate;
+}
+
+.quick-actions-dot--pro {
+  background: #a855f7;
+  box-shadow: 0 0 8px #a855f7;
+  animation: pro-dot-pulse 2s infinite alternate;
+}
+
+@keyframes pro-dot-pulse {
+  0% { opacity: 0.4; box-shadow: 0 0 2px #a855f7; }
+  100% { opacity: 1; box-shadow: 0 0 10px #a855f7; }
+}
+
+/* Quick Actions Button */
+.quick-actions-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 1.25rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #fff;
+  border: 1px solid transparent;
+}
+
+.quick-actions-trigger--casual {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.05) 100%);
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow: 0 2px 10px rgba(56, 189, 248, 0.1);
+}
+
+.quick-actions-trigger--casual:hover {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.25) 0%, rgba(14, 165, 233, 0.1) 100%);
+  border-color: rgba(56, 189, 248, 0.65);
+  box-shadow: 0 4px 18px rgba(56, 189, 248, 0.3);
+  transform: translateY(-1px);
+}
+
+.quick-actions-trigger--pro {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(139, 92, 246, 0.08) 100%);
+  border-color: rgba(168, 85, 247, 0.38);
+  box-shadow: 0 2px 10px rgba(168, 85, 247, 0.1);
+}
+
+.quick-actions-trigger--pro:hover {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.32) 0%, rgba(139, 92, 246, 0.15) 100%);
+  border-color: rgba(168, 85, 247, 0.65);
+  box-shadow: 0 4px 18px rgba(168, 85, 247, 0.35);
+  transform: translateY(-1px);
+}
+
+.quick-actions-icon {
+  display: inline-block;
+  font-size: 0.9rem;
+  transition: transform 0.2s ease;
+}
+
+.quick-actions-trigger:hover .quick-actions-icon {
+  animation: bolt-bounce 0.6s ease infinite alternate;
+}
+
+@keyframes bolt-bounce {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-2px) scale(1.15); }
+}
+
+.quick-actions-chevron {
+  font-size: 0.65rem;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-block;
+  opacity: 0.8;
+}
+
+/* Mode-adaptive Active Subtabs */
+.horizontal-subtabs--pro .subtab-item.active {
+  color: #c084fc;
+}
+.horizontal-subtabs--pro .subtab-item.active::after {
+  background: #a855f7;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.75);
+}
+
+/* Telemetry Premium Cards (Pro) */
+.telemetry-tile-pro {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.018) 0%, rgba(255, 255, 255, 0.005) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.04) !important;
+  border-radius: var(--radius-sm) !important;
+  padding: 1.25rem !important;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25) !important;
+}
+
+.telemetry-tile-pro::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--status-color, var(--glass-border));
+  box-shadow: 0 0 10px var(--status-color);
+  transition: all 0.3s ease;
+}
+
+.telemetry-tile-pro:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0.012) 100%) !important;
+  border-color: rgba(168, 85, 247, 0.3) !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.45), 
+              0 0 20px rgba(168, 85, 247, 0.04) !important;
+}
+
+.telemetry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.telemetry-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.telemetry-value-container {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  margin-top: 0.25rem;
+}
+
+.telemetry-value {
+  font-family: monospace;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.telemetry-unit {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.telemetry-ideal-range {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+/* Micro Gauge/Slider Component */
+.telemetry-gauge {
+  position: relative;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  margin: 0.65rem 0 0.35rem;
+}
+
+.telemetry-gauge-ideal {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: rgba(52, 211, 153, 0.08);
+  border-left: 1px dashed rgba(52, 211, 153, 0.2);
+  border-right: 1px dashed rgba(52, 211, 153, 0.2);
+}
+
+.telemetry-gauge-marker {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border: 2px solid var(--status-color);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 8px var(--status-color);
+  transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Nitrogen Sub-readouts grid */
+.nitrogen-cycle-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.nitrogen-parameter-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.nitrogen-parameter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+}
+
+.nitrogen-parameter-name {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.nitrogen-parameter-value {
+  font-family: monospace;
+  font-weight: 700;
+}
+
+.nitrogen-progress-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.nitrogen-progress-fill {
+  height: 100%;
+  background: var(--param-status-color);
+  box-shadow: 0 0 6px var(--param-status-color);
+  transition: width 0.5s ease;
+}
+
+/* Primary Purple Button for Pro Mode */
+.btn-primary-pro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.25);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary-pro:hover {
+  background: linear-gradient(135deg, #c084fc 0%, #8b5cf6 100%);
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-primary-pro:active {
+  transform: translateY(0);
+}
+
+.btn-primary-pro:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+
 
