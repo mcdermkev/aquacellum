@@ -8,6 +8,7 @@
  */
 
 import { db } from "../db";
+import { syncTankToCloud, syncSpecimenToCloud } from "./cloudSync";
 
 /**
  * Register a tank locally in Dexie (beta mode — no on-chain write).
@@ -48,6 +49,9 @@ export async function relayRegisterTank({
 
     // Store in Dexie
     await db.tanks.put(tank);
+
+    // Fire-and-forget cloud sync (non-blocking)
+    syncTankToCloud(tank).catch(() => {});
 
     return { success: true, tankId, txHash: null };
   } catch (err) {
@@ -97,6 +101,9 @@ export async function relayMintSpecimen({
     // Store in standalone specimens table
     await db.specimens.put(specimen);
 
+    // Fire-and-forget cloud sync (non-blocking)
+    syncSpecimenToCloud(specimen).catch(() => {});
+
     // Also embed in the tank's specimens array if a tank is specified
     if (currentTankId && Number(currentTankId) !== 0) {
       const tank = await db.tanks.get(Number(currentTankId));
@@ -111,6 +118,9 @@ export async function relayMintSpecimen({
           gender,
         });
         await db.tanks.update(Number(currentTankId), { specimens });
+        // Sync updated tank to cloud
+        const updatedTankForSync = await db.tanks.get(Number(currentTankId));
+        if (updatedTankForSync) syncTankToCloud(updatedTankForSync).catch(() => {});
       }
     }
 
@@ -147,6 +157,9 @@ export async function relayMoveSpecimen({
       if (sourceTank) {
         const filtered = (sourceTank.specimens || []).filter(s => s.id !== specimenId);
         await db.tanks.update(sourceTankId, { specimens: filtered });
+        // Sync source tank
+        const updatedSource = await db.tanks.get(sourceTankId);
+        if (updatedSource) syncTankToCloud(updatedSource).catch(() => {});
       }
     }
 
@@ -163,11 +176,17 @@ export async function relayMoveSpecimen({
           status: specimen.status,
         });
         await db.tanks.update(targetTankId, { specimens });
+        // Sync target tank
+        const updatedTarget = await db.tanks.get(targetTankId);
+        if (updatedTarget) syncTankToCloud(updatedTarget).catch(() => {});
       }
     }
 
     // Update specimen's currentTankId
     await db.specimens.update(specimenId, { currentTankId: targetTankId });
+    // Sync updated specimen
+    const updatedSpec = await db.specimens.get(specimenId);
+    if (updatedSpec) syncSpecimenToCloud(updatedSpec).catch(() => {});
 
     return { success: true, specimenId, targetTankId, txHash: null };
   } catch (err) {
@@ -213,6 +232,9 @@ export async function relayLogWaterParameters({
     logs.push(log);
 
     await db.tanks.update(tankId, { logs, latestLog: log });
+    // Sync updated tank (with new logs) to cloud
+    const updatedTank = await db.tanks.get(tankId);
+    if (updatedTank) syncTankToCloud(updatedTank).catch(() => {});
 
     return { success: true, tankId, logIndex: logs.length - 1, txHash: null };
   } catch (err) {

@@ -24,6 +24,8 @@ import { ModeSegmentedControl } from "./components/ModeSegmentedControl";
 import { OnboardingWizard } from "./components/OnboardingWizard";
 import { useOnboardingGate } from "./hooks/useOnboardingGate";
 import { useAuth } from "./contexts/AuthContext";
+import { pullCloudDataForWallet, pushAllLocalDataToCloud } from "./services/cloudSync";
+
 
 // Lazy-load The Reef social layer (code-split for performance)
 const ReefFeed = lazy(() =>
@@ -51,6 +53,29 @@ export default function App() {
       window.removeEventListener("offline", handleOffline);
     };
   }, []);
+
+  // Cloud sync: on login, pull cloud data to this device then push any local-only data up.
+  // This is what makes tanks appear on any device the user signs in to.
+  useEffect(() => {
+    if (!account) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        // 1. Pull cloud → local (other-device data this device doesn't have yet)
+        await pullCloudDataForWallet(account);
+        if (cancelled) return;
+        // 2. Push local → cloud (data created on this device not yet in cloud)
+        await pushAllLocalDataToCloud(account);
+        // 3. Invalidate tank cache so UI re-renders with any newly pulled tanks
+        if (!cancelled) {
+          queryClient.invalidateQueries({ queryKey: ["tanks", account] });
+        }
+      } catch (e) {
+        console.warn("[CloudSync] Login sync failed silently:", e.message);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [account]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Set up ethers event listeners for reactive background refetching
   useEffect(() => {
