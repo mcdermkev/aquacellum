@@ -2517,8 +2517,11 @@ textarea:focus:not(:focus-visible) {
     width: 100% !important;
     max-width: 100% !important;
     max-height: 100vh !important;
+    max-height: 100dvh !important;
     border-radius: 0 !important;
     height: 100vh;
+    height: 100dvh;
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom)) !important;
   }
 }
 

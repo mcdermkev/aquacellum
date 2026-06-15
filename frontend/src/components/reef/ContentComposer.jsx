@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { db } from "../../db";
 import { uploadImages, createPreviewUrl, revokePreviewUrl } from "../../services/mediaUpload";
 import { uploadVideo, createVideoPreviewUrl, revokeVideoPreviewUrl, isVideoFile, getMaxVideoDuration, getVideoMetadata } from "../../services/videoUpload";
@@ -294,12 +295,12 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
 
   const canSubmit = (body.trim() || photos.length > 0 || video) && !submitting;
 
-  return (
+  return createPortal(
     <div
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 9999,
+        zIndex: 99999,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -718,6 +719,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
           </p>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
