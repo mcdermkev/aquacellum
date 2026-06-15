@@ -9,8 +9,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { db } from "../../db";
 import { uploadImages, createPreviewUrl, revokePreviewUrl } from "../../services/mediaUpload";
+import { uploadVideo, createVideoPreviewUrl, revokeVideoPreviewUrl, isVideoFile, getMaxVideoDuration, getVideoMetadata } from "../../services/videoUpload";
 import { createCurrent } from "../../services/reefApi";
 import { getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
+import { VideoRecorder } from "../video/VideoRecorder";
 
 const MAX_PHOTOS = 4;
 const MAX_BODY_LENGTH = 2000;
@@ -20,6 +22,8 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
   const [selectedTank, setSelectedTank] = useState(null);
   const [body, setBody] = useState("");
   const [photos, setPhotos] = useState([]); // [{file, previewUrl}]
+  const [video, setVideo] = useState(null); // {file, previewUrl, duration}
+  const [showRecorder, setShowRecorder] = useState(false);
   const [visibility, setVisibility] = useState("public");
   const [params, setParams] = useState(null); // auto-fetched from tank
   const [speciesTags, setSpeciesTags] = useState([]);
@@ -27,6 +31,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
   const [uploadProgress, setUploadProgress] = useState(null);
   const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
+  const videoInputRef = useRef(null);
 
   // Load user's tanks from Dexie
   useEffect(() => {
@@ -119,10 +124,74 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
     });
   };
 
+  // ── Video handling ──
+  const handleVideoSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (videoInputRef.current) videoInputRef.current.value = "";
+
+    if (!isVideoFile(file)) {
+      setError("Invalid video type. Allowed: MP4, WebM, MOV");
+      return;
+    }
+
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    if (file.size > maxSize) {
+      setError("Video too large. Maximum 100MB.");
+      return;
+    }
+
+    try {
+      const meta = await getVideoMetadata(file);
+      if (meta.duration > getMaxVideoDuration()) {
+        setError(`Video is ${Math.round(meta.duration)}s — max is ${getMaxVideoDuration()}s. Please trim it.`);
+        return;
+      }
+
+      setVideo({
+        file,
+        previewUrl: createVideoPreviewUrl(file),
+        duration: Math.round(meta.duration),
+      });
+      setError(null);
+    } catch {
+      // If metadata extraction fails, still allow — Mux will validate
+      setVideo({
+        file,
+        previewUrl: createVideoPreviewUrl(file),
+        duration: 0,
+      });
+    }
+  };
+
+  const handleVideoRecorded = (file) => {
+    setShowRecorder(false);
+    getVideoMetadata(file).then((meta) => {
+      setVideo({
+        file,
+        previewUrl: createVideoPreviewUrl(file),
+        duration: Math.round(meta.duration),
+      });
+    }).catch(() => {
+      setVideo({
+        file,
+        previewUrl: createVideoPreviewUrl(file),
+        duration: 0,
+      });
+    });
+  };
+
+  const handleRemoveVideo = () => {
+    if (video) {
+      revokeVideoPreviewUrl(video.previewUrl);
+      setVideo(null);
+    }
+  };
+
   const handleSubmit = async () => {
     const walletAddress = getCurrentWallet();
     if (!walletAddress) return;
-    if (!body.trim() && photos.length === 0) return;
+    if (!body.trim() && photos.length === 0 && !video) return;
 
     setSubmitting(true);
     setError(null);
@@ -149,6 +218,27 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
         setUploadProgress(100);
       }
 
+      // Upload video (if attached)
+      let videoUploadId = null;
+      let videoDuration = null;
+      let videoThumbnailUrl = null;
+      if (video) {
+        setUploadProgress(0);
+        const videoResult = await uploadVideo(video.file, {
+          onProgress: (pct) => setUploadProgress(pct),
+        });
+
+        if (videoResult.error) {
+          setError(`Video upload failed: ${videoResult.error}`);
+          setSubmitting(false);
+          return;
+        }
+
+        videoUploadId = videoResult.uploadId;
+        videoDuration = videoResult.duration || video.duration;
+        videoThumbnailUrl = videoResult.thumbnailUrl;
+      }
+
       // Create the Current
       const { data, error: createError } = await createCurrent({
         authorWallet: walletAddress,
@@ -161,6 +251,10 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
         speciesTags,
         parametersSnapshot: params,
         visibility,
+        // Video fields (new)
+        videoUploadId,
+        videoDuration,
+        videoThumbnailUrl,
       });
 
       if (createError) {
@@ -171,6 +265,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
       // Success — reset and close
       setBody("");
       setPhotos([]);
+      handleRemoveVideo();
       setSelectedTank(null);
       setParams(null);
       setSpeciesTags([]);
@@ -197,7 +292,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
 
   if (!isOpen) return null;
 
-  const canSubmit = (body.trim() || photos.length > 0) && !submitting;
+  const canSubmit = (body.trim() || photos.length > 0 || video) && !submitting;
 
   return (
     <div
@@ -344,15 +439,15 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
             <button
               onClick={() => fileInputRef.current?.click()}
-              disabled={photos.length >= MAX_PHOTOS}
+              disabled={photos.length >= MAX_PHOTOS || !!video}
               style={{
                 padding: "0.4rem 0.75rem",
                 borderRadius: "8px",
                 border: "1px solid rgba(255, 255, 255, 0.1)",
                 background: "rgba(255, 255, 255, 0.04)",
-                color: photos.length >= MAX_PHOTOS ? "var(--text-muted)" : "#fff",
+                color: photos.length >= MAX_PHOTOS || video ? "var(--text-muted)" : "#fff",
                 fontSize: "0.75rem",
-                cursor: photos.length >= MAX_PHOTOS ? "default" : "pointer",
+                cursor: photos.length >= MAX_PHOTOS || video ? "default" : "pointer",
               }}
             >
               📷 Add Photos ({photos.length}/{MAX_PHOTOS})
@@ -408,6 +503,118 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
                   </button>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* Video upload */}
+        <div>
+          {!video && photos.length === 0 && !showRecorder && (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <button
+                onClick={() => videoInputRef.current?.click()}
+                style={{
+                  padding: "0.4rem 0.75rem",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  background: "rgba(255, 255, 255, 0.04)",
+                  color: "#fff",
+                  fontSize: "0.75rem",
+                  cursor: "pointer",
+                }}
+              >
+                🎬 Add Video
+              </button>
+              <button
+                onClick={() => setShowRecorder(true)}
+                style={{
+                  padding: "0.4rem 0.75rem",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  background: "rgba(255, 255, 255, 0.04)",
+                  color: "#fff",
+                  fontSize: "0.75rem",
+                  cursor: "pointer",
+                }}
+              >
+                ⏺️ Record
+              </button>
+              <input
+                ref={videoInputRef}
+                type="file"
+                accept="video/mp4,video/webm,video/quicktime,video/x-m4v"
+                onChange={handleVideoSelect}
+                style={{ display: "none" }}
+                aria-label="Select video"
+              />
+              <span style={{ fontSize: "0.6rem", color: "var(--text-muted)" }}>
+                Max {getMaxVideoDuration()}s
+              </span>
+            </div>
+          )}
+
+          {/* Video recorder */}
+          {showRecorder && (
+            <VideoRecorder
+              onRecorded={handleVideoRecorded}
+              onCancel={() => setShowRecorder(false)}
+            />
+          )}
+
+          {/* Video preview */}
+          {video && (
+            <div style={{ position: "relative", borderRadius: "10px", overflow: "hidden" }}>
+              <video
+                src={video.previewUrl}
+                style={{
+                  width: "100%",
+                  maxHeight: "200px",
+                  objectFit: "cover",
+                  borderRadius: "10px",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                }}
+                muted
+                playsInline
+                preload="metadata"
+              />
+              {/* Duration badge */}
+              {video.duration > 0 && (
+                <span style={{
+                  position: "absolute",
+                  bottom: "8px",
+                  right: "8px",
+                  padding: "2px 6px",
+                  borderRadius: "4px",
+                  background: "rgba(0, 0, 0, 0.7)",
+                  fontSize: "0.65rem",
+                  color: "#fff",
+                }}>
+                  🎬 {video.duration}s
+                </span>
+              )}
+              {/* Remove button */}
+              <button
+                onClick={handleRemoveVideo}
+                style={{
+                  position: "absolute",
+                  top: "6px",
+                  right: "6px",
+                  width: "22px",
+                  height: "22px",
+                  borderRadius: "50%",
+                  background: "rgba(239, 68, 68, 0.9)",
+                  border: "none",
+                  color: "#fff",
+                  fontSize: "0.7rem",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                aria-label="Remove video"
+              >
+                ✕
+              </button>
             </div>
           )}
         </div>

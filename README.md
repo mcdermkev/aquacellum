@@ -49,6 +49,7 @@ graph TD
 - **FishBase Master Curation File**: Offline JSON manifest (`fishbase_master.json`) storing taxonomic envelopes (temperature/pH/volume bounds) for compatibility evaluations.
 - **Local Database & Cache**: Maintains state persistence via `localStorage` and `Dexie.js` for responsive offline capabilities.
 - **Social Layer (The Reef)**: Supabase-backed social network with profiles, feed, reactions, comments, Schools (clubs), Expert Audits, mentorship, and real-time chat.
+- **Video & Livestream**: Mux-powered video pipeline — short-form video posts in feed (60s max, HLS adaptive streaming), with Tank Cams and Tide Livestream planned for Phase 2-3.
 - **Beta Infrastructure**: Local-first tank storage (Dexie.js), server-side transaction relayer for gasless on-chain writes, Privy embedded wallets for frictionless onboarding.
 
 ---

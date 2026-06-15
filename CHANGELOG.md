@@ -4,6 +4,77 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [Unreleased] — 2026-06-15
+
+### 🎬 Video Upload & Livestream — Phase 1: Short-Form Video in Currents
+
+Full video upload pipeline for The Reef social feed. Users can record or select video clips (up to 60s) and post them as Currents with inline HLS playback.
+
+#### New Infrastructure
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| Video Transcoding | Mux (Direct Upload + HLS delivery) | Upload, transcode, adaptive bitrate streaming |
+| Webhook Handler | Vercel Serverless (`/api/mux-webhook`) | Process video.asset.ready/errored events |
+| Upload API | Vercel Serverless (`/api/video-upload`) | Generate Mux Direct Upload URLs |
+| Playback | hls.js + native `<video>` | Cross-browser HLS with autoplay-on-scroll |
+
+#### New Files
+- **`api/video-upload.js`** — Serverless endpoint creating Mux Direct Upload URLs with wallet auth
+- **`api/mux-webhook.js`** — Webhook handler with signature verification, processes asset status transitions
+- **`src/services/videoUpload.js`** — Client-side upload service (validates type/size/duration, metadata extraction, thumbnail generation, PUT to Mux with progress)
+- **`src/hooks/useVideoUpload.js`** — TanStack Query mutation hook with progress tracking
+- **`src/components/video/VideoPlayer.jsx`** — HLS player with autoplay-on-scroll (IntersectionObserver), tap-to-unmute, duration badge, progress bar, error/retry states
+- **`src/components/video/VideoThumbnail.jsx`** — Poster frame display with processing/error overlays and duration badge
+- **`src/components/video/VideoRecorder.jsx`** — In-app camera recording with MediaRecorder API, 60s timer ring, front/back toggle, live preview
+- **`src/components/video/index.js`** — Barrel export
+- **`supabase/migrations/20250615_video_currents.sql`** — DB migration adding video columns to currents table
+- **`docs/VIDEO_ARCHITECTURE.md`** — Full architecture document covering all 4 phases (video uploads, Tank Cams, Tide Livestream, AI video features)
+
+#### Modified Files
+- **`src/components/reef/ContentComposer.jsx`** — Added video selection (file picker + in-app recorder), video preview with duration badge, mutual exclusivity with photo uploads
+- **`src/components/reef/CurrentCard.jsx`** — Renders `VideoPlayer` for ready videos, `VideoThumbnail` for processing/error states
+- **`src/services/reefApi.js`** — `createCurrent()` now accepts `videoUploadId`, `videoDuration`, `videoThumbnailUrl` params
+- **`package.json`** — Added `hls.js` ^1.5.17 dependency
+- **`.env.example`** — Added `MUX_TOKEN_ID`, `MUX_TOKEN_SECRET`, `MUX_WEBHOOK_SECRET`, `FRONTEND_ORIGIN`
+
+#### Database Schema (Supabase Migration)
+```sql
+ALTER TABLE currents ADD COLUMN video_upload_id TEXT;
+ALTER TABLE currents ADD COLUMN video_asset_id TEXT;
+ALTER TABLE currents ADD COLUMN video_playback_id TEXT;
+ALTER TABLE currents ADD COLUMN video_thumbnail_url TEXT;
+ALTER TABLE currents ADD COLUMN video_duration_seconds NUMERIC;
+ALTER TABLE currents ADD COLUMN video_status TEXT;
+ALTER TABLE currents ADD COLUMN video_alt_text TEXT;
+```
+
+#### Video Upload Flow
+1. User records (MediaRecorder) or selects video file (max 60s, 100MB)
+2. Client validates type/size/duration, extracts metadata
+3. Client calls `/api/video-upload` → receives Mux Direct Upload URL
+4. Client PUTs file directly to Mux with progress tracking (XHR)
+5. Current created with `video_status: "uploading"`
+6. Mux transcodes → fires webhook → updates to `"ready"` with playback ID
+7. Feed renders inline HLS player with autoplay-on-scroll
+
+#### Feed Playback UX
+- Autoplay muted when 50%+ visible (IntersectionObserver)
+- Tap to unmute → tap again to pause
+- Duration countdown badge (bottom-right)
+- Progress bar on hover
+- Poster frame from Mux thumbnail API
+- Processing state: blurred thumbnail + spinner
+- Error state: retry button
+
+#### Verification
+- ✅ `npm run build` — Vite production build passes (hls.js code-split into own chunk)
+- ✅ Mux API authenticated — Direct Upload creation confirmed
+- ✅ `/api/video-upload` endpoint live — returns upload URLs
+- ✅ `/api/mux-webhook` endpoint live — rejects unsigned requests (signature verification working)
+- ✅ Deployed to production via `vercel deploy --prod`
+
+---
+
 ## [Unreleased] — 2026-06-13
 
 ### Breeder Pro Mode Premium Upgrades & Enhancements

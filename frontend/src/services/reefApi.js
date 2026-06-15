@@ -166,6 +166,9 @@ export async function createCurrent({
   speciesTags = [],
   parametersSnapshot,
   visibility = "public",
+  videoUploadId,
+  videoDuration,
+  videoThumbnailUrl,
 }) {
   if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
 
@@ -173,20 +176,30 @@ export async function createCurrent({
   const rateCheck = checkRateLimit("post");
   if (!rateCheck.allowed) return { data: null, error: rateCheck.message };
 
+  // Build insert payload — only include video fields if present
+  const insertPayload = {
+    author_wallet: authorWallet,
+    title,
+    body,
+    media_urls: mediaUrls,
+    media_alt_texts: mediaAltTexts.length > 0 ? mediaAltTexts : null,
+    linked_tank_id: linkedTankId || null,
+    linked_tank_name: linkedTankName || null,
+    species_tags: speciesTags,
+    parameters_snapshot: parametersSnapshot || null,
+    visibility,
+  };
+
+  if (videoUploadId) {
+    insertPayload.video_upload_id = videoUploadId;
+    insertPayload.video_status = "uploading";
+    insertPayload.video_duration_seconds = videoDuration || null;
+    insertPayload.video_thumbnail_url = videoThumbnailUrl || null;
+  }
+
   const { data, error } = await supabase
     .from("currents")
-    .insert({
-      author_wallet: authorWallet,
-      title,
-      body,
-      media_urls: mediaUrls,
-      media_alt_texts: mediaAltTexts.length > 0 ? mediaAltTexts : null,
-      linked_tank_id: linkedTankId || null,
-      linked_tank_name: linkedTankName || null,
-      species_tags: speciesTags,
-      parameters_snapshot: parametersSnapshot || null,
-      visibility,
-    })
+    .insert(insertPayload)
     .select()
     .single();
 

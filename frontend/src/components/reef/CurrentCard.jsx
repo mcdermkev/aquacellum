@@ -12,6 +12,8 @@ import { ReactionBar } from "./ReactionBar";
 import { CommentThread } from "./CommentThread";
 import { watchTank, unwatchTank, isWatchingTank } from "../../services/reefApi";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import { VideoPlayer } from "../video/VideoPlayer";
+import { VideoThumbnail } from "../video/VideoThumbnail";
 
 /**
  * Format relative time (e.g., "2h ago", "3d ago")
@@ -232,6 +234,25 @@ export function CurrentCard({ current, onProfileClick, casualModeActive = false 
 
       {/* Photo grid */}
       <PhotoGrid urls={current.media_urls} altTexts={current.media_alt_texts} />
+
+      {/* Video player */}
+      {current.video_playback_id && current.video_status === "ready" && (
+        <VideoPlayer
+          playbackId={current.video_playback_id}
+          thumbnailUrl={current.video_thumbnail_url}
+          duration={current.video_duration_seconds}
+          altText={current.video_alt_text}
+        />
+      )}
+
+      {/* Video processing state */}
+      {current.video_status && current.video_status !== "ready" && !current.video_playback_id && (
+        <VideoThumbnail
+          thumbnailUrl={current.video_thumbnail_url}
+          duration={current.video_duration_seconds}
+          status={current.video_status}
+        />
+      )}
 
       {/* Parameter chips */}
       <ParameterChips snapshot={current.parameters_snapshot} />
