@@ -789,6 +789,22 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     await fetchDashboardData();
   };
 
+  const logWaterChange = async () => {
+    await db.actionLogs.add({
+      tankId: activeTank.id,
+      actionType: "Water Change",
+      timestamp: Math.round(Date.now() / 1000),
+      details: "Partial water change performed"
+    });
+    addXp(3, "Logged Water Change");
+    showToast(casualModeActive
+      ? "💧 Fresh water! Your fish are loving it! +15 Loyalty Points!"
+      : "💧 Water change logged"
+    );
+    fetchLocalActionLogs();
+    await fetchDashboardData();
+  };
+
   const logAlgaeLongPress = async () => {
     setInlineDetailType("algae");
     setInlineDetailText("Scraped green spot algae & wiped glass");
@@ -2201,10 +2217,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
                         <button
                           type="button"
-                          onClick={() => { logAlgaeClick(); setQuickActionsOpen(false); }}
+                          onClick={() => { logWaterChange(); setQuickActionsOpen(false); }}
                           className="dropdown-action-item"
                         >
-                          <span style={{ marginRight: "0.25rem" }}>🧹</span> Quick Clean
+                          <span style={{ marginRight: "0.25rem" }}>💧</span> Water Change
                         </button>
                         <button
                           type="button"
@@ -2351,16 +2367,16 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             
                             <button
                               type="button"
-                              onClick={() => { logAlgaeClick(); setQuickActionsOpen(false); }}
+                              onClick={() => { logWaterChange(); setQuickActionsOpen(false); }}
                               className="console-tile tile-environment"
                             >
                               <span className="console-tile-icon">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8" />
+                                  <path d="M12 2c0 0-4 6-4 10a4 4 0 0 0 8 0c0-4-4-10-4-10z" />
                                 </svg>
                               </span>
-                              <span className="console-tile-label">Quick Clean</span>
-                              <span className="console-tile-desc">Algae sweep</span>
+                              <span className="console-tile-label">Water Change</span>
+                              <span className="console-tile-desc">Log partial change</span>
                             </button>
                             
                             <button

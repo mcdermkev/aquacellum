@@ -4,6 +4,17 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [Unreleased] — 2026-06-16
+
+### 🔧 Command Console — Replace Quick Clean with Water Change
+
+Swapped the "Quick Clean" (algae sweep) button in the pro Command Console with a "Water Change" button. Clicking it instantly logs a water change action and updates the tank card's "Water Change" timestamp in real time.
+
+#### Modified Files
+- **`src/components/TankList.jsx`** — Added `logWaterChange()` function, replaced Quick Clean tile and dropdown item with Water Change (💧 icon, logs `actionType: "Water Change"`)
+
+---
+
 ## [Unreleased] — 2026-06-15
 
 ### 🎬 Video Upload & Livestream — Phase 1: Short-Form Video in Currents
