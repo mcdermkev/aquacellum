@@ -13,6 +13,7 @@ import { ProfileEdit } from "./ProfileEdit";
 import { BadgeShelf } from "./BadgeShelf";
 import { FollowButton } from "./FollowButton";
 import { SchoolInviteButton } from "./SchoolInviteButton";
+import { MessageButton } from "./MessageButton";
 import { useProfile, useTankmates, useRelationshipStatus, useSendTankmateRequest, useUpdateProfile } from "../../hooks/useReefProfile";
 import { useUserCurrents } from "../../hooks/useReefFeed";
 import { getCurrentWallet } from "../../services/supabaseClient";
@@ -400,6 +401,12 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
           <ConnectionButton targetWallet={walletAddress} casualModeActive={casualModeActive} />
           {!isOwnProfile && (
             <FollowButton targetWallet={walletAddress} />
+          )}
+          {!isOwnProfile && (
+            <MessageButton targetWallet={walletAddress} onOpenConversation={(convoId, wallet) => {
+              // Dispatch event for ReefFeed to handle navigation
+              window.dispatchEvent(new CustomEvent("reef_open_conversation", { detail: { conversationId: convoId, targetWallet: wallet } }));
+            }} />
           )}
           {!isOwnProfile && (
             <SchoolInviteButton targetWallet={walletAddress} />

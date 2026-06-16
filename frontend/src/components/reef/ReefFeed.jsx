@@ -10,6 +10,7 @@ import React, { useState, useCallback, useRef } from "react";
 import { CurrentCard } from "./CurrentCard";
 import { ContentComposer } from "./ContentComposer";
 import { SonarBell } from "./SonarBell";
+import { MessagesPanel } from "./MessagesPanel";
 import { TankmateRequests } from "./TankmateRequests";
 import { SchoolInvites } from "./SchoolInvites";
 import { PublicProfile } from "./PublicProfile";
@@ -348,6 +349,7 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
             </button>
           )}
           <SonarBell />
+          <MessagesPanel />
           <button
             onClick={handleRefresh}
             style={{
