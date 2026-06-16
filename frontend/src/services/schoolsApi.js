@@ -480,3 +480,157 @@ export async function updateChallenge(challengeId, updates) {
 
   return { error };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCHOOL INVITES
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Invite a user to a school (Founder/Elder only).
+ */
+export async function inviteToSchool(schoolId, targetWallet) {
+  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
+
+  const walletAddress = getCurrentWallet();
+  if (!walletAddress) return { data: null, error: "Not connected" };
+
+  // Check if already invited or already a member
+  const { data: existing } = await supabase
+    .from("school_invites")
+    .select("id, status")
+    .eq("school_id", schoolId)
+    .eq("invited_wallet", targetWallet)
+    .eq("status", "pending")
+    .single();
+
+  if (existing) return { data: null, error: "User already has a pending invite" };
+
+  const { data, error } = await supabase
+    .from("school_invites")
+    .insert({
+      school_id: schoolId,
+      invited_wallet: targetWallet,
+      invited_by: walletAddress,
+      status: "pending",
+    })
+    .select()
+    .single();
+
+  return { data, error };
+}
+
+/**
+ * Get pending invites for the current user.
+ */
+export async function getMySchoolInvites() {
+  if (!isSupabaseConfigured()) return { data: [], error: "Not configured" };
+
+  const walletAddress = getCurrentWallet();
+  if (!walletAddress) return { data: [], error: "Not connected" };
+
+  const { data, error } = await supabase
+    .from("school_invites")
+    .select(`
+      *,
+      school:school_id (
+        id,
+        name,
+        slug,
+        school_type,
+        banner_url,
+        member_count
+      ),
+      inviter:invited_by (
+        wallet_address,
+        display_name,
+        avatar_url,
+        companion_tier
+      )
+    `)
+    .eq("invited_wallet", walletAddress)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  return { data: data || [], error };
+}
+
+/**
+ * Get pending invites sent for a specific school (for Founder/Elder to see).
+ */
+export async function getSchoolPendingInvites(schoolId) {
+  if (!isSupabaseConfigured()) return { data: [], error: "Not configured" };
+
+  const { data, error } = await supabase
+    .from("school_invites")
+    .select(`
+      *,
+      invitee:invited_wallet (
+        wallet_address,
+        display_name,
+        avatar_url,
+        companion_tier
+      )
+    `)
+    .eq("school_id", schoolId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  return { data: data || [], error };
+}
+
+/**
+ * Accept a school invite — adds user as member.
+ */
+export async function acceptSchoolInvite(inviteId, schoolId) {
+  if (!isSupabaseConfigured()) return { error: "Not configured" };
+
+  const walletAddress = getCurrentWallet();
+  if (!walletAddress) return { error: "Not connected" };
+
+  // Update invite status
+  const { error: updateError } = await supabase
+    .from("school_invites")
+    .update({ status: "accepted" })
+    .eq("id", inviteId);
+
+  if (updateError) return { error: updateError };
+
+  // Add as member
+  const { error: memberError } = await supabase
+    .from("school_members")
+    .insert({
+      school_id: schoolId,
+      wallet_address: walletAddress,
+      role: "member",
+    });
+
+  return { error: memberError };
+}
+
+/**
+ * Decline a school invite.
+ */
+export async function declineSchoolInvite(inviteId) {
+  if (!isSupabaseConfigured()) return { error: "Not configured" };
+
+  const { error } = await supabase
+    .from("school_invites")
+    .update({ status: "declined" })
+    .eq("id", inviteId);
+
+  return { error };
+}
+
+/**
+ * Cancel a pending invite (Founder/Elder action).
+ */
+export async function cancelSchoolInvite(inviteId) {
+  if (!isSupabaseConfigured()) return { error: "Not configured" };
+
+  const { error } = await supabase
+    .from("school_invites")
+    .delete()
+    .eq("id", inviteId);
+
+  return { error };
+}

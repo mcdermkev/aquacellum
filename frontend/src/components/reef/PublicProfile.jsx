@@ -12,6 +12,7 @@ import { CurrentCard } from "./CurrentCard";
 import { ProfileEdit } from "./ProfileEdit";
 import { BadgeShelf } from "./BadgeShelf";
 import { FollowButton } from "./FollowButton";
+import { SchoolInviteButton } from "./SchoolInviteButton";
 import { useProfile, useTankmates, useRelationshipStatus, useSendTankmateRequest, useUpdateProfile } from "../../hooks/useReefProfile";
 import { useUserCurrents } from "../../hooks/useReefFeed";
 import { getCurrentWallet } from "../../services/supabaseClient";
@@ -399,6 +400,9 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
           <ConnectionButton targetWallet={walletAddress} casualModeActive={casualModeActive} />
           {!isOwnProfile && (
             <FollowButton targetWallet={walletAddress} />
+          )}
+          {!isOwnProfile && (
+            <SchoolInviteButton targetWallet={walletAddress} />
           )}
           {isOwnProfile && !editing && (
             <button

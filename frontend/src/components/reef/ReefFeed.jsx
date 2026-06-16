@@ -11,6 +11,7 @@ import { CurrentCard } from "./CurrentCard";
 import { ContentComposer } from "./ContentComposer";
 import { SonarBell } from "./SonarBell";
 import { TankmateRequests } from "./TankmateRequests";
+import { SchoolInvites } from "./SchoolInvites";
 import { PublicProfile } from "./PublicProfile";
 import { SchoolDirectory } from "./SchoolDirectory";
 import { SchoolPage } from "./SchoolPage";
@@ -479,6 +480,11 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
       {/* Pending Tankmate Requests */}
       {activeTab === "following" && (
         <TankmateRequests onNavigateProfile={handleProfileClick} casualModeActive={casualModeActive} />
+      )}
+
+      {/* Pending School Invites */}
+      {activeTab === "following" && (
+        <SchoolInvites onNavigateSchool={(schoolId) => { setViewingSchool(schoolId); }} />
       )}
 
       {/* Discovery features — Discover tab only */}
