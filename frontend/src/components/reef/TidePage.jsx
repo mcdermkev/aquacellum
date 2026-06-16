@@ -16,6 +16,7 @@ import TideChat from "./TideChat";
 import TideMap from "./TideMap";
 import SwapSheet from "./SwapSheet";
 import AuctionPanel from "./AuctionPanel";
+import { TideStreamPlayer } from "./TideStreamPlayer";
 
 const TIDE_TYPE_LABELS = {
   expo: { label: "Expo", icon: "📍", color: "#10b981" },
@@ -236,22 +237,14 @@ export function TidePage({ tideId, onBack }) {
               )}
             </section>
 
-            {/* Virtual Tides — Coming Soon notice */}
+            {/* Virtual Tides — Livestream Player */}
             {tide.tide_type === "virtual" && (
-              <section aria-label="Virtual Stream" className="tide-page__virtual-coming-soon">
-                <div style={{
-                  padding: "1.5rem",
-                  borderRadius: "12px",
-                  background: "rgba(99, 102, 241, 0.08)",
-                  border: "1px solid rgba(99, 102, 241, 0.2)",
-                  textAlign: "center",
-                }}>
-                  <p style={{ fontSize: "2rem", margin: "0 0 0.5rem" }}>🎥</p>
-                  <h3 style={{ margin: "0 0 0.5rem", color: "#fff" }}>Livestream — Coming Soon</h3>
-                  <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                    Virtual Tides with live video streaming, real-time chat overlay, and Poseidon narration are under development. Stay tuned!
-                  </p>
-                </div>
+              <section aria-label="Virtual Stream">
+                <TideStreamPlayer
+                  tideId={tideId}
+                  hostWallet={tide.host_wallet}
+                  tideStartTime={tide.start_time}
+                />
               </section>
             )}
           </div>

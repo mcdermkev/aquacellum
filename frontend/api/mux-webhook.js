@@ -145,6 +145,7 @@ export default async function handler(req, res) {
         const streamId = eventData.id;
         console.log(`[Mux Webhook] Live stream active: ${streamId}`);
 
+        // Update tank_cams
         await supabaseUpdateTable(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
           table: "tank_cams",
           matchColumn: "mux_live_stream_id",
@@ -152,6 +153,16 @@ export default async function handler(req, res) {
           updates: {
             status: "active",
             last_active_at: new Date().toISOString(),
+          },
+        });
+
+        // Update tide_streams
+        await supabaseUpdateTable(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+          table: "tide_streams",
+          matchColumn: "mux_live_stream_id",
+          matchValue: streamId,
+          updates: {
+            status: "live",
           },
         });
         break;
@@ -170,6 +181,15 @@ export default async function handler(req, res) {
             status: "idle",
           },
         });
+
+        await supabaseUpdateTable(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+          table: "tide_streams",
+          matchColumn: "mux_live_stream_id",
+          matchValue: streamId,
+          updates: {
+            status: "ended",
+          },
+        });
         break;
       }
 
@@ -186,6 +206,37 @@ export default async function handler(req, res) {
             status: "disconnected",
           },
         });
+
+        await supabaseUpdateTable(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+          table: "tide_streams",
+          matchColumn: "mux_live_stream_id",
+          matchValue: streamId,
+          updates: {
+            status: "disconnected",
+          },
+        });
+        break;
+      }
+
+      case "video.asset.live_stream_completed": {
+        // Recording from a live stream is ready (VOD)
+        const asset = eventData;
+        const playbackId = asset.playback_ids?.[0]?.id;
+        const passthrough = parsePassthrough(asset.passthrough);
+        const tideId = passthrough?.tideId;
+
+        if (playbackId && tideId) {
+          console.log(`[Mux Webhook] Live recording ready for tide ${tideId}: ${playbackId}`);
+
+          await supabaseUpdateTable(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+            table: "tide_streams",
+            matchColumn: "tide_id",
+            matchValue: tideId,
+            updates: {
+              recording_playback_id: playbackId,
+            },
+          });
+        }
         break;
       }
 
