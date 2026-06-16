@@ -138,6 +138,57 @@ export default async function handler(req, res) {
         break;
       }
 
+      // ── Live Stream Events (Tank Cams / Tide Streams) ──
+
+      case "video.live_stream.active": {
+        // Camera/OBS connected and streaming
+        const streamId = eventData.id;
+        console.log(`[Mux Webhook] Live stream active: ${streamId}`);
+
+        await supabaseUpdateTable(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+          table: "tank_cams",
+          matchColumn: "mux_live_stream_id",
+          matchValue: streamId,
+          updates: {
+            status: "active",
+            last_active_at: new Date().toISOString(),
+          },
+        });
+        break;
+      }
+
+      case "video.live_stream.idle": {
+        // Stream ended gracefully (camera disconnected normally)
+        const streamId = eventData.id;
+        console.log(`[Mux Webhook] Live stream idle: ${streamId}`);
+
+        await supabaseUpdateTable(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+          table: "tank_cams",
+          matchColumn: "mux_live_stream_id",
+          matchValue: streamId,
+          updates: {
+            status: "idle",
+          },
+        });
+        break;
+      }
+
+      case "video.live_stream.disconnected": {
+        // Stream disconnected unexpectedly
+        const streamId = eventData.id;
+        console.warn(`[Mux Webhook] Live stream disconnected: ${streamId}`);
+
+        await supabaseUpdateTable(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+          table: "tank_cams",
+          matchColumn: "mux_live_stream_id",
+          matchValue: streamId,
+          updates: {
+            status: "disconnected",
+          },
+        });
+        break;
+      }
+
       default:
         // Unhandled event type — acknowledge but do nothing
         console.log(`[Mux Webhook] Unhandled event: ${eventType}`);
@@ -184,5 +235,30 @@ function parsePassthrough(passthrough) {
     return JSON.parse(passthrough);
   } catch {
     return {};
+  }
+}
+
+/**
+ * Update a row in any Supabase table by matching a column value.
+ */
+async function supabaseUpdateTable(supabaseUrl, serviceKey, { table, matchColumn, matchValue, updates }) {
+  if (!matchValue || !table) return;
+
+  const url = `${supabaseUrl}/rest/v1/${table}?${matchColumn}=eq.${encodeURIComponent(matchValue)}`;
+
+  const response = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify(updates),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error(`[Mux Webhook] Supabase update (${table}) failed: ${response.status} ${errText}`);
   }
 }
