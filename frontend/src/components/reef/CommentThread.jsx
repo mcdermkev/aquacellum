@@ -184,20 +184,29 @@ export function CommentThread({ currentId, initialCount = 0 }) {
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [commentCount, setCommentCount] = useState(initialCount);
+  const [loaded, setLoaded] = useState(false);
 
   const loadComments = async () => {
-    if (!currentId) return;
+    if (!currentId || loaded) return;
     setLoading(true);
     const { data } = await getComments(currentId, { limit: 50 });
     if (data) {
       setComments(data);
       setCommentCount(data.length);
+      // Auto-expand if there are existing comments
+      if (data.length > 0) setExpanded(true);
     }
     setLoading(false);
+    setLoaded(true);
   };
 
+  // Load comments on mount
+  useEffect(() => {
+    loadComments();
+  }, [currentId]);
+
   const handleExpand = () => {
-    if (!expanded) {
+    if (!loaded) {
       loadComments();
     }
     setExpanded(!expanded);
