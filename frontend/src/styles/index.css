@@ -3529,17 +3529,6 @@ textarea:focus:not(:focus-visible) {
   color: white;
   box-shadow: 0 0 12px rgba(14, 165, 233, 0.25), 0 0 0 3px rgba(14, 165, 233, 0.08);
 }
-/* Connector lines between steps */
-.create-tide__steps .create-tide__step + .create-tide__step::before {
-  content: "";
-  display: block;
-  width: 24px;
-  height: 2px;
-  background: rgba(255, 255, 255, 0.06);
-  margin-right: 0.75rem;
-  position: relative;
-  left: -0.75rem;
-}
 .create-tide__step-content {
   animation: fadeSlideIn 0.25s ease;
 }

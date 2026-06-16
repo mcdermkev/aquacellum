@@ -161,7 +161,18 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
           {walletAddress && (
             <button
               onClick={() => setCreatingTide(true)}
-              className="btn btn--primary btn--sm"
+              style={{
+                padding: "0.45rem 1rem",
+                borderRadius: "8px",
+                border: "none",
+                background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
+                color: "#fff",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                boxShadow: "0 3px 10px rgba(14, 165, 233, 0.2)",
+                transition: "all 0.15s ease",
+              }}
             >
               + Create Tide
             </button>
