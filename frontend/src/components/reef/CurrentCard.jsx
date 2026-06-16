@@ -10,6 +10,7 @@ import React, { useState } from "react";
 import { ProfileCard } from "./ProfileCard";
 import { ReactionBar } from "./ReactionBar";
 import { CommentThread } from "./CommentThread";
+import { FollowButton } from "./FollowButton";
 import { watchTank, unwatchTank, isWatchingTank } from "../../services/reefApi";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { VideoPlayer } from "../video/VideoPlayer";
@@ -163,7 +164,7 @@ export function CurrentCard({ current, onProfileClick, casualModeActive = false 
       }}
       aria-label={`Post by ${profile?.display_name || current.author_wallet}`}
     >
-      {/* Header: Author + Timestamp + Tank name */}
+      {/* Header: Author + Timestamp + Follow + Tank name */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <ProfileCard
@@ -174,9 +175,14 @@ export function CurrentCard({ current, onProfileClick, casualModeActive = false 
             onClick={() => onProfileClick?.(current.author_wallet)}
           />
         </div>
-        <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>
-          {timeAgo(current.created_at)}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          {!isOwnPost && (
+            <FollowButton targetWallet={current.author_wallet} compact />
+          )}
+          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>
+            {timeAgo(current.created_at)}
+          </span>
+        </div>
       </div>
 
       {/* Tank name badge */}

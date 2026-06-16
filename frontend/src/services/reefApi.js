@@ -248,7 +248,7 @@ export async function getFollowingFeed(walletAddress, { cursor, limit = 20 } = {
 
   // Separate followed wallets and watched tanks
   const followedWallets = follows
-    .filter((f) => f.follow_type === "tankmate" && f.target_wallet)
+    .filter((f) => (f.follow_type === "tankmate" || f.follow_type === "follow") && f.target_wallet)
     .map((f) => f.target_wallet);
 
   const watchedTanks = follows
@@ -801,6 +801,102 @@ export async function removeTankmate(targetWallet) {
     .eq("target_wallet", walletAddress);
 
   return { error: null };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ONE-WAY FOLLOWS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Follow a user (one-way, no approval needed).
+ */
+export async function followUser(targetWallet) {
+  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
+
+  const walletAddress = getCurrentWallet();
+  if (!walletAddress) return { data: null, error: "Not connected" };
+  if (walletAddress === targetWallet) return { data: null, error: "Cannot follow yourself" };
+
+  const { data, error } = await supabase
+    .from("follows")
+    .insert({
+      follower_wallet: walletAddress,
+      follow_type: "follow",
+      target_wallet: targetWallet,
+    })
+    .select()
+    .single();
+
+  return { data, error };
+}
+
+/**
+ * Unfollow a user.
+ */
+export async function unfollowUser(targetWallet) {
+  if (!isSupabaseConfigured()) return { error: "Not configured" };
+
+  const walletAddress = getCurrentWallet();
+  if (!walletAddress) return { error: "Not connected" };
+
+  const { error } = await supabase
+    .from("follows")
+    .delete()
+    .eq("follower_wallet", walletAddress)
+    .eq("follow_type", "follow")
+    .eq("target_wallet", targetWallet);
+
+  return { error };
+}
+
+/**
+ * Check if current user is following a target user.
+ */
+export async function isFollowingUser(targetWallet) {
+  if (!isSupabaseConfigured()) return false;
+
+  const walletAddress = getCurrentWallet();
+  if (!walletAddress || walletAddress === targetWallet) return false;
+
+  const { data } = await supabase
+    .from("follows")
+    .select("id")
+    .eq("follower_wallet", walletAddress)
+    .eq("follow_type", "follow")
+    .eq("target_wallet", targetWallet)
+    .single();
+
+  return !!data;
+}
+
+/**
+ * Get follower count for a user.
+ */
+export async function getFollowerCount(walletAddress) {
+  if (!isSupabaseConfigured()) return 0;
+
+  const { count } = await supabase
+    .from("follows")
+    .select("*", { count: "exact", head: true })
+    .eq("target_wallet", walletAddress)
+    .in("follow_type", ["follow", "tankmate"]);
+
+  return count || 0;
+}
+
+/**
+ * Get following count for a user.
+ */
+export async function getFollowingCount(walletAddress) {
+  if (!isSupabaseConfigured()) return 0;
+
+  const { count } = await supabase
+    .from("follows")
+    .select("*", { count: "exact", head: true })
+    .eq("follower_wallet", walletAddress)
+    .in("follow_type", ["follow", "tankmate"]);
+
+  return count || 0;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

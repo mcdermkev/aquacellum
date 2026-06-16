@@ -11,9 +11,11 @@ import { ProfileCard } from "./ProfileCard";
 import { CurrentCard } from "./CurrentCard";
 import { ProfileEdit } from "./ProfileEdit";
 import { BadgeShelf } from "./BadgeShelf";
+import { FollowButton } from "./FollowButton";
 import { useProfile, useTankmates, useRelationshipStatus, useSendTankmateRequest, useUpdateProfile } from "../../hooks/useReefProfile";
 import { useUserCurrents } from "../../hooks/useReefFeed";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import { getFollowerCount, getFollowingCount } from "../../services/reefApi";
 import { db } from "../../db";
 
 const TIER_COLORS = {
@@ -43,6 +45,30 @@ function walletGradient(wallet) {
 function truncateWallet(wallet) {
   if (!wallet) return "Unknown";
   return `${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
+}
+
+function FollowerCounts({ walletAddress }) {
+  const [followers, setFollowers] = useState(null);
+  const [following, setFollowing] = useState(null);
+
+  useEffect(() => {
+    if (!walletAddress) return;
+    getFollowerCount(walletAddress).then(setFollowers);
+    getFollowingCount(walletAddress).then(setFollowing);
+  }, [walletAddress]);
+
+  if (followers === null && following === null) return null;
+
+  return (
+    <div style={{ display: "flex", gap: "1.25rem", marginTop: "0.75rem", paddingLeft: "0.25rem" }}>
+      <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+        <strong style={{ color: "#fff", fontWeight: 700 }}>{followers ?? "–"}</strong> Followers
+      </span>
+      <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+        <strong style={{ color: "#fff", fontWeight: 700 }}>{following ?? "–"}</strong> Following
+      </span>
+    </div>
+  );
 }
 
 function ConnectionButton({ targetWallet, casualModeActive }) {
@@ -371,6 +397,9 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
             </p>
           </div>
           <ConnectionButton targetWallet={walletAddress} casualModeActive={casualModeActive} />
+          {!isOwnProfile && (
+            <FollowButton targetWallet={walletAddress} />
+          )}
           {isOwnProfile && !editing && (
             <button
               onClick={() => setEditing(true)}
@@ -507,6 +536,9 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
             </p>
           </div>
         </div>
+
+        {/* Follower / Following counts */}
+        <FollowerCounts walletAddress={walletAddress} />
       </div>
 
       {/* Badge Shelf */}
