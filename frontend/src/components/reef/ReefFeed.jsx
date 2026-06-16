@@ -20,6 +20,7 @@ import { TidePage } from "./TidePage";
 import { CreateTide } from "./CreateTide";
 import { ReefSearchBar } from "./ReefSearchBar";
 import { DiscoveryPanel } from "./DiscoveryPanel";
+import { TankCamDiscovery } from "../tank-cam/TankCamDiscovery";
 import { useFollowingFeed, useDiscoverFeed } from "../../hooks/useReefFeed";
 import { useEnsureProfile } from "../../hooks/useReefProfile";
 import { getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
@@ -410,6 +411,25 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
         >
           {casualModeActive ? "Explore" : "Discover"}
         </button>
+        <button
+          onClick={() => setActiveTab("live")}
+          style={{
+            flex: 1,
+            padding: "0.5rem",
+            borderRadius: "8px",
+            border: "none",
+            background: activeTab === "live"
+              ? "rgba(239, 68, 68, 0.12)"
+              : "transparent",
+            color: activeTab === "live" ? "#fff" : "var(--text-muted)",
+            fontSize: "0.8rem",
+            fontWeight: activeTab === "live" ? 600 : 400,
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+          }}
+        >
+          📹 Live
+        </button>
       </div>
 
       {/* Welcome / First-Post Guidance Banner */}
@@ -456,6 +476,11 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
           onProfileClick={handleProfileClick}
           casualModeActive={casualModeActive}
         />
+      )}
+
+      {/* Live Tank Cams — Live tab */}
+      {activeTab === "live" && (
+        <TankCamDiscovery />
       )}
 
       {/* Not configured notice */}

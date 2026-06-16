@@ -17,6 +17,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { relayMoveSpecimen, relayLogWaterParameters, relayMintSpecimen } from "../services/relayer";
 import { createCurrent } from "../services/reefApi";
 import { isSupabaseConfigured } from "../services/supabaseClient";
+import { TankCamSetup } from "./tank-cam/TankCamSetup";
 
 const TANK_TYPES = ["Freshwater", "Saltwater", "Brackish", "Pond"];
 const CONTAINMENT_TYPES = ["Tank", "Tub", "Basket"];
@@ -2717,6 +2718,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       )}
                     </>
                   )}
+
+                  {/* Tank Cam Setup */}
+                  <TankCamSetup tankId={activeTank.id} tankName={activeTank.name} />
                 </div>
               ) }
 {/* 2.2 FISH SUB-TAB: Fish inside tank — consumer label in Casual mode */}
