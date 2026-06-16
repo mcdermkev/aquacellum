@@ -22,7 +22,6 @@ const TIDE_TYPES = [
     icon: "🎥",
     label: "Virtual",
     desc: "Livestream event — breeding demos, Q&A, species spotlights.",
-    comingSoon: true,
   },
   {
     key: "challenge",
