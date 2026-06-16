@@ -6,6 +6,85 @@ All notable changes to AquaDex are documented here.
 
 ## [Unreleased] — 2026-06-16
 
+### 🎬 Video & Livestream System — Complete (Phases 1–3)
+
+Full video infrastructure for The Reef social layer, powered by Mux.
+
+#### Phase 1: Short-Form Video in Currents
+- **Video Upload Pipeline**: Record (MediaRecorder) or select video (max 60s, 100MB) → client-side validation → Mux Direct Upload → HLS transcoding → inline feed playback
+- **VideoPlayer**: Autoplay-on-scroll (IntersectionObserver), tap-to-unmute, duration badge, progress bar, error/retry states
+- **VideoRecorder**: In-app camera with 60s circular timer, front/back toggle, live preview
+- **Webhook Handler**: Processes `video.asset.ready`/`errored`/`upload.asset_created` events to update post status
+- **ContentComposer**: Extended with video file picker + record button (mutual exclusivity with photos)
+- **CurrentCard**: Renders VideoPlayer for ready videos, VideoThumbnail for processing states
+
+#### Phase 2: Tank Cams (Always-On Ambient Livestream)
+- **Tank Cam Setup**: One-click from tank Overview tab → creates Mux live stream → displays RTMP URL + stream key
+- **Tank Cam Viewer**: Full-screen LL-HLS player with LIVE badge, viewer count (Supabase Presence), floating emoji reactions
+- **Tank Cam Discovery**: Grid layout in new "📹 Live" tab in The Reef showing all active public cams
+- **Webhook Integration**: `live_stream.active/idle/disconnected` events update `tank_cams.status` in real-time
+- **FloatingReactions**: Periscope-style emoji animation overlay (broadcast via Supabase Realtime)
+
+#### Phase 3: Virtual Tide Livestream
+- **TideStreamPlayer**: Host controls (create stream, RTMP credentials, end stream) + LL-HLS viewer for attendees
+- **VOD Recording**: Streams are automatically recorded; after event ends, recording becomes available in Recap tab
+- **Webhook**: Handles `live_stream.active/idle/disconnected` + `asset.live_stream_completed` for VOD playback ID
+- **TidePage**: Replaced "Coming Soon" placeholder with live stream player
+
+#### Infrastructure
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| Video Transcoding | Mux (Direct Upload + HLS) | Upload, transcode, adaptive bitrate |
+| Live Streaming | Mux Live (LL-HLS, RTMP ingest) | Tank Cams + Tide broadcasts |
+| Playback | hls.js + native `<video>` | Cross-browser HLS |
+| Realtime | Supabase Presence + Broadcast | Viewer counts, reactions |
+| Webhooks | Vercel Serverless | Async status updates |
+
+#### New API Endpoints
+- `POST /api/video-upload` — Mux Direct Upload URL creation
+- `POST /api/mux-webhook` — Handles all Mux webhook events
+- `POST /api/tank-cam-setup` — Create/delete Tank Cam live streams
+- `GET /api/tank-cams` — List active public Tank Cams
+- `POST /api/tide-stream-setup` — Create/end Tide livestreams with VOD recording
+
+#### Database Migrations
+- `20250615_video_currents.sql` — Video columns on currents table
+- `20250616_tank_cams.sql` — Tank Cams table with RLS
+- `20250616_tide_streams.sql` — Tide Streams table with RLS
+
+---
+
+### 🤝 Social Layer Overhaul — Follow System & School Invites
+
+#### One-Tap Follow System (Batch 1)
+- **FollowButton component**: Compact (feed cards) and full (profiles) variants with optimistic UI
+- **Follow from feed**: Every post shows a "+ Follow" button next to the author timestamp
+- **Follow from profile**: Full-size Follow button next to Connect on PublicProfile
+- **Follower/Following counts**: Displayed on all profiles
+- **Following feed fixed**: Now includes posts from followed users (not just tankmates)
+- Uses existing `follows` table with `follow_type: "follow"` — no migration needed
+
+#### School Invite System (Batch 2)
+- **SchoolInviteButton**: Dropdown on user profiles showing eligible schools (only visible to Founders/Elders)
+- **SchoolInvites panel**: Shows pending invites in Following tab with Join/Decline
+- **API functions**: `inviteToSchool`, `acceptSchoolInvite`, `declineSchoolInvite`, `getMySchoolInvites`
+- **DB migration**: `school_invites` table with unique pending constraint
+- **Flow**: Founder visits profile → Invite to School → user sees invite in feed → accepts → joined
+
+---
+
+### 🐛 Bug Fixes & UI Polish
+
+- **ContentComposer mobile**: Fixed nav bar overlapping modal on mobile (React Portal + z-index 99999 + 100dvh + safe-area-inset)
+- **Mux webhook**: Fixed signature verification (Vercel body parsing) and env var fallback (`VITE_SUPABASE_ANON_KEY`)
+- **Comments auto-show**: Comments now auto-load and expand when a post has them (no click required)
+- **Create Tide wizard**: Premium glassmorphic redesign (gradient buttons, glow steps, card hover lift, form focus states, responsive grid, fadeSlideIn animation)
+- **Create Tide steps**: Fixed step numbers not centered (removed ::before pseudo-element connectors)
+- **Create Tide button**: Styled "+ Create Tide" button (was rendering with browser defaults/white)
+- **Virtual Tide unlocked**: Removed "Coming Soon" badge — now fully functional with livestream
+
+---
+
 ### 🔧 Command Console — Replace Quick Clean with Water Change
 
 Swapped the "Quick Clean" (algae sweep) button in the pro Command Console with a "Water Change" button. Clicking it instantly logs a water change action and updates the tank card's "Water Change" timestamp in real time.

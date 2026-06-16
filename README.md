@@ -48,8 +48,8 @@ graph TD
 - **Base L2 Smart Contracts**: Execute registry transactions, pedigree state transitions, and escrow/shipping handling.
 - **FishBase Master Curation File**: Offline JSON manifest (`fishbase_master.json`) storing taxonomic envelopes (temperature/pH/volume bounds) for compatibility evaluations.
 - **Local Database & Cache**: Maintains state persistence via `localStorage` and `Dexie.js` for responsive offline capabilities.
-- **Social Layer (The Reef)**: Supabase-backed social network with profiles, feed, reactions, comments, Schools (clubs), Expert Audits, mentorship, and real-time chat.
-- **Video & Livestream**: Mux-powered video pipeline — short-form video posts in feed (60s max, HLS adaptive streaming), with Tank Cams and Tide Livestream planned for Phase 2-3.
+- **Social Layer (The Reef)**: Supabase-backed social network with profiles, feed, reactions, comments, Schools (clubs), Expert Audits, mentorship, one-tap follow system, school invites, and real-time chat.
+- **Video & Livestream**: Mux-powered video pipeline — short-form video posts (60s max, HLS adaptive streaming), always-on Tank Cams with live viewer reactions, and Virtual Tide livestreaming with VOD recording.
 - **Beta Infrastructure**: Local-first tank storage (Dexie.js), server-side transaction relayer for gasless on-chain writes, Privy embedded wallets for frictionless onboarding.
 
 ---
