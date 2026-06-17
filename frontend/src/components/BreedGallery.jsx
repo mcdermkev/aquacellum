@@ -18,6 +18,7 @@ import { db } from "../db";
 import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";
 import { getPersonality } from "../utils/personality";
 import { SpeciesInsights } from "./reef/SpeciesInsights";
+import { SpeciesCardPremium } from "./SpeciesCardPremium";
 
 // Config configurations for Aquadex biological easter eggs
 export function getEasterEggConfig(key, evolved = false) {
@@ -1057,7 +1058,7 @@ export function BreedGallery({
               }}
             >
               <h3 style={{ fontSize: "1.2rem", fontWeight: "700", color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <span>🎮</span> Simulate My Tank
+                <span>🎮</span> {casualModeActive ? "Tank Match" : "Simulate My Tank"}
               </h3>
 
               {/* Match Score Display Panel */}
@@ -1137,14 +1138,7 @@ export function BreedGallery({
                     step="5"
                     value={simVolume} 
                     onChange={(e) => setSimVolume(Number(e.target.value))}
-                    style={{ 
-                      width: "100%", 
-                      accentColor: "var(--accent-blue)",
-                      background: "rgba(255,255,255,0.1)",
-                      height: "4px",
-                      borderRadius: "2px",
-                      outline: "none"
-                    }}
+                    className="premium-slider"
                   />
                   <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "flex", justifyContent: "space-between" }}>
                     <span>5 gal</span>
@@ -1166,14 +1160,7 @@ export function BreedGallery({
                     step="0.1"
                     value={simPh} 
                     onChange={(e) => setSimPh(Number(e.target.value))}
-                    style={{ 
-                      width: "100%", 
-                      accentColor: "var(--accent-blue)",
-                      background: "rgba(255,255,255,0.1)",
-                      height: "4px",
-                      borderRadius: "2px",
-                      outline: "none"
-                    }}
+                    className="premium-slider"
                   />
                   <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "flex", justifyContent: "space-between" }}>
                     <span>4.0 pH</span>
@@ -1195,14 +1182,7 @@ export function BreedGallery({
                     step="0.5"
                     value={simTemp} 
                     onChange={(e) => setSimTemp(Number(e.target.value))}
-                    style={{ 
-                      width: "100%", 
-                      accentColor: "var(--accent-blue)",
-                      background: "rgba(255,255,255,0.1)",
-                      height: "4px",
-                      borderRadius: "2px",
-                      outline: "none"
-                    }}
+                    className="premium-slider"
                   />
                   <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "flex", justifyContent: "space-between" }}>
                     <span>15.0 °C</span>
@@ -1385,41 +1365,28 @@ export function BreedGallery({
             )}
 
             {/* Sub-tab Selection */}
-            <div 
-              className="glass-card" 
-              style={{ 
-                display: "flex", 
-                gap: "0.25rem", 
-                padding: "0.25rem", 
-                borderRadius: "var(--radius-sm)",
-                background: "rgba(255,255,255,0.01)"
-              }}
-            >
+            <div className="species-detail__tabs">
               <button 
-                className={activeInfoTab === "care" ? "btn-primary" : "btn-secondary"} 
+                className={`species-detail__tab${activeInfoTab === "care" ? " active" : ""}`}
                 onClick={() => setActiveInfoTab("care")}
-                style={{ flex: 1, padding: "0.4rem 0.5rem", fontSize: "0.8rem", borderRadius: "6px", textAlign: "center", whiteSpace: "nowrap" }}
               >
                 Care Blueprint
               </button>
               <button 
-                className={activeInfoTab === "diet" ? "btn-primary" : "btn-secondary"} 
+                className={`species-detail__tab${activeInfoTab === "diet" ? " active" : ""}`}
                 onClick={() => setActiveInfoTab("diet")}
-                style={{ flex: 1, padding: "0.4rem 0.5rem", fontSize: "0.8rem", borderRadius: "6px", textAlign: "center", whiteSpace: "nowrap" }}
               >
                 Diet & Nutrition
               </button>
               <button 
-                className={activeInfoTab === "breeding" ? "btn-primary" : "btn-secondary"} 
+                className={`species-detail__tab${activeInfoTab === "breeding" ? " active" : ""}`}
                 onClick={() => setActiveInfoTab("breeding")}
-                style={{ flex: 1, padding: "0.4rem 0.5rem", fontSize: "0.8rem", borderRadius: "6px", textAlign: "center", whiteSpace: "nowrap" }}
               >
                 Breeding Profile
               </button>
               <button 
-                className={activeInfoTab === "insights" ? "btn-primary" : "btn-secondary"} 
+                className={`species-detail__tab${activeInfoTab === "insights" ? " active" : ""}`}
                 onClick={() => setActiveInfoTab("insights")}
-                style={{ flex: 1, padding: "0.4rem 0.5rem", fontSize: "0.8rem", borderRadius: "6px", textAlign: "center", whiteSpace: "nowrap" }}
               >
                 {casualModeActive ? "💡 Tips" : "Insights"}
               </button>
@@ -2029,18 +1996,12 @@ export function BreedGallery({
           {/* Filter Toggle Button */}
           <button
             onClick={() => setFiltersOpen(!filtersOpen)}
-            className="glass-card breed-filter-toggle"
+            className="gallery-filter-bar"
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "0.75rem 1.25rem",
-              background: filtersOpen ? "rgba(56, 189, 248, 0.06)" : "rgba(255,255,255,0.02)",
-              border: filtersOpen ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "var(--radius-sm)",
               cursor: "pointer",
-              transition: "all 0.3s ease",
               width: "100%",
+              justifyContent: "space-between",
+              border: filtersOpen ? "1px solid rgba(56, 189, 248, 0.3)" : undefined,
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
@@ -2052,7 +2013,7 @@ export function BreedGallery({
                 <span style={{
                   background: "var(--accent-blue)",
                   color: "#fff",
-                  fontSize: "0.65rem",
+                  fontSize: "0.6rem",
                   fontWeight: "700",
                   padding: "0.15rem 0.5rem",
                   borderRadius: "50px",
@@ -2066,6 +2027,7 @@ export function BreedGallery({
               fontSize: "0.8rem",
               transform: filtersOpen ? "rotate(180deg)" : "rotate(0deg)",
               transition: "transform 0.3s ease",
+              display: "inline-block",
             }}>
               ▼
             </span>
@@ -2540,408 +2502,24 @@ export function BreedGallery({
                             const isOwned = ownedCount > 0;
 
                             return (
-                              <div 
-                                key={breed.speciesId} 
-                                className="glass-card" 
-                                style={{ 
-                                  padding: "0", 
-                                  cursor: "pointer", 
-                                  background: "linear-gradient(145deg, rgba(6, 20, 38, 0.85) 0%, rgba(8, 12, 20, 0.95) 100%)",
-                                  border: isOwned ? "1px solid rgba(16, 185, 129, 0.25)" : "1px solid rgba(34, 211, 238, 0.12)",
-                                  borderRadius: "16px",
-                                  overflow: "hidden",
-                                  transition: "transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease" 
-                                }}
-                                onClick={() => {
+                              <SpeciesCardPremium
+                                key={breed.speciesId}
+                                breed={breed}
+                                fishbaseData={fishbaseData}
+                                casualModeActive={casualModeActive}
+                                isOwned={isOwned}
+                                ownedCount={ownedCount}
+                                viewMode={viewMode}
+                                searchTerm={searchTerm}
+                                magikarpEvolved={magikarpEvolved}
+                                onSelect={() => {
                                   setSelectedBreed(breed);
                                   if (viewMode !== "global") {
                                     loadBreedSpecimens(breed);
                                   }
                                 }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.transform = "translateY(-4px)";
-                                  e.currentTarget.style.boxShadow = isOwned 
-                                    ? "0 8px 40px rgba(16, 185, 129, 0.15), inset 0 1px 0 rgba(16, 185, 129, 0.1)" 
-                                    : "0 8px 40px rgba(34, 211, 238, 0.12), inset 0 1px 0 rgba(34, 211, 238, 0.1)";
-                                  e.currentTarget.style.borderColor = isOwned 
-                                    ? "rgba(16, 185, 129, 0.5)" 
-                                    : "rgba(34, 211, 238, 0.35)";
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.transform = "translateY(0)";
-                                  e.currentTarget.style.boxShadow = "none";
-                                  e.currentTarget.style.borderColor = isOwned 
-                                    ? "rgba(16, 185, 129, 0.25)" 
-                                    : "rgba(34, 211, 238, 0.12)";
-                                }}
-                              >
-                                {/* Terminal Header Bar */}
-                                <div style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "center",
-                                  padding: "0.6rem 1rem",
-                                  borderBottom: "1px solid rgba(34, 211, 238, 0.08)",
-                                  background: "rgba(0, 0, 0, 0.2)",
-                                }}>
-                                  <div style={{ display: "flex", gap: "5px" }}>
-                                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ff5f57" }} />
-                                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#ffbd2e" }} />
-                                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#28c840" }} />
-                                  </div>
-                                  <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontFamily: "monospace" }}>
-                                    spec-dex / entry #{breed.speciesId}
-                                  </span>
-                                  <span style={{
-                                    fontSize: "0.55rem",
-                                    fontWeight: "700",
-                                    padding: "0.15rem 0.5rem",
-                                    borderRadius: "4px",
-                                    border: "1px solid rgba(255,255,255,0.3)",
-                                    color: "#fff",
-                                    textTransform: "uppercase",
-                                    letterSpacing: "0.05em",
-                                  }}>
-                                    {CARE_LEVEL_STRINGS[breed.careLevel]}
-                                  </span>
-                                </div>
-
-                                {/* Card Body */}
-                                <div style={{ padding: "1rem 1.25rem 1.25rem" }}>
-                                {/* Photo Card Area */}
-                                {(() => {
-                                  const matched = fishbaseData.find(
-                                    (f) => f.scientificName.toLowerCase() === breed.scientificName.toLowerCase()
-                                  );
-                                  const breedImgSrc = matched?.masterPhotoUrl || "";
-                                  const isPlant = isPlantEntry(matched || { specCode: breed.speciesId });
-                                  const badgeLabel = isPlant ? "🌿 Certified Master Flora" : "🛡️ Breeder-Verified Master Stock";
-                                  const badgeBg = isPlant ? "rgba(16,185,129,0.18)" : "rgba(56,189,248,0.12)";
-                                  const badgeBorder = isPlant ? "rgba(16,185,129,0.45)" : "rgba(56,189,248,0.35)";
-                                  const badgeColor = isPlant ? "#34d399" : "#7dd3fc";
-                                  const fallbackSvg = isPlant ? (
-                                    <PlantSilhouetteSVG
-                                      specCode={matched?.specCode || breed.speciesId}
-                                      style={{ width: "100px", height: "100px" }}
-                                    />
-                                  ) : (
-                                    <FishSilhouetteSVG 
-                                      specimenId={breed.speciesId} 
-                                      style={{ width: "120px", height: "120px" }} 
-                                    />
-                                  );
-                                   const activeEggType = matched?.easterEgg || (Number(breed.speciesId) === 10691 ? "nami_lol" : Number(breed.speciesId) === 271 ? "magikarp_pokemon" : null);
-                                   const eggConfig = activeEggType ? getEasterEggConfig(activeEggType, magikarpEvolved) : null;
-                                   const isEggRevealed = eggConfig && (
-                                     !casualModeActive || 
-                                     eggConfig.keywords.some(w => searchTerm.toLowerCase().includes(w))
-                                   );
-                                  return (
-                                    <div style={{ 
-                                       height: "12rem", 
-                                       width: "100%", 
-                                       borderRadius: "0.75rem", 
-                                       background: isPlant 
-                                         ? "linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, rgba(16, 185, 129, 0.02) 100%)" 
-                                         : "linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)",
-                                       backdropFilter: "blur(12px)",
-                                       boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 4px 15px rgba(0, 0, 0, 0.1)",
-                                       marginBottom: "1rem",
-                                       position: "relative",
-                                       overflow: "hidden",
-                                       border: isPlant ? "1px solid rgba(16, 185, 129, 0.15)" : "1px solid rgba(255, 255, 255, 0.08)",
-                                       display: "flex",
-                                       alignItems: "center",
-                                       justifyContent: "center"
-                                    }}>
-                                      <LazyImage
-                                        src={breedImgSrc}
-                                        alt={breed.commonName}
-                                        style={{ width: "100%", height: "100%" }}
-                                        fallbackSvg={fallbackSvg}
-                                      />
-
-                                      {isEggRevealed && eggConfig && (
-                                         <span 
-                                           onClick={(e) => {
-                                             e.stopPropagation();
-                                             setActiveLoreEgg(eggConfig);
-                                           }}
-                                           style={{
-                                             position: "absolute",
-                                             top: "0.6rem",
-                                             left: "0.6rem",
-                                             fontSize: "0.6rem",
-                                             fontWeight: "800",
-                                             padding: "0.22rem 0.65rem",
-                                             borderRadius: "20px",
-                                             whiteSpace: "nowrap",
-                                             color: eggConfig.color,
-                                             background: eggConfig.bg,
-                                             border: `1px solid ${eggConfig.border}`,
-                                             backdropFilter: "blur(8px)",
-                                             boxShadow: `0 0 10px ${eggConfig.glow}`,
-                                             cursor: "pointer",
-                                             transition: "all 0.25s ease",
-                                             zIndex: 10,
-                                             letterSpacing: "0.03em"
-                                           }}
-                                           onMouseEnter={(e) => {
-                                             e.currentTarget.style.transform = "scale(1.05)";
-                                             e.currentTarget.style.boxShadow = `0 0 15px ${eggConfig.glow}`;
-                                           }}
-                                           onMouseLeave={(e) => {
-                                             e.currentTarget.style.transform = "scale(1)";
-                                             e.currentTarget.style.boxShadow = `0 0 10px ${eggConfig.glow}`;
-                                           }}
-                                         >
-                                           {eggConfig.label}
-                                         </span>
-                                       )}
-
-                                      {/* Pro-only breeding method badge (top-right) */}
-                                      {proMode && matched?.reproduction?.spawningTrait &&
-                                        matched.reproduction.spawningTrait !== "Information arriving soon" && (
-                                        <span style={{
-                                          position: "absolute",
-                                          top: "0.6rem",
-                                          right: "0.6rem",
-                                          fontSize: "0.6rem",
-                                          fontWeight: "700",
-                                          padding: "0.22rem 0.65rem",
-                                          borderRadius: "20px",
-                                          whiteSpace: "nowrap",
-                                          color: "#fcd34d",
-                                          background: "rgba(251, 191, 36, 0.16)",
-                                          border: "1px solid rgba(251, 191, 36, 0.4)",
-                                          backdropFilter: "blur(8px)",
-                                          letterSpacing: "0.03em",
-                                          zIndex: 3
-                                        }}>
-                                          🥚 {matched.reproduction.spawningTrait}
-                                        </span>
-                                      )}
-
-                                      {/* Glassmorphic Verified Master Badge */}
-                                      <span style={{
-                                        position: "absolute",
-                                        bottom: "0.6rem",
-                                        left: "50%",
-                                        transform: "translateX(-50%)",
-                                        fontSize: "0.6rem",
-                                        fontWeight: "700",
-                                        padding: "0.22rem 0.65rem",
-                                        borderRadius: "20px",
-                                        whiteSpace: "nowrap",
-                                        color: badgeColor,
-                                        background: badgeBg,
-                                        border: `1px solid ${badgeBorder}`,
-                                        backdropFilter: "blur(8px)",
-                                        letterSpacing: "0.03em",
-                                        zIndex: 2
-                                      }}>
-                                        {badgeLabel}
-                                      </span>
-
-                                      {/* Glassmorphic Owned Count Badge */}
-                                      {isOwned && (
-                                        <span style={{
-                                          position: "absolute",
-                                          bottom: "0.6rem",
-                                          left: "0.6rem",
-                                          fontSize: "0.58rem",
-                                          fontWeight: "800",
-                                          padding: "0.22rem 0.6rem",
-                                          borderRadius: "20px",
-                                          whiteSpace: "nowrap",
-                                          color: "#10b981",
-                                          background: "rgba(6, 78, 59, 0.8)",
-                                          border: "1px solid rgba(16, 185, 129, 0.4)",
-                                          backdropFilter: "blur(8px)",
-                                          boxShadow: "0 0 10px rgba(16, 185, 129, 0.25)",
-                                          letterSpacing: "0.03em",
-                                          zIndex: 3
-                                        }}>
-                                          👑 Owned: {ownedCount}
-                                        </span>
-                                      )}
-                                    </div>
-                                  );
-                                })()}
-
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.25rem" }}>
-                                  <h3 style={{ fontSize: "1.15rem", fontWeight: "700", color: "#fff", margin: 0, letterSpacing: "-0.01em" }}>
-                                    {breed.commonName}
-                                  </h3>
-                                  {viewMode === "contract" && (
-                                    <span style={{ fontSize: "0.7rem", color: proMode ? "#67e8f9" : "var(--accent-green)", fontWeight: "600", fontFamily: "monospace" }}>
-                                      {proMode ? `${breed.specimenCount} Certs` : breed.specimenCount > 0 ? `${breed.specimenCount} Available` : ""}
-                                    </span>
-                                  )}
-                                  {proMode && (
-                                    <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontFamily: "monospace", opacity: 0.7 }}>
-                                      #{breed.speciesId}
-                                    </span>
-                                  )}
-                                </div>
-
-                                <p style={{ fontSize: "0.78rem", color: proMode ? "#67e8f9" : "var(--text-secondary)", fontStyle: "italic", margin: "0 0 0.75rem 0", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-                                  {breed.scientificName}
-                                </p>
-
-                                {/* Casual Mode: Personality tagline + behavior tags */}
-                                {casualModeActive && (() => {
-                                  const profile = fishbaseData.find(f => f.scientificName.toLowerCase() === breed.scientificName.toLowerCase());
-                                  const tagline = getPersonality(profile, "casual").vibeLine || profile?.ecology?.socialBehavior || profile?.ecology?.comments || "";
-                                  const tags = [];
-                                  if (profile?.ecology?.socialBehavior?.toLowerCase().includes("school")) tags.push("Schooling Fish");
-                                  if (profile?.diet?.trophicLevel === "Omnivore") tags.push("Easy Feeder");
-                                  if (breed.careLevel === 0) tags.push("Beginner Friendly");
-                                  if (profile?.reproduction?.spawningTrait) tags.push("Tank-Bred Available");
-                                  const displayTags = tags.slice(0, 3);
-                                  
-                                  return (
-                                    <div style={{ marginBottom: "1rem" }}>
-                                      {tagline && (
-                                        <p style={{
-                                          fontSize: "0.72rem",
-                                          color: "var(--text-secondary)",
-                                          fontStyle: "italic",
-                                          margin: "0 0 0.75rem 0",
-                                          paddingLeft: "0.75rem",
-                                          borderLeft: "2px solid rgba(34, 211, 238, 0.4)",
-                                          lineHeight: "1.4",
-                                          display: "-webkit-box",
-                                          WebkitLineClamp: 2,
-                                          WebkitBoxOrient: "vertical",
-                                          overflow: "hidden",
-                                        }}>
-                                          "{tagline}"
-                                        </p>
-                                      )}
-                                      {displayTags.length > 0 && (
-                                        <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
-                                          {displayTags.map(tag => (
-                                            <span key={tag} style={{
-                                              fontSize: "0.58rem",
-                                              fontWeight: "700",
-                                              padding: "0.2rem 0.55rem",
-                                              borderRadius: "20px",
-                                              color: "#34d399",
-                                              background: "rgba(16, 185, 129, 0.1)",
-                                              border: "1px solid rgba(16, 185, 129, 0.3)",
-                                              textTransform: "uppercase",
-                                              letterSpacing: "0.04em",
-                                            }}>
-                                              {tag}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                })()}
-
-                                {/* Pro Mode: Full technical data block */}
-                                {proMode && (() => {
-                                  const profile = fishbaseData.find(f => f.scientificName.toLowerCase() === breed.scientificName.toLowerCase());
-                                  const minVol = profile?.tankMetrics?.minVolumeGallons ?? profile?.tankMetrics?.minVolume ?? 30;
-                                  return (
-                                    <div style={{ marginBottom: "0.75rem" }}>
-                                      {/* 2x2 Parameter Grid matching landing page */}
-                                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginBottom: "0.75rem" }}>
-                                        <div style={{ padding: "0.5rem 0.6rem", background: "rgba(6, 20, 38, 0.7)", borderRadius: "6px", border: "1px solid rgba(34, 211, 238, 0.1)", position: "relative", overflow: "hidden" }}>
-                                          <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>Temp Range</span>
-                                          <strong style={{ fontSize: "0.9rem", color: "#67e8f9", fontFamily: "monospace" }}>{breed.minTemp} – {breed.maxTemp}°C</strong>
-                                          <div style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: "2px", background: "linear-gradient(90deg, transparent, #22d3ee, transparent)" }} />
-                                        </div>
-                                        <div style={{ padding: "0.5rem 0.6rem", background: "rgba(6, 20, 38, 0.7)", borderRadius: "6px", border: "1px solid rgba(34, 211, 238, 0.1)", position: "relative", overflow: "hidden" }}>
-                                          <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>pH Range</span>
-                                          <strong style={{ fontSize: "0.9rem", color: "#67e8f9", fontFamily: "monospace" }}>{breed.minPh} – {breed.maxPh}</strong>
-                                          <div style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: "2px", background: "linear-gradient(90deg, transparent, #22d3ee, transparent)" }} />
-                                        </div>
-                                        <div style={{ padding: "0.5rem 0.6rem", background: "rgba(6, 20, 38, 0.7)", borderRadius: "6px", border: "1px solid rgba(34, 211, 238, 0.1)", position: "relative", overflow: "hidden" }}>
-                                          <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>Min. Volume</span>
-                                          <strong style={{ fontSize: "0.9rem", color: "#67e8f9", fontFamily: "monospace" }}>{Math.round(minVol * 3.785)}L / {minVol} gal</strong>
-                                          <div style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: "2px", background: "linear-gradient(90deg, transparent, #22d3ee, transparent)" }} />
-                                        </div>
-                                        <div style={{ padding: "0.5rem 0.6rem", background: "rgba(6, 20, 38, 0.7)", borderRadius: "6px", border: "1px solid rgba(34, 211, 238, 0.1)", position: "relative", overflow: "hidden" }}>
-                                          <span style={{ fontSize: "0.5rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block" }}>Care Level</span>
-                                          <strong style={{ fontSize: "0.9rem", color: "#67e8f9", fontFamily: "monospace" }}>{CARE_LEVEL_STRINGS[breed.careLevel]}</strong>
-                                          <div style={{ position: "absolute", bottom: 0, left: "10%", right: "10%", height: "2px", background: "linear-gradient(90deg, transparent, #22d3ee, transparent)" }} />
-                                        </div>
-                                      </div>
-                                      {/* Raw on-chain values */}
-                                      <div style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontFamily: "monospace", marginBottom: "0.5rem", lineHeight: "1.6", opacity: 0.8 }}>
-                                        FishBase SpecCode: {profile?.specCode || breed.speciesId} · WoRMS Validated · Updated May 2026<br/>
-                                        tempX10: [{breed.minTemp * 10}, {breed.maxTemp * 10}] · phX10: [{breed.minPh * 10}, {breed.maxPh * 10}] · salX10000: 10000
-                                      </div>
-                                    </div>
-                                  );
-                                })()}
-
-                                {/* Casual Mode: Friendly parameter tiles */}
-                                {casualModeActive && (
-                                <div style={{ 
-                                  display: "grid", 
-                                  gridTemplateColumns: "repeat(3, 1fr)", 
-                                  gap: "0.75rem", 
-                                  marginBottom: "1rem"
-                                }}>
-                                  <div style={{
-                                    padding: "0.6rem 0.5rem",
-                                    background: "rgba(6, 20, 38, 0.7)",
-                                    borderRadius: "8px",
-                                    border: "1px solid rgba(56, 189, 248, 0.1)",
-                                    textAlign: "center",
-                                    position: "relative",
-                                    overflow: "hidden",
-                                  }}>
-                                    <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                                      {casualModeActive ? "Difficulty" : "Care"}
-                                    </span>
-                                    <strong style={{ fontSize: "0.85rem", color: casualModeActive ? (breed.careLevel === 0 ? "#34d399" : breed.careLevel === 1 ? "#fbbf24" : "#f87171") : "#67e8f9", fontWeight: "700" }}>
-                                      {casualModeActive ? (breed.careLevel === 0 ? "Easy!" : breed.careLevel === 1 ? "Medium" : "Hard") : CARE_LEVEL_STRINGS[breed.careLevel]}
-                                    </strong>
-                                    <div style={{ position: "absolute", bottom: 0, left: "15%", right: "15%", height: "2px", background: casualModeActive ? `linear-gradient(90deg, transparent, ${breed.careLevel === 0 ? "#34d399" : breed.careLevel === 1 ? "#fbbf24" : "#f87171"}, transparent)` : "linear-gradient(90deg, transparent, #22d3ee, transparent)", borderRadius: "2px" }} />
-                                  </div>
-                                  <div style={{
-                                    padding: "0.6rem 0.5rem",
-                                    background: "rgba(6, 20, 38, 0.7)",
-                                    borderRadius: "8px",
-                                    border: "1px solid rgba(56, 189, 248, 0.1)",
-                                    textAlign: "center",
-                                    position: "relative",
-                                    overflow: "hidden",
-                                  }}>
-                                    <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Temp</span>
-                                    <strong style={{ fontSize: "0.85rem", color: "#67e8f9", fontWeight: "700" }}>{breed.minTemp}–{breed.maxTemp}°C</strong>
-                                    <div style={{ position: "absolute", bottom: 0, left: "15%", right: "15%", height: "2px", background: "linear-gradient(90deg, transparent, #22d3ee, transparent)", borderRadius: "2px" }} />
-                                  </div>
-                                  <div style={{
-                                    padding: "0.6rem 0.5rem",
-                                    background: "rgba(6, 20, 38, 0.7)",
-                                    borderRadius: "8px",
-                                    border: "1px solid rgba(56, 189, 248, 0.1)",
-                                    textAlign: "center",
-                                    position: "relative",
-                                    overflow: "hidden",
-                                  }}>
-                                    <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", display: "block", marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>pH</span>
-                                    <strong style={{ fontSize: "0.85rem", color: "#67e8f9", fontWeight: "700" }}>{breed.minPh}–{breed.maxPh}</strong>
-                                    <div style={{ position: "absolute", bottom: 0, left: "15%", right: "15%", height: "2px", background: "linear-gradient(90deg, transparent, #22d3ee, transparent)", borderRadius: "2px" }} />
-                                  </div>
-                                </div>
-                                )}
-
-                                <div style={{ fontSize: "0.72rem", color: "#22d3ee", textAlign: "right", fontWeight: "600", letterSpacing: "0.02em" }}>
-                                  {casualModeActive 
-                                    ? (breed.specimenCount > 0 ? "🛒 Browse Available →" : "Learn More →")
-                                    : (viewMode === "global" ? "Propose Breed to Catalog" : "View Certificates →")
-                                  }
-                                </div>
-                                </div>{/* end card body */}
-                              </div>
+                                onEasterEgg={(config) => setActiveLoreEgg(config)}
+                              />
                             );
                           })}
                         </div>

@@ -6,6 +6,71 @@ All notable changes to AquaDex are documented here.
 
 ## [Unreleased] — 2026-06-17
 
+### ✨ Premium UX Overhaul — Fish Finder & Breed Gallery
+
+Complete visual and UX refresh for the Fish Finder (Casual mode) and Breed Gallery (Pro mode) sections, delivering a premium, image-dominant card experience with reduced visual noise.
+
+#### New Component: `SpeciesCardPremium.jsx`
+Extracted the 300+ line inline card rendering into a clean, memoized React component with proper CSS classes.
+
+| Before | After |
+|--------|-------|
+| Terminal-style macOS colored dots header | Removed — cleaner top edge |
+| 2×2 monospace parameter grid | Compact inline parameter pills |
+| Raw on-chain values in card (`tempX10`, `phX10`, `salX10000`) | Hidden from cards, shown only in detail view |
+| Inline JS hover handlers per card | CSS-driven hover animations (scale, glow, arrow translate) |
+| Inline styles (~200 lines per card) | CSS BEM classes with proper specificity |
+
+#### Card Design Improvements
+- **Image-dominant layout** — photo area with gradient fade overlay into body text
+- **Floating difficulty badge** (top-right) color-coded per care level (green/amber/red/violet)
+- **Owned indicator** (top-left) with green glow for species in user's tank
+- **Parameter pills** — compact `🌡️ 10–24°C · 💧 pH 6–8 · 📐 40 gal` inline row
+- **Personality tagline** (casual mode) with accent-colored left border
+- **Behavior tags** — "Schooling", "Easy Feeder", "Beginner Friendly" as pill badges
+- **Footer CTA** — "Learn More →" with hover-animated arrow
+- **Staggered entrance animation** — 60ms offset per card via CSS keyframes
+
+#### Filter UX Upgrade
+- Filter toggle button now uses `gallery-filter-bar` glassmorphic class
+- Cleaner border and padding rhythm
+- Active state badge persists when filters are applied
+
+#### Species Detail View
+- **Tab navigation** converted from inline-styled buttons to `.species-detail__tabs` CSS system
+- **Premium slider inputs** — custom thumb with blue glow, larger hit area
+- **Simulator title** adapts per mode: "Tank Match" (casual) vs "Simulate My Tank" (pro)
+
+#### Database.html (Static Fish Finder) Polish
+- Card aspect ratio changed from `2.5:3.5` to `3:4` (squarer, more modern)
+- Flip card container widened to 360px with matching ratio
+- Card info section rewritten with flexbox gap layout
+- Hover-reveal "View Details →" CTA added to each card
+
+#### CSS Added (~200 lines in `index.css`)
+- `.species-card-premium` — full card system (image, badge, body, pills, tags, CTA)
+- `.gallery-filter-bar` / `.gallery-filter-chip` — horizontal filter chip system
+- `.species-detail__tabs` / `__tab` — segmented tab navigation
+- `.simulator-widget` — collapsible container for tank simulator
+- `.premium-slider` — custom range input with glow thumb
+- `.compat-quick` — quick compatibility result display (casual mode)
+- Full responsive overrides (768px, 480px breakpoints)
+
+#### Files Changed
+| File | Change |
+|------|--------|
+| `frontend/src/components/SpeciesCardPremium.jsx` | **New** — Extracted premium species card component |
+| `frontend/src/components/BreedGallery.jsx` | Replaced inline card rendering with `<SpeciesCardPremium />`, upgraded tabs/sliders/filters to CSS classes |
+| `frontend/src/styles/index.css` | Added ~200 lines of premium gallery CSS |
+| `frontend/database.html` | Updated card ratio, info layout, flip card size, added hover CTA |
+
+#### Verification
+- ✅ `npm run build` — Vite production build passes (exit code 0)
+- ✅ No TypeScript/lint diagnostics in modified files
+- ✅ All existing functionality preserved (easter eggs, filters, natural language search, virtualized scrolling)
+
+---
+
 ### ⛓️ EIP-4337 Account Abstraction — Full On-Chain Integration
 
 Migrated from local-only beta relayer to full EIP-4337 account abstraction with Coinbase Smart Wallet and CDP Paymaster gas sponsorship. All user actions now persist on-chain with zero gas cost.

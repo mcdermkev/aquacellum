@@ -322,33 +322,120 @@
     }
 
     /* =========================================
-       SPECIES GRID — Trading Card Style
+       SPECIES GRID — Premium Trading Card Style
     ========================================= */
     .species-grid {
       position: relative;
       z-index: 1;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 24px;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 28px;
       padding-bottom: 80px;
     }
 
+    /* Hero featured cards — first 2 span double width */
+    .species-card.card-featured {
+      grid-column: span 2;
+      aspect-ratio: 4 / 3;
+    }
+    @media (max-width: 768px) {
+      .species-card.card-featured { grid-column: span 1; aspect-ratio: 3 / 4; }
+    }
+
     .species-card {
-      aspect-ratio: 2.5 / 3.5;
+      aspect-ratio: 3 / 4;
       border-radius: var(--radius-md);
       overflow: hidden;
       cursor: pointer;
       position: relative;
       background: var(--glass-bg);
       border: 1px solid var(--glass-border);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.35s ease, border-color 0.35s ease;
       display: flex;
       flex-direction: column;
+      opacity: 0;
+      transform: translateY(24px);
     }
-    .species-card:hover {
-      transform: translateY(-4px) scale(1.02);
-      box-shadow: 0 12px 40px rgba(16, 185, 129, 0.12);
-      border-color: rgba(52, 211, 153, 0.3);
+    .species-card.card-visible {
+      opacity: 1;
+      transform: translateY(0);
+      transition: transform 0.5s cubic-bezier(0.4,0,0.2,1), opacity 0.5s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+    }
+
+    /* ---- Tier: Beginner (common) — muted, clean ---- */
+    .species-card.tier-beginner {
+      border-color: rgba(52, 211, 153, 0.08);
+    }
+    .species-card.tier-beginner:hover {
+      transform: translateY(-4px) scale(1.015);
+      box-shadow: 0 12px 36px rgba(16, 185, 129, 0.1);
+      border-color: rgba(52, 211, 153, 0.22);
+    }
+
+    /* ---- Tier: Intermediate — subtle glow ---- */
+    .species-card.tier-intermediate {
+      border-color: rgba(34, 211, 238, 0.12);
+      border-width: 1.5px;
+    }
+    .species-card.tier-intermediate:hover {
+      transform: translateY(-5px) scale(1.02);
+      box-shadow: 0 14px 44px rgba(6, 182, 212, 0.14), 0 0 20px rgba(34, 211, 238, 0.06);
+      border-color: rgba(34, 211, 238, 0.35);
+    }
+
+    /* ---- Tier: Advanced — warm glow, thicker border ---- */
+    .species-card.tier-advanced {
+      border-color: rgba(251, 113, 133, 0.15);
+      border-width: 1.5px;
+    }
+    .species-card.tier-advanced:hover {
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: 0 16px 48px rgba(251, 113, 133, 0.12), 0 0 24px rgba(251, 113, 133, 0.06);
+      border-color: rgba(251, 113, 133, 0.4);
+    }
+
+    /* ---- Tier: Difficult/Rare — holographic chase card ---- */
+    .species-card.tier-difficult {
+      border-width: 2px;
+      border-color: rgba(167,139,250,0.25);
+      position: relative;
+    }
+    .species-card.tier-difficult::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: var(--radius-md);
+      padding: 2px;
+      background: linear-gradient(135deg, rgba(167,139,250,0.5), rgba(232,121,249,0.4), rgba(251,191,36,0.4), rgba(34,211,238,0.3), rgba(167,139,250,0.5));
+      background-size: 300% 300%;
+      animation: holo-shift 6s ease-in-out infinite;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      z-index: 3;
+      opacity: 0.6;
+      transition: opacity 0.3s;
+    }
+    .species-card.tier-difficult:hover::before {
+      opacity: 1;
+    }
+    .species-card.tier-difficult:hover {
+      transform: translateY(-6px) scale(1.025);
+      box-shadow: 0 20px 60px rgba(167, 139, 250, 0.18), 0 0 30px rgba(232, 121, 249, 0.08);
+    }
+    @keyframes holo-shift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    /* ---- Vignette overlay for depth ---- */
+    .card-vignette {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 50%, rgba(4,14,12,0.5) 100%);
     }
 
     .card-image {
@@ -376,10 +463,10 @@
       height: 100%;
       object-fit: cover;
       object-position: center 40%;
-      transition: transform 0.4s ease;
+      transition: transform 0.45s cubic-bezier(0.4,0,0.2,1);
     }
     .species-card:hover .card-image .main-img {
-      transform: scale(1.05);
+      transform: scale(1.06);
     }
     .card-image .placeholder-icon {
       font-size: 3rem;
@@ -389,7 +476,7 @@
       position: absolute;
       top: 10px;
       right: 10px;
-      z-index: 2;
+      z-index: 4;
       padding: 4px 10px;
       border-radius: 20px;
       font-size: 0.65rem;
@@ -404,19 +491,21 @@
     .badge-unknown { background: rgba(255,255,255,0.1); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); }
 
     .card-info {
-      padding: 14px 16px;
-      background: linear-gradient(180deg, rgba(10,31,26,0.9) 0%, rgba(6,20,18,1) 100%);
+      padding: 18px 20px 16px;
+      background: linear-gradient(180deg, rgba(10,31,26,0.95) 0%, rgba(6,20,18,1) 100%);
       border-top: 1px solid var(--glass-border);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
     .card-common-name {
       font-family: 'Outfit', sans-serif;
-      font-weight: 700;
-      font-size: 0.92rem;
+      font-weight: 800;
+      font-size: 1rem;
       color: var(--text-primary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      margin-bottom: 2px;
     }
     .card-sci-name {
       font-size: 0.74rem;
@@ -425,6 +514,119 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+    .card-cta {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--teal-300);
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.3s, transform 0.3s;
+      margin-top: 4px;
+    }
+    .species-card:hover .card-cta {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* =========================================
+       SKELETON LOADING CARDS
+    ========================================= */
+    .skeleton-card {
+      aspect-ratio: 2.5 / 3.5;
+      border-radius: var(--radius-md);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .skeleton-image {
+      flex: 1;
+      background: linear-gradient(110deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 37%, rgba(255,255,255,0.03) 63%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.5s ease-in-out infinite;
+    }
+    .skeleton-info {
+      padding: 16px 18px;
+      border-top: 1px solid var(--glass-border);
+    }
+    .skeleton-line {
+      height: 12px;
+      border-radius: 6px;
+      background: linear-gradient(110deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 37%, rgba(255,255,255,0.04) 63%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.5s ease-in-out infinite;
+      margin-bottom: 8px;
+    }
+    .skeleton-line:last-child { width: 60%; margin-bottom: 0; }
+    @keyframes skeleton-shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* =========================================
+       VIEW MODE TOGGLE
+    ========================================= */
+    .view-toggle {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .view-toggle-btn {
+      padding: 8px 16px;
+      border-radius: 7px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      transition: all 0.25s;
+      cursor: pointer;
+    }
+    .view-toggle-btn.active {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--emerald-300);
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+    }
+    .view-toggle-btn:hover:not(.active) {
+      color: var(--text-secondary);
+      background: rgba(255,255,255,0.03);
+    }
+
+    /* =========================================
+       SORT TOGGLE
+    ========================================= */
+    .sort-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      width: 100%;
+      margin-top: 8px;
+    }
+    .sort-chip {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .sort-chip:hover {
+      color: var(--text-secondary);
+      border-color: rgba(255,255,255,0.12);
+    }
+    .sort-chip.active {
+      color: var(--emerald-300);
+      background: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.25);
     }
 
     /* =========================================
@@ -452,9 +654,9 @@
        3D FLIP CARD
     ========================================= */
     .flip-card-container {
-      width: 340px;
+      width: 360px;
       max-width: 90vw;
-      aspect-ratio: 2.5 / 3.5;
+      aspect-ratio: 3 / 4;
       perspective: 1200px;
       cursor: pointer;
     }
@@ -687,7 +889,7 @@
     .footer-links a:hover { color: var(--emerald-300); }
 
     /* =========================================
-       EMPTY / LOADING STATES
+       EMPTY STATE
     ========================================= */
     .empty-state {
       text-align: center;
@@ -702,31 +904,23 @@
       color: var(--text-secondary);
       margin-bottom: 8px;
     }
-    .loading { text-align: center; padding: 80px 24px; grid-column: 1 / -1; }
-    .loading-spinner {
-      width: 40px; height: 40px;
-      border: 3px solid rgba(16, 185, 129, 0.15);
-      border-top-color: var(--emerald-400);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 16px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* =========================================
        RESPONSIVE
     ========================================= */
     @media (max-width: 768px) {
       .nav-links { display: none; }
-      .species-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+      .species-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 18px; }
       .filters-bar { flex-direction: column; }
       .search-wrap { min-width: 100%; }
       .flip-card-container { width: 300px; }
       .db-stats { gap: 20px; }
+      .view-toggle { width: 100%; justify-content: center; }
+      .sort-chips { justify-content: center; }
     }
     @media (max-width: 480px) {
       .db-hero h1 { font-size: 1.8rem; }
-      .species-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+      .species-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
       .flip-card-container { width: 260px; }
     }
   </style>
@@ -807,17 +1001,32 @@
         <option value="Advanced">Advanced</option>
         <option value="Difficult">Difficult</option>
       </select>
+      <div class="view-toggle">
+        <button class="view-toggle-btn active" data-view="hobbyist" onclick="setViewMode('hobbyist')">🐠 Hobbyist</button>
+        <button class="view-toggle-btn" data-view="breeder" onclick="setViewMode('breeder')">🧬 Breeder</button>
+      </div>
       <div class="result-count" id="resultCount"></div>
+      <div class="sort-chips">
+        <button class="sort-chip active" data-sort="alpha" onclick="setSort('alpha')">A → Z</button>
+        <button class="sort-chip" data-sort="difficulty" onclick="setSort('difficulty')">Difficulty</button>
+        <button class="sort-chip" data-sort="size" onclick="setSort('size')">Size</button>
+        <button class="sort-chip" data-sort="family" onclick="setSort('family')">Family</button>
+      </div>
     </div>
   </div>
 
   <!-- ========== SPECIES GRID ========== -->
   <div class="container">
     <div id="speciesGrid" class="species-grid">
-      <div class="loading">
-        <div class="loading-spinner"></div>
-        <p style="color:var(--text-muted);">Loading species database...</p>
-      </div>
+      <!-- Skeleton loading cards -->
+      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
+      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
     </div>
   </div>
 
@@ -851,11 +1060,51 @@
     let allSpecies = [];
     let filteredSpecies = [];
     let isFlipped = false;
+    let currentView = 'hobbyist';
+    let currentSort = 'alpha';
 
     // ---- Helpers ----
     function getDifficultyClass(diff) {
       if (!diff) return 'badge-unknown';
       return 'badge-' + diff.toLowerCase();
+    }
+
+    function getTierClass(diff) {
+      if (!diff) return 'tier-beginner';
+      const d = diff.toLowerCase();
+      if (d === 'beginner') return 'tier-beginner';
+      if (d === 'intermediate') return 'tier-intermediate';
+      if (d === 'advanced') return 'tier-advanced';
+      if (d === 'difficult') return 'tier-difficult';
+      return 'tier-beginner';
+    }
+
+    function getDifficultyWeight(diff) {
+      if (!diff) return 0;
+      const d = diff.toLowerCase();
+      if (d === 'beginner') return 1;
+      if (d === 'intermediate') return 2;
+      if (d === 'advanced') return 3;
+      if (d === 'difficult') return 4;
+      return 0;
+    }
+
+    // ---- View Mode ----
+    function setViewMode(mode) {
+      currentView = mode;
+      document.querySelectorAll('.view-toggle-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === mode);
+      });
+      renderGrid();
+    }
+
+    // ---- Sort ----
+    function setSort(sort) {
+      currentSort = sort;
+      document.querySelectorAll('.sort-chip').forEach(chip => {
+        chip.classList.toggle('active', chip.dataset.sort === sort);
+      });
+      applyFilters();
     }
 
     // ---- Fetch & Initialize ----
@@ -876,6 +1125,12 @@
           opt.textContent = fam;
           familySelect.appendChild(opt);
         });
+
+        // Detect referrer for auto view mode
+        const ref = document.referrer || '';
+        if (ref.includes('/breeder')) {
+          setViewMode('breeder');
+        }
 
         applyFilters();
       } catch (err) {
@@ -905,9 +1160,24 @@
       });
 
       filteredSpecies.sort((a, b) => {
-        const nameA = (a.commonName || a.scientificName || '').toLowerCase();
-        const nameB = (b.commonName || b.scientificName || '').toLowerCase();
-        return nameA.localeCompare(nameB);
+        switch (currentSort) {
+          case 'alpha': {
+            const nameA = (a.commonName || a.scientificName || '').toLowerCase();
+            const nameB = (b.commonName || b.scientificName || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+          }
+          case 'difficulty':
+            return getDifficultyWeight(b.tankMetrics?.difficulty) - getDifficultyWeight(a.tankMetrics?.difficulty);
+          case 'size':
+            return (b.maxLengthCm || 0) - (a.maxLengthCm || 0);
+          case 'family': {
+            const famA = (a.family || '').toLowerCase();
+            const famB = (b.family || '').toLowerCase();
+            return famA.localeCompare(famB);
+          }
+          default:
+            return 0;
+        }
       });
 
       document.getElementById('resultCount').textContent =
@@ -930,27 +1200,70 @@
         return;
       }
 
+      const hasQuery = document.getElementById('searchInput').value.trim();
+
       grid.innerHTML = filteredSpecies.map((sp, idx) => {
         const difficulty = sp.tankMetrics?.difficulty || 'Unknown';
         const badgeClass = getDifficultyClass(difficulty);
+        const tierClass = getTierClass(difficulty);
         const hasImage = sp.masterPhotoUrl && sp.masterPhotoUrl !== '';
+        const isFeatured = idx < 2 && !hasQuery;
 
         const imageHtml = hasImage
           ? `<img class="blur-bg" src="${sp.masterPhotoUrl}" alt="" aria-hidden="true"><img class="main-img" src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="lazy">`
           : `<span class="placeholder-icon">🐟</span>`;
 
+        // Contextual metadata based on view mode
+        let metaHtml = '';
+        if (currentView === 'breeder') {
+          const spawning = sp.reproduction?.spawningTrait || null;
+          const maxSize = sp.maxLengthCm ? sp.maxLengthCm + 'cm' : '—';
+          const spawnTag = spawning ? (spawning.length > 20 ? spawning.slice(0,18) + '…' : spawning) : '';
+          metaHtml = `<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+            ${spawnTag ? `<span style="font-size:0.62rem;padding:2px 7px;border-radius:4px;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.2);color:#a78bfa;font-weight:600;">${spawnTag}</span>` : ''}
+            <span style="font-size:0.62rem;padding:2px 7px;border-radius:4px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.15);color:#34d399;font-weight:600;">Max ${maxSize}</span>
+          </div>`;
+        } else {
+          const minTank = sp.tankMetrics?.minVolumeGallons;
+          const vibe = sp.personality?.vibeLine?.casual;
+          const vibeShort = vibe ? (vibe.length > 35 ? vibe.slice(0,33) + '…' : vibe) : '';
+          metaHtml = `<div style="margin-top:5px;">
+            ${minTank ? `<span style="font-size:0.62rem;padding:2px 7px;border-radius:4px;background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.15);color:#5eead4;font-weight:600;">${minTank}+ gal</span>` : ''}
+            ${vibeShort ? `<div style="font-size:0.65rem;color:#3d6b5a;margin-top:4px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">"${vibeShort}"</div>` : ''}
+          </div>`;
+        }
+
         return `
-          <div class="species-card" onclick="openPopup(${idx})">
+          <div class="species-card ${tierClass}${isFeatured ? ' card-featured' : ''}" onclick="openPopup(${idx})" data-idx="${idx}">
             <div class="card-image">
               ${imageHtml}
+              <div class="card-vignette"></div>
               <span class="card-difficulty-badge ${badgeClass}">${difficulty}</span>
             </div>
             <div class="card-info">
               <div class="card-common-name">${sp.commonName || 'Unknown'}</div>
               <div class="card-sci-name">${sp.scientificName}</div>
+              ${metaHtml}
+              <div class="card-cta">View Details →</div>
             </div>
           </div>`;
       }).join('');
+
+      // Staggered entrance animation via IntersectionObserver
+      requestAnimationFrame(() => {
+        const cards = grid.querySelectorAll('.species-card');
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const card = entry.target;
+              const idx = Array.from(cards).indexOf(card) % 8;
+              setTimeout(() => { card.classList.add('card-visible'); }, idx * 60);
+              observer.unobserve(card);
+            }
+          });
+        }, { threshold: 0.05, rootMargin: '50px' });
+        cards.forEach(card => observer.observe(card));
+      });
     }
 
     // ---- Popup / Flip Logic ----
