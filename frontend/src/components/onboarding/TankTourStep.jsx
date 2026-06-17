@@ -174,7 +174,6 @@ export function TankTourStep({
           details: {
             temp: 24.5,
             ph: 7.2,
-            salinity: 1.0,
             ammonia: 0,
             nitrite: 0,
             nitrate: 5,

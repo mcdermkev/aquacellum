@@ -75,29 +75,46 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
       const provider = getProvider();
       const contract = new Contract(contractAddress, aquadexAbi, provider);
 
-      // 1. Load Species Catalog (parallelized)
-      const nextId = await contract.nextSpeciesId();
-      const totalSpeciesCount = Number(nextId) - 1;
-      const catalogPromises = [];
-      for (let i = 1; i <= totalSpeciesCount; i++) {
-        catalogPromises.push(
-          contract.speciesCatalog(i)
-            .then(spec => spec.active ? { id: i, scientificName: spec.scientificName, commonName: spec.commonName } : null)
-            .catch(() => null)
-        );
-      }
-      const catalogResults = await Promise.all(catalogPromises);
+      // 1. Load Species Catalog (on-chain, with local Dexie fallback)
       const catalog = {};
-      for (const item of catalogResults) {
-        if (item) catalog[item.id] = { scientificName: item.scientificName, commonName: item.commonName };
+      try {
+        const nextId = await contract.nextSpeciesId();
+        const totalSpeciesCount = Number(nextId) - 1;
+        const catalogPromises = [];
+        for (let i = 1; i <= totalSpeciesCount; i++) {
+          catalogPromises.push(
+            contract.speciesCatalog(i)
+              .then(spec => spec.active ? { id: i, scientificName: spec.scientificName, commonName: spec.commonName } : null)
+              .catch(() => null)
+          );
+        }
+        const catalogResults = await Promise.all(catalogPromises);
+        for (const item of catalogResults) {
+          if (item) catalog[item.id] = { scientificName: item.scientificName, commonName: item.commonName };
+        }
+      } catch (catalogErr) {
+        console.warn("On-chain species catalog query failed:", catalogErr.message);
+      }
+
+      // Enrich catalog from local Dexie species data
+      try {
+        const localSpeciesRecords = await db.table("species").toArray();
+        for (const sp of localSpeciesRecords) {
+          const spId = Number(sp.speciesId || sp.id);
+          if (spId && !catalog[spId]) {
+            catalog[spId] = { scientificName: sp.scientificName || "", commonName: sp.commonName || "" };
+          }
+        }
+      } catch (e) {
+        // species table may not exist — that's fine
       }
       setSpeciesCatalog(catalog);
 
-      // 2. Load all specimens to choose Sire/Dam (parallelized ownership checks)
-      const totalSpecimens = Number(await contract.totalSpecimensMinted());
+      // 2. Load all specimens to choose Sire/Dam (local-first, then on-chain fallback)
       let specimenToLocation = {};
+      let localSpecimens = [];
       try {
-        const cachedTanks = await db.tanks.toArray();
+        const cachedTanks = await db.tanks.where("ownerAddress").equals(walletAccount).toArray();
         for (const tank of cachedTanks) {
           if (tank.specimens) {
             for (const spec of tank.specimens) {
@@ -106,6 +123,20 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                 facility: tank.facility || "Main Room",
                 parentUnitId: Number(tank.parentUnitId || 0)
               };
+              // Build local specimen list from Dexie tank data
+              localSpecimens.push({
+                id: Number(spec.id),
+                speciesId: Number(spec.speciesId),
+                sireId: Number(spec.sireId || 0),
+                damId: Number(spec.damId || 0),
+                breeder: spec.breeder || walletAccount,
+                status: Number(spec.status || 0),
+                tankId: Number(tank.id),
+                facility: tank.facility || "Main Room",
+                parentUnitId: Number(tank.parentUnitId || 0),
+                commonName: spec.commonName || "",
+                scientificName: spec.scientificName || ""
+              });
             }
           }
         }
@@ -113,79 +144,155 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
         console.warn("Failed to load tanks from Dexie:", dbErr);
       }
 
-      // Batch ownership checks in groups of 10
-      const BATCH_SIZE = 10;
-      const fetchedSpecimens = [];
-      for (let batchStart = 1; batchStart <= totalSpecimens; batchStart += BATCH_SIZE) {
-        const batchEnd = Math.min(batchStart + BATCH_SIZE - 1, totalSpecimens);
-        const batchPromises = [];
-        for (let i = batchStart; i <= batchEnd; i++) {
-          batchPromises.push(
-            contract.ownerOf(i)
-              .then(async (owner) => {
-                if (owner.toLowerCase() === walletAccount.toLowerCase()) {
-                  const spec = await contract.specimens(i);
-                  if (Number(spec.status) === 0) {
-                    const loc = specimenToLocation[i] || { tankId: 0, facility: "Unknown", parentUnitId: 0 };
-                    return {
-                      id: i,
-                      speciesId: Number(spec.speciesId),
-                      sireId: Number(spec.sireId),
-                      damId: Number(spec.damId),
-                      breeder: spec.breeder,
-                      status: Number(spec.status),
-                      tankId: loc.tankId,
-                      facility: loc.facility,
-                      parentUnitId: loc.parentUnitId
-                    };
-                  }
-                }
-                return null;
-              })
-              .catch(() => null)
-          );
-        }
-        const batchResults = await Promise.all(batchPromises);
-        fetchedSpecimens.push(...batchResults.filter(Boolean));
-      }
-      setSpecimens(fetchedSpecimens);
-
-      // 3. Load user tanks (sequential — typically few tanks)
-      const tempTanks = [];
-      let idx = 0;
-      while (true) {
-        try {
-          const id = await contract.ownerTanks(walletAccount, idx);
-          const t = await contract.tanks(id);
-          if (t.active) {
-            // Fetch latest parameter log
-            let latestLog = null;
-            try {
-              let logIndex = 0;
-              while (true) {
-                try {
-                  const log = await contract.tankParameterLogs(id, logIndex);
-                  latestLog = log;
-                  logIndex++;
-                } catch (e) {
-                  break;
-                }
-              }
-            } catch (e) {}
-
-            tempTanks.push({
-              id: Number(id),
-              name: t.name,
-              volumeLiters: Number(t.volumeLiters),
-              latestLog
+      // Also check the specimens table directly for any not attached to tanks
+      try {
+        const dexieSpecimens = await db.specimens.where("ownerAddress").equals(walletAccount).toArray();
+        for (const spec of dexieSpecimens) {
+          if (!localSpecimens.some(ls => ls.id === Number(spec.id)) && Number(spec.status || 0) === 0) {
+            const loc = specimenToLocation[Number(spec.id)] || { tankId: 0, facility: "Unknown", parentUnitId: 0 };
+            localSpecimens.push({
+              id: Number(spec.id),
+              speciesId: Number(spec.speciesId),
+              sireId: Number(spec.sireId || 0),
+              damId: Number(spec.damId || 0),
+              breeder: spec.breeder || walletAccount,
+              status: 0,
+              tankId: loc.tankId,
+              facility: loc.facility,
+              parentUnitId: loc.parentUnitId,
+              commonName: spec.commonName || "",
+              scientificName: spec.scientificName || ""
             });
           }
-          idx++;
-        } catch (err) {
-          break;
+        }
+      } catch (e) {
+        // specimens table may not exist in all DB versions
+      }
+
+      // Try on-chain as well, merge with local data
+      let onChainSpecimens = [];
+      try {
+        const totalSpecimens = Number(await contract.totalSpecimensMinted());
+        const BATCH_SIZE = 10;
+        for (let batchStart = 1; batchStart <= totalSpecimens; batchStart += BATCH_SIZE) {
+          const batchEnd = Math.min(batchStart + BATCH_SIZE - 1, totalSpecimens);
+          const batchPromises = [];
+          for (let i = batchStart; i <= batchEnd; i++) {
+            batchPromises.push(
+              contract.ownerOf(i)
+                .then(async (owner) => {
+                  if (owner.toLowerCase() === walletAccount.toLowerCase()) {
+                    const spec = await contract.specimens(i);
+                    if (Number(spec.status) === 0) {
+                      const loc = specimenToLocation[i] || { tankId: 0, facility: "Unknown", parentUnitId: 0 };
+                      return {
+                        id: i,
+                        speciesId: Number(spec.speciesId),
+                        sireId: Number(spec.sireId),
+                        damId: Number(spec.damId),
+                        breeder: spec.breeder,
+                        status: Number(spec.status),
+                        tankId: loc.tankId,
+                        facility: loc.facility,
+                        parentUnitId: loc.parentUnitId
+                      };
+                    }
+                  }
+                  return null;
+                })
+                .catch(() => null)
+            );
+          }
+          const batchResults = await Promise.all(batchPromises);
+          onChainSpecimens.push(...batchResults.filter(Boolean));
+        }
+      } catch (chainErr) {
+        console.warn("On-chain specimen query failed (expected for Privy-only users):", chainErr.message);
+      }
+
+      // Merge: local specimens + on-chain specimens (deduplicate by id)
+      const allSpecimens = [...localSpecimens];
+      for (const ocs of onChainSpecimens) {
+        if (!allSpecimens.some(s => s.id === ocs.id)) {
+          allSpecimens.push(ocs);
         }
       }
-      setTanks(tempTanks);
+      // Filter to only active (status 0) specimens
+      const activeSpecimens = allSpecimens.filter(s => s.status === 0);
+      setSpecimens(activeSpecimens);
+
+      // Enrich species catalog from local specimen names (fallback when on-chain catalog is empty)
+      for (const spec of activeSpecimens) {
+        if (spec.speciesId && !catalog[spec.speciesId] && (spec.commonName || spec.scientificName)) {
+          catalog[spec.speciesId] = { 
+            commonName: spec.commonName || `Species ID ${spec.speciesId}`, 
+            scientificName: spec.scientificName || "" 
+          };
+        }
+      }
+      setSpeciesCatalog({ ...catalog });
+
+      // 3. Load user tanks (local-first from Dexie, then on-chain fallback)
+      let localTanks = [];
+      try {
+        const dexieTanks = await db.tanks.where("ownerAddress").equals(walletAccount).toArray();
+        localTanks = dexieTanks.filter(t => t.active !== false).map(t => ({
+          id: Number(t.id),
+          name: t.name,
+          volumeLiters: Number(t.volumeLiters || 0),
+          latestLog: t.latestLog || (t.logs && t.logs.length > 0 ? t.logs[t.logs.length - 1] : null)
+        }));
+      } catch (e) {
+        console.warn("Failed to load local tanks for spawning:", e);
+      }
+
+      // Also try on-chain for historical tanks
+      let onChainTanks = [];
+      try {
+        let idx = 0;
+        while (true) {
+          try {
+            const id = await contract.ownerTanks(walletAccount, idx);
+            const t = await contract.tanks(id);
+            if (t.active) {
+              let latestLog = null;
+              try {
+                let logIndex = 0;
+                while (true) {
+                  try {
+                    const log = await contract.tankParameterLogs(id, logIndex);
+                    latestLog = log;
+                    logIndex++;
+                  } catch (e) {
+                    break;
+                  }
+                }
+              } catch (e) {}
+
+              onChainTanks.push({
+                id: Number(id),
+                name: t.name,
+                volumeLiters: Number(t.volumeLiters),
+                latestLog
+              });
+            }
+            idx++;
+          } catch (err) {
+            break;
+          }
+        }
+      } catch (chainErr) {
+        console.warn("On-chain tank query failed:", chainErr.message);
+      }
+
+      // Merge local + on-chain tanks (deduplicate by id)
+      const mergedTanks = [...localTanks];
+      for (const oct of onChainTanks) {
+        if (!mergedTanks.some(t => t.id === oct.id)) {
+          mergedTanks.push(oct);
+        }
+      }
+      setTanks(mergedTanks);
     } catch (err) {
       console.error("Error loading wizard metadata:", err);
       setError("Failed to resolve registry data for spawning setup.");
@@ -241,7 +348,6 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
       setSnappedParameters({
         temp: (Number(log.tempCelsiusX10) / 10).toFixed(1),
         ph: (Number(log.phX10) / 10).toFixed(1),
-        salinity: (Number(log.salinitySgX10000) / 10000).toFixed(4),
         ammonia: (Number(log.ammoniaPpmX100) / 100).toFixed(2),
         nitrite: (Number(log.nitritePpmX100) / 100).toFixed(2),
         nitrate: (Number(log.nitratePpmX100) / 100).toFixed(1),
@@ -284,7 +390,6 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
           ...snappedParameters ? [
             { trait_type: "Snapped Temp", value: `${snappedParameters.temp}°C` },
             { trait_type: "Snapped pH", value: snappedParameters.ph },
-            { trait_type: "Snapped Salinity", value: snappedParameters.salinity },
             { trait_type: "Snapped Ammonia", value: `${snappedParameters.ammonia} ppm` }
           ] : []
         ]
@@ -355,7 +460,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
   return (
     <div className="glass-card spawning-wizard-card" style={{ maxWidth: "680px", margin: "0 auto", padding: "2.5rem" }}>
       <h2 style={{ fontSize: "1.75rem", color: "#fff", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        🐶 Breeding Pair Setup
+        🥚 Breeding Pair Setup
       </h2>
       <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
         Follow the simple steps below to pair your fish, pick a tank, and register new fry — no technical knowledge needed!

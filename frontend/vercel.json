@@ -4,7 +4,7 @@
   "outputDirectory": "dist",
   "cleanUrls": true,
   "functions": {
-    "api/poseidon.js": {
+    "api/*.js": {
       "includeFiles": "public/fishbase_master.json"
     }
   },

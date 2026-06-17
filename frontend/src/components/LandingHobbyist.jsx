@@ -125,7 +125,7 @@ export function LandingHobbyist({ onEnter }) {
             <div style={{ fontSize: "2rem", marginBottom: "1rem" }}>🎚️</div>
             <h3 style={{ fontSize: "1.2rem", fontWeight: "700", marginBottom: "0.5rem", color: "#38bdf8" }}>Frictionless Water Sliders</h3>
             <p style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.6)", lineHeight: "1.5", margin: 0 }}>
-              Adjust pH, temperature, and salinity using visual color-coded sliders designed to match natural target habitats perfectly.
+              Adjust pH and temperature using visual color-coded sliders designed to match natural target habitats perfectly.
             </p>
           </div>
 

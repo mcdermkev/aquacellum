@@ -34,7 +34,14 @@ export default defineConfig({
     }
   },
   server: {
-    port: 4200
+    port: 4200,
+    proxy: {
+      // Forward /api requests to the Vercel dev server (run `vercel dev --listen 3000`)
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      }
+    }
   },
   test: {
     environment: 'node',

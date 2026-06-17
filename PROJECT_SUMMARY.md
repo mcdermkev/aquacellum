@@ -11,8 +11,8 @@ By bridging hobbyist fishkeeping registries with professional breeding standards
 
 ### Core Value Anchors
 - **Immutable Provenance**: Un-falsifiable ancestry trees (Sire/Dam indices) tracing specimens across generations, with inbreeding coefficient detection.
-- **Account Abstraction & Embedded Wallets**: Seamless onboarding via Privy embedded MPC wallets (email/Google login). MetaMask available as fallback for advanced users. Gasless beta via server-side relayer.
-- **Local-First Architecture**: Dexie.js offline database with TanStack Query caching. All operational data (tanks, action logs, grow-out tracking, photos) works without network. On-chain registration deferred to "publish" step.
+- **Account Abstraction & Embedded Wallets**: Seamless onboarding via Privy embedded MPC wallets (email/Google login). EIP-4337 smart wallets (Coinbase Smart Account) for gasless on-chain writes. CDP Paymaster sponsors all gas fees. MetaMask available as fallback for advanced users.
+- **Local-First Architecture**: Dexie.js offline database with TanStack Query caching. All operational data (tanks, action logs, grow-out tracking, photos) works without network. On-chain writes batched via EIP-4337 UserOperations in the background (3-second queue, max 10 per batch).
 - **Dual-Mode Experience**: Casual Hobbyist mode (friendly, gamified) and Pro Breeder mode (operational, de-gamified) driven by a single toggle.
 - **Narrative Onboarding**: Cinematic dual-pane wizard guided by Poseidon (AI assistant) with a living visual stage. Persona selection → Privy-only login → display name confirmation (uniqueness-checked) → Echo egg hatch (real art assets) → guided spotlight tour of real tank/fish registration → profile picture nudge. Per-account completion flag (Supabase + Dexie mirror + localStorage cache) ensures it shows exactly once. Replay available from Settings without data loss.
 - **Poseidon AI Intelligence Layer**: **Vertex AI (Gemini 2.5 Flash)** powered freshwater fish expert, grounded via RAG in the curated 326-species catalog. Provides natural language search, spawn thread narration, species compatibility advice, image alt-text generation, and contextual Q&A — all routed through server-side Edge Functions with structured JSON responses. User-controllable via Settings toggle. Runs on Vertex AI billed to the `aquacellum` Cloud project; simple/high-volume endpoints use the cheaper Gemini 2.5 Flash-Lite.
@@ -55,7 +55,7 @@ graph TD
 5. **Serverless API**: Vercel serverless functions for species suggestion validation (WoRMS + Gemini AI audit), transaction relayer, and Poseidon AI gateway.
 6. **Poseidon AI Gateway**: `/api/poseidon` (Vertex AI, Gemini 2.5 Flash) — structured JSON responses, RAG-grounded in 326-species catalog, multi-turn context, rate-limited (20/hr). Additional endpoints: `/api/parse-search` (NL query parsing, Gemini 2.5 Flash-Lite), `/api/generate-alt-text` (Gemini 2.5 Flash-Lite vision for accessibility), `/api/suggest-species` (WoRMS + Gemini 2.5 Flash audit). All authenticate to Vertex AI via a service account (`_lib/vertexClient.js`), billed to the `aquacellum` Cloud project. Static reef art is generated with Imagen 4 on Vertex (`scripts/imagen_generate.py`).
 7. **Social Backend**: Supabase Postgres (19 tables with RLS + notification triggers + cron), Supabase Storage (media CDN), Supabase Realtime (live chat + notifications), 8 Edge Functions (`send-push`, `tide-lifecycle`, `reef-digest`, `breeder-summary`, `content-moderation`, `tide-narration`, `mentor-match`, `anti-gaming`), Web Push via VAPID. Migrations consolidated in `supabase/migrations/` (001–010).
-8. **Beta Relayer**: `/api/relay-transaction` — server-side transaction signing for on-chain writes using a single funded deployer wallet. Beta testers never interact with MetaMask.
+8. **On-Chain Relay (EIP-4337)**: Coinbase Smart Wallet + CDP Paymaster. All on-chain writes (mints, tank registration, water logs, spawns, marketplace listings) are submitted as gas-sponsored UserOperations via the CDP Bundler. Operations are batched client-side (3s debounce, max 10 per UserOp) for gas efficiency. Smart wallet: `0x53d3c6F4F11b0B08bC1A5034bBCe7d46198b6851`.
 
 ---
 
@@ -86,7 +86,7 @@ All contracts deployed on **Base Sepolia (Chain ID 84532)**.
 |--------|---------|------|---------|
 | Temperature | ×10 | `int16` | 23.5°C → `235` |
 | pH | ×10 | `uint8` | 7.2 → `72` |
-| Salinity (SG) | ×10,000 | `uint16` | 1.0240 → `10240` |
+| Salinity (SG) | ×10,000 | `uint16` | 1.0240 → `10240` (legacy, not used in UI) |
 | Nitrogen (ppm) | ×100 | `uint16` | 0.25 ppm → `25` |
 
 ---

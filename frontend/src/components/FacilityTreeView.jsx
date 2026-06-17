@@ -252,7 +252,6 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
         details: {
           temp: 24.5,
           ph: 7.2,
-          salinity: registerForm.tankType === "2" ? 1.025 : 1.0,
           ammonia: 0,
           nitrite: 0,
           nitrate: 5,

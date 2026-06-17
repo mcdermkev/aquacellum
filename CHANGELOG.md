@@ -4,6 +4,117 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [Unreleased] — 2026-06-17
+
+### ⛓️ EIP-4337 Account Abstraction — Full On-Chain Integration
+
+Migrated from local-only beta relayer to full EIP-4337 account abstraction with Coinbase Smart Wallet and CDP Paymaster gas sponsorship. All user actions now persist on-chain with zero gas cost.
+
+#### Architecture
+- **Smart Wallet**: Coinbase Smart Account (`0x53d3c6F4F11b0B08bC1A5034bBCe7d46198b6851`) derived from sponsor key
+- **Paymaster**: CDP Paymaster sponsors all gas — users never pay fees
+- **Bundler**: CDP Bundler batches UserOperations into single transactions
+- **Client Batching**: 3-second debounce queue (max 10 ops) → one UserOp per flush
+
+#### Operations Going On-Chain via 4337
+| Action | Contract Function | Batched? |
+|--------|-------------------|----------|
+| Register tank | `registerTank()` | ✅ |
+| Mint specimen / Add fish | `mintSpecimen()` | ✅ |
+| Log water parameters | `logWaterParameters()` | ✅ |
+| Move fish between tanks | `moveSpecimenToTank()` | ✅ |
+| Initiate spawn | `initiateSpawn()` | ✅ |
+| Create listing | `approve()` + `listSpecimen()` | ✅ |
+| Cancel listing | `cancelListing()` | ✅ |
+
+#### Files Changed
+| File | Change |
+|------|--------|
+| `frontend/src/services/smartAccountClient.js` | **New** — EIP-4337 client (viem + Coinbase Smart Account + CDP Paymaster/Bundler) with call builders for all contract functions |
+| `frontend/src/services/relayer.js` | Rewired from server-side API to client-side 4337 queue with `enqueueOnChain()` batching |
+| `frontend/api/relay-transaction.js` | Expanded to support all contract functions (fallback for non-4337 environments) |
+| `frontend/src/components/DataPortabilityWidget.jsx` | Added smart wallet status card in Settings (address, network, BaseScan link) |
+| `frontend/package.json` | Added `viem@^2.52.2` dependency |
+
+#### Verified on Base Sepolia
+- ✅ Batched UserOp (registerTank + mintSpecimen) confirmed in single tx
+- ✅ Gas fully sponsored by CDP Paymaster ($0 cost)
+- ✅ All contract functions pass (mint, log params, spawn, move)
+
+---
+
+### 🐟 My Aquariums — Visual & Functional Fixes
+
+#### Fixes Applied
+| Issue | Fix |
+|-------|-----|
+| `viewMode` set to invalid `"grid"` | Changed to `"list"` (the actual valid mode) |
+| Pro Overview hardcoded ideal ranges (22-27°C, 6.5-8.0 pH) | Now uses dynamic ranges per tank type (Freshwater/Saltwater/Brackish/Pond) |
+| Salinity visible in UI (freshwater-only app) | Removed from all forms, states, safe ranges, landing page, and relay calls. Contract still receives `0` for the param. |
+| Spawning Wizard shows dog emoji 🐶 | Changed to 🥚 (egg emoji) |
+| Fish intermittently missing from Spawning Wizard | Rewrote to local-first data loading (Dexie tanks + specimens → on-chain merge) |
+| Hatchery Spawning Logs shows "No Spawning History" | Now queries local `db.spawns` table first, merges with on-chain data |
+| Spawned fish not appearing in tanks | Added specimen reconciliation in `useUserTanks` — cross-references `db.specimens` against tank arrays |
+
+#### Files Changed
+- `frontend/src/components/TankList.jsx` — Salinity removal, dynamic ranges, viewMode fix
+- `frontend/src/components/SpawningWizard.jsx` — Dog→egg emoji, local-first specimen/tank/species loading
+- `frontend/src/components/HatcheryLogs.jsx` — Local Dexie spawn query + on-chain merge
+- `frontend/src/components/FacilityTreeView.jsx` — Removed salinity from init params
+- `frontend/src/components/LandingHobbyist.jsx` — Updated marketing copy (removed salinity mention)
+- `frontend/src/components/onboarding/TankTourStep.jsx` — Removed salinity from tutorial
+- `frontend/src/hooks/useUserTanks.js` — Added specimen reconciliation step
+
+---
+
+### 🧠 Poseidon AI Gateway — Critical Fix (Live Site Restored)
+
+Fixed Poseidon AI assistant failing on the live site (aquacellum.com) with "Sorry, I'm having trouble connecting to my knowledge base right now." All AI-powered features are now fully operational in production.
+
+#### Root Cause
+1. **Corrupted credentials**: The `GCP_SERVICE_ACCOUNT_JSON` env var stored in Vercel was 4 characters shorter than the correct value (2306 vs 2310), causing the RSA private key to be unreadable by Node.js's OpenSSL layer (`error:1E08010C:DECODER routines::unsupported`).
+2. **Node 24 + google-auth-library incompatibility**: The `google-auth-library` package's key handling was fragile on Vercel's Node 24 runtime with OpenSSL 3.x, providing unhelpful error messages that masked the real issue.
+3. **Silent fallback to depleted API key**: When Vertex AI auth failed, the system fell back to the `GEMINI_API_KEY` (Google AI Studio) which had exhausted prepayment credits (HTTP 429).
+
+#### Fixes Applied
+
+| File | Change |
+|------|--------|
+| `frontend/api/_lib/vertexClient.js` | **Complete rewrite** — replaced `google-auth-library` with manual JWT signing (`crypto.createSign`). Gives full control over auth, clearer errors, and works reliably on Node 24. Includes AI Studio fallback with proper error propagation. |
+| `frontend/api/poseidon.js` | Added diagnostic logging for `isVertexConfigured()` failures and debug hints in non-production error responses |
+| `frontend/src/hooks/usePoseidon.js` | Fixed `isOnline` state detection — now correctly handles `data.error: true` responses from the API; stopped counting error responses toward rate limit |
+| `frontend/vercel.json` | Changed `functions` scope from `api/poseidon.js` to `api/*.js` — all serverless functions now get access to `fishbase_master.json` |
+| `frontend/vite.config.js` | Added `/api` proxy to `localhost:3000` for local dev (forwards to `vercel dev`) |
+| `frontend/package.json` | Changed `"dev"` script to `vercel dev --listen 3000`; added `"dev:vite"` for Vite-only mode; added `engines.node: "20.x"` |
+| `frontend/.vercel/.env.production.local` | Removed empty `GEMINI_API_KEY=""` and stale OIDC token that were overriding real `.env` values |
+| Vercel Environment Variables | Re-uploaded correct `GCP_SERVICE_ACCOUNT_JSON` (2310 chars) via `vercel env add` |
+
+#### New File
+- **`frontend/api/poseidon-health.js`** — Diagnostic health check endpoint (`GET /api/poseidon-health`) that reports credential status, JSON parseability, private key format, and performs a live Vertex AI ping test
+
+#### AI Endpoints Verified Working (Production)
+- `POST /api/poseidon` — Poseidon chat assistant (Gemini 2.5 Flash + species RAG)
+- `POST /api/parse-search` — Natural language search → structured filters
+- `POST /api/suggest-species` — AI-powered species validation (WoRMS + Gemini audit)
+- `POST /api/generate-alt-text` — Gemini Vision alt-text for aquarium photos
+- `GET /api/poseidon-health` — Credential & connectivity diagnostic
+
+#### Architecture (vertexClient.js)
+```
+Auth Flow: Manual JWT → Google OAuth2 token exchange → Vertex AI Bearer auth
+Fallback:  If Vertex fails → GEMINI_API_KEY (AI Studio endpoint)
+Caching:   Access tokens cached in-memory (1hr TTL with 60s buffer)
+```
+
+#### Verification
+- ✅ `npm run build` — Vite production build passes
+- ✅ `/api/poseidon-health` — `vertexTest.success: true` on live site
+- ✅ `/api/poseidon` — Returns structured JSON responses with correct intent classification
+- ✅ `/api/parse-search` — NLP query parsing operational
+- ✅ Deployed to production via `vercel --prod`
+
+---
+
 ## [Unreleased] — 2026-06-16
 
 ### 🎬 Video & Livestream System — Complete (Phases 1–3)

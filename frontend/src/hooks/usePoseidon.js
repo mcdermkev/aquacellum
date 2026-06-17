@@ -156,8 +156,10 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress } = {}) {
 
       const data = await response.json();
 
-      // Track successful request for rate limiting
-      requestTimestamps.current.push(Date.now());
+      // Track successful request for rate limiting (only if not an error response)
+      if (!data.error && !data.offline) {
+        requestTimestamps.current.push(Date.now());
+      }
 
       const poseidonMsg = {
         id: `pos-${Date.now()}`,
@@ -172,7 +174,7 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress } = {}) {
       };
 
       setMessages(prev => [...prev, poseidonMsg]);
-      setIsOnline(!data.offline);
+      setIsOnline(!data.offline && !data.error);
 
       return poseidonMsg;
 

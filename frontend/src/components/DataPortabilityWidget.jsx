@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { exportLocalDatabase, importLocalDatabase, db } from "../db";
 import { useQueryClient } from "@tanstack/react-query";
 import { generateFacilitySummary } from "../utils/pdfExport";
 import { useAuth } from "../contexts/AuthContext";
 import { ONBOARDING_CACHE_KEY } from "../hooks/useOnboardingGate";
 import { setOnboardingComplete } from "../services/reefApi";
+import { getSmartWalletAddress } from "../services/smartAccountClient";
 
 export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
   const queryClient = useQueryClient();
@@ -14,6 +15,17 @@ export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
   const [isImporting, setIsImporting] = useState(false);
   const [showModeConfirm, setShowModeConfirm] = useState(false);
   const [showReplayConfirm, setShowReplayConfirm] = useState(false);
+  const [smartWalletAddress, setSmartWalletAddress] = useState(null);
+  const [smartWalletLoading, setSmartWalletLoading] = useState(false);
+
+  // Load smart wallet address on mount
+  useEffect(() => {
+    setSmartWalletLoading(true);
+    getSmartWalletAddress()
+      .then(addr => setSmartWalletAddress(addr))
+      .catch(err => console.warn("Smart wallet init failed:", err))
+      .finally(() => setSmartWalletLoading(false));
+  }, []);
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -146,6 +158,82 @@ export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
 
   return (
     <>
+    {/* ─── Smart Wallet Status ─── */}
+    <div 
+      className="glass-card" 
+      style={{
+        padding: "1.5rem 2rem",
+        borderRadius: "var(--radius-md)",
+        border: smartWalletAddress ? "1px solid rgba(52, 211, 153, 0.2)" : "1px solid rgba(255, 255, 255, 0.08)",
+        background: "rgba(10, 15, 30, 0.7)",
+        backdropFilter: "blur(12px)",
+        maxWidth: "600px",
+        margin: "0 auto 1.5rem auto",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
+        <span style={{ fontSize: "1.3rem" }}>⛓️</span>
+        <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "#fff", margin: 0 }}>
+          On-Chain Smart Wallet (EIP-4337)
+        </h3>
+        <span style={{
+          fontSize: "0.6rem",
+          padding: "0.15rem 0.5rem",
+          borderRadius: "20px",
+          background: smartWalletAddress ? "rgba(52, 211, 153, 0.15)" : "rgba(251, 191, 36, 0.15)",
+          color: smartWalletAddress ? "#4ade80" : "#fbbf24",
+          border: smartWalletAddress ? "1px solid rgba(52, 211, 153, 0.3)" : "1px solid rgba(251, 191, 36, 0.3)",
+          fontWeight: "700",
+          textTransform: "uppercase",
+          letterSpacing: "0.05em"
+        }}>
+          {smartWalletLoading ? "Initializing..." : smartWalletAddress ? "Active" : "Offline"}
+        </span>
+      </div>
+
+      {smartWalletAddress ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.85rem", background: "rgba(0,0,0,0.25)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)" }}>
+            <div>
+              <span style={{ display: "block", fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.2rem" }}>Smart Wallet Address</span>
+              <span style={{ fontSize: "0.8rem", color: "#fff", fontFamily: "monospace" }}>
+                {smartWalletAddress.slice(0, 6)}...{smartWalletAddress.slice(-4)}
+              </span>
+            </div>
+            <a
+              href={`https://sepolia.basescan.org/address/${smartWalletAddress}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontSize: "0.7rem", color: "var(--accent-blue)", textDecoration: "none", fontWeight: "600" }}
+            >
+              View on BaseScan ↗
+            </a>
+          </div>
+          <div style={{ display: "flex", gap: "0.75rem" }}>
+            <div style={{ flex: 1, padding: "0.5rem 0.75rem", background: "rgba(52,211,153,0.04)", borderRadius: "6px", border: "1px solid rgba(52,211,153,0.15)" }}>
+              <span style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", marginBottom: "0.15rem" }}>Network</span>
+              <span style={{ fontSize: "0.75rem", color: "#4ade80", fontWeight: "600" }}>Base Sepolia</span>
+            </div>
+            <div style={{ flex: 1, padding: "0.5rem 0.75rem", background: "rgba(56,189,248,0.04)", borderRadius: "6px", border: "1px solid rgba(56,189,248,0.15)" }}>
+              <span style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", marginBottom: "0.15rem" }}>Gas Sponsor</span>
+              <span style={{ fontSize: "0.75rem", color: "#38bdf8", fontWeight: "600" }}>CDP Paymaster</span>
+            </div>
+            <div style={{ flex: 1, padding: "0.5rem 0.75rem", background: "rgba(168,85,247,0.04)", borderRadius: "6px", border: "1px solid rgba(168,85,247,0.15)" }}>
+              <span style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", marginBottom: "0.15rem" }}>Batching</span>
+              <span style={{ fontSize: "0.75rem", color: "#c084fc", fontWeight: "600" }}>3s Queue</span>
+            </div>
+          </div>
+          <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", lineHeight: "1.5", margin: "0.25rem 0 0" }}>
+            All actions (mints, logs, listings) are batched and submitted as gasless UserOperations. Gas is fully sponsored by the CDP Paymaster — you never pay fees.
+          </p>
+        </div>
+      ) : (
+        <p style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+          {smartWalletLoading ? "Connecting to Coinbase Smart Wallet..." : "Smart wallet could not be initialized. On-chain writes are paused."}
+        </p>
+      )}
+    </div>
+
     <div 
       className="glass-card" 
       style={{

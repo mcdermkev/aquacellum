@@ -118,6 +118,12 @@ export default async function handler(req, res) {
 
   // Fallback: if Vertex AI isn't configured, return a structured offline response
   if (!isVertexConfigured()) {
+    console.warn('[Poseidon Gateway] isVertexConfigured() returned false.',
+      'GCP_PROJECT_ID:', !!process.env.GCP_PROJECT_ID,
+      'GCP_SERVICE_ACCOUNT_JSON:', !!(process.env.GCP_SERVICE_ACCOUNT_JSON && process.env.GCP_SERVICE_ACCOUNT_JSON.trim()),
+      'GOOGLE_APPLICATION_CREDENTIALS:', !!(process.env.GOOGLE_APPLICATION_CREDENTIALS && process.env.GOOGLE_APPLICATION_CREDENTIALS.trim()),
+      'GEMINI_API_KEY:', !!(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim())
+    );
     return res.status(200).json({
       message: mode === 'pro'
         ? "[POSEIDON OFFLINE] Gemini API key not configured. Operating in local-only mode."
@@ -247,13 +253,16 @@ export default async function handler(req, res) {
     return res.status(200).json(parsed);
 
   } catch (error) {
-    console.error('[Poseidon Gateway] Error:', error);
+    console.error('[Poseidon Gateway] Error:', error.message || error);
 
-    // Graceful degradation — return a helpful fallback
+    // Graceful degradation — return a helpful fallback with diagnostic hint
+    const isDev = process.env.VERCEL_ENV !== 'production';
+    const debugHint = isDev ? ` (Debug: ${error.message})` : '';
+
     return res.status(200).json({
       message: mode === 'pro'
-        ? "[POSEIDON ERROR] Backend intelligence layer unreachable. Retry or use local command mode."
-        : "🌊 Sorry, I'm having trouble connecting to my knowledge base right now. Try again in a moment!",
+        ? `[POSEIDON ERROR] Backend intelligence layer unreachable. Retry or use local command mode.${debugHint}`
+        : `🌊 Sorry, I'm having trouble connecting to my knowledge base right now. Try again in a moment!${debugHint}`,
       intent: "fallback_unknown",
       action: { type: "NONE", payload: {} },
       echoReaction: { mood: "confused", glowActive: false, glowColor: "", swimSpeedMultiplier: 0.8, durationMs: 2000 },

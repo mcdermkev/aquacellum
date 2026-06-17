@@ -122,6 +122,39 @@ export function useUserTanks(contractAddress, walletAccount) {
         }
       }
 
+      // Reconcile: ensure specimens from the standalone db.specimens table
+      // are also reflected in their tank's specimens array (fixes spawned fish
+      // not appearing in tanks when they were minted against an on-chain tank ID).
+      try {
+        const allLocalSpecimens = await db.specimens
+          .where("ownerAddress").equals(walletAccount)
+          .filter(s => Number(s.status) === 0 && s.currentTankId && Number(s.currentTankId) !== 0)
+          .toArray();
+
+        for (const spec of allLocalSpecimens) {
+          const tankId = Number(spec.currentTankId);
+          const tank = allTanks.find(t => Number(t.id) === tankId);
+          if (tank) {
+            const existingSpecimens = tank.specimens || [];
+            if (!existingSpecimens.some(s => Number(s.id) === Number(spec.id))) {
+              existingSpecimens.push({
+                id: Number(spec.id),
+                speciesId: Number(spec.speciesId),
+                commonName: spec.commonName || "",
+                scientificName: spec.scientificName || "",
+                status: 0,
+                gender: spec.gender || "Unsexed",
+                sireId: Number(spec.sireId || 0),
+                damId: Number(spec.damId || 0),
+              });
+              tank.specimens = existingSpecimens;
+            }
+          }
+        }
+      } catch (reconcileErr) {
+        console.warn("Specimen reconciliation failed:", reconcileErr);
+      }
+
       // Populate latest test and change timestamps from actionLogs and parameter logs
       for (const tank of allTanks) {
         try {

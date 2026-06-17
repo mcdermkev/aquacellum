@@ -330,63 +330,91 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
   useEffect(() => {
     let active = true;
     const fetchLogs = async () => {
-      if (!contractInstance) {
-        setLoading(false);
-        return;
-      }
       try {
         setLoading(true);
         const fetchedLogs = [];
-        let id = 1;
-        
-        let marketplaceContract = null;
-        if (marketplaceAddress) {
-          const provider = getProvider();
-          marketplaceContract = new Contract(marketplaceAddress, marketplaceAbi, provider);
-        }
 
-        // Loop sequentially through mappings until spawnId returns 0n
-        while (true) {
-          const log = await contractInstance.spawnLogs(id);
-          if (!log || log.spawnId === 0n || Number(log.spawnId) === 0) {
-            break;
-          }
-          if (Number(log.speciesId) === Number(specCode)) {
-            const spawnId = Number(log.spawnId);
-            let listingDetails = null;
-
-            if (marketplaceContract) {
-              try {
-                const listingId = await marketplaceContract.spawnToListing(spawnId);
-                if (listingId > 0n) {
-                  const listing = await marketplaceContract.batchListings(listingId);
-                  if (listing.isActive) {
-                    listingDetails = {
-                      listingId: Number(listing.listingId),
-                      spawnId: Number(listing.spawnId),
-                      quantity: Number(listing.quantity),
-                      pricePerFish: listing.pricePerFish.toString(),
-                      seller: listing.seller,
-                      isActive: listing.isActive
-                    };
-                  }
-                }
-              } catch (err) {
-                console.error(`Error querying spawnToListing for spawn ${spawnId}:`, err);
-              }
-            }
-
+        // 1. Load local spawns from Dexie (beta relayer stores here)
+        try {
+          const localSpawns = await db.spawns.where("speciesId").equals(Number(specCode)).toArray();
+          for (const spawn of localSpawns) {
             fetchedLogs.push({
-              spawnId: spawnId,
-              speciesId: Number(log.speciesId),
-              breeder: log.breeder,
-              eggCount: Number(log.eggCount),
-              eventTimestamp: Number(log.eventTimestamp),
-              notesIpfsHash: log.notesIpfsHash,
-              listing: listingDetails,
+              spawnId: spawn.spawnId,
+              speciesId: Number(spawn.speciesId),
+              breeder: spawn.ownerAddress || walletAccount || "",
+              eggCount: (spawn.offspringIds || []).length || Number(spawn.offspringCount || 0),
+              eventTimestamp: Number(spawn.timestamp || Math.floor(spawn.spawnId / 1000)),
+              notesIpfsHash: spawn.metadata?.ipfsHash || "",
+              listing: null,
+              isLocal: true,
+              offspringIds: spawn.offspringIds || [],
+              sireId: spawn.sireId,
+              damId: spawn.damId,
+              tankId: spawn.tankId,
             });
           }
-          id++;
+        } catch (localErr) {
+          console.warn("Failed to load local spawns from Dexie:", localErr);
+        }
+
+        // 2. Load on-chain spawns if contract is available
+        if (contractInstance) {
+          let marketplaceContract = null;
+          if (marketplaceAddress) {
+            const provider = getProvider();
+            marketplaceContract = new Contract(marketplaceAddress, marketplaceAbi, provider);
+          }
+
+          let id = 1;
+          while (true) {
+            try {
+              const log = await contractInstance.spawnLogs(id);
+              if (!log || log.spawnId === 0n || Number(log.spawnId) === 0) {
+                break;
+              }
+              if (Number(log.speciesId) === Number(specCode)) {
+                const spawnId = Number(log.spawnId);
+                let listingDetails = null;
+
+                if (marketplaceContract) {
+                  try {
+                    const listingId = await marketplaceContract.spawnToListing(spawnId);
+                    if (listingId > 0n) {
+                      const listing = await marketplaceContract.batchListings(listingId);
+                      if (listing.isActive) {
+                        listingDetails = {
+                          listingId: Number(listing.listingId),
+                          spawnId: Number(listing.spawnId),
+                          quantity: Number(listing.quantity),
+                          pricePerFish: listing.pricePerFish.toString(),
+                          seller: listing.seller,
+                          isActive: listing.isActive
+                        };
+                      }
+                    }
+                  } catch (err) {
+                    console.error(`Error querying spawnToListing for spawn ${spawnId}:`, err);
+                  }
+                }
+
+                // Only add if not already present from local data
+                if (!fetchedLogs.some(l => l.spawnId === spawnId)) {
+                  fetchedLogs.push({
+                    spawnId: spawnId,
+                    speciesId: Number(log.speciesId),
+                    breeder: log.breeder,
+                    eggCount: Number(log.eggCount),
+                    eventTimestamp: Number(log.eventTimestamp),
+                    notesIpfsHash: log.notesIpfsHash,
+                    listing: listingDetails,
+                  });
+                }
+              }
+              id++;
+            } catch (err) {
+              break;
+            }
+          }
         }
         
         if (active) {
@@ -407,7 +435,7 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
     return () => {
       active = false;
     };
-  }, [specCode, contractInstance, marketplaceAddress, refreshTrigger]);
+  }, [specCode, contractInstance, marketplaceAddress, refreshTrigger, walletAccount]);
 
   const handleBuy = async (listing, spawnId) => {
     const qtyInput = document.getElementById(`buy-qty-${spawnId}`);

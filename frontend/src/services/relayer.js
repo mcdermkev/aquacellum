@@ -1,14 +1,88 @@
 /**
  * relayer.js
  * 
- * During beta, tanks and specimens are stored locally in Dexie.js (offline-first).
- * On-chain registration is deferred until the user "publishes" their data.
- * This avoids the ownership mismatch (relayer wallet vs user wallet) and
- * prevents MetaMask from popping up for routine actions.
+ * Local-first architecture with EIP-4337 account abstraction on-chain writes.
+ * 
+ * Flow for every user action:
+ *   1. Instant local write → Dexie (IndexedDB) — user sees results immediately
+ *   2. Cloud sync → Supabase (fire-and-forget) — backup and cross-device
+ *   3. On-chain write → EIP-4337 UserOperation via Coinbase Smart Wallet + CDP Paymaster
+ *      - Gas is sponsored by the CDP Paymaster (users pay nothing)
+ *      - Operations are batched into single UserOps when possible
+ *      - Failures don't affect local UX (fire-and-forget)
  */
 
 import { db } from "../db";
 import { syncTankToCloud, syncSpecimenToCloud } from "./cloudSync";
+import {
+  submitUserOperation,
+  buildRegisterTankCall,
+  buildMintSpecimenCall,
+  buildLogWaterParametersCall,
+  buildMoveSpecimenCall,
+  buildInitiateSpawnCall,
+  buildListSpecimenCall,
+  buildCancelListingCall,
+  buildApproveCall,
+  buildCreateShippingListingCall,
+} from "./smartAccountClient";
+
+/**
+ * Queue for batching on-chain operations.
+ * Accumulates calls and flushes them as a single UserOperation.
+ */
+const _onChainQueue = [];
+let _flushTimer = null;
+const FLUSH_DELAY_MS = 3000; // Wait 3s to batch multiple rapid actions
+const MAX_BATCH_SIZE = 10;   // Flush immediately if queue hits this size
+
+function enqueueOnChain(call, label = "") {
+  if (!call) return; // Skip null calls (e.g., local-only tank operations)
+  
+  _onChainQueue.push({ call, label, timestamp: Date.now() });
+
+  // Flush immediately if batch is full
+  if (_onChainQueue.length >= MAX_BATCH_SIZE) {
+    flushOnChainQueue();
+    return;
+  }
+
+  // Otherwise debounce: wait for more operations to batch
+  if (_flushTimer) clearTimeout(_flushTimer);
+  _flushTimer = setTimeout(flushOnChainQueue, FLUSH_DELAY_MS);
+}
+
+async function flushOnChainQueue() {
+  if (_flushTimer) {
+    clearTimeout(_flushTimer);
+    _flushTimer = null;
+  }
+
+  if (_onChainQueue.length === 0) return;
+
+  // Drain the queue
+  const batch = _onChainQueue.splice(0);
+  const calls = batch.map(b => b.call);
+  const labels = batch.map(b => b.label).filter(Boolean).join(", ");
+
+  console.log(`[4337] Flushing batch of ${calls.length} operations: ${labels}`);
+
+  const result = await submitUserOperation(calls);
+  if (result.success) {
+    console.log(`[4337] Batch confirmed! UserOp: ${result.userOpHash}`);
+  } else {
+    console.warn(`[4337] Batch failed: ${result.error}`);
+  }
+}
+
+// Flush on page unload to avoid losing queued operations
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", () => {
+    if (_onChainQueue.length > 0) {
+      flushOnChainQueue();
+    }
+  });
+}
 
 /**
  * Register a tank locally in Dexie (beta mode — no on-chain write).
@@ -52,6 +126,12 @@ export async function relayRegisterTank({
 
     // Fire-and-forget cloud sync (non-blocking)
     syncTankToCloud(tank).catch(() => {});
+
+    // Fire-and-forget on-chain registration via 4337 (non-blocking, batched)
+    enqueueOnChain(
+      buildRegisterTankCall({ name, tankType, volumeLiters, containment, parentUnitId, facility, room, rack }),
+      `registerTank(${name})`
+    );
 
     return { success: true, tankId, txHash: null };
   } catch (err) {
@@ -103,6 +183,20 @@ export async function relayMintSpecimen({
 
     // Fire-and-forget cloud sync (non-blocking)
     syncSpecimenToCloud(specimen).catch(() => {});
+
+    // Fire-and-forget on-chain mint via 4337 (non-blocking, batched)
+    enqueueOnChain(
+      buildMintSpecimenCall({
+        speciesId: Number(speciesId),
+        birthTimestamp: birthTimestamp || Math.floor(Date.now() / 1000),
+        breeder: breeder || ownerAddress,
+        currentTankId: Number(currentTankId),
+        sireId: Number(sireId),
+        damId: Number(damId),
+        ipfsMetadataUri: ipfsMetadataUri || ""
+      }),
+      `mintSpecimen(species:${speciesId})`
+    );
 
     // Also embed in the tank's specimens array if a tank is specified
     if (currentTankId && Number(currentTankId) !== 0) {
@@ -188,6 +282,12 @@ export async function relayMoveSpecimen({
     const updatedSpec = await db.specimens.get(specimenId);
     if (updatedSpec) syncSpecimenToCloud(updatedSpec).catch(() => {});
 
+    // Fire-and-forget on-chain move via 4337 (non-blocking, batched)
+    enqueueOnChain(
+      buildMoveSpecimenCall({ specimenId, targetTankId }),
+      `moveSpecimen(${specimenId} → tank:${targetTankId})`
+    );
+
     return { success: true, specimenId, targetTankId, txHash: null };
   } catch (err) {
     console.error("[Relayer] Local specimen move failed:", err);
@@ -235,6 +335,15 @@ export async function relayLogWaterParameters({
     // Sync updated tank (with new logs) to cloud
     const updatedTank = await db.tanks.get(tankId);
     if (updatedTank) syncTankToCloud(updatedTank).catch(() => {});
+
+    // Fire-and-forget on-chain parameter log via 4337 (non-blocking, batched)
+    enqueueOnChain(
+      buildLogWaterParametersCall({
+        tankId, tempCelsiusX10, phX10, salinitySgX10000,
+        ammoniaPpmX100, nitritePpmX100, nitratePpmX100, notes: notes || ""
+      }),
+      `logWaterParameters(tank:${tankId})`
+    );
 
     return { success: true, tankId, logIndex: logs.length - 1, txHash: null };
   } catch (err) {
@@ -318,6 +427,17 @@ export async function relayCreateListing({
     // Also write to the listings cache so it shows immediately
     try { await db.listings.put(listing); } catch (e) {}
 
+    // On-chain: approve marketplace + list specimen (batched in one UserOp)
+    const priceWei = BigInt(Math.round(parseFloat(priceEth) * 1e18));
+    if (isShipping) {
+      const shippingWei = BigInt(Math.round(parseFloat(shippingFeeEth) * 1e18));
+      enqueueOnChain(buildApproveCall({ tokenId: Number(tokenId) }), `approve(${tokenId})`);
+      enqueueOnChain(buildCreateShippingListingCall({ tokenId: Number(tokenId), priceWei, shippingFeeWei: shippingWei }), `createShippingListing(${tokenId})`);
+    } else {
+      enqueueOnChain(buildApproveCall({ tokenId: Number(tokenId) }), `approve(${tokenId})`);
+      enqueueOnChain(buildListSpecimenCall({ tokenId: Number(tokenId), priceWei }), `listSpecimen(${tokenId})`);
+    }
+
     return { success: true, tokenId: Number(tokenId), txHash: null };
   } catch (err) {
     console.error("[Relayer] Local listing creation failed:", err);
@@ -332,6 +452,10 @@ export async function relayCancelListing(tokenId) {
   try {
     await db.localListings.delete(Number(tokenId));
     try { await db.listings.delete(Number(tokenId)); } catch (e) {}
+
+    // On-chain: cancel the listing
+    enqueueOnChain(buildCancelListingCall({ tokenId: Number(tokenId) }), `cancelListing(${tokenId})`);
+
     return { success: true, tokenId: Number(tokenId), txHash: null };
   } catch (err) {
     console.error("[Relayer] Local listing cancel failed:", err);
@@ -649,6 +773,17 @@ export async function relaySpawn({
       metadata,
     };
     await db.spawns.put(spawn);
+
+    // Fire-and-forget on-chain spawn initiation via 4337 (non-blocking, batched)
+    enqueueOnChain(
+      buildInitiateSpawnCall({
+        sireId: Number(sireId),
+        damId: Number(damId),
+        tankId: Number(tankId),
+        ipfsLogUri: ipfsMetadataUri || ""
+      }),
+      `initiateSpawn(sire:${sireId}, dam:${damId})`
+    );
 
     const offspringIds = [];
     for (let i = 0; i < Number(offspringCount); i++) {

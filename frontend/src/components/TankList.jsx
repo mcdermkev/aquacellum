@@ -925,7 +925,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       tankId: activeTank.id,
       actionType: "Quick Water Test",
       timestamp: Math.round(Date.now() / 1000),
-      details: "Baseline Water Test (Temp: 24.5°C, pH: 7.2, Salinity: 1.020)"
+      details: "Baseline Water Test (Temp: 24.5°C, pH: 7.2)"
     });
     addXp(2, "Logged Baseline Water Test");
     showToast(casualModeActive
@@ -940,7 +940,6 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     setFormData({
       temp: activeTank.latestLog ? (activeTank.latestLog.tempCelsiusX10/10).toString() : "24.5",
       ph: activeTank.latestLog ? (activeTank.latestLog.phX10/10).toString() : "7.2",
-      salinity: activeTank.latestLog ? (activeTank.latestLog.salinitySgX10000/10000).toString() : "1.0000",
       ammonia: "0.0",
       nitrite: "0.0",
       nitrate: "5.0",
@@ -1065,7 +1064,6 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const [formData, setFormData] = useState({
     temp: "24.5",
     ph: "7.2",
-    salinity: "1.0000",
     ammonia: "0.0",
     nitrite: "0.0",
     nitrate: "5.0",
@@ -1100,7 +1098,6 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     try {
       const tempCelsiusX10 = Math.round(parseFloat(formData.temp) * 10);
       const phX10 = Math.round(parseFloat(formData.ph) * 10);
-      const salinitySgX10000 = Math.round(parseFloat(formData.salinity) * 10000);
       const ammoniaPpmX100 = Math.round(parseFloat(formData.ammonia) * 100);
       const nitritePpmX100 = Math.round(parseFloat(formData.nitrite) * 100);
       const nitratePpmX100 = Math.round(parseFloat(formData.nitrate) * 100);
@@ -1110,7 +1107,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
           tankId: tank.id,
           tempCelsiusX10,
           phX10,
-          salinitySgX10000,
+          salinitySgX10000: 0,
           ammoniaPpmX100,
           nitritePpmX100,
           nitratePpmX100,
@@ -1127,7 +1124,6 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       setFormData({
         temp: "24.5",
         ph: "7.2",
-        salinity: "1.0000",
         ammonia: "0.0",
         nitrite: "0.0",
         nitrate: "5.0",
@@ -1245,8 +1241,6 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   let maxSafeTemp = 28.0;
   let minSafePh = 6.5;
   let maxSafePh = 8.2;
-  let minSafeSalinity = 1.0000;
-  let maxSafeSalinity = 1.0250;
 
   if (selectedLogTank) {
     const typeIdx = selectedLogTank.tankType;
@@ -1255,29 +1249,21 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       maxSafeTemp = 27.0;
       minSafePh = 8.0;
       maxSafePh = 8.4;
-      minSafeSalinity = 1.0200;
-      maxSafeSalinity = 1.0260;
     } else if (typeIdx === 2) { // Brackish
       minSafeTemp = 22.0;
       maxSafeTemp = 28.0;
       minSafePh = 7.2;
       maxSafePh = 8.2;
-      minSafeSalinity = 1.0050;
-      maxSafeSalinity = 1.0150;
     } else if (typeIdx === 3) { // Pond
       minSafeTemp = 10.0;
       maxSafeTemp = 28.0;
       minSafePh = 6.8;
       maxSafePh = 8.0;
-      minSafeSalinity = 1.0000;
-      maxSafeSalinity = 1.0010;
     } else { // Freshwater (0)
       minSafeTemp = 22.0;
       maxSafeTemp = 26.0;
       minSafePh = 6.5;
       maxSafePh = 7.8;
-      minSafeSalinity = 1.0000;
-      maxSafeSalinity = 1.0020;
     }
   }
 
@@ -1629,12 +1615,12 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               }}
               onReload={() => {
                 fetchDashboardData();
-                if (casualModeActive) setViewMode("grid");
+                if (casualModeActive) setViewMode("list");
               }}
               openRegisterOnTreeMount={openRegisterOnTreeMount}
               onCloseRegister={() => {
                 setOpenRegisterOnTreeMount(false);
-                if (casualModeActive) setViewMode("grid");
+                if (casualModeActive) setViewMode("list");
               }}
             />
           ) : (
@@ -2585,18 +2571,18 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     <>
                       <div className="telemetry-2x2-grid">
                         {/* Thermal */}
-                        <div className="telemetry-tile-premium" style={{ borderLeft: `3px solid ${activeTank.latestLog ? getHslColor(activeTank.latestLog.tempCelsiusX10/10, 22.0, 27.0, 5) : "var(--glass-border)"}` }}>
+                        <div className="telemetry-tile-premium" style={{ borderLeft: `3px solid ${activeTank.latestLog ? getHslColor(activeTank.latestLog.tempCelsiusX10/10, minSafeTemp, maxSafeTemp, 5) : "var(--glass-border)"}` }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>🌡️ Thermal Chemistry</span>
                             {activeTank.latestLog && (
                               <span className="badge" style={{ 
                                 fontSize: "0.55rem", 
                                 padding: "0.1rem 0.4rem", 
-                                background: `${getHslColor(activeTank.latestLog.tempCelsiusX10/10, 22.0, 27.0, 5)}15`, 
-                                color: getHslColor(activeTank.latestLog.tempCelsiusX10/10, 22.0, 27.0, 5),
-                                borderColor: getHslColor(activeTank.latestLog.tempCelsiusX10/10, 22.0, 27.0, 5)
+                                background: `${getHslColor(activeTank.latestLog.tempCelsiusX10/10, minSafeTemp, maxSafeTemp, 5)}15`, 
+                                color: getHslColor(activeTank.latestLog.tempCelsiusX10/10, minSafeTemp, maxSafeTemp, 5),
+                                borderColor: getHslColor(activeTank.latestLog.tempCelsiusX10/10, minSafeTemp, maxSafeTemp, 5)
                               }}>
-                                {activeTank.latestLog.tempCelsiusX10/10 >= 22.0 && activeTank.latestLog.tempCelsiusX10/10 <= 27.0 ? "Ideal" : "Warning"}
+                                {activeTank.latestLog.tempCelsiusX10/10 >= minSafeTemp && activeTank.latestLog.tempCelsiusX10/10 <= maxSafeTemp ? "Ideal" : "Warning"}
                               </span>
                             )}
                           </div>
@@ -2610,29 +2596,29 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               </>
                             ) : "N/A"}
                           </strong>
-                          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Ideal range: 22.0°C - 27.0°C</span>
+                          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Ideal range: {minSafeTemp.toFixed(1)}°C - {maxSafeTemp.toFixed(1)}°C</span>
                         </div>
 
                         {/* pH */}
-                        <div className="telemetry-tile-premium" style={{ borderLeft: `3px solid ${activeTank.latestLog ? getHslColor(activeTank.latestLog.phX10/10, 6.5, 8.0, 1.5) : "var(--glass-border)"}` }}>
+                        <div className="telemetry-tile-premium" style={{ borderLeft: `3px solid ${activeTank.latestLog ? getHslColor(activeTank.latestLog.phX10/10, minSafePh, maxSafePh, 1.5) : "var(--glass-border)"}` }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>🧪 Acidic Level (pH)</span>
                             {activeTank.latestLog && (
                               <span className="badge" style={{ 
                                 fontSize: "0.55rem", 
                                 padding: "0.1rem 0.4rem", 
-                                background: `${getHslColor(activeTank.latestLog.phX10/10, 6.5, 8.0, 1.5)}15`, 
-                                color: getHslColor(activeTank.latestLog.phX10/10, 6.5, 8.0, 1.5),
-                                borderColor: getHslColor(activeTank.latestLog.phX10/10, 6.5, 8.0, 1.5)
+                                background: `${getHslColor(activeTank.latestLog.phX10/10, minSafePh, maxSafePh, 1.5)}15`, 
+                                color: getHslColor(activeTank.latestLog.phX10/10, minSafePh, maxSafePh, 1.5),
+                                borderColor: getHslColor(activeTank.latestLog.phX10/10, minSafePh, maxSafePh, 1.5)
                               }}>
-                                {activeTank.latestLog.phX10/10 >= 6.5 && activeTank.latestLog.phX10/10 <= 8.0 ? "Ideal" : "Warning"}
+                                {activeTank.latestLog.phX10/10 >= minSafePh && activeTank.latestLog.phX10/10 <= maxSafePh ? "Ideal" : "Warning"}
                               </span>
                             )}
                           </div>
                           <strong style={{ fontSize: "1.25rem", color: "#fff" }}>
                             {activeTank.latestLog ? (activeTank.latestLog.phX10 / 10).toFixed(1) : "N/A"}
                           </strong>
-                          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Ideal range: 6.5 - 8.0 pH</span>
+                          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Ideal range: {minSafePh.toFixed(1)} - {maxSafePh.toFixed(1)} pH</span>
                         </div>
                         {/* Nitrogen */}
                         <div className="telemetry-tile-premium" style={{ 
@@ -2716,7 +2702,6 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               setFormData({
                                 temp: activeTank.latestLog ? (activeTank.latestLog.tempCelsiusX10/10).toString() : "24.5",
                                 ph: activeTank.latestLog ? (activeTank.latestLog.phX10/10).toString() : "7.2",
-                                salinity: activeTank.latestLog ? (activeTank.latestLog.salinitySgX10000/10000).toString() : "1.0000",
                                 ammonia: "0.0",
                                 nitrite: "0.0",
                                 nitrate: "0.0",
