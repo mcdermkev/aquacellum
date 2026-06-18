@@ -1972,8 +1972,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               <div className="biotope-banner-overlay"></div>
 
               {/* Companion Fish Entity (swimming fry or hatched tier) — hidden in Pro mode */}
-              {casualModeActive && companionData && (companionData.companionXp >= 500 || (profile && profile.totalXp >= 500)) && (
-                <CompanionFishEntity tier={companionData.currentTier} companionXp={profile?.totalXp || companionData.companionXp || 0} />
+              {casualModeActive && companionData && companionData.eggState >= 1 && (
+                <CompanionFishEntity tier={companionData.currentTier} companionXp={companionData.companionXp || 0} />
               )}
 
               {/* Quiet Mystery Egg UI Overlay — hidden in Pro mode */}
