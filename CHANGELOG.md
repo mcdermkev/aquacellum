@@ -6,6 +6,22 @@ All notable changes to AquaDex are documented here.
 
 ## [Unreleased] — 2026-06-18
 
+### 🐛 XP Bar — Tier & Progress Display Fix
+
+Fixed the XP progress bar and tier label showing incorrect values (resetting to Tier 1) when navigating between tabs.
+
+#### Root Cause
+- **Property name mismatch**: The progress bar referenced `levelInfo.levelPoints` / `levelInfo.nextLevelPoints`, but `getLevelInfo()` returns `baseXp` / `nextLevelXp`. This caused `NaN` width calculations.
+- **Lazy init missing**: XP state initialized to `0` and only read from localStorage after the first render effect, briefly flashing Tier 1.
+- **Tier 4 edge case**: At max tier, `nextLevelXp` is `null`, causing a division-by-null crash in the progress bar.
+
+#### Fix
+- Corrected property names in the progress bar width calc and XP counter display
+- Changed `useState(0)` → `useState(() => getXp())` for immediate localStorage read on first render
+- Added null guard for max tier — bar shows 100% and label shows "MAX"
+
+---
+
 ### 🧬 Breeder Tools — Unified Pro Tab
 
 Consolidated the three separate Pro-mode tabs (Register, Lineage, Spawning) into a single **Breeder Tools** tab with internal pill-style sub-navigation. All functionality preserved — cleaner top-level nav with fewer tabs.

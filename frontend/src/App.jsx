@@ -137,7 +137,7 @@ export default function App() {
   const [gallerySelectedBreed, setGallerySelectedBreed] = useState(null);
   const [preselectedListSpecimen, setPreselectedListSpecimen] = useState(null);
   const [preselectedListTank, setPreselectedListTank] = useState(null);
-  const [xp, setXp] = useState(0);
+  const [xp, setXp] = useState(() => getXp());
   const [toasts, setToasts] = useState([]);
   const [casualModeActive, setCasualModeActive] = useState(() => {
     const saved = localStorage.getItem("aquadex_casual_mode");
@@ -216,12 +216,6 @@ export default function App() {
   }, [displayTank]);
 
   useEffect(() => {
-    // Read initial XP from local-first storage safely
-    setXp(getXp());
-
-    // Auto-resolve active smart account session on load
-    // Session restoration is now handled by ConnectWallet.jsx via MetaMask eth_accounts
-
     const handleXpAdded = (e) => {
       const { points, label, newXp, levelChanged, newLevel } = e.detail;
       setXp(newXp);
@@ -688,7 +682,7 @@ export default function App() {
             position: "relative",
           }}>
             <div style={{ 
-              width: `${((xp - levelInfo.levelPoints) / (levelInfo.nextLevelPoints - levelInfo.levelPoints)) * 100}%`, 
+              width: `${levelInfo.nextLevelXp ? ((xp - levelInfo.baseXp) / (levelInfo.nextLevelXp - levelInfo.baseXp)) * 100 : 100}%`, 
               height: "100%", 
               background: casualModeActive 
                 ? "linear-gradient(90deg, #fbbf24, #f59e0b)"
@@ -708,7 +702,7 @@ export default function App() {
             fontFamily: "monospace",
             whiteSpace: "nowrap",
           }}>
-            {xp} / {levelInfo.nextLevelPoints} {casualModeActive ? "pts" : "XP"}
+            {xp} / {levelInfo.nextLevelXp || "MAX"} {casualModeActive ? "pts" : "XP"}
           </span>
         </div>
       </header>
