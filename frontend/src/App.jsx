@@ -33,9 +33,16 @@ const ReefFeed = lazy(() =>
 
 // ── Founders Dashboard Access Control ──────────────────────────────────────
 // Only these wallet addresses can see the "Founders" tab.
-// Add/remove addresses as needed (lowercase for comparison).
+// `account` from useAuth() is the Privy embedded wallet (EOA), NOT the smart wallet.
+// Add your EOA address here (check browser console for the logged value).
 const FOUNDER_WALLETS = [
-  "0x53d3c6f4f11b0b08bc1a5034bbce7d46198b6851", // Mcdermkev81
+  "0x53d3c6f4f11b0b08bc1a5034bbce7d46198b6851", // Smart wallet (for future use)
+];
+
+// Also match by prefix+suffix for partial-match fallback (truncated addresses)
+const FOUNDER_WALLET_PATTERNS = [
+  { prefix: "0x53d3c6", suffix: "6851" },
+  { prefix: "0x4a85", suffix: "a6d3" },  // EOA (Privy embedded wallet)
 ];
 
 
@@ -133,7 +140,14 @@ export default function App() {
       console.warn("Aquadex: Failed to initialize event listeners for cache invalidation:", err);
     }
   }, [account, queryClient]);
-  const isFounder = account && FOUNDER_WALLETS.includes(account.toLowerCase());
+  const isFounder = (() => {
+    if (!account) return false;
+    const addr = account.toLowerCase();
+    if (FOUNDER_WALLETS.includes(addr)) return true;
+    return FOUNDER_WALLET_PATTERNS.some(
+      (p) => addr.startsWith(p.prefix.toLowerCase()) && addr.endsWith(p.suffix.toLowerCase())
+    );
+  })();
 
   const [activeTab, setActiveTab] = useState(() => {
     // Quick Win 10: Restore tab from URL hash on load
