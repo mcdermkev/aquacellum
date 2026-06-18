@@ -6,6 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { ONBOARDING_CACHE_KEY } from "../hooks/useOnboardingGate";
 import { setOnboardingComplete } from "../services/reefApi";
 import { getSmartWalletAddress } from "../services/smartAccountClient";
+import { ZoneAssignmentFlow } from "./ZoneAssignmentFlow";
 
 export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
   const queryClient = useQueryClient();
@@ -17,6 +18,17 @@ export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
   const [showReplayConfirm, setShowReplayConfirm] = useState(false);
   const [smartWalletAddress, setSmartWalletAddress] = useState(null);
   const [smartWalletLoading, setSmartWalletLoading] = useState(false);
+  const [zoneAssigned, setZoneAssigned] = useState(false);
+
+  // Check if user already has a zone assigned
+  useEffect(() => {
+    if (!account) return;
+    db.userProfile.get(account).then((profile) => {
+      if (profile && profile.zoneHash) {
+        setZoneAssigned(true);
+      }
+    }).catch(() => {});
+  }, [account]);
 
   // Load smart wallet address on mount
   useEffect(() => {
@@ -477,6 +489,43 @@ export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
           </div>
         </div>
       )}
+    </div>
+
+    {/* ─── Zone & Location ─── */}
+    <div
+      className="glass-card"
+      style={{
+        padding: "2rem",
+        borderRadius: "var(--radius-md)",
+        border: "1px solid rgba(255, 255, 255, 0.08)",
+        background: "rgba(10, 15, 30, 0.7)",
+        backdropFilter: "blur(12px)",
+        boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
+        maxWidth: "600px",
+        margin: "0 auto 3rem auto",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+        <span style={{ fontSize: "1.5rem" }}>📍</span>
+        <h3 style={{ fontSize: "1.25rem", fontWeight: "700", color: "#fff", margin: 0 }}>
+          {casualModeActive ? "Zone & Location" : "Regional Zone Assignment"}
+        </h3>
+      </div>
+
+      <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", lineHeight: "1.5", marginBottom: "1.25rem" }}>
+        {casualModeActive
+          ? "Enable location to join your regional zone leaderboard and compete with nearby keepers. Your exact coordinates are never stored — only your city-level zone."
+          : "Assign your operator profile to a geographic zone for regional leaderboard rankings. Location is bucketed to a 15–30 mile zone — precise coordinates are discarded after hashing."}
+      </p>
+
+      <ZoneAssignmentFlow
+        onComplete={(zone) => {
+          setImportStatus({ type: "success", message: `Joined zone: ${zone.displayName}` });
+        }}
+        onSkip={() => {}}
+        isTransfer={zoneAssigned}
+        casualModeActive={casualModeActive}
+      />
     </div>
 
     {/* ─── Replay Onboarding ─── */}
