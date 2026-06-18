@@ -6,6 +6,23 @@ All notable changes to AquaDex are documented here.
 
 ## [Unreleased] — 2026-06-18
 
+### 🥚 Spawning Dashboard — Certificates, Hatchery Insights & Logs
+
+Added a full Spawning Dashboard to the Spawning sub-tab under Breeder Tools. Renders above the existing Spawning Wizard with three pill-navigated sections:
+
+#### Sections
+- **Registered Certificates**: Scrollable list of all birth certificates (specimens) owned by the connected wallet, showing serial numbers, species, sire/dam lineage, status badges, and registration dates.
+- **Hatchery Insights**: Stats overview — total spawns, total offspring, average clutch size, unique species bred, 30-day activity, top-bred species bar chart, and last spawn event summary.
+- **Spawning Logs**: Chronological feed of every spawn event with species, parent IDs, offspring count, tank assignment, lifecycle status (Fry/Juvenile/Adult), and timestamps.
+
+#### Files Changed
+| File | Change |
+|------|--------|
+| `frontend/src/components/SpawningDashboard.jsx` | **New** — Dashboard component with 3 sub-sections |
+| `frontend/src/components/BreederTools.jsx` | Import + render `SpawningDashboard` above `SpawningWizard` in spawning section |
+
+---
+
 ### 🐛 XP Bar — Tier & Progress Display Fix
 
 Fixed the XP progress bar and tier label showing incorrect values (resetting to Tier 1) when navigating between tabs.

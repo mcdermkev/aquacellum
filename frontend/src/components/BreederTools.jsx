@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { MintSpecimen } from "./MintSpecimen";
 import { SpecimenLineage } from "./SpecimenLineage";
 import { SpawningWizard } from "./SpawningWizard";
+import { SpawningDashboard } from "./SpawningDashboard";
 
 /**
  * BreederTools — Combined pro-mode panel that unifies Register, Lineage, and
@@ -99,12 +100,15 @@ export function BreederTools({
       )}
 
       {activeSection === "spawning" && (
-        <SpawningWizard
-          contractAddress={contractAddress}
-          walletAccount={walletAccount}
-          onComplete={onSpawningComplete}
-          casualModeActive={casualModeActive}
-        />
+        <>
+          <SpawningDashboard walletAccount={walletAccount} />
+          <SpawningWizard
+            contractAddress={contractAddress}
+            walletAccount={walletAccount}
+            onComplete={onSpawningComplete}
+            casualModeActive={casualModeActive}
+          />
+        </>
       )}
     </div>
   );

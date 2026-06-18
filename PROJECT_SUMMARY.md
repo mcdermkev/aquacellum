@@ -101,6 +101,7 @@ All contracts deployed on **Base Sepolia (Chain ID 84532)**.
 - **Facility Tree View**: Hierarchical Facility → Room → Rack → Unit tree with nested containment, water-health alerts.
 - **Bulk/Rack-Level Logging**: Scope selector (Single Tank / Entire Rack / Entire Room) with saved templates. Off-chain, instant.
 - **Spawning Wizard**: 4-step flow (pair selection → telemetry snap → genetic markers → bulk offspring allocation) with inbreeding coefficient detection.
+- **Spawning Dashboard**: Certificates list (all registered birth certificates with lineage), Hatchery Insights (stats: total spawns, avg clutch size, species breakdown, 30-day trends), and Spawning Logs (chronological event feed with status tracking).
 - **Spawn Grow-Out Tracker**: Per-spawn yield funnel (Eggs → Fry → Alive → Sold → Lost/Culled) with survival rate, checkpoint history.
 - **Species Catalog**: 326 species with compatibility checking, personality text (dual-mode), care guides.
 - **Marketplace**: Active listings, proximity radar map (fuzzed coordinates), consolidated shipping checkout.
