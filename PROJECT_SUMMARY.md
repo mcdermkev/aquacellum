@@ -130,6 +130,14 @@ All contracts deployed on **Base Sepolia (Chain ID 84532)**.
 - Anti-gaming cooldowns per action per tank. Monthly Loyalty Rewards Pool distribution (40% of protocol fees).
 - All gamification suppressed/quieted in Pro mode (companion hidden, toasts operational, XP bar in collapsible panel).
 
+### Echo AI Companion (Casual Mode)
+- **Dashboard Widget**: Persistent sidebar card showing Echo's avatar (tier art with glow), mood indicator, poetic one-liner, care streak badge, progress bar to next tier. Tap-to-expand shows recent reactions.
+- **Mood State Machine**: 6 moods (joyful/pleased/calm/curious/concerned/quiet) determined by streak, activity, time since last action. ~36 poetic lines rotate per mood.
+- **Whisper Nudges**: Floating speech bubble (bottom-left) with contextual micro-prompts — care reminders, progress nudges, streak encouragement. Priority-ranked, 2min cooldown, auto-dismiss after 8s.
+- **AI Observations**: Poseidon-backed (Gemini) per-session observation on tank open — warm, species-specific, max 25 words. Cached in sessionStorage, falls back to canned lines when offline.
+- **Action Reactions**: Immediate poetic feedback after care actions ("Fed and happy. Echo approves."). 7 action types with multiple variants.
+- **Pre-hatch State**: Egg with progress bar for new users (< 500 pts). Evolves visually through tiers.
+
 ### Social Layer — "The Reef" (MVP Live)
 - **Tank Currents**: Users post updates with photos, text, linked tank, water parameters snapshot, and species tags.
 - **Social Feed**: Two modes — "My Feed" (chronological from Tankmates + watched tanks) and "Explore" (all public posts).

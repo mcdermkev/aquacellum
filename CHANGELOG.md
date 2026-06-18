@@ -6,6 +6,111 @@ All notable changes to AquaDex are documented here.
 
 ## [Unreleased] — 2026-06-18
 
+### 🏆 Unified Gamification System (Phases 1–5)
+
+Complete gamification overhaul — unified XP pool, zone leaderboards, loyalty rewards, and anti-gaming enforcement.
+
+#### Phase 1: Unified XP Pool
+- **Single `totalXp` pool** replaces the split `prestigeXp` + `hobbyistXp` fields. One number, two lenses.
+- **Canonical 5-tier ladder**: Shallow (0–1,499) → Coastal (1,500–2,499) → Pelagic (2,500–4,999) → Abyssal (5,000–9,999) → Hadal (10,000+).
+- **Mode-aware labels**: "Loyalty Points" / "pts" in casual mode, "Reputation XP" / "XP" in pro mode.
+- **XP_ACTIONS expanded**: 21 defined actions with point values, cooldown metadata, and daily limits per spec.
+- **Dexie v15 migration**: Sums legacy fields into `totalXp`, adds `xpCooldowns` table for anti-gaming.
+- **`xpCooldowns.js` utility**: Per-tank cooldowns, daily maximums, `enforceXpCooldown()` before awarding.
+
+#### Phase 2: Zone Leaderboard
+- **Adaptive-density zones**: 27 pre-defined metro regions (10–18mi radius) + sparse default (25mi). `zoneHash.js` calculates deterministic zone from coordinates.
+- **Supabase schema**: `zones` table, `xp_events` audit trail, `zone_leaderboard` materialized view (refreshes every 5min).
+- **Zone champion evaluation**: Only one God-Tier per zone. Server-side promotion/demotion with notifications.
+- **`ZoneLeaderboardWidget.jsx`**: Dashboard sidebar widget with top 5, user rank, cross-zone browser, champion callout.
+- **`ZoneAssignmentFlow.jsx`**: Multi-step location permission UX (intro → detect → confirm → assign) with 90-day transfer cooldown.
+- **Settings integration**: "Zone & Location" section added to Settings tab.
+
+#### Phase 3: Loyalty Rewards Pool
+- **40% of 4% protocol fee** flows into the pool on every marketplace transaction.
+- **Monthly distribution**: Proportional to XP earned that month. Eligibility: 500+ total XP + marketplace activity in 90d.
+- **Credit transactions**: Full earn/spend/expire audit trail. Credits expire after 12 months.
+- **Tier-based marketplace discounts**: Coastal 2%, Pelagic 4%, Abyssal 6%, Hadal 8% — applied at checkout.
+- **`RewardCreditsCard.jsx`**: Dashboard widget showing balance, tier discount badge, next distribution countdown, transaction history.
+- **Checkout integration**: Toggle to apply credits + tier discount breakdown in `CheckoutSummary.jsx`.
+- **`distribute-rewards` Edge Function**: Monthly cron — expires old credits, runs distribution, refreshes views, sends notifications.
+
+#### Phase 4: Anti-Gaming & Server-Side Validation
+- **`validate-xp-event` Edge Function**: Server-side enforcement — validates action types, checks per-tank cooldowns, daily limits, streak multiplier (7d → 1.5x), expo multiplier (2x).
+- **XP sync to Supabase**: `useXPSync.js` now fires-and-forgets `logXpEvent()` after local XP award. `mapReasonToActionKey()` translates free-text labels to action codes.
+
+#### Phase 5: Weekly Contributors & Badge Refinement
+- **Weekly contributors board**: `DiscoveryPanel.jsx` now pulls from `weekly_contributors` materialized view (shows weekly XP + action counts). Falls back to manual Insights + Audits query.
+- **25 achievement badges**: Replaced old tier names (Bronze/Silver/Gold/Master/God-Tier) with canonical (Coastal/Pelagic/Abyssal/Hadal). Added: zone_champion, expo_attendee, challenge_victor, care_streak_30, care_streak_90, weekly_contributor, xp_10000 (Deep Sea Legend).
+
+#### Files Created (New)
+| File | Purpose |
+|------|---------|
+| `docs/GAMIFICATION_SPEC.md` | Single source of truth for the gamification system |
+| `frontend/src/utils/xpCooldowns.js` | Anti-gaming cooldown enforcement |
+| `frontend/src/utils/zoneHash.js` | Adaptive zone calculation from coordinates |
+| `frontend/src/services/zoneLeaderboardApi.js` | Zone leaderboard Supabase queries |
+| `frontend/src/services/rewardsPoolApi.js` | Rewards pool credit/checkout queries |
+| `frontend/src/hooks/useZoneLeaderboard.js` | React Query hooks for zones |
+| `frontend/src/hooks/useRewardsPool.js` | React Query hooks for rewards |
+| `frontend/src/components/ZoneLeaderboardWidget.jsx` | Dashboard zone leaderboard card |
+| `frontend/src/components/ZoneAssignmentFlow.jsx` | Location permission + zone assignment UX |
+| `frontend/src/components/RewardCreditsCard.jsx` | Dashboard reward credits card |
+| `supabase/migrations/011_zone_leaderboard.sql` | Zones, xp_events, materialized views |
+| `supabase/migrations/012_rewards_pool.sql` | Pool ledger, distributions, credit transactions |
+| `supabase/functions/validate-xp-event/index.ts` | Server-side XP validation Edge Function |
+| `supabase/functions/distribute-rewards/index.ts` | Monthly distribution cron Edge Function |
+
+#### Files Modified (27)
+`App.jsx`, `TankList.jsx`, `CheckoutSummary.jsx`, `BreedersCouncil.jsx`, `ConnectWallet.jsx`, `IdentityStep.jsx`, `NameConfirmStep.jsx`, `persistCompanion.js`, `BadgeShelf.jsx`, `DiscoveryPanel.jsx`, `ProfileCard.jsx`, `PublicProfile.jsx`, `CompanionGuide.jsx`, `DataPortabilityWidget.jsx`, `db.js`, `xp.js`, `useXPSync.js`, `useReefProfile.js`, `useDiscovery.js`, `depthScoreApi.js`, `echoCompanion.js`, `reefApi.js`, `index.css`, `PROJECT_SUMMARY.md`, test files.
+
+---
+
+### 🐠 Echo Companion Presence — Active AI Companion System
+
+Transformed Echo from a background Easter egg into a constant, reactive presence in the app.
+
+#### Echo Dashboard Widget (`EchoCompanionWidget.jsx`)
+- Persistent card in the sidebar showing Echo's current state
+- Tier-appropriate avatar art with glow effect (maps to Shallow→Hadal art)
+- Mood emoji indicator (✨ joyful / 🌊 pleased / 🫧 calm / 💭 curious / 💫 concerned / 🌙 quiet)
+- Poetic one-liner that changes based on streak, recent activity, and time of day
+- Care streak badge (🔥 + day count)
+- Progress bar to next tier with mode-aware labels
+- Tap to expand: recent XP reactions + full mood text
+- Pre-hatch egg state for new users (progress bar to 500 pts)
+
+#### Echo Mood State Machine (`echoMood.js`)
+- 6 moods determined by: streakDays, hoursSinceLastAction, actionsToday, justLeveledUp
+- ~36 poetic one-liner lines across all moods
+- Greeting system: morning/afternoon/evening/returning/streak variants
+- Action reactions: 7 types (feeding, water, params, tank, mint, spawn, tier-up)
+
+#### Echo Whispers (`EchoWhispers.jsx`)
+- Floating speech bubble (fixed, bottom-left) with contextual nudges
+- Triggers: care reminders, progress nudges, streak encouragement, new user tips
+- Priority-ranked candidate system — highest priority whisper shown
+- Action-reaction whispers (1.5s delay after XP events)
+- Auto-dismiss after 8s, 2-minute cooldown between whispers, click to dismiss
+- Smooth enter/exit animations
+
+#### AI Observations (`useEchoObservation.js`)
+- Calls Poseidon (Gemini) with tank context on first tank open
+- 1 call per session, cached in sessionStorage
+- Prompt: max 25 words, warm/poetic, reference actual species/params
+- Falls back to 6 canned observations if Poseidon is offline
+- Respects Poseidon enabled/disabled toggle
+
+#### Files Created
+| File | Purpose |
+|------|---------|
+| `frontend/src/utils/echoMood.js` | Mood state machine + poetic lines |
+| `frontend/src/components/EchoCompanionWidget.jsx` | Dashboard sidebar companion card |
+| `frontend/src/components/EchoWhispers.jsx` | Proactive floating nudge system |
+| `frontend/src/hooks/useEchoObservation.js` | AI-powered per-session observation |
+
+---
+
 ### 📊 Founders Dashboard — Internal Analytics & Monitoring
 
 Added a wallet-gated Founders Dashboard tab to the React SPA. Only allowlisted founder wallets see the "📊 Founders" navigation item — everyone else has no visibility of this feature.
