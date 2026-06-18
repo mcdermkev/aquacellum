@@ -76,8 +76,7 @@ CREATE INDEX IF NOT EXISTS idx_profiles_zone_xp ON profiles(zone_hash, total_xp 
 
 CREATE INDEX IF NOT EXISTS idx_xp_events_wallet ON xp_events(wallet_address, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_xp_events_zone ON xp_events(zone_hash, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_xp_events_monthly ON xp_events(wallet_address, created_at)
-  WHERE created_at >= date_trunc('month', NOW());
+CREATE INDEX IF NOT EXISTS idx_xp_events_monthly ON xp_events(wallet_address, created_at);
 
 CREATE INDEX IF NOT EXISTS idx_zones_location ON zones(center_lat, center_lng);
 
