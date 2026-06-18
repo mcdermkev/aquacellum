@@ -206,6 +206,74 @@ db.version(14).stores({
   tankNotes: "++id, tankId, createdAt"
 });
 
+// Version 15: Unified Gamification — merge prestigeXp + hobbyistXp into totalXp.
+// Adds monthlyXp (resets each distribution period), rewardCredits (loyalty pool payouts),
+// streakDays, lastActiveDate, and currentTier (cached from totalXp thresholds).
+// The breederCompanion.companionXp is now derived from userProfile.totalXp.
+// Migration: existing prestigeXp + hobbyistXp are summed into totalXp.
+db.version(15).stores({
+  species: "specCode, commonName, scientificName, type, difficulty",
+  listings: "id, tokenId, seller, price, isBatch, speciesId",
+  tanks: "id, ownerAddress, name, active",
+  userProfile: "walletAddress, totalXp, currentTier, zoneHash, isCouncilMember, onboardingComplete",
+  breederCompanion: "walletAddress, eggState, currentTier, selectedStats, zoneHash",
+  pendingHandshakes: "purchaseId, pin, salt, buyerAddress",
+  speciesManifest: "speciesId, scientificName, commonName, contractAddress, cachedAt",
+  actionLogs: "++id, tankId, actionType, timestamp, details",
+  spawnGrowout: "++id, spawnId, timestamp, type",
+  feedCache: "++id, contentId, authorWallet, createdAt, [authorWallet+createdAt]",
+  socialNotifications: "++id, category, isRead, createdAt",
+  draftContent: "++id, type, status, createdAt",
+  specimens: "id, ownerAddress, speciesId, currentTankId, status, createdAt",
+  localListings: "id, seller, speciesId, isBatch, listingId, tokenId",
+  marketOrders: "++key, orderType, status, state, buyer, seller, tokenId, purchaseId, listingId",
+  spawns: "spawnId, sireId, damId, tankId, speciesId, status, timestamp",
+  tankNotes: "++id, tankId, createdAt",
+  xpCooldowns: "++id, walletAddress, actionType, tankId, timestamp, [walletAddress+actionType+tankId]"
+}).upgrade(async (tx) => {
+  // Migrate existing users: sum prestigeXp + hobbyistXp → totalXp
+  const profiles = await tx.table("userProfile").toArray();
+  for (const profile of profiles) {
+    const totalXp = (profile.prestigeXp || 0) + (profile.hobbyistXp || 0);
+    const currentTier = deriveTierFromXp(totalXp);
+    await tx.table("userProfile").put({
+      ...profile,
+      totalXp,
+      currentTier,
+      monthlyXp: 0,
+      rewardCredits: 0,
+      streakDays: 0,
+      lastActiveDate: null,
+      // Keep legacy fields for safety (non-indexed, won't cause issues)
+      prestigeXp: profile.prestigeXp || 0,
+      hobbyistXp: profile.hobbyistXp || 0,
+    });
+  }
+
+  // Sync breederCompanion tier from totalXp
+  const companions = await tx.table("breederCompanion").toArray();
+  for (const companion of companions) {
+    const profile = await tx.table("userProfile").get(companion.walletAddress);
+    const totalXp = profile ? profile.totalXp : (companion.companionXp || 0);
+    companion.currentTier = deriveTierFromXp(totalXp);
+    // companionXp is now redundant — keep for reference but no longer authoritative
+    await tx.table("breederCompanion").put(companion);
+  }
+});
+
+/**
+ * Derive tier key from totalXp using the canonical tier ladder.
+ * Used by the v15 migration and shared with xp.js.
+ */
+export function deriveTierFromXp(totalXp) {
+  const xp = Number(totalXp) || 0;
+  if (xp >= 10000) return "Hadal";
+  if (xp >= 5000) return "Abyssal";
+  if (xp >= 2500) return "Pelagic";
+  if (xp >= 1500) return "Coastal";
+  return "Shallow";
+}
+
 /**
  * 1. FULL LEXICAL JSON DATA EXPORT:
  * Interfaces directly with our Dexie.js database layers.

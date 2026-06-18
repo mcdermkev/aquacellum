@@ -246,14 +246,14 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
           (p) => p.walletAddress?.toLowerCase() === walletAddress?.toLowerCase()
         );
         const xpTotal = uProfile
-          ? (uProfile.prestigeXp || 0) + (uProfile.hobbyistXp || 0)
+          ? (uProfile.totalXp || 0)
           : 0;
 
         const localCompanions = await db.breederCompanion.toArray();
         const uCompanion = localCompanions.find(
           (c) => c.walletAddress?.toLowerCase() === walletAddress?.toLowerCase()
         );
-        const companionTier = uCompanion?.currentTier || "Bronze";
+        const companionTier = uCompanion?.currentTier || "Shallow";
 
         // Check if anything differs
         if (
@@ -558,7 +558,7 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
           stats={{
             tankCount: profile.tank_count || 0,
             speciesCount: profile.species_count || 0,
-            companionTier: profile.companion_tier || "Bronze",
+            companionTier: profile.companion_tier || "Shallow",
             xpTotal: profile.xp_total || 0,
             postCount: currents.length,
             insightCount: 0, // TODO: query from species_insights

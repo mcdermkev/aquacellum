@@ -37,9 +37,9 @@ describe("buildInitialCompanion", () => {
     });
   });
 
-  it("uses Bronze tier and a hatched egg state by default", () => {
+  it("uses Shallow tier and a hatched egg state by default", () => {
     const row = buildInitialCompanion(ACCOUNT);
-    expect(row.currentTier).toBe("Bronze");
+    expect(row.currentTier).toBe("Shallow");
     expect(row.eggState).toBe(1);
     expect(row.companionXp).toBe(15);
   });

@@ -95,7 +95,7 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
   // ─────────────────────────────────────────────────────────────────────────
   if (account) {
     const avatarUrl = reefProfile?.avatar_url;
-    const tierBadge = reefProfile?.companion_tier || "Bronze";
+    const tierBadge = reefProfile?.companion_tier || "Shallow";
 
     return (
       <div style={{ position: "relative" }}>

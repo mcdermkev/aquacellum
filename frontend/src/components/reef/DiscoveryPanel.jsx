@@ -12,6 +12,7 @@
 import React, { useState, useCallback } from "react";
 import { ProfileCard } from "./ProfileCard";
 import { useNearbyBreeders, useBreedersForSpecies, useTopContributors } from "../../hooks/useDiscovery";
+import { useWeeklyContributors } from "../../hooks/useZoneLeaderboard";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-components
@@ -139,6 +140,25 @@ export function DiscoveryPanel({ onProfileClick, casualModeActive = false }) {
   const { data: nearbyBreeders, isLoading: nearbyLoading } = useNearbyBreeders();
   const { data: speciesBreeders, isLoading: speciesLoading } = useBreedersForSpecies(speciesQuery);
   const { data: topContributors, isLoading: contributorsLoading } = useTopContributors();
+  const { data: weeklyLeaderboard } = useWeeklyContributors({ limit: 10 });
+
+  // Prefer the materialized view (includes all XP actions) over the manual query
+  const contributorsData = weeklyLeaderboard && weeklyLeaderboard.length > 0
+    ? weeklyLeaderboard.map((entry) => ({
+        wallet: entry.wallet_address,
+        profile: {
+          wallet_address: entry.wallet_address,
+          display_name: entry.display_name,
+          avatar_url: entry.avatar_url,
+          companion_tier: entry.current_tier || "Shallow",
+        },
+        weeklyXp: entry.weekly_xp,
+        actionCount: entry.action_count,
+        insights: 0,
+        audits: 0,
+        total: entry.weekly_xp,
+      }))
+    : topContributors;
 
   const handleSpeciesSearch = useCallback((e) => {
     e.preventDefault();
@@ -318,13 +338,13 @@ export function DiscoveryPanel({ onProfileClick, casualModeActive = false }) {
         {expandedSection === "contributors" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
             {contributorsLoading && <LoadingSkeleton />}
-            {!contributorsLoading && topContributors?.length === 0 && (
+            {!contributorsLoading && contributorsData?.length === 0 && (
               <EmptyState message={casualModeActive
                 ? "No contributions this week yet — be the first!"
                 : "No contributor activity this week."
               } />
             )}
-            {!contributorsLoading && topContributors?.map((entry, index) => (
+            {!contributorsLoading && contributorsData?.map((entry, index) => (
               <div
                 key={entry.wallet}
                 style={{
@@ -367,7 +387,18 @@ export function DiscoveryPanel({ onProfileClick, casualModeActive = false }) {
                   gap: "0.5rem",
                   fontSize: "0.6rem",
                   color: "var(--text-muted)",
+                  alignItems: "center",
                 }}>
+                  {entry.weeklyXp > 0 && (
+                    <span title="Weekly XP earned" style={{ fontFamily: "monospace", fontWeight: "600", color: "var(--accent-amber, #fbbf24)" }}>
+                      {entry.weeklyXp.toLocaleString()} {casualModeActive ? "pts" : "XP"}
+                    </span>
+                  )}
+                  {entry.actionCount > 0 && (
+                    <span title="Actions this week" style={{ color: "var(--text-muted)" }}>
+                      ({entry.actionCount})
+                    </span>
+                  )}
                   {entry.insights > 0 && (
                     <span title="Insights posted">💡{entry.insights}</span>
                   )}

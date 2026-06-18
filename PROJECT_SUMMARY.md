@@ -123,9 +123,12 @@ All contracts deployed on **Base Sepolia (Chain ID 84532)**.
 - **Data Sources**: Supabase aggregate queries with graceful fallback to mock data when tables don't exist yet.
 
 ### Gamification (Casual Mode)
-- XP system (Hobbyist XP + Prestige XP), level progression, breeder companion fish (egg → hatched → tiered evolution).
-- Regional God-Tier leaderboard, expo double-XP events, expert mentorship social feed.
-- All gamification suppressed/quieted in Pro mode (companion hidden, toasts operational, XP bar muted).
+- Unified XP system (single `totalXp` pool) with mode-aware labels ("Loyalty Points" for casual, "Reputation XP" for pro).
+- 5-tier canonical progression: Shallow (0–1,499) → Coastal (1,500–2,499) → Pelagic (2,500–4,999) → Abyssal (5,000–9,999) → Hadal (10,000+).
+- Breeder companion fish (egg → hatched → tiered evolution), tier derived from totalXp.
+- Regional God-Tier zone leaderboard (adaptive zones), expo double-XP events, expert mentorship social feed.
+- Anti-gaming cooldowns per action per tank. Monthly Loyalty Rewards Pool distribution (40% of protocol fees).
+- All gamification suppressed/quieted in Pro mode (companion hidden, toasts operational, XP bar in collapsible panel).
 
 ### Social Layer — "The Reef" (MVP Live)
 - **Tank Currents**: Users post updates with photos, text, linked tank, water parameters snapshot, and species tags.
@@ -139,7 +142,7 @@ All contracts deployed on **Base Sepolia (Chain ID 84532)**.
 - **Photo Uploads**: Client-side resize (max 2048px) → Supabase Storage (CDN-delivered).
 - **Dual-Mode Labels**: "The Reef" / "Tankmates" / "Currents" in casual mode → "Social Feed" / "Connections" / "Posts" in pro mode.
 - **Species Insights**: Micro-content system (280-char tips) on species pages. 5 categories (Care Tip, Warning, Breeding, Compatibility, Behavior). Upvotable/downvotable. Integrated as tab in species detail view.
-- **Badge Shelf**: 17 auto-awarded achievement badges on profiles. Calculated from stats: tank count, species mastered, companion tier, XP, posts, insights, and tankmate connections.
+- **Badge Shelf**: 25 auto-awarded achievement badges on profiles. Categories: Collection (6), Tier (5), Community (4), XP Milestones (4), Event (4 — Expo Attendee, Challenge Victor, 30/90-day Streak), Weekly Contributor (1, refreshes Monday). Calculated from stats: tank count, species, companion tier, XP, posts, insights, tankmates, streaks, expo transactions, challenge wins, zone champion status.
 - **Profile Edit**: Inline editor on own profile — change name, bio (280 chars), upload avatar photo anytime.
 - **Share from Tanks**: "Share on The Reef" button in tank detail social tab — navigates to Reef and opens composer pre-filled with that tank.
 - **Backend**: Supabase Postgres (15+ tables, RLS, notification triggers, 2 Edge Functions) + Supabase Storage + Supabase Realtime + Web Push (VAPID).
@@ -150,9 +153,11 @@ All contracts deployed on **Base Sepolia (Chain ID 84532)**.
 - **Web Push (Phase 3)**: VAPID-authenticated push notifications, per-category preferences, quiet hours.
 - **Depth Score (Phase 4)**: Full reputation system — Shallow→Hadal tiers, auto-calculated from audits/insights/spawns/moderation. Tier-gated privileges. Anti-gaming detection (mutual upvote rings, score spikes, zero-engagement accounts).
 - **Poseidon Social AI (Phase 4)**: Weekly Reef Digest, Breeder Summary auto-generation, Tide live narration + post-event recaps, AI content moderation (text + image via Gemini), Poseidon mentor matching.
-- **Edge Functions (8 deployed)**: `send-push`, `tide-lifecycle`, `reef-digest`, `breeder-summary`, `content-moderation`, `tide-narration`, `mentor-match`, `anti-gaming`.
+- **Edge Functions (10 deployed)**: `send-push`, `tide-lifecycle`, `reef-digest`, `breeder-summary`, `content-moderation`, `tide-narration`, `mentor-match`, `anti-gaming`, `validate-xp-event`, `distribute-rewards`.
 - **Search (Phase 5)**: Supabase full-text search across profiles, currents, schools, tides, and insights. Global search bar with keyboard shortcut (/), grouped results dropdown, mobile-responsive. Poseidon NL search for species via Gemini.
-- **Discovery (Phase 1)**: Three sub-features in the Discover tab — Nearby Breeders (zoneHash regional grouping), Breeders Who Keep [Species] (species-tag search), and Top Contributors This Week (Insights + Audits leaderboard).
+- **Discovery (Phase 1)**: Three sub-features in the Discover tab — Nearby Breeders (zoneHash regional grouping), Breeders Who Keep [Species] (species-tag search), and Top Contributors This Week (materialized view weekly_contributors with XP totals + action counts, fallback to manual Insights + Audits query).
+- **Zone Leaderboard (Phase 2)**: Adaptive-density regional zones (27 metro regions + sparse fallback). Materialized view zone_leaderboard. Dashboard sidebar widget with top 5, cross-zone browsing picker, zone champion callout. Zone assignment flow with 90-day transfer cooldown.
+- **Loyalty Rewards Pool (Phase 3)**: 40% of 4% protocol fee accumulates in pool. Monthly distribution proportional to XP earned (eligibility: 500+ total XP + marketplace activity in 90d). Credits expire 12 months after award. Tier-based passive discount at checkout (Coastal 2% → Hadal 8%). RewardCreditsCard dashboard widget. Edge Function cron for monthly distribution + notifications.
 - **Rate Limiting (Phase 5)**: Client-side throttle (localStorage) — 10 posts/hr, 50 comments/hr, 100 reactions/hr, 3 audits/day, 1 school/day, 20 Poseidon/hr. Wired into all social API mutations.
 - **Moderation (Phase 5)**: Admin panel for Hadal-tier curators — flagged content queue with dismiss/hide/warn/mute/ban actions, Poseidon AI case summaries, escalation history.
 - **GDPR (Phase 5)**: Data export (parallel fetch across 9 tables → JSON download) and account deletion (soft-delete with 30-day grace, cancellation, countdown). Integrated into profile settings.
@@ -193,17 +198,25 @@ All contracts deployed on **Base Sepolia (Chain ID 84532)**.
 - `listings`: id, tokenId, seller, price, isBatch, speciesId
 - `tanks`: id, ownerAddress, name, active
 - `actionLogs`: ++id, tankId, actionType, timestamp, details
-- `userProfile`: walletAddress, level, prestigeXp, hobbyistXp, isCouncilMember, onboardingComplete
-- `breederCompanion`: walletAddress, eggState, companionXp, currentTier, selectedStats, zoneHash
+- `userProfile`: walletAddress, totalXp, currentTier, zoneHash, isCouncilMember, onboardingComplete
+- `breederCompanion`: walletAddress, eggState, currentTier, selectedStats, zoneHash
 - `pendingHandshakes`: purchaseId, pin, salt, buyerAddress
 - `speciesManifest`: speciesId, scientificName, commonName, contractAddress, cachedAt
 - `spawnGrowout`: ++id, spawnId, timestamp, type
 - `feedCache`: ++id, contentId, authorWallet, createdAt, [authorWallet+createdAt]
 - `socialNotifications`: ++id, category, isRead, createdAt
 - `draftContent`: ++id, type, status, createdAt
+- `xpCooldowns`: ++id, walletAddress, actionType, tankId, timestamp, [walletAddress+actionType+tankId]
 
 ### Supabase Schema (Social Layer)
-- `profiles`: wallet_address (PK), display_name, avatar_url, bio, privacy_settings, tank_count, species_count, xp_total, companion_tier, notification_preferences, onboarding_complete
+- `profiles`: wallet_address (PK), display_name, avatar_url, bio, privacy_settings, tank_count, species_count, xp_total, total_xp, current_tier, zone_hash, monthly_xp, reward_credits, streak_days, last_active_date, companion_tier, notification_preferences, onboarding_complete
+- `zones`: zone_hash (PK), display_name, center_lat, center_lng, radius_miles, population_tier, member_count, champion_wallet
+- `xp_events`: id, wallet_address, action_type, points_awarded, multiplier, final_points, zone_hash, metadata, created_at
+- `reward_pool_ledger`: id, source_type, source_id, gross_fee, pool_contribution, seller_wallet, buyer_wallet, created_at
+- `reward_distributions`: id, wallet_address, distribution_period, monthly_xp_earned, total_pool_xp, pool_balance, user_share_pct, credits_awarded
+- `credit_transactions`: id, wallet_address, amount, transaction_type, reference_id, description, expires_at
+- `zone_leaderboard` (materialized view): wallet_address, display_name, avatar_url, total_xp, current_tier, zone_hash, zone_name, zone_rank, is_champion
+- `weekly_contributors` (materialized view): wallet_address, display_name, avatar_url, current_tier, weekly_xp, action_count, weekly_rank
 - `currents`: id, author_wallet, title, body, media_urls, linked_tank_id, linked_tank_name, species_tags, parameters_snapshot, visibility
 - `reactions`: id, user_wallet, target_id, emoji (UNIQUE per user/target/emoji)
 - `comments`: id, author_wallet, current_id, parent_comment_id, body

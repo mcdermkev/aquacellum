@@ -107,22 +107,20 @@ export async function reportContent({ targetType, targetId, reason, details }) {
 
 /**
  * Check privileges based on depth tier.
+ * Aligned with GAMIFICATION_SPEC.md section 3.2.
+ * 
+ * Tier privilege unlocks:
+ *   Shallow (Bronze):  Post currents, join schools
+ *   Coastal (Silver):  + Create schools, request audits
+ *   Pelagic (Gold):    + Post insights (inherits all below)
+ *   Abyssal (Master):  + Give audits, mentor, host virtual Tides
+ *   Hadal (Champion):  + Host expo Tides, moderate
  */
 export function getTierPrivileges(tier) {
   const privileges = {
     Shallow: {
+      canPostCurrents: true,
       canPostInsights: false,
-      canJoinSchools: false,
-      canCreateSchools: false,
-      canRequestAudits: false,
-      canGiveAudits: false,
-      canMentor: false,
-      canHostVirtualTides: false,
-      canHostExpoTides: false,
-      canModerate: false,
-    },
-    Coastal: {
-      canPostInsights: true,
       canJoinSchools: true,
       canCreateSchools: false,
       canRequestAudits: false,
@@ -132,7 +130,20 @@ export function getTierPrivileges(tier) {
       canHostExpoTides: false,
       canModerate: false,
     },
+    Coastal: {
+      canPostCurrents: true,
+      canPostInsights: true,
+      canJoinSchools: true,
+      canCreateSchools: true,
+      canRequestAudits: true,
+      canGiveAudits: false,
+      canMentor: false,
+      canHostVirtualTides: false,
+      canHostExpoTides: false,
+      canModerate: false,
+    },
     Pelagic: {
+      canPostCurrents: true,
       canPostInsights: true,
       canJoinSchools: true,
       canCreateSchools: true,
@@ -144,6 +155,7 @@ export function getTierPrivileges(tier) {
       canModerate: false,
     },
     Abyssal: {
+      canPostCurrents: true,
       canPostInsights: true,
       canJoinSchools: true,
       canCreateSchools: true,
@@ -155,6 +167,7 @@ export function getTierPrivileges(tier) {
       canModerate: false,
     },
     Hadal: {
+      canPostCurrents: true,
       canPostInsights: true,
       canJoinSchools: true,
       canCreateSchools: true,
@@ -167,16 +180,26 @@ export function getTierPrivileges(tier) {
     },
   };
 
-  return privileges[tier] || privileges.Shallow;
+  // Normalize "Hadal-Champion" to "Hadal" for privilege lookup
+  const normalizedTier = tier === "Hadal-Champion" ? "Hadal" : tier;
+  return privileges[normalizedTier] || privileges.Shallow;
 }
 
 /**
- * Tier metadata (icons, colors, thresholds).
+ * Canonical tier metadata (icons, colors, thresholds).
+ * Aligned with GAMIFICATION_SPEC.md section 3.1 and xp.js TIER_LADDER.
+ * 
+ * Thresholds:
+ *   Shallow:  0 – 1,499
+ *   Coastal:  1,500 – 2,499
+ *   Pelagic:  2,500 – 4,999
+ *   Abyssal:  5,000 – 9,999
+ *   Hadal:    10,000+
  */
 export const DEPTH_TIERS = [
-  { key: "Shallow", label: "Shallow", icon: "🏖️", color: "#94a3b8", min: 0, max: 99 },
-  { key: "Coastal", label: "Coastal", icon: "🌊", color: "#38bdf8", min: 100, max: 499 },
-  { key: "Pelagic", label: "Pelagic", icon: "🐟", color: "#34d399", min: 500, max: 1499 },
-  { key: "Abyssal", label: "Abyssal", icon: "🦑", color: "#a855f7", min: 1500, max: 4999 },
-  { key: "Hadal", label: "Hadal", icon: "🔱", color: "#f59e0b", min: 5000, max: Infinity },
+  { key: "Shallow", label: "Shallow", hobbyistLabel: "Bronze Fry", icon: "🥚", color: "#94a3b8", min: 0, max: 1499 },
+  { key: "Coastal", label: "Coastal", hobbyistLabel: "Silver Keeper", icon: "🥈", color: "#38bdf8", min: 1500, max: 2499 },
+  { key: "Pelagic", label: "Pelagic", hobbyistLabel: "Gold Aquarist", icon: "🥇", color: "#fbbf24", min: 2500, max: 4999 },
+  { key: "Abyssal", label: "Abyssal", hobbyistLabel: "Master Keeper", icon: "💎", color: "#a855f7", min: 5000, max: 9999 },
+  { key: "Hadal", label: "Hadal", hobbyistLabel: "God-Tier Champion", icon: "👑", color: "#f59e0b", min: 10000, max: Infinity },
 ];

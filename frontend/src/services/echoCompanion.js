@@ -29,7 +29,7 @@ export const HATCHED_EGG_STATE = 1;
 /** Initial companion XP granted at hatch. */
 export const INITIAL_COMPANION_XP = 15;
 /** Starting companion tier. */
-export const INITIAL_COMPANION_TIER = "Bronze";
+export const INITIAL_COMPANION_TIER = "Shallow";
 
 /**
  * Build the initial `breederCompanion` record for an account.

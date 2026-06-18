@@ -47,7 +47,7 @@ export function ProfileCard({
   walletAddress,
   displayName,
   avatarUrl,
-  companionTier = "Bronze",
+  companionTier = "Shallow",
   size = "default", // "default" | "small" | "large"
   onClick,
   showTier = true,

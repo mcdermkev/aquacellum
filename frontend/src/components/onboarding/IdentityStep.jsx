@@ -69,9 +69,13 @@ export async function persistIdentityProfile(account, alias, persona) {
     walletAddress: account,
     alias,
     persona,
-    level: 1,
-    prestigeXp: 0,
-    hobbyistXp: 0,
+    totalXp: 0,
+    currentTier: "Shallow",
+    zoneHash: null,
+    monthlyXp: 0,
+    rewardCredits: 0,
+    streakDays: 0,
+    lastActiveDate: null,
     isCouncilMember: false,
   });
 }

@@ -48,9 +48,9 @@ export function useEnsureProfile(walletAddress) {
           display_name: userProfile?.alias || null,
           tank_count: tanks || 0,
           xp_total: userProfile
-            ? (userProfile.prestigeXp || 0) + (userProfile.hobbyistXp || 0)
+            ? (userProfile.totalXp || 0)
             : 0,
-          companion_tier: companion?.currentTier || "Bronze",
+          companion_tier: companion?.currentTier || "Shallow",
         };
       } catch (err) {
         console.warn("[Reef] Could not read Dexie stats for profile seeding:", err);

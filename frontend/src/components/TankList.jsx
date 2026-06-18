@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ethers, Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
-import { addXp, XP_ACTIONS } from "../utils/xp";
+import { addXp, XP_ACTIONS, getPointsSuffix } from "../utils/xp";
 import { FacilityTreeView } from "./FacilityTreeView";
 import { getProvider } from "../utils/smartAccount";
 import { LoadingSkeleton } from "./LoadingSkeleton";
@@ -757,10 +757,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       timestamp: Math.round(Date.now() / 1000),
       details: "Routine Feeding (Standard Diet)"
     });
-    addXp(2, "Logged Tank Feeding");
+    addXp(XP_ACTIONS.LOG_FEEDING.points, "Logged Tank Feeding");
+    const suffix = getPointsSuffix(casualModeActive);
     showToast(casualModeActive
-      ? "🥣 Yum! Your fish are loving it! +10 Loyalty Points!"
-      : "🥣 Feeding logged"
+      ? `🥣 Yum! Your fish are loving it! +${XP_ACTIONS.LOG_FEEDING.points} ${suffix}!`
+      : `🥣 Feeding logged (+${XP_ACTIONS.LOG_FEEDING.points} ${suffix})`
     );
     fetchLocalActionLogs();
     await fetchDashboardData();
@@ -780,10 +781,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       timestamp: Math.round(Date.now() / 1000),
       details: "Routine Algae Scraped"
     });
-    addXp(2, "Logged Algae Scraping");
+    addXp(XP_ACTIONS.LOG_FEEDING.points, "Logged Algae Scraping");
+    const suffix = getPointsSuffix(casualModeActive);
     showToast(casualModeActive
-      ? "🧹 Sparkly clean! Your tank is gleaming! +10 Loyalty Points!"
-      : "🧹 Maintenance logged"
+      ? `🧹 Sparkly clean! Your tank is gleaming! +${XP_ACTIONS.LOG_FEEDING.points} ${suffix}!`
+      : `🧹 Maintenance logged (+${XP_ACTIONS.LOG_FEEDING.points} ${suffix})`
     );
     fetchLocalActionLogs();
     await fetchDashboardData();
@@ -796,10 +798,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       timestamp: Math.round(Date.now() / 1000),
       details: "Partial water change performed"
     });
-    addXp(3, "Logged Water Change");
+    addXp(XP_ACTIONS.LOG_WATER.points, "Logged Water Change");
+    const suffix = getPointsSuffix(casualModeActive);
     showToast(casualModeActive
-      ? "💧 Fresh water! Your fish are loving it! +15 Loyalty Points!"
-      : "💧 Water change logged"
+      ? `💧 Fresh water! Your fish are loving it! +${XP_ACTIONS.LOG_WATER.points} ${suffix}!`
+      : `💧 Water change logged (+${XP_ACTIONS.LOG_WATER.points} ${suffix})`
     );
     fetchLocalActionLogs();
     await fetchDashboardData();
@@ -825,10 +828,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         timestamp: Math.round(Date.now() / 1000),
         details: details
       });
-      addXp(3, "Logged Custom Feeding");
+      addXp(XP_ACTIONS.LOG_FEEDING.points, "Logged Custom Feeding");
+      const suffix = getPointsSuffix(casualModeActive);
       showToast(casualModeActive
-        ? "🥣 Custom meal logged — great care! +10 Loyalty Points!"
-        : "🥣 Custom feeding logged"
+        ? `🥣 Custom meal logged — great care! +${XP_ACTIONS.LOG_FEEDING.points} ${suffix}!`
+        : `🥣 Custom feeding logged (+${XP_ACTIONS.LOG_FEEDING.points} ${suffix})`
       );
     } else if (inlineDetailType === "algae") {
       await db.actionLogs.add({
@@ -837,10 +841,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         timestamp: Math.round(Date.now() / 1000),
         details: details
       });
-      addXp(3, "Logged Custom Algae Scraping");
+      addXp(XP_ACTIONS.LOG_FEEDING.points, "Logged Custom Algae Scraping");
+      const suffix = getPointsSuffix(casualModeActive);
       showToast(casualModeActive
-        ? "🧹 Custom clean logged — looking great! +10 Loyalty Points!"
-        : "🧹 Custom maintenance logged"
+        ? `🧹 Custom clean logged — looking great! +${XP_ACTIONS.LOG_FEEDING.points} ${suffix}!`
+        : `🧹 Custom maintenance logged (+${XP_ACTIONS.LOG_FEEDING.points} ${suffix})`
       );
     } else if (inlineDetailType === "population") {
       const newCount = parseInt(details, 10);
@@ -965,7 +970,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
     // Normalize to current breeder tier if posted as a Breeder in Pro Mode
     if (!casualModeActive && role === "breeder") {
-      const userTier = companionData?.currentTier || "Bronze";
+      const userTier = companionData?.currentTier || "Shallow";
       const normalizedTier = userTier.toLowerCase().replace("-tier", "");
       role = `${normalizedTier}-breeder`;
     }
@@ -1967,8 +1972,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               <div className="biotope-banner-overlay"></div>
 
               {/* Companion Fish Entity (swimming fry or hatched tier) — hidden in Pro mode */}
-              {casualModeActive && companionData && companionData.companionXp >= 500 && (
-                <CompanionFishEntity tier={companionData.currentTier} companionXp={companionData.companionXp} />
+              {casualModeActive && companionData && (companionData.companionXp >= 500 || (profile && profile.totalXp >= 500)) && (
+                <CompanionFishEntity tier={companionData.currentTier} companionXp={profile?.totalXp || companionData.companionXp || 0} />
               )}
 
               {/* Quiet Mystery Egg UI Overlay — hidden in Pro mode */}
@@ -3215,7 +3220,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             badgeLabel = "Hobbyist";
                           } else {
                             // Breeder tiers
-                            let tier = "bronze";
+                            let tier = "shallow";
                             if (typeof comment.role === "string" && comment.role.endsWith("-breeder")) {
                               tier = comment.role.split("-")[0];
                             }
@@ -3513,10 +3518,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             
                             {(!casualModeActive && isHatched) ? (
                               <div
-                                className={`role-chip ${companionData?.currentTier?.toLowerCase() || "bronze"} ${commenterRole === "breeder" ? "active" : ""}`}
+                                className={`role-chip ${companionData?.currentTier?.toLowerCase() || "shallow"} ${commenterRole === "breeder" ? "active" : ""}`}
                                 onClick={() => setCommenterRole("breeder")}
                               >
-                                🧬 {companionData?.currentTier || "Bronze"} Breeder
+                                🧬 {companionData?.currentTier || "Shallow"} Breeder
                               </div>
                             ) : (
                               <div

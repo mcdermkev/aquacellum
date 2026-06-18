@@ -98,7 +98,7 @@ const GENESIS_COUNCIL = [
 const TARGET_XP = 5000;
 
 export function BreedersCouncil({ walletAccount, suggestionsQuery, updateSuggestionStatus, CARE_LEVEL_STRINGS, marketplaceAddress, isModalView }) {
-  const [profile, setProfile] = useState({ level: 1, prestigeXp: 1850, hobbyistXp: 950, isCouncilMember: false });
+  const [profile, setProfile] = useState({ totalXp: 2800, currentTier: "Pelagic", isCouncilMember: false });
   const [stats, setStats] = useState({ totalSpecies: 0, totalListings: 0, totalTanks: 0 });
   const [marketplaceContract, setMarketplaceContract] = useState(null);
   const [companionData, setCompanionData] = useState(null);
@@ -140,9 +140,8 @@ export function BreedersCouncil({ walletAccount, suggestionsQuery, updateSuggest
       if (!user) {
         user = {
           walletAddress: walletAccount,
-          level: 2,
-          prestigeXp: 1850, // default mock value to show progress bar interaction
-          hobbyistXp: 950,
+          totalXp: 2800,
+          currentTier: "Pelagic",
           isCouncilMember: isCouncil
         };
         await db.userProfile.put(user);
@@ -294,7 +293,7 @@ export function BreedersCouncil({ walletAccount, suggestionsQuery, updateSuggest
   }
 
   // Render Progression-Locked Screen for Standard Hobbyists
-  const progressPercent = Math.min((profile.prestigeXp / TARGET_XP) * 100, 100);
+  const progressPercent = Math.min(((profile.totalXp || 0) / TARGET_XP) * 100, 100);
 
   return (
     <div style={{ 
@@ -323,8 +322,8 @@ export function BreedersCouncil({ walletAccount, suggestionsQuery, updateSuggest
       {/* Progression Meter */}
       <div style={{ maxWidth: "500px", margin: "0 auto 3rem auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", fontSize: "0.9rem" }}>
-          <span style={{ color: "#38bdf8", fontWeight: "bold" }}>Prestige XP Level {profile.level || 2}</span>
-          <span style={{ color: "var(--text-muted)" }}>{profile.prestigeXp} / {TARGET_XP} XP</span>
+          <span style={{ color: "#38bdf8", fontWeight: "bold" }}>Tier: {profile.currentTier || "Shallow"}</span>
+          <span style={{ color: "var(--text-muted)" }}>{profile.totalXp || 0} / {TARGET_XP} XP</span>
         </div>
         
         {/* Progress Bar Container */}
@@ -348,7 +347,7 @@ export function BreedersCouncil({ walletAccount, suggestionsQuery, updateSuggest
         </div>
         
         <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.75rem" }}>
-          You need {TARGET_XP - profile.prestigeXp} more Prestige XP to unlock Council Curation nomination rights.
+          You need {TARGET_XP - (profile.totalXp || 0)} more XP to unlock Council Curation nomination rights.
         </p>
       </div>
 

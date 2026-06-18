@@ -54,7 +54,7 @@ export async function ensureProfile(walletAddress, initialData = {}) {
       tank_count: initialData.tank_count || 0,
       species_count: initialData.species_count || 0,
       xp_total: initialData.xp_total || 0,
-      companion_tier: initialData.companion_tier || "Bronze",
+      companion_tier: initialData.companion_tier || "Shallow",
       onboarding_complete: initialData.onboarding_complete ?? false,
     })
     .select()

@@ -24,6 +24,8 @@ import { useOnboardingGate } from "./hooks/useOnboardingGate";
 import { useAuth } from "./contexts/AuthContext";
 import { pullCloudDataForWallet, pushAllLocalDataToCloud } from "./services/cloudSync";
 import { FoundersDashboard } from "./components/FoundersDashboard";
+import { ZoneLeaderboardWidget } from "./components/ZoneLeaderboardWidget";
+import { RewardCreditsCard } from "./components/RewardCreditsCard";
 
 
 // Lazy-load The Reef social layer (code-split for performance)
@@ -462,14 +464,24 @@ export default function App() {
       case "tanks":
       default:
         return (
-          <TankList 
-            contractAddress={CONTRACT_ADDRESS} 
-            walletAccount={account} 
-            onViewLineage={handleLineageSelect} 
-            onListOnMarketplace={handleListOnMarketplace}
-            casualModeActive={casualModeActive}
-            onSelectSpecimen={setSelectedSpecimenId}
-          />
+          <div style={{ display: "flex", gap: "1.5rem", alignItems: "flex-start" }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <TankList 
+                contractAddress={CONTRACT_ADDRESS} 
+                walletAccount={account} 
+                onViewLineage={handleLineageSelect} 
+                onListOnMarketplace={handleListOnMarketplace}
+                casualModeActive={casualModeActive}
+                onSelectSpecimen={setSelectedSpecimenId}
+              />
+            </div>
+            <aside className="zone-leaderboard-sidebar" style={{ width: "280px", flexShrink: 0, position: "sticky", top: "2rem" }}>
+              <ZoneLeaderboardWidget casualModeActive={casualModeActive} compact />
+              <div style={{ marginTop: "1rem" }}>
+                <RewardCreditsCard casualModeActive={casualModeActive} compact />
+              </div>
+            </aside>
+          </div>
         );
     }
   };

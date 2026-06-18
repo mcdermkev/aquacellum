@@ -17,6 +17,8 @@ import { useHandshake } from "../hooks/useHandshake";
 import { db } from "../db";
 import { generateAlias } from "../utils/generateAlias";
 import { getProfile } from "../services/reefApi";
+import { useRewardCredits, useApplyCredits } from "../hooks/useRewardsPool";
+import { calculateCheckoutDiscount } from "../services/rewardsPoolApi";
 
 /**
  * DisplayName — Resolves a wallet address to a human-readable display name.
@@ -93,6 +95,9 @@ export function CheckoutSummary({
   casualModeActive = false
 }) {
   const { getPendingHandshake } = useHandshake();
+  const { data: creditData } = useRewardCredits();
+  const applyCredits = useApplyCredits();
+  const [useCreditsAtCheckout, setUseCreditsAtCheckout] = useState(true);
   const [purchases, setPurchases] = useState([]);
   const [shippingEscrows, setShippingEscrows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -894,8 +899,86 @@ export function CheckoutSummary({
                 )}
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.95rem", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "0.75rem", marginTop: "0.25rem" }}>
                   <strong style={{ color: "#fff" }}>Net Secure Payment:</strong>
-                  <strong style={{ fontFamily: "monospace", color: "var(--accent-green)" }}>${(totalCost * 1000).toFixed(2)}</strong>
+                  <strong style={{ fontFamily: "monospace", color: "var(--accent-green)" }}>${((() => {
+                    const discount = calculateCheckoutDiscount(
+                      totalCost * 1000,
+                      creditData?.tier || "Shallow",
+                      creditData?.credits || 0,
+                      useCreditsAtCheckout
+                    );
+                    return discount.finalPrice;
+                  })()).toFixed(2)}</strong>
                 </div>
+
+                {/* Tier Discount + Reward Credits */}
+                {(() => {
+                  const discount = calculateCheckoutDiscount(
+                    totalCost * 1000,
+                    creditData?.tier || "Shallow",
+                    creditData?.credits || 0,
+                    useCreditsAtCheckout
+                  );
+                  return discount.totalSavings > 0 ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem", marginTop: "0.4rem" }}>
+                      {discount.tierDiscountAmount > 0 && (
+                        <div style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          fontSize: "0.75rem",
+                          color: "var(--accent-amber, #fbbf24)",
+                          background: "rgba(251, 191, 36, 0.05)",
+                          padding: "0.3rem 0.5rem",
+                          borderRadius: "4px",
+                        }}>
+                          <span>🏷️ Tier Discount ({Math.round(discount.tierDiscount * 100)}% — {creditData?.tier})</span>
+                          <span style={{ fontFamily: "monospace" }}>-${discount.tierDiscountAmount.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {discount.creditsToApply > 0 && (
+                        <div style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          fontSize: "0.75rem",
+                          color: "var(--accent-purple, #a855f7)",
+                          background: "rgba(139, 92, 246, 0.05)",
+                          padding: "0.3rem 0.5rem",
+                          borderRadius: "4px",
+                        }}>
+                          <span>⭐ {casualModeActive ? "Loyalty Credits" : "Reward Credits"} Applied</span>
+                          <span style={{ fontFamily: "monospace" }}>-${discount.creditsToApply.toFixed(2)}</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : null;
+                })()}
+
+                {/* Toggle: apply credits */}
+                {(creditData?.credits || 0) > 0 && (
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    marginTop: "0.5rem",
+                    padding: "0.4rem 0.5rem",
+                    borderRadius: "6px",
+                    background: "rgba(139, 92, 246, 0.04)",
+                    border: "1px solid rgba(139, 92, 246, 0.1)",
+                  }}>
+                    <input
+                      type="checkbox"
+                      id="apply-credits-toggle"
+                      checked={useCreditsAtCheckout}
+                      onChange={(e) => setUseCreditsAtCheckout(e.target.checked)}
+                      style={{ width: "14px", height: "14px", accentColor: "#a855f7", cursor: "pointer" }}
+                    />
+                    <label
+                      htmlFor="apply-credits-toggle"
+                      style={{ fontSize: "0.72rem", color: "var(--text-secondary)", cursor: "pointer" }}
+                    >
+                      Apply ${(creditData?.credits || 0).toFixed(2)} in {casualModeActive ? "Loyalty Credits" : "reward credits"}
+                    </label>
+                  </div>
+                )}
                 {casualModeActive && (
                   <div style={{
                     padding: "0.75rem",

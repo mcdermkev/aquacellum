@@ -104,7 +104,7 @@ export async function persistDisplayName(
       // covers the case where the row already existed from the identity step.
       await ensureProfileFn(account, {
         display_name: trimmed,
-        companion_tier: "Bronze",
+        companion_tier: "Shallow",
       });
       await updateProfileFn(account, { display_name: trimmed });
       supabaseWritten = true;

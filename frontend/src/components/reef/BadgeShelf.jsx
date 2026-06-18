@@ -11,13 +11,20 @@ import React, { useMemo } from "react";
 /**
  * Badge definitions with unlock criteria.
  * Each badge has: id, icon, name, description, and an unlock function.
+ * 
+ * Updated per GAMIFICATION_SPEC.md section 7:
+ *   - Tier badges use canonical names (Shallow/Coastal/Pelagic/Abyssal/Hadal)
+ *   - Added event badges (Expo Attendee, Challenge Victor, Care Streak)
+ *   - Added weekly Contributor of the Week badge
  */
 const BADGE_DEFINITIONS = [
+  // ─── Collection Badges ─────────────────────────────────────────────────
   {
     id: "first_tank",
     icon: "🐠",
     name: "First Tank",
     description: "Registered your first aquarium",
+    category: "collection",
     unlock: (stats) => stats.tankCount >= 1,
   },
   {
@@ -25,6 +32,7 @@ const BADGE_DEFINITIONS = [
     icon: "🏠",
     name: "Tank Collector",
     description: "Managing 5 or more tanks",
+    category: "collection",
     unlock: (stats) => stats.tankCount >= 5,
   },
   {
@@ -32,6 +40,7 @@ const BADGE_DEFINITIONS = [
     icon: "🏭",
     name: "Facility Operator",
     description: "Running 10+ tanks like a pro",
+    category: "collection",
     unlock: (stats) => stats.tankCount >= 10,
   },
   {
@@ -39,6 +48,7 @@ const BADGE_DEFINITIONS = [
     icon: "🐟",
     name: "Species Explorer",
     description: "Keeping 10+ different species",
+    category: "collection",
     unlock: (stats) => stats.speciesCount >= 10,
   },
   {
@@ -46,6 +56,7 @@ const BADGE_DEFINITIONS = [
     icon: "📚",
     name: "Catalog Scholar",
     description: "Logged 50+ species in your collection",
+    category: "collection",
     unlock: (stats) => stats.speciesCount >= 50,
   },
   {
@@ -53,41 +64,59 @@ const BADGE_DEFINITIONS = [
     icon: "🧬",
     name: "Biodiversity Champion",
     description: "100+ species mastered",
+    category: "collection",
     unlock: (stats) => stats.speciesCount >= 100,
   },
+
+  // ─── Tier Badges (canonical names) ─────────────────────────────────────
   {
-    id: "silver_tier",
+    id: "coastal_tier",
     icon: "🥈",
-    name: "Silver Tier",
-    description: "Reached Silver companion tier",
-    unlock: (stats) => ["Silver", "Gold", "Master", "God-Tier"].includes(stats.companionTier),
+    name: "Coastal Tier",
+    description: "Reached Coastal tier (1,500+ pts)",
+    category: "tier",
+    unlock: (stats) => ["Coastal", "Pelagic", "Abyssal", "Hadal", "Hadal-Champion"].includes(stats.companionTier),
   },
   {
-    id: "gold_tier",
+    id: "pelagic_tier",
     icon: "🥇",
-    name: "Gold Tier",
-    description: "Reached Gold companion tier",
-    unlock: (stats) => ["Gold", "Master", "God-Tier"].includes(stats.companionTier),
+    name: "Pelagic Tier",
+    description: "Reached Pelagic tier (2,500+ pts)",
+    category: "tier",
+    unlock: (stats) => ["Pelagic", "Abyssal", "Hadal", "Hadal-Champion"].includes(stats.companionTier),
   },
   {
-    id: "master_tier",
+    id: "abyssal_tier",
     icon: "💎",
-    name: "Master Breeder",
-    description: "Achieved Master tier — elite status",
-    unlock: (stats) => ["Master", "God-Tier"].includes(stats.companionTier),
+    name: "Abyssal Tier",
+    description: "Reached Abyssal tier (5,000+ pts) — elite status",
+    category: "tier",
+    unlock: (stats) => ["Abyssal", "Hadal", "Hadal-Champion"].includes(stats.companionTier),
   },
   {
-    id: "god_tier",
-    icon: "👑",
-    name: "God-Tier Champion",
-    description: "The #1 breeder in your region",
-    unlock: (stats) => stats.companionTier === "God-Tier",
+    id: "hadal_tier",
+    icon: "🔱",
+    name: "Hadal Tier",
+    description: "Reached Hadal tier (10,000+ pts) — legendary",
+    category: "tier",
+    unlock: (stats) => ["Hadal", "Hadal-Champion"].includes(stats.companionTier),
   },
+  {
+    id: "zone_champion",
+    icon: "👑",
+    name: "Zone Champion",
+    description: "The #1 ranked keeper in your regional zone",
+    category: "tier",
+    unlock: (stats) => stats.companionTier === "Hadal-Champion" || stats.isZoneChampion,
+  },
+
+  // ─── Community Badges ──────────────────────────────────────────────────
   {
     id: "first_post",
     icon: "🪸",
     name: "Reef Pioneer",
     description: "Published your first Tank Current",
+    category: "community",
     unlock: (stats) => stats.postCount >= 1,
   },
   {
@@ -95,6 +124,7 @@ const BADGE_DEFINITIONS = [
     icon: "📢",
     name: "Active Voice",
     description: "Shared 10+ updates on The Reef",
+    category: "community",
     unlock: (stats) => stats.postCount >= 10,
   },
   {
@@ -102,6 +132,7 @@ const BADGE_DEFINITIONS = [
     icon: "💡",
     name: "Knowledge Sharer",
     description: "Posted your first Species Insight",
+    category: "community",
     unlock: (stats) => stats.insightCount >= 1,
   },
   {
@@ -109,13 +140,17 @@ const BADGE_DEFINITIONS = [
     icon: "🤝",
     name: "Social Swimmer",
     description: "Connected with 5+ Tankmates",
+    category: "social",
     unlock: (stats) => stats.tankmateCount >= 5,
   },
+
+  // ─── XP Milestone Badges ───────────────────────────────────────────────
   {
     id: "xp_500",
     icon: "⚡",
     name: "Rising Current",
     description: "Earned 500+ total XP",
+    category: "xp",
     unlock: (stats) => stats.xpTotal >= 500,
   },
   {
@@ -123,6 +158,7 @@ const BADGE_DEFINITIONS = [
     icon: "🌊",
     name: "Tidal Force",
     description: "Earned 2,000+ total XP",
+    category: "xp",
     unlock: (stats) => stats.xpTotal >= 2000,
   },
   {
@@ -130,7 +166,60 @@ const BADGE_DEFINITIONS = [
     icon: "🔱",
     name: "Poseidon's Favor",
     description: "Earned 5,000+ total XP — legendary dedication",
+    category: "xp",
     unlock: (stats) => stats.xpTotal >= 5000,
+  },
+  {
+    id: "xp_10000",
+    icon: "🐉",
+    name: "Deep Sea Legend",
+    description: "Earned 10,000+ total XP — God-Tier territory",
+    category: "xp",
+    unlock: (stats) => stats.xpTotal >= 10000,
+  },
+
+  // ─── Event Badges ──────────────────────────────────────────────────────
+  {
+    id: "expo_attendee",
+    icon: "🎪",
+    name: "Expo Attendee",
+    description: "Completed a transaction at a verified swap meet",
+    category: "event",
+    unlock: (stats) => stats.expoTransactions >= 1,
+  },
+  {
+    id: "challenge_victor",
+    icon: "🏆",
+    name: "Challenge Victor",
+    description: "Finished in the top 3 of a School Challenge",
+    category: "event",
+    unlock: (stats) => stats.challengeWins >= 1,
+  },
+  {
+    id: "care_streak_30",
+    icon: "🔥",
+    name: "30-Day Streak",
+    description: "Maintained a 30-day consecutive care streak",
+    category: "event",
+    unlock: (stats) => stats.longestStreak >= 30,
+  },
+  {
+    id: "care_streak_90",
+    icon: "💫",
+    name: "90-Day Streak",
+    description: "Maintained a 90-day consecutive care streak — incredible dedication",
+    category: "event",
+    unlock: (stats) => stats.longestStreak >= 90,
+  },
+
+  // ─── Weekly Contributor Badge (non-permanent, refreshes weekly) ─────────
+  {
+    id: "weekly_contributor",
+    icon: "🌟",
+    name: "Contributor of the Week",
+    description: "Ranked top 3 in weekly contributions (refreshes Monday)",
+    category: "event",
+    unlock: (stats) => stats.isWeeklyTopContributor,
   },
 ];
 

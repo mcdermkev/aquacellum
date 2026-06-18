@@ -29,10 +29,12 @@ import { db } from "../../db.js";
 export const ECHO_EGG_STATE_HATCHED = 1;
 
 // Starting XP granted to Echo at hatch (mirrors design.md + existing wizard).
+// NOTE: Under unified gamification, companionXp is legacy — totalXp on userProfile is authoritative.
+// This initial value seeds the breederCompanion row for backwards compat with visual components.
 export const ECHO_INITIAL_XP = 15;
 
-// Starting tier for a freshly hatched Echo.
-export const ECHO_INITIAL_TIER = "Bronze";
+// Starting tier for a freshly hatched Echo (now "Shallow" per canonical tier ladder).
+export const ECHO_INITIAL_TIER = "Shallow";
 
 /**
  * Build the initial `breederCompanion` record for a freshly hatched Echo.

@@ -63,7 +63,7 @@ describe("buildEchoCompanionRecord", () => {
   it("uses the conventional starting values (hatched egg, Bronze, +15 XP)", () => {
     expect(HATCHED_EGG_STATE).toBe(1);
     expect(INITIAL_COMPANION_XP).toBe(15);
-    expect(INITIAL_COMPANION_TIER).toBe("Bronze");
+    expect(INITIAL_COMPANION_TIER).toBe("Shallow");
   });
 });
 

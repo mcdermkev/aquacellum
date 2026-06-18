@@ -13,6 +13,13 @@ import * as THREE from "three";
 
 // Map tier to Echo cutout sprite (transparent PNGs in public/).
 const TIER_SPRITES = {
+  "Shallow": "/echo-fry.png",
+  "Coastal": "/echo-silver.png",
+  "Pelagic": "/echo-mid.png",
+  "Abyssal": "/echo-evolved.png",
+  "Hadal": "/echo-evolved.png",
+  "Hadal-Champion": "/echo-evolved.png",
+  // Legacy fallbacks for existing data
   "Bronze": "/echo-fry.png",
   "Silver": "/echo-silver.png",
   "Gold": "/echo-mid.png",
@@ -21,6 +28,13 @@ const TIER_SPRITES = {
 };
 
 const TIER_CONFIG = {
+  "Shallow": { glow: "#94a3b8", scale: 0.9 },
+  "Coastal": { glow: "#38bdf8", scale: 1.1 },
+  "Pelagic": { glow: "#fbbf24", scale: 1.3 },
+  "Abyssal": { glow: "#a855f7", scale: 1.6 },
+  "Hadal": { glow: "#f59e0b", scale: 1.9 },
+  "Hadal-Champion": { glow: "#ff6b35", scale: 1.9 },
+  // Legacy fallbacks
   "Bronze": { glow: "#cd7f32", scale: 0.9 },
   "Silver": { glow: "#38bdf8", scale: 1.1 },
   "Gold": { glow: "#fbbf24", scale: 1.3 },

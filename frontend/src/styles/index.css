@@ -1142,6 +1142,11 @@ input[type="range"] {
     padding: 1rem !important;
   }
 
+  /* Zone leaderboard sidebar — hide on mobile, content stacks full-width */
+  .zone-leaderboard-sidebar {
+    display: none !important;
+  }
+
   /* Header — stack vertically on mobile */
   header.glass-card {
     padding: 1rem !important;

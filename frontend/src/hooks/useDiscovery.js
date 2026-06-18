@@ -234,7 +234,7 @@ export function useTopContributors(enabled = true) {
           wallet_address: entry.wallet,
           display_name: null,
           avatar_url: null,
-          companion_tier: "Bronze",
+          companion_tier: "Shallow",
         },
       }));
     },
