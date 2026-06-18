@@ -4,6 +4,61 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [Unreleased] — 2026-06-18
+
+### 🧬 Breeder Tools — Unified Pro Tab
+
+Consolidated the three separate Pro-mode tabs (Register, Lineage, Spawning) into a single **Breeder Tools** tab with internal pill-style sub-navigation. All functionality preserved — cleaner top-level nav with fewer tabs.
+
+#### Changes
+- **New component**: `BreederTools.jsx` — wrapper with internal Register / Lineage / Spawning pill switcher
+- **App.jsx**: Replaced 3 tab entries + 3 render cases with single "🧬 Breeder Tools" tab
+- **External navigation preserved**: "View Lineage" links from other tabs open directly to the Lineage sub-section
+- Updated helper text in `ModeSegmentedControl.jsx`, `TankList.jsx`, `BreedGallery.jsx`
+
+---
+
+### ⚡ My Orders — Instant Load Performance Fix
+
+Fixed slow loading of the My Orders tab (previously blank for several seconds even with zero orders).
+
+#### Root Cause
+`fetchOrders()` made sequential blockchain RPC calls for every specimen ever minted + 50 batch purchase IDs before showing any UI. Each call has network latency on Base Sepolia, causing multi-second waits.
+
+#### Fix
+- **Local-first instant render**: Loads Dexie/IndexedDB orders immediately and displays them (sets `loading = false` within milliseconds)
+- **Background on-chain scan**: Blockchain RPC calls run silently after the UI is already rendered
+- **Parallel RPC batching**: On-chain reads now fire in parallel batches of 10 via `Promise.allSettled` instead of sequential `await` loops
+
+---
+
+### 👤 My Orders — Display Names Instead of Wallet Addresses
+
+Replaced all raw `0x...` wallet address displays in the Orders tab with human-readable user identifiers.
+
+#### Resolution Strategy
+1. Supabase Reef profile `display_name` (if user set one during onboarding)
+2. Local Dexie `userProfile.alias` (cached locally)
+3. `generateAlias()` fallback — deterministic fish-themed name (e.g. "Coral-Tetra-4821")
+
+#### Locations Fixed
+- Consolidated Shipping header ("Grouping specimens from seller...")
+- Cash Handshake QR modal (Buyer / Seller fields)
+- Batch Order detail modal (Seller / Buyer)
+- Shipping Order detail modal (Seller / Buyer)
+
+#### Files Changed
+| File | Change |
+|------|--------|
+| `frontend/src/components/BreederTools.jsx` | **New** — Combined pro tab with internal sub-nav |
+| `frontend/src/components/CheckoutSummary.jsx` | Performance rewrite + `DisplayName` component for address resolution |
+| `frontend/src/App.jsx` | Replaced 3 pro tabs with single Breeder Tools tab |
+| `frontend/src/components/ModeSegmentedControl.jsx` | Updated hint text |
+| `frontend/src/components/TankList.jsx` | Updated empty state text |
+| `frontend/src/components/BreedGallery.jsx` | Updated hash navigation |
+
+---
+
 ## [Unreleased] — 2026-06-17
 
 ### ✨ Premium UX Overhaul — Fish Finder & Breed Gallery

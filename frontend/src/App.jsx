@@ -2,12 +2,10 @@ import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
 import "./styles/index.css";
 import { ConnectWallet } from "./components/ConnectWallet";
 import { TankList } from "./components/TankList";
-import { MintSpecimen } from "./components/MintSpecimen";
-import { SpecimenLineage } from "./components/SpecimenLineage";
+import { BreederTools } from "./components/BreederTools";
 import { MarketplaceBoard } from "./components/MarketplaceBoard";
 import { BreedGallery } from "./components/BreedGallery";
 import { LocalBreederMap } from "./components/LocalBreederMap";
-import { SpawningWizard } from "./components/SpawningWizard";
 import { CheckoutSummary } from "./components/CheckoutSummary";
 import { SpecimenDetailModal } from "./components/SpecimenDetailModal";
 import { getLevelInfo, getXp } from "./utils/xp";
@@ -130,10 +128,11 @@ export default function App() {
   const [activeTab, setActiveTab] = useState(() => {
     // Quick Win 10: Restore tab from URL hash on load
     const hash = window.location.hash.replace("#", "");
-    const validTabs = ["tanks", "mint", "lineage", "directory", "gallery", "map", "spawning", "orders", "reef", "settings"];
+    const validTabs = ["tanks", "breeder", "directory", "gallery", "map", "orders", "reef", "settings"];
     return validTabs.includes(hash) ? hash : "tanks";
   });
   const [preselectedLineageId, setPreselectedLineageId] = useState(null);
+  const [breederToolsSection, setBreederToolsSection] = useState("register");
   const [selectedBreedId, setSelectedBreedId] = useState(null);
   const [gallerySelectedBreed, setGallerySelectedBreed] = useState(null);
   const [preselectedListSpecimen, setPreselectedListSpecimen] = useState(null);
@@ -282,7 +281,7 @@ export default function App() {
   };
 
   const handleTabChange = (tabName) => {
-    if (tabName !== "lineage") {
+    if (tabName !== "breeder") {
       setPreselectedLineageId(null);
     }
     if (tabName !== "gallery") {
@@ -300,7 +299,7 @@ export default function App() {
   useEffect(() => {
     const handlePopState = (e) => {
       const hash = window.location.hash.replace("#", "");
-      const validTabs = ["tanks", "mint", "lineage", "directory", "gallery", "map", "spawning", "orders", "reef", "settings"];
+      const validTabs = ["tanks", "breeder", "directory", "gallery", "map", "orders", "reef", "settings"];
       if (validTabs.includes(hash)) {
         setActiveTab(hash);
       }
@@ -311,7 +310,9 @@ export default function App() {
 
   const handleLineageSelect = (tokenId) => {
     setPreselectedLineageId(tokenId);
-    setActiveTab("lineage");
+    setBreederToolsSection("lineage");
+    setActiveTab("breeder");
+    window.history.pushState({ tab: "breeder" }, "", "#breeder");
   };
 
   const handleListOnMarketplace = (tank, specimen) => {
@@ -334,18 +335,19 @@ export default function App() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case "mint":
-        return <MintSpecimen contractAddress={CONTRACT_ADDRESS} walletAccount={account} />;
-      case "lineage":
+      case "breeder":
         return (
-          <SpecimenLineage 
-            contractAddress={CONTRACT_ADDRESS} 
-            walletAccount={account} 
-            preselectedTokenId={preselectedLineageId} 
+          <BreederTools
+            contractAddress={CONTRACT_ADDRESS}
+            walletAccount={account}
+            casualModeActive={casualModeActive}
+            preselectedTokenId={preselectedLineageId}
             onSelectBreed={(breedId) => {
               setSelectedBreedId(breedId);
               handleTabChange("gallery");
             }}
+            onSpawningComplete={() => handleTabChange("tanks")}
+            initialSection={breederToolsSection}
           />
         );
       case "directory":
@@ -386,15 +388,6 @@ export default function App() {
             casualModeActive={casualModeActive}
             initialSelectedBreed={gallerySelectedBreed}
             onSelectedBreedChange={setGallerySelectedBreed}
-          />
-        );
-      case "spawning":
-        return (
-          <SpawningWizard 
-            contractAddress={CONTRACT_ADDRESS} 
-            walletAccount={account} 
-            onComplete={() => handleTabChange("tanks")}
-            casualModeActive={casualModeActive}
           />
         );
       case "map":
@@ -740,9 +733,7 @@ export default function App() {
           {[
             { id: "tanks",     icon: "🐠",  label: casualModeActive ? "My Aquariums"  : "Aquariums",    tourId: "aquariums-tab", alwaysShow: true  },
             { id: "gallery",   icon: "🔍",  label: casualModeActive ? "Fish Finder"   : "Breed Gallery", alwaysShow: true  },
-            { id: "mint",      icon: "✦",   label: "Register",                                           alwaysShow: !casualModeActive },
-            { id: "lineage",   icon: "🌿",  label: "Lineage",                                            alwaysShow: !casualModeActive },
-            { id: "spawning",  icon: "🥚",  label: "Spawning",                                           alwaysShow: !casualModeActive },
+            { id: "breeder",   icon: "🧬",  label: "Breeder Tools",                                      alwaysShow: !casualModeActive },
             { id: "directory", icon: "🛒",  label: casualModeActive ? "Breeder Store" : "Marketplace",  alwaysShow: true  },
             { id: "map",       icon: "🗺️", label: casualModeActive ? "Local Sellers" : "Local Map",     alwaysShow: true  },
             { id: "orders",    icon: "📦",  label: "My Orders",                                          alwaysShow: true  },

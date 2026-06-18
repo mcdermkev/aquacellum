@@ -51,6 +51,7 @@ graph TD
 - **Social Layer (The Reef)**: Supabase-backed social network with profiles, feed, reactions, comments, Schools (clubs), Expert Audits, mentorship, one-tap follow system, school invites, and real-time chat.
 - **Video & Livestream**: Mux-powered video pipeline — short-form video posts (60s max, HLS adaptive streaming), always-on Tank Cams with live viewer reactions, and Virtual Tide livestreaming with VOD recording.
 - **Beta Infrastructure**: Local-first tank storage (Dexie.js), server-side transaction relayer for gasless on-chain writes, Privy embedded wallets for frictionless onboarding.
+- **Breeder Tools**: Unified pro-mode panel combining specimen registration, multi-generation lineage tracking, and spawning wizard into a single streamlined interface.
 
 ---
 

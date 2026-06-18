@@ -18,7 +18,7 @@ export function ModeSegmentedControl({ casualModeActive, onToggle }) {
       localStorage.setItem("aquadex_mode_hint_seen", "true");
       const text = newCasualVal
         ? "Casual mode: simplified labels, fewer tabs. Perfect for hobbyists."
-        : "Pro mode: full breeder tools including Lineage and Spawning tabs.";
+        : "Pro mode: full breeder tools including Register, Lineage, and Spawning.";
       setHintText(text);
       setShowHint(true);
       setTimeout(() => setShowHint(false), 4500);

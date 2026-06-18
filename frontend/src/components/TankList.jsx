@@ -1644,7 +1644,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     <p style={{ color: "var(--text-secondary)", lineHeight: "1.6", marginBottom: "1.5rem" }}>
                       {casualModeActive
                         ? "Create your first aquarium to start tracking your fish. You'll be able to log water parameters, catalog species, and monitor tank health all in one place."
-                        : "Register your first containment unit to begin. Head to the Register tab or use the facility tree view to define your system topology."}
+                        : "Register your first containment unit to begin. Head to the Breeder Tools tab or use the facility tree view to define your system topology."}
                     </p>
                     <button
                       className="btn-primary"

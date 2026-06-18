@@ -15,6 +15,50 @@ import {
 } from "../services/relayer";
 import { useHandshake } from "../hooks/useHandshake";
 import { db } from "../db";
+import { generateAlias } from "../utils/generateAlias";
+import { getProfile } from "../services/reefApi";
+
+/**
+ * DisplayName — Resolves a wallet address to a human-readable display name.
+ * Checks Supabase Reef profile first, then local Dexie, then falls back to generateAlias.
+ */
+function DisplayName({ address }) {
+  const [name, setName] = useState(() => address ? generateAlias(address) : "Unknown");
+
+  useEffect(() => {
+    if (!address) return;
+    let cancelled = false;
+
+    (async () => {
+      // 1. Try Supabase Reef profile
+      try {
+        const { data } = await getProfile(address);
+        if (!cancelled && data?.display_name) {
+          setName(data.display_name);
+          return;
+        }
+      } catch (e) {}
+
+      // 2. Try local Dexie userProfile
+      try {
+        const local = await db.userProfile.get(address);
+        if (!cancelled && local?.alias) {
+          setName(local.alias);
+          return;
+        }
+      } catch (e) {}
+
+      // 3. Fallback: deterministic alias
+      if (!cancelled) {
+        setName(generateAlias(address));
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [address]);
+
+  return <>{name}</>;
+}
 
 const ESCROW_STATES = ["LOCKED", "RELEASED", "REFUNDED"];
 const SHIPPING_STATUSES = ["LOCKED", "DISPATCHED", "RELEASED", "DISPUTED", "REFUNDED"];
@@ -282,6 +326,24 @@ export function CheckoutSummary({
       setError(null);
       setActionError(null);
 
+      // ── Fast path: load local-first orders immediately (Dexie/IndexedDB) ──
+      // This makes the tab feel instant for the common case.
+      let localShipping = [];
+      let localPurchases = [];
+      try {
+        const local = await relayGetOrders(walletAccount);
+        localShipping = local.shippingEscrows || [];
+        localPurchases = local.purchases || [];
+      } catch (e) {
+        console.warn("Failed to load local orders:", e);
+      }
+
+      // Show local results immediately so the UI isn't blank
+      setShippingEscrows(localShipping);
+      setPurchases(localPurchases);
+      setLoading(false);
+
+      // ── Slow path: on-chain scan in background ──
       const provider = getProvider();
       const marketContract = new Contract(marketplaceAddress, marketplaceAbi, provider);
       const managerContract = new Contract(contractAddress, managerAbi, provider);
@@ -294,68 +356,80 @@ export function CheckoutSummary({
         console.warn("Failed to check curator status:", e);
       }
 
-      // Discover orders. Since Solidity mappings are not enumerable, we can search recent IDs.
-      // For shipping escrows: they are indexed by tokenId. We can search from tokenId = 1 to totalSpecimensMinted.
-      // For batch purchases: they are indexed by purchaseId. We can search from 1 to a reasonable upper bound or read events.
-      // We will loop to read from 1 up to a small limit for local testing.
       const totalSpecimens = Number(await managerContract.totalSpecimensMinted());
-      
-      // Load shipping escrows
+
+      // Parallel scan for shipping escrows (batched to avoid overwhelming RPC)
+      const BATCH_SIZE = 10;
       const fetchedShipping = [];
-      for (let i = 1; i <= totalSpecimens; i++) {
-        try {
-          const esc = await marketContract.shippingEscrows(i);
-          if (esc.buyer !== "0x0000000000000000000000000000000000000000") {
-            // Check if user is buyer or seller
-            const isBuyer = esc.buyer.toLowerCase() === walletAccount.toLowerCase();
-            const isSeller = esc.seller.toLowerCase() === walletAccount.toLowerCase();
-            if (isBuyer || isSeller || isCurator) {
-              // Fetch species name
-              const spec = await managerContract.specimens(i);
-              const species = await managerContract.speciesCatalog(Number(spec.speciesId));
-              fetchedShipping.push({
-                tokenId: i,
-                buyer: esc.buyer,
-                seller: esc.seller,
-                price: formatEther(esc.price),
-                shippingFee: formatEther(esc.shippingFee),
-                amountLocked: formatEther(esc.amountLocked),
-                trackingNumber: esc.trackingNumber,
-                dispatchTimestamp: Number(esc.dispatchTimestamp),
-                status: Number(esc.status),
-                commonName: species.commonName,
-                role: isBuyer ? "Buyer" : isSeller ? "Seller" : "Curator"
-              });
-            }
+
+      for (let start = 1; start <= totalSpecimens; start += BATCH_SIZE) {
+        const end = Math.min(start + BATCH_SIZE - 1, totalSpecimens);
+        const batch = [];
+        for (let i = start; i <= end; i++) {
+          batch.push(
+            (async (tokenId) => {
+              try {
+                const esc = await marketContract.shippingEscrows(tokenId);
+                if (esc.buyer === "0x0000000000000000000000000000000000000000") return null;
+                const isBuyer = esc.buyer.toLowerCase() === walletAccount.toLowerCase();
+                const isSeller = esc.seller.toLowerCase() === walletAccount.toLowerCase();
+                if (!isBuyer && !isSeller && !isCurator) return null;
+
+                const spec = await managerContract.specimens(tokenId);
+                const species = await managerContract.speciesCatalog(Number(spec.speciesId));
+                return {
+                  tokenId,
+                  buyer: esc.buyer,
+                  seller: esc.seller,
+                  price: formatEther(esc.price),
+                  shippingFee: formatEther(esc.shippingFee),
+                  amountLocked: formatEther(esc.amountLocked),
+                  trackingNumber: esc.trackingNumber,
+                  dispatchTimestamp: Number(esc.dispatchTimestamp),
+                  status: Number(esc.status),
+                  commonName: species.commonName,
+                  role: isBuyer ? "Buyer" : isSeller ? "Seller" : "Curator"
+                };
+              } catch (e) {
+                return null;
+              }
+            })(i)
+          );
+        }
+        const results = await Promise.allSettled(batch);
+        for (const r of results) {
+          if (r.status === "fulfilled" && r.value) {
+            fetchedShipping.push(r.value);
           }
-        } catch (e) {}
+        }
       }
 
-      // Load batch purchases (e.g. search purchaseId from 1 to 50 for local nodes)
+      // Parallel scan for batch purchases (IDs 1-50)
       const fetchedBatches = [];
+      const batchPromises = [];
       for (let i = 1; i <= 50; i++) {
-        try {
-          const purch = await marketContract.escrowPurchases(i);
-          if (purch.buyer !== "0x0000000000000000000000000000000000000000") {
-            const isBuyer = purch.buyer.toLowerCase() === walletAccount.toLowerCase();
-            
-            // Get listing details to find seller
-            const listing = await marketContract.batchListings(purch.listingId);
-            const isSeller = listing.seller.toLowerCase() === walletAccount.toLowerCase();
+        batchPromises.push(
+          (async (purchaseId) => {
+            try {
+              const purch = await marketContract.escrowPurchases(purchaseId);
+              if (purch.buyer === "0x0000000000000000000000000000000000000000") return null;
+              const isBuyer = purch.buyer.toLowerCase() === walletAccount.toLowerCase();
 
-            if (isBuyer || isSeller || isCurator) {
-              // Resolve breed info from spawn records
+              const listing = await marketContract.batchListings(purch.listingId);
+              const isSeller = listing.seller.toLowerCase() === walletAccount.toLowerCase();
+
+              if (!isBuyer && !isSeller && !isCurator) return null;
+
               let commonName = "Juvenile Fry Batch";
               try {
                 const spawnRec = await managerContract.spawnRecords(listing.spawnId);
-                // Sire species
                 const sireSpec = await managerContract.specimens(Number(spawnRec.sireId || 1));
                 const species = await managerContract.speciesCatalog(Number(sireSpec.speciesId));
                 commonName = `${species.commonName} Fry`;
               } catch (e) {}
 
-              fetchedBatches.push({
-                purchaseId: i,
+              return {
+                purchaseId,
                 listingId: Number(purch.listingId),
                 buyer: purch.buyer,
                 seller: listing.seller,
@@ -365,45 +439,42 @@ export function CheckoutSummary({
                 fulfillmentType: Number(purch.fulfillmentType),
                 commonName,
                 role: isBuyer ? "Buyer" : isSeller ? "Seller" : "Curator"
-              });
+              };
+            } catch (e) {
+              return null;
             }
-          }
-        } catch (e) {
-          break; // Stop querying if it errors out or goes out of bounds
+          })(i)
+        );
+      }
+      const batchResults = await Promise.allSettled(batchPromises);
+      for (const r of batchResults) {
+        if (r.status === "fulfilled" && r.value) {
+          fetchedBatches.push(r.value);
         }
       }
 
-      setShippingEscrows(fetchedShipping);
-      setPurchases(fetchedBatches);
+      // Merge on-chain results with local (local takes priority for duplicates)
+      const localShipIds = new Set(localShipping.map(o => Number(o.tokenId)));
+      const localPurchIds = new Set(localPurchases.map(o => Number(o.purchaseId)));
 
-      // Beta: merge local-first orders (purchases made without MetaMask)
-      try {
-        const local = await relayGetOrders(walletAccount);
-        if (local.shippingEscrows.length || local.purchases.length) {
-          setShippingEscrows(prev => {
-            const existing = new Set(prev.map(o => Number(o.tokenId)));
-            return [...prev, ...local.shippingEscrows.filter(o => !existing.has(Number(o.tokenId)))];
-          });
-          setPurchases(prev => {
-            const existing = new Set(prev.map(o => Number(o.purchaseId)));
-            return [...prev, ...local.purchases.filter(o => !existing.has(Number(o.purchaseId)))];
-          });
-        }
-      } catch (e) {
-        console.warn("Failed to merge local orders:", e);
-      }
+      const mergedShipping = [
+        ...localShipping,
+        ...fetchedShipping.filter(o => !localShipIds.has(Number(o.tokenId)))
+      ];
+      const mergedPurchases = [
+        ...localPurchases,
+        ...fetchedBatches.filter(o => !localPurchIds.has(Number(o.purchaseId)))
+      ];
+
+      setShippingEscrows(mergedShipping);
+      setPurchases(mergedPurchases);
     } catch (err) {
-      console.error("Error reading orders:", err);
-      // Beta fallback: show local-first orders even if the chain read fails
-      try {
-        const local = await relayGetOrders(walletAccount);
-        setShippingEscrows(local.shippingEscrows);
-        setPurchases(local.purchases);
-      } catch (e) {
-        setError("Failed to fetch order tracking details.");
+      console.error("Error reading on-chain orders:", err);
+      // Local orders were already loaded above, so UI is not blank.
+      // Only set error if we have nothing to show at all.
+      if (shippingEscrows.length === 0 && purchases.length === 0) {
+        setError("Failed to fetch order tracking details from the network.");
       }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -705,7 +776,7 @@ export function CheckoutSummary({
                 <span>📦</span> Consolidated Shipping & Box Optimization
               </h3>
               <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: 0 }}>
-                Grouping specimens from seller <span style={{ fontFamily: "monospace", color: "var(--accent-blue)" }}>{activeSeller}</span> to optimize box utilization and save shipping fees.
+                Grouping specimens from seller <span style={{ fontFamily: "monospace", color: "var(--accent-blue)" }}><DisplayName address={activeSeller} /></span> to optimize box utilization and save shipping fees.
               </p>
             </div>
             <button 
@@ -945,8 +1016,8 @@ export function CheckoutSummary({
                       </div>
 
                       <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", textAlign: "left", background: "rgba(0,0,0,0.2)", padding: "0.75rem", borderRadius: "6px" }}>
-                        <div>Buyer: <span style={{ fontFamily: "monospace", fontSize: "0.7rem" }}>{cashHandshakePayload.buyer}</span></div>
-                        <div>Seller: <span style={{ fontFamily: "monospace", fontSize: "0.7rem" }}>{cashHandshakePayload.seller}</span></div>
+                        <div>Buyer: <span style={{ fontFamily: "monospace", fontSize: "0.7rem" }}><DisplayName address={cashHandshakePayload.buyer} /></span></div>
+                        <div>Seller: <span style={{ fontFamily: "monospace", fontSize: "0.7rem" }}><DisplayName address={cashHandshakePayload.seller} /></span></div>
                         <div>Specimens: <strong>{cashHandshakePayload.tokenIds.length}</strong></div>
                         <div>Total Price: <strong>${(cashHandshakePayload.totalCost * 1000).toFixed(2)}</strong></div>
                         <div>Event ID: <strong>{cashHandshakePayload.eventId}</strong></div>
@@ -1187,8 +1258,8 @@ export function CheckoutSummary({
                 <div style={{ background: "rgba(255,255,255,0.02)", padding: "0.75rem", borderRadius: "4px", fontSize: "0.85rem" }}>
                   <div>Specimen: <strong>{selectedOrder.data.commonName}</strong></div>
                   <div>Quantity: <strong>{selectedOrder.data.quantity}</strong></div>
-                  <div>Seller: <span style={{ fontSize: "0.75rem", fontFamily: "monospace" }}>{selectedOrder.data.seller}</span></div>
-                  <div>Buyer: <span style={{ fontSize: "0.75rem", fontFamily: "monospace" }}>{selectedOrder.data.buyer}</span></div>
+                  <div>Seller: <span style={{ fontSize: "0.75rem", fontFamily: "monospace" }}><DisplayName address={selectedOrder.data.seller} /></span></div>
+                  <div>Buyer: <span style={{ fontSize: "0.75rem", fontFamily: "monospace" }}><DisplayName address={selectedOrder.data.buyer} /></span></div>
                   <div>State: <span className="badge badge-blue" style={{ fontSize: "0.65rem" }}>{ESCROW_STATES[selectedOrder.data.state]}</span></div>
                 </div>
 
@@ -1293,8 +1364,8 @@ export function CheckoutSummary({
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                 <div style={{ background: "rgba(255,255,255,0.02)", padding: "0.75rem", borderRadius: "4px", fontSize: "0.85rem" }}>
                   <div>Specimen: <strong>{selectedOrder.data.commonName}</strong></div>
-                  <div>Seller: <span style={{ fontSize: "0.75rem", fontFamily: "monospace" }}>{selectedOrder.data.seller}</span></div>
-                  <div>Buyer: <span style={{ fontSize: "0.75rem", fontFamily: "monospace" }}>{selectedOrder.data.buyer}</span></div>
+                  <div>Seller: <span style={{ fontSize: "0.75rem", fontFamily: "monospace" }}><DisplayName address={selectedOrder.data.seller} /></span></div>
+                  <div>Buyer: <span style={{ fontSize: "0.75rem", fontFamily: "monospace" }}><DisplayName address={selectedOrder.data.buyer} /></span></div>
                   {selectedOrder.data.trackingNumber && (
                     <div>Tracking Number: <strong style={{ color: "var(--accent-blue)" }}>{selectedOrder.data.trackingNumber}</strong></div>
                   )}

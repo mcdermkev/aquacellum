@@ -2333,7 +2333,7 @@ export function BreedGallery({
                     Your local aquariums don't contain any registered species yet. Register your specimens or mint a digital certificate to establish your pedigree lines.
                   </p>
                   <button
-                    onClick={() => { window.location.hash = "mint"; }}
+                    onClick={() => { window.location.hash = "breeder"; }}
                     className="btn-primary"
                     style={{
                       padding: "0.75rem 2rem",
