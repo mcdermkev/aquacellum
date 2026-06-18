@@ -26,6 +26,8 @@ import { pullCloudDataForWallet, pushAllLocalDataToCloud } from "./services/clou
 import { FoundersDashboard } from "./components/FoundersDashboard";
 import { ZoneLeaderboardWidget } from "./components/ZoneLeaderboardWidget";
 import { RewardCreditsCard } from "./components/RewardCreditsCard";
+import { EchoCompanionWidget } from "./components/EchoCompanionWidget";
+import { EchoWhispers } from "./components/EchoWhispers";
 
 
 // Lazy-load The Reef social layer (code-split for performance)
@@ -476,6 +478,11 @@ export default function App() {
               />
             </div>
             <aside className="zone-leaderboard-sidebar" style={{ width: "280px", flexShrink: 0, position: "sticky", top: "2rem" }}>
+              {casualModeActive && (
+                <div style={{ marginBottom: "1rem" }}>
+                  <EchoCompanionWidget casualModeActive={casualModeActive} compact />
+                </div>
+              )}
               <ZoneLeaderboardWidget casualModeActive={casualModeActive} compact />
               <div style={{ marginTop: "1rem" }}>
                 <RewardCreditsCard casualModeActive={casualModeActive} compact />
@@ -838,6 +845,20 @@ export default function App() {
           {renderContent()}
         </div>
       </main>
+
+      {/* Echo Whispers — proactive companion nudges (casual mode only) */}
+      {casualModeActive && (
+        <EchoWhispers
+          casualModeActive={casualModeActive}
+          userState={{
+            totalXp: xp,
+            streakDays: 0,
+            lastActiveDate: null,
+            currentTier: "Shallow",
+          }}
+          tankData={{}}
+        />
+      )}
 
       {/* XP Toasts Container */}
       <div className="xp-toast-container" style={{
