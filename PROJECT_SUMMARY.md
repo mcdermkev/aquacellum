@@ -113,6 +113,15 @@ All contracts deployed on **Base Sepolia (Chain ID 84532)**.
 - **Facility Summary PDF**: Unit counts, rack breakdown, alerts, recent spawns.
 - **Tank QR Labels**: Printable 76×51mm labels with scannable deep-link QR codes.
 
+### Founders Dashboard (Internal)
+- **Wallet-Gated Access**: Only allowlisted founder wallets see the "📊 Founders" tab. Non-founders have zero visibility.
+- **KPI Strip**: Total Users, DAU, Specimens Minted, Protocol Fees, Marketplace GMV, Live Activity.
+- **Charts**: User Growth (area chart, 7/30/90d), Protocol Activity (bar chart — specimens/spawns/userOps per week).
+- **Social & AI Panels**: Reef engagement metrics, Poseidon query breakdown (donut chart by intent).
+- **Operational Health**: Live service status checks (Poseidon AI, Supabase, Mux, Stripe, Smart Contracts).
+- **Auto-Refresh**: 60-second polling interval. Manual refresh button available.
+- **Data Sources**: Supabase aggregate queries with graceful fallback to mock data when tables don't exist yet.
+
 ### Gamification (Casual Mode)
 - XP system (Hobbyist XP + Prestige XP), level progression, breeder companion fish (egg → hatched → tiered evolution).
 - Regional God-Tier leaderboard, expo double-XP events, expert mentorship social feed.
@@ -225,7 +234,7 @@ npx hardhat test                # Contract test suites (from root)
 ```
 
 ### Key Dependencies
-- React 18, Vite 5, TanStack Query/Virtual, Dexie 4, ethers 5, Fuse.js, jsPDF, qrcode
+- React 18, Vite 5, TanStack Query/Virtual, Dexie 4, ethers 5, Fuse.js, jsPDF, qrcode, Recharts
 - Supabase JS (social layer, storage, realtime)
 - google-auth-library (Vertex AI service-account auth for the Poseidon/AI endpoints)
 - Hardhat, OpenZeppelin (AccessControl, ERC721, ReentrancyGuard)

@@ -23,12 +23,20 @@ import { OnboardingWizard } from "./components/OnboardingWizard";
 import { useOnboardingGate } from "./hooks/useOnboardingGate";
 import { useAuth } from "./contexts/AuthContext";
 import { pullCloudDataForWallet, pushAllLocalDataToCloud } from "./services/cloudSync";
+import { FoundersDashboard } from "./components/FoundersDashboard";
 
 
 // Lazy-load The Reef social layer (code-split for performance)
 const ReefFeed = lazy(() =>
   import("./components/reef").then((m) => ({ default: m.ReefFeed }))
 );
+
+// ── Founders Dashboard Access Control ──────────────────────────────────────
+// Only these wallet addresses can see the "Founders" tab.
+// Add/remove addresses as needed (lowercase for comparison).
+const FOUNDER_WALLETS = [
+  "0x53d3c6f4f11b0b08bc1a5034bbce7d46198b6851", // Mcdermkev81
+];
 
 
 // Deployed contract addresses — Base Sepolia Testnet
@@ -125,10 +133,12 @@ export default function App() {
       console.warn("Aquadex: Failed to initialize event listeners for cache invalidation:", err);
     }
   }, [account, queryClient]);
+  const isFounder = account && FOUNDER_WALLETS.includes(account.toLowerCase());
+
   const [activeTab, setActiveTab] = useState(() => {
     // Quick Win 10: Restore tab from URL hash on load
     const hash = window.location.hash.replace("#", "");
-    const validTabs = ["tanks", "breeder", "directory", "gallery", "map", "orders", "reef", "settings"];
+    const validTabs = ["tanks", "breeder", "directory", "gallery", "map", "orders", "reef", "settings", "founders"];
     return validTabs.includes(hash) ? hash : "tanks";
   });
   const [preselectedLineageId, setPreselectedLineageId] = useState(null);
@@ -293,7 +303,7 @@ export default function App() {
   useEffect(() => {
     const handlePopState = (e) => {
       const hash = window.location.hash.replace("#", "");
-      const validTabs = ["tanks", "breeder", "directory", "gallery", "map", "orders", "reef", "settings"];
+      const validTabs = ["tanks", "breeder", "directory", "gallery", "map", "orders", "reef", "settings", "founders"];
       if (validTabs.includes(hash)) {
         setActiveTab(hash);
       }
@@ -430,6 +440,10 @@ export default function App() {
               localStorage.setItem("aquadex_casual_mode", newCasualVal.toString());
             }}
           />
+        );
+      case "founders":
+        return (
+          <FoundersDashboard casualModeActive={casualModeActive} />
         );
       case "tanks":
       default:
@@ -733,6 +747,7 @@ export default function App() {
             { id: "orders",    icon: "📦",  label: "My Orders",                                          alwaysShow: true  },
             { id: "reef",      icon: "🪸",  label: casualModeActive ? "The Reef"      : "Social",        alwaysShow: true, badge: !postedFirstCurrent },
             { id: "settings",  icon: "⚙️", label: "Settings",                                           alwaysShow: true  },
+            ...(isFounder ? [{ id: "founders", icon: "📊", label: "Founders", alwaysShow: true }] : []),
           ]
             .filter((t) => t.alwaysShow)
             .map((tab) => {

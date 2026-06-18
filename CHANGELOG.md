@@ -6,6 +6,33 @@ All notable changes to AquaDex are documented here.
 
 ## [Unreleased] — 2026-06-18
 
+### 📊 Founders Dashboard — Internal Analytics & Monitoring
+
+Added a wallet-gated Founders Dashboard tab to the React SPA. Only allowlisted founder wallets see the "📊 Founders" navigation item — everyone else has no visibility of this feature.
+
+#### Sections
+- **KPI Strip**: Total Users, DAU, Specimens Minted, Protocol Fees (cumulative), Marketplace GMV, Live Activity (cams + tides). Trend indicators and sparkline-style context.
+- **User Growth Chart**: Area chart showing cumulative user signups over the last 7/30/90 days (Recharts).
+- **Protocol Activity Chart**: Grouped bar chart — Specimens minted, Spawns, and UserOps per week.
+- **Social Engagement Panel**: Posts, Reactions, Comments, and 7-day active users from The Reef.
+- **AI Poseidon Queries**: Donut chart breaking down query intents (Identify, Husbandry, Diet, General) with total count.
+- **Operational Health**: Service status grid — Poseidon AI, Supabase, Mux Video, Stripe Connect, Smart Contracts (green/amber/red indicators with live health checks).
+- **Auto-Refresh**: Dashboard data refreshes automatically every 60 seconds.
+
+#### Access Control
+- Wallet allowlist (`FOUNDER_WALLETS` in App.jsx). Currently: `0x53d3c6F4F11b0B08bC1A5034bBCe7d46198b6851`.
+- Non-founder wallets never see the tab or route.
+
+#### Files Changed
+| File | Change |
+|------|--------|
+| `frontend/src/components/FoundersDashboard.jsx` | **New** — Full dashboard component with KPI cards, Recharts charts, health panel |
+| `frontend/src/services/foundersAnalytics.js` | **New** — Analytics service (Supabase queries, health checks, mock data fallback) |
+| `frontend/src/App.jsx` | Import, wallet allowlist, `isFounder` gate, nav tab, switch case |
+| `frontend/package.json` | Added `recharts` dependency |
+
+---
+
 ### 🥚 Spawning Dashboard — Certificates, Hatchery Insights & Logs
 
 Added a full Spawning Dashboard to the Spawning sub-tab under Breeder Tools. Renders above the existing Spawning Wizard with three pill-navigated sections:
