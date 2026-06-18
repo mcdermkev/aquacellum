@@ -654,25 +654,44 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
 
                 {/* Husbandry Notes */}
                 {log.notesIpfsHash && log.notesIpfsHash !== "" ? (
-                  <a 
-                    href={`https://ipfs.io/ipfs/${log.notesIpfsHash}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    style={{
-                      fontSize: "0.75rem",
-                      color: "var(--accent-blue)",
-                      textDecoration: "none",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "0.3rem",
-                      transition: "var(--transition-smooth)"
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = "#fff"}
-                    onMouseLeave={(e) => e.currentTarget.style.color = "var(--accent-blue)"}
-                  >
-                    <span>📖</span>
-                    <span>View Husbandry Notes ({log.notesIpfsHash.substring(0, 6)}...)</span>
-                  </a>
+                  // Check if the value is actually an IPFS CID/URI vs. plain-text relay notes
+                  /^(Qm[a-zA-Z0-9]{44}|baf[a-z2-7]{50,}|ipfs:\/\/)/.test(log.notesIpfsHash.trim()) ? (
+                    <a 
+                      href={log.notesIpfsHash.startsWith("ipfs://") 
+                        ? `https://ipfs.io/ipfs/${log.notesIpfsHash.replace("ipfs://", "")}` 
+                        : `https://ipfs.io/ipfs/${log.notesIpfsHash}`
+                      } 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "var(--accent-blue)",
+                        textDecoration: "none",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.3rem",
+                        transition: "var(--transition-smooth)"
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = "#fff"}
+                      onMouseLeave={(e) => e.currentTarget.style.color = "var(--accent-blue)"}
+                    >
+                      <span>📖</span>
+                      <span>View Husbandry Notes ({log.notesIpfsHash.substring(0, 8)}...)</span>
+                    </a>
+                  ) : (
+                    <span 
+                      style={{ 
+                        fontSize: "0.725rem", 
+                        color: "var(--text-secondary)", 
+                        display: "inline-flex", 
+                        alignItems: "center", 
+                        gap: "0.3rem" 
+                      }}
+                    >
+                      <span>📝</span>
+                      <span>{log.notesIpfsHash.length > 60 ? log.notesIpfsHash.substring(0, 60) + "…" : log.notesIpfsHash}</span>
+                    </span>
+                  )
                 ) : (
                   <span style={{ fontSize: "0.725rem", color: "var(--text-muted)", fontStyle: "italic" }}>
                     No triggers/diet logged
