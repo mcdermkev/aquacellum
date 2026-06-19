@@ -282,3 +282,95 @@ export async function pushAllLocalDataToCloud(walletAddress) {
     console.warn("[CloudSync] pushAllLocalDataToCloud failed:", e.message);
   }
 }
+
+// ─── MARKETPLACE LISTINGS — Cloud sync for cross-user visibility ────────────
+
+/**
+ * Serialize a local listing object for the aquadex_listings Supabase table.
+ */
+function listingToRow(listing) {
+  return {
+    id: String(listing.id || listing.tokenId || listing.listingId),
+    seller_address: (listing.seller || "").toLowerCase(),
+    species_id: Number(listing.speciesId || 0),
+    common_name: listing.commonName || "",
+    price: String(listing.price || "0"),
+    is_batch: !!listing.isBatch,
+    is_active: listing.active !== false,
+    updated_at: new Date().toISOString(),
+    data: JSON.stringify(listing),
+  };
+}
+
+/**
+ * Upsert a single listing to Supabase so other users can see it.
+ * Fire-and-forget — non-blocking.
+ * @param {object} listing - Dexie localListing object
+ */
+export async function syncListingToCloud(listing) {
+  if (!isSupabaseConfigured()) return;
+  try {
+    const { error } = await supabase
+      .from("aquadex_listings")
+      .upsert(listingToRow(listing), { onConflict: "id" });
+    if (error) console.warn("[CloudSync] Listing upsert failed:", error.message);
+  } catch (e) {
+    console.warn("[CloudSync] Listing upsert error:", e.message);
+  }
+}
+
+/**
+ * Mark a listing as inactive in Supabase (on cancel/purchase).
+ * @param {string|number} listingId
+ */
+export async function deactivateListingInCloud(listingId) {
+  if (!isSupabaseConfigured()) return;
+  try {
+    const { error } = await supabase
+      .from("aquadex_listings")
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq("id", String(listingId));
+    if (error) console.warn("[CloudSync] Listing deactivate failed:", error.message);
+  } catch (e) {
+    console.warn("[CloudSync] Listing deactivate error:", e.message);
+  }
+}
+
+/**
+ * Pull ALL active listings from Supabase (all sellers).
+ * This is what enables cross-user listing visibility — every user sees
+ * all other users' listings, not just their own local ones.
+ * 
+ * @param {number|null} speciesId - optional filter by species
+ * @returns {Promise<Array>} array of listing objects (same shape as Dexie localListings)
+ */
+export async function pullCloudListings(speciesId = null) {
+  if (!isSupabaseConfigured()) return [];
+  try {
+    let query = supabase
+      .from("aquadex_listings")
+      .select("data")
+      .eq("is_active", true);
+
+    if (speciesId) {
+      query = query.eq("species_id", Number(speciesId));
+    }
+
+    const { data, error } = await query.order("created_at", { ascending: false }).limit(200);
+    if (error) {
+      console.warn("[CloudSync] Pull listings failed:", error.message);
+      return [];
+    }
+
+    return (data || []).map(row => {
+      try {
+        return typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+      } catch {
+        return null;
+      }
+    }).filter(Boolean);
+  } catch (e) {
+    console.warn("[CloudSync] Pull listings error:", e.message);
+    return [];
+  }
+}

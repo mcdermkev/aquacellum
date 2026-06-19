@@ -3,6 +3,7 @@ import { db } from "../db";
 import { fetchListingsByBreed } from "../utils/listingManager";
 import { getProvider } from "../utils/smartAccount";
 import { getLocalListings } from "../services/relayer";
+import { pullCloudListings } from "../services/cloudSync";
 
 export function useMarketplaceListings(contractAddress, marketplaceAddress, filterSpeciesId = null) {
   return useQuery({
@@ -11,6 +12,10 @@ export function useMarketplaceListings(contractAddress, marketplaceAddress, filt
       const provider = getProvider();
       // Local-first beta listings (created without MetaMask)
       const localListings = await getLocalListings(filterSpeciesId);
+
+      // Cloud listings from all users (Supabase — cross-user visibility)
+      const cloudListings = await pullCloudListings(filterSpeciesId);
+
       try {
         const data = await fetchListingsByBreed(
           filterSpeciesId,
@@ -29,17 +34,29 @@ export function useMarketplaceListings(contractAddress, marketplaceAddress, filt
           }
         }
 
-        // Merge local beta listings (deduplicated by id)
+        // Merge: on-chain > cloud > local (deduplicated by id)
         const ids = new Set(data.map((l) => Number(l.id)));
-        return [...data, ...localListings.filter((l) => !ids.has(Number(l.id)))];
+        const uniqueCloud = cloudListings.filter((l) => !ids.has(Number(l.id)));
+        uniqueCloud.forEach((l) => ids.add(Number(l.id)));
+        const uniqueLocal = localListings.filter((l) => !ids.has(Number(l.id)));
+
+        return [...data, ...uniqueCloud, ...uniqueLocal];
       } catch (err) {
-        console.warn("Fetch listings failed, reading from Dexie offline database...", err);
+        console.warn("Fetch listings failed, using cloud + local fallback...", err);
+
+        // Fallback: merge cloud listings + local listings + Dexie cache
         const cached = await db.listings.toArray();
-        const ids = new Set(localListings.map((l) => Number(l.id)));
         const base = (cached || []).filter((item) =>
           filterSpeciesId ? Number(item.speciesId) === Number(filterSpeciesId) : true
         );
-        const merged = [...base.filter((l) => !ids.has(Number(l.id))), ...localListings];
+
+        // Deduplicate: cloud > cached > local
+        const ids = new Set();
+        const merged = [];
+        for (const l of cloudListings) { ids.add(Number(l.id)); merged.push(l); }
+        for (const l of base) { if (!ids.has(Number(l.id))) { ids.add(Number(l.id)); merged.push(l); } }
+        for (const l of localListings) { if (!ids.has(Number(l.id))) { ids.add(Number(l.id)); merged.push(l); } }
+
         if (merged.length > 0) {
           return merged;
         }

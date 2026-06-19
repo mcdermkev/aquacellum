@@ -13,7 +13,7 @@
  */
 
 import { db } from "../db";
-import { syncTankToCloud, syncSpecimenToCloud } from "./cloudSync";
+import { syncTankToCloud, syncSpecimenToCloud, syncListingToCloud, deactivateListingInCloud } from "./cloudSync";
 import {
   submitUserOperation,
   buildRegisterTankCall,
@@ -427,6 +427,9 @@ export async function relayCreateListing({
     // Also write to the listings cache so it shows immediately
     try { await db.listings.put(listing); } catch (e) {}
 
+    // Sync to Supabase so other users can see this listing (fire-and-forget)
+    syncListingToCloud(listing).catch(() => {});
+
     // On-chain: approve marketplace + list specimen (batched in one UserOp)
     const priceWei = BigInt(Math.round(parseFloat(priceEth) * 1e18));
     if (isShipping) {
@@ -452,6 +455,9 @@ export async function relayCancelListing(tokenId) {
   try {
     await db.localListings.delete(Number(tokenId));
     try { await db.listings.delete(Number(tokenId)); } catch (e) {}
+
+    // Deactivate in cloud so other users stop seeing it
+    deactivateListingInCloud(tokenId).catch(() => {});
 
     // On-chain: cancel the listing
     enqueueOnChain(buildCancelListingCall({ tokenId: Number(tokenId) }), `cancelListing(${tokenId})`);
@@ -555,6 +561,9 @@ export async function relayPurchaseSpecimen({
     // Remove the listing locally
     await db.localListings.delete(tokenId);
     try { await db.listings.delete(tokenId); } catch (e) {}
+
+    // Deactivate in cloud (listing sold)
+    deactivateListingInCloud(tokenId).catch(() => {});
 
     // Transfer specimen ownership locally if it exists
     const specimen = await db.specimens.get(tokenId);
