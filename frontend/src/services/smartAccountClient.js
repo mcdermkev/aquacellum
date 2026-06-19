@@ -13,7 +13,7 @@
  * The CDP Paymaster URL acts as BOTH bundler and paymaster endpoint.
  */
 
-import { createPublicClient, http } from "viem";
+import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { baseSepolia } from "viem/chains";
 import { toCoinbaseSmartAccount, createBundlerClient } from "viem/account-abstraction";
 import { privateKeyToAccount } from "viem/accounts";
@@ -177,11 +177,42 @@ const MARKETPLACE_ABI = [
 const CDP_BUNDLER_URL = import.meta.env.VITE_CDP_PAYMASTER_URL
   || "https://api.developer.coinbase.com/rpc/v1/base-sepolia/hCEY3T6LkDJr0WbfoOau4B5FHF9syGlb";
 
-// ─── Fallback sponsor key (used when no user signer available) ─────────────
+// ─── Fallback sponsor key (used ONLY when no user signer is available) ─────
 const SPONSOR_PRIVATE_KEY = "0x71fb36108056cdb142ed1610a548dc721bb0db106020caaa99e339c36867b8b6";
 
+// ─── User signer management ───────────────────────────────────────────────
+// The user's Privy embedded wallet EIP-1193 provider, set by AuthContext.
+let _userEip1193Provider = null;
+let _userAddress = null;
+
+/**
+ * Register the current user's EIP-1193 provider (from Privy embedded wallet).
+ * Called by AuthContext when the user's wallet becomes available.
+ * This ensures each user gets their OWN Coinbase Smart Wallet derived from
+ * their unique EOA — not a shared app-level wallet.
+ */
+export function setUserSigner(eip1193Provider, address) {
+  // Clear cached clients when switching users
+  if (_userAddress && _userAddress.toLowerCase() !== address.toLowerCase()) {
+    _cachedClients.clear();
+  }
+  _userEip1193Provider = eip1193Provider;
+  _userAddress = address;
+  console.log("[4337] User signer registered:", address.slice(0, 10) + "...");
+}
+
+/**
+ * Clear the registered user signer (on logout).
+ */
+export function clearUserSigner() {
+  _userEip1193Provider = null;
+  _userAddress = null;
+  _cachedClients.clear();
+  console.log("[4337] User signer cleared");
+}
+
 // ─── Singleton cache ───────────────────────────────────────────────────────
-let _cachedClients = new Map(); // key = signerAddress, value = { account, bundlerClient }
+let _cachedClients = new Map(); // key = ownerAddress, value = { account, bundlerClient }
 let _publicClient = null;
 
 function getPublicClient() {
@@ -195,22 +226,35 @@ function getPublicClient() {
 }
 
 /**
- * Get or create a smart account + bundler client for a given signer.
- * If no signer is provided, falls back to the sponsor key.
+ * Get or create a smart account + bundler client for the current user.
  * 
- * @param {Function|null} getSignerFn - async function that returns a viem LocalAccount or WalletClient
+ * If a user signer is registered (via setUserSigner), derives a unique
+ * Coinbase Smart Wallet from their Privy embedded wallet (EOA).
+ * Falls back to the sponsor key only when no user is logged in.
  */
-async function getClientsForSigner(privySignerAddress = null) {
-  const cacheKey = privySignerAddress || "sponsor";
+async function getClientsForSigner() {
+  const cacheKey = _userAddress || "sponsor";
   
   if (_cachedClients.has(cacheKey)) {
     return _cachedClients.get(cacheKey);
   }
 
   const client = getPublicClient();
+  let owner;
 
-  // Use sponsor key as the owner (deterministic smart wallet for the app)
-  const owner = privateKeyToAccount(SPONSOR_PRIVATE_KEY);
+  if (_userEip1193Provider && _userAddress) {
+    // Per-user smart wallet: derive from the user's Privy embedded wallet (EOA)
+    owner = createWalletClient({
+      account: _userAddress,
+      chain: baseSepolia,
+      transport: custom(_userEip1193Provider),
+    });
+    console.log("[4337] Deriving smart wallet from user EOA:", _userAddress.slice(0, 10) + "...");
+  } else {
+    // Fallback: sponsor key (only for pre-login or read-only operations)
+    owner = privateKeyToAccount(SPONSOR_PRIVATE_KEY);
+    console.warn("[4337] No user signer — using sponsor fallback (shared wallet)");
+  }
   
   const account = await toCoinbaseSmartAccount({
     client,
@@ -242,7 +286,7 @@ async function getClientsForSigner(privySignerAddress = null) {
   const result = { account, bundlerClient, publicClient: client };
   _cachedClients.set(cacheKey, result);
   
-  console.log("[4337] Smart wallet ready:", account.address);
+  console.log("[4337] Smart wallet ready:", account.address, _userAddress ? "(per-user)" : "(sponsor fallback)");
   return result;
 }
 
@@ -254,6 +298,10 @@ async function getClientsForSigner(privySignerAddress = null) {
  */
 export async function submitUserOperation(calls) {
   try {
+    if (!_userEip1193Provider) {
+      console.warn("[4337] submitUserOperation called without user signer — operations will use shared wallet");
+    }
+
     const { bundlerClient, account } = await getClientsForSigner();
 
     // Build the calls array for the bundler
@@ -295,11 +343,20 @@ export async function submitUserOperation(calls) {
 }
 
 /**
- * Get the smart wallet address.
+ * Get the smart wallet address for the current user.
+ * Returns the user's unique smart wallet if they're logged in,
+ * or the sponsor fallback address if not.
  */
 export async function getSmartWalletAddress() {
   const { account } = await getClientsForSigner();
   return account.address;
+}
+
+/**
+ * Check if a user signer is currently registered.
+ */
+export function hasUserSigner() {
+  return !!_userEip1193Provider && !!_userAddress;
 }
 
 // ─── Manager Call Builders ─────────────────────────────────────────────────

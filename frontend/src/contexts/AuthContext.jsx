@@ -22,6 +22,7 @@ import {
   unregisterSignerResolver,
 } from "../utils/smartAccount";
 import { authenticateWithWallet, clearReefSession } from "../services/supabaseClient";
+import { setUserSigner, clearUserSigner } from "../services/smartAccountClient";
 
 const AuthContext = createContext(null);
 
@@ -197,6 +198,38 @@ export function AuthProvider({ children }) {
     return () => unregisterSignerResolver();
   }, [loginMethod, wallets]);
 
+  // Register user's EIP-1193 provider with smartAccountClient for per-user smart wallets
+  useEffect(() => {
+    if (!account) {
+      clearUserSigner();
+      return;
+    }
+
+    // Privy path: use embedded wallet's EIP-1193 provider
+    if (wallets?.length) {
+      const embeddedWallet = wallets.find(w => w.walletClientType === "privy") || wallets[0];
+      if (embeddedWallet?.address) {
+        (async () => {
+          try {
+            const eip1193Provider = await embeddedWallet.getEthereumProvider();
+            setUserSigner(eip1193Provider, embeddedWallet.address);
+          } catch (err) {
+            console.warn("[AuthContext] Failed to register Privy user signer:", err);
+          }
+        })();
+        return () => clearUserSigner();
+      }
+    }
+
+    // MetaMask path: use window.ethereum as the EIP-1193 provider
+    if (loginMethod === "metamask" && window.ethereum) {
+      setUserSigner(window.ethereum, account);
+      return () => clearUserSigner();
+    }
+
+    return () => clearUserSigner();
+  }, [account, wallets, loginMethod]);
+
   // ─────────────────────────────────────────────────────────────────────────
   // METAMASK PATH: Direct injected wallet connection
   // ─────────────────────────────────────────────────────────────────────────
@@ -309,6 +342,7 @@ export function AuthProvider({ children }) {
     }
 
     unregisterSignerResolver();
+    clearUserSigner();
     setAccount(null);
     setLoginMethod(null);
     setWrongNetwork(false);

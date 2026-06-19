@@ -6,6 +6,33 @@ All notable changes to AquaDex are documented here.
 
 ## [Unreleased] — 2026-06-18
 
+### 🔐 Per-User Smart Wallet Derivation (Critical Bug Fix)
+
+Fixed a critical bug where **all users shared the same Coinbase Smart Wallet address** (`0x53d3c6F4F11b0B08bC1A5034bBCe7d46198b6851`). The smart wallet was being derived from a hardcoded sponsor private key instead of each user's Privy embedded wallet (EOA).
+
+#### Symptoms
+- All marketplace listings showed the same seller address regardless of who listed them.
+- New users saw the project owner's smart wallet as their own.
+- Listings created by other users didn't display correctly in filtered views.
+
+#### Root Cause
+`smartAccountClient.js` → `getClientsForSigner()` always used `SPONSOR_PRIVATE_KEY` as the owner in `toCoinbaseSmartAccount()`, ignoring the actual logged-in user.
+
+#### Fix
+- Each user now gets their **own unique Coinbase Smart Wallet** derived from their Privy embedded wallet's EIP-1193 provider.
+- Added `setUserSigner()` / `clearUserSigner()` lifecycle — called by `AuthContext` when the user's wallet becomes available or on logout.
+- Sponsor key is now **only** used as a fallback for pre-login / read-only operations.
+- Smart wallet address in `DataPortabilityWidget` now refreshes reactively when the user logs in.
+
+#### Files Changed
+| File | Change |
+|------|--------|
+| `frontend/src/services/smartAccountClient.js` | Rewrote wallet derivation to use per-user EIP-1193 provider; added `setUserSigner`, `clearUserSigner`, `hasUserSigner` exports |
+| `frontend/src/contexts/AuthContext.jsx` | Registers user signer on wallet availability; clears on disconnect |
+| `frontend/src/components/DataPortabilityWidget.jsx` | Smart wallet address effect now depends on `[account]` instead of `[]` |
+
+---
+
 ### 🏆 Unified Gamification System (Phases 1–5)
 
 Complete gamification overhaul — unified XP pool, zone leaderboards, loyalty rewards, and anti-gaming enforcement.

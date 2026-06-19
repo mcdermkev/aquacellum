@@ -30,14 +30,18 @@ export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
     }).catch(() => {});
   }, [account]);
 
-  // Load smart wallet address on mount
+  // Load smart wallet address when account changes (per-user smart wallet)
   useEffect(() => {
+    if (!account) {
+      setSmartWalletAddress(null);
+      return;
+    }
     setSmartWalletLoading(true);
     getSmartWalletAddress()
       .then(addr => setSmartWalletAddress(addr))
       .catch(err => console.warn("Smart wallet init failed:", err))
       .finally(() => setSmartWalletLoading(false));
-  }, []);
+  }, [account]);
 
   const handleExport = async () => {
     setIsExporting(true);
