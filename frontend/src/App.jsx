@@ -28,6 +28,9 @@ import { ZoneLeaderboardWidget } from "./components/ZoneLeaderboardWidget";
 import { RewardCreditsCard } from "./components/RewardCreditsCard";
 import { EchoCompanionWidget } from "./components/EchoCompanionWidget";
 import { EchoWhispers } from "./components/EchoWhispers";
+import { BetaBanner } from "./components/BetaBanner";
+import { TabErrorBoundary } from "./components/TabErrorBoundary";
+import { NetworkStatusBanner } from "./components/NetworkStatusBanner";
 
 
 // Lazy-load The Reef social layer (code-split for performance)
@@ -557,7 +560,9 @@ export default function App() {
 
   return (
     <>
+    <NetworkStatusBanner />
     <div style={{ padding: "2rem max(2rem, (100vw - 1200px) / 2)", minHeight: "100vh" }}>
+      <BetaBanner />
       {/* Premium Header Nav Bar — Redesigned v2 */}
       <header 
         className={`aquadex-header glass-card ${casualModeActive ? "aquadex-header--casual" : "aquadex-header--pro"}`}
@@ -870,7 +875,17 @@ export default function App() {
             willChange: "transform, opacity"
           }}
         >
-          {renderContent()}
+          <TabErrorBoundary name={activeTab} resetKey={activeTab}>
+            <Suspense fallback={
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem", padding: "2rem 0" }}>
+                {[1, 2, 3].map((i) => (
+                  <div key={i} style={{ height: "120px", borderRadius: "12px", background: "rgba(255, 255, 255, 0.03)", border: "1px solid rgba(255, 255, 255, 0.05)", animation: "pulse 1.5s ease-in-out infinite" }} />
+                ))}
+              </div>
+            }>
+              {renderContent()}
+            </Suspense>
+          </TabErrorBoundary>
         </div>
       </main>
 

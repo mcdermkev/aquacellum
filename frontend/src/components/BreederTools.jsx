@@ -36,6 +36,7 @@ export function BreederTools({
     <div>
       {/* Internal sub-navigation pills */}
       <div
+        className="breeder-sub-nav"
         style={{
           display: "flex",
           gap: "0.5rem",

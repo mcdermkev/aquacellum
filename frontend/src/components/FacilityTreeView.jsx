@@ -608,7 +608,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
             )}
 
             <form onSubmit={handleRegisterSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "1rem", alignItems: "end" }}>
+              <div className="form-grid-2col" style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "1rem", alignItems: "end" }}>
                 <div>
                   <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>
                     {casualModeActive ? "Tank Name" : "Unit Name"}
@@ -667,7 +667,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+              <div className="form-grid-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                 <div>
                   <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Water Type</label>
                   <select 
@@ -775,7 +775,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
 
               {!casualModeActive && (
                 <>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                  <div className="form-grid-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                     <div>
                       <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Containment Type</label>
                       <select 
@@ -801,7 +801,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                     </div>
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+                  <div className="form-grid-3col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
                     <div>
                       <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Facility</label>
                       <input 

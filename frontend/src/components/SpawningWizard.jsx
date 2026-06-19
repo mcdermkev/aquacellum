@@ -781,7 +781,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
               <h3 style={{ fontSize: "1.1rem", color: "var(--accent-blue)" }}>Step 3: Genetic Checklist</h3>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+              <div className="form-grid-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                 {PHENOTYPES.map(p => (
                   <div 
                     key={p.id} 

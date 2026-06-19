@@ -1606,7 +1606,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: activeTank ? "1.2fr 1fr" : "1fr", gap: "2rem", alignItems: "start" }}>
+      <div className="tank-detail-split-grid" style={{ display: "grid", gridTemplateColumns: activeTank ? "1.2fr 1fr" : "1fr", gap: "2rem", alignItems: "start" }}>
         {/* LEFT VIEW COMPONENT */}
         <div>
           {viewMode === "tree" ? (

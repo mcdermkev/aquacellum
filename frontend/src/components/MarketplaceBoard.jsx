@@ -530,7 +530,7 @@ export function MarketplaceBoard({
         </div>
 
         {/* Dashboard Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "1.5rem" }}>
+        <div className="marketplace-dashboard-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "1.5rem" }}>
           
           {/* Inventory Velocity Card */}
           <div className="glass-card" style={{

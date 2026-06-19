@@ -160,7 +160,7 @@ export function FoundersDashboard({ casualModeActive }) {
       </div>
 
       {/* Charts Row */}
-      <div style={styles.chartsRow}>
+      <div className="founders-charts-row" style={styles.chartsRow}>
         {/* User Growth Chart */}
         <div className="glass-card" style={styles.chartCard}>
           <div style={styles.chartHeader}>

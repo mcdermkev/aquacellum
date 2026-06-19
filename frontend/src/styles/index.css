@@ -913,11 +913,24 @@ h1, h2, h3, h4, h5, h6 {
 /* Touch Targets Polish for Mobile Devices */
 button, 
 select, 
+textarea,
 input[type="text"], 
 input[type="number"],
 input[type="range"],
-.location-chip {
+.location-chip,
+[role="button"],
+a[href] {
   min-height: 44px;
+}
+
+/* Small inline copy/action buttons — ensure tap-safe area even when visually compact */
+button[style*="0.2rem"],
+button[style*="0.3rem"] {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Ensure range inputs have proper height and centered tracking slider line */
@@ -1181,6 +1194,42 @@ input[type="range"] {
   /* Tank action buttons row — wrap properly */
   .tank-row-card {
     padding: 0.75rem !important;
+  }
+
+  /* Tank detail split grid — stack on mobile */
+  .tank-detail-split-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* Breeder Tools sub-nav — full-width, scrollable */
+  .breeder-sub-nav {
+    width: 100% !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .breeder-sub-nav::-webkit-scrollbar { display: none; }
+
+  /* Form grids — stack to single column on tablet */
+  .form-grid-2col,
+  .form-grid-3col {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Founders chart row — prevent overflow */
+  .founders-charts-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Spawning pair grid (already handled above 640px) */
+  .spawning-pair-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Marketplace seller dashboard — single column */
+  .marketplace-dashboard-grid {
+    grid-template-columns: 1fr !important;
   }
 }
 
@@ -6315,5 +6364,41 @@ input:checked + .broadcast-slider:before {
   .species-detail__stat {
     min-width: 80px;
     padding: 0.5rem 0.75rem;
+  }
+}
+
+/* =========================================================================
+   NETWORK STATUS BANNER ANIMATIONS
+   ========================================================================= */
+
+@keyframes slideDownBanner {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDownToast {
+  from {
+    transform: translateX(-50%) translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOutToast {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    visibility: hidden;
   }
 }
