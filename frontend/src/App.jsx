@@ -148,13 +148,37 @@ export default function App() {
       console.warn("Aquadex: Failed to initialize event listeners for cache invalidation:", err);
     }
   }, [account, queryClient]);
+
+  // Resolve smart wallet address for founder check (smart wallet differs from EOA)
+  const [smartWalletForFounderCheck, setSmartWalletForFounderCheck] = useState(null);
+  useEffect(() => {
+    if (!account) { setSmartWalletForFounderCheck(null); return; }
+    let cancelled = false;
+    const resolve = async () => {
+      try {
+        const { getSmartWalletAddress, hasUserSigner } = await import("./services/smartAccountClient");
+        // Wait briefly for signer to be registered
+        if (!hasUserSigner()) await new Promise(r => setTimeout(r, 1500));
+        const addr = await getSmartWalletAddress();
+        if (!cancelled) setSmartWalletForFounderCheck(addr);
+      } catch (err) {
+        console.warn("[App] Smart wallet resolve for founder check failed:", err);
+      }
+    };
+    resolve();
+    return () => { cancelled = true; };
+  }, [account]);
+
   const isFounder = (() => {
     if (!account) return false;
     const addr = account.toLowerCase();
     if (FOUNDER_WALLETS.includes(addr)) return true;
-    return FOUNDER_WALLET_PATTERNS.some(
+    if (FOUNDER_WALLET_PATTERNS.some(
       (p) => addr.startsWith(p.prefix.toLowerCase()) && addr.endsWith(p.suffix.toLowerCase())
-    );
+    )) return true;
+    // Also check the smart wallet address (derived per-user, different from EOA)
+    if (smartWalletForFounderCheck && FOUNDER_WALLETS.includes(smartWalletForFounderCheck.toLowerCase())) return true;
+    return false;
   })();
 
   const [activeTab, setActiveTab] = useState(() => {
