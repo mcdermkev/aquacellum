@@ -40,13 +40,15 @@ const ReefFeed = lazy(() =>
 // `account` from useAuth() is the Privy embedded wallet (EOA), NOT the smart wallet.
 // Add your EOA address here (check browser console for the logged value).
 const FOUNDER_WALLETS = [
-  "0x53d3c6f4f11b0b08bc1a5034bbce7d46198b6851", // Smart wallet (for future use)
+  "0x53d3c6f4f11b0b08bc1a5034bbce7d46198b6851", // Kevin — Smart wallet
+  "0x41e562ee88825ad8d79b48311a30742ac276c9eb", // Second founder — Smart wallet
 ];
 
 // Also match by prefix+suffix for partial-match fallback (truncated addresses)
 const FOUNDER_WALLET_PATTERNS = [
   { prefix: "0x53d3c6", suffix: "6851" },
   { prefix: "0x4a85", suffix: "a6d3" },  // EOA (Privy embedded wallet)
+  { prefix: "0x41e562", suffix: "c9eb" }, // Second founder
 ];
 
 
