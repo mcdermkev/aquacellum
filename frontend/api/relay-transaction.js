@@ -5,6 +5,9 @@
  * a single funded wallet (the deployer key). Beta testers never see
  * MetaMask or pay gas — this endpoint handles all on-chain writes.
  * 
+ * AUTHENTICATION: Requires a valid Privy access token in the Authorization
+ * header. Unauthenticated requests are rejected with 401.
+ * 
  * The sponsor wallet acts as custodian for all on-chain state during beta.
  * Real user ownership is tracked locally (Dexie) and in Supabase cloud.
  * 
@@ -15,6 +18,7 @@
  */
 
 import { ethers } from "ethers";
+import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
 
 const MANAGER_ABI = [
   // Tank Registration
@@ -38,7 +42,7 @@ export default async function handler(req, res) {
   // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") {
     return res.status(200).end();
@@ -46,6 +50,12 @@ export default async function handler(req, res) {
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  // ─── Authentication: Verify Privy access token ───────────────────────────
+  const auth = await verifyPrivyToken(req);
+  if (!auth.verified) {
+    return res.status(401).json({ error: "Unauthorized", message: auth.error });
   }
 
   const { action, params } = req.body;

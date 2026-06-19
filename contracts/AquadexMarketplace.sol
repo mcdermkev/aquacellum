@@ -115,6 +115,7 @@ contract AquadexMarketplace is IERC721Receiver, AccessControl {
     mapping(uint256 => LiveEvent) public liveEvents;
 
     bytes32 public constant COUNCIL_MEMBER_ROLE = keccak256("COUNCIL_MEMBER_ROLE");
+    bytes32 public constant FIAT_RELAYER_ROLE = keccak256("FIAT_RELAYER_ROLE");
     uint256 public constant TOTAL_FEE_BPS = 400; // 4.0% fee
     uint256 private constant MAX_BATCH_CHECKOUT_SIZE = 6;
 
@@ -131,7 +132,33 @@ contract AquadexMarketplace is IERC721Receiver, AccessControl {
     mapping(uint256 => ShippingEscrow) public shippingEscrows;
     uint256 public constant SHIPPING_SAFETY_WINDOW = 3 days;
 
+    // Fiat settlement tracking: Stripe payment ID → on-chain record
+    mapping(bytes32 => bool) public fiatSettlements;
+
     // --- Events ---
+
+    event FiatPurchaseSettled(
+        uint256 indexed tokenId,
+        address indexed seller,
+        address indexed buyer,
+        uint256 priceCentsUSD,
+        bytes32 stripePaymentHash
+    );
+    event FiatBatchSettled(
+        uint256 indexed listingId,
+        address indexed seller,
+        address indexed buyer,
+        uint256 quantity,
+        uint256 totalCentsUSD,
+        bytes32 stripePaymentHash
+    );
+    event FiatShippingSettled(
+        uint256 indexed tokenId,
+        address indexed seller,
+        address indexed buyer,
+        uint256 priceCentsUSD,
+        bytes32 stripePaymentHash
+    );
 
     event SpecimenListed(uint256 indexed tokenId, address indexed seller, uint256 price);
     event ListingCancelled(uint256 indexed tokenId, address indexed seller);
@@ -219,6 +246,9 @@ contract AquadexMarketplace is IERC721Receiver, AccessControl {
         _grantRole(COUNCIL_MEMBER_ROLE, _kevin);
         _grantRole(COUNCIL_MEMBER_ROLE, _steve);
         _grantRole(COUNCIL_MEMBER_ROLE, _coFounder);
+
+        // Fiat relayer role granted to admins initially; reassign to backend relayer address post-deploy
+        _grantRole(FIAT_RELAYER_ROLE, _kevin);
 
         emit TreasuryUpdated(address(0), _ecosystemTreasury);
     }
@@ -972,5 +1002,226 @@ contract AquadexMarketplace is IERC721Receiver, AccessControl {
         emit SpecimenPurchased(tokenId, msg.sender, buyer, 0, 0);
         emit XPEarned(buyer, 200, "Cash Purchase Specimen (Event Double XP)");
         emit XPEarned(msg.sender, 300, "Cash Sale Settled (Event Double XP)");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // FIAT SETTLEMENT FUNCTIONS (Stripe Connect)
+    //
+    // These functions are called by the backend relayer AFTER Stripe has
+    // confirmed payment. No ETH moves on-chain — money flows through Stripe
+    // (fiat rails), ownership flows through the blockchain (provenance rails).
+    //
+    // The stripePaymentHash is keccak256(abi.encodePacked(stripePaymentIntentId))
+    // used for idempotency and on-chain audit trail linking to the fiat receipt.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * @dev Settles a single specimen purchase paid via Stripe. Transfers the NFT
+     *      from marketplace escrow to the buyer. No ETH is exchanged.
+     *      Can only be called by the FIAT_RELAYER_ROLE after Stripe payment confirmation.
+     *
+     * @param tokenId The listed specimen token ID (must be in escrow).
+     * @param buyer The buyer's on-chain wallet (Coinbase Smart Wallet).
+     * @param priceCentsUSD The fiat price in USD cents (for on-chain audit record).
+     * @param stripePaymentHash keccak256 of the Stripe PaymentIntent ID (idempotency key).
+     */
+    function purchaseSpecimenFiat(
+        uint256 tokenId,
+        address buyer,
+        uint256 priceCentsUSD,
+        bytes32 stripePaymentHash
+    ) external onlyRole(FIAT_RELAYER_ROLE) {
+        if (buyer == address(0)) revert InvalidAddress();
+        if (fiatSettlements[stripePaymentHash]) revert EscrowAlreadyResolved();
+
+        Listing storage listing = listings[tokenId];
+        if (!listing.active) revert ListingNotActive();
+
+        address seller = listing.seller;
+
+        // Effects: mark settlement and deactivate listing (CEI)
+        fiatSettlements[stripePaymentHash] = true;
+        listing.active = false;
+        delete listings[tokenId];
+
+        // Interaction: transfer NFT to buyer
+        aquadexManager.safeTransferFrom(address(this), buyer, tokenId);
+
+        emit FiatPurchaseSettled(tokenId, seller, buyer, priceCentsUSD, stripePaymentHash);
+        emit XPEarned(buyer, 100, "Fiat Purchase Specimen");
+        emit XPEarned(seller, 150, "Fiat Sale Settled");
+    }
+
+    /**
+     * @dev Settles a shipping-enabled specimen purchase paid via Stripe.
+     *      Creates a ShippingEscrow record (for tracking/dispatch flow) but no ETH is locked.
+     *      The seller still needs to dispatch + buyer confirms receipt, same as the crypto flow.
+     *
+     * @param tokenId The listed specimen token ID (must be a shipping listing in escrow).
+     * @param buyer The buyer's on-chain wallet.
+     * @param priceCentsUSD The fiat price in USD cents.
+     * @param stripePaymentHash keccak256 of the Stripe PaymentIntent ID.
+     */
+    function purchaseShippingFiat(
+        uint256 tokenId,
+        address buyer,
+        uint256 priceCentsUSD,
+        bytes32 stripePaymentHash
+    ) external onlyRole(FIAT_RELAYER_ROLE) {
+        if (buyer == address(0)) revert InvalidAddress();
+        if (fiatSettlements[stripePaymentHash]) revert EscrowAlreadyResolved();
+
+        Listing storage listing = listings[tokenId];
+        if (!listing.active) revert ListingNotActive();
+        if (!listing.isShipping) revert NotShippingListing();
+
+        address seller = listing.seller;
+        uint256 price = listing.price;
+        uint256 shippingFee = listing.shippingFee;
+
+        // Effects
+        fiatSettlements[stripePaymentHash] = true;
+        listing.active = false;
+        delete listings[tokenId];
+
+        // Create shipping escrow for tracking (no ETH locked — fiat held by Stripe)
+        shippingEscrows[tokenId] = ShippingEscrow({
+            tokenId: tokenId,
+            buyer: buyer,
+            seller: seller,
+            price: price,
+            shippingFee: shippingFee,
+            amountLocked: 0, // Fiat-settled: no on-chain ETH
+            trackingNumber: "",
+            dispatchTimestamp: 0,
+            status: ShippingStatus.LOCKED
+        });
+
+        emit FiatShippingSettled(tokenId, seller, buyer, priceCentsUSD, stripePaymentHash);
+        emit XPEarned(buyer, 100, "Fiat Purchase Shipping Specimen");
+    }
+
+    /**
+     * @dev Settles a batch (juvenile) purchase paid via Stripe. Decrements the batch
+     *      listing quantity and records the purchase. No ETH is exchanged on-chain.
+     *
+     * @param listingId The batch listing ID.
+     * @param quantity Number of juveniles purchased.
+     * @param buyer The buyer's on-chain wallet.
+     * @param priceCentsUSD The total fiat price in USD cents.
+     * @param stripePaymentHash keccak256 of the Stripe PaymentIntent ID.
+     */
+    function purchaseBatchFiat(
+        uint256 listingId,
+        uint256 quantity,
+        address buyer,
+        uint256 priceCentsUSD,
+        bytes32 stripePaymentHash
+    ) external onlyRole(FIAT_RELAYER_ROLE) {
+        if (buyer == address(0)) revert InvalidAddress();
+        if (quantity == 0) revert QuantityZero();
+        if (fiatSettlements[stripePaymentHash]) revert EscrowAlreadyResolved();
+
+        BatchListing storage listing = batchListings[listingId];
+        if (!listing.isActive) revert ListingNotActive();
+        if (quantity > listing.quantity) revert QuantityExceedsAvailable();
+
+        // Effects
+        fiatSettlements[stripePaymentHash] = true;
+        listing.quantity -= quantity;
+        if (listing.quantity == 0) {
+            listing.isActive = false;
+        }
+
+        _nextPurchaseId++;
+        uint256 purchaseId = _nextPurchaseId;
+
+        escrowPurchases[purchaseId] = EscrowPurchase({
+            purchaseId: purchaseId,
+            listingId: listingId,
+            buyer: buyer,
+            quantity: quantity,
+            amountLocked: 0, // Fiat-settled: no on-chain ETH
+            commitmentHash: stripePaymentHash, // Reuse field for Stripe audit link
+            state: EscrowState.RELEASED, // Already paid via Stripe — no escrow needed
+            fulfillmentType: 0
+        });
+
+        emit FiatBatchSettled(listingId, listing.seller, buyer, quantity, priceCentsUSD, stripePaymentHash);
+        emit XPEarned(buyer, 100, "Fiat Purchase Batch");
+        emit XPEarned(listing.seller, 150, "Fiat Batch Sale Settled");
+    }
+
+    /**
+     * @dev Settles multiple specimen purchases from the same seller, paid via Stripe.
+     *      Transfers all NFTs from marketplace escrow to the buyer in a single tx.
+     *
+     * @param tokenIds Array of specimen token IDs to purchase (max 6).
+     * @param buyer The buyer's on-chain wallet.
+     * @param priceCentsUSD The total fiat price in USD cents.
+     * @param stripePaymentHash keccak256 of the Stripe PaymentIntent ID.
+     */
+    function purchaseMultipleFiat(
+        uint256[] calldata tokenIds,
+        address buyer,
+        uint256 priceCentsUSD,
+        bytes32 stripePaymentHash
+    ) external onlyRole(FIAT_RELAYER_ROLE) {
+        if (buyer == address(0)) revert InvalidAddress();
+        if (tokenIds.length == 0) revert EmptyTokenList();
+        if (tokenIds.length > MAX_BATCH_CHECKOUT_SIZE) revert MaxBatchExceeded();
+        if (fiatSettlements[stripePaymentHash]) revert EscrowAlreadyResolved();
+
+        fiatSettlements[stripePaymentHash] = true;
+
+        address seller = listings[tokenIds[0]].seller;
+
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            Listing storage listing = listings[tokenId];
+
+            if (!listing.active) revert ListingNotActive();
+            if (listing.seller != seller) revert SellerMismatch();
+
+            listing.active = false;
+            delete listings[tokenId];
+
+            aquadexManager.safeTransferFrom(address(this), buyer, tokenId);
+
+            emit FiatPurchaseSettled(tokenId, seller, buyer, priceCentsUSD / tokenIds.length, stripePaymentHash);
+            emit XPEarned(buyer, 100, "Fiat Purchase Specimen");
+            emit XPEarned(seller, 150, "Fiat Sale Settled");
+        }
+    }
+
+    /**
+     * @dev Releases a fiat-settled shipping escrow. Called after buyer confirms receipt.
+     *      Since funds are held by Stripe (not on-chain), this only transfers the NFT.
+     *      Stripe payout to seller is triggered separately via webhook.
+     */
+    function releaseFiatShippingEscrow(uint256 tokenId) external {
+        ShippingEscrow storage escrow = shippingEscrows[tokenId];
+        if (escrow.status != ShippingStatus.DISPATCHED) revert EscrowNotDispatched();
+        if (escrow.amountLocked != 0) revert Unauthorized(); // Only for fiat-settled escrows
+
+        // Authorization: buyer at any time, seller after safety window
+        if (msg.sender == escrow.buyer) {
+            // Buyer confirms receipt
+        } else if (msg.sender == escrow.seller) {
+            if (block.timestamp < escrow.dispatchTimestamp + SHIPPING_SAFETY_WINDOW) revert SafetyWindowNotElapsed();
+        } else if (hasRole(FIAT_RELAYER_ROLE, msg.sender)) {
+            // Relayer can release on behalf of buyer (after Stripe webhook)
+        } else {
+            revert Unauthorized();
+        }
+
+        escrow.status = ShippingStatus.RELEASED;
+
+        // Transfer specimen to buyer
+        aquadexManager.safeTransferFrom(address(this), escrow.buyer, tokenId);
+
+        emit ShippingEscrowReleased(tokenId, escrow.seller, escrow.buyer, 0);
+        emit XPEarned(escrow.buyer, 100, "Fiat Shipping Confirmed");
+        emit XPEarned(escrow.seller, 150, "Fiat Shipping Sale Settled");
     }
 }

@@ -4,6 +4,81 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [Unreleased] — 2026-06-19
+
+### 💳 Stripe Sandbox Integration & Fiat Payment Pipeline
+
+Wired up a new Stripe sandbox account for end-to-end fiat purchases. Configured webhook events, environment variables, and verified the on-chain settlement flow.
+
+#### What Was Done
+- Configured new Stripe test keys (`pk_test_51Tk2WQ...` / `sk_test_51Tk2WQ...`) across local `.env` and Vercel environment variables.
+- Set up webhook endpoint at `https://aquacellum.com/api/stripe-webhook` listening for `payment_intent.succeeded`, `charge.dispute.created`, and `account.updated`.
+- Added `stripe` package (v17.7.0) to frontend dependencies for serverless function use.
+- Shelved 3 livestream API routes (`tank-cam-setup`, `tank-cams`, `tide-stream-setup`) to `api/_shelved/` to stay under Vercel Hobby's 12-function limit.
+- Added `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` to Vercel for server-side API routes.
+
+#### Files Changed
+| File | Change |
+|------|--------|
+| `frontend/.env` | Updated Stripe keys, added server-side Supabase vars, updated marketplace address |
+| `frontend/api/stripe-webhook.js` | Hardened module initialization (try-catch Stripe SDK, flexible body parsing) |
+| `frontend/api/_shelved/` | Moved tank-cam-setup.js, tank-cams.js, tide-stream-setup.js |
+| `frontend/package.json` | Added `stripe@17.7.0` dependency |
+
+---
+
+### 🔗 AquadexMarketplace v2 Deployment (Fiat Settlement)
+
+Redeployed the marketplace contract with `purchaseSpecimenFiat`, `purchaseShippingFiat`, `purchaseBatchFiat`, and `purchaseMultipleFiat` functions. The old contract lacked these — they were written after the May 29 deployment.
+
+#### New Contract
+- **Address**: `0x9E9ca82766ce0B36c88aF1eDc093d4e01826BBBf` (Base Sepolia)
+- **Old (deprecated)**: `0x16168B514144e0380610b78d904a4de51ba03Ca3`
+- **Verified**: `purchaseSpecimenFiat()` successfully transferred Token #5 from marketplace escrow to buyer, deactivated listing, and recorded the Stripe payment hash.
+- **TX**: [0x2317bb58...](https://sepolia.basescan.org/tx/0x2317bb5892c3485335b24c4aa9fe3bf2789de8cce9e7fcab8aad8a9d697b349c)
+
+#### Setup Completed
+- `FIAT_RELAYER_ROLE` granted to deployer wallet.
+- `setApprovalForAll` called on AquadexManager for new marketplace.
+- Token #5 recovered from old marketplace escrow and re-listed.
+- `MARKETPLACE_ADDRESS` and `VITE_MARKETPLACE_ADDRESS` updated on Vercel.
+
+#### Files Changed
+| File | Change |
+|------|--------|
+| `deployed-addresses-sepolia.json` | Updated to new marketplace address |
+| `scripts/deploy-marketplace-v2.js` | New deployment script (Hardhat v3) |
+| `scripts/setup-new-marketplace.js` | Post-deploy role/listing setup |
+| `scripts/settle-fiat-direct.js` | Direct on-chain E2E test script |
+| `scripts/grant-relayer-role.js` | FIAT_RELAYER_ROLE grant utility |
+| `scripts/preflight-stripe-test.js` | Pre-flight checklist for Stripe E2E |
+| `scripts/simulate-webhook.js` | Webhook simulation for testing |
+
+---
+
+### 📱 Cross-Device XP Sync
+
+Fixed XP not syncing between desktop and mobile. XP was stored locally in IndexedDB (Dexie) per device with no cloud persistence for the `userProfile` table.
+
+#### Root Cause
+- `cloudSync.js` synced tanks, specimens, and action logs — but explicitly skipped `userProfile` and `breederCompanion`.
+- Desktop accumulated 1581 XP locally; mobile started fresh at 0.
+
+#### Fix
+- Created `user_xp_profiles` table in Supabase (wallet_address PK, total_xp, current_tier, streak_days, etc.).
+- Added `syncXpProfileToCloud()` — fire-and-forget upsert on every XP award.
+- Added `pullXpProfileFromCloud()` — called on login, uses "highest wins" merge (cloud XP never decreases local).
+- Wired into `pullCloudDataForWallet()` so XP restores automatically on any new device.
+- Wired into `useXPSync` hook so every XP award pushes to cloud immediately.
+
+#### Files Changed
+| File | Change |
+|------|--------|
+| `frontend/src/services/cloudSync.js` | Added `syncXpProfileToCloud()`, `pullXpProfileFromCloud()`, XP pull in login flow |
+| `frontend/src/hooks/useXPSync.js` | Added cloud sync call after XP transaction completes |
+
+---
+
 ## [Unreleased] — 2026-06-18
 
 ### 🔐 Per-User Smart Wallet Derivation (Critical Bug Fix)

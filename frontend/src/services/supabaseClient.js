@@ -28,8 +28,28 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 }
 
 /**
+ * Mutable wallet address for RLS header injection.
+ * Updated when the wallet connects/disconnects.
+ */
+let _walletForHeader = null;
+
+/**
+ * Custom fetch wrapper that injects the x-wallet-address header
+ * into every Supabase request for RLS enforcement.
+ */
+function supabaseFetchWithWallet(url, options = {}) {
+  if (_walletForHeader) {
+    options.headers = {
+      ...options.headers,
+      "x-wallet-address": _walletForHeader,
+    };
+  }
+  return fetch(url, options);
+}
+
+/**
  * The base Supabase client (anon key, no auth session initially).
- * Used for public reads before the user authenticates.
+ * Uses a custom fetch wrapper to inject wallet address headers for RLS.
  */
 export const supabase = createClient(
   SUPABASE_URL || "https://placeholder.supabase.co",
@@ -45,8 +65,19 @@ export const supabase = createClient(
         eventsPerSecond: 10,
       },
     },
+    global: {
+      fetch: supabaseFetchWithWallet,
+    },
   }
 );
+
+/**
+ * Set the wallet address header for RLS enforcement.
+ * Called when a wallet connects; clears on disconnect.
+ */
+function setWalletHeader(walletAddress) {
+  _walletForHeader = walletAddress ? walletAddress.toLowerCase() : null;
+}
 
 /**
  * Track whether we have an active authenticated session.
@@ -84,8 +115,12 @@ export async function authenticateWithWallet(walletAddress, privyToken = null) {
   if (!isSupabaseConfigured()) {
     _currentWallet = walletAddress;
     _isAuthenticated = false;
+    setWalletHeader(walletAddress);
     return { success: false, error: "Supabase not configured" };
   }
+
+  // Always set the wallet header for RLS (works even in anon mode)
+  setWalletHeader(walletAddress);
 
   try {
     // Attempt to mint a session JWT via Edge Function
@@ -141,6 +176,7 @@ export async function authenticateWithWallet(walletAddress, privyToken = null) {
 export async function clearReefSession() {
   _currentWallet = null;
   _isAuthenticated = false;
+  setWalletHeader(null);
   try {
     await supabase.auth.signOut();
   } catch (err) {

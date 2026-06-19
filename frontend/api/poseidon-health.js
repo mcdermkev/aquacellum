@@ -1,7 +1,8 @@
 // Vercel serverless function: frontend/api/poseidon-health.js
-// Health check for Poseidon AI Gateway — reveals configuration status without exposing secrets.
+// Health check for Poseidon AI Gateway + Relayer wallet — reveals configuration status without exposing secrets.
 
 import { isVertexConfigured, vertexGenerateContent } from './_lib/vertexClient.js';
+import { ethers } from "ethers";
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -72,6 +73,50 @@ export default async function handler(req, res) {
     }
   }
 
+  // ─── Relayer Wallet Balance Check ───────────────────────────────────────────
+  let relayerHealth = null;
+  const RELAYER_PRIVATE_KEY = process.env.RELAYER_PRIVATE_KEY;
+  const RPC_URL = process.env.RPC_URL || "https://sepolia.base.org";
+
+  if (RELAYER_PRIVATE_KEY) {
+    try {
+      const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+      const wallet = new ethers.Wallet(RELAYER_PRIVATE_KEY, provider);
+      const balance = await provider.getBalance(wallet.address);
+      const balanceEth = parseFloat(ethers.utils.formatEther(balance));
+
+      // Threshold: warn below 0.01 ETH, critical below 0.002 ETH
+      const WARNING_THRESHOLD = 0.01;
+      const CRITICAL_THRESHOLD = 0.002;
+
+      let status = "healthy";
+      if (balanceEth < CRITICAL_THRESHOLD) {
+        status = "critical";
+      } else if (balanceEth < WARNING_THRESHOLD) {
+        status = "low";
+      }
+
+      relayerHealth = {
+        status,
+        address: wallet.address,
+        balanceEth: balanceEth.toFixed(6),
+        network: "Base Sepolia (84532)",
+        warningThreshold: `${WARNING_THRESHOLD} ETH`,
+        criticalThreshold: `${CRITICAL_THRESHOLD} ETH`,
+      };
+    } catch (e) {
+      relayerHealth = {
+        status: "error",
+        error: e.message,
+      };
+    }
+  } else {
+    relayerHealth = {
+      status: "not_configured",
+      error: "RELAYER_PRIVATE_KEY not set",
+    };
+  }
+
   return res.status(200).json({
     status: configured ? 'configured' : 'not_configured',
     checks: {
@@ -87,6 +132,7 @@ export default async function handler(req, res) {
       isVertexConfigured: configured,
     },
     vertexTest,
+    relayer: relayerHealth,
     timestamp: new Date().toISOString(),
   });
 }

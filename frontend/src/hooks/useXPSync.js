@@ -4,6 +4,7 @@ import { deriveTierFromXp } from "../db";
 import { TIER_LADDER } from "../utils/xp";
 import { isSupabaseConfigured } from "../services/supabaseClient";
 import { logXpEvent } from "../services/zoneLeaderboardApi";
+import { syncXpProfileToCloud } from "../services/cloudSync";
 
 /**
  * useXPSync — Unified XP Sync Hook
@@ -146,6 +147,15 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated) {
 
         await db.breederCompanion.put(companion);
       });
+
+      // Sync XP to cloud for cross-device persistence (fire-and-forget)
+      syncXpProfileToCloud(user, {
+        totalXp,
+        currentTier: deriveTierFromXp(totalXp),
+        streakDays: (await db.userProfile.get(user))?.streakDays || 0,
+        lastActiveDate: (await db.userProfile.get(user))?.lastActiveDate || null,
+        monthlyXp: (await db.userProfile.get(user))?.monthlyXp || 0,
+      }).catch(() => {});
 
       // Notify consumers
       if (onXpUpdated) {

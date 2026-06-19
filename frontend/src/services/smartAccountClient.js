@@ -16,7 +16,7 @@
 import { createPublicClient, http } from "viem";
 import { baseSepolia } from "viem/chains";
 import { toCoinbaseSmartAccount, createBundlerClient } from "viem/account-abstraction";
-import { privateKeyToAccount, toAccount } from "viem/accounts";
+import { toAccount } from "viem/accounts";
 
 // Contract addresses
 const MANAGER_ADDRESS = "0x351ca8f34D94F29F6f865Afa419A636324473DeF";
@@ -174,11 +174,15 @@ const MARKETPLACE_ABI = [
 ];
 
 // ─── CDP Paymaster / Bundler URL ───────────────────────────────────────────
-const CDP_BUNDLER_URL = import.meta.env.VITE_CDP_PAYMASTER_URL
-  || "https://api.developer.coinbase.com/rpc/v1/base-sepolia/hCEY3T6LkDJr0WbfoOau4B5FHF9syGlb";
+const CDP_BUNDLER_URL = import.meta.env.VITE_CDP_PAYMASTER_URL;
 
-// ─── Fallback sponsor key (used ONLY when no user signer is available) ─────
-const SPONSOR_PRIVATE_KEY = "0x71fb36108056cdb142ed1610a548dc721bb0db106020caaa99e339c36867b8b6";
+if (!CDP_BUNDLER_URL) {
+  console.warn("[4337] VITE_CDP_PAYMASTER_URL not configured — on-chain operations will fail");
+}
+
+// ─── No fallback key — users must be logged in for on-chain writes ──────────
+// Previously a hardcoded sponsor key was here. Removed for security:
+// exposing a private key in the browser bundle allows anyone to drain funds.
 
 // ─── User signer management ───────────────────────────────────────────────
 // The user's Privy embedded wallet EIP-1193 provider, set by AuthContext.
@@ -233,8 +237,12 @@ function getPublicClient() {
  * Falls back to the sponsor key only when no user is logged in.
  */
 async function getClientsForSigner() {
-  const cacheKey = _userAddress || "sponsor";
+  const cacheKey = _userAddress;
   
+  if (!cacheKey) {
+    throw new Error("User not logged in — on-chain operations require authentication");
+  }
+
   if (_cachedClients.has(cacheKey)) {
     return _cachedClients.get(cacheKey);
   }
@@ -277,9 +285,9 @@ async function getClientsForSigner() {
     });
     console.log("[4337] Deriving smart wallet from user EOA:", _userAddress.slice(0, 10) + "...");
   } else {
-    // Fallback: sponsor key (only for pre-login or read-only operations)
-    owner = privateKeyToAccount(SPONSOR_PRIVATE_KEY);
-    console.warn("[4337] No user signer — using sponsor fallback (shared wallet)");
+    // No user signer available — cannot derive a smart wallet without a key.
+    // Reject early rather than exposing a sponsor key in the browser bundle.
+    throw new Error("User not logged in — on-chain operations require authentication");
   }
   
   const account = await toCoinbaseSmartAccount({
@@ -312,7 +320,7 @@ async function getClientsForSigner() {
   const result = { account, bundlerClient, publicClient: client };
   _cachedClients.set(cacheKey, result);
   
-  console.log("[4337] Smart wallet ready:", account.address, _userAddress ? "(per-user)" : "(sponsor fallback)");
+  console.log("[4337] Smart wallet ready:", account.address, "(per-user)");
   return result;
 }
 
@@ -325,7 +333,8 @@ async function getClientsForSigner() {
 export async function submitUserOperation(calls) {
   try {
     if (!_userEip1193Provider) {
-      console.warn("[4337] submitUserOperation called without user signer — operations will use shared wallet");
+      console.warn("[4337] submitUserOperation called without user signer — skipping on-chain write");
+      return { success: false, error: "User not logged in — on-chain write skipped" };
     }
 
     const { bundlerClient, account } = await getClientsForSigner();
@@ -371,9 +380,12 @@ export async function submitUserOperation(calls) {
 /**
  * Get the smart wallet address for the current user.
  * Returns the user's unique smart wallet if they're logged in,
- * or the sponsor fallback address if not.
+ * or null if no user is authenticated.
  */
 export async function getSmartWalletAddress() {
+  if (!_userEip1193Provider || !_userAddress) {
+    return null;
+  }
   const { account } = await getClientsForSigner();
   return account.address;
 }
