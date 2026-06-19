@@ -13,10 +13,10 @@
  * The CDP Paymaster URL acts as BOTH bundler and paymaster endpoint.
  */
 
-import { createPublicClient, createWalletClient, custom, http } from "viem";
+import { createPublicClient, http } from "viem";
 import { baseSepolia } from "viem/chains";
 import { toCoinbaseSmartAccount, createBundlerClient } from "viem/account-abstraction";
-import { privateKeyToAccount } from "viem/accounts";
+import { privateKeyToAccount, toAccount } from "viem/accounts";
 
 // Contract addresses
 const MANAGER_ADDRESS = "0x351ca8f34D94F29F6f865Afa419A636324473DeF";
@@ -243,11 +243,37 @@ async function getClientsForSigner() {
   let owner;
 
   if (_userEip1193Provider && _userAddress) {
-    // Per-user smart wallet: derive from the user's Privy embedded wallet (EOA)
-    owner = createWalletClient({
-      account: _userAddress,
-      chain: baseSepolia,
-      transport: custom(_userEip1193Provider),
+    // Per-user smart wallet: create a custom local account that delegates
+    // signing to the user's Privy embedded wallet via their EIP-1193 provider.
+    // This gives toCoinbaseSmartAccount a `type: 'local'` owner it can use
+    // for both address derivation AND UserOperation signing.
+    owner = toAccount({
+      address: _userAddress,
+      async signMessage({ message }) {
+        const msg = typeof message === "string" ? message : message.raw;
+        return await _userEip1193Provider.request({
+          method: "personal_sign",
+          params: [msg, _userAddress],
+        });
+      },
+      async signTypedData({ domain, types, primaryType, message }) {
+        const typedData = JSON.stringify({
+          types: { EIP712Domain: [], ...types },
+          domain: domain || {},
+          primaryType,
+          message,
+        });
+        return await _userEip1193Provider.request({
+          method: "eth_signTypedData_v4",
+          params: [_userAddress, typedData],
+        });
+      },
+      async signTransaction(tx) {
+        return await _userEip1193Provider.request({
+          method: "eth_signTransaction",
+          params: [tx],
+        });
+      },
     });
     console.log("[4337] Deriving smart wallet from user EOA:", _userAddress.slice(0, 10) + "...");
   } else {

@@ -5,7 +5,7 @@ import { generateFacilitySummary } from "../utils/pdfExport";
 import { useAuth } from "../contexts/AuthContext";
 import { ONBOARDING_CACHE_KEY } from "../hooks/useOnboardingGate";
 import { setOnboardingComplete } from "../services/reefApi";
-import { getSmartWalletAddress } from "../services/smartAccountClient";
+import { getSmartWalletAddress, hasUserSigner } from "../services/smartAccountClient";
 import { ZoneAssignmentFlow } from "./ZoneAssignmentFlow";
 
 export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
@@ -37,10 +37,24 @@ export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
       return;
     }
     setSmartWalletLoading(true);
-    getSmartWalletAddress()
-      .then(addr => setSmartWalletAddress(addr))
-      .catch(err => console.warn("Smart wallet init failed:", err))
-      .finally(() => setSmartWalletLoading(false));
+
+    // The signer registration is async, so we retry briefly if it's not ready yet
+    let cancelled = false;
+    const attempt = (retries = 0) => {
+      getSmartWalletAddress()
+        .then(addr => { if (!cancelled) setSmartWalletAddress(addr); })
+        .catch(err => {
+          if (!cancelled && retries < 3 && !hasUserSigner()) {
+            setTimeout(() => attempt(retries + 1), 1000);
+            return;
+          }
+          if (!cancelled) console.warn("Smart wallet init failed:", err);
+        })
+        .finally(() => { if (!cancelled) setSmartWalletLoading(false); });
+    };
+    // Small delay on first attempt to allow signer registration to complete
+    const timer = setTimeout(() => attempt(), 500);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [account]);
 
   const handleExport = async () => {
