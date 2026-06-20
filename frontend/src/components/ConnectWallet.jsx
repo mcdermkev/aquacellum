@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect } from "react";
+import { CaretDown, Wallet } from "@phosphor-icons/react";
 import { useAuth } from "../contexts/AuthContext";
 import { generateAlias } from "../utils/generateAlias";
 import { useProfile } from "../hooks/useReefProfile";
@@ -163,9 +164,7 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
           </div>
 
           {/* Chevron */}
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ opacity: 0.5, transition: "transform 0.2s", transform: menuOpen ? "rotate(180deg)" : "rotate(0)" }}>
-            <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <CaretDown size={10} weight="bold" style={{ opacity: 0.5, transition: "transform 0.2s", transform: menuOpen ? "rotate(180deg)" : "rotate(0)" }} />
         </button>
 
         {/* Dropdown Menu — rendered as fixed overlay to avoid any clipping */}
@@ -303,20 +302,7 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
           </>
         ) : (
           <>
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
-              <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
-              <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
-            </svg>
+            <Wallet size={18} weight="duotone" />
             {casualModeActive ? "Open Logbook" : "Connect"}
           </>
         )}

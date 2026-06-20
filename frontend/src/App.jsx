@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
 import "./styles/index.css";
+import { GlobeHemisphereWest } from "@phosphor-icons/react";
 import { ConnectWallet } from "./components/ConnectWallet";
 import { TankList } from "./components/TankList";
 import { BreederTools } from "./components/BreederTools";
@@ -734,19 +735,7 @@ export default function App() {
               transition: "background 0.35s ease, box-shadow 0.35s ease",
               flexShrink: 0,
             }}>
-              <svg 
-                width="18" 
-                height="18" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="#fff" 
-                strokeWidth="2.5" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              >
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                <path d="M2 12h20" />
-              </svg>
+              <GlobeHemisphereWest size={18} weight="duotone" color="#fff" />
             </div>
             <div style={{ minWidth: "0" }}>
               <h1 className="aquadex-header-title" style={{ 

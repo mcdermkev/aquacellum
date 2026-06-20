@@ -135,12 +135,15 @@
       gap: 12px;
     }
     .nav-logo-mark {
-      width: 36px; height: 36px;
+      width: 38px; height: 38px;
       display: flex; align-items: center; justify-content: center;
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.25);
+      background: linear-gradient(135deg, rgba(20,184,166,0.15), rgba(139,92,246,0.15));
+      border: 1px solid rgba(255,255,255,0.08);
       border-radius: 10px;
+      box-shadow: 0 0 20px rgba(20,184,166,0.3);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
+    .nav-logo-mark:hover { box-shadow: 0 0 30px rgba(20,184,166,0.5); transform: scale(1.05); }
     .nav-logo-text {
       font-family: 'Outfit', sans-serif;
       font-weight: 800;
@@ -328,18 +331,50 @@
       position: relative;
       z-index: 1;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 28px;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 24px;
       padding-bottom: 80px;
     }
-
-    /* Hero featured cards — first 2 span double width */
-    .species-card.card-featured {
-      grid-column: span 2;
-      aspect-ratio: 4 / 3;
+    .species-grid.grid-large {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 32px;
     }
-    @media (max-width: 768px) {
-      .species-card.card-featured { grid-column: span 1; aspect-ratio: 3 / 4; }
+    .species-grid.grid-compact {
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 14px;
+    }
+
+    /* Grid density toggle */
+    .grid-density-toggle {
+      display: flex;
+      gap: 4px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      padding: 3px;
+    }
+    .grid-density-btn {
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .grid-density-btn.active {
+      background: rgba(20,184,166,0.12);
+      color: var(--emerald-400);
+      border: 1px solid rgba(20,184,166,0.2);
+    }
+    .grid-density-btn:hover:not(.active) {
+      color: var(--text-secondary);
+      background: rgba(255,255,255,0.03);
     }
 
     .species-card {
@@ -910,17 +945,22 @@
     ========================================= */
     @media (max-width: 768px) {
       .nav-links { display: none; }
-      .species-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 18px; }
+      .species-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+      .species-grid.grid-large { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+      .species-grid.grid-compact { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
       .filters-bar { flex-direction: column; }
       .search-wrap { min-width: 100%; }
       .flip-card-container { width: 300px; }
       .db-stats { gap: 20px; }
       .view-toggle { width: 100%; justify-content: center; }
       .sort-chips { justify-content: center; }
+      .grid-density-toggle { justify-content: center; }
     }
     @media (max-width: 480px) {
       .db-hero h1 { font-size: 1.8rem; }
-      .species-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+      .species-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .species-grid.grid-large { grid-template-columns: 1fr; gap: 16px; }
+      .species-grid.grid-compact { grid-template-columns: repeat(3, 1fr); gap: 10px; }
       .flip-card-container { width: 260px; }
     }
   </style>
@@ -939,9 +979,15 @@
     <nav class="nav-inner">
       <a href="/" class="nav-logo">
         <div class="nav-logo-mark">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/>
-            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          <svg width="28" height="28" viewBox="0 0 38 38" fill="none">
+            <defs><linearGradient id="nav-g" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#5eead4"/><stop offset="50%" stop-color="#22d3ee"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs>
+            <circle cx="19" cy="19" r="15" stroke="url(#nav-g)" stroke-width="2.4" fill="none"/>
+            <path d="M19 4 C22.5 9.5, 24 14, 22.8 19 C21.6 24, 22.5 28.5, 19 34" stroke="url(#nav-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <path d="M19 4 C15.5 9.5, 14 14, 15.2 19 C16.4 24, 15.5 28.5, 19 34" stroke="url(#nav-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <path d="M4 19 C9.5 17, 14 16.2, 19 16.2 C24 16.2, 28.5 17, 34 19" stroke="#5eead4" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.9"/>
+            <path d="M4 19 C9.5 21, 14 21.8, 19 21.8 C24 21.8, 28.5 21, 34 19" stroke="#a78bfa" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.9"/>
+            <circle cx="19" cy="19" r="4" fill="url(#nav-g)"/>
+            <circle cx="17.5" cy="17.5" r="1.3" fill="#fff" opacity="0.7"/>
           </svg>
         </div>
         <div>
@@ -1007,10 +1053,25 @@
       </div>
       <div class="result-count" id="resultCount"></div>
       <div class="sort-chips">
-        <button class="sort-chip active" data-sort="alpha" onclick="setSort('alpha')">A → Z</button>
+        <button class="sort-chip active" data-sort="popular" onclick="setSort('popular')">Popular</button>
+        <button class="sort-chip" data-sort="alpha" onclick="setSort('alpha')">A → Z</button>
         <button class="sort-chip" data-sort="difficulty" onclick="setSort('difficulty')">Difficulty</button>
         <button class="sort-chip" data-sort="size" onclick="setSort('size')">Size</button>
         <button class="sort-chip" data-sort="family" onclick="setSort('family')">Family</button>
+      </div>
+      <div class="grid-density-toggle">
+        <button class="grid-density-btn" data-density="large" onclick="setGridDensity('large')">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
+          Large
+        </button>
+        <button class="grid-density-btn active" data-density="medium" onclick="setGridDensity('medium')">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="0.5" y="0.5" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="5.25" y="0.5" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="10" y="0.5" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="0.5" y="5.25" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="5.25" y="5.25" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="10" y="5.25" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="0.5" y="10" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="5.25" y="10" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="10" y="10" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/></svg>
+          Medium
+        </button>
+        <button class="grid-density-btn" data-density="compact" onclick="setGridDensity('compact')">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="0.5" y="0.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="4" y="0.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="7.5" y="0.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="11" y="0.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="0.5" y="4" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="4" y="4" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="7.5" y="4" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="11" y="4" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="0.5" y="7.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="4" y="7.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="7.5" y="7.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="11" y="7.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="0.5" y="11" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="4" y="11" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="7.5" y="11" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="11" y="11" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/></svg>
+          Compact
+        </button>
       </div>
     </div>
   </div>
@@ -1061,7 +1122,7 @@
     let filteredSpecies = [];
     let isFlipped = false;
     let currentView = 'hobbyist';
-    let currentSort = 'alpha';
+    let currentSort = 'popular';
 
     // ---- Helpers ----
     function getDifficultyClass(diff) {
@@ -1105,6 +1166,16 @@
         chip.classList.toggle('active', chip.dataset.sort === sort);
       });
       applyFilters();
+    }
+
+    function setGridDensity(density) {
+      const grid = document.getElementById('speciesGrid');
+      grid.classList.remove('grid-large', 'grid-compact');
+      if (density === 'large') grid.classList.add('grid-large');
+      if (density === 'compact') grid.classList.add('grid-compact');
+      document.querySelectorAll('.grid-density-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.density === density);
+      });
     }
 
     // ---- Fetch & Initialize ----
@@ -1161,6 +1232,19 @@
 
       filteredSpecies.sort((a, b) => {
         switch (currentSort) {
+          case 'popular': {
+            // Beginner-friendly species first, then by whether they have an image, then alpha
+            const diffOrder = { 'Beginner': 0, 'Intermediate': 1, 'Advanced': 2, 'Difficult': 3 };
+            const da = diffOrder[a.tankMetrics?.difficulty] ?? 4;
+            const db = diffOrder[b.tankMetrics?.difficulty] ?? 4;
+            if (da !== db) return da - db;
+            const imgA = (a.masterPhotoUrl && a.masterPhotoUrl !== '') ? 0 : 1;
+            const imgB = (b.masterPhotoUrl && b.masterPhotoUrl !== '') ? 0 : 1;
+            if (imgA !== imgB) return imgA - imgB;
+            const nameA = (a.commonName || a.scientificName || '').toLowerCase();
+            const nameB = (b.commonName || b.scientificName || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+          }
           case 'alpha': {
             const nameA = (a.commonName || a.scientificName || '').toLowerCase();
             const nameB = (b.commonName || b.scientificName || '').toLowerCase();
@@ -1207,7 +1291,6 @@
         const badgeClass = getDifficultyClass(difficulty);
         const tierClass = getTierClass(difficulty);
         const hasImage = sp.masterPhotoUrl && sp.masterPhotoUrl !== '';
-        const isFeatured = idx < 2 && !hasQuery;
 
         const imageHtml = hasImage
           ? `<img class="blur-bg" src="${sp.masterPhotoUrl}" alt="" aria-hidden="true"><img class="main-img" src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="lazy">`
@@ -1234,7 +1317,7 @@
         }
 
         return `
-          <div class="species-card ${tierClass}${isFeatured ? ' card-featured' : ''}" onclick="openPopup(${idx})" data-idx="${idx}">
+          <div class="species-card ${tierClass}" onclick="openPopup(${idx})" data-idx="${idx}">
             <div class="card-image">
               ${imageHtml}
               <div class="card-vignette"></div>

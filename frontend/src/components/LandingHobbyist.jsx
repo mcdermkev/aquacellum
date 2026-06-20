@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-
-// Set to false to immediately bypass the waitlist gate and restore direct dashboard login
+import { ArrowRight } from "@phosphor-icons/react";
 const GATED = false;
 
 export function LandingHobbyist({ onEnter }) {
@@ -80,9 +79,19 @@ export function LandingHobbyist({ onEnter }) {
             justifyContent: "center",
             boxShadow: "0 0 20px rgba(14, 165, 233, 0.4)"
           }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-              <path d="M2 12h20" />
+            <svg width="24" height="24" viewBox="0 0 38 38" fill="none">
+              <defs>
+                <linearGradient id="hob-g" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#2dd4bf"/>
+                  <stop offset="50%" stopColor="#22d3ee"/>
+                  <stop offset="100%" stopColor="#8b5cf6"/>
+                </linearGradient>
+              </defs>
+              <circle cx="19" cy="19" r="15.5" stroke="url(#hob-g)" strokeWidth="1.8" fill="none"/>
+              <path d="M19 3.5 C22 9, 23.5 14, 22.5 19 C21.5 24, 22.5 29, 19 34.5" stroke="url(#hob-g)" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.85"/>
+              <path d="M19 3.5 C16 9, 14.5 14, 15.5 19 C16.5 24, 15.5 29, 19 34.5" stroke="url(#hob-g)" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.85"/>
+              <circle cx="19" cy="19" r="3" fill="url(#hob-g)"/>
+              <circle cx="18" cy="18" r="1" fill="#fff" opacity="0.5"/>
             </svg>
           </div>
           <div>
@@ -241,10 +250,7 @@ export function LandingHobbyist({ onEnter }) {
               className="btn-cta"
             >
               <span>Open My Aquarium Logbook</span>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12" />
-                <polyline points="12 5 19 12 12 19" />
-              </svg>
+              <ArrowRight size={18} weight="bold" color="#fff" />
             </button>
             <span style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.6)" }}>
               ⚡ Secured instantly via Biometric Login

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ethers, Contract } from "ethers";
+import { FishSimple, Flask, Drop, Asterisk } from "@phosphor-icons/react";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { addXp, XP_ACTIONS, getPointsSuffix } from "../utils/xp";
 import { FacilityTreeView } from "./FacilityTreeView";
@@ -2274,12 +2275,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               className="console-tile tile-husbandry"
                             >
                               <span className="console-tile-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M2 12h20a10 10 0 0 1-20 0z" />
-                                  <circle cx="8" cy="7" r="1.2" fill="currentColor"/>
-                                  <circle cx="12" cy="5" r="1.2" fill="currentColor"/>
-                                  <circle cx="16" cy="7" r="1.2" fill="currentColor"/>
-                                </svg>
+                                <FishSimple size={18} weight="duotone" />
                               </span>
                               <span className="console-tile-label">Quick Feed</span>
                               <span className="console-tile-desc">Standard dose</span>
@@ -2291,12 +2287,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               className="console-tile tile-husbandry"
                             >
                               <span className="console-tile-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M2 12h20a10 10 0 0 1-20 0z" />
-                                  <circle cx="8" cy="7" r="1.2" fill="currentColor"/>
-                                  <circle cx="12" cy="5" r="1.2" fill="currentColor"/>
-                                  <circle cx="16" cy="7" r="1.2" fill="currentColor"/>
-                                </svg>
+                                <FishSimple size={18} weight="duotone" />
                               </span>
                               <span className="console-tile-label">Detailed Feed</span>
                               <span className="console-tile-desc">Log details</span>
@@ -2336,10 +2327,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               className="console-tile tile-environment"
                             >
                               <span className="console-tile-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M6 3h12M9 3v8L4 19A2 2 0 0 0 6 22h12a2 2 0 0 0 2-3L15 11V3" />
-                                  <path d="M6 18h12" />
-                                </svg>
+                                <Flask size={18} weight="duotone" />
                               </span>
                               <span className="console-tile-label">Quick Test</span>
                               <span className="console-tile-desc">Nominal parameters</span>
@@ -2351,10 +2339,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               className="console-tile tile-environment"
                             >
                               <span className="console-tile-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M6 3h12M9 3v8L4 19A2 2 0 0 0 6 22h12a2 2 0 0 0 2-3L15 11V3" />
-                                  <path d="M6 18h12" />
-                                </svg>
+                                <Flask size={18} weight="duotone" />
                               </span>
                               <span className="console-tile-label">Detailed Test</span>
                               <span className="console-tile-desc">Enter measurements</span>
@@ -2366,9 +2351,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               className="console-tile tile-environment"
                             >
                               <span className="console-tile-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M12 2c0 0-4 6-4 10a4 4 0 0 0 8 0c0-4-4-10-4-10z" />
-                                </svg>
+                                <Drop size={18} weight="duotone" />
                               </span>
                               <span className="console-tile-label">Water Change</span>
                               <span className="console-tile-desc">Log partial change</span>
@@ -2380,9 +2363,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               className="console-tile tile-environment"
                             >
                               <span className="console-tile-icon">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8" />
-                                </svg>
+                                <Asterisk size={18} weight="duotone" />
                               </span>
                               <span className="console-tile-label">Detailed Clean</span>
                               <span className="console-tile-desc">Water change & filters</span>

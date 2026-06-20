@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="80" viewBox="0 0 600 80" fill="none">
+  <defs>
+    <linearGradient id="wg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f0f4ff"/>
+      <stop offset="100%" stop-color="#f0f4ff"/>
+    </linearGradient>
+    <linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2dd4bf"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+
+  <!-- AQUACELLUM wordmark — Outfit 800, tracking 0.12em -->
+  <text x="0" y="48" 
+        font-family="Outfit, sans-serif" 
+        font-weight="800" 
+        font-size="42" 
+        letter-spacing="5" 
+        fill="url(#wg)">AQUACELLUM</text>
+
+  <!-- Tagline -->
+  <text x="2" y="72" 
+        font-family="Outfit, sans-serif" 
+        font-weight="600" 
+        font-size="10" 
+        letter-spacing="2" 
+        fill="url(#tg)" 
+        text-transform="uppercase">THE LIVING AQUATIC REGISTRY</text>
+</svg>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ethers, Contract } from "ethers";
+import { Plus, MinusCircle } from "@phosphor-icons/react";
 import aquadexAbi from "../abi/AquadexManager.json";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
 import { ListSpecimenModal } from "./ListSpecimenModal";
@@ -773,9 +774,7 @@ export function MarketplaceBoard({
           </div>
           {!casualModeActive && walletAccount && (
             <button className="btn-primary-pro" onClick={() => setIsModalOpen(true)}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 12h14M12 5v14"/>
-              </svg>
+              <Plus size={18} weight="bold" />
               Publish Entry
             </button>
           )}
@@ -981,10 +980,7 @@ export function MarketplaceBoard({
         <LoadingSkeleton variant="marketplace" count={6} />
       ) : listings.length === 0 ? (
         <div className="glass-card" style={{ padding: "4rem 2rem", textAlign: "center", border: "1px dashed var(--glass-border)", background: "none" }}>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: "1rem" }}>
-            <circle cx="12" cy="12" r="10" />
-            <path d="M8 12h8" />
-          </svg>
+          <MinusCircle size={48} weight="duotone" color="var(--text-muted)" style={{ marginBottom: "1rem" }} />
           <h3 style={{ color: "var(--text-secondary)", marginBottom: "0.5rem" }}>No Entries Found</h3>
           <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
             The exchange directory is currently empty. Be the first to publish a specimen card!
