@@ -25,6 +25,7 @@ export default defineConfig({
         hobbyist: resolve(__dirname, 'hobbyist.html'), // Hobbyist landing
         breeder: resolve(__dirname, 'breeder.html'),   // Breeder landing
         database: resolve(__dirname, 'database.html'), // Species database page
+        marketplace: resolve(__dirname, 'marketplace.html'), // Public marketplace browse
         reef: resolve(__dirname, 'reef.html'),         // The Reef social landing
         reefXr: resolve(__dirname, 'reef-xr.html'),   // Immersive 3D reef (WebXR)
         about: resolve(__dirname, 'about.html'),       // About page
