@@ -29,6 +29,7 @@ import { RewardCreditsCard } from "./components/RewardCreditsCard";
 import { EchoCompanionWidget } from "./components/EchoCompanionWidget";
 import { EchoWhispers } from "./components/EchoWhispers";
 import { BetaBanner } from "./components/BetaBanner";
+import { db } from "./db";
 import { TabErrorBoundary } from "./components/TabErrorBoundary";
 import { NetworkStatusBanner } from "./components/NetworkStatusBanner";
 import { FeedbackWidget } from "./components/FeedbackWidget";
@@ -279,6 +280,10 @@ export default function App() {
   const [preselectedOrderForCheckout, setPreselectedOrderForCheckout] = useState(null);
   const [activeSellerFilter, setActiveSellerFilter] = useState(null);
 
+  // Echo Whispers — real user state from Dexie (replaces hardcoded values)
+  const [echoUserState, setEchoUserState] = useState({ totalXp: 0, streakDays: 0, lastActiveDate: null, currentTier: "Shallow" });
+  const [echoTankData, setEchoTankData] = useState({});
+
   const [marketplaceContract, setMarketplaceContract] = useState(null);
 
   useEffect(() => {
@@ -294,6 +299,48 @@ export default function App() {
 
   // Hook up useXPSync globally in App.jsx
   useXPSync(account, marketplaceContract);
+
+  // ─── Load real Echo state from Dexie for EchoWhispers ─────────────────────
+  useEffect(() => {
+    if (!account) return;
+
+    const loadEchoState = async () => {
+      try {
+        const profile = await db.userProfile.get(account);
+        if (profile) {
+          setEchoUserState({
+            totalXp: profile.totalXp || 0,
+            streakDays: profile.streakDays || 0,
+            lastActiveDate: profile.lastActiveDate || null,
+            currentTier: profile.currentTier || "Shallow",
+          });
+        }
+
+        // Load tank data for care reminders
+        const logs = await db.actionLogs.orderBy("timestamp").reverse().limit(50).toArray();
+        const waterChanges = logs.filter(l => l.actionType === "Water Change");
+        const feedings = logs.filter(l => l.actionType === "Feed");
+        const paramTests = logs.filter(l => l.actionType === "Quick Water Test" || l.actionType === "Water Parameters");
+        const tankCount = await db.tanks.where("active").equals(1).count();
+
+        setEchoTankData({
+          lastWaterChange: waterChanges[0]?.timestamp ? new Date(waterChanges[0].timestamp * 1000).toISOString() : null,
+          lastFeeding: feedings[0]?.timestamp ? new Date(feedings[0].timestamp * 1000).toISOString() : null,
+          lastParams: paramTests[0]?.timestamp ? new Date(paramTests[0].timestamp * 1000).toISOString() : null,
+          tankCount,
+        });
+      } catch (err) {
+        console.warn("App: Failed to load Echo state from Dexie:", err);
+      }
+    };
+
+    loadEchoState();
+
+    // Refresh when XP changes
+    const refreshEchoState = () => loadEchoState();
+    window.addEventListener("aquadex_xp_added", refreshEchoState);
+    return () => window.removeEventListener("aquadex_xp_added", refreshEchoState);
+  }, [account]);
 
   useEffect(() => {
     if (displayTank) {
@@ -962,13 +1009,8 @@ export default function App() {
       {casualModeActive && (
         <EchoWhispers
           casualModeActive={casualModeActive}
-          userState={{
-            totalXp: xp,
-            streakDays: 0,
-            lastActiveDate: null,
-            currentTier: "Shallow",
-          }}
-          tankData={{}}
+          userState={echoUserState}
+          tankData={echoTankData}
         />
       )}
 

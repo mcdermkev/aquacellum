@@ -166,6 +166,7 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated) {
 
       const xpEvent = new CustomEvent("aquadex_xp_added", {
         detail: {
+          _dexieSynced: true, // Flag to prevent bridge listener from re-processing
           walletAddress: user,
           amount: amountNum,
           reason: cleanReason,
@@ -257,6 +258,27 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated) {
 
     window.triggerXpTracking = handleXpUpdate;
 
+    // ─── Bridge: catch addXp() events that only wrote to localStorage ──────
+    // addXp() in utils/xp.js fires aquadex_xp_added but only writes localStorage.
+    // useXPSync also fires that same event AFTER writing Dexie. We distinguish
+    // by checking for a `_dexieSynced` flag that we set on our own dispatches.
+    const handleExternalXpEvent = async (e) => {
+      const detail = e.detail || {};
+      // Skip events we dispatched ourselves (already in Dexie)
+      if (detail._dexieSynced) return;
+      // Skip events without usable data
+      const amount = Number(detail.points || detail.amount || 0);
+      if (amount <= 0) return;
+      const reason = detail.actionLabel || detail.label || detail.reason || "Activity";
+      try {
+        await processXpProgression(walletAddress, amount, reason);
+      } catch (err) {
+        console.warn("useXPSync: Bridge sync from addXp() failed:", err);
+      }
+    };
+
+    window.addEventListener("aquadex_xp_added", handleExternalXpEvent);
+
     // ─── Dexie actionLogs hook — auto-award XP on husbandry logs ───────────
     const handleActionLogCreating = (primKey, obj, transaction) => {
       const actionType = obj.actionType;
@@ -294,6 +316,7 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated) {
 
     // ─── Cleanup ───────────────────────────────────────────────────────────
     return () => {
+      window.removeEventListener("aquadex_xp_added", handleExternalXpEvent);
       db.actionLogs.hook("creating").unsubscribe(handleActionLogCreating);
       if (contractInstance && handleXpEvent) {
         contractInstance.off("XPEarned", handleXpEvent);

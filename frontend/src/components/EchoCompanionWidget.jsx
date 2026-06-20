@@ -67,6 +67,7 @@ export function EchoCompanionWidget({ casualModeActive = true, compact = false }
   const [recentReactions, setRecentReactions] = useState([]);
   const [expanded, setExpanded] = useState(false);
   const [greeting, setGreeting] = useState("");
+  const [justLeveledUp, setJustLeveledUp] = useState(false);
 
   // Load Echo's state from Dexie
   useEffect(() => {
@@ -106,7 +107,16 @@ export function EchoCompanionWidget({ casualModeActive = true, compact = false }
     loadState();
 
     // Listen for XP events to refresh state
-    const handleXpEvent = () => loadState();
+    const handleXpEvent = (e) => {
+      loadState();
+      // Detect tier-up and temporarily set justLeveledUp for joyful mood
+      const detail = e.detail || {};
+      if (detail.tierChanged || detail.levelChanged) {
+        setJustLeveledUp(true);
+        // Reset after 10 seconds so mood returns to normal
+        setTimeout(() => setJustLeveledUp(false), 10000);
+      }
+    };
     window.addEventListener("aquadex_xp_added", handleXpEvent);
     return () => window.removeEventListener("aquadex_xp_added", handleXpEvent);
   }, [account]);
@@ -139,9 +149,9 @@ export function EchoCompanionWidget({ casualModeActive = true, compact = false }
       streakDays: echoState.streakDays,
       hoursSinceLastAction: hoursSince,
       actionsToday,
-      justLeveledUp: false,
+      justLeveledUp,
     });
-  }, [echoState.streakDays, echoState.lastActiveDate, actionsToday]);
+  }, [echoState.streakDays, echoState.lastActiveDate, actionsToday, justLeveledUp]);
 
   const moodLine = useMemo(() => getMoodLine(mood.key), [mood.key]);
 

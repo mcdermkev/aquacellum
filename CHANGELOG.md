@@ -4,6 +4,26 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [0.9.2] — 2026-06-20
+
+### 🐠 Echo Companion: Progression Wiring Fix
+
+Fixes critical disconnect where Echo's companion widget wasn't receiving real-time XP updates from direct `addXp()` calls (minting, checkout, handshakes), and wires real user state into the whisper/nudge system.
+
+#### Bug Fixes
+- **XP → Dexie bridge** — `addXp()` (localStorage-only) events now get routed through `useXPSync` to update Dexie's `userProfile.totalXp`, `breederCompanion.eggState`, and `currentTier`. Previously, minting a specimen or completing a checkout wouldn't update Echo's widget until a separate care action triggered the Dexie path.
+- **EchoWhispers real state** — Replaced hardcoded `streakDays: 0`, `lastActiveDate: null`, `currentTier: "Shallow"`, and empty `tankData` with actual values from Dexie. Streak encouragement, care reminders, and progress nudges now fire correctly.
+- **Tier-up joyful mood** — Echo now enters "joyful" mood for 10 seconds when the user reaches a new tier, instead of `justLeveledUp` always being `false`.
+
+#### Files Changed
+| File | Change |
+|------|--------|
+| `src/hooks/useXPSync.js` | Added bridge listener for external `aquadex_xp_added` events; tagged own dispatches with `_dexieSynced` flag |
+| `src/App.jsx` | Added `db` import, `echoUserState`/`echoTankData` state from Dexie, passed to `EchoWhispers` |
+| `src/components/EchoCompanionWidget.jsx` | Added `justLeveledUp` state, wired tier-change detection from XP events into mood calculation |
+
+---
+
 ## [0.9.1] — 2026-06-20
 
 ### 🛡️ Beta Readiness: Security Hardening & Platform Polish
