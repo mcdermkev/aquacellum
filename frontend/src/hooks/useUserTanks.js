@@ -155,6 +155,36 @@ export function useUserTanks(contractAddress, walletAccount) {
         console.warn("Specimen reconciliation failed:", reconcileErr);
       }
 
+      // Arrival Flow: Include batch orders assigned to each tank as synthetic entries.
+      // Shows "X juvenile fry — pending individual registration" in the tank view.
+      try {
+        const batchOrders = await db.marketOrders
+          .where("assignedTankId")
+          .above(0)
+          .toArray();
+        for (const order of batchOrders) {
+          const tankId = Number(order.assignedTankId);
+          const tank = allTanks.find(t => Number(t.id) === tankId);
+          if (tank) {
+            const existingSpecimens = tank.specimens || [];
+            const batchKey = `batch-${order.purchaseId || order.key}`;
+            if (!existingSpecimens.some(s => s.id === batchKey)) {
+              existingSpecimens.push({
+                id: batchKey,
+                isBatchPlaceholder: true,
+                quantity: order.quantity || 0,
+                commonName: order.commonName || "Juvenile Fry",
+                speciesId: 0,
+                status: 0,
+              });
+              tank.specimens = existingSpecimens;
+            }
+          }
+        }
+      } catch (batchErr) {
+        console.warn("Batch arrival reconciliation failed:", batchErr);
+      }
+
       // Populate latest test and change timestamps from actionLogs and parameter logs
       for (const tank of allTanks) {
         try {

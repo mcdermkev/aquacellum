@@ -19,6 +19,7 @@ import { generateAlias } from "../utils/generateAlias";
 import { getProfile } from "../services/reefApi";
 import { useRewardCredits, useApplyCredits } from "../hooks/useRewardsPool";
 import { calculateCheckoutDiscount } from "../services/rewardsPoolApi";
+import { ArrivalModal } from "./ArrivalModal";
 
 /**
  * DisplayName — Resolves a wallet address to a human-readable display name.
@@ -126,6 +127,11 @@ export function CheckoutSummary({
   const [isCashHandshake, setIsCashHandshake] = useState(false);
   const [cashHandshakePayload, setCashHandshakePayload] = useState(null);
   const [currentEventId, setCurrentEventId] = useState(1);
+
+  // Arrival Flow States
+  const [arrivalModalOpen, setArrivalModalOpen] = useState(false);
+  const [arrivalSpecimen, setArrivalSpecimen] = useState(null);
+  const [arrivalShippingOrder, setArrivalShippingOrder] = useState(null);
 
   useEffect(() => {
     if (preselectedOrderForCheckout && !loading) {
@@ -564,7 +570,35 @@ export function CheckoutSummary({
   };
 
   // Release Shipping Escrow (Buyer at any time, Seller after 3 days)
+  // Now opens ArrivalModal for buyers to merge escrow release + tank assignment
   const handleReleaseShipping = async () => {
+    if (!selectedOrder?.data) return;
+
+    const order = selectedOrder.data;
+    const isBuyer = order.role === "Buyer";
+
+    // For buyers: open ArrivalModal (merged flow)
+    if (isBuyer) {
+      // Try to find the specimen record for this token
+      let specimen = null;
+      try {
+        specimen = await db.specimens.get(Number(order.tokenId));
+      } catch (e) {
+        // Specimen may not exist locally yet — create a stub for the modal
+      }
+      if (!specimen) {
+        specimen = {
+          id: Number(order.tokenId),
+          commonName: order.commonName || "Specimen",
+        };
+      }
+      setArrivalSpecimen(specimen);
+      setArrivalShippingOrder(order);
+      setArrivalModalOpen(true);
+      return;
+    }
+
+    // For sellers (after safety window): release directly as before
     setActionLoading(true);
     setActionError(null);
     setActionTx(null);
@@ -582,6 +616,15 @@ export function CheckoutSummary({
       setActionLoading(false);
       setActionTx(null);
     }
+  };
+
+  // Callback when ArrivalModal completes (buyer flow)
+  const handleArrivalComplete = async () => {
+    setArrivalModalOpen(false);
+    setArrivalSpecimen(null);
+    setArrivalShippingOrder(null);
+    setSelectedOrder(null);
+    await fetchOrders();
   };
 
   // Dispute Shipping Escrow (Buyer calls)
@@ -1543,6 +1586,24 @@ export function CheckoutSummary({
           </div>
         </div>
       )}
+
+      {/* Arrival Flow Modal — merged shipping confirmation + tank assignment */}
+      <ArrivalModal
+        isOpen={arrivalModalOpen}
+        onClose={() => {
+          setArrivalModalOpen(false);
+          setArrivalSpecimen(null);
+          setArrivalShippingOrder(null);
+        }}
+        item={arrivalSpecimen}
+        itemType="specimen"
+        isShippingMerge={true}
+        shippingOrder={arrivalShippingOrder}
+        walletAccount={walletAccount}
+        contractAddress={contractAddress}
+        casualModeActive={casualModeActive}
+        onComplete={handleArrivalComplete}
+      />
     </div>
   );
 }

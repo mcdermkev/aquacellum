@@ -599,6 +599,12 @@ h1, h2, h3, h4, h5, h6 {
   to { transform: translateX(0); }
 }
 
+/* Incoming Badge pulse — gentle attention-getter for unassigned specimens past nudge threshold */
+@keyframes incomingPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
 /* Echo Egg wobble animation — subtle periodic wiggle to build anticipation */
 @keyframes eggWobble {
   0%, 85%, 100% { transform: rotate(0deg) scale(1); }

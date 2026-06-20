@@ -4,6 +4,50 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [0.9.3] — 2026-06-20
+
+### 🚚 Post-Purchase Arrival Flow
+
+Adds a complete lifecycle layer between marketplace purchase and tank assignment. Fish now enter a "transit" state after purchase, and users are guided through a structured arrival flow to assign them to a tank when they're home — merging with the existing shipping confirmation for zero extra steps.
+
+#### New Features
+- **Incoming Fish section** — New nav tab appears when specimens are in transit. Shows individual fish and batch orders with purchase type badges, seller info, and relative timestamps. Hides automatically when empty.
+- **Arrival Modal** — Unified confirmation flow for all purchase types (shipping, in-person, instant, fiat). Handles tank selection, optional acclimation notes, and XP awards in one action.
+- **Merged shipping confirmation** — "Release Funds" for buyers now opens the Arrival Modal, combining escrow release + tank assignment into a single step. Sellers retain the original direct-release behavior.
+- **Smart tank defaults** — Single-tank users get auto-assignment with a toast (zero friction). Multi-tank users see a sorted selector with the most recently interacted tank suggested.
+- **Acclimation notes** — Optional free-text field (500 chars) during arrival for recording acclimation protocol. Persona-aware placeholders.
+- **Nudge system** — Non-blocking badge + banner when fish have been in transit past threshold (7 days for shipping, 48 hours for in-person/instant). Dismissible for 7 days. Startup toast (24h cooldown).
+- **Batch arrival** — Batch juvenile orders can be marked as arrived and assigned to a grow-out tank. The tank view shows pending fry counts.
+- **Transit metadata** — Purchases now write `arrivalStatus`, `purchasedAt`, and `purchaseType` on specimen records for lifecycle tracking.
+
+#### New Components
+| Component | Purpose |
+|-----------|---------|
+| `TankSelector.jsx` | Reusable tank picker with type icons, MRU ordering, suggested badge |
+| `AcclimationNotes.jsx` | Persona-aware textarea with character counter |
+| `ArrivalModal.jsx` | Shared modal for all arrival confirmations |
+| `IncomingSpecimens.jsx` | Transit view with IncomingCard + IncomingBatchCard |
+| `IncomingBadge.jsx` | Nav badge with pulse animation on nudge |
+| `useArrivalNudge.js` | Hook for incoming count, nudge state, startup toast |
+| `arrivalNudge.js` | Utility: threshold logic, relative time, purchase type labels |
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `db.js` | Version 16: compound index `[ownerAddress+arrivalStatus]`, `assignedTankId` index on marketOrders |
+| `xp.js` | Added `ARRIVAL_CONFIRMED` (25pts) and `BATCH_ARRIVAL_CONFIRMED` (15pts) |
+| `relayer.js` | `relayPurchaseSpecimen` writes transit metadata; `relaySettleHandshake` supports in-person transit |
+| `CheckoutSummary.jsx` | Buyer "Release Funds" opens ArrivalModal (merged flow) |
+| `useUserTanks.js` | Batch order reconciliation — injects fry placeholders into tank specimens |
+| `App.jsx` | "Incoming" nav tab, badge, startup nudge toast |
+| `index.css` | `@keyframes incomingPulse` |
+
+#### XP Awards
+- Specimen arrival confirmed: +25 pts
+- Batch arrival confirmed: +15 pts
+
+---
+
 ## [0.9.2] — 2026-06-20
 
 ### 🐠 Echo Companion: Progression Wiring Fix

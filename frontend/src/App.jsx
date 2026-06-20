@@ -34,6 +34,9 @@ import { TabErrorBoundary } from "./components/TabErrorBoundary";
 import { NetworkStatusBanner } from "./components/NetworkStatusBanner";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 import { WhatsNewModal } from "./components/WhatsNewModal";
+import { IncomingSpecimens } from "./components/IncomingSpecimens";
+import { IncomingBadge } from "./components/IncomingBadge";
+import { useArrivalNudge } from "./hooks/useArrivalNudge";
 
 
 // Lazy-load The Reef social layer (code-split for performance)
@@ -212,7 +215,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState(() => {
     // Quick Win 10: Restore tab from URL hash on load
     const hash = window.location.hash.replace("#", "");
-    const validTabs = ["tanks", "breeder", "directory", "gallery", "map", "orders", "reef", "settings", "founders"];
+    const validTabs = ["tanks", "breeder", "directory", "gallery", "map", "orders", "incoming", "reef", "settings", "founders"];
     return validTabs.includes(hash) ? hash : "tanks";
   });
   const [preselectedLineageId, setPreselectedLineageId] = useState(null);
@@ -299,6 +302,20 @@ export default function App() {
 
   // Hook up useXPSync globally in App.jsx
   useXPSync(account, marketplaceContract);
+
+  // ─── Arrival Flow: track incoming specimens + nudge state ─────────────────
+  const { incomingCount, hasNudge, shouldShowToast, markToastShown } = useArrivalNudge(account);
+
+  // Show nudge toast on startup (once per 24h)
+  useEffect(() => {
+    if (shouldShowToast && incomingCount > 0) {
+      const msg = casualModeActive
+        ? `You have ${incomingCount} fish waiting to be placed in a tank.`
+        : `${incomingCount} unassigned specimen${incomingCount > 1 ? "s" : ""} in transit.`;
+      setToasts((prev) => [...prev, { id: Date.now(), message: msg, type: "info" }]);
+      markToastShown();
+    }
+  }, [shouldShowToast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Load real Echo state from Dexie for EchoWhispers ─────────────────────
   useEffect(() => {
@@ -433,7 +450,7 @@ export default function App() {
   useEffect(() => {
     const handlePopState = (e) => {
       const hash = window.location.hash.replace("#", "");
-      const validTabs = ["tanks", "breeder", "directory", "gallery", "map", "orders", "reef", "settings", "founders"];
+      const validTabs = ["tanks", "breeder", "directory", "gallery", "map", "orders", "incoming", "reef", "settings", "founders"];
       if (validTabs.includes(hash)) {
         setActiveTab(hash);
       }
@@ -562,6 +579,14 @@ export default function App() {
             clearPreselectedOrder={() => setPreselectedOrderForCheckout(null)}
             displayTank={displayTank}
             casualModeActive={casualModeActive}
+          />
+        );
+      case "incoming":
+        return (
+          <IncomingSpecimens
+            walletAccount={account}
+            casualModeActive={casualModeActive}
+            contractAddress={CONTRACT_ADDRESS}
           />
         );
       case "reef":
@@ -927,6 +952,7 @@ export default function App() {
             { id: "directory", icon: "🛒",  label: casualModeActive ? "Breeder Store" : "Marketplace",  alwaysShow: true  },
             { id: "map",       icon: "🗺️", label: casualModeActive ? "Local Sellers" : "Local Map",     alwaysShow: true  },
             { id: "orders",    icon: "📦",  label: "My Orders",                                          alwaysShow: true  },
+            ...(incomingCount > 0 ? [{ id: "incoming", icon: "🚚", label: casualModeActive ? "Incoming" : "In Transit", alwaysShow: true, incomingBadge: true }] : []),
             { id: "reef",      icon: "🪸",  label: casualModeActive ? "The Reef"      : "Social",        alwaysShow: true, badge: !postedFirstCurrent },
             { id: "settings",  icon: "⚙️", label: "Settings",                                           alwaysShow: true  },
             ...(isFounder ? [{ id: "founders", icon: "📊", label: "Founders", alwaysShow: true }] : []),
@@ -962,6 +988,11 @@ export default function App() {
                         animation: "pulse-glow 1.5s infinite ease-in-out",
                       }}
                     />
+                  )}
+                  {tab.incomingBadge && (
+                    <span style={{ position: "absolute", top: "4px", right: "4px" }}>
+                      <IncomingBadge count={incomingCount} hasNudge={hasNudge} />
+                    </span>
                   )}
                 </button>
               );

@@ -261,6 +261,45 @@ db.version(15).stores({
   }
 });
 
+// Version 16: Post-Purchase Arrival Flow (arrival-flow spec).
+// Adds a compound index on specimens for efficient transit-state queries:
+//   [ownerAddress+arrivalStatus] enables fast lookup of "my fish in transit".
+// Also indexes marketOrders by assignedTankId for batch-arrival tank display.
+//
+// NEW NON-INDEXED FIELDS (stored automatically by Dexie, no index needed):
+//   specimens:
+//     - arrivalStatus: "transit" | "arrived" | null  — lifecycle state post-purchase
+//     - purchasedAt: number | null                   — Unix timestamp of purchase
+//     - arrivedAt: number | null                     — Unix timestamp of arrival confirmation
+//     - acclimationNotes: string | null              — free-text notes from arrival flow
+//     - purchaseType: "shipping"|"in-person"|"instant"|"fiat" | null
+//     - purchaseOrderKey: string | null              — links to marketOrders record
+//   marketOrders:
+//     - assignedTankId: number | null                — tank assigned on batch arrival
+//     - arrivedAt: number | null                     — when buyer confirmed batch arrival
+//     - acclimationNotes: string | null              — notes for batch arrivals
+//     - nudgeDismissedAt: number | null              — suppress nudge until this + 7d
+db.version(16).stores({
+  species: "specCode, commonName, scientificName, type, difficulty",
+  listings: "id, tokenId, seller, price, isBatch, speciesId",
+  tanks: "id, ownerAddress, name, active",
+  userProfile: "walletAddress, totalXp, currentTier, zoneHash, isCouncilMember, onboardingComplete",
+  breederCompanion: "walletAddress, eggState, currentTier, selectedStats, zoneHash",
+  pendingHandshakes: "purchaseId, pin, salt, buyerAddress",
+  speciesManifest: "speciesId, scientificName, commonName, contractAddress, cachedAt",
+  actionLogs: "++id, tankId, actionType, timestamp, details",
+  spawnGrowout: "++id, spawnId, timestamp, type",
+  feedCache: "++id, contentId, authorWallet, createdAt, [authorWallet+createdAt]",
+  socialNotifications: "++id, category, isRead, createdAt",
+  draftContent: "++id, type, status, createdAt",
+  specimens: "id, ownerAddress, speciesId, currentTankId, status, createdAt, [ownerAddress+arrivalStatus]",
+  localListings: "id, seller, speciesId, isBatch, listingId, tokenId",
+  marketOrders: "++key, orderType, status, state, buyer, seller, tokenId, purchaseId, listingId, assignedTankId",
+  spawns: "spawnId, sireId, damId, tankId, speciesId, status, timestamp",
+  tankNotes: "++id, tankId, createdAt",
+  xpCooldowns: "++id, walletAddress, actionType, tankId, timestamp, [walletAddress+actionType+tankId]"
+});
+
 /**
  * Derive tier key from totalXp using the canonical tier ladder.
  * Used by the v15 migration and shared with xp.js.

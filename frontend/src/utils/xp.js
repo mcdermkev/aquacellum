@@ -40,6 +40,10 @@ export const XP_ACTIONS = {
   AUDIT_GIVEN: { points: 60, label: "Pedigree Audit Completed" },
   AUDIT_RECEIVED: { points: 20, label: "Pedigree Audit Received" },
 
+  // Arrival Flow
+  ARRIVAL_CONFIRMED: { points: 25, label: "Confirmed Specimen Arrival" },
+  BATCH_ARRIVAL_CONFIRMED: { points: 15, label: "Confirmed Batch Arrival" },
+
   // Community & Social
   POST_CURRENT: { points: 10, label: "Posted Tank Current", dailyMax: 2 },
   PUBLISH_INSIGHT: { points: 20, label: "Published Species Insight" },

@@ -568,7 +568,14 @@ export async function relayPurchaseSpecimen({
     // Transfer specimen ownership locally if it exists
     const specimen = await db.specimens.get(tokenId);
     if (specimen && buyer) {
-      await db.specimens.update(tokenId, { ownerAddress: buyer });
+      await db.specimens.update(tokenId, {
+        ownerAddress: buyer,
+        // Arrival Flow: mark specimen as in transit
+        arrivalStatus: "transit",
+        purchasedAt: Math.floor(Date.now() / 1000),
+        purchaseType: isShipping ? "shipping" : "instant",
+        purchaseOrderKey: isShipping ? `shipping:${tokenId}` : null,
+      });
     }
 
     // Record a shipping escrow order so the Orders view can track it
@@ -732,7 +739,7 @@ export async function relayUpdateBatchOrder(purchaseId, changes = {}) {
  * Settle an in-person / cash handshake locally. Removes the pending handshake
  * pre-image and marks the related order complete.
  */
-export async function relaySettleHandshake({ purchaseId, tokenIds = [] } = {}) {
+export async function relaySettleHandshake({ purchaseId, tokenIds = [], buyer = "" } = {}) {
   try {
     if (purchaseId != null) {
       const order = await db.marketOrders.where({ orderType: "batch", purchaseId: Number(purchaseId) }).first();
@@ -742,6 +749,17 @@ export async function relaySettleHandshake({ purchaseId, tokenIds = [] } = {}) {
     for (const tid of tokenIds) {
       const order = await db.marketOrders.where({ orderType: "shipping", tokenId: Number(tid) }).first();
       if (order) await db.marketOrders.update(order.key, { status: 2 });
+
+      // Arrival Flow: mark specimen as in-person transit (buyer is carrying fish home)
+      const specimen = await db.specimens.get(Number(tid));
+      if (specimen && buyer) {
+        await db.specimens.update(Number(tid), {
+          ownerAddress: buyer,
+          arrivalStatus: "transit",
+          purchasedAt: Math.floor(Date.now() / 1000),
+          purchaseType: "in-person",
+        });
+      }
     }
     return { success: true, txHash: null };
   } catch (err) {
