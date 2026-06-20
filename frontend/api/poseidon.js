@@ -4,6 +4,8 @@
 
 import { buildSpeciesContext } from './_lib/speciesIndex.js';
 import { vertexGenerateContent, isVertexConfigured } from './_lib/vertexClient.js';
+import { handleCorsPreFlight } from './_lib/cors.js';
+import { checkRateLimit } from './_lib/rateLimiter.js';
 
 /**
  * Poseidon System Prompt — encodes the "guide" (Curation Standard, protocol rules, persona behavior)
@@ -97,14 +99,8 @@ function buildUserContext(sessionData) {
 }
 
 export default async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end();
-  }
+  // CORS
+  if (handleCorsPreFlight(req, res, { methods: 'POST, OPTIONS' })) return;
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
@@ -114,6 +110,33 @@ export default async function handler(req, res) {
 
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ error: 'Missing required field: message' });
+  }
+
+  // ─── Rate Limiting: 30 requests per hour per IP (no auth on this endpoint) ─
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
+    || req.headers['x-real-ip']
+    || req.socket?.remoteAddress
+    || 'unknown';
+  const { allowed, remaining, resetIn } = checkRateLimit(`poseidon:${clientIp}`, {
+    maxRequests: 30,
+    windowMs: 60 * 60 * 1000, // 1 hour
+  });
+
+  res.setHeader('X-RateLimit-Limit', '30');
+  res.setHeader('X-RateLimit-Remaining', String(remaining));
+  res.setHeader('X-RateLimit-Reset', String(resetIn));
+
+  if (!allowed) {
+    return res.status(429).json({
+      message: mode === 'pro'
+        ? `[RATE LIMITED] 30 queries/hour exceeded. Retry in ${resetIn}s.`
+        : `🌊 You've been asking a lot of great questions! I need a short break — try again in ${Math.ceil(resetIn / 60)} minutes.`,
+      intent: "fallback_unknown",
+      action: { type: "NONE", payload: {} },
+      echoReaction: { mood: "calm", glowActive: false, glowColor: "", swimSpeedMultiplier: 0.5, durationMs: 2000 },
+      confidence: 0.0,
+      rateLimited: true,
+    });
   }
 
   // Fallback: if Vertex AI isn't configured, return a structured offline response

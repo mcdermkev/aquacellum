@@ -3,13 +3,10 @@
 
 import { isVertexConfigured, vertexGenerateContent } from './_lib/vertexClient.js';
 import { ethers } from "ethers";
+import { handleCorsPreFlight } from './_lib/cors.js';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (handleCorsPreFlight(req, res, { methods: 'GET, OPTIONS' })) return;
 
   const gcpProjectId = process.env.GCP_PROJECT_ID;
   const gcpLocation = process.env.GCP_LOCATION;

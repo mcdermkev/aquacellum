@@ -3,6 +3,20 @@ import { handlePoseidonAction } from "../utils/poseidonBridge";
 import { usePoseidon } from "../hooks/usePoseidon";
 
 /**
+ * Format action type into a friendly label for the confirmation bar.
+ */
+function formatActionLabel(actionType, casual = true) {
+  const labels = {
+    CREATE_TANK: casual ? "create a new tank" : "CREATE_TANK",
+    LOG_HUSBANDRY: casual ? "log a care event" : "LOG_HUSBANDRY",
+    QUERY_COMPATIBILITY: casual ? "check compatibility" : "QUERY_COMPATIBILITY",
+    SUGGEST_SPECIES: casual ? "suggest species" : "SUGGEST_SPECIES",
+    LOG_WATER_PARAMS: casual ? "record water parameters" : "LOG_WATER_PARAMS",
+  };
+  return labels[actionType] || (casual ? actionType.toLowerCase().replace(/_/g, " ") : actionType);
+}
+
+/**
  * PoseidonChatConsole Panel
  * Renders a glassmorphic panel on the right boundary of the biotope banner.
  * Bridges conversational NLP to local Dexie mutations and Echo animations.
@@ -22,6 +36,7 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, o
   } = usePoseidon({ tankId, mode, walletAddress: walletAccount });
 
   const [inputText, setInputText] = useState("");
+  const [pendingAction, setPendingAction] = useState(null); // { type, payload, msgId }
   const messagesEndRef = useRef(null);
   const workerRef = useRef(null);
 
@@ -47,17 +62,16 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, o
     const lastMsg = messages[messages.length - 1];
     if (!lastMsg || lastMsg.sender !== 'poseidon' || lastMsg.intent === 'init') return;
 
-    // Route action to Dexie bridge
+    // Queue action for user confirmation (don't auto-execute)
     if (lastMsg.action && lastMsg.action.type !== "NONE") {
-      handlePoseidonAction({
+      setPendingAction({
         type: lastMsg.action.type,
-        payload: lastMsg.action.payload,
-        tankId,
-        walletAddress: walletAccount
+        payload: lastMsg.action.payload || {},
+        msgId: lastMsg.id,
       });
     }
 
-    // Dispatch echo reaction to CompanionFishEntity
+    // Dispatch echo reaction to CompanionFishEntity (non-destructive, ok to auto-run)
     if (lastMsg.echoReaction) {
       window.dispatchEvent(
         new CustomEvent("poseidon:echo-reaction", {
@@ -66,6 +80,23 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, o
       );
     }
   }, [messages, tankId, walletAccount]);
+
+  // Confirm and execute the pending action
+  const confirmAction = () => {
+    if (!pendingAction) return;
+    handlePoseidonAction({
+      type: pendingAction.type,
+      payload: pendingAction.payload,
+      tankId,
+      walletAddress: walletAccount,
+    });
+    setPendingAction(null);
+  };
+
+  // Dismiss the pending action without executing
+  const dismissAction = () => {
+    setPendingAction(null);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -298,6 +329,65 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, o
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Action Confirmation Bar */}
+      {pendingAction && (
+        <div
+          style={{
+            padding: "0.6rem 0.75rem",
+            background: casualModeActive
+              ? "rgba(251, 191, 36, 0.08)"
+              : "rgba(168, 85, 247, 0.08)",
+            borderTop: `1px solid ${casualModeActive ? "rgba(251, 191, 36, 0.25)" : "rgba(168, 85, 247, 0.25)"}`,
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            flexWrap: "wrap",
+          }}
+          role="alert"
+          aria-label="Action confirmation"
+        >
+          <span style={{ fontSize: "0.9rem" }}>⚡</span>
+          <span style={{ fontSize: "0.72rem", color: casualModeActive ? "#fbbf24" : "#c084fc", flex: 1, minWidth: 0 }}>
+            {casualModeActive
+              ? `Poseidon wants to: ${formatActionLabel(pendingAction.type, true)}`
+              : `ACTION: ${pendingAction.type}`}
+          </span>
+          <button
+            type="button"
+            onClick={confirmAction}
+            style={{
+              padding: "0.3rem 0.6rem",
+              fontSize: "0.7rem",
+              fontWeight: 600,
+              borderRadius: "6px",
+              border: "none",
+              background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+              color: "#fff",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {casualModeActive ? "Confirm" : "EXEC"}
+          </button>
+          <button
+            type="button"
+            onClick={dismissAction}
+            style={{
+              padding: "0.3rem 0.5rem",
+              fontSize: "0.7rem",
+              borderRadius: "6px",
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.05)",
+              color: "var(--text-muted)",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {casualModeActive ? "Skip" : "DENY"}
+          </button>
+        </div>
+      )}
+
       {/* Input Console Form */}
       <form
         onSubmit={handleSubmit}
@@ -349,6 +439,63 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, o
           {isPro ? "RUN" : "Ask"}
         </button>
       </form>
+
+      {/* Quick Action Suggestion Chips */}
+      {messages.length <= 2 && !inputText && (
+        <div style={{
+          padding: "0.5rem 0.75rem",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "0.4rem",
+          borderTop: `1px solid ${isPro ? "rgba(168, 85, 247, 0.1)" : "rgba(56, 189, 248, 0.1)"}`,
+          background: "rgba(0,0,0,0.08)",
+        }}>
+          <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", width: "100%", marginBottom: "0.15rem" }}>
+            {isPro ? "SUGGESTED COMMANDS:" : "Try asking:"}
+          </span>
+          {(isPro ? [
+            { label: "LOG_FEEDING", prompt: "log feeding for this tank" },
+            { label: "WATER_TEST", prompt: "log water parameters" },
+            { label: "CHECK_COMPAT", prompt: "check species compatibility" },
+            { label: "SUGGEST_SPECIES", prompt: "suggest species for my tank" },
+          ] : [
+            { label: "🍽️ Log Feeding", prompt: "log a feeding for this tank" },
+            { label: "🧪 Water Test", prompt: "log my water test results" },
+            { label: "🐠 Check Compatibility", prompt: "are my fish compatible?" },
+            { label: "💡 Suggest Fish", prompt: "what fish would work well in my tank?" },
+          ]).map((chip) => (
+            <button
+              key={chip.label}
+              type="button"
+              onClick={() => {
+                setInputText(chip.prompt);
+              }}
+              style={{
+                padding: "0.25rem 0.5rem",
+                fontSize: "0.68rem",
+                borderRadius: isPro ? "0" : "12px",
+                border: `1px solid ${isPro ? "rgba(168, 85, 247, 0.25)" : "rgba(56, 189, 248, 0.2)"}`,
+                background: isPro ? "rgba(168, 85, 247, 0.06)" : "rgba(56, 189, 248, 0.06)",
+                color: accentColor,
+                cursor: "pointer",
+                fontFamily: isPro ? "'Courier New', monospace" : "inherit",
+                transition: "all 0.2s ease",
+                whiteSpace: "nowrap",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = isPro ? "rgba(168, 85, 247, 0.15)" : "rgba(56, 189, 248, 0.12)";
+                e.currentTarget.style.borderColor = isPro ? "rgba(168, 85, 247, 0.4)" : "rgba(56, 189, 248, 0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = isPro ? "rgba(168, 85, 247, 0.06)" : "rgba(56, 189, 248, 0.06)";
+                e.currentTarget.style.borderColor = isPro ? "rgba(168, 85, 247, 0.25)" : "rgba(56, 189, 248, 0.2)";
+              }}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

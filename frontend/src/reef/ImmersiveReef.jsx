@@ -30,18 +30,31 @@ class ReefErrorBoundary extends React.Component {
       return (
         <div style={{
           width: "100%", height: "100%", display: "flex", alignItems: "center",
-          justifyContent: "center", flexDirection: "column", gap: 12,
-          background: "#0a1628", color: "#ef4444", fontFamily: "system-ui, sans-serif", padding: 24
+          justifyContent: "center", flexDirection: "column", gap: 16,
+          background: "#0a1628", color: "#f8fafc", fontFamily: "system-ui, sans-serif", padding: 32,
+          textAlign: "center",
         }}>
-          <div style={{ fontSize: "1.2rem" }}>Reef rendering error</div>
-          <div style={{ fontSize: "0.8rem", color: "#94a3b8", maxWidth: 500, wordBreak: "break-word" }}>
-            {this.state.error?.message || "Unknown error"}
+          <div style={{ fontSize: "2.5rem" }}>🌊</div>
+          <div style={{ fontSize: "1.2rem", fontWeight: 600 }}>The Immersive Reef couldn't load</div>
+          <div style={{ fontSize: "0.85rem", color: "#94a3b8", maxWidth: 420, lineHeight: 1.5 }}>
+            Your device or browser may not support WebGL/WebXR, or available memory was exceeded.
+            Try on a desktop with a modern browser (Chrome, Edge, or Firefox) for the best experience.
           </div>
-          <button onClick={() => this.setState({ hasError: false, error: null })}
-            style={{ marginTop: 12, padding: "8px 16px", borderRadius: 8, border: "1px solid #38bdf8",
-              background: "transparent", color: "#38bdf8", cursor: "pointer" }}>
-            Retry
-          </button>
+          <div style={{ fontSize: "0.72rem", color: "#64748b", maxWidth: 420, wordBreak: "break-word", marginTop: 4 }}>
+            {this.state.error?.message || "Unknown rendering error"}
+          </div>
+          <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+            <button onClick={() => this.setState({ hasError: false, error: null })}
+              style={{ padding: "10px 20px", borderRadius: 8, border: "1px solid #38bdf8",
+                background: "transparent", color: "#38bdf8", cursor: "pointer", fontWeight: 500, fontSize: "0.85rem" }}>
+              Try Again
+            </button>
+            <button onClick={() => window.history.back()}
+              style={{ padding: "10px 20px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)",
+                background: "rgba(255,255,255,0.05)", color: "#94a3b8", cursor: "pointer", fontWeight: 500, fontSize: "0.85rem" }}>
+              Go Back
+            </button>
+          </div>
         </div>
       );
     }

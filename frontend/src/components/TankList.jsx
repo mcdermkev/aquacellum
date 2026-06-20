@@ -575,6 +575,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
   // Detailed Tank View State
   const [detailSubTab, setDetailSubTab] = useState("overview"); // "overview" | "fish" | "history" | "notes"
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [commenterRole, setCommenterRole] = useState("hobbyist");
   const [composerCategory, setComposerCategory] = useState("observation"); // "observation" | "telemetry" | "spawning" | "lab-audit"
@@ -942,12 +943,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   };
 
   const logTestLongPress = () => {
+    const lastLog = activeTank.latestLog;
     setFormData({
-      temp: activeTank.latestLog ? (activeTank.latestLog.tempCelsiusX10/10).toString() : "24.5",
-      ph: activeTank.latestLog ? (activeTank.latestLog.phX10/10).toString() : "7.2",
-      ammonia: "0.0",
-      nitrite: "0.0",
-      nitrate: "5.0",
+      temp: lastLog ? (lastLog.tempCelsiusX10/10).toString() : "24.5",
+      ph: lastLog ? (lastLog.phX10/10).toString() : "7.2",
+      ammonia: lastLog?.ammoniaPpmX100 ? (lastLog.ammoniaPpmX100/100).toString() : "0.0",
+      nitrite: lastLog?.nitritePpmX100 ? (lastLog.nitritePpmX100/100).toString() : "0.0",
+      nitrate: lastLog?.nitratePpmX100 ? (lastLog.nitratePpmX100/100).toString() : "5.0",
       notes: ""
     });
     setQuickLogMode("water_test");
@@ -1984,6 +1986,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     setShowBubble(true);
                     setTimeout(() => setShowBubble(false), 3000);
                   }}
+                  className="echo-egg-wobble"
                   style={{
                     position: 'absolute',
                     bottom: '12px',
@@ -1997,9 +2000,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     cursor: 'pointer',
                     boxShadow: '0 0 10px rgba(0,229,255,0.2)',
                     transition: 'transform 0.2s ease',
-                    zIndex: 10
+                    zIndex: 10,
+                    animation: 'eggWobble 4s ease-in-out infinite',
                   }}
-                  title="Quiet Mystery Egg"
+                  title="Something's stirring inside..."
                   onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
                   onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
@@ -3564,6 +3568,94 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   </div>
                 );
               })()}
+
+              {/* Archive Tank — danger zone */}
+              <div style={{
+                marginTop: "2rem",
+                padding: "1rem",
+                borderTop: "1px solid rgba(248, 113, 113, 0.15)",
+              }}>
+                {!showArchiveConfirm ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowArchiveConfirm(true)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "var(--text-muted)",
+                      fontSize: "0.72rem",
+                      cursor: "pointer",
+                      padding: "0.4rem 0",
+                      opacity: 0.7,
+                      transition: "opacity 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.color = "#f87171"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.opacity = "0.7"; e.currentTarget.style.color = "var(--text-muted)"; }}
+                  >
+                    {casualModeActive ? "🗑️ Archive this tank..." : "DECOMMISSION UNIT..."}
+                  </button>
+                ) : (
+                  <div style={{
+                    padding: "0.75rem",
+                    background: "rgba(248, 113, 113, 0.06)",
+                    border: "1px solid rgba(248, 113, 113, 0.2)",
+                    borderRadius: "8px",
+                  }}>
+                    <p style={{ fontSize: "0.78rem", color: "#f87171", marginBottom: "0.5rem", lineHeight: 1.4 }}>
+                      {getSpecimenCount(activeTank) > 0
+                        ? (casualModeActive
+                          ? `⚠️ This tank has ${getSpecimenCount(activeTank)} fish! Archiving will hide it from your dashboard. Fish records are preserved.`
+                          : `WARNING: Unit contains ${getSpecimenCount(activeTank)} registered specimens. Archive sets active=false. Specimen records retained.`)
+                        : (casualModeActive
+                          ? "This will hide the tank from your dashboard. You can re-import it later from a backup."
+                          : "Sets unit active=false. Reversible via data import.")}
+                    </p>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await db.tanks.update(activeTank.id, { active: false });
+                            queryClient.invalidateQueries({ queryKey: ["tanks", walletAccount] });
+                            setActiveTank(null);
+                            setShowArchiveConfirm(false);
+                          } catch (err) {
+                            console.error("Archive failed:", err);
+                          }
+                        }}
+                        style={{
+                          padding: "0.4rem 0.8rem",
+                          fontSize: "0.75rem",
+                          fontWeight: 600,
+                          borderRadius: "6px",
+                          border: "none",
+                          background: "linear-gradient(135deg, #dc2626, #b91c1c)",
+                          color: "#fff",
+                          cursor: "pointer",
+                          boxShadow: "0 2px 8px rgba(220, 38, 38, 0.3)",
+                        }}
+                      >
+                        {casualModeActive ? "Yes, Archive" : "CONFIRM DECOMMISSION"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowArchiveConfirm(false)}
+                        style={{
+                          padding: "0.4rem 0.8rem",
+                          fontSize: "0.75rem",
+                          borderRadius: "6px",
+                          border: "1px solid rgba(255,255,255,0.12)",
+                          background: "rgba(255,255,255,0.05)",
+                          color: "var(--text-muted)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           </>
@@ -4197,6 +4289,42 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   )}
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
+                    {/* "Same as last time" quick-fill button */}
+                    {activeTank?.latestLog && (
+                      <div style={{ gridColumn: "span 2", marginBottom: "-0.5rem" }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const lastLog = activeTank.latestLog;
+                            setFormData({
+                              temp: lastLog.tempCelsiusX10 ? (lastLog.tempCelsiusX10/10).toString() : formData.temp,
+                              ph: lastLog.phX10 ? (lastLog.phX10/10).toString() : formData.ph,
+                              ammonia: lastLog.ammoniaPpmX100 ? (lastLog.ammoniaPpmX100/100).toString() : formData.ammonia,
+                              nitrite: lastLog.nitritePpmX100 ? (lastLog.nitritePpmX100/100).toString() : formData.nitrite,
+                              nitrate: lastLog.nitratePpmX100 ? (lastLog.nitratePpmX100/100).toString() : formData.nitrate,
+                              notes: formData.notes,
+                            });
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "0.5rem",
+                            fontSize: "0.75rem",
+                            fontWeight: 500,
+                            borderRadius: "6px",
+                            border: "1px dashed rgba(52, 211, 153, 0.3)",
+                            background: "rgba(52, 211, 153, 0.04)",
+                            color: "var(--accent-green)",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease",
+                            fontFamily: "'Plus Jakarta Sans', sans-serif",
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(52, 211, 153, 0.1)"; e.currentTarget.style.borderColor = "rgba(52, 211, 153, 0.5)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(52, 211, 153, 0.04)"; e.currentTarget.style.borderColor = "rgba(52, 211, 153, 0.3)"; }}
+                        >
+                          {casualModeActive ? "✨ Same as last time" : "↻ REPEAT LAST READING"}
+                        </button>
+                      </div>
+                    )}
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.25rem" }}>
                         <span style={{ color: "var(--text-secondary)" }}>Temp (°C)</span>

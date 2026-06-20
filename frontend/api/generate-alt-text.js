@@ -2,6 +2,7 @@
 // Generates accessible alt-text for user-uploaded aquarium photos via Gemini Vision.
 
 import { vertexGenerateContent, isVertexConfigured } from './_lib/vertexClient.js';
+import { handleCorsPreFlight } from './_lib/cors.js';
 
 /**
  * Accepts either:
@@ -11,11 +12,7 @@ import { vertexGenerateContent, isVertexConfigured } from './_lib/vertexClient.j
  * Returns: { altText: "Descriptive alt text...", error?: string }
  */
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (handleCorsPreFlight(req, res, { methods: 'POST, OPTIONS' })) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
   const { imageUrl, imageBase64 } = req.body || {};

@@ -41,7 +41,7 @@ import { useCatalogHydration } from "../hooks/useCatalogHydration";
 
 // Hard cap on the Echo-syncing hold so a slow/failed catalog hydration never
 // blocks the final transition into the dashboard (Req 9.5, Property 6).
-const CATALOG_HOLD_CAP_MS = 8000;
+const CATALOG_HOLD_CAP_MS = 4000;
 
 // Echo's hatchling art (served from /public) — reused on the syncing beat.
 const ECHO_FRY = "/echo-fry.png";

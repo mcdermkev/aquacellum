@@ -61,6 +61,26 @@ export function MarketplaceBoard({
   const [fishbaseData, setFishbaseData] = useState([]);
   const [checkoutQuantityMap, setCheckoutQuantityMap] = useState({});
   const [userLocation, setUserLocation] = useState({ lat: 37.7749, lng: -122.4194 }); // Default SF
+  const [locationRequested, setLocationRequested] = useState(false);
+
+  // Geolocation: only request when user interacts with proximity/map features.
+  const requestUserLocation = () => {
+    if (locationRequested) return;
+    setLocationRequested(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (err) => {
+          console.warn("Geolocation blocked/failed, using default center.", err);
+        }
+      );
+    }
+  };
 
   const { 
     results: searchedListings, 
@@ -113,23 +133,6 @@ export function MarketplaceBoard({
     // Minimum card width of 320px + 24px gap = 344px. Handle edge case of very narrow screens.
     return Math.max(1, Math.floor((containerWidth + 24) / 344));
   }, [containerWidth]);
-
-
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (err) => {
-          console.warn("Geolocation blocked/failed, using default center.", err);
-        }
-      );
-    }
-  }, []);
 
   useEffect(() => {
     if (casualModeActive) {

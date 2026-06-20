@@ -1,8 +1,12 @@
 // Vercel serverless function: frontend/api/suggest-species.js
 
 import { vertexGenerateContent, isVertexConfigured } from './_lib/vertexClient.js';
+import { handleCorsPreFlight } from './_lib/cors.js';
 
 export default async function handler(req, res) {
+  // CORS
+  if (handleCorsPreFlight(req, res, { methods: 'POST, OPTIONS' })) return;
+
   // Enforce POST method
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });

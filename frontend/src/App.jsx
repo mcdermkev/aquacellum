@@ -31,6 +31,8 @@ import { EchoWhispers } from "./components/EchoWhispers";
 import { BetaBanner } from "./components/BetaBanner";
 import { TabErrorBoundary } from "./components/TabErrorBoundary";
 import { NetworkStatusBanner } from "./components/NetworkStatusBanner";
+import { FeedbackWidget } from "./components/FeedbackWidget";
+import { WhatsNewModal } from "./components/WhatsNewModal";
 
 
 // Lazy-load The Reef social layer (code-split for performance)
@@ -62,6 +64,19 @@ const FOUNDER_WALLET_PATTERNS = [
 const CONTRACT_ADDRESS = "0x351ca8f34D94F29F6f865Afa419A636324473DeF";
 const MARKETPLACE_ADDRESS = "0x16168B514144e0380610b78d904a4de51ba03Ca3";
 
+/** Format a sync timestamp into a human-readable relative time. */
+function formatSyncTime(date) {
+  if (!date) return "";
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin} min ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} hr ago`;
+  return date.toLocaleDateString();
+}
+
 export default function App() {
   const { account, ready, authenticated } = useAuth();
   const queryClient = useQueryClient();
@@ -80,25 +95,34 @@ export default function App() {
 
   // Cloud sync: on login, pull cloud data to this device then push any local-only data up.
   // This is what makes tanks appear on any device the user signs in to.
+  const runCloudSync = async (walletAddr, signal) => {
+    setSyncStatus("syncing");
+    try {
+      await pullCloudDataForWallet(walletAddr);
+      if (signal?.cancelled) return;
+      await pushAllLocalDataToCloud(walletAddr);
+      if (!signal?.cancelled) {
+        queryClient.invalidateQueries({ queryKey: ["tanks", walletAddr] });
+        setSyncStatus("success");
+        const now = new Date();
+        setLastSyncedAt(now);
+        localStorage.setItem("aquadex_last_synced", now.toISOString());
+        // Auto-dismiss success after 3s
+        setTimeout(() => setSyncStatus((s) => s === "success" ? null : s), 3000);
+      }
+    } catch (e) {
+      console.warn("[CloudSync] Login sync failed:", e.message);
+      if (!signal?.cancelled) {
+        setSyncStatus("failed");
+      }
+    }
+  };
+
   useEffect(() => {
     if (!account) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        // 1. Pull cloud → local (other-device data this device doesn't have yet)
-        await pullCloudDataForWallet(account);
-        if (cancelled) return;
-        // 2. Push local → cloud (data created on this device not yet in cloud)
-        await pushAllLocalDataToCloud(account);
-        // 3. Invalidate tank cache so UI re-renders with any newly pulled tanks
-        if (!cancelled) {
-          queryClient.invalidateQueries({ queryKey: ["tanks", account] });
-        }
-      } catch (e) {
-        console.warn("[CloudSync] Login sync failed silently:", e.message);
-      }
-    })();
-    return () => { cancelled = true; };
+    const signal = { cancelled: false };
+    runCloudSync(account, signal);
+    return () => { signal.cancelled = true; };
   }, [account]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Set up ethers event listeners for reactive background refetching
@@ -198,6 +222,11 @@ export default function App() {
   const [preselectedListTank, setPreselectedListTank] = useState(null);
   const [xp, setXp] = useState(() => getXp());
   const [toasts, setToasts] = useState([]);
+  const [syncStatus, setSyncStatus] = useState(null); // null | "syncing" | "failed" | "success"
+  const [lastSyncedAt, setLastSyncedAt] = useState(() => {
+    const saved = localStorage.getItem("aquadex_last_synced");
+    return saved ? new Date(saved) : null;
+  });
   const [casualModeActive, setCasualModeActive] = useState(() => {
     const saved = localStorage.getItem("aquadex_casual_mode");
     if (saved !== null) return saved === "true";
@@ -285,6 +314,9 @@ export default function App() {
       // Push a regular XP earned toast
       setToasts((prev) => [...prev, { id: toastId, points, label, isLevelUp: false }]);
 
+      // Haptic feedback on mobile — makes XP rewards feel physical
+      if (navigator.vibrate) navigator.vibrate(50);
+
       // Auto-expire after 4 seconds
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== toastId));
@@ -295,6 +327,8 @@ export default function App() {
         const levelUpId = toastId + 1;
         setTimeout(() => {
           setToasts((prev) => [...prev, { id: levelUpId, level: newLevel, isLevelUp: true }]);
+          // Stronger haptic pattern for level-up celebration
+          if (navigator.vibrate) navigator.vibrate([50, 30, 80]);
           setTimeout(() => {
             setToasts((prev) => prev.filter((t) => t.id !== levelUpId));
           }, 5000);
@@ -385,6 +419,25 @@ export default function App() {
   };
 
   const levelInfo = getLevelInfo(xp);
+
+  // Count unique species across all user's tanks for the profile chip
+  const [speciesCount, setSpeciesCount] = useState(0);
+  useEffect(() => {
+    if (!account) { setSpeciesCount(0); return; }
+    (async () => {
+      try {
+        const { db } = await import("./db");
+        const tanks = await db.tanks.where("ownerAddress").equals(account).toArray();
+        const speciesIds = new Set();
+        for (const tank of tanks) {
+          if (tank.specimens) {
+            tank.specimens.forEach(s => { if (s.speciesId) speciesIds.add(Number(s.speciesId)); });
+          }
+        }
+        setSpeciesCount(speciesIds.size);
+      } catch { setSpeciesCount(0); }
+    })();
+  }, [account, syncStatus]); // re-count after sync completes
 
   const renderContent = () => {
     switch (activeTab) {
@@ -752,6 +805,22 @@ export default function App() {
             )}
           </span>
 
+          {/* Species count chip */}
+          {speciesCount > 0 && (
+            <span style={{
+              fontSize: "0.62rem",
+              fontWeight: "500",
+              color: "var(--accent-green)",
+              background: "rgba(52, 211, 153, 0.08)",
+              border: "1px solid rgba(52, 211, 153, 0.2)",
+              borderRadius: "12px",
+              padding: "0.1rem 0.45rem",
+              whiteSpace: "nowrap",
+            }}>
+              🐠 {speciesCount} species
+            </span>
+          )}
+
           {/* Progress bar */}
           <div style={{ 
             flex: 1, 
@@ -903,6 +972,82 @@ export default function App() {
         />
       )}
 
+      {/* Feedback Widget — floating bug report / feedback button */}
+      <FeedbackWidget walletAddress={account} casualModeActive={casualModeActive} />
+
+      {/* Cloud Sync Status Toast */}
+      {syncStatus && syncStatus !== "success" && (
+        <div style={{
+          position: "fixed",
+          bottom: "8.5rem",
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 10001,
+          display: "flex",
+          alignItems: "center",
+          gap: "0.75rem",
+          padding: "0.75rem 1.25rem",
+          background: "rgba(14, 20, 36, 0.95)",
+          border: syncStatus === "failed"
+            ? "1px solid rgba(248, 113, 113, 0.4)"
+            : "1px solid rgba(56, 189, 248, 0.3)",
+          borderRadius: "var(--radius-sm)",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.6)",
+          backdropFilter: "blur(12px)",
+          fontSize: "0.82rem",
+          color: "#f8fafc",
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
+          maxWidth: "90vw",
+        }}>
+          {syncStatus === "syncing" && (
+            <>
+              <span style={{ color: "var(--accent-blue)", animation: "pulse 1.5s ease-in-out infinite" }}>⟳</span>
+              <span style={{ color: "var(--text-secondary)" }}>Syncing your data...</span>
+            </>
+          )}
+          {syncStatus === "failed" && (
+            <>
+              <span style={{ color: "var(--accent-red)" }}>⚠</span>
+              <span style={{ color: "var(--text-secondary)" }}>
+                Sync pending — your data is saved locally.
+              </span>
+              <button
+                onClick={() => account && runCloudSync(account, { cancelled: false })}
+                style={{
+                  background: "rgba(255, 255, 255, 0.06)",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  borderRadius: "6px",
+                  color: "var(--accent-blue)",
+                  padding: "0.3rem 0.7rem",
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  fontFamily: "'Outfit', sans-serif",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Retry
+              </button>
+              <button
+                onClick={() => setSyncStatus(null)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#64748b",
+                  cursor: "pointer",
+                  fontSize: "1rem",
+                  padding: "0 0.25rem",
+                  lineHeight: 1,
+                }}
+                aria-label="Dismiss sync notification"
+              >
+                ×
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       {/* XP Toasts Container */}
       <div className="xp-toast-container" style={{
         position: "fixed",
@@ -966,6 +1111,11 @@ export default function App() {
         <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
           Aquadex Protocol © {new Date().getFullYear()} — Digital aquarium management and specimen registries.
         </p>
+        {lastSyncedAt && account && (
+          <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", opacity: 0.6, marginTop: "0.4rem" }}>
+            ☁️ Last synced: {formatSyncTime(lastSyncedAt)}
+          </p>
+        )}
       </footer>
 
       {/* Specimen Detail Modal Overlay */}
@@ -980,6 +1130,9 @@ export default function App() {
           casualModeActive={casualModeActive}
         />
       )}
+
+      {/* What's New changelog modal — shows once per version bump */}
+      <WhatsNewModal />
     </div>
 
       {/* TODO: Onboarding wizard + tour temporarily disabled (mobile bug — step 1 blocks progress).

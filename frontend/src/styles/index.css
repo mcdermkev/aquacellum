@@ -599,6 +599,15 @@ h1, h2, h3, h4, h5, h6 {
   to { transform: translateX(0); }
 }
 
+/* Echo Egg wobble animation — subtle periodic wiggle to build anticipation */
+@keyframes eggWobble {
+  0%, 85%, 100% { transform: rotate(0deg) scale(1); }
+  88% { transform: rotate(-3deg) scale(1.02); }
+  91% { transform: rotate(3deg) scale(1.02); }
+  94% { transform: rotate(-2deg) scale(1.01); }
+  97% { transform: rotate(1deg) scale(1); }
+}
+
 /* Pedigree pricing cards */
 .pedigree-purebred {
   border: 1px solid rgba(251, 191, 36, 0.3) !important;

@@ -4,6 +4,49 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [0.9.1] — 2026-06-20
+
+### 🛡️ Beta Readiness: Security Hardening & Platform Polish
+
+Full security audit and UX polish pass to prepare for closed beta launch.
+
+#### Security Fixes
+- **CORS lockdown** — All API endpoints now restricted to allowed origins (aquacellum.com, aquadex.fish, Vercel previews, localhost). Created shared `_lib/cors.js` utility.
+- **Rate limiting** — Added sliding-window rate limiter (`_lib/rateLimiter.js`). Relay endpoint: 50 tx/hr per user. Poseidon AI: 30 queries/hr per IP. Returns proper 429 + `X-RateLimit-*` headers.
+- **Privy auth verified** — Confirmed `verifyPrivyToken.js` has proper JWKS-based JWT verification against Privy's endpoint.
+
+#### New Features
+- **Feedback Widget** — Floating "Feedback" button opens modal with category selector (Bug/Feature/UX/Other), textarea, optional screenshot upload. Stores to Supabase `beta_feedback` table + sends Discord webhook notification in real-time.
+- **"What's New" Modal** — Version-gated changelog popup shows curated user-facing changes on app update.
+- **Cloud Sync Toast** — Non-blocking notification on sync failure with Retry button. Auto-clears on success.
+- **Last Synced Timestamp** — Footer shows "☁️ Last synced: X min ago" to reassure offline-first users.
+- **Reset Local Data** — Two-step confirmation button in Settings to purge Dexie + localStorage for stuck accounts.
+- **Tank Archive + Confirmation** — "Archive this tank" with specimen count warning and two-step confirm.
+- **Poseidon Action Confirmation** — AI actions now require user confirmation before executing (Confirm/Skip bar).
+- **Poseidon Quick Action Chips** — Suggestion buttons (Log Feeding, Water Test, Check Compatibility, Suggest Fish) shown below chat input for new conversations.
+- **Species Count Chip** — Shows `🐠 X species` in the XP header bar.
+
+#### UX Improvements
+- **BetaBanner expanded** — Now includes "Known Beta Limitations" dropdown (data privacy, XP client-side, sponsor wallet, resets, AI accuracy). Auto-expands for first 3 sessions.
+- **Geolocation deferred** — No more surprise permission prompt on marketplace mount. Triggered only on map interaction.
+- **Catalog sync cap reduced** — Onboarding hold cap lowered from 8s → 4s for faster mobile experience.
+- **Water param pre-fill** — Form now pulls all 5 params from last reading + "Same as last time" one-tap button.
+- **Haptic feedback** — `navigator.vibrate(50)` on XP toasts, stronger pattern `[50, 30, 80]` on level-ups.
+- **Echo egg wobble** — Subtle CSS wiggle animation (4s cycle) during pre-hatch state. Tooltip: "Something's stirring inside..."
+- **WebXR error boundary** — Improved fallback with device compatibility guidance, "Try Again" and "Go Back" buttons.
+
+#### Files Changed
+| Area | Files |
+|------|-------|
+| API Security | `_lib/cors.js` (new), `_lib/rateLimiter.js` (new), all 9 API endpoints |
+| Frontend Components | `FeedbackWidget.jsx` (new), `WhatsNewModal.jsx` (new), `BetaBanner.jsx`, `PoseidonChatConsole.jsx`, `TankList.jsx`, `MarketplaceBoard.jsx`, `DataPortabilityWidget.jsx`, `OnboardingWizard.jsx` |
+| Reef/WebXR | `ImmersiveReef.jsx` |
+| App Shell | `App.jsx` |
+| Styles | `index.css` (eggWobble keyframe) |
+| Config | `frontend/.env` (Discord webhook) |
+
+---
+
 ## [Unreleased] — 2026-06-19
 
 ### 💳 Stripe Sandbox Integration & Fiat Payment Pipeline

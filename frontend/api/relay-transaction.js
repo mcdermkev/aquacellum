@@ -19,6 +19,8 @@
 
 import { ethers } from "ethers";
 import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
+import { handleCorsPreFlight } from "./_lib/cors.js";
+import { checkRateLimit } from "./_lib/rateLimiter.js";
 
 const MANAGER_ABI = [
   // Tank Registration
@@ -40,13 +42,7 @@ const MANAGER_ABI = [
 
 export default async function handler(req, res) {
   // CORS
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
+  if (handleCorsPreFlight(req, res, { methods: 'POST, OPTIONS', headers: 'Content-Type, Authorization' })) return;
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -56,6 +52,25 @@ export default async function handler(req, res) {
   const auth = await verifyPrivyToken(req);
   if (!auth.verified) {
     return res.status(401).json({ error: "Unauthorized", message: auth.error });
+  }
+
+  // ─── Rate Limiting: 50 transactions per hour per user ───────────────────
+  const rateLimitKey = auth.userId || auth.walletAddress || 'unknown';
+  const { allowed, remaining, resetIn } = checkRateLimit(rateLimitKey, {
+    maxRequests: 50,
+    windowMs: 60 * 60 * 1000, // 1 hour
+  });
+
+  res.setHeader('X-RateLimit-Limit', '50');
+  res.setHeader('X-RateLimit-Remaining', String(remaining));
+  res.setHeader('X-RateLimit-Reset', String(resetIn));
+
+  if (!allowed) {
+    return res.status(429).json({
+      error: "Rate limit exceeded",
+      message: `Maximum 50 transactions per hour. Try again in ${resetIn} seconds.`,
+      retryAfter: resetIn,
+    });
   }
 
   const { action, params } = req.body;
