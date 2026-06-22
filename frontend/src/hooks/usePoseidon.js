@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { db } from '../db';
 
 /**
@@ -6,7 +6,7 @@ import { db } from '../db';
  * 
  * Handles:
  * - Sending messages to the Edge Function
- * - Maintaining conversation history
+ * - Maintaining conversation history (persisted to sessionStorage)
  * - Assembling session context (tanks, recent logs, species) from Dexie
  * - Falling back to the local worker when offline or API unavailable
  * - Rate limiting (20 requests/hour as per spec)
@@ -15,12 +15,60 @@ import { db } from '../db';
 const POSEIDON_API_URL = '/api/poseidon';
 const MAX_REQUESTS_PER_HOUR = 20;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const SESSION_STORAGE_KEY = 'aquadex_poseidon_conversation';
+const SESSION_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes — conversations expire after inactivity
 
-export function usePoseidon({ tankId, mode = 'casual', walletAddress } = {}) {
-  const [messages, setMessages] = useState([]);
+/**
+ * Load persisted conversation from sessionStorage.
+ * Returns messages array or null if expired/missing.
+ */
+function loadPersistedConversation(persistKey) {
+  try {
+    const raw = sessionStorage.getItem(persistKey || SESSION_STORAGE_KEY);
+    if (!raw) return null;
+    const { messages: stored, lastActivity } = JSON.parse(raw);
+    // Expire stale conversations (30 min inactivity)
+    if (Date.now() - lastActivity > SESSION_EXPIRY_MS) {
+      sessionStorage.removeItem(persistKey || SESSION_STORAGE_KEY);
+      return null;
+    }
+    return Array.isArray(stored) ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Persist conversation to sessionStorage.
+ */
+function persistConversation(messages, persistKey) {
+  try {
+    if (!messages || messages.length === 0) {
+      sessionStorage.removeItem(persistKey || SESSION_STORAGE_KEY);
+      return;
+    }
+    sessionStorage.setItem(persistKey || SESSION_STORAGE_KEY, JSON.stringify({
+      messages,
+      lastActivity: Date.now(),
+    }));
+  } catch {
+    // sessionStorage full or unavailable — degrade gracefully
+  }
+}
+
+export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey } = {}) {
+  const [messages, setMessages] = useState(() => {
+    // Restore persisted conversation on mount
+    return loadPersistedConversation(persistKey) || [];
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const requestTimestamps = useRef([]);
+
+  // Persist messages whenever they change
+  useEffect(() => {
+    persistConversation(messages, persistKey);
+  }, [messages, persistKey]);
 
   /**
    * Gather session context from Dexie for grounding Poseidon's responses.
@@ -202,11 +250,12 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress } = {}) {
   }, [mode, messages, gatherSessionContext, checkRateLimit]);
 
   /**
-   * Clear conversation history.
+   * Clear conversation history (also clears persistence).
    */
   const clearConversation = useCallback(() => {
     setMessages([]);
-  }, []);
+    sessionStorage.removeItem(persistKey || SESSION_STORAGE_KEY);
+  }, [persistKey]);
 
   /**
    * Initialize with a greeting message.

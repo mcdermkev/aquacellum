@@ -34,6 +34,7 @@ import { db } from "./db";
 import { TabErrorBoundary } from "./components/TabErrorBoundary";
 import { NetworkStatusBanner } from "./components/NetworkStatusBanner";
 import { FeedbackWidget } from "./components/FeedbackWidget";
+import { PoseidonGlobalWidget } from "./components/PoseidonGlobalWidget";
 import { WhatsNewModal } from "./components/WhatsNewModal";
 import { IncomingSpecimens } from "./components/IncomingSpecimens";
 import { IncomingBadge } from "./components/IncomingBadge";
@@ -420,6 +421,27 @@ export default function App() {
     };
     window.addEventListener("reef_share_tank", handleShareOnReef);
     return () => window.removeEventListener("reef_share_tank", handleShareOnReef);
+  }, []);
+
+  // Listen for Poseidon deep-link navigation events (species search, tab switches)
+  useEffect(() => {
+    const handlePoseidonNav = (e) => {
+      const { tab, search } = e.detail || {};
+      if (tab) {
+        setActiveTab(tab);
+        window.history.pushState({ tab }, "", `#${tab}`);
+      }
+      // If a species search query is provided, dispatch it for the gallery to pick up
+      if (search) {
+        setTimeout(() => {
+          window.dispatchEvent(
+            new CustomEvent("poseidon:species-search", { detail: { query: search } })
+          );
+        }, 200);
+      }
+    };
+    window.addEventListener("poseidon:navigate", handlePoseidonNav);
+    return () => window.removeEventListener("poseidon:navigate", handlePoseidonNav);
   }, []);
 
   const handleWalletConnected = (addr) => {
@@ -1036,6 +1058,13 @@ export default function App() {
 
       {/* Feedback Widget — floating bug report / feedback button */}
       <FeedbackWidget walletAddress={account} casualModeActive={casualModeActive} />
+
+      {/* Poseidon Global Widget — AI assistant accessible from anywhere */}
+      <PoseidonGlobalWidget
+        walletAddress={account}
+        casualModeActive={casualModeActive}
+        activeTab={activeTab}
+      />
 
       {/* Cloud Sync Status Toast */}
       {syncStatus && syncStatus !== "success" && (
