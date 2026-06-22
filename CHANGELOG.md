@@ -4,6 +4,35 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [0.9.4] — 2026-06-20
+
+### 🔱 Global Poseidon AI Chat Widget
+
+Poseidon is now accessible from anywhere on the site via a floating action button. Talk to the AI assistant without leaving your current page — with session memory, mobile-optimized UX, and smart navigation links.
+
+#### New Features
+- **Global FAB** — Floating "Poseidon" button (bottom-right) opens a slide-up glassmorphic chat drawer. Works on every tab.
+- **Conversation persistence** — Chat history stored in sessionStorage, survives page navigation within the same session. Auto-expires after 30 minutes of inactivity.
+- **Mobile pill mode** — On small screens (≤480px), a compact pill previews the last Poseidon response above the FAB. Tap to expand, dismiss with ×.
+- **Deep-link detection** — Species names in AI responses (50+ common freshwater fish) render as clickable green links → navigate to gallery with search pre-filled. Navigation intents ("check the marketplace") become blue action links that switch tabs.
+- **Context-aware suggestions** — Quick-tap suggestion chips adapt based on the active dashboard tab (tanks → water params, breeder → spawning tips, marketplace → pricing help).
+- **Echo integration** — Poseidon responses with echo reactions dispatch `poseidon:echo-reaction` events for the companion fish entity.
+
+#### New Files
+| File | Purpose |
+|------|---------|
+| `PoseidonGlobalWidget.jsx` | Main widget component: FAB, panel, messages, pill, suggestions |
+| `poseidonDeepLinks.js` | Utility: parses AI text for species names and nav intents |
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `usePoseidon.js` | Added sessionStorage persistence (save/restore/expire), `persistKey` option |
+| `App.jsx` | Renders global widget, added `poseidon:navigate` event listener for deep-links |
+| `index.css` | Full widget CSS: FAB animations, panel glassmorphism, pill, deep-link styles, responsive breakpoints |
+
+---
+
 ## [0.9.3] — 2026-06-20
 
 ### 🚚 Post-Purchase Arrival Flow
