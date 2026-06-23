@@ -1,50 +1,48 @@
 /**
  * Vercel Serverless Function: /api/ensure-profile
  *
- * Multi-action endpoint (stays within Vercel Hobby 12-function limit).
+ * Creates or retrieves a user profile using the service role key (bypasses RLS).
+ * This is a best-effort fallback: the browser normally creates profiles directly
+ * via the anon key (dev RLS bypass policies allow it). This endpoint is only hit
+ * if the direct insert fails.
  *
- * Actions:
- *   POST { action: "ensure-profile", walletAddress, initialData? }
- *     → Creates or retrieves a user profile using service role (bypasses RLS).
+ * POST body: { walletAddress, initialData? }
+ * Returns: { data: profile } | { error: string }
  *
- *   POST { action: "discord-feedback", category, description, ... }
- *     → Proxies feedback to Discord webhook (avoids browser CORS block).
- *
- *   POST { walletAddress, initialData? }  (no action field — legacy compat)
- *     → Same as "ensure-profile".
+ * Requires SUPABASE_URL + SUPABASE_SERVICE_KEY in the Vercel environment. If those
+ * are missing, the function returns 503 (instead of crashing at module load, which
+ * would surface as an opaque 500).
  */
 
 import { createClient } from "@supabase/supabase-js";
 import { handleCorsPreFlight } from "./_lib/cors.js";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "",
-  process.env.SUPABASE_SERVICE_KEY || ""
-);
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || "";
+
+// Lazily construct the client so a missing env var yields a clean 503 rather than
+// throwing at module load (which Vercel reports as a generic 500 with no body).
+let _supabase = null;
+function getSupabase() {
+  if (_supabase) return _supabase;
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return null;
+  _supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+  return _supabase;
+}
 
 export default async function handler(req, res) {
-  // CORS
   if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS" })) return;
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { action } = req.body || {};
-
-  // Route to the appropriate handler
-  if (action === "discord-feedback") {
-    return handleDiscordFeedback(req, res);
+  const supabase = getSupabase();
+  if (!supabase) {
+    console.error("[ensure-profile] Missing SUPABASE_URL or SUPABASE_SERVICE_KEY in Vercel env");
+    return res.status(503).json({ error: "Profile service not configured (missing Supabase env vars)" });
   }
 
-  // Default: ensure-profile (supports legacy calls without action field)
-  return handleEnsureProfile(req, res);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Action: ensure-profile
-// ─────────────────────────────────────────────────────────────────────────────
-async function handleEnsureProfile(req, res) {
   const { walletAddress, initialData = {} } = req.body || {};
 
   if (!walletAddress || typeof walletAddress !== "string") {
@@ -59,7 +57,7 @@ async function handleEnsureProfile(req, res) {
       .from("profiles")
       .select("*")
       .eq("wallet_address", normalizedWallet)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       return res.status(200).json({ data: existing });
@@ -70,21 +68,12 @@ async function handleEnsureProfile(req, res) {
       .from("profiles")
       .select("*")
       .ilike("wallet_address", normalizedWallet)
-      .single();
+      .maybeSingle();
 
     if (legacyRow) {
-      // Migrate to lowercase for consistency
-      const { data: migrated } = await supabase
-        .from("profiles")
-        .update({ wallet_address: normalizedWallet })
-        .eq("wallet_address", legacyRow.wallet_address)
-        .select()
-        .single();
-
-      if (migrated) {
-        return res.status(200).json({ data: migrated });
-      }
-      // If migration failed (e.g., unique constraint), return the legacy row as-is
+      // Return the existing (checksum-cased) row as-is. We intentionally do NOT
+      // rewrite wallet_address to lowercase because it is a primary key referenced
+      // by foreign keys without ON UPDATE CASCADE.
       return res.status(200).json({ data: legacyRow });
     }
 
@@ -112,57 +101,5 @@ async function handleEnsureProfile(req, res) {
   } catch (err) {
     console.error("[ensure-profile] Unexpected error:", err);
     return res.status(500).json({ error: err.message });
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Action: discord-feedback
-// ─────────────────────────────────────────────────────────────────────────────
-async function handleDiscordFeedback(req, res) {
-  const webhookUrl = process.env.DISCORD_FEEDBACK_WEBHOOK;
-  if (!webhookUrl) {
-    console.error("[discord-feedback] DISCORD_FEEDBACK_WEBHOOK env var not set");
-    return res.status(500).json({ error: "Discord webhook not configured" });
-  }
-
-  const { category, description, page_url, screen_size, wallet_address, screenshot_url, created_at } = req.body;
-
-  if (!description || !category) {
-    return res.status(400).json({ error: "Missing required fields: category, description" });
-  }
-
-  const categoryEmoji = { bug: "\u{1F41B}", feature: "\u{1F4A1}", ux: "\u{1F3A8}", other: "\u{1F4AC}" };
-  const categoryColor = { bug: 0xf87171, feature: 0x38bdf8, ux: 0xfbbf24, other: 0x94a3b8 };
-
-  const embed = {
-    title: `${categoryEmoji[category] || "\u{1F4AC}"} Beta Feedback: ${category.toUpperCase()}`,
-    description: (description || "").slice(0, 1000),
-    color: categoryColor[category] || 0x94a3b8,
-    fields: [
-      { name: "Page", value: page_url || "\u2014", inline: true },
-      { name: "Device", value: screen_size || "\u2014", inline: true },
-      ...(screenshot_url ? [{ name: "Screenshot", value: `[View](${screenshot_url})` }] : []),
-    ],
-    footer: { text: `Wallet: ${wallet_address?.slice(0, 8) || "anonymous"}...` },
-    timestamp: created_at || new Date().toISOString(),
-  };
-
-  try {
-    const discordRes = await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ embeds: [embed] }),
-    });
-
-    if (!discordRes.ok) {
-      const errText = await discordRes.text();
-      console.error("[discord-feedback] Discord API error:", discordRes.status, errText);
-      return res.status(502).json({ error: "Discord webhook rejected the payload", status: discordRes.status });
-    }
-
-    return res.status(200).json({ success: true });
-  } catch (err) {
-    console.error("[discord-feedback] Fetch to Discord failed:", err.message);
-    return res.status(502).json({ error: "Failed to reach Discord" });
   }
 }

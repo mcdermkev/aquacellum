@@ -101,22 +101,25 @@ export async function getProfile(walletAddress) {
   const normalizedWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
 
   // Try exact lowercase match first
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .select("*")
     .eq("wallet_address", normalizedWallet)
     .maybeSingle();
 
   if (data) return { data, error: null };
+  // Surface non-"empty" errors (e.g., 401 auth failures) instead of silently treating as not-found
+  if (error) console.warn("[reefApi.getProfile] exact lookup error:", error.message || error);
 
   // Fallback: case-insensitive search for legacy rows with checksum casing
-  const { data: fallbackData } = await supabase
+  const { data: fallbackData, error: fallbackError } = await supabase
     .from("profiles")
     .select("*")
     .ilike("wallet_address", normalizedWallet)
     .maybeSingle();
 
   if (fallbackData) return { data: fallbackData, error: null };
+  if (fallbackError) console.warn("[reefApi.getProfile] ilike lookup error:", fallbackError.message || fallbackError);
 
   return { data: null, error: "Not found" };
 }

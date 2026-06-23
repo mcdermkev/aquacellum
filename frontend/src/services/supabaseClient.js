@@ -56,8 +56,14 @@ export const supabase = createClient(
   SUPABASE_ANON_KEY || "placeholder-key",
   {
     auth: {
-      autoRefreshToken: true,
-      persistSession: true,
+      // The Privy→Supabase JWT bridge (mint-session edge function) is NOT deployed.
+      // The app operates purely in anon mode with the x-wallet-address header for RLS.
+      // Persisting a session is harmful here: a stale/invalid token left in localStorage
+      // gets sent as the Authorization header on every request, causing 401s that silently
+      // break profile reads/writes. Disable persistence and auto-refresh to guarantee
+      // every request uses the anon key.
+      autoRefreshToken: false,
+      persistSession: false,
       storageKey: "aquacellum-reef-auth",
     },
     realtime: {
@@ -70,6 +76,17 @@ export const supabase = createClient(
     },
   }
 );
+
+// One-time cleanup: remove any stale Supabase session persisted by earlier builds
+// (when persistSession was true). Without this, a leftover token in localStorage
+// could be loaded once and sent as an invalid Authorization header.
+if (typeof window !== "undefined" && window.localStorage) {
+  try {
+    window.localStorage.removeItem("aquacellum-reef-auth");
+  } catch {
+    // ignore storage access errors (private mode, etc.)
+  }
+}
 
 /**
  * Set the wallet address header for RLS enforcement.
@@ -112,62 +129,26 @@ export function isSupabaseConfigured() {
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 export async function authenticateWithWallet(walletAddress, privyToken = null) {
+  // The mint-session edge function is not deployed (returns 404), so there is no
+  // JWT bridge. We operate in anon mode: set the wallet header for RLS and record
+  // the current wallet. We deliberately do NOT call supabase.auth.setSession here —
+  // doing so previously planted stale tokens that broke profile reads with 401s.
+  _currentWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
+  _isAuthenticated = false;
+  setWalletHeader(walletAddress);
+
   if (!isSupabaseConfigured()) {
-    _currentWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
-    _isAuthenticated = false;
-    setWalletHeader(walletAddress);
     return { success: false, error: "Supabase not configured" };
   }
 
-  // Always set the wallet header for RLS (works even in anon mode)
-  setWalletHeader(walletAddress);
-
+  // Defensively clear any lingering Supabase auth session so requests use the anon key.
   try {
-    // Attempt to mint a session JWT via Edge Function
-    const { data, error } = await supabase.functions.invoke("mint-session", {
-      body: {
-        wallet_address: walletAddress,
-        privy_token: privyToken,
-      },
-    });
-
-    if (error) {
-      // Edge function not deployed yet — fall back to anon mode
-      console.warn("[Reef] Auth bridge not available yet, using anon mode:", error.message);
-      _currentWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
-      _isAuthenticated = false;
-      return { success: false, error: error.message };
-    }
-
-    if (data?.access_token) {
-      // Set the Supabase session with the custom JWT
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: data.access_token,
-        refresh_token: data.refresh_token || data.access_token,
-      });
-
-      if (sessionError) {
-        console.error("[Reef] Failed to set Supabase session:", sessionError);
-        _currentWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
-        _isAuthenticated = false;
-        return { success: false, error: sessionError.message };
-      }
-
-      _currentWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
-      _isAuthenticated = true;
-      return { success: true };
-    }
-
-    // Fallback if edge function returns unexpected shape
-    _currentWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
-    _isAuthenticated = false;
-    return { success: false, error: "Unexpected auth response" };
-  } catch (err) {
-    console.warn("[Reef] Auth bridge call failed, using anon mode:", err.message);
-    _currentWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
-    _isAuthenticated = false;
-    return { success: false, error: err.message };
+    await supabase.auth.signOut({ scope: "local" });
+  } catch {
+    // ignore — no session to clear
   }
+
+  return { success: true };
 }
 
 /**
