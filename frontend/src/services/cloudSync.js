@@ -349,10 +349,11 @@ export async function pullXpProfileFromCloud(walletAddress) {
       .from("user_xp_profiles")
       .select("total_xp, current_tier, streak_days, last_active_date, monthly_xp")
       .eq("wallet_address", addr)
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
-      // No cloud profile yet — will be created on next XP award
+      // No cloud profile yet — will be created on next XP award.
+      // maybeSingle() returns null (not a 406) when the row doesn't exist.
       return false;
     }
 

@@ -38,12 +38,13 @@ export async function ensureProfile(walletAddress, initialData = {}) {
   // Normalize wallet address to lowercase for consistent lookups
   const normalizedWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
 
-  // Check if profile exists — try lowercase first
+  // Check if profile exists — try lowercase first.
+  // maybeSingle() returns null (not a 406) when no row matches.
   const { data: existing } = await supabase
     .from("profiles")
     .select("*")
     .eq("wallet_address", normalizedWallet)
-    .single();
+    .maybeSingle();
 
   if (existing) return { data: existing, error: null };
 
@@ -52,7 +53,7 @@ export async function ensureProfile(walletAddress, initialData = {}) {
     .from("profiles")
     .select("*")
     .ilike("wallet_address", normalizedWallet)
-    .single();
+    .maybeSingle();
 
   if (existingIlike) return { data: existingIlike, error: null };
 
