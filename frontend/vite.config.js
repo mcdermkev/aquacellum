@@ -3,8 +3,25 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import react from '@vitejs/plugin-react';
 
+// Custom plugin to handle SPA-style rewrites during development
+// (mirrors vercel.json rewrites for local dev)
+function storefrontRewritePlugin() {
+  return {
+    name: 'storefront-rewrite',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        // Rewrite /store/* to /store.html (let Vite serve the HTML entry)
+        if (req.url && req.url.startsWith('/store/')) {
+          req.url = '/store.html';
+        }
+        next();
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [storefrontRewritePlugin(), react()],
   root: '.',
   resolve: {
     alias: {
@@ -30,7 +47,8 @@ export default defineConfig({
         reefXr: resolve(__dirname, 'reef-xr.html'),   // Immersive 3D reef (WebXR)
         about: resolve(__dirname, 'about.html'),       // About page
         legal: resolve(__dirname, 'legal.html'),       // Legal & policies page
-        app: resolve(__dirname, 'app.html')            // React dashboard app
+        app: resolve(__dirname, 'app.html'),           // React dashboard app
+        store: resolve(__dirname, 'store.html')        // Breeder Storefront (public)
       }
     }
   },

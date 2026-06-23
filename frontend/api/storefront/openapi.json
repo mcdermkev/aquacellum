@@ -1,0 +1,330 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Aquacellum Breeder Storefront API",
+    "version": "1.0.0",
+    "description": "Public API for accessing Aquacellum breeder storefronts. Returns complete breeder profiles, active listings with purchase actions, stats, and breeding history. All purchases route through the AquadexMarketplace smart contract (4% protocol fee). No authentication required for read access.",
+    "contact": {
+      "name": "Aquacellum Protocol",
+      "url": "https://aquadex.fish"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "x-ai-instructions": {
+      "overview": "This API provides everything needed to render a complete breeder storefront. A single GET request returns the breeder's profile, stats, active listings with full purchase action metadata, and breeding history.",
+      "rendering-guide": "Display the breeder.avatarUrl and breeder.bannerUrl as the storefront header. Show stats prominently. Render each listing as a card with imageUrl, species info, price (ETH + approximate USD), shipping/pickup badges, and a Buy Now button.",
+      "purchase-flow": "Each listing includes a purchaseActions object with three options: (1) deepLink - redirect to the Aquacellum app, (2) crypto - call the smart contract directly, (3) fiat - POST to the Stripe checkout endpoint. All options enforce the 4% protocol fee.",
+      "important-constraints": [
+        "Never bypass the marketplace contract - all purchases must route through it",
+        "The 4% fee (400 BPS) is enforced on-chain and cannot be circumvented",
+        "Images use IPFS - construct URLs using protocol.ipfsGateway + CID",
+        "Prices in ETH may fluctuate - use approximateUsd for display but transact in ETH",
+        "Batch listings have quantity > 1 and use purchaseBatch method"
+      ]
+    }
+  },
+  "servers": [
+    {
+      "url": "https://aquadex.fish/api",
+      "description": "Production"
+    },
+    {
+      "url": "http://localhost:3000/api",
+      "description": "Local development"
+    }
+  ],
+  "paths": {
+    "/storefront": {
+      "get": {
+        "operationId": "getStorefront",
+        "summary": "Get a breeder's complete storefront",
+        "description": "Returns a flat JSON object containing the breeder's profile, stats, active listings with purchase actions, breeding history, and protocol metadata. Supports lookup by wallet address or slug.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "Breeder identifier - either a wallet address (0x...) or a URL slug",
+            "schema": {
+              "type": "string",
+              "examples": ["0x9174d162ed1ab6594064fa0ffbfaf063dc20f3c6", "coral-kings"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete storefront data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorefrontResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing required parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Breeder not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storefront/discover": {
+      "get": {
+        "operationId": "discoverStorefronts",
+        "summary": "Browse active breeder storefronts",
+        "description": "Returns a paginated list of active breeder storefronts. Tier 1 (Master Breeder) storefronts are featured first.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 20, "maximum": 50 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": { "type": "integer", "default": 0 }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search by breeder name or specialty",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of active storefronts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoveryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "StorefrontResponse": {
+        "type": "object",
+        "properties": {
+          "protocol": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string", "example": "Aquacellum" },
+              "version": { "type": "string", "example": "0.9.4" },
+              "chain": { "type": "string", "example": "Base Sepolia" },
+              "chainId": { "type": "integer", "example": 84532 },
+              "marketplaceContract": { "type": "string" },
+              "managerContract": { "type": "string" },
+              "feeStructure": {
+                "type": "object",
+                "properties": {
+                  "totalFeeBps": { "type": "integer", "example": 400 },
+                  "description": { "type": "string" }
+                }
+              },
+              "ipfsGateway": { "type": "string", "format": "uri" }
+            }
+          },
+          "breeder": {
+            "$ref": "#/components/schemas/BreederProfile"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/BreederStats"
+          },
+          "listings": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Listing" }
+          },
+          "breedingHistory": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/BreedingRecord" }
+          },
+          "_aiInstructions": {
+            "type": "object",
+            "description": "Instructions for AI agents on how to use this data"
+          },
+          "_meta": {
+            "type": "object",
+            "properties": {
+              "generatedAt": { "type": "string", "format": "date-time" },
+              "cacheHint": { "type": "string" },
+              "openApiSpec": { "type": "string", "format": "uri" }
+            }
+          }
+        }
+      },
+      "BreederProfile": {
+        "type": "object",
+        "properties": {
+          "walletAddress": { "type": "string" },
+          "slug": { "type": "string", "nullable": true },
+          "displayName": { "type": "string" },
+          "bio": { "type": "string" },
+          "avatarUrl": { "type": "string", "format": "uri", "nullable": true },
+          "bannerUrl": { "type": "string", "format": "uri", "nullable": true },
+          "specialties": { "type": "array", "items": { "type": "string" } },
+          "location": { "type": "string", "nullable": true },
+          "isMasterBreeder": { "type": "boolean" },
+          "currentTier": { "type": "string", "enum": ["Shallow", "Coastal", "Pelagic", "Abyssal", "Hadal", "God-Tier"] },
+          "storefrontUrl": { "type": "string", "format": "uri" },
+          "socialLinks": { "type": "object" },
+          "memberSince": { "type": "string", "format": "date-time" }
+        }
+      },
+      "BreederStats": {
+        "type": "object",
+        "properties": {
+          "totalSales": { "type": "integer" },
+          "totalListings": { "type": "integer" },
+          "activeListings": { "type": "integer" },
+          "avgRating": { "type": "number" },
+          "reviewCount": { "type": "integer" },
+          "speciesCount": { "type": "integer" },
+          "repeatBuyerRate": { "type": "number" },
+          "lastActive": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "Listing": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string", "enum": ["specimen", "batch"] },
+          "tokenId": { "type": "integer", "nullable": true },
+          "listingId": { "type": "string" },
+          "species": {
+            "type": "object",
+            "properties": {
+              "commonName": { "type": "string" },
+              "scientificName": { "type": "string", "nullable": true },
+              "specCode": { "type": "integer", "nullable": true }
+            }
+          },
+          "price": {
+            "type": "object",
+            "properties": {
+              "eth": { "type": "string" },
+              "approximateUsd": { "type": "number", "nullable": true }
+            }
+          },
+          "imageUrl": { "type": "string", "format": "uri", "nullable": true },
+          "quantity": { "type": "integer" },
+          "pedigree": { "type": "string", "nullable": true, "enum": ["wild-caught", "purebred", "F1-hybrid", null] },
+          "shippingAvailable": { "type": "boolean" },
+          "localPickup": { "type": "boolean" },
+          "description": { "type": "string", "nullable": true },
+          "listedAt": { "type": "string", "format": "date-time" },
+          "purchaseActions": {
+            "$ref": "#/components/schemas/PurchaseActions"
+          }
+        }
+      },
+      "PurchaseActions": {
+        "type": "object",
+        "description": "Contains all methods to purchase this listing",
+        "properties": {
+          "deepLink": {
+            "type": "string",
+            "format": "uri",
+            "description": "Redirect URL to complete purchase in the Aquacellum app"
+          },
+          "crypto": {
+            "type": "object",
+            "description": "Direct smart contract call parameters",
+            "properties": {
+              "chainId": { "type": "integer" },
+              "contract": { "type": "string" },
+              "method": { "type": "string", "enum": ["purchaseSpecimen", "purchaseBatch"] },
+              "params": { "type": "object" },
+              "value": { "type": "string", "description": "ETH value to send with transaction" }
+            }
+          },
+          "fiat": {
+            "type": "object",
+            "description": "Stripe checkout session creation",
+            "properties": {
+              "checkoutUrl": { "type": "string", "format": "uri" },
+              "method": { "type": "string", "enum": ["POST"] },
+              "body": { "type": "object" }
+            }
+          }
+        }
+      },
+      "BreedingRecord": {
+        "type": "object",
+        "properties": {
+          "spawnId": { "type": "string" },
+          "species": { "type": "string", "nullable": true },
+          "sireTokenId": { "type": "integer", "nullable": true },
+          "damTokenId": { "type": "integer", "nullable": true },
+          "offspringCount": { "type": "integer" },
+          "spawnDate": { "type": "string", "format": "date-time" },
+          "status": { "type": "string" }
+        }
+      },
+      "DiscoveryResponse": {
+        "type": "object",
+        "properties": {
+          "storefronts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "walletAddress": { "type": "string" },
+                "slug": { "type": "string", "nullable": true },
+                "displayName": { "type": "string" },
+                "avatarUrl": { "type": "string", "format": "uri", "nullable": true },
+                "specialties": { "type": "array", "items": { "type": "string" } },
+                "isMasterBreeder": { "type": "boolean" },
+                "currentTier": { "type": "string" },
+                "storefrontUrl": { "type": "string", "format": "uri" },
+                "stats": {
+                  "type": "object",
+                  "properties": {
+                    "totalSales": { "type": "integer" },
+                    "avgRating": { "type": "number" },
+                    "speciesCount": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "total": { "type": "integer" },
+          "limit": { "type": "integer" },
+          "offset": { "type": "integer" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "identifier": { "type": "string" },
+          "suggestion": { "type": "string" }
+        }
+      }
+    }
+  }
+}

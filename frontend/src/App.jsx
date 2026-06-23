@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
 import "./styles/index.css";
+import "./styles/storefront-setup.css";
 import { GlobeHemisphereWest } from "@phosphor-icons/react";
 import { ConnectWallet } from "./components/ConnectWallet";
 import { TankList } from "./components/TankList";
@@ -46,6 +47,11 @@ const ReefFeed = lazy(() =>
   import("./components/reef").then((m) => ({ default: m.ReefFeed }))
 );
 
+// Lazy-load Storefront Setup (only needed for beta breeders)
+const StorefrontSetup = lazy(() =>
+  import("./components/StorefrontSetup").then((m) => ({ default: m.StorefrontSetup }))
+);
+
 // ── Founders Dashboard Access Control ──────────────────────────────────────
 // Only these wallet addresses can see the "Founders" tab.
 // `account` from useAuth() is the Privy embedded wallet (EOA), NOT the smart wallet.
@@ -62,6 +68,15 @@ const FOUNDER_WALLET_PATTERNS = [
   { prefix: "0x4a85", suffix: "a6d3" },  // EOA (Privy embedded wallet)
   { prefix: "0x41e562", suffix: "c9eb" }, // Second founder
   { prefix: "0x9174d1", suffix: "f3c6" }, // Kevin per-user smart wallet
+];
+
+// ── Storefront Beta Allowlist ─────────────────────────────────────────────
+// Wallets that can access the "My Store" tab during beta.
+// Same as founders + any additional beta tester wallets you add here.
+const STOREFRONT_BETA_WALLETS = [
+  ...FOUNDER_WALLETS,
+  // Add beta tester wallets below:
+  // "0xYOUR_TESTER_WALLET_HERE",
 ];
 
 
@@ -214,10 +229,13 @@ export default function App() {
     return false;
   })();
 
+  // Storefront beta: all authenticated users can access "My Store" during closed beta
+  const isStorefrontBeta = !!account;
+
   const [activeTab, setActiveTab] = useState(() => {
     // Quick Win 10: Restore tab from URL hash on load
     const hash = window.location.hash.replace("#", "");
-    const validTabs = ["tanks", "breeder", "directory", "gallery", "map", "orders", "incoming", "reef", "settings", "founders"];
+    const validTabs = ["tanks", "breeder", "directory", "gallery", "map", "orders", "incoming", "reef", "settings", "founders", "storefront"];
     return validTabs.includes(hash) ? hash : "tanks";
   });
   const [preselectedLineageId, setPreselectedLineageId] = useState(null);
@@ -473,7 +491,7 @@ export default function App() {
   useEffect(() => {
     const handlePopState = (e) => {
       const hash = window.location.hash.replace("#", "");
-      const validTabs = ["tanks", "breeder", "directory", "gallery", "map", "orders", "incoming", "reef", "settings", "founders"];
+      const validTabs = ["tanks", "breeder", "directory", "gallery", "map", "orders", "incoming", "reef", "settings", "founders", "storefront"];
       if (validTabs.includes(hash)) {
         setActiveTab(hash);
       }
@@ -641,6 +659,19 @@ export default function App() {
       case "founders":
         return (
           <FoundersDashboard casualModeActive={casualModeActive} />
+        );
+      case "storefront":
+        return (
+          <Suspense fallback={
+            <div style={{ maxWidth: "640px", margin: "0 auto", padding: "2rem 0" }}>
+              <div className="shimmer-placeholder" style={{ width: "100%", height: "300px", borderRadius: "16px" }} />
+            </div>
+          }>
+            <StorefrontSetup
+              walletAccount={account}
+              casualModeActive={casualModeActive}
+            />
+          </Suspense>
         );
       case "tanks":
       default:
@@ -967,6 +998,7 @@ export default function App() {
             { id: "reef",      icon: "🪸",  label: casualModeActive ? "The Reef"      : "Social",        alwaysShow: true, badge: !postedFirstCurrent },
             { id: "settings",  icon: "⚙️", label: "Settings",                                           alwaysShow: true  },
             ...(isFounder ? [{ id: "founders", icon: "📊", label: "Founders", alwaysShow: true }] : []),
+            ...(isStorefrontBeta ? [{ id: "storefront", icon: "🏪", label: "My Store", alwaysShow: true }] : []),
           ]
             .filter((t) => t.alwaysShow)
             .map((tab) => {

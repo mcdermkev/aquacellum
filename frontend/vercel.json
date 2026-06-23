@@ -9,6 +9,7 @@
     }
   },
   "rewrites": [
+    { "source": "/store/:slug*", "destination": "/store.html" },
     { "source": "/app", "destination": "/app.html" },
     { "source": "/hobbyist", "destination": "/hobbyist.html" },
     { "source": "/breeder", "destination": "/breeder.html" },

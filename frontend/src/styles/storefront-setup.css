@@ -1,0 +1,396 @@
+/* =========================================================================
+   STOREFRONT SETUP — "Setup My Store" panel styling
+   ========================================================================= */
+
+.sf-setup {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1.5rem 0;
+}
+
+.sf-setup__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.sf-setup__title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.sf-setup__subtitle {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* Form layout */
+.sf-setup__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.sf-setup__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sf-setup__label {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sf-setup__required {
+  color: var(--accent-red);
+  font-size: 0.9rem;
+}
+
+.sf-setup__char-count {
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.sf-setup__input,
+.sf-setup__textarea {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 1rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+}
+
+.sf-setup__input:focus,
+.sf-setup__textarea:focus {
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.08);
+}
+
+.sf-setup__input--error {
+  border-color: rgba(248, 113, 113, 0.5) !important;
+}
+
+.sf-setup__input--success {
+  border-color: rgba(52, 211, 153, 0.4) !important;
+}
+
+.sf-setup__textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.sf-setup__input::placeholder,
+.sf-setup__textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.sf-setup__hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* Slug input row */
+.sf-setup__slug-input {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sf-setup__slug-input:focus-within {
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.08);
+}
+
+.sf-setup__slug-prefix {
+  padding: 0.7rem 0 0.7rem 1rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.sf-setup__slug-input .sf-setup__input {
+  border: none;
+  background: transparent;
+  padding-left: 0;
+  box-shadow: none !important;
+}
+
+.sf-setup__slug-input .sf-setup__input:focus {
+  box-shadow: none !important;
+}
+
+.sf-setup__slug-status {
+  padding: 0 0.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.sf-setup__spinner {
+  animation: sf-spin 0.8s linear infinite;
+  color: var(--text-muted);
+}
+
+@keyframes sf-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Specialties */
+.sf-setup__specialties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.sf-setup__specialty-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: #7dd3fc;
+}
+
+.sf-setup__specialty-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.sf-setup__specialty-remove:hover {
+  background: rgba(248, 113, 113, 0.3);
+  color: #f87171;
+}
+
+.sf-setup__specialty-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sf-setup__specialty-input {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 50px;
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  outline: none;
+  width: 130px;
+  transition: border-color 0.2s ease;
+}
+
+.sf-setup__specialty-input:focus {
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.sf-setup__specialty-add-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  background: rgba(56, 189, 248, 0.08);
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sf-setup__specialty-add-btn:hover:not(:disabled) {
+  background: rgba(56, 189, 248, 0.2);
+}
+
+.sf-setup__specialty-add-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.sf-setup__suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.sf-setup__suggestion-chip {
+  padding: 3px 10px;
+  border-radius: 50px;
+  font-size: 0.68rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sf-setup__suggestion-chip:hover:not(:disabled) {
+  background: rgba(56, 189, 248, 0.06);
+  border-color: rgba(56, 189, 248, 0.2);
+  color: #7dd3fc;
+}
+
+.sf-setup__suggestion-chip:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* Actions */
+.sf-setup__actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.sf-setup__submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.7rem 1.5rem;
+  border-radius: 50px;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(14, 165, 233, 0.15));
+  color: #e0f7ff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+}
+
+.sf-setup__submit:hover:not(:disabled) {
+  transform: scale(1.02);
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.3);
+}
+
+.sf-setup__submit:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.sf-setup__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.sf-setup__preview-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.7rem 1.25rem;
+  border-radius: 50px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sf-setup__preview-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+}
+
+/* Result banner */
+.sf-setup__result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.sf-setup__result--success {
+  background: rgba(52, 211, 153, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  color: #34d399;
+}
+
+.sf-setup__result--error {
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  color: #f87171;
+}
+
+.sf-setup__result-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 50px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  color: #34d399;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.sf-setup__result-link:hover {
+  background: rgba(52, 211, 153, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .sf-setup__slug-prefix {
+    font-size: 0.7rem;
+    padding-left: 0.75rem;
+  }
+
+  .sf-setup__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sf-setup__submit,
+  .sf-setup__preview-btn {
+    justify-content: center;
+  }
+}
