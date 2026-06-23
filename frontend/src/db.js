@@ -325,6 +325,110 @@ db.version(17).stores({
   storefrontCache: "id, walletAddress, cachedAt"
 });
 
+// Version 18: Canonical EOA address normalization.
+// All ownerAddress / breeder / seller / buyer fields are lowercased so there's
+// never a casing mismatch between the Privy EOA and stored records.
+// Also rewrites any rows that were historically stored under the smart wallet
+// to the EOA (both addresses are present in the same browser's IndexedDB,
+// so we can find and unify them).
+db.version(18).stores({
+  species: "specCode, commonName, scientificName, type, difficulty",
+  listings: "id, tokenId, seller, price, isBatch, speciesId",
+  tanks: "id, ownerAddress, name, active",
+  userProfile: "walletAddress, totalXp, currentTier, zoneHash, isCouncilMember, onboardingComplete",
+  breederCompanion: "walletAddress, eggState, currentTier, selectedStats, zoneHash",
+  pendingHandshakes: "purchaseId, pin, salt, buyerAddress",
+  speciesManifest: "speciesId, scientificName, commonName, contractAddress, cachedAt",
+  actionLogs: "++id, tankId, actionType, timestamp, details",
+  spawnGrowout: "++id, spawnId, timestamp, type",
+  feedCache: "++id, contentId, authorWallet, createdAt, [authorWallet+createdAt]",
+  socialNotifications: "++id, category, isRead, createdAt",
+  draftContent: "++id, type, status, createdAt",
+  specimens: "id, ownerAddress, speciesId, currentTankId, status, createdAt, [ownerAddress+arrivalStatus]",
+  localListings: "id, seller, speciesId, isBatch, listingId, tokenId",
+  marketOrders: "++key, orderType, status, state, buyer, seller, tokenId, purchaseId, listingId, assignedTankId",
+  spawns: "spawnId, sireId, damId, tankId, speciesId, status, timestamp",
+  tankNotes: "++id, tankId, createdAt",
+  xpCooldowns: "++id, walletAddress, actionType, tankId, timestamp, [walletAddress+actionType+tankId]",
+  storefrontCache: "id, walletAddress, cachedAt"
+}).upgrade(async (tx) => {
+  // Helper: lowercase an address (no-op if already lowercase or null/undefined)
+  const norm = (addr) => (addr ? addr.toLowerCase() : addr);
+
+  // 1. Collect all unique ownerAddresses to detect the EOA→smart wallet pair.
+  //    The EOA is the one used by most records (tanks are always created with EOA).
+  //    The smart wallet is any other non-test address that shares records with the same device.
+  const tanks = await tx.table("tanks").toArray();
+  const eoaCandidates = new Set(tanks.map(t => norm(t.ownerAddress)).filter(Boolean));
+
+  // 2. Normalize tanks
+  for (const tank of tanks) {
+    if (tank.ownerAddress && tank.ownerAddress !== norm(tank.ownerAddress)) {
+      await tx.table("tanks").update(tank.id, { ownerAddress: norm(tank.ownerAddress) });
+    }
+  }
+
+  // 3. Normalize specimens — ownerAddress and breeder
+  const specimens = await tx.table("specimens").toArray();
+  for (const s of specimens) {
+    const updates = {};
+    if (s.ownerAddress && s.ownerAddress !== norm(s.ownerAddress)) {
+      updates.ownerAddress = norm(s.ownerAddress);
+    }
+    if (s.breeder && s.breeder !== norm(s.breeder)) {
+      updates.breeder = norm(s.breeder);
+    }
+    // If ownerAddress is not in eoaCandidates, it's probably the smart wallet.
+    // Remap to the first (and likely only) EOA on this device.
+    const normalOwner = norm(s.ownerAddress);
+    if (normalOwner && !eoaCandidates.has(normalOwner) && eoaCandidates.size === 1) {
+      updates.ownerAddress = [...eoaCandidates][0];
+    }
+    if (Object.keys(updates).length > 0) {
+      await tx.table("specimens").update(s.id, updates);
+    }
+  }
+
+  // 4. Normalize spawns — ownerAddress
+  const spawns = await tx.table("spawns").toArray();
+  for (const sp of spawns) {
+    const updates = {};
+    if (sp.ownerAddress && sp.ownerAddress !== norm(sp.ownerAddress)) {
+      updates.ownerAddress = norm(sp.ownerAddress);
+    }
+    // Remap smart wallet to EOA
+    const normalOwner = norm(sp.ownerAddress);
+    if (normalOwner && !eoaCandidates.has(normalOwner) && eoaCandidates.size === 1) {
+      updates.ownerAddress = [...eoaCandidates][0];
+    }
+    if (Object.keys(updates).length > 0) {
+      await tx.table("spawns").update(sp.spawnId, updates);
+    }
+  }
+
+  // 5. Normalize localListings — seller
+  const listings = await tx.table("localListings").toArray();
+  for (const l of listings) {
+    if (l.seller && l.seller !== norm(l.seller)) {
+      await tx.table("localListings").update(l.id, { seller: norm(l.seller) });
+    }
+  }
+
+  // 6. Normalize marketOrders — buyer, seller
+  const orders = await tx.table("marketOrders").toArray();
+  for (const o of orders) {
+    const updates = {};
+    if (o.buyer && o.buyer !== norm(o.buyer)) updates.buyer = norm(o.buyer);
+    if (o.seller && o.seller !== norm(o.seller)) updates.seller = norm(o.seller);
+    if (Object.keys(updates).length > 0) {
+      await tx.table("marketOrders").update(o.key, updates);
+    }
+  }
+
+  console.log("[DB v18] Canonical address normalization complete —",
+    `${tanks.length} tanks, ${specimens.length} specimens, ${spawns.length} spawns, ${listings.length} listings, ${orders.length} orders migrated.`);
+});
+
 /**
  * Derive tier key from totalXp using the canonical tier ladder.
  * Used by the v15 migration and shared with xp.js.

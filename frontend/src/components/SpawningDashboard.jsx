@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../db";
-import { getSmartWalletAddress } from "../services/smartAccountClient";
 
 /**
  * SpawningDashboard — Displays three sections under the Spawning tab:
@@ -25,42 +24,24 @@ export function SpawningDashboard({ walletAccount }) {
     try {
       setLoading(true);
 
-      // Load specimens (certificates) owned by this wallet
-      // Load specimens (certificates) — match EOA and smart wallet (case-insensitive)
+      const walletLower = walletAccount.toLowerCase();
+
+      // Load specimens (certificates) owned by this wallet.
+      // After DB v18 migration, all ownerAddress fields are lowercase EOA.
       let specs = [];
       try {
-        const allSpecs = await db.specimens.toArray();
-        const walletLower = walletAccount.toLowerCase();
-        let smartAddr = null;
-        try { smartAddr = await getSmartWalletAddress(); } catch {}
-        const smartLower = smartAddr ? smartAddr.toLowerCase() : null;
-
-        specs = allSpecs.filter(s => {
-          if (!s.ownerAddress) return false;
-          const owner = s.ownerAddress.toLowerCase();
-          return owner === walletLower || (smartLower && owner === smartLower);
-        });
+        specs = await db.specimens.where("ownerAddress").equals(walletLower).toArray();
       } catch (e) {
         console.warn("Failed to load specimens:", e);
       }
       setCertificates(specs);
 
-      // Load spawn records — match by ownerAddress (case-insensitive).
-      // Spawns may have been recorded under the smart wallet or EOA with different casing.
+      // Load spawn records owned by this wallet.
+      // ownerAddress is not indexed on spawns, so full-scan with filter.
       let spawnRecords = [];
       try {
         const allSpawns = await db.spawns.toArray();
-        const walletLower = walletAccount.toLowerCase();
-        // Also resolve the smart wallet address to catch spawns recorded under it
-        let smartAddr = null;
-        try { smartAddr = await getSmartWalletAddress(); } catch {}
-        const smartLower = smartAddr ? smartAddr.toLowerCase() : null;
-
-        spawnRecords = allSpawns.filter(s => {
-          if (!s.ownerAddress) return false;
-          const owner = s.ownerAddress.toLowerCase();
-          return owner === walletLower || (smartLower && owner === smartLower);
-        });
+        spawnRecords = allSpawns.filter(s => s.ownerAddress === walletLower);
       } catch (e) {
         console.warn("Failed to load spawns:", e);
       }

@@ -10,6 +10,12 @@
  *      - Gas is sponsored by the CDP Paymaster (users pay nothing)
  *      - Operations are batched into single UserOps when possible
  *      - Failures don't affect local UX (fire-and-forget)
+ *
+ * CANONICAL ADDRESS RULE:
+ *   All ownerAddress / breeder / seller fields stored in Dexie MUST use the
+ *   Privy EOA (lowercase), never the derived smart wallet. This ensures a single
+ *   canonical identity for queries. The smart wallet is only used for sending
+ *   on-chain UserOperations; it never appears in local data.
  */
 
 import { db } from "../db";
@@ -26,6 +32,14 @@ import {
   buildApproveCall,
   buildCreateShippingListingCall,
 } from "./smartAccountClient";
+
+/**
+ * Normalize an address to lowercase for consistent storage.
+ * All Dexie writes go through this so there's never a casing mismatch.
+ */
+function normalizeAddress(addr) {
+  return addr ? addr.toLowerCase() : "";
+}
 
 /**
  * Queue for batching on-chain operations.
@@ -105,7 +119,7 @@ export async function relayRegisterTank({
 
     const tank = {
       id: tankId,
-      ownerAddress,
+      ownerAddress: normalizeAddress(ownerAddress),
       name,
       tankType,
       volumeLiters,
@@ -165,12 +179,12 @@ export async function relayMintSpecimen({
       id: specimenId,
       speciesId: Number(speciesId),
       birthTimestamp,
-      breeder,
+      breeder: normalizeAddress(breeder || ownerAddress),
       currentTankId: Number(currentTankId),
       sireId: Number(sireId),
       damId: Number(damId),
       ipfsMetadataUri,
-      ownerAddress,
+      ownerAddress: normalizeAddress(ownerAddress),
       commonName,
       scientificName,
       status: 0, // Active
@@ -400,7 +414,7 @@ export async function relayCreateListing({
     const listing = {
       id: Number(tokenId),
       tokenId: Number(tokenId),
-      seller,
+      seller: normalizeAddress(seller),
       price: String(priceEth),
       rawPrice: String(priceEth),
       shippingFee: String(shippingFeeEth),
@@ -569,7 +583,7 @@ export async function relayPurchaseSpecimen({
     const specimen = await db.specimens.get(tokenId);
     if (specimen && buyer) {
       await db.specimens.update(tokenId, {
-        ownerAddress: buyer,
+        ownerAddress: normalizeAddress(buyer),
         // Arrival Flow: mark specimen as in transit
         arrivalStatus: "transit",
         purchasedAt: Math.floor(Date.now() / 1000),
@@ -582,8 +596,8 @@ export async function relayPurchaseSpecimen({
     const order = {
       orderType: "shipping",
       tokenId,
-      buyer,
-      seller,
+      buyer: normalizeAddress(buyer),
+      seller: normalizeAddress(seller),
       price: String(priceEth),
       shippingFee: String(shippingFeeEth),
       amountLocked: String(Number(priceEth) + Number(shippingFeeEth)),
@@ -661,8 +675,8 @@ export async function relayPurchaseBatch({
       orderType: "batch",
       purchaseId,
       listingId,
-      buyer,
-      seller,
+      buyer: normalizeAddress(buyer),
+      seller: normalizeAddress(seller),
       quantity,
       amountLocked: String(Number(pricePerFishEth) * quantity),
       state: 0, // 0 = pending
@@ -754,7 +768,7 @@ export async function relaySettleHandshake({ purchaseId, tokenIds = [], buyer = 
       const specimen = await db.specimens.get(Number(tid));
       if (specimen && buyer) {
         await db.specimens.update(Number(tid), {
-          ownerAddress: buyer,
+          ownerAddress: normalizeAddress(buyer),
           arrivalStatus: "transit",
           purchasedAt: Math.floor(Date.now() / 1000),
           purchaseType: "in-person",
@@ -795,7 +809,7 @@ export async function relaySpawn({
       speciesId: Number(speciesId),
       status: 1, // Fry
       offspringIds: [],
-      ownerAddress,
+      ownerAddress: normalizeAddress(ownerAddress),
       timestamp: Math.floor(Date.now() / 1000),
       metadata,
     };
