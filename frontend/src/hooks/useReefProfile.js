@@ -38,11 +38,25 @@ export function useEnsureProfile(walletAddress) {
 
       // Fallback: profile doesn't exist (returning user from before social layer, or skipped onboarding)
       // Pull current stats from Dexie for initial profile seeding
+      // Try both exact and case-insensitive wallet lookups since Dexie may store
+      // the address in a different case than what Supabase expects.
       let initialData = {};
       try {
-        const userProfile = await db.userProfile.get(walletAddress);
-        const tanks = await db.tanks.where("ownerAddress").equals(walletAddress).count();
-        const companion = await db.breederCompanion.get(walletAddress);
+        let userProfile = await db.userProfile.get(walletAddress);
+        // Fallback: try lowercase key (Dexie keys are case-sensitive)
+        if (!userProfile && walletAddress.toLowerCase() !== walletAddress) {
+          userProfile = await db.userProfile.get(walletAddress.toLowerCase());
+        }
+
+        let tanks = await db.tanks.where("ownerAddress").equals(walletAddress).count();
+        if (!tanks && walletAddress.toLowerCase() !== walletAddress) {
+          tanks = await db.tanks.where("ownerAddress").equals(walletAddress.toLowerCase()).count();
+        }
+
+        let companion = await db.breederCompanion.get(walletAddress);
+        if (!companion && walletAddress.toLowerCase() !== walletAddress) {
+          companion = await db.breederCompanion.get(walletAddress.toLowerCase());
+        }
 
         initialData = {
           display_name: userProfile?.alias || null,
@@ -65,7 +79,7 @@ export function useEnsureProfile(walletAddress) {
     },
     enabled: !!walletAddress && isSupabaseConfigured(),
     staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 1,
+    retry: 2,
   });
 }
 
@@ -77,8 +91,11 @@ export function useProfile(walletAddress, enabled = true) {
     queryKey: ["reef", "profile", walletAddress],
     queryFn: async () => {
       const { data, error } = await getProfile(walletAddress);
-      if (error) throw new Error(error);
-      return data;
+      // Don't throw on "not found" — just return null so consumers can handle gracefully
+      if (error && error !== "Not found") {
+        console.warn("[useProfile] Error fetching profile:", error);
+      }
+      return data || null;
     },
     enabled: enabled && !!walletAddress && isSupabaseConfigured(),
     staleTime: 2 * 60 * 1000,

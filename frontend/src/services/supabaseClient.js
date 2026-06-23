@@ -113,7 +113,7 @@ export function isSupabaseConfigured() {
  */
 export async function authenticateWithWallet(walletAddress, privyToken = null) {
   if (!isSupabaseConfigured()) {
-    _currentWallet = walletAddress;
+    _currentWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
     _isAuthenticated = false;
     setWalletHeader(walletAddress);
     return { success: false, error: "Supabase not configured" };
@@ -134,7 +134,7 @@ export async function authenticateWithWallet(walletAddress, privyToken = null) {
     if (error) {
       // Edge function not deployed yet — fall back to anon mode
       console.warn("[Reef] Auth bridge not available yet, using anon mode:", error.message);
-      _currentWallet = walletAddress;
+      _currentWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
       _isAuthenticated = false;
       return { success: false, error: error.message };
     }
@@ -148,23 +148,23 @@ export async function authenticateWithWallet(walletAddress, privyToken = null) {
 
       if (sessionError) {
         console.error("[Reef] Failed to set Supabase session:", sessionError);
-        _currentWallet = walletAddress;
+        _currentWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
         _isAuthenticated = false;
         return { success: false, error: sessionError.message };
       }
 
-      _currentWallet = walletAddress;
+      _currentWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
       _isAuthenticated = true;
       return { success: true };
     }
 
     // Fallback if edge function returns unexpected shape
-    _currentWallet = walletAddress;
+    _currentWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
     _isAuthenticated = false;
     return { success: false, error: "Unexpected auth response" };
   } catch (err) {
     console.warn("[Reef] Auth bridge call failed, using anon mode:", err.message);
-    _currentWallet = walletAddress;
+    _currentWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
     _isAuthenticated = false;
     return { success: false, error: err.message };
   }

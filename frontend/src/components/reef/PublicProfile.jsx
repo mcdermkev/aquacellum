@@ -14,9 +14,9 @@ import { BadgeShelf } from "./BadgeShelf";
 import { FollowButton } from "./FollowButton";
 import { SchoolInviteButton } from "./SchoolInviteButton";
 import { MessageButton } from "./MessageButton";
-import { useProfile, useTankmates, useRelationshipStatus, useSendTankmateRequest, useUpdateProfile } from "../../hooks/useReefProfile";
+import { useProfile, useTankmates, useRelationshipStatus, useSendTankmateRequest, useUpdateProfile, useEnsureProfile } from "../../hooks/useReefProfile";
 import { useUserCurrents } from "../../hooks/useReefFeed";
-import { getCurrentWallet } from "../../services/supabaseClient";
+import { getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
 import { getFollowerCount, getFollowingCount } from "../../services/reefApi";
 import { db } from "../../db";
 
@@ -201,8 +201,21 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
   const userCurrents = useUserCurrents(walletAddress);
   const currents = userCurrents.data?.pages?.flatMap((p) => p.data) || [];
   const [editing, setEditing] = useState(false);
+  const [creatingProfile, setCreatingProfile] = useState(false);
   const currentWallet = getCurrentWallet();
   const isOwnProfile = currentWallet && currentWallet.toLowerCase() === walletAddress?.toLowerCase();
+
+  // Auto-ensure profile exists for the user's own profile when it's not found
+  const { data: ensuredProfile } = useEnsureProfile(
+    isOwnProfile && !profile && !isLoading ? walletAddress : null
+  );
+
+  // Refetch profile after ensureProfile creates it
+  useEffect(() => {
+    if (ensuredProfile && !profile) {
+      refetch();
+    }
+  }, [ensuredProfile, profile, refetch]);
 
   const updateProfileMutation = useUpdateProfile();
 
@@ -306,6 +319,30 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
   }
 
   if (!profile) {
+    // If it's the user's own profile, show a brief loading state then fall back gracefully
+    if (isOwnProfile && isSupabaseConfigured()) {
+      // If ensureProfile already ran and returned null (failed), don't stay stuck
+      if (ensuredProfile === null && !isLoading) {
+        return (
+          <div style={{ maxWidth: "640px", margin: "0 auto", textAlign: "center", padding: "3rem" }}>
+            <p style={{ fontSize: "2rem" }}>🐠</p>
+            <p style={{ color: "var(--text-muted)" }}>Could not load your profile. Try switching to Casual mode and back, or reconnect your wallet.</p>
+            {onBack && (
+              <button onClick={onBack} style={{ marginTop: "1rem", padding: "0.4rem 0.8rem", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#fff", cursor: "pointer", fontSize: "0.8rem" }}>
+                ← Back to feed
+              </button>
+            )}
+          </div>
+        );
+      }
+      return (
+        <div style={{ maxWidth: "640px", margin: "0 auto", textAlign: "center", padding: "3rem" }}>
+          <p style={{ fontSize: "2rem" }}>🌊</p>
+          <p style={{ color: "var(--text-muted)" }}>Setting up your profile...</p>
+        </div>
+      );
+    }
+
     return (
       <div style={{ maxWidth: "640px", margin: "0 auto", textAlign: "center", padding: "3rem" }}>
         <p style={{ fontSize: "2rem" }}>🐠</p>

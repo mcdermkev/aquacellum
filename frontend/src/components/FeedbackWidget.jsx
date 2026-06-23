@@ -91,29 +91,21 @@ export function FeedbackWidget({ walletAddress, casualModeActive = true }) {
         localStorage.setItem("aquadex_feedback_queue", JSON.stringify(queue));
       }
 
-      // Send to Discord webhook for real-time team notifications (non-blocking)
-      const discordWebhookUrl = import.meta.env.VITE_DISCORD_FEEDBACK_WEBHOOK;
-      if (discordWebhookUrl) {
-        const categoryEmoji = { bug: "🐛", feature: "💡", ux: "🎨", other: "💬" };
-        fetch(discordWebhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            embeds: [{
-              title: `${categoryEmoji[category] || "💬"} Beta Feedback: ${category.toUpperCase()}`,
-              description: description.trim().slice(0, 1000),
-              color: category === "bug" ? 0xf87171 : category === "feature" ? 0x38bdf8 : 0x94a3b8,
-              fields: [
-                { name: "Page", value: feedback.page_url || "—", inline: true },
-                { name: "Device", value: feedback.screen_size || "—", inline: true },
-                ...(screenshotUrl ? [{ name: "Screenshot", value: `[View](${screenshotUrl})` }] : []),
-              ],
-              footer: { text: `Wallet: ${feedback.wallet_address?.slice(0, 8) || "anonymous"}...` },
-              timestamp: feedback.created_at,
-            }],
-          }),
-        }).catch(() => {}); // Fire and forget — don't block UI
-      }
+      // Send to Discord via server-side proxy (avoids browser CORS block)
+      fetch("/api/ensure-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "discord-feedback",
+          category,
+          description: description.trim(),
+          page_url: feedback.page_url,
+          screen_size: feedback.screen_size,
+          wallet_address: feedback.wallet_address,
+          screenshot_url: screenshotUrl,
+          created_at: feedback.created_at,
+        }),
+      }).catch((err) => console.warn("[Feedback] Discord notification failed:", err.message));
 
       setSubmitted(true);
     } catch (err) {

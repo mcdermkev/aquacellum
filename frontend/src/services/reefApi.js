@@ -35,21 +35,32 @@ import { checkRateLimit, recordAction } from "./rateLimiter";
 export async function ensureProfile(walletAddress, initialData = {}) {
   if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
 
-  // Check if profile exists (select * includes onboarding_complete when the column exists)
-  const { data: existing, error: fetchError } = await supabase
+  // Normalize wallet address to lowercase for consistent lookups
+  const normalizedWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
+
+  // Check if profile exists — try lowercase first
+  const { data: existing } = await supabase
     .from("profiles")
     .select("*")
-    .eq("wallet_address", walletAddress)
+    .eq("wallet_address", normalizedWallet)
     .single();
 
   if (existing) return { data: existing, error: null };
 
-  // Create new profile. New accounts default to onboarding_complete = false so the
-  // wizard runs exactly once on first login.
+  // Fallback: case-insensitive search to find legacy rows stored with checksum casing
+  const { data: existingIlike } = await supabase
+    .from("profiles")
+    .select("*")
+    .ilike("wallet_address", normalizedWallet)
+    .single();
+
+  if (existingIlike) return { data: existingIlike, error: null };
+
+  // Try direct insert (works if dev RLS bypass policies are active)
   const { data, error } = await supabase
     .from("profiles")
     .insert({
-      wallet_address: walletAddress,
+      wallet_address: normalizedWallet,
       display_name: initialData.display_name || null,
       tank_count: initialData.tank_count || 0,
       species_count: initialData.species_count || 0,
@@ -60,7 +71,24 @@ export async function ensureProfile(walletAddress, initialData = {}) {
     .select()
     .single();
 
-  return { data, error };
+  if (data) return { data, error: null };
+
+  // If direct insert failed (likely RLS), use the serverless API that has service role access
+  try {
+    const response = await fetch("/api/ensure-profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ walletAddress: normalizedWallet, initialData }),
+    });
+    if (response.ok) {
+      const result = await response.json();
+      if (result.data) return { data: result.data, error: null };
+    }
+  } catch (apiErr) {
+    console.warn("[reefApi] ensure-profile API fallback failed:", apiErr.message);
+  }
+
+  return { data: null, error: error?.message || "Profile creation failed" };
 }
 
 /**
@@ -69,13 +97,28 @@ export async function ensureProfile(walletAddress, initialData = {}) {
 export async function getProfile(walletAddress) {
   if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
 
-  const { data, error } = await supabase
+  // Normalize to lowercase for consistent lookups
+  const normalizedWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
+
+  // Try exact lowercase match first
+  const { data } = await supabase
     .from("profiles")
     .select("*")
-    .eq("wallet_address", walletAddress)
-    .single();
+    .eq("wallet_address", normalizedWallet)
+    .maybeSingle();
 
-  return { data, error };
+  if (data) return { data, error: null };
+
+  // Fallback: case-insensitive search for legacy rows with checksum casing
+  const { data: fallbackData } = await supabase
+    .from("profiles")
+    .select("*")
+    .ilike("wallet_address", normalizedWallet)
+    .maybeSingle();
+
+  if (fallbackData) return { data: fallbackData, error: null };
+
+  return { data: null, error: "Not found" };
 }
 
 /**
@@ -84,14 +127,36 @@ export async function getProfile(walletAddress) {
 export async function updateProfile(walletAddress, updates) {
   if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
 
+  // Normalize to lowercase for consistent lookups
+  const normalizedWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
+
   const { data, error } = await supabase
     .from("profiles")
     .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq("wallet_address", walletAddress)
+    .eq("wallet_address", normalizedWallet)
     .select()
-    .single();
+    .maybeSingle();
 
-  return { data, error };
+  if (data) return { data, error: null };
+
+  // Fallback: case-insensitive match for legacy rows with checksum casing
+  const { data: legacyRow } = await supabase
+    .from("profiles")
+    .select("wallet_address")
+    .ilike("wallet_address", normalizedWallet)
+    .maybeSingle();
+
+  if (legacyRow) {
+    const { data: fallbackData } = await supabase
+      .from("profiles")
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq("wallet_address", legacyRow.wallet_address)
+      .select()
+      .maybeSingle();
+    if (fallbackData) return { data: fallbackData, error: null };
+  }
+
+  return { data: null, error: error?.message || "Update failed" };
 }
 
 /**
