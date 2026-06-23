@@ -61,10 +61,10 @@ export function FeedbackWidget({ walletAddress, casualModeActive = true }) {
       created_at: new Date().toISOString(),
     };
 
-    try {
-      // Upload screenshot if present
-      let screenshotUrl = null;
-      if (screenshot && isSupabaseConfigured()) {
+    // Step 1: Upload screenshot (best-effort; failure must not block anything).
+    let screenshotUrl = null;
+    if (screenshot && isSupabaseConfigured()) {
+      try {
         const fileName = `feedback/${Date.now()}_${screenshot.name}`;
         const { data: uploadData } = await supabase.storage
           .from("media")
@@ -75,29 +75,21 @@ export function FeedbackWidget({ walletAddress, casualModeActive = true }) {
             .getPublicUrl(uploadData.path);
           screenshotUrl = urlData?.publicUrl || null;
         }
+      } catch (err) {
+        console.warn("[Feedback] Screenshot upload failed (non-blocking):", err.message);
       }
+    }
+    feedback.screenshot_url = screenshotUrl;
 
-      feedback.screenshot_url = screenshotUrl;
-
-      if (isSupabaseConfigured()) {
-        const { error } = await supabase
-          .from("beta_feedback")
-          .insert([feedback]);
-        if (error) throw error;
-      } else {
-        // Fallback: queue in localStorage for later sync
-        const queue = JSON.parse(localStorage.getItem("aquadex_feedback_queue") || "[]");
-        queue.push(feedback);
-        localStorage.setItem("aquadex_feedback_queue", JSON.stringify(queue));
-      }
-
-      // Send to Discord webhook directly from the browser.
-      // Discord webhook endpoints return CORS headers (Access-Control-Allow-Origin),
-      // so a direct browser POST works — no server proxy needed.
-      const discordWebhookUrl = import.meta.env.VITE_DISCORD_FEEDBACK_WEBHOOK;
-      if (discordWebhookUrl) {
-        const categoryEmoji = { bug: "🐛", feature: "💡", ux: "🎨", other: "💬" };
-        fetch(discordWebhookUrl, {
+    // Step 2: Notify Discord FIRST and independently of the database write.
+    // Discord is the team's real-time channel — it must fire even if Supabase is
+    // down or rejects the insert. Discord webhooks allow browser CORS, so this
+    // direct POST works without a server proxy.
+    const discordWebhookUrl = import.meta.env.VITE_DISCORD_FEEDBACK_WEBHOOK;
+    if (discordWebhookUrl) {
+      const categoryEmoji = { bug: "🐛", feature: "💡", ux: "🎨", other: "💬" };
+      try {
+        const res = await fetch(discordWebhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -114,26 +106,34 @@ export function FeedbackWidget({ walletAddress, casualModeActive = true }) {
               timestamp: feedback.created_at,
             }],
           }),
-        })
-          .then((res) => {
-            if (!res.ok) console.warn("[Feedback] Discord webhook returned", res.status);
-          })
-          .catch((err) => console.warn("[Feedback] Discord notification failed:", err.message));
-      } else {
-        console.warn("[Feedback] VITE_DISCORD_FEEDBACK_WEBHOOK not set — Discord notification skipped");
+        });
+        if (!res.ok) console.warn("[Feedback] Discord webhook returned", res.status);
+      } catch (err) {
+        console.warn("[Feedback] Discord notification failed:", err.message);
       }
+    } else {
+      console.warn("[Feedback] VITE_DISCORD_FEEDBACK_WEBHOOK not set — Discord notification skipped");
+    }
 
-      setSubmitted(true);
+    // Step 3: Persist to Supabase (best-effort). On failure, queue locally for later sync.
+    try {
+      if (isSupabaseConfigured()) {
+        const { error } = await supabase
+          .from("beta_feedback")
+          .insert([feedback]);
+        if (error) throw error;
+      } else {
+        throw new Error("Supabase not configured");
+      }
     } catch (err) {
-      console.warn("[Feedback] Submit failed, queuing locally:", err.message);
-      // Fallback to localStorage
+      console.warn("[Feedback] DB write failed, queuing locally:", err.message);
       const queue = JSON.parse(localStorage.getItem("aquadex_feedback_queue") || "[]");
       queue.push(feedback);
       localStorage.setItem("aquadex_feedback_queue", JSON.stringify(queue));
-      setSubmitted(true);
-    } finally {
-      setSubmitting(false);
     }
+
+    setSubmitted(true);
+    setSubmitting(false);
   };
 
   return (

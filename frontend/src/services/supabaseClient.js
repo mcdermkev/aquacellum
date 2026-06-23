@@ -36,15 +36,19 @@ let _walletForHeader = null;
 /**
  * Custom fetch wrapper that injects the x-wallet-address header
  * into every Supabase request for RLS enforcement.
+ *
+ * IMPORTANT: supabase-js passes `options.headers` as a `Headers` instance.
+ * Spreading it with `{...options.headers}` yields an empty object and silently
+ * drops the `apikey` and `Authorization` headers, causing "No API key found in
+ * request" → 401 on every request once a wallet is connected. We must merge via
+ * the Headers API to preserve the existing headers.
  */
 function supabaseFetchWithWallet(url, options = {}) {
+  const headers = new Headers(options.headers || {});
   if (_walletForHeader) {
-    options.headers = {
-      ...options.headers,
-      "x-wallet-address": _walletForHeader,
-    };
+    headers.set("x-wallet-address", _walletForHeader);
   }
-  return fetch(url, options);
+  return fetch(url, { ...options, headers });
 }
 
 /**
