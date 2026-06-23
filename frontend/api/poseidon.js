@@ -1,11 +1,13 @@
 // Vercel serverless function: frontend/api/poseidon.js
 // Poseidon AI Gateway — Routes user queries to Gemini with species RAG context
+// Also serves health check via GET method (consolidated from poseidon-health.js)
 // Runtime: Node.js serverless (needs fs access for species catalog)
 
 import { buildSpeciesContext } from './_lib/speciesIndex.js';
 import { vertexGenerateContent, isVertexConfigured } from './_lib/vertexClient.js';
-import { handleCorsPreFlight } from './_lib/cors.js';
+import { handleCorsPreFlight, setCorsHeaders } from './_lib/cors.js';
 import { checkRateLimit } from './_lib/rateLimiter.js';
+import { ethers } from "ethers";
 
 /**
  * Poseidon System Prompt — encodes the "guide" (Curation Standard, protocol rules, persona behavior)
@@ -99,11 +101,16 @@ function buildUserContext(sessionData) {
 }
 
 export default async function handler(req, res) {
-  // CORS
-  if (handleCorsPreFlight(req, res, { methods: 'POST, OPTIONS' })) return;
+  // GET requests → health check (previously /api/poseidon-health)
+  if (req.method === 'GET') {
+    return handleHealth(req, res);
+  }
+
+  // CORS for POST
+  if (handleCorsPreFlight(req, res, { methods: 'POST, GET, OPTIONS' })) return;
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed. Use GET for health check or POST for queries.' });
   }
 
   const { message, mode, sessionData, conversationHistory } = req.body || {};
@@ -293,4 +300,135 @@ export default async function handler(req, res) {
       error: true
     });
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Health Check Handler (previously /api/poseidon-health)
+// GET /api/poseidon — returns configuration status + relayer wallet balance
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function handleHealth(req, res) {
+  setCorsHeaders(req, res, { methods: 'GET, OPTIONS' });
+  if (req.method === 'OPTIONS') return res.status(204).end();
+
+  const gcpProjectId = process.env.GCP_PROJECT_ID;
+  const gcpLocation = process.env.GCP_LOCATION;
+  const hasServiceAccountJson = !!(process.env.GCP_SERVICE_ACCOUNT_JSON && process.env.GCP_SERVICE_ACCOUNT_JSON.trim());
+  const hasCredentialsFile = !!(process.env.GOOGLE_APPLICATION_CREDENTIALS && process.env.GOOGLE_APPLICATION_CREDENTIALS.trim());
+  const hasGeminiKey = !!(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim());
+
+  // Try to parse the service account JSON to check validity
+  let serviceAccountParseable = false;
+  let serviceAccountEmail = null;
+  let parseError = null;
+
+  if (hasServiceAccountJson) {
+    try {
+      const parsed = JSON.parse(process.env.GCP_SERVICE_ACCOUNT_JSON);
+      serviceAccountParseable = true;
+      serviceAccountEmail = parsed.client_email || null;
+      if (parsed.private_key) {
+        const hasRealNewlines = parsed.private_key.includes('\n');
+        const hasLiteralBackslashN = parsed.private_key.includes('\\n');
+        parseError = `private_key: realNewlines=${hasRealNewlines}, literalBackslashN=${hasLiteralBackslashN}, length=${parsed.private_key.length}`;
+      }
+    } catch (e) {
+      parseError = e.message;
+      try {
+        const unescaped = process.env.GCP_SERVICE_ACCOUNT_JSON.replace(/\\n/g, '\n');
+        const parsed = JSON.parse(unescaped);
+        serviceAccountParseable = true;
+        serviceAccountEmail = parsed.client_email || null;
+        parseError = 'Fixed with \\n unescape';
+      } catch (e2) {
+        parseError = `Primary: ${e.message} | Unescape attempt: ${e2.message}`;
+      }
+    }
+  }
+
+  const configured = isVertexConfigured();
+
+  // If configured, attempt a real Vertex AI ping
+  let vertexTest = null;
+  if (configured) {
+    try {
+      const testRes = await vertexGenerateContent('gemini-2.5-flash', {
+        contents: [{ role: 'user', parts: [{ text: 'Say OK' }] }],
+        generationConfig: { maxOutputTokens: 5 },
+      });
+      const testStatus = testRes.status;
+      if (testStatus === 200) {
+        const testData = await testRes.json();
+        const text = testData.candidates?.[0]?.content?.parts?.[0]?.text;
+        vertexTest = { success: true, status: testStatus, response: text || '(empty)' };
+      } else {
+        const errBody = await testRes.text();
+        vertexTest = { success: false, status: testStatus, error: errBody.slice(0, 500) };
+      }
+    } catch (e) {
+      vertexTest = { success: false, error: e.message, stack: e.stack?.split('\n').slice(0, 3).join(' | ') };
+    }
+  }
+
+  // Relayer Wallet Balance Check
+  let relayerHealth = null;
+  const RELAYER_PRIVATE_KEY = process.env.RELAYER_PRIVATE_KEY;
+  const RPC_URL = process.env.RPC_URL || "https://sepolia.base.org";
+
+  if (RELAYER_PRIVATE_KEY) {
+    try {
+      const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+      const wallet = new ethers.Wallet(RELAYER_PRIVATE_KEY, provider);
+      const balance = await provider.getBalance(wallet.address);
+      const balanceEth = parseFloat(ethers.utils.formatEther(balance));
+
+      const WARNING_THRESHOLD = 0.01;
+      const CRITICAL_THRESHOLD = 0.002;
+
+      let status = "healthy";
+      if (balanceEth < CRITICAL_THRESHOLD) {
+        status = "critical";
+      } else if (balanceEth < WARNING_THRESHOLD) {
+        status = "low";
+      }
+
+      relayerHealth = {
+        status,
+        address: wallet.address,
+        balanceEth: balanceEth.toFixed(6),
+        network: "Base Sepolia (84532)",
+        warningThreshold: `${WARNING_THRESHOLD} ETH`,
+        criticalThreshold: `${CRITICAL_THRESHOLD} ETH`,
+      };
+    } catch (e) {
+      relayerHealth = {
+        status: "error",
+        error: e.message,
+      };
+    }
+  } else {
+    relayerHealth = {
+      status: "not_configured",
+      error: "RELAYER_PRIVATE_KEY not set",
+    };
+  }
+
+  return res.status(200).json({
+    status: configured ? 'configured' : 'not_configured',
+    checks: {
+      gcpProjectId: gcpProjectId || '(not set)',
+      gcpLocation: gcpLocation || '(not set, defaults to us-central1)',
+      hasServiceAccountJson,
+      serviceAccountJsonLength: hasServiceAccountJson ? process.env.GCP_SERVICE_ACCOUNT_JSON.length : 0,
+      serviceAccountParseable,
+      serviceAccountEmail,
+      parseError,
+      hasCredentialsFile,
+      hasGeminiKey,
+      isVertexConfigured: configured,
+    },
+    vertexTest,
+    relayer: relayerHealth,
+    timestamp: new Date().toISOString(),
+  });
 }

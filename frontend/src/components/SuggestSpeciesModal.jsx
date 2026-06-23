@@ -221,7 +221,6 @@ export default function SuggestSpeciesModal({
                   background: activeTab === "council" 
                     ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
                     : "transparent",
-                  border: "none",
                   outline: "none",
                   borderRadius: "50px",
                   color: activeTab === "council" ? "#fff" : "var(--text-secondary)",
@@ -246,7 +245,6 @@ export default function SuggestSpeciesModal({
                   background: activeTab === "propose" 
                     ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
                     : "transparent",
-                  border: "none",
                   outline: "none",
                   borderRadius: "50px",
                   color: activeTab === "propose" ? "#fff" : "var(--text-secondary)",

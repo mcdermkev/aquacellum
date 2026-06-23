@@ -1579,7 +1579,6 @@ export function BreedGallery({
                   background: (viewMode === "contract" && showMyTankSpeciesOnly) 
                     ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
                     : "transparent",
-                  border: "none",
                   outline: "none",
                   borderRadius: "50px",
                   color: (viewMode === "contract" && showMyTankSpeciesOnly) ? "#fff" : "var(--text-secondary)",
@@ -1609,7 +1608,6 @@ export function BreedGallery({
                   background: (viewMode === "contract" && !showMyTankSpeciesOnly) 
                     ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
                     : "transparent",
-                  border: "none",
                   outline: "none",
                   borderRadius: "50px",
                   color: (viewMode === "contract" && !showMyTankSpeciesOnly) ? "#fff" : "var(--text-secondary)",
@@ -1638,7 +1636,6 @@ export function BreedGallery({
                   background: (viewMode === "global") 
                     ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
                     : "transparent",
-                  border: "none",
                   outline: "none",
                   borderRadius: "50px",
                   color: (viewMode === "global") ? "#fff" : "var(--text-secondary)",
@@ -1670,7 +1667,6 @@ export function BreedGallery({
                   background: (viewMode === "contract") 
                     ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
                     : "transparent",
-                  border: "none",
                   outline: "none",
                   borderRadius: "50px",
                   color: (viewMode === "contract") ? "#fff" : "var(--text-secondary)",
@@ -1699,7 +1695,6 @@ export function BreedGallery({
                   background: (viewMode === "global") 
                     ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
                     : "transparent",
-                  border: "none",
                   outline: "none",
                   borderRadius: "50px",
                   color: (viewMode === "global") ? "#fff" : "var(--text-secondary)",
@@ -1731,7 +1726,6 @@ export function BreedGallery({
                 background: (viewMode === "curation") 
                   ? "linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(14, 165, 233, 0.25) 100%)" 
                   : "transparent",
-                border: "none",
                 outline: "none",
                 borderRadius: "50px",
                 color: (viewMode === "curation") ? "#fff" : "var(--text-secondary)",

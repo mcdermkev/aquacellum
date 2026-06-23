@@ -331,7 +331,7 @@ export async function getPoseidonStats() {
  */
 export async function getOperationalHealth() {
   const checks = [
-    { name: "Poseidon AI", endpoint: "/api/poseidon-health" },
+    { name: "Poseidon AI", endpoint: "/api/poseidon" },
     { name: "Supabase", check: checkSupabaseHealth },
     { name: "Mux Video", endpoint: "/api/tank-cams" },
     { name: "Stripe Connect", endpoint: "/api/create-checkout" },

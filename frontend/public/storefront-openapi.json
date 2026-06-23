@@ -36,30 +36,66 @@
     }
   ],
   "paths": {
-    "/storefront": {
+    "/storefront-detail": {
       "get": {
         "operationId": "getStorefront",
         "summary": "Get a breeder's complete storefront",
-        "description": "Returns a flat JSON object containing the breeder's profile, stats, active listings with purchase actions, breeding history, and protocol metadata. Supports lookup by wallet address or slug.",
+        "description": "Returns a flat JSON object containing the breeder's profile, stats, active listings with purchase actions, breeding history, and protocol metadata. Supports lookup by wallet address or slug. Also supports action-based routing via the 'action' query parameter for check-slug, discover, and setup operations.",
         "parameters": [
           {
             "name": "id",
             "in": "query",
-            "required": true,
-            "description": "Breeder identifier - either a wallet address (0x...) or a URL slug",
+            "description": "Breeder identifier - either a wallet address (0x...) or a URL slug. Required when action is not specified.",
             "schema": {
               "type": "string",
               "examples": ["0x9174d162ed1ab6594064fa0ffbfaf063dc20f3c6", "coral-kings"]
             }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "description": "Optional action to route to a sub-operation: check-slug, discover, or setup (POST only)",
+            "schema": {
+              "type": "string",
+              "enum": ["check-slug", "discover", "setup"]
+            }
+          },
+          {
+            "name": "slug",
+            "in": "query",
+            "description": "Slug to check availability (used with action=check-slug)",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Pagination limit (used with action=discover)",
+            "schema": { "type": "integer", "default": 20, "maximum": 50 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Pagination offset (used with action=discover)",
+            "schema": { "type": "integer", "default": 0 }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search by breeder name or specialty (used with action=discover)",
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
           "200": {
-            "description": "Complete storefront data",
+            "description": "Complete storefront data (default), slug availability (action=check-slug), or storefront list (action=discover)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/StorefrontResponse"
+                  "oneOf": [
+                    { "$ref": "#/components/schemas/StorefrontResponse" },
+                    { "$ref": "#/components/schemas/DiscoveryResponse" },
+                    { "$ref": "#/components/schemas/SlugCheckResponse" }
+                  ]
                 }
               }
             }
@@ -85,42 +121,64 @@
             }
           }
         }
-      }
-    },
-    "/storefront/discover": {
-      "get": {
-        "operationId": "discoverStorefronts",
-        "summary": "Browse active breeder storefronts",
-        "description": "Returns a paginated list of active breeder storefronts. Tier 1 (Master Breeder) storefronts are featured first.",
+      },
+      "post": {
+        "operationId": "setupStorefront",
+        "summary": "Create or update a breeder storefront",
+        "description": "Creates or updates a breeder's storefront profile. Requires action=setup query parameter. Gated by beta allowlist.",
         "parameters": [
           {
-            "name": "limit",
+            "name": "action",
             "in": "query",
-            "schema": { "type": "integer", "default": 20, "maximum": 50 }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "schema": { "type": "integer", "default": 0 }
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "description": "Search by breeder name or specialty",
-            "schema": { "type": "string" }
+            "required": true,
+            "schema": { "type": "string", "enum": ["setup"] }
           }
         ],
-        "responses": {
-          "200": {
-            "description": "List of active storefronts",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DiscoveryResponse"
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["walletAddress", "slug", "displayName"],
+                "properties": {
+                  "walletAddress": { "type": "string", "description": "Breeder's wallet address" },
+                  "slug": { "type": "string", "description": "URL slug (3-32 chars, lowercase alphanumeric + hyphens)" },
+                  "displayName": { "type": "string", "description": "Breeder display name (2-60 chars)" },
+                  "bio": { "type": "string", "description": "Short bio (max 280 chars)" },
+                  "specialties": { "type": "array", "items": { "type": "string" }, "description": "Specialties (max 5)" },
+                  "location": { "type": "string", "description": "City/region" }
                 }
               }
             }
           }
+        },
+        "responses": {
+          "200": {
+            "description": "Storefront created/updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "profile": {
+                      "type": "object",
+                      "properties": {
+                        "walletAddress": { "type": "string" },
+                        "slug": { "type": "string" },
+                        "displayName": { "type": "string" },
+                        "storefrontUrl": { "type": "string", "format": "uri" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": { "description": "Wallet not on beta allowlist" },
+          "409": { "description": "Slug already taken" }
         }
       }
     }
@@ -315,6 +373,13 @@
           "total": { "type": "integer" },
           "limit": { "type": "integer" },
           "offset": { "type": "integer" }
+        }
+      },
+      "SlugCheckResponse": {
+        "type": "object",
+        "properties": {
+          "available": { "type": "boolean" },
+          "slug": { "type": "string" }
         }
       },
       "ErrorResponse": {

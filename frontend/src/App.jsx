@@ -11,6 +11,7 @@ import { LocalBreederMap } from "./components/LocalBreederMap";
 import { CheckoutSummary } from "./components/CheckoutSummary";
 import { SpecimenDetailModal } from "./components/SpecimenDetailModal";
 import { getLevelInfo, getXp } from "./utils/xp";
+import { haptic } from "./utils/haptics";
 import { getSmartAccountAddress, getProvider } from "./utils/smartAccount";
 import { ethers } from "ethers";
 import { useQueryClient } from "@tanstack/react-query";
@@ -399,7 +400,7 @@ export default function App() {
       setToasts((prev) => [...prev, { id: toastId, points, label, isLevelUp: false }]);
 
       // Haptic feedback on mobile — makes XP rewards feel physical
-      if (navigator.vibrate) navigator.vibrate(50);
+      haptic("success");
 
       // Auto-expire after 4 seconds
       setTimeout(() => {
@@ -412,7 +413,7 @@ export default function App() {
         setTimeout(() => {
           setToasts((prev) => [...prev, { id: levelUpId, level: newLevel, isLevelUp: true }]);
           // Stronger haptic pattern for level-up celebration
-          if (navigator.vibrate) navigator.vibrate([50, 30, 80]);
+          haptic("levelUp");
           setTimeout(() => {
             setToasts((prev) => prev.filter((t) => t.id !== levelUpId));
           }, 5000);

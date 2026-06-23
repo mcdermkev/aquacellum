@@ -3,7 +3,7 @@
  *
  * Allows beta testers (and eventually earned Master Breeders) to create
  * or edit their storefront profile: slug, display name, bio, specialties,
- * location, and avatar. Writes to Supabase via /api/storefront/setup endpoint.
+ * location, and avatar. Writes to Supabase via /api/storefront-detail?action=setup endpoint.
  *
  * Gated by beta allowlist in the parent (App.jsx passes `isEligible` prop).
  */
@@ -66,7 +66,7 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
     setSlugStatus("checking");
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/storefront/check-slug?slug=${encodeURIComponent(slug)}`);
+        const res = await fetch(`/api/storefront-detail?action=check-slug&slug=${encodeURIComponent(slug)}`);
         const data = await res.json();
         setSlugStatus(data.available ? "available" : "taken");
       } catch {
@@ -105,7 +105,7 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
     setSaveResult(null);
 
     try {
-      const res = await fetch("/api/storefront/setup", {
+      const res = await fetch("/api/storefront-detail?action=setup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
