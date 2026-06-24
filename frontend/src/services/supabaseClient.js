@@ -189,7 +189,6 @@ export async function authenticateWithWallet(walletAddress, privyToken = null) {
           if (!sessionError) {
             _isAuthenticated = true;
             _sessionExpiresAt = expires_at;
-            console.log("[Reef] JWT bridge active — authenticated session for", _currentWallet.slice(0, 8));
             return { success: true, authenticated: true };
           } else {
             console.warn("[Reef] setSession failed, falling back to header mode:", sessionError.message);

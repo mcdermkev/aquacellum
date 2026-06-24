@@ -160,18 +160,15 @@ export default function App() {
       marketplaceContract = new ethers.Contract(MARKETPLACE_ADDRESS, marketplaceAbi, provider);
 
       const invalidateTanks = () => {
-        console.log("Aquadex: Specimen event detected. Invalidating tanks and breed catalog caches...");
         queryClient.invalidateQueries({ queryKey: ["tanks", account] });
         queryClient.invalidateQueries({ queryKey: ["contractSpecies", CONTRACT_ADDRESS] });
       };
 
       const invalidateSpeciesCatalog = () => {
-        console.log("Aquadex: SpeciesAdded event detected. Invalidating breed catalog and species manifest caches...");
         queryClient.invalidateQueries({ queryKey: ["contractSpecies", CONTRACT_ADDRESS] });
       };
 
       const invalidateListings = () => {
-        console.log("Aquadex: Listing event detected. Invalidating marketplace listings cache...");
         queryClient.invalidateQueries({ queryKey: ["listings"] });
       };
 

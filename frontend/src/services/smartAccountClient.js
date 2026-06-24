@@ -202,7 +202,6 @@ export function setUserSigner(eip1193Provider, address) {
   }
   _userEip1193Provider = eip1193Provider;
   _userAddress = address;
-  console.log("[4337] User signer registered:", address.slice(0, 10) + "...");
 }
 
 /**
@@ -212,7 +211,6 @@ export function clearUserSigner() {
   _userEip1193Provider = null;
   _userAddress = null;
   _cachedClients.clear();
-  console.log("[4337] User signer cleared");
 }
 
 // ─── Singleton cache ───────────────────────────────────────────────────────
@@ -283,7 +281,6 @@ async function getClientsForSigner() {
         });
       },
     });
-    console.log("[4337] Deriving smart wallet from user EOA:", _userAddress.slice(0, 10) + "...");
   } else {
     // No user signer available — cannot derive a smart wallet without a key.
     // Reject early rather than exposing a sponsor key in the browser bundle.
@@ -320,7 +317,6 @@ async function getClientsForSigner() {
   const result = { account, bundlerClient, publicClient: client };
   _cachedClients.set(cacheKey, result);
   
-  console.log("[4337] Smart wallet ready:", account.address, "(per-user)");
   return result;
 }
 
@@ -364,7 +360,6 @@ export async function submitUserOperation(calls) {
       hash: userOpHash,
     });
 
-    console.log(`[4337] UserOp confirmed: ${receipt.userOpHash}`);
     return {
       success: true,
       userOpHash: receipt.userOpHash,

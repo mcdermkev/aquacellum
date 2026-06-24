@@ -425,8 +425,6 @@ db.version(18).stores({
     }
   }
 
-  console.log("[DB v18] Canonical address normalization complete —",
-    `${tanks.length} tanks, ${specimens.length} specimens, ${spawns.length} spawns, ${listings.length} listings, ${orders.length} orders migrated.`);
 });
 
 /**

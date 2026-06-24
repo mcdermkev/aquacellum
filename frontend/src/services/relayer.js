@@ -79,12 +79,8 @@ async function flushOnChainQueue() {
   const calls = batch.map(b => b.call);
   const labels = batch.map(b => b.label).filter(Boolean).join(", ");
 
-  console.log(`[4337] Flushing batch of ${calls.length} operations: ${labels}`);
-
   const result = await submitUserOperation(calls);
-  if (result.success) {
-    console.log(`[4337] Batch confirmed! UserOp: ${result.userOpHash}`);
-  } else {
+  if (!result.success) {
     console.warn(`[4337] Batch failed: ${result.error}`);
   }
 }

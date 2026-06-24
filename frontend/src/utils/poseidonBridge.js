@@ -97,8 +97,6 @@ export async function handlePoseidonAction(actionPayload) {
           details: `Poseidon Setup: Configured new ${volumeLiters}L containment unit profile with target temp ${(tempCelsiusX10/10).toFixed(1)}°C and pH ${(phX10/10).toFixed(1)}.`
         });
 
-        console.log(`[Poseidon Bridge] Successfully created tank #${tankId} for ${ownerAddress}`);
-
       } else if (type === 'LOG_HUSBANDRY') {
         const logs = actionPayload.logs || [];
         const tankId = Number(actionPayload.tankId || 0);
@@ -139,7 +137,6 @@ export async function handlePoseidonAction(actionPayload) {
           });
         }
 
-        console.log(`[Poseidon Bridge] Successfully logged ${logs.length} husbandry events.`);
       }
     });
 

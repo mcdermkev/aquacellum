@@ -46,8 +46,6 @@ export function CompanionFishEntity({
       const reaction = e.detail;
       if (!reaction) return;
 
-      console.log("[Echo Companion] Received Poseidon reaction trigger:", reaction);
-      
       if (reaction.mood) setLocalMood(reaction.mood);
       if (reaction.glowActive !== undefined) setLocalGlow(reaction.glowActive);
       if (reaction.swimSpeedMultiplier !== undefined) setLocalSpeed(reaction.swimSpeedMultiplier);
@@ -80,7 +78,6 @@ export function CompanionFishEntity({
 
   // Handle pointer interactions smoothly
   const handleEntityClick = (e) => {
-    console.log(`[Echo Companion] Clicked! Current mood: ${localMood}, XP: ${companionXp}`);
     if (onClick) onClick(e);
     if (onReactionComplete) onReactionComplete();
   };

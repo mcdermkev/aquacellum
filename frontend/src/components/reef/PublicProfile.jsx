@@ -276,15 +276,6 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
           profile.companion_tier !== companionTier
         ) {
           if (!active) return;
-          console.log("[Reef Profile Sync] Local stats differ from Supabase, updating...", {
-            local: { tankCount, speciesCount, xpTotal, companionTier },
-            supabase: {
-              tank_count: profile.tank_count,
-              species_count: profile.species_count,
-              xp_total: profile.xp_total,
-              companion_tier: profile.companion_tier,
-            },
-          });
 
           await updateProfileMutation.mutateAsync({
             walletAddress,

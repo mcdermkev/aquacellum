@@ -171,14 +171,7 @@ export function AuthProvider({ children }) {
             console.warn("[Reef] Could not get Privy token, falling back to header mode:", err.message);
           }
         }
-        const { success, authenticated } = await authenticateWithWallet(account, privyToken);
-        if (success) {
-          console.log(
-            "[Reef] Supabase session established for",
-            account.slice(0, 8),
-            authenticated ? "(JWT bridge active)" : "(header fallback)"
-          );
-        }
+        await authenticateWithWallet(account, privyToken);
       };
       initSession();
     } else {
@@ -207,10 +200,7 @@ export function AuthProvider({ children }) {
         try {
           const token = await getAccessToken();
           if (token) {
-            const refreshed = await refreshSession(token);
-            if (refreshed) {
-              console.log("[Reef] Session refreshed successfully");
-            }
+            await refreshSession(token);
           }
         } catch (err) {
           console.warn("[Reef] Session refresh failed:", err.message);
