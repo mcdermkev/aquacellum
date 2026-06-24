@@ -6,13 +6,15 @@
  * Architecture:
  * - Privy handles authentication (email/Google → embedded wallet)
  * - We bridge the authenticated wallet address into a Supabase session
- *   using a custom JWT minted by a Supabase Edge Function
+ *   using a custom JWT minted by the /api/mint-session Vercel function
+ * - The mint-session endpoint verifies the Privy token via JWKS, then
+ *   signs a Supabase-compatible JWT with the wallet_address claim
  * - RLS policies on Supabase use `auth.jwt()->>'wallet_address'` to
  *   scope reads/writes to the connected wallet
  * 
- * Until the Edge Function is deployed, the client operates in "anon" mode
- * with the wallet address passed explicitly in queries. This allows
- * development and testing of the schema/UI before the JWT bridge is live.
+ * Fallback: If the JWT bridge fails (endpoint not deployed, missing env,
+ * network error), we fall back to anon mode with the x-wallet-address
+ * header for backward-compatible RLS enforcement.
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -53,21 +55,22 @@ function supabaseFetchWithWallet(url, options = {}) {
 
 /**
  * The base Supabase client (anon key, no auth session initially).
- * Uses a custom fetch wrapper to inject wallet address headers for RLS.
+ * Uses a custom fetch wrapper to inject wallet address headers for RLS fallback.
+ * 
+ * When the JWT bridge is active, the Authorization header carries the minted JWT
+ * and RLS uses auth.jwt() claims. The x-wallet-address header is still sent as a
+ * fallback for any policies that haven't been updated yet.
  */
 export const supabase = createClient(
   SUPABASE_URL || "https://placeholder.supabase.co",
   SUPABASE_ANON_KEY || "placeholder-key",
   {
     auth: {
-      // The Privy→Supabase JWT bridge (mint-session edge function) is NOT deployed.
-      // The app operates purely in anon mode with the x-wallet-address header for RLS.
-      // Persisting a session is harmful here: a stale/invalid token left in localStorage
-      // gets sent as the Authorization header on every request, causing 401s that silently
-      // break profile reads/writes. Disable persistence and auto-refresh to guarantee
-      // every request uses the anon key.
-      autoRefreshToken: false,
-      persistSession: false,
+      // Enable session persistence now that we have a proper JWT bridge.
+      // The minted token (1hr lifetime) is stored in localStorage and the
+      // client will use it as the Authorization header on every request.
+      autoRefreshToken: false, // We handle refresh via re-minting from Privy token
+      persistSession: true,
       storageKey: "aquacellum-reef-auth",
     },
     realtime: {
@@ -81,14 +84,33 @@ export const supabase = createClient(
   }
 );
 
-// One-time cleanup: remove any stale Supabase session persisted by earlier builds
-// (when persistSession was true). Without this, a leftover token in localStorage
-// could be loaded once and sent as an invalid Authorization header.
+// Clean up stale sessions from builds before the JWT bridge was deployed.
+// If the stored token doesn't have a wallet_address claim, it's from the old
+// anon-only era and will cause 401s. Remove it so we start fresh.
 if (typeof window !== "undefined" && window.localStorage) {
   try {
-    window.localStorage.removeItem("aquacellum-reef-auth");
+    const stored = window.localStorage.getItem("aquacellum-reef-auth");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      const token = parsed?.access_token || parsed?.currentSession?.access_token;
+      if (token) {
+        // Decode payload (base64url) to check for wallet_address claim
+        const payloadB64 = token.split(".")[1];
+        if (payloadB64) {
+          const payload = JSON.parse(atob(payloadB64.replace(/-/g, "+").replace(/_/g, "/")));
+          if (!payload.wallet_address) {
+            // Old-style token without wallet claim — clear it
+            window.localStorage.removeItem("aquacellum-reef-auth");
+          }
+        }
+      } else {
+        // Malformed stored session — clear it
+        window.localStorage.removeItem("aquacellum-reef-auth");
+      }
+    }
   } catch {
-    // ignore storage access errors (private mode, etc.)
+    // If anything goes wrong parsing, just clear it
+    try { window.localStorage.removeItem("aquacellum-reef-auth"); } catch {}
   }
 }
 
@@ -121,38 +143,133 @@ export function isSupabaseConfigured() {
 /**
  * Authenticate the Supabase session using the connected wallet address.
  * 
- * Phase 1 (MVP): Uses a Supabase Edge Function to mint a JWT with the
- * wallet_address claim. The Edge Function verifies the wallet is legitimate
- * by checking a signed message or Privy token.
+ * Calls the /api/mint-session endpoint with the Privy access token to get
+ * a Supabase-compatible JWT, then sets a real authenticated session.
  * 
- * Fallback: If the Edge Function isn't deployed yet, we set the wallet
- * address in a module-level variable and pass it explicitly in queries.
+ * Fallback: If the JWT bridge fails (network error, endpoint not deployed,
+ * missing secret), falls back to anon mode with x-wallet-address header.
  * 
  * @param {string} walletAddress - The authenticated wallet address from Privy/MetaMask
- * @param {string} [privyToken] - Optional Privy auth token for verification
- * @returns {Promise<{success: boolean, error?: string}>}
+ * @param {string} [privyToken] - Privy access token for server-side verification
+ * @returns {Promise<{success: boolean, authenticated: boolean, error?: string}>}
  */
 export async function authenticateWithWallet(walletAddress, privyToken = null) {
-  // The mint-session edge function is not deployed (returns 404), so there is no
-  // JWT bridge. We operate in anon mode: set the wallet header for RLS and record
-  // the current wallet. We deliberately do NOT call supabase.auth.setSession here —
-  // doing so previously planted stale tokens that broke profile reads with 401s.
   _currentWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
   _isAuthenticated = false;
   setWalletHeader(walletAddress);
 
   if (!isSupabaseConfigured()) {
-    return { success: false, error: "Supabase not configured" };
+    return { success: false, authenticated: false, error: "Supabase not configured" };
   }
 
-  // Defensively clear any lingering Supabase auth session so requests use the anon key.
+  // If we have a Privy token, attempt the JWT bridge
+  if (privyToken) {
+    try {
+      const response = await fetch("/api/mint-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${privyToken}`,
+        },
+        body: JSON.stringify({ walletAddress: _currentWallet }),
+      });
+
+      if (response.ok) {
+        const { access_token, expires_at } = await response.json();
+
+        if (access_token) {
+          // Set the real Supabase session with the minted JWT.
+          // We use a dummy refresh token since we handle re-minting ourselves
+          // when the Privy token refreshes.
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token,
+            refresh_token: access_token, // No refresh token — we re-mint from Privy
+          });
+
+          if (!sessionError) {
+            _isAuthenticated = true;
+            _sessionExpiresAt = expires_at;
+            console.log("[Reef] JWT bridge active — authenticated session for", _currentWallet.slice(0, 8));
+            return { success: true, authenticated: true };
+          } else {
+            console.warn("[Reef] setSession failed, falling back to header mode:", sessionError.message);
+          }
+        }
+      } else if (response.status === 503) {
+        // JWT bridge not configured (SUPABASE_JWT_SECRET missing) — expected in some envs
+        console.info("[Reef] JWT bridge not configured (503), using header-based RLS");
+      } else {
+        const errBody = await response.json().catch(() => ({}));
+        console.warn("[Reef] mint-session failed:", response.status, errBody.error || "");
+      }
+    } catch (err) {
+      // Network error, endpoint not deployed, etc. — fall back gracefully
+      console.warn("[Reef] JWT bridge unavailable, falling back to header mode:", err.message);
+    }
+  }
+
+  // Fallback: anon mode with x-wallet-address header
+  // Clear any lingering session so requests use the anon key + header
   try {
     await supabase.auth.signOut({ scope: "local" });
   } catch {
     // ignore — no session to clear
   }
 
-  return { success: true };
+  return { success: true, authenticated: false };
+}
+
+/**
+ * Refresh the Supabase session by re-minting from a fresh Privy token.
+ * Called when the existing session is about to expire.
+ * 
+ * @param {string} privyToken - Fresh Privy access token
+ * @returns {Promise<boolean>} Whether the refresh succeeded
+ */
+export async function refreshSession(privyToken) {
+  if (!_currentWallet || !privyToken) return false;
+
+  try {
+    const response = await fetch("/api/mint-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${privyToken}`,
+      },
+      body: JSON.stringify({ walletAddress: _currentWallet }),
+    });
+
+    if (response.ok) {
+      const { access_token, expires_at } = await response.json();
+      if (access_token) {
+        const { error } = await supabase.auth.setSession({
+          access_token,
+          refresh_token: access_token,
+        });
+        if (!error) {
+          _isAuthenticated = true;
+          _sessionExpiresAt = expires_at;
+          return true;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[Reef] Session refresh failed:", err.message);
+  }
+
+  return false;
+}
+
+/** Timestamp (unix seconds) when the current session token expires */
+let _sessionExpiresAt = null;
+
+/**
+ * Check if the current session needs refresh (within 5 min of expiry).
+ */
+export function sessionNeedsRefresh() {
+  if (!_isAuthenticated || !_sessionExpiresAt) return false;
+  const now = Math.floor(Date.now() / 1000);
+  return (now + 300) >= _sessionExpiresAt; // 5 min buffer
 }
 
 /**

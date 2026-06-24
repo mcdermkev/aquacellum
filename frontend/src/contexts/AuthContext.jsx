@@ -10,7 +10,7 @@
  * full self-custody control.
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { usePrivy, useWallets, useCreateWallet } from "@privy-io/react-auth";
 import { ethers } from "ethers";
 import {
@@ -21,7 +21,7 @@ import {
   registerSignerResolver,
   unregisterSignerResolver,
 } from "../utils/smartAccount";
-import { authenticateWithWallet, clearReefSession } from "../services/supabaseClient";
+import { authenticateWithWallet, clearReefSession, refreshSession, sessionNeedsRefresh } from "../services/supabaseClient";
 import { setUserSigner, clearUserSigner } from "../services/smartAccountClient";
 
 const AuthContext = createContext(null);
@@ -34,6 +34,7 @@ export function AuthProvider({ children }) {
     user: privyUser,
     login: privyLogin,
     logout: privyLogout,
+    getAccessToken,
   } = usePrivy();
   const { wallets } = useWallets();
   const { createWallet } = useCreateWallet();
@@ -154,19 +155,76 @@ export function AuthProvider({ children }) {
   }, [privyReady, privyAuthenticated, account, wallets]);
 
   // ─────────────────────────────────────────────────────────────────────────
-  // REEF SOCIAL: Bridge wallet auth to Supabase session
+  // REEF SOCIAL: Bridge wallet auth to Supabase session (JWT bridge)
   // ─────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (account) {
-      authenticateWithWallet(account).then(({ success }) => {
-        if (success) {
-          console.log("[Reef] Supabase session established for", account.slice(0, 8));
+      // Get the Privy access token to authenticate with the JWT bridge.
+      // For Privy users, this mints a real Supabase JWT with wallet_address claim.
+      // For MetaMask-only users (no Privy session), falls back to header mode.
+      const initSession = async () => {
+        let privyToken = null;
+        if (privyAuthenticated && getAccessToken) {
+          try {
+            privyToken = await getAccessToken();
+          } catch (err) {
+            console.warn("[Reef] Could not get Privy token, falling back to header mode:", err.message);
+          }
         }
-      });
+        const { success, authenticated } = await authenticateWithWallet(account, privyToken);
+        if (success) {
+          console.log(
+            "[Reef] Supabase session established for",
+            account.slice(0, 8),
+            authenticated ? "(JWT bridge active)" : "(header fallback)"
+          );
+        }
+      };
+      initSession();
     } else {
       clearReefSession();
     }
-  }, [account]);
+  }, [account, privyAuthenticated]);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // SESSION REFRESH: Re-mint Supabase JWT before expiry
+  // ─────────────────────────────────────────────────────────────────────────
+  const refreshIntervalRef = useRef(null);
+
+  useEffect(() => {
+    // Only set up refresh for Privy-authenticated users
+    if (!account || !privyAuthenticated || !getAccessToken) {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Check every 5 minutes if the session needs refresh
+    refreshIntervalRef.current = setInterval(async () => {
+      if (sessionNeedsRefresh()) {
+        try {
+          const token = await getAccessToken();
+          if (token) {
+            const refreshed = await refreshSession(token);
+            if (refreshed) {
+              console.log("[Reef] Session refreshed successfully");
+            }
+          }
+        } catch (err) {
+          console.warn("[Reef] Session refresh failed:", err.message);
+        }
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
+    };
+  }, [account, privyAuthenticated, getAccessToken]);
 
   // Register Privy signer resolver so all getSigner() calls use embedded wallet
   useEffect(() => {
