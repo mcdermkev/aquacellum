@@ -92,14 +92,14 @@ export function useSuggestSpecies(walletAddress, existingSpecies = []) {
     }
   });
 
-  // Simulated proxy validation call (in a production environment, this calls /api/suggest-species)
+  // Simulated proxy validation call (in a production environment, this calls /api/ai?action=suggest-species)
   const triggerOffChainCurationCheck = async (id) => {
     try {
       const entry = await db.suggestions.get(id);
       if (!entry) return;
 
       // Call our backend proxy
-      const response = await fetch('/api/suggest-species', {
+      const response = await fetch('/api/ai?action=suggest-species', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

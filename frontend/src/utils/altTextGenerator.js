@@ -6,7 +6,7 @@
  * Falls back to a generic description if generation fails.
  */
 
-const ALT_TEXT_API_URL = '/api/generate-alt-text';
+const ALT_TEXT_API_URL = '/api/ai?action=alt-text';
 const ALT_TEXT_CACHE_PREFIX = 'aquadex_alt_text_';
 
 /**

@@ -527,7 +527,7 @@ export function BreedGallery({
 
   const handleProposeBreed = (breed) => {
     // Bypass DAO voting: open the Suggest Species modal pre-populated with the global breed entry.
-    // The form will route through /api/suggest-species (Gemini AI audit) and land in the Curator dashboard queue.
+    // The form will route through /api/ai?action=suggest-species (Gemini AI audit) and land in the Curator dashboard queue.
     setIsSuggestModalOpen(true);
   };
 

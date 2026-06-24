@@ -15,7 +15,7 @@
  *   2. This endpoint looks up the seller's Stripe Connected Account
  *   3. Creates a Checkout Session with the platform fee split
  *   4. Returns the Checkout URL → buyer completes payment in Stripe's hosted UI
- *   5. On success, stripe-webhook.js triggers the on-chain NFT transfer
+ *   5. On success, stripe.js (webhook action) triggers the on-chain NFT transfer
  *
  * Environment variables:
  *   STRIPE_SECRET_KEY — Platform Stripe secret key

@@ -141,7 +141,7 @@ async function main() {
         console.log(`     Onboarding complete: ${data[0].onboarding_complete}`);
       } else {
         console.log("  ⚠️  No seller record for the test wallet.");
-        console.log("  We'll create one via the /api/stripe-connect-onboard endpoint");
+        console.log("  We'll create one via the /api/stripe?action=connect-onboard endpoint");
         console.log("  or you can insert it directly once the table is created.");
       }
     }

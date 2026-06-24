@@ -2,7 +2,7 @@
  * simulate-webhook.js
  *
  * Simulates a Stripe `payment_intent.succeeded` webhook event against the
- * deployed endpoint at https://aquacellum.com/api/stripe-webhook.
+ * deployed endpoint at https://aquacellum.com/api/stripe?action=webhook.
  *
  * This crafts a valid webhook payload with a correct signature using the
  * STRIPE_WEBHOOK_SECRET, so the endpoint accepts it as if Stripe sent it.
@@ -22,7 +22,7 @@ dotenv.config({ path: resolve("frontend/.env") });
 // ─── Config ────────────────────────────────────────────────────────────────────
 
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
-const WEBHOOK_URL = "https://aquacellum.com/api/stripe-webhook";
+const WEBHOOK_URL = "https://aquacellum.com/api/stripe?action=webhook";
 
 if (!WEBHOOK_SECRET) {
   console.error("❌ STRIPE_WEBHOOK_SECRET not found in frontend/.env");

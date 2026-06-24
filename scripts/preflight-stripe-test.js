@@ -199,7 +199,7 @@ async function main() {
   const sellerWallet = relayerAddress; // On testnet, deployer is likely the seller too
   
   try {
-    const apiUrl = `https://aquacellum.com/api/stripe-connect-onboard?wallet=${sellerWallet.toLowerCase()}`;
+    const apiUrl = `https://aquacellum.com/api/stripe?action=connect-onboard&wallet=${sellerWallet.toLowerCase()}`;
     const response = await fetch(apiUrl);
     
     if (response.ok) {
@@ -211,10 +211,10 @@ async function main() {
         info(`  Payouts enabled: ${data.payoutsEnabled}`);
       } else if (data.connected && !data.onboardingComplete) {
         warn(`Seller has a Stripe account but onboarding is incomplete`);
-        info("Complete onboarding at: POST /api/stripe-connect-onboard with walletAddress");
+        info("Complete onboarding at: POST /api/stripe?action=connect-onboard with walletAddress");
       } else {
         warn(`Seller ${sellerWallet} has NO connected Stripe account`);
-        info("The seller needs to onboard via POST /api/stripe-connect-onboard");
+        info("The seller needs to onboard via POST /api/stripe?action=connect-onboard");
         info("For testing, you can insert a test record directly in Supabase:");
         info("  Table: seller_stripe_accounts");
         info("  wallet_address: " + sellerWallet.toLowerCase());
@@ -227,7 +227,7 @@ async function main() {
     }
   } catch (e) {
     warn(`Could not reach API: ${e.message}`);
-    info("Make sure aquacellum.com is deployed and /api/stripe-connect-onboard is working.");
+    info("Make sure aquacellum.com is deployed and /api/stripe?action=connect-onboard is working.");
   }
 
   // --- Summary ---

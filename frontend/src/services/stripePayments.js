@@ -8,11 +8,11 @@
  *   - Checking payment and seller account status
  *
  * This service talks to the Vercel serverless API endpoints:
- *   /api/create-checkout      → creates a Stripe Checkout session
- *   /api/stripe-connect-onboard → seller onboarding & status
+ *   /api/create-checkout             → creates a Stripe Checkout session
+ *   /api/stripe?action=connect-onboard → seller onboarding & status
  *
- * After payment, the webhook (/api/stripe-webhook) handles on-chain settlement
- * automatically — the frontend just needs to poll or listen for confirmation.
+ * After payment, the webhook (/api/stripe?action=webhook) handles on-chain
+ * settlement automatically — the frontend just needs to poll or listen for confirmation.
  */
 
 import { db } from "../db";
@@ -237,7 +237,7 @@ async function _recordPendingPurchase(payload, sessionId) {
 export async function checkSellerStatus(walletAddress) {
   try {
     const response = await fetch(
-      `${API_BASE}/stripe-connect-onboard?wallet=${encodeURIComponent(walletAddress)}`,
+      `${API_BASE}/stripe?action=connect-onboard&wallet=${encodeURIComponent(walletAddress)}`,
       { method: "GET" }
     );
 
@@ -264,7 +264,7 @@ export async function checkSellerStatus(walletAddress) {
  */
 export async function startSellerOnboarding({ walletAddress, email, displayName }) {
   try {
-    const response = await fetch(`${API_BASE}/stripe-connect-onboard`, {
+    const response = await fetch(`${API_BASE}/stripe?action=connect-onboard`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ walletAddress, email, displayName }),

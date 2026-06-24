@@ -1,17 +1,13 @@
 /**
- * stripe-webhook.js — Vercel Serverless Function
+ * stripe.js — Consolidated Vercel Serverless Function
  *
- * Handles Stripe webhook events. When a payment succeeds, this endpoint:
- *   1. Verifies the webhook signature (prevents spoofing)
- *   2. Extracts purchase metadata from the PaymentIntent
- *   3. Calls the appropriate on-chain fiat settlement function via the relayer wallet
- *   4. Records the settlement in Supabase for cross-device sync
+ * Combines stripe-webhook and stripe-connect-onboard into a single function
+ * to stay within Vercel Hobby plan's 12 serverless function limit.
  *
- * The relayer wallet must hold the FIAT_RELAYER_ROLE on AquadexMarketplace.
- *
- * Listened events:
- *   - payment_intent.succeeded → triggers NFT transfer
- *   - charge.dispute.created → flags the order for review (future)
+ * Routing:
+ *   /api/stripe?action=webhook         → Stripe webhook handler
+ *   /api/stripe?action=connect-onboard  → Stripe Connect seller onboarding
+ *   /api/stripe (no action)             → defaults to webhook (for Stripe's POST)
  *
  * Environment variables:
  *   STRIPE_SECRET_KEY — Platform Stripe secret key
@@ -21,11 +17,14 @@
  *   MARKETPLACE_ADDRESS — AquadexMarketplace contract address
  *   SUPABASE_URL — Supabase project URL
  *   SUPABASE_SERVICE_KEY — Supabase service role key
+ *   STRIPE_CONNECT_RETURN_URL — URL to redirect seller after onboarding
+ *   STRIPE_CONNECT_REFRESH_URL — URL if the onboarding link expires
  */
 
 import Stripe from "stripe";
 import { ethers } from "ethers";
 import { createClient } from "@supabase/supabase-js";
+import { handleCorsPreFlight } from "./_lib/cors.js";
 
 let stripe;
 try {
@@ -33,7 +32,7 @@ try {
     apiVersion: "2024-06-20",
   });
 } catch (e) {
-  console.error("[Stripe Webhook] Failed to initialize Stripe SDK:", e.message);
+  console.error("[Stripe] Failed to initialize Stripe SDK:", e.message);
 }
 
 const supabase = createClient(
@@ -49,30 +48,23 @@ const MARKETPLACE_ABI = [
   "function purchaseMultipleFiat(uint256[] tokenIds, address buyer, uint256 priceCentsUSD, bytes32 stripePaymentHash)",
 ];
 
-// Vercel config: disable body parsing so we can verify the raw webhook signature
-export const config = {
-  supportsResponseStreaming: false,
-};
+// ═══════════════════════════════════════════════════════════════════════════════
+// WEBHOOK HELPERS
+// ═══════════════════════════════════════════════════════════════════════════════
 
 /**
  * Read raw body from the request stream (needed for Stripe signature verification).
- * Handles both Next.js-style (stream) and Vercel plain function (req.body buffer) cases.
  */
 function getRawBody(req) {
-  // If Vercel already parsed the body into a Buffer, use it directly
   if (req.body && Buffer.isBuffer(req.body)) {
     return Promise.resolve(req.body);
   }
-  // If body is a string (Vercel may do this for JSON content-type)
   if (req.body && typeof req.body === "string") {
     return Promise.resolve(Buffer.from(req.body));
   }
-  // If body is already parsed as an object, we need to re-stringify it
-  // This happens when Vercel auto-parses JSON — we reconstruct it for signature verification
   if (req.body && typeof req.body === "object") {
     return Promise.resolve(Buffer.from(JSON.stringify(req.body)));
   }
-  // Fallback: read from stream (Next.js with bodyParser: false)
   return new Promise((resolve, reject) => {
     const chunks = [];
     req.on("data", (chunk) => chunks.push(chunk));
@@ -83,12 +75,9 @@ function getRawBody(req) {
 
 /**
  * Compute the on-chain stripePaymentHash from a Stripe PaymentIntent ID.
- * This links the fiat payment to the on-chain settlement record.
  */
 function computeStripePaymentHash(paymentIntentId) {
-  return ethers.utils.keccak256(
-    ethers.utils.toUtf8Bytes(paymentIntentId)
-  );
+  return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(paymentIntentId));
 }
 
 /**
@@ -97,7 +86,8 @@ function computeStripePaymentHash(paymentIntentId) {
 async function settleOnChain(purchaseType, metadata, paymentIntentId, amountCents) {
   const PRIVATE_KEY = process.env.RELAYER_PRIVATE_KEY;
   const RPC_URL = process.env.RPC_URL || "https://sepolia.base.org";
-  const MARKETPLACE_ADDRESS = process.env.MARKETPLACE_ADDRESS || "0x16168B514144e0380610b78d904a4de51ba03Ca3";
+  const MARKETPLACE_ADDRESS =
+    process.env.MARKETPLACE_ADDRESS || "0x16168B514144e0380610b78d904a4de51ba03Ca3";
 
   if (!PRIVATE_KEY) {
     throw new Error("RELAYER_PRIVATE_KEY not configured");
@@ -116,49 +106,32 @@ async function settleOnChain(purchaseType, metadata, paymentIntentId, amountCent
     case "specimen": {
       const tokenId = Number(metadata.tokenId);
       tx = await marketplace.purchaseSpecimenFiat(
-        tokenId,
-        buyerWallet,
-        amountCents,
-        stripePaymentHash
+        tokenId, buyerWallet, amountCents, stripePaymentHash
       );
       break;
     }
-
     case "shipping": {
       const tokenId = Number(metadata.tokenId);
       tx = await marketplace.purchaseShippingFiat(
-        tokenId,
-        buyerWallet,
-        amountCents,
-        stripePaymentHash
+        tokenId, buyerWallet, amountCents, stripePaymentHash
       );
       break;
     }
-
     case "batch": {
       const listingId = Number(metadata.listingId);
       const quantity = Number(metadata.quantity);
       tx = await marketplace.purchaseBatchFiat(
-        listingId,
-        quantity,
-        buyerWallet,
-        amountCents,
-        stripePaymentHash
+        listingId, quantity, buyerWallet, amountCents, stripePaymentHash
       );
       break;
     }
-
     case "multi": {
       const tokenIds = JSON.parse(metadata.tokenIds).map(Number);
       tx = await marketplace.purchaseMultipleFiat(
-        tokenIds,
-        buyerWallet,
-        amountCents,
-        stripePaymentHash
+        tokenIds, buyerWallet, amountCents, stripePaymentHash
       );
       break;
     }
-
     default:
       throw new Error(`Unknown purchaseType in metadata: ${purchaseType}`);
   }
@@ -171,13 +144,17 @@ async function settleOnChain(purchaseType, metadata, paymentIntentId, amountCent
   };
 }
 
-export default async function handler(req, res) {
+// ═══════════════════════════════════════════════════════════════════════════════
+// WEBHOOK HANDLER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function handleWebhook(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   if (!stripe) {
-    console.error("[Stripe Webhook] Stripe SDK not initialized — STRIPE_SECRET_KEY missing");
+    console.error("[Stripe Webhook] Stripe SDK not initialized");
     return res.status(500).json({ error: "Stripe not configured" });
   }
 
@@ -192,14 +169,12 @@ export default async function handler(req, res) {
   try {
     const rawBody = await getRawBody(req);
     const signature = req.headers["stripe-signature"];
-
     event = stripe.webhooks.constructEvent(rawBody, signature, WEBHOOK_SECRET);
   } catch (err) {
     console.error("[Stripe Webhook] Signature verification failed:", err.message);
     return res.status(400).json({ error: "Invalid webhook signature" });
   }
 
-  // ─── Handle the event ────────────────────────────────────────────────────
   switch (event.type) {
     case "payment_intent.succeeded": {
       const paymentIntent = event.data.object;
@@ -209,7 +184,6 @@ export default async function handler(req, res) {
       const amountCents = paymentIntent.amount;
 
       if (!purchaseType || !metadata?.buyerWallet) {
-        // Not an Aquadex purchase (might be from another integration)
         console.log("[Stripe Webhook] Ignoring non-Aquadex payment:", paymentIntentId);
         return res.status(200).json({ received: true, action: "ignored" });
       }
@@ -217,15 +191,10 @@ export default async function handler(req, res) {
       console.log(`[Stripe Webhook] Processing ${purchaseType} purchase: ${paymentIntentId}`);
 
       try {
-        // Execute the on-chain settlement
         const settlement = await settleOnChain(
-          purchaseType,
-          metadata,
-          paymentIntentId,
-          amountCents
+          purchaseType, metadata, paymentIntentId, amountCents
         );
 
-        // Record in Supabase for cross-device sync and order history
         await supabase.from("fiat_settlements").insert({
           stripe_payment_intent_id: paymentIntentId,
           stripe_payment_hash: settlement.stripePaymentHash,
@@ -249,7 +218,6 @@ export default async function handler(req, res) {
       } catch (err) {
         console.error("[Stripe Webhook] On-chain settlement failed:", err);
 
-        // Record the failure for manual retry
         await supabase.from("fiat_settlements").insert({
           stripe_payment_intent_id: paymentIntentId,
           stripe_payment_hash: computeStripePaymentHash(paymentIntentId),
@@ -265,8 +233,6 @@ export default async function handler(req, res) {
           created_at: new Date().toISOString(),
         });
 
-        // Return 200 so Stripe doesn't retry (we handle retries ourselves)
-        // If we returned 500, Stripe would keep retrying the webhook
         return res.status(200).json({
           received: true,
           action: "failed",
@@ -276,7 +242,6 @@ export default async function handler(req, res) {
     }
 
     case "charge.dispute.created": {
-      // A buyer disputed the charge — flag the order for curator review
       const dispute = event.data.object;
       const paymentIntentId = dispute.payment_intent;
 
@@ -291,7 +256,6 @@ export default async function handler(req, res) {
     }
 
     case "account.updated": {
-      // A connected account's status changed (seller completed onboarding, etc.)
       const account = event.data.object;
       if (account.charges_enabled && account.payouts_enabled) {
         await supabase
@@ -305,7 +269,150 @@ export default async function handler(req, res) {
     }
 
     default:
-      // Unhandled event type — acknowledge receipt
       return res.status(200).json({ received: true, action: "unhandled" });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONNECT ONBOARD HANDLER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function handleConnectOnboard(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, GET, OPTIONS" })) return;
+
+  // ─── GET: Check onboarding status for a seller ───────────────────────────
+  if (req.method === "GET") {
+    const { wallet } = req.query;
+    if (!wallet) {
+      return res.status(400).json({ error: "Missing wallet query parameter" });
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("seller_stripe_accounts")
+        .select("stripe_account_id, onboarding_complete, created_at")
+        .eq("wallet_address", wallet.toLowerCase())
+        .single();
+
+      if (error || !data) {
+        return res.status(200).json({ connected: false, onboardingComplete: false });
+      }
+
+      const account = await stripe.accounts.retrieve(data.stripe_account_id);
+      const isComplete = account.charges_enabled && account.payouts_enabled;
+
+      if (isComplete && !data.onboarding_complete) {
+        await supabase
+          .from("seller_stripe_accounts")
+          .update({ onboarding_complete: true })
+          .eq("wallet_address", wallet.toLowerCase());
+      }
+
+      return res.status(200).json({
+        connected: true,
+        onboardingComplete: isComplete,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        stripeAccountId: data.stripe_account_id,
+      });
+    } catch (err) {
+      console.error("[Stripe Connect] Status check failed:", err);
+      return res.status(500).json({ error: "Failed to check onboarding status" });
+    }
+  }
+
+  // ─── POST: Create or resume onboarding ───────────────────────────────────
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const { walletAddress, email, displayName } = req.body;
+
+  if (!walletAddress) {
+    return res.status(400).json({ error: "Missing walletAddress" });
+  }
+
+  const RETURN_URL =
+    process.env.STRIPE_CONNECT_RETURN_URL || "https://aquadex.fish/seller/onboarding-complete";
+  const REFRESH_URL =
+    process.env.STRIPE_CONNECT_REFRESH_URL || "https://aquadex.fish/seller/onboarding-refresh";
+
+  try {
+    const { data: existing } = await supabase
+      .from("seller_stripe_accounts")
+      .select("stripe_account_id")
+      .eq("wallet_address", walletAddress.toLowerCase())
+      .single();
+
+    let stripeAccountId;
+
+    if (existing?.stripe_account_id) {
+      stripeAccountId = existing.stripe_account_id;
+    } else {
+      const account = await stripe.accounts.create({
+        type: "express",
+        email: email || undefined,
+        metadata: {
+          wallet_address: walletAddress.toLowerCase(),
+          platform: "aquadex",
+        },
+        business_profile: {
+          name: displayName || "Aquadex Seller",
+          product_description: "Live aquarium fish, invertebrates, and coral specimens",
+          mcc: "5947",
+        },
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+      });
+
+      stripeAccountId = account.id;
+
+      await supabase.from("seller_stripe_accounts").upsert({
+        wallet_address: walletAddress.toLowerCase(),
+        stripe_account_id: stripeAccountId,
+        email: email || null,
+        display_name: displayName || null,
+        onboarding_complete: false,
+        created_at: new Date().toISOString(),
+      });
+    }
+
+    const accountLink = await stripe.accountLinks.create({
+      account: stripeAccountId,
+      return_url: RETURN_URL,
+      refresh_url: REFRESH_URL,
+      type: "account_onboarding",
+    });
+
+    return res.status(200).json({
+      success: true,
+      onboardingUrl: accountLink.url,
+      stripeAccountId,
+    });
+  } catch (err) {
+    console.error("[Stripe Connect] Onboarding failed:", err);
+    return res.status(500).json({
+      error: "Failed to create onboarding session",
+      details: err.message,
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN ROUTER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export default async function handler(req, res) {
+  const action = req.query.action || "webhook";
+
+  switch (action) {
+    case "webhook":
+      return handleWebhook(req, res);
+    case "connect-onboard":
+      return handleConnectOnboard(req, res);
+    default:
+      return res.status(400).json({ error: `Unknown action: ${action}` });
   }
 }
