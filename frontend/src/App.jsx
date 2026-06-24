@@ -100,7 +100,7 @@ function formatSyncTime(date) {
 }
 
 export default function App() {
-  const { account, ready, authenticated } = useAuth();
+  const { account, ready, authenticated, getAccessToken } = useAuth();
   const queryClient = useQueryClient();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
@@ -322,7 +322,7 @@ export default function App() {
   }, [account]);
 
   // Hook up useXPSync globally in App.jsx
-  useXPSync(account, marketplaceContract);
+  useXPSync(account, marketplaceContract, null, getAccessToken);
 
   // ─── Arrival Flow: track incoming specimens + nudge state ─────────────────
   const { incomingCount, hasNudge, shouldShowToast, markToastShown } = useArrivalNudge(account);

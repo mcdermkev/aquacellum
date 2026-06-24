@@ -475,6 +475,7 @@ export function AuthProvider({ children }) {
 
     // Utilities
     getReadOnlyProvider,
+    getAccessToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

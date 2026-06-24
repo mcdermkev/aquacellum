@@ -128,7 +128,7 @@ export function BreedersCouncil({ walletAccount, suggestionsQuery, updateSuggest
   };
 
   // Bind the real-time XP sync hook
-  useXPSync(walletAccount, marketplaceContract, handleXpRefresh);
+  useXPSync(walletAccount, marketplaceContract, handleXpRefresh, null);
 
   // Load offline profile stats and database counts
   useEffect(() => {

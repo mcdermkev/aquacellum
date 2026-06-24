@@ -224,18 +224,19 @@ export async function registerZone(zoneData) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// XP Event Logging (client-side supplement to server-side triggers)
+// XP Event Logging
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Log an XP event to Supabase (syncs local XP to server for leaderboard).
+ * @deprecated Use /api/validate-xp instead. Direct client inserts are now blocked
+ * by RLS (only service_role can insert into xp_events). This function is kept for
+ * backward compatibility but will return an error once the RLS migration is applied.
  * 
- * @param {object} event
- * @param {string} event.actionType - XP_ACTIONS key
- * @param {number} event.pointsAwarded - Base points
- * @param {number} event.multiplier - Multiplier applied (1.0, 1.5, 2.0)
- * @param {object} event.metadata - Additional context (tankId, challengeId, etc.)
- * @returns {Promise<{error: string|null}>}
+ * The replacement flow is:
+ *   1. useXPSync awards XP locally (instant)
+ *   2. useXPSync calls /api/validate-xp with Privy token
+ *   3. Server validates and inserts into xp_events (trigger updates profiles.total_xp)
+ *   4. If server rejects → useXPSync rolls back local XP
  */
 export async function logXpEvent({ actionType, pointsAwarded, multiplier = 1.0, metadata = {} }) {
   if (!isSupabaseConfigured()) return { error: "Not configured" };
@@ -265,6 +266,76 @@ export async function logXpEvent({ actionType, pointsAwarded, multiplier = 1.0, 
     });
 
   return { error: error?.message || null };
+}
+
+/**
+ * Fetch the user's server-authoritative XP total.
+ * This is the trusted value for leaderboard display — cannot be
+ * manipulated via DevTools since it's derived from validated xp_events.
+ * 
+ * @param {string} [walletAddress] - Optional, defaults to connected wallet
+ * @returns {Promise<{data: {total_xp: number, current_tier: string, zone_rank: number|null}|null, error: string|null}>}
+ */
+export async function fetchServerXpTotal(walletAddress) {
+  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
+
+  const wallet = walletAddress || getCurrentWallet();
+  if (!wallet) return { data: null, error: "Not connected" };
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("total_xp, current_tier, zone_hash")
+    .eq("wallet_address", wallet)
+    .maybeSingle();
+
+  if (error || !data) {
+    return { data: null, error: error?.message || "Profile not found" };
+  }
+
+  // Also try to get zone rank
+  let zoneRank = null;
+  if (data.zone_hash) {
+    const { data: rankData } = await supabase
+      .from("zone_leaderboard")
+      .select("zone_rank")
+      .eq("wallet_address", wallet)
+      .maybeSingle();
+    zoneRank = rankData?.zone_rank || null;
+  }
+
+  return {
+    data: {
+      total_xp: data.total_xp || 0,
+      current_tier: data.current_tier || "Shallow",
+      zone_rank: zoneRank,
+    },
+    error: null,
+  };
+}
+
+/**
+ * Fetch the user's XP event history (server-validated events only).
+ * Useful for displaying "Recent XP" in the profile/gamification UI.
+ * 
+ * @param {object} opts
+ * @param {number} opts.limit - Max events (default 20)
+ * @param {string} opts.walletAddress - Optional, defaults to connected wallet
+ * @returns {Promise<{data: Array, error: string|null}>}
+ */
+export async function fetchXpHistory({ limit = 20, walletAddress } = {}) {
+  if (!isSupabaseConfigured()) return { data: [], error: "Not configured" };
+
+  const wallet = walletAddress || getCurrentWallet();
+  if (!wallet) return { data: [], error: "Not connected" };
+
+  const { data, error } = await supabase
+    .from("xp_events")
+    .select("id, action_type, points_awarded, multiplier, final_points, created_at, metadata")
+    .eq("wallet_address", wallet)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  return { data: data || [], error: error?.message || null };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
