@@ -34,9 +34,22 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
   const { data: reefProfile } = useProfile(account, !!account);
   const [showMetaMaskOption, setShowMetaMaskOption] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [dexieAlias, setDexieAlias] = useState(null);
 
-  // Resolve display name: Supabase profile name → generated alias → short address
-  const displayNameResolved = reefProfile?.display_name || (account ? generateAlias(account) : "");
+  // Resolve display name: Supabase profile name → Dexie alias → generated alias → short address
+  const displayNameResolved = reefProfile?.display_name || dexieAlias || (account ? generateAlias(account) : "");
+
+  // Try to read the local Dexie alias as a fallback (in case Supabase profile is missing/stale)
+  React.useEffect(() => {
+    if (!account) { setDexieAlias(null); return; }
+    import("../db").then(({ db }) => {
+      db.userProfile.get(account).then((profile) => {
+        if (profile?.alias) {
+          setDexieAlias(profile.alias);
+        }
+      }).catch(() => {});
+    });
+  }, [account]);
 
   // Notify parent when account changes
   React.useEffect(() => {
@@ -178,8 +191,12 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
                 inset: 0,
                 zIndex: 9998,
               }}
+              aria-hidden="true"
             />
-            <div style={{
+            <div
+              role="menu"
+              aria-label="User menu"
+              style={{
               position: "fixed",
               top: "70px",
               right: "2rem",
@@ -211,6 +228,7 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
 
             {/* View Profile */}
             <button
+              role="menuitem"
               onClick={() => {
                 setMenuOpen(false);
                 // Navigate to Reef profile via existing event system
@@ -247,6 +265,7 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
 
             {/* Disconnect */}
             <button
+              role="menuitem"
               onClick={() => { setMenuOpen(false); disconnect(); }}
               style={{
                 display: "flex",

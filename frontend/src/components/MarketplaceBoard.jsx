@@ -1181,6 +1181,7 @@ export function MarketplaceBoard({
                                         backdropFilter: "blur(4px)",
                                         fontSize: "1rem"
                                       }}
+                                      aria-label="Previous photo"
                                     >
                                       &#8249;
                                     </button>
@@ -1210,6 +1211,7 @@ export function MarketplaceBoard({
                                         backdropFilter: "blur(4px)",
                                         fontSize: "1rem"
                                       }}
+                                      aria-label="Next photo"
                                     >
                                       &#8250;
                                     </button>

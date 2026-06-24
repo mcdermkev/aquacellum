@@ -232,8 +232,11 @@ export function EchoWhispers({ casualModeActive = true, userState, tankData }) {
     <div
       className="echo-whisper"
       onClick={dismiss}
+      onKeyDown={(e) => (e.key === "Escape" || e.key === "Enter") && dismiss()}
       role="status"
       aria-live="polite"
+      aria-label="Echo whisper notification — click or press Escape to dismiss"
+      tabIndex={0}
       style={{
         position: "fixed",
         bottom: "5.5rem",

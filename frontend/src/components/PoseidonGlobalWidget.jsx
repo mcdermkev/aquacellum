@@ -162,7 +162,14 @@ export function PoseidonGlobalWidget({ walletAddress, casualModeActive = true, a
     <>
       {/* Mobile Pill — compact preview of last Poseidon response */}
       {showPill && (
-        <div className="poseidon-global-pill" onClick={() => setIsOpen(true)}>
+        <div
+          className="poseidon-global-pill"
+          onClick={() => setIsOpen(true)}
+          onKeyDown={(e) => e.key === "Enter" && setIsOpen(true)}
+          role="button"
+          tabIndex={0}
+          aria-label="Open Poseidon chat — last message preview"
+        >
           <img src="/poseidon-avatar.jpg" alt="" className="poseidon-global-pill__avatar" />
           <span className="poseidon-global-pill__text">
             {lastPoseidonMsg.text.length > 60
