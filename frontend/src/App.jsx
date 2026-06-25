@@ -41,6 +41,16 @@ import { WhatsNewModal } from "./components/WhatsNewModal";
 import { IncomingSpecimens } from "./components/IncomingSpecimens";
 import { IncomingBadge } from "./components/IncomingBadge";
 import { useArrivalNudge } from "./hooks/useArrivalNudge";
+import {
+  CONTRACT_ADDRESS,
+  MARKETPLACE_ADDRESS,
+  FOUNDER_WALLETS,
+  FOUNDER_WALLET_PATTERNS,
+  STOREFRONT_BETA_WALLETS,
+  VALID_TABS,
+  isFounderWallet,
+  formatSyncTime,
+} from "./config/appConfig";
 
 
 // Lazy-load The Reef social layer (code-split for performance)
@@ -52,52 +62,6 @@ const ReefFeed = lazy(() =>
 const StorefrontSetup = lazy(() =>
   import("./components/StorefrontSetup").then((m) => ({ default: m.StorefrontSetup }))
 );
-
-// ── Founders Dashboard Access Control ──────────────────────────────────────
-// Only these wallet addresses can see the "Founders" tab.
-// `account` from useAuth() is the Privy embedded wallet (EOA), NOT the smart wallet.
-// Add your EOA address here (check browser console for the logged value).
-const FOUNDER_WALLETS = [
-  "0x53d3c6f4f11b0b08bc1a5034bbce7d46198b6851", // Kevin — old shared smart wallet (legacy)
-  "0x9174d162ed1ab6594064fa0ffbfaf063dc20f3c6", // Kevin — per-user smart wallet (current)
-  "0x41e562ee88825ad8d79b48311a30742ac276c9eb", // Second founder — Smart wallet
-];
-
-// Also match by prefix+suffix for partial-match fallback (truncated addresses)
-const FOUNDER_WALLET_PATTERNS = [
-  { prefix: "0x53d3c6", suffix: "6851" },
-  { prefix: "0x4a85", suffix: "a6d3" },  // EOA (Privy embedded wallet)
-  { prefix: "0x41e562", suffix: "c9eb" }, // Second founder
-  { prefix: "0x9174d1", suffix: "f3c6" }, // Kevin per-user smart wallet
-];
-
-// ── Storefront Beta Allowlist ─────────────────────────────────────────────
-// Wallets that can access the "My Store" tab during beta.
-// Same as founders + any additional beta tester wallets you add here.
-const STOREFRONT_BETA_WALLETS = [
-  ...FOUNDER_WALLETS,
-  // Add beta tester wallets below:
-  // "0xYOUR_TESTER_WALLET_HERE",
-];
-
-
-// Deployed contract addresses — Base Sepolia Testnet
-// Deployed: May 29, 2026 | Chain ID: 84532
-const CONTRACT_ADDRESS = "0x351ca8f34D94F29F6f865Afa419A636324473DeF";
-const MARKETPLACE_ADDRESS = "0x16168B514144e0380610b78d904a4de51ba03Ca3";
-
-/** Format a sync timestamp into a human-readable relative time. */
-function formatSyncTime(date) {
-  if (!date) return "";
-  const now = new Date();
-  const diffMs = now - date;
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return "just now";
-  if (diffMin < 60) return `${diffMin} min ago`;
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `${diffHr} hr ago`;
-  return date.toLocaleDateString();
-}
 
 export default function App() {
   const { account, ready, authenticated, getAccessToken } = useAuth();
@@ -215,17 +179,7 @@ export default function App() {
     return () => { cancelled = true; };
   }, [account]);
 
-  const isFounder = (() => {
-    if (!account) return false;
-    const addr = account.toLowerCase();
-    if (FOUNDER_WALLETS.includes(addr)) return true;
-    if (FOUNDER_WALLET_PATTERNS.some(
-      (p) => addr.startsWith(p.prefix.toLowerCase()) && addr.endsWith(p.suffix.toLowerCase())
-    )) return true;
-    // Also check the smart wallet address (derived per-user, different from EOA)
-    if (smartWalletForFounderCheck && FOUNDER_WALLETS.includes(smartWalletForFounderCheck.toLowerCase())) return true;
-    return false;
-  })();
+  const isFounder = isFounderWallet(account, smartWalletForFounderCheck);
 
   // Storefront beta: all authenticated users can access "My Store" during closed beta
   const isStorefrontBeta = !!account;
@@ -489,7 +443,7 @@ export default function App() {
   useEffect(() => {
     const handlePopState = (e) => {
       const hash = window.location.hash.replace("#", "");
-      const validTabs = ["tanks", "breeder", "directory", "gallery", "map", "orders", "incoming", "reef", "settings", "founders", "storefront"];
+      const validTabs = VALID_TABS;
       if (validTabs.includes(hash)) {
         setActiveTab(hash);
       }
