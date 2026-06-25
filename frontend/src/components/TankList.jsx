@@ -21,6 +21,7 @@ import { isSupabaseConfigured } from "../services/supabaseClient";
 import { TankCamSetup } from "./tank-cam/TankCamSetup";
 import { ActivityLog } from "./ActivityLog";
 import { NotesTab } from "./NotesTab";
+import { QuickLogPanel } from "./QuickLogPanel";
 import { getSupabaseImageUrl, isInsideEnvelope, getTrackBackground, TANK_TYPES, CONTAINMENT_TYPES } from "../utils/tankUtils";
 export function TankList({ contractAddress, walletAccount, onViewLineage, onListOnMarketplace, onSelectSpecimen, casualModeActive = false }) {
   const queryClient = useQueryClient();
@@ -128,7 +129,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     return mockPopulationCounts[tank.id] !== undefined ? mockPopulationCounts[tank.id] : tank.specimens.length;
   };
 
-  // Layout View Modes: "list" | "tree"
+  // Layout View Modes: "list" | "tree" | "quicklog"
   const [viewMode, setViewMode] = useState("list");
   const [openRegisterOnTreeMount, setOpenRegisterOnTreeMount] = useState(false);
 
@@ -1249,6 +1250,15 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               <span>🏢</span>
               <span>Facility Tree</span>
             </button>
+            <button
+              className={`tank-view-btn${viewMode === "quicklog" ? " tank-view-btn--active" : ""}`}
+              onClick={() => setViewMode("quicklog")}
+              role="radio"
+              aria-checked={viewMode === "quicklog"}
+            >
+              <span>⚡</span>
+              <span>Batch Log</span>
+            </button>
           </div>
         )}
 
@@ -1345,7 +1355,16 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       <div className="tank-detail-split-grid" style={{ display: "grid", gridTemplateColumns: activeTank ? "1.2fr 1fr" : "1fr", gap: "2rem", alignItems: "start" }}>
         {/* LEFT VIEW COMPONENT */}
         <div>
-          {viewMode === "tree" ? (
+          {viewMode === "quicklog" ? (
+            <QuickLogPanel
+              tanks={tanks}
+              casualModeActive={casualModeActive}
+              onComplete={() => {
+                refetchTanks();
+                setViewMode("list");
+              }}
+            />
+          ) : viewMode === "tree" ? (
             <FacilityTreeView 
               contractAddress={contractAddress} 
               walletAccount={walletAccount} 

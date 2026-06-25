@@ -14,6 +14,7 @@ import { fetchListingsByBreed } from "../utils/listingManager";
 import { useSpeciesSearch } from "../hooks/useSpeciesSearch";
 import { LazyImage } from "./LazyImage";
 import { useMarketplaceListings } from "../hooks/useMarketplaceListings";
+import { WantedBoard } from "./WantedBoard";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 
 // Helper: detect if a fishbase record or specCode is a plant entry
@@ -49,7 +50,7 @@ export function MarketplaceBoard({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [cardImageIndexMap, setCardImageIndexMap] = useState({});
-  const [activeSubTab, setActiveSubTab] = useState("listings"); // "listings" | "analytics"
+  const [activeSubTab, setActiveSubTab] = useState("listings"); // "listings" | "wanted" | "analytics"
   const [actionLoading, setActionLoading] = useState({});
   const [actionTxHash, setActionTxHash] = useState({});
   const [actionError, setActionError] = useState(null);
@@ -661,7 +662,56 @@ export function MarketplaceBoard({
 
   return (
     <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-      {/* Sub-Tab Navigation Bar */}
+      {/* Casual Mode: simple toggle between Store and Looking For */}
+      {casualModeActive && (
+        <div style={{
+          display: "flex",
+          background: "rgba(8, 25, 48, 0.6)",
+          border: "1px solid rgba(56, 189, 248, 0.12)",
+          borderRadius: "10px",
+          padding: "0.35rem",
+          marginBottom: "1.5rem",
+          gap: "0.4rem",
+          backdropFilter: "blur(12px)"
+        }}>
+          <button
+            onClick={() => setActiveSubTab("listings")}
+            style={{
+              flex: 1,
+              padding: "0.55rem",
+              fontSize: "0.82rem",
+              fontWeight: "600",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              background: activeSubTab === "listings" ? "rgba(56, 189, 248, 0.15)" : "transparent",
+              color: activeSubTab === "listings" ? "#7dd3fc" : "var(--text-muted)",
+              transition: "all 0.2s"
+            }}
+          >
+            🐟 Browse Store
+          </button>
+          <button
+            onClick={() => setActiveSubTab("wanted")}
+            style={{
+              flex: 1,
+              padding: "0.55rem",
+              fontSize: "0.82rem",
+              fontWeight: "600",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              background: activeSubTab === "wanted" ? "rgba(56, 189, 248, 0.15)" : "transparent",
+              color: activeSubTab === "wanted" ? "#7dd3fc" : "var(--text-muted)",
+              transition: "all 0.2s"
+            }}
+          >
+            🔍 Looking For
+          </button>
+        </div>
+      )}
+
+      {/* Pro Mode: Sub-Tab Navigation Bar */}
       {!casualModeActive && (
         <div style={{
           display: "flex",
@@ -692,6 +742,24 @@ export function MarketplaceBoard({
             🗂️ Active Directory Listings
           </button>
           <button
+            onClick={() => setActiveSubTab("wanted")}
+            style={{
+              flex: 1,
+              padding: "0.6rem",
+              fontSize: "0.85rem",
+              fontWeight: "600",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              background: activeSubTab === "wanted" ? "rgba(168, 85, 247, 0.18)" : "transparent",
+              color: activeSubTab === "wanted" ? "#c084fc" : "var(--text-muted)",
+              boxShadow: activeSubTab === "wanted" ? "0 0 10px rgba(168, 85, 247, 0.15)" : "none",
+              transition: "all 0.2s"
+            }}
+          >
+            🔍 Wanted Board
+          </button>
+          <button
             onClick={() => setActiveSubTab("analytics")}
             style={{
               flex: 1,
@@ -714,6 +782,8 @@ export function MarketplaceBoard({
 
       {activeSubTab === "analytics" ? (
         renderEventAnalytics()
+      ) : activeSubTab === "wanted" ? (
+        <WantedBoard casualModeActive={casualModeActive} walletAccount={walletAccount} />
       ) : (
         <>
       {activeSellerFilter && (
