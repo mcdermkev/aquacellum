@@ -14,6 +14,10 @@ function storefrontRewritePlugin() {
         if (req.url && req.url.startsWith('/store/')) {
           req.url = '/store.html';
         }
+        // Rewrite /species/* to /species.html (species detail pages)
+        if (req.url && req.url.startsWith('/species/')) {
+          req.url = '/species.html';
+        }
         next();
       });
     },
@@ -48,7 +52,9 @@ export default defineConfig({
         about: resolve(__dirname, 'about.html'),       // About page
         legal: resolve(__dirname, 'legal.html'),       // Legal & policies page
         app: resolve(__dirname, 'app.html'),           // React dashboard app
-        store: resolve(__dirname, 'store.html')        // Breeder Storefront (public)
+        store: resolve(__dirname, 'store.html'),        // Breeder Storefront (public)
+        species: resolve(__dirname, 'species.html'),      // Species detail page
+        compare: resolve(__dirname, 'compare.html')       // Species comparison tool
       }
     }
   },

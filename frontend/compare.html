@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compare Species — Aquacellum</title>
+  <meta name="description" content="Compare up to 3 species side-by-side. See overlapping temperature, pH, and hardness ranges to determine tank compatibility.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-void:      #09090b;
+      --bg-deep:      #0f0f12;
+      --bg-surface:   #18181b;
+      --emerald-100:  #d1fae5;
+      --emerald-200:  #a7f3d0;
+      --emerald-300:  #6ee7b7;
+      --emerald-400:  #34d399;
+      --emerald-500:  #10b981;
+      --emerald-600:  #059669;
+      --teal-300:     #5eead4;
+      --teal-400:     #2dd4bf;
+      --teal-500:     #14b8a6;
+      --cyan-300:     #67e8f9;
+      --cyan-400:     #22d3ee;
+      --violet-400:   #a78bfa;
+      --amber-300:    #fcd34d;
+      --amber-400:    #fbbf24;
+      --rose-400:     #fb7185;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted:   #52525b;
+      --glass-bg:     rgba(15, 15, 18, 0.75);
+      --glass-border: rgba(255, 255, 255, 0.06);
+      --radius-sm: 12px;
+      --radius-md: 18px;
+      --radius-lg: 24px;
+      --radius-xl: 32px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --species-1: #34d399;
+      --species-2: #22d3ee;
+      --species-3: #a78bfa;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-void);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: inherit; border: none; background: none; }
+
+    /* Ambient */
+    .ambient-layer { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(120px); animation: orb-drift 18s ease-in-out infinite; }
+    .orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%); top: -150px; left: -80px; }
+    .orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(167,139,250,0.05) 0%, transparent 70%); bottom: -100px; right: -100px; animation-delay: -6s; }
+    .orb-3 { width: 350px; height: 350px; background: radial-gradient(circle, rgba(251,191,36,0.04) 0%, transparent 70%); top: 40%; left: 50%; animation-delay: -12s; }
+    @keyframes orb-drift {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -20px) scale(1.05); }
+      66% { transform: translate(-20px, 15px) scale(0.95); }
+    }
+
+    /* Navigation */
+    .nav { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(20px) saturate(1.4); background: rgba(9,9,11,0.88); border-bottom: 1px solid var(--glass-border); padding: 0 24px; }
+    .nav-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; }
+    .nav-logo { display: flex; align-items: center; gap: 12px; }
+    .nav-logo-mark { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(20,184,166,0.15), rgba(139,92,246,0.15)); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; box-shadow: 0 0 20px rgba(20,184,166,0.3); transition: var(--transition); }
+    .nav-logo-mark:hover { box-shadow: 0 0 30px rgba(20,184,166,0.5); transform: scale(1.05); }
+    .nav-logo-text { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1rem; letter-spacing: 0.1em; color: #fff; }
+    .nav-logo-sub { display: block; font-size: 9px; letter-spacing: 0.15em; color: var(--emerald-400); font-weight: 600; text-transform: uppercase; margin-top: -2px; }
+    .nav-links { display: flex; align-items: center; gap: 20px; list-style: none; }
+    .nav-links a { font-size: 0.82rem; font-weight: 500; color: var(--text-secondary); transition: color 0.2s; }
+    .nav-links a:hover { color: var(--emerald-300); }
+    .nav-cta { display: flex; align-items: center; gap: 8px; padding: 9px 20px; font-size: 0.82rem; font-weight: 600; color: #fff; background: linear-gradient(135deg, var(--emerald-600), var(--teal-500)); border-radius: 10px; transition: var(--transition); }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(16,185,129,0.3); }
+
+    /* Layout */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+    /* Page Header */
+    .page-header { padding: 60px 0 40px; text-align: center; position: relative; z-index: 1; }
+    .page-header h1 {
+      font-family: 'Outfit', sans-serif; font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+      font-weight: 900; line-height: 1.15; margin-bottom: 12px;
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, var(--emerald-300), var(--teal-300), var(--cyan-300));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .page-header p { font-size: 1rem; color: var(--text-secondary); max-width: 560px; margin: 0 auto; line-height: 1.7; }
+
+    /* Species Selector */
+    .selector-section { position: relative; z-index: 10; margin-bottom: 48px; }
+    .selector-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .selector-slot {
+      background: var(--glass-bg); border: 2px dashed rgba(52,211,153,0.2);
+      border-radius: var(--radius-lg); padding: 24px; min-height: 180px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 12px; transition: var(--transition); position: relative;
+    }
+    .selector-slot:hover { border-color: rgba(52,211,153,0.4); background: rgba(52,211,153,0.03); }
+    .selector-slot.filled { border-style: solid; }
+    .selector-slot.slot-1.filled { border-color: var(--species-1); }
+    .selector-slot.slot-2.filled { border-color: var(--species-2); }
+    .selector-slot.slot-3.filled { border-color: var(--species-3); }
+
+    .slot-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+    .slot-1 .slot-label { color: var(--species-1); }
+    .slot-2 .slot-label { color: var(--species-2); }
+    .slot-3 .slot-label { color: var(--species-3); }
+
+    .slot-empty-icon { font-size: 2rem; opacity: 0.4; }
+    .slot-empty-text { font-size: 0.82rem; color: var(--text-muted); }
+
+    .slot-filled-content { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; width: 100%; }
+    .slot-fish-image { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1); }
+    .slot-fish-name { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.92rem; color: var(--text-primary); }
+    .slot-fish-sci { font-size: 0.72rem; font-style: italic; color: var(--emerald-400); }
+    .slot-remove {
+      position: absolute; top: 10px; right: 10px;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: rgba(251,113,133,0.15); border: 1px solid rgba(251,113,133,0.3);
+      color: var(--rose-400); font-size: 0.72rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      transition: var(--transition); cursor: pointer;
+    }
+    .slot-remove:hover { background: rgba(251,113,133,0.3); transform: scale(1.1); }
+
+    /* Search dropdown */
+    .species-search-wrap { width: 100%; max-width: 280px; position: relative; }
+    .species-search-input {
+      width: 100%; padding: 10px 14px; font-size: 0.82rem;
+      color: var(--text-primary); background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+      outline: none; transition: var(--transition);
+    }
+    .species-search-input:focus { border-color: var(--emerald-500); box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
+    .species-search-input::placeholder { color: var(--text-muted); }
+    .search-dropdown {
+      display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      max-height: 240px; overflow-y: auto; z-index: 50;
+      background: var(--bg-surface); border: 1px solid var(--glass-border);
+      border-radius: 10px; box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    }
+    .search-dropdown.open { display: block; }
+    .search-option {
+      padding: 10px 14px; cursor: pointer; transition: background 0.15s;
+      display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .search-option:hover { background: rgba(52,211,153,0.08); }
+    .search-option img { width: 32px; height: 32px; border-radius: 6px; object-fit: cover; }
+    .search-option-info { display: flex; flex-direction: column; }
+    .search-option-name { font-size: 0.8rem; font-weight: 600; color: var(--text-primary); }
+    .search-option-sci { font-size: 0.68rem; font-style: italic; color: var(--text-muted); }
+
+    /* Comparison Results */
+    .comparison-results { position: relative; z-index: 1; padding-bottom: 80px; display: none; }
+    .comparison-results.visible { display: block; }
+
+    .results-header {
+      text-align: center; margin-bottom: 40px;
+    }
+    .results-header h2 {
+      font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin-bottom: 8px;
+    }
+    .verdict-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 20px; border-radius: 20px; font-size: 0.82rem; font-weight: 700;
+    }
+    .verdict-compatible { background: rgba(52,211,153,0.15); color: var(--emerald-300); border: 1px solid rgba(52,211,153,0.3); }
+    .verdict-caution { background: rgba(251,191,36,0.15); color: var(--amber-300); border: 1px solid rgba(251,191,36,0.3); }
+    .verdict-incompatible { background: rgba(251,113,133,0.15); color: var(--rose-400); border: 1px solid rgba(251,113,133,0.3); }
+
+    /* Range Chart */
+    .range-section { margin-bottom: 32px; }
+    .range-section-title {
+      font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1rem;
+      color: var(--text-primary); margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .range-chart {
+      background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg); padding: 24px;
+    }
+    .range-row { margin-bottom: 24px; }
+    .range-row:last-child { margin-bottom: 0; }
+    .range-row-label {
+      font-size: 0.72rem; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px;
+    }
+    .range-track-container { position: relative; height: 48px; }
+    .range-track {
+      position: absolute; top: 50%; left: 0; right: 0;
+      height: 6px; transform: translateY(-50%);
+      background: rgba(255,255,255,0.04); border-radius: 3px;
+    }
+    .range-bar {
+      position: absolute; height: 12px; border-radius: 6px;
+      top: 50%; transform: translateY(-50%); opacity: 0.8;
+      transition: all 0.6s cubic-bezier(0.4,0,0.2,1);
+    }
+    .range-bar.species-1-bar { background: var(--species-1); top: calc(50% - 10px); }
+    .range-bar.species-2-bar { background: var(--species-2); top: calc(50%); }
+    .range-bar.species-3-bar { background: var(--species-3); top: calc(50% + 10px); }
+    .range-overlap {
+      position: absolute; height: 36px; border-radius: 6px;
+      top: 50%; transform: translateY(-50%);
+      background: rgba(255,255,255,0.06); border: 1px dashed rgba(255,255,255,0.2);
+      transition: all 0.6s cubic-bezier(0.4,0,0.2,1);
+    }
+    .range-scale {
+      display: flex; justify-content: space-between; margin-top: 6px;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text-muted);
+    }
+    .overlap-label {
+      position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+      font-size: 0.62rem; font-weight: 700; color: var(--emerald-300);
+      white-space: nowrap; background: var(--bg-surface); padding: 2px 6px; border-radius: 4px;
+    }
+
+    /* Attribute comparison table */
+    .attr-table {
+      background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 32px;
+    }
+    .attr-table-header {
+      display: grid; gap: 1px; padding: 16px 24px;
+      background: rgba(16,185,129,0.04); border-bottom: 1px solid var(--glass-border);
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text-muted);
+    }
+    .attr-table-row {
+      display: grid; gap: 1px; padding: 14px 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      font-size: 0.82rem; align-items: center;
+    }
+    .attr-table-row:last-child { border-bottom: none; }
+    .attr-table-header, .attr-table-row { grid-template-columns: 140px repeat(var(--cols), 1fr); }
+    .attr-label { color: var(--text-secondary); font-weight: 600; font-size: 0.78rem; }
+    .attr-value { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--text-primary); }
+    .attr-value.match { color: var(--emerald-300); }
+    .attr-value.mismatch { color: var(--rose-400); }
+
+    /* Temperament section */
+    .temperament-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 32px; }
+    .temperament-card {
+      background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md); padding: 20px;
+    }
+    .temperament-card-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+    }
+    .temperament-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .temperament-card-name { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.88rem; }
+    .temperament-traits { display: flex; flex-wrap: wrap; gap: 6px; }
+    .trait-chip {
+      padding: 4px 10px; border-radius: 6px; font-size: 0.68rem; font-weight: 600;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      color: var(--text-secondary);
+    }
+    .trait-chip.warning { background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.25); color: var(--amber-300); }
+    .trait-chip.danger { background: rgba(251,113,133,0.1); border-color: rgba(251,113,133,0.25); color: var(--rose-400); }
+    .trait-chip.safe { background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.25); color: var(--emerald-300); }
+
+    /* Legend */
+    .legend { display: flex; gap: 20px; justify-content: center; margin-bottom: 32px; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-secondary); }
+    .legend-swatch { width: 16px; height: 4px; border-radius: 2px; }
+
+    /* Footer */
+    .footer { position: relative; z-index: 1; padding: 40px 0; border-top: 1px solid var(--glass-border); text-align: center; }
+    .footer p { font-size: 0.78rem; color: var(--text-muted); }
+    .footer-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 12px; flex-wrap: wrap; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-secondary); transition: color 0.2s; }
+    .footer-links a:hover { color: var(--emerald-300); }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .selector-grid { grid-template-columns: 1fr; }
+      .attr-table-header, .attr-table-row { grid-template-columns: 100px repeat(var(--cols), 1fr); font-size: 0.72rem; }
+    }
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .temperament-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient -->
+  <div class="ambient-layer">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Navigation -->
+  <header class="nav">
+    <nav class="nav-inner">
+      <a href="/" class="nav-logo">
+        <div class="nav-logo-mark">
+          <svg width="28" height="28" viewBox="0 0 38 38" fill="none">
+            <defs><linearGradient id="nav-g" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#5eead4"/><stop offset="50%" stop-color="#22d3ee"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs>
+            <circle cx="19" cy="19" r="15" stroke="url(#nav-g)" stroke-width="2.4" fill="none"/>
+            <path d="M19 4 C22.5 9.5, 24 14, 22.8 19 C21.6 24, 22.5 28.5, 19 34" stroke="url(#nav-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <path d="M19 4 C15.5 9.5, 14 14, 15.2 19 C16.4 24, 15.5 28.5, 19 34" stroke="url(#nav-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <path d="M4 19 C9.5 17, 14 16.2, 19 16.2 C24 16.2, 28.5 17, 34 19" stroke="#5eead4" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.9"/>
+            <path d="M4 19 C9.5 21, 14 21.8, 19 21.8 C24 21.8, 28.5 21, 34 19" stroke="#a78bfa" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.9"/>
+            <circle cx="19" cy="19" r="4" fill="url(#nav-g)"/>
+            <circle cx="17.5" cy="17.5" r="1.3" fill="#fff" opacity="0.7"/>
+          </svg>
+        </div>
+        <div>
+          <span class="nav-logo-text">AQUACELLUM</span>
+          <span class="nav-logo-sub">Compatibility Tool</span>
+        </div>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/database">Database</a></li>
+        <li><a href="/hobbyist">For Hobbyists</a></li>
+        <li><a href="/breeder">For Breeders</a></li>
+      </ul>
+      <a href="/database" class="nav-cta">Browse Database</a>
+    </nav>
+  </header>
+
+  <div class="container">
+    <!-- Page Header -->
+    <section class="page-header">
+      <h1>Can they live <span class="gradient-text">together?</span></h1>
+      <p>Select 2 or 3 species to compare their parameter ranges side-by-side. See where they overlap — and where they don't.</p>
+    </section>
+
+    <!-- Species Selector -->
+    <section class="selector-section">
+      <div class="selector-grid">
+        <div class="selector-slot slot-1" id="slot1">
+          <span class="slot-label">Species 1</span>
+          <span class="slot-empty-icon">🐟</span>
+          <div class="species-search-wrap">
+            <input type="text" class="species-search-input" id="search1" placeholder="Type to search..." autocomplete="off">
+            <div class="search-dropdown" id="dropdown1"></div>
+          </div>
+        </div>
+        <div class="selector-slot slot-2" id="slot2">
+          <span class="slot-label">Species 2</span>
+          <span class="slot-empty-icon">🐠</span>
+          <div class="species-search-wrap">
+            <input type="text" class="species-search-input" id="search2" placeholder="Type to search..." autocomplete="off">
+            <div class="search-dropdown" id="dropdown2"></div>
+          </div>
+        </div>
+        <div class="selector-slot slot-3" id="slot3">
+          <span class="slot-label">Species 3 (optional)</span>
+          <span class="slot-empty-icon">🦐</span>
+          <div class="species-search-wrap">
+            <input type="text" class="species-search-input" id="search3" placeholder="Type to search..." autocomplete="off">
+            <div class="search-dropdown" id="dropdown3"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Comparison Results -->
+    <section class="comparison-results" id="resultsSection">
+      <div id="resultsContent"></div>
+    </section>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/database">Database</a>
+        <a href="/hobbyist">For Hobbyists</a>
+        <a href="/breeder">For Breeders</a>
+        <a href="/app.html">Open Logbook</a>
+      </div>
+      <p>&copy; 2026 Aquacellum. All species data validated against FishBase & WoRMS.</p>
+    </div>
+  </footer>
+
+  <script>
+    let allSpecies = [];
+    let selectedSpecies = [null, null, null]; // 3 slots
+    const COLORS = ['var(--species-1)', 'var(--species-2)', 'var(--species-3)'];
+    const COLOR_HEX = ['#34d399', '#22d3ee', '#a78bfa'];
+
+    function toSlug(name) {
+      return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+
+    async function init() {
+      try {
+        const res = await fetch('/fishbase_master.json');
+        if (!res.ok) throw new Error('Failed to load');
+        allSpecies = await res.json();
+
+        // Check URL params for pre-selected species
+        const params = new URLSearchParams(window.location.search);
+        const preSelected = [params.get('s1'), params.get('s2'), params.get('s3')];
+        preSelected.forEach((slug, idx) => {
+          if (slug) {
+            const sp = allSpecies.find(s => toSlug(s.scientificName) === slug || toSlug(s.commonName || '') === slug);
+            if (sp) selectSpecies(idx, sp);
+          }
+        });
+
+        setupSearchInputs();
+      } catch (err) {
+        console.error('Failed to load species data:', err);
+      }
+    }
+
+    function setupSearchInputs() {
+      [1, 2, 3].forEach(i => {
+        const input = document.getElementById('search' + i);
+        const dropdown = document.getElementById('dropdown' + i);
+
+        input.addEventListener('input', () => {
+          const q = input.value.toLowerCase().trim();
+          if (q.length < 2) { dropdown.classList.remove('open'); return; }
+
+          const matches = allSpecies.filter(sp => {
+            const str = [sp.commonName || '', sp.scientificName, sp.genus || '', sp.family || ''].join(' ').toLowerCase();
+            return str.includes(q);
+          }).slice(0, 8);
+
+          if (matches.length === 0) { dropdown.classList.remove('open'); return; }
+
+          dropdown.innerHTML = matches.map(sp => {
+            const img = sp.masterPhotoUrl ? `<img src="${sp.masterPhotoUrl}" alt="">` : `<div style="width:32px;height:32px;border-radius:6px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-size:0.8rem;">🐟</div>`;
+            return `<div class="search-option" data-sci="${sp.scientificName}">
+              ${img}
+              <div class="search-option-info">
+                <span class="search-option-name">${sp.commonName || sp.scientificName}</span>
+                <span class="search-option-sci">${sp.scientificName}</span>
+              </div>
+            </div>`;
+          }).join('');
+
+          dropdown.classList.add('open');
+
+          dropdown.querySelectorAll('.search-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+              const sci = opt.dataset.sci;
+              const sp = allSpecies.find(s => s.scientificName === sci);
+              if (sp) selectSpecies(i - 1, sp);
+              dropdown.classList.remove('open');
+              input.value = '';
+            });
+          });
+        });
+
+        input.addEventListener('blur', () => {
+          setTimeout(() => dropdown.classList.remove('open'), 200);
+        });
+      });
+    }
+
+    function selectSpecies(slotIdx, sp) {
+      selectedSpecies[slotIdx] = sp;
+      renderSlot(slotIdx);
+      updateComparison();
+      updateURL();
+    }
+
+    function removeSpecies(slotIdx) {
+      selectedSpecies[slotIdx] = null;
+      renderSlot(slotIdx);
+      updateComparison();
+      updateURL();
+    }
+
+    function renderSlot(idx) {
+      const slot = document.getElementById('slot' + (idx + 1));
+      const sp = selectedSpecies[idx];
+
+      if (!sp) {
+        const icons = ['🐟', '🐠', '🦐'];
+        slot.classList.remove('filled');
+        slot.innerHTML = `
+          <span class="slot-label">Species ${idx + 1}${idx === 2 ? ' (optional)' : ''}</span>
+          <span class="slot-empty-icon">${icons[idx]}</span>
+          <div class="species-search-wrap">
+            <input type="text" class="species-search-input" id="search${idx+1}" placeholder="Type to search..." autocomplete="off">
+            <div class="search-dropdown" id="dropdown${idx+1}"></div>
+          </div>`;
+        setupSearchInputs();
+        return;
+      }
+
+      slot.classList.add('filled');
+      const img = sp.masterPhotoUrl
+        ? `<img class="slot-fish-image" src="${sp.masterPhotoUrl}" alt="${sp.commonName}">`
+        : `<div class="slot-fish-image" style="background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-size:1.5rem;">🐟</div>`;
+
+      slot.innerHTML = `
+        <span class="slot-label">Species ${idx + 1}</span>
+        <button class="slot-remove" onclick="removeSpecies(${idx})" title="Remove">✕</button>
+        <div class="slot-filled-content">
+          ${img}
+          <div class="slot-fish-name">${sp.commonName || sp.scientificName}</div>
+          <div class="slot-fish-sci">${sp.scientificName}</div>
+        </div>`;
+    }
+
+    function updateURL() {
+      const params = new URLSearchParams();
+      selectedSpecies.forEach((sp, idx) => {
+        if (sp) params.set('s' + (idx + 1), toSlug(sp.scientificName));
+      });
+      const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+      window.history.replaceState({}, '', newUrl);
+    }
+
+    function updateComparison() {
+      const active = selectedSpecies.filter(Boolean);
+      const section = document.getElementById('resultsSection');
+      const content = document.getElementById('resultsContent');
+
+      if (active.length < 2) {
+        section.classList.remove('visible');
+        return;
+      }
+
+      section.classList.add('visible');
+
+      // Calculate overlap and verdict
+      const analysis = analyzeCompatibility(active);
+      const cols = active.length;
+
+      let html = '';
+
+      // Verdict
+      html += `<div class="results-header">
+        <h2>Compatibility Analysis</h2>
+        <span class="verdict-badge verdict-${analysis.verdict}">${analysis.verdictIcon} ${analysis.verdictText}</span>
+      </div>`;
+
+      // Legend
+      html += `<div class="legend">`;
+      active.forEach((sp, i) => {
+        const globalIdx = selectedSpecies.indexOf(sp);
+        html += `<div class="legend-item">
+          <div class="legend-swatch" style="background:${COLOR_HEX[globalIdx]}"></div>
+          ${sp.commonName || sp.scientificName}
+        </div>`;
+      });
+      html += `</div>`;
+
+      // Range Charts
+      html += `<div class="range-section">
+        <h3 class="range-section-title"><span>🌡️</span> Parameter Ranges</h3>
+        <div class="range-chart">`;
+
+      // Temperature
+      html += renderRangeRow('Temperature (°C)', active, 15, 35, sp => sp.tankMetrics?.tempRangeCelsius);
+      // pH
+      html += renderRangeRow('pH', active, 5, 9.5, sp => sp.tankMetrics?.phRange);
+      // Size (as single value bar)
+      html += renderSizeRow(active);
+
+      html += `</div></div>`;
+
+      // Attribute table
+      html += `<div class="attr-table" style="--cols:${cols}">
+        <div class="attr-table-header">
+          <div></div>
+          ${active.map(sp => `<div>${sp.commonName || sp.scientificName}</div>`).join('')}
+        </div>
+        ${renderAttrRow('Difficulty', active, sp => sp.tankMetrics?.difficulty || '—')}
+        ${renderAttrRow('Min Tank (gal)', active, sp => sp.tankMetrics?.minVolumeGallons ? sp.tankMetrics.minVolumeGallons + '' : '—')}
+        ${renderAttrRow('Max Size (cm)', active, sp => sp.maxLengthCm ? sp.maxLengthCm + '' : '—')}
+        ${renderAttrRow('Trophic Level', active, sp => sp.diet?.trophicLevel || '—')}
+        ${renderAttrRow('Spawning', active, sp => sp.reproduction?.spawningTrait || '—')}
+        ${renderAttrRow('Hardness', active, sp => sp.ecology?.hardnessRange || '—')}
+      </div>`;
+
+      // Temperament cards
+      html += `<div class="range-section">
+        <h3 class="range-section-title"><span>🧠</span> Temperament & Behavior</h3>
+        <div class="temperament-grid">`;
+
+      active.forEach((sp, i) => {
+        const globalIdx = selectedSpecies.indexOf(sp);
+        const traits = extractTraits(sp);
+        html += `<div class="temperament-card">
+          <div class="temperament-card-header">
+            <div class="temperament-dot" style="background:${COLOR_HEX[globalIdx]}"></div>
+            <div class="temperament-card-name">${sp.commonName || sp.scientificName}</div>
+          </div>
+          <div class="temperament-traits">
+            ${traits.map(t => `<span class="trait-chip ${t.type}">${t.label}</span>`).join('')}
+          </div>
+        </div>`;
+      });
+
+      html += `</div></div>`;
+
+      // Compatibility notes
+      if (analysis.notes.length > 0) {
+        html += `<div class="range-section">
+          <h3 class="range-section-title"><span>📋</span> Notes</h3>
+          <div class="range-chart">
+            <ul style="list-style:none; display:flex; flex-direction:column; gap:8px;">
+              ${analysis.notes.map(n => `<li style="font-size:0.84rem; color:var(--text-secondary); line-height:1.6; padding-left:16px; position:relative;">
+                <span style="position:absolute;left:0;">${n.icon}</span> ${n.text}
+              </li>`).join('')}
+            </ul>
+          </div>
+        </div>`;
+      }
+
+      content.innerHTML = html;
+    }
+
+    function renderRangeRow(label, species, absMin, absMax, getRangeFn) {
+      const span = absMax - absMin;
+      let bars = '';
+      let overlapMin = -Infinity, overlapMax = Infinity;
+      let hasAll = true;
+
+      species.forEach((sp, i) => {
+        const range = getRangeFn(sp);
+        if (!range) { hasAll = false; return; }
+        const globalIdx = selectedSpecies.indexOf(sp);
+        const left = ((range[0] - absMin) / span) * 100;
+        const width = ((range[1] - range[0]) / span) * 100;
+        bars += `<div class="range-bar species-${globalIdx + 1}-bar" style="left:${left}%;width:${width}%"></div>`;
+        overlapMin = Math.max(overlapMin, range[0]);
+        overlapMax = Math.min(overlapMax, range[1]);
+      });
+
+      let overlapHtml = '';
+      if (hasAll && overlapMin < overlapMax) {
+        const oLeft = ((overlapMin - absMin) / span) * 100;
+        const oWidth = ((overlapMax - overlapMin) / span) * 100;
+        overlapHtml = `<div class="range-overlap" style="left:${oLeft}%;width:${oWidth}%">
+          <span class="overlap-label">Overlap: ${overlapMin}–${overlapMax}</span>
+        </div>`;
+      } else if (hasAll) {
+        overlapHtml = `<div style="position:absolute;top:-18px;right:0;font-size:0.65rem;color:var(--rose-400);font-weight:600;">No overlap!</div>`;
+      }
+
+      return `<div class="range-row">
+        <div class="range-row-label">${label}</div>
+        <div class="range-track-container">
+          <div class="range-track"></div>
+          ${bars}
+          ${overlapHtml}
+        </div>
+        <div class="range-scale"><span>${absMin}</span><span>${absMax}</span></div>
+      </div>`;
+    }
+
+    function renderSizeRow(species) {
+      const absMax = 40;
+      let bars = '';
+      species.forEach((sp, i) => {
+        const size = sp.maxLengthCm || 0;
+        const globalIdx = selectedSpecies.indexOf(sp);
+        const width = Math.min((size / absMax) * 100, 100);
+        bars += `<div class="range-bar species-${globalIdx + 1}-bar" style="left:0%;width:${width}%"></div>`;
+      });
+
+      return `<div class="range-row">
+        <div class="range-row-label">Max Size (cm)</div>
+        <div class="range-track-container">
+          <div class="range-track"></div>
+          ${bars}
+        </div>
+        <div class="range-scale"><span>0 cm</span><span>${absMax} cm</span></div>
+      </div>`;
+    }
+
+    function renderAttrRow(label, species, getValueFn) {
+      const values = species.map(getValueFn);
+      const allSame = values.every(v => v === values[0]);
+      return `<div class="attr-table-row">
+        <div class="attr-label">${label}</div>
+        ${values.map(v => `<div class="attr-value ${allSame ? 'match' : ''}">${v}</div>`).join('')}
+      </div>`;
+    }
+
+    function extractTraits(sp) {
+      const traits = [];
+      const social = (sp.ecology?.socialBehavior || '').toLowerCase();
+      const difficulty = (sp.tankMetrics?.difficulty || '').toLowerCase();
+      const size = sp.maxLengthCm || 0;
+
+      if (social.includes('peaceful') || social.includes('community')) traits.push({ label: 'Peaceful', type: 'safe' });
+      if (social.includes('schooling') || social.includes('group') || social.includes('shoal')) traits.push({ label: 'Schooling', type: 'safe' });
+      if (social.includes('territorial')) traits.push({ label: 'Territorial', type: 'warning' });
+      if (social.includes('aggressive')) traits.push({ label: 'Aggressive', type: 'danger' });
+      if (social.includes('solitary') || social.includes('single pair')) traits.push({ label: 'Solitary/Pair', type: 'warning' });
+      if (social.includes('predator') || social.includes('predatory')) traits.push({ label: 'Predatory', type: 'danger' });
+      if (size <= 4) traits.push({ label: 'Nano fish', type: 'safe' });
+      if (size >= 20) traits.push({ label: 'Large species', type: 'warning' });
+      if (difficulty === 'beginner') traits.push({ label: 'Beginner', type: 'safe' });
+      if (difficulty === 'difficult') traits.push({ label: 'Expert-only', type: 'danger' });
+      if (traits.length === 0) traits.push({ label: 'General community', type: '' });
+      return traits;
+    }
+
+    function analyzeCompatibility(species) {
+      let score = 100;
+      const notes = [];
+
+      // Check temperature overlap
+      const temps = species.map(sp => sp.tankMetrics?.tempRangeCelsius).filter(Boolean);
+      if (temps.length >= 2) {
+        const overlapMin = Math.max(...temps.map(t => t[0]));
+        const overlapMax = Math.min(...temps.map(t => t[1]));
+        if (overlapMin >= overlapMax) {
+          score -= 40;
+          notes.push({ icon: '🌡️', text: 'Temperature ranges do not overlap. These species need different water temperatures.' });
+        } else if (overlapMax - overlapMin < 2) {
+          score -= 15;
+          notes.push({ icon: '🌡️', text: 'Very narrow temperature overlap. You\'ll need precise temperature control.' });
+        } else {
+          notes.push({ icon: '✓', text: `Temperature overlap: ${overlapMin}–${overlapMax}°C. Good shared range.` });
+        }
+      }
+
+      // Check pH overlap
+      const phs = species.map(sp => sp.tankMetrics?.phRange).filter(Boolean);
+      if (phs.length >= 2) {
+        const overlapMin = Math.max(...phs.map(p => p[0]));
+        const overlapMax = Math.min(...phs.map(p => p[1]));
+        if (overlapMin >= overlapMax) {
+          score -= 35;
+          notes.push({ icon: '⚗️', text: 'pH ranges do not overlap. These species require different water chemistry.' });
+        } else if (overlapMax - overlapMin < 0.5) {
+          score -= 10;
+          notes.push({ icon: '⚗️', text: 'Narrow pH overlap. Monitor water parameters closely.' });
+        } else {
+          notes.push({ icon: '✓', text: `pH overlap: ${overlapMin}–${overlapMax}. Compatible water chemistry.` });
+        }
+      }
+
+      // Check size disparity
+      const sizes = species.map(sp => sp.maxLengthCm || 0).filter(s => s > 0);
+      if (sizes.length >= 2) {
+        const maxSize = Math.max(...sizes);
+        const minSize = Math.min(...sizes);
+        if (maxSize > minSize * 4) {
+          score -= 25;
+          notes.push({ icon: '📏', text: `Large size disparity (${minSize} cm vs ${maxSize} cm). The larger fish may eat or bully smaller ones.` });
+        } else if (maxSize > minSize * 2.5) {
+          score -= 10;
+          notes.push({ icon: '📏', text: `Moderate size difference. Ensure adequate hiding spots for smaller species.` });
+        }
+      }
+
+      // Check aggression conflicts
+      const behaviors = species.map(sp => (sp.ecology?.socialBehavior || '').toLowerCase());
+      const hasAggressive = behaviors.some(b => b.includes('aggressive') || b.includes('territorial'));
+      const hasPeaceful = behaviors.some(b => b.includes('peaceful') || b.includes('timid') || b.includes('shy'));
+      const hasNano = species.some(sp => (sp.maxLengthCm || 0) <= 4);
+
+      if (hasAggressive && hasPeaceful) {
+        score -= 20;
+        notes.push({ icon: '⚠️', text: 'Mixing aggressive/territorial species with peaceful ones. The peaceful fish may be stressed or harassed.' });
+      }
+      if (hasAggressive && hasNano) {
+        score -= 15;
+        notes.push({ icon: '⚠️', text: 'Aggressive species paired with nano fish. High predation/bullying risk.' });
+      }
+
+      // Multiple territorial species
+      const territorialCount = behaviors.filter(b => b.includes('territorial') || b.includes('aggressive')).length;
+      if (territorialCount >= 2) {
+        score -= 15;
+        notes.push({ icon: '💥', text: 'Multiple territorial species may clash. Provide ample space, sight breaks, and territories.' });
+      }
+
+      // Tank size check
+      const volumes = species.map(sp => sp.tankMetrics?.minVolumeGallons || 0);
+      const totalMinVolume = Math.max(...volumes); // They share the same tank
+      if (totalMinVolume > 0) {
+        notes.push({ icon: '🏠', text: `Minimum recommended tank size: ${totalMinVolume}+ gallons (based on the largest species' requirements).` });
+      }
+
+      // Determine verdict
+      score = Math.max(0, score);
+      let verdict, verdictText, verdictIcon;
+      if (score >= 70) {
+        verdict = 'compatible'; verdictText = 'Likely Compatible'; verdictIcon = '✓';
+      } else if (score >= 40) {
+        verdict = 'caution'; verdictText = 'Proceed with Caution'; verdictIcon = '⚠️';
+      } else {
+        verdict = 'incompatible'; verdictText = 'Not Recommended'; verdictIcon = '✗';
+      }
+
+      return { score, verdict, verdictText, verdictIcon, notes };
+    }
+
+    // Boot
+    init();
+  </script>
+</body>
+</html>

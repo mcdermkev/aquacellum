@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Species Profile — Aquacellum</title>
+  <meta name="description" content="Detailed species care profile with tank parameters, diet, breeding guides, and ecology data — validated against FishBase.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-void:      #09090b;
+      --bg-deep:      #0f0f12;
+      --bg-surface:   #18181b;
+      --emerald-100:  #d1fae5;
+      --emerald-200:  #a7f3d0;
+      --emerald-300:  #6ee7b7;
+      --emerald-400:  #34d399;
+      --emerald-500:  #10b981;
+      --emerald-600:  #059669;
+      --teal-300:     #5eead4;
+      --teal-400:     #2dd4bf;
+      --teal-500:     #14b8a6;
+      --cyan-300:     #67e8f9;
+      --cyan-400:     #22d3ee;
+      --violet-400:   #a78bfa;
+      --amber-300:    #fcd34d;
+      --amber-400:    #fbbf24;
+      --rose-400:     #fb7185;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted:   #52525b;
+      --glass-bg:     rgba(15, 15, 18, 0.75);
+      --glass-border: rgba(255, 255, 255, 0.06);
+      --radius-sm: 12px;
+      --radius-md: 18px;
+      --radius-lg: 24px;
+      --radius-xl: 32px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-void);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: inherit; border: none; background: none; }
+
+    /* Ambient */
+    .ambient-layer { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(120px); animation: orb-drift 18s ease-in-out infinite; }
+    .orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%); top: -150px; left: -80px; }
+    .orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(167,139,250,0.05) 0%, transparent 70%); bottom: -100px; right: -100px; animation-delay: -6s; }
+    .orb-3 { width: 350px; height: 350px; background: radial-gradient(circle, rgba(251,191,36,0.04) 0%, transparent 70%); top: 40%; left: 50%; animation-delay: -12s; }
+    @keyframes orb-drift {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -20px) scale(1.05); }
+      66% { transform: translate(-20px, 15px) scale(0.95); }
+    }
+
+    /* Navigation */
+    .nav { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(20px) saturate(1.4); background: rgba(9, 9, 11, 0.88); border-bottom: 1px solid var(--glass-border); padding: 0 24px; }
+    .nav-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between; height: 64px;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 12px; }
+    .nav-logo-mark {
+      width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, rgba(20,184,166,0.15), rgba(139,92,246,0.15));
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+      box-shadow: 0 0 20px rgba(20,184,166,0.3); transition: var(--transition);
+    }
+    .nav-logo-mark:hover { box-shadow: 0 0 30px rgba(20,184,166,0.5); transform: scale(1.05); }
+    .nav-logo-text { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1rem; letter-spacing: 0.1em; color: #fff; }
+    .nav-logo-sub { display: block; font-size: 9px; letter-spacing: 0.15em; color: var(--emerald-400); font-weight: 600; text-transform: uppercase; margin-top: -2px; }
+    .nav-links { display: flex; align-items: center; gap: 20px; list-style: none; }
+    .nav-links a { font-size: 0.82rem; font-weight: 500; color: var(--text-secondary); transition: color 0.2s; }
+    .nav-links a:hover { color: var(--emerald-300); }
+    .nav-cta {
+      display: flex; align-items: center; gap: 8px; padding: 9px 20px;
+      font-size: 0.82rem; font-weight: 600; color: #fff;
+      background: linear-gradient(135deg, var(--emerald-600), var(--teal-500));
+      border-radius: 10px; transition: var(--transition);
+    }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(16,185,129,0.3); }
+
+    /* Layout */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+    /* Breadcrumb */
+    .breadcrumb {
+      padding: 20px 0 0;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .breadcrumb a { color: var(--text-secondary); transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--emerald-300); }
+    .breadcrumb .sep { color: var(--text-muted); }
+
+    /* Species Hero */
+    .species-hero {
+      position: relative; z-index: 1;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 48px;
+      padding: 40px 0 60px; align-items: center;
+    }
+    .hero-image-wrap {
+      position: relative; border-radius: var(--radius-xl); overflow: hidden;
+      aspect-ratio: 4/3; background: var(--bg-surface);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .hero-image-wrap img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .hero-image-wrap .placeholder-icon {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 5rem; opacity: 0.3;
+    }
+    .hero-difficulty-badge {
+      position: absolute; top: 16px; right: 16px;
+      padding: 6px 14px; border-radius: 20px;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.03em;
+      backdrop-filter: blur(8px);
+    }
+    .badge-beginner { background: rgba(52,211,153,0.2); color: var(--emerald-300); border: 1px solid rgba(52,211,153,0.3); }
+    .badge-intermediate { background: rgba(6,182,212,0.25); color: var(--cyan-300); border: 1px solid rgba(6,182,212,0.4); }
+    .badge-advanced { background: rgba(251,113,133,0.2); color: var(--rose-400); border: 1px solid rgba(251,113,133,0.3); }
+    .badge-difficult { background: rgba(167,139,250,0.2); color: var(--violet-400); border: 1px solid rgba(167,139,250,0.3); }
+    .badge-unknown { background: rgba(255,255,255,0.1); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); }
+
+    /* Hero Info */
+    .hero-info { display: flex; flex-direction: column; gap: 16px; }
+    .hero-common-name {
+      font-family: 'Outfit', sans-serif; font-weight: 900;
+      font-size: clamp(2rem, 3.5vw, 2.8rem); line-height: 1.1;
+      background: linear-gradient(135deg, var(--emerald-300), var(--teal-300));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero-sci-name { font-size: 1.1rem; font-style: italic; color: var(--emerald-400); }
+    .hero-taxonomy {
+      display: flex; gap: 16px; flex-wrap: wrap;
+      font-size: 0.78rem; color: var(--text-muted);
+    }
+    .hero-taxonomy span { display: flex; align-items: center; gap: 4px; }
+    .hero-taxonomy strong { color: var(--text-secondary); font-weight: 600; }
+    .hero-vibe {
+      font-size: 1rem; color: var(--text-secondary); line-height: 1.7;
+      font-style: italic; border-left: 3px solid var(--emerald-500);
+      padding-left: 16px; margin-top: 8px;
+    }
+    .hero-quick-stats {
+      display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px;
+    }
+    .quick-stat {
+      padding: 8px 14px; border-radius: 10px;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .quick-stat-label { font-size: 0.62rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+    .quick-stat-value { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: var(--text-primary); font-weight: 500; }
+
+    /* Section styling */
+    .content-sections { position: relative; z-index: 1; padding-bottom: 80px; }
+    .section-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
+      margin-bottom: 40px;
+    }
+    .section-card {
+      background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg); padding: 28px; backdrop-filter: blur(12px);
+      transition: border-color 0.3s;
+    }
+    .section-card:hover { border-color: rgba(52,211,153,0.2); }
+    .section-card.full-width { grid-column: 1 / -1; }
+    .section-title {
+      font-family: 'Outfit', sans-serif; font-weight: 700;
+      font-size: 1.1rem; color: var(--text-primary); margin-bottom: 16px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-title .icon { font-size: 1.2rem; }
+    .section-text { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.75; }
+    .section-text strong { color: var(--text-primary); }
+
+    /* Parameter Gauges */
+    .gauge-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 16px; }
+    .gauge-item { display: flex; flex-direction: column; gap: 8px; }
+    .gauge-label { font-size: 0.72rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .gauge-track {
+      height: 8px; border-radius: 4px; background: rgba(255,255,255,0.05);
+      position: relative; overflow: hidden;
+    }
+    .gauge-fill {
+      position: absolute; top: 0; left: 0; height: 100%; border-radius: 4px;
+      background: linear-gradient(90deg, var(--emerald-500), var(--teal-400));
+      transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+    }
+    .gauge-fill.warm { background: linear-gradient(90deg, var(--amber-400), var(--rose-400)); }
+    .gauge-fill.neutral { background: linear-gradient(90deg, var(--cyan-400), var(--violet-400)); }
+    .gauge-values {
+      display: flex; justify-content: space-between;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-secondary);
+    }
+
+    /* Compatibility mini-cards */
+    .compat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-top: 12px; }
+    .compat-chip {
+      padding: 10px 14px; border-radius: 10px;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.78rem; color: var(--text-secondary); text-align: center;
+      transition: var(--transition);
+    }
+    .compat-chip.good { border-color: rgba(52,211,153,0.25); background: rgba(52,211,153,0.05); }
+    .compat-chip.caution { border-color: rgba(251,191,36,0.25); background: rgba(251,191,36,0.05); }
+    .compat-chip.avoid { border-color: rgba(251,113,133,0.25); background: rgba(251,113,133,0.05); }
+
+    /* FishBase link */
+    .source-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-top: 16px; padding: 8px 16px; border-radius: 8px;
+      font-size: 0.78rem; font-weight: 600; color: var(--emerald-300);
+      background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2);
+      transition: var(--transition);
+    }
+    .source-link:hover { background: rgba(16,185,129,0.15); transform: translateY(-1px); }
+
+    /* Footer */
+    .footer {
+      position: relative; z-index: 1; padding: 40px 0;
+      border-top: 1px solid var(--glass-border); text-align: center;
+    }
+    .footer p { font-size: 0.78rem; color: var(--text-muted); }
+    .footer-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 12px; flex-wrap: wrap; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-secondary); transition: color 0.2s; }
+    .footer-links a:hover { color: var(--emerald-300); }
+
+    /* Loading state */
+    .loading-state {
+      text-align: center; padding: 120px 24px; color: var(--text-muted);
+    }
+    .loading-state .spinner {
+      width: 40px; height: 40px; border: 3px solid rgba(52,211,153,0.15);
+      border-top-color: var(--emerald-400); border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .species-hero { grid-template-columns: 1fr; gap: 32px; }
+      .section-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hero-common-name { font-size: 1.8rem; }
+      .gauge-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient Background -->
+  <div class="ambient-layer">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Navigation -->
+  <header class="nav">
+    <nav class="nav-inner">
+      <a href="/" class="nav-logo">
+        <div class="nav-logo-mark">
+          <svg width="28" height="28" viewBox="0 0 38 38" fill="none">
+            <defs><linearGradient id="nav-g" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#5eead4"/><stop offset="50%" stop-color="#22d3ee"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs>
+            <circle cx="19" cy="19" r="15" stroke="url(#nav-g)" stroke-width="2.4" fill="none"/>
+            <path d="M19 4 C22.5 9.5, 24 14, 22.8 19 C21.6 24, 22.5 28.5, 19 34" stroke="url(#nav-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <path d="M19 4 C15.5 9.5, 14 14, 15.2 19 C16.4 24, 15.5 28.5, 19 34" stroke="url(#nav-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <path d="M4 19 C9.5 17, 14 16.2, 19 16.2 C24 16.2, 28.5 17, 34 19" stroke="#5eead4" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.9"/>
+            <path d="M4 19 C9.5 21, 14 21.8, 19 21.8 C24 21.8, 28.5 21, 34 19" stroke="#a78bfa" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.9"/>
+            <circle cx="19" cy="19" r="4" fill="url(#nav-g)"/>
+            <circle cx="17.5" cy="17.5" r="1.3" fill="#fff" opacity="0.7"/>
+          </svg>
+        </div>
+        <div>
+          <span class="nav-logo-text">AQUACELLUM</span>
+          <span class="nav-logo-sub">Species Database</span>
+        </div>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/database">Database</a></li>
+        <li><a href="/hobbyist">For Hobbyists</a></li>
+        <li><a href="/breeder">For Breeders</a></li>
+      </ul>
+      <a href="/app.html" class="nav-cta">Open Logbook</a>
+    </nav>
+  </header>
+
+  <!-- Main Content (populated by JS) -->
+  <main class="container" id="mainContent">
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading species data...</p>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/database">Database</a>
+        <a href="/hobbyist">For Hobbyists</a>
+        <a href="/breeder">For Breeders</a>
+        <a href="/app.html">Open Logbook</a>
+      </div>
+      <p>&copy; 2026 Aquacellum. All species data validated against FishBase & WoRMS.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Utility: generate slug from scientific name
+    function toSlug(name) {
+      return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+
+    // Utility: get difficulty badge class
+    function getBadgeClass(diff) {
+      if (!diff) return 'badge-unknown';
+      const d = diff.toLowerCase();
+      if (d === 'beginner') return 'badge-beginner';
+      if (d === 'intermediate') return 'badge-intermediate';
+      if (d === 'advanced') return 'badge-advanced';
+      if (d === 'difficult') return 'badge-difficult';
+      return 'badge-unknown';
+    }
+
+    // Utility: check for placeholder values
+    function real(val) {
+      return val && val !== 'Information arriving soon' && val !== 'Generic Biotope Details' ? val : null;
+    }
+
+    // Gauge helper: map a value range to percentage within an absolute scale
+    function rangeToPercent(min, max, absMin, absMax) {
+      const span = absMax - absMin;
+      const left = ((min - absMin) / span) * 100;
+      const width = ((max - min) / span) * 100;
+      return { left: Math.max(0, left), width: Math.min(100 - left, width) };
+    }
+
+    async function init() {
+      // Extract slug from URL path
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      // Expected: /species/{slug}
+      const slug = pathParts.length >= 2 ? pathParts[pathParts.length - 1] : null;
+
+      if (!slug) {
+        showError('No species specified. <a href="/database">Browse the database</a>.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/fishbase_master.json');
+        if (!res.ok) throw new Error('Failed to load species data');
+        const allSpecies = await res.json();
+
+        // Find species by slug match on scientific name or common name
+        const species = allSpecies.find(sp => {
+          return toSlug(sp.scientificName) === slug || toSlug(sp.commonName || '') === slug;
+        });
+
+        if (!species) {
+          showError(`Species "${slug}" not found. <a href="/database">Browse the database</a>.`);
+          return;
+        }
+
+        // Update page title
+        document.title = `${species.commonName || species.scientificName} — Aquacellum Species Profile`;
+        const metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc) {
+          metaDesc.content = `Complete care profile for ${species.commonName || species.scientificName} (${species.scientificName}). Tank parameters, diet, breeding, and ecology data.`;
+        }
+
+        renderSpecies(species);
+      } catch (err) {
+        showError('Failed to load species data. Please try refreshing.');
+      }
+    }
+
+    function showError(message) {
+      document.getElementById('mainContent').innerHTML = `
+        <div class="loading-state">
+          <p style="font-size:1.1rem; color: var(--text-secondary);">${message}</p>
+        </div>`;
+    }
+
+    function renderSpecies(sp) {
+      const difficulty = sp.tankMetrics?.difficulty || 'Unknown';
+      const badgeClass = getBadgeClass(difficulty);
+      const hasImage = sp.masterPhotoUrl && sp.masterPhotoUrl !== '';
+      const temp = sp.tankMetrics?.tempRangeCelsius;
+      const ph = sp.tankMetrics?.phRange;
+
+      // Build the hero image
+      const imageHtml = hasImage
+        ? `<img src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="eager">`
+        : `<div class="placeholder-icon">🐟</div>`;
+
+      // Vibe line
+      const vibe = sp.personality?.flavorText?.casual || sp.personality?.vibeLine?.casual || '';
+
+      // Quick stats
+      const quickStats = [];
+      if (temp) quickStats.push({ label: 'Temp', value: `${temp[0]}–${temp[1]}°C` });
+      if (ph) quickStats.push({ label: 'pH', value: `${ph[0]}–${ph[1]}` });
+      if (sp.maxLengthCm) quickStats.push({ label: 'Max Size', value: `${sp.maxLengthCm} cm` });
+      if (sp.tankMetrics?.minVolumeGallons) quickStats.push({ label: 'Min Tank', value: `${sp.tankMetrics.minVolumeGallons} gal` });
+      if (sp.ecology?.hardnessRange) quickStats.push({ label: 'Hardness', value: sp.ecology.hardnessRange });
+
+      let html = `
+        <!-- Breadcrumb -->
+        <div class="breadcrumb">
+          <a href="/">Home</a> <span class="sep">›</span>
+          <a href="/database">Database</a> <span class="sep">›</span>
+          <span>${sp.commonName || sp.scientificName}</span>
+        </div>
+
+        <!-- Hero -->
+        <section class="species-hero">
+          <div class="hero-image-wrap">
+            ${imageHtml}
+            <span class="hero-difficulty-badge ${badgeClass}">${difficulty}</span>
+          </div>
+          <div class="hero-info">
+            <h1 class="hero-common-name">${sp.commonName || 'Unknown Species'}</h1>
+            <p class="hero-sci-name">${sp.scientificName}</p>
+            <div class="hero-taxonomy">
+              <span><strong>Family:</strong> ${sp.family || '—'}</span>
+              <span><strong>Genus:</strong> ${sp.genus || '—'}</span>
+              <span><strong>SpecCode:</strong> ${sp.specCode || '—'}</span>
+            </div>
+            ${vibe ? `<blockquote class="hero-vibe">${vibe}</blockquote>` : ''}
+            <div class="hero-quick-stats">
+              ${quickStats.map(s => `
+                <div class="quick-stat">
+                  <span class="quick-stat-label">${s.label}</span>
+                  <span class="quick-stat-value">${s.value}</span>
+                </div>`).join('')}
+            </div>
+          </div>
+        </section>
+      `;
+
+      // Content sections
+      html += `<div class="content-sections"><div class="section-grid">`;
+
+      // 1. Tank Parameters with gauges
+      if (temp || ph || sp.ecology?.hardnessRange) {
+        html += `
+          <div class="section-card">
+            <h2 class="section-title"><span class="icon">🌡️</span> Tank Parameters</h2>
+            <div class="gauge-row">`;
+
+        if (temp) {
+          const tPct = rangeToPercent(temp[0], temp[1], 15, 35);
+          html += `
+              <div class="gauge-item">
+                <span class="gauge-label">Temperature</span>
+                <div class="gauge-track">
+                  <div class="gauge-fill warm" style="left:${tPct.left}%; width:${tPct.width}%"></div>
+                </div>
+                <div class="gauge-values"><span>${temp[0]}°C</span><span>${temp[1]}°C</span></div>
+              </div>`;
+        }
+
+        if (ph) {
+          const pPct = rangeToPercent(ph[0], ph[1], 5, 9.5);
+          html += `
+              <div class="gauge-item">
+                <span class="gauge-label">pH Range</span>
+                <div class="gauge-track">
+                  <div class="gauge-fill neutral" style="left:${pPct.left}%; width:${pPct.width}%"></div>
+                </div>
+                <div class="gauge-values"><span>${ph[0]}</span><span>${ph[1]}</span></div>
+              </div>`;
+        }
+
+        if (sp.tankMetrics?.minVolumeGallons) {
+          const vPct = Math.min((sp.tankMetrics.minVolumeGallons / 150) * 100, 100);
+          html += `
+              <div class="gauge-item">
+                <span class="gauge-label">Minimum Volume</span>
+                <div class="gauge-track">
+                  <div class="gauge-fill" style="left:0%; width:${vPct}%"></div>
+                </div>
+                <div class="gauge-values"><span>${sp.tankMetrics.minVolumeGallons} gal</span><span>150 gal</span></div>
+              </div>`;
+        }
+
+        if (sp.maxLengthCm) {
+          const sPct = Math.min((sp.maxLengthCm / 40) * 100, 100);
+          html += `
+              <div class="gauge-item">
+                <span class="gauge-label">Max Adult Size</span>
+                <div class="gauge-track">
+                  <div class="gauge-fill" style="left:0%; width:${sPct}%"></div>
+                </div>
+                <div class="gauge-values"><span>${sp.maxLengthCm} cm</span><span>40 cm</span></div>
+              </div>`;
+        }
+
+        html += `</div></div>`;
+      }
+
+      // 2. Ecology & Habitat
+      const biotope = real(sp.ecology?.biotope);
+      const socialBehavior = real(sp.ecology?.socialBehavior);
+      const ecoComments = real(sp.ecology?.comments);
+
+      if (biotope || socialBehavior || ecoComments) {
+        html += `
+          <div class="section-card">
+            <h2 class="section-title"><span class="icon">🌿</span> Ecology & Habitat</h2>
+            <div class="section-text">
+              ${ecoComments ? `<p>${ecoComments}</p>` : ''}
+              ${biotope ? `<p style="margin-top:12px;"><strong>Natural Habitat:</strong> ${biotope}</p>` : ''}
+              ${socialBehavior ? `<p style="margin-top:12px;"><strong>Social Behavior:</strong> ${socialBehavior}</p>` : ''}
+            </div>
+          </div>`;
+      }
+
+      // 3. Diet & Feeding
+      const fooditems = real(sp.diet?.fooditems);
+      const feedingPlaybook = real(sp.diet?.feedingPlaybook);
+      const trophicLevel = sp.diet?.trophicLevel;
+
+      if (trophicLevel || fooditems || feedingPlaybook) {
+        html += `
+          <div class="section-card">
+            <h2 class="section-title"><span class="icon">🍽️</span> Diet & Feeding</h2>
+            <div class="section-text">
+              ${trophicLevel ? `<p><strong>Trophic Level:</strong> ${trophicLevel}</p>` : ''}
+              ${fooditems ? `<p style="margin-top:12px;"><strong>Recommended Foods:</strong> ${fooditems}</p>` : ''}
+              ${feedingPlaybook ? `<p style="margin-top:12px;"><strong>Feeding Guide:</strong> ${feedingPlaybook}</p>` : ''}
+            </div>
+          </div>`;
+      }
+
+      // 4. Reproduction & Breeding
+      const spawningTrait = real(sp.reproduction?.spawningTrait);
+      const layoutReq = real(sp.reproduction?.layoutRequirement);
+      const reproComments = real(sp.reproduction?.comments);
+
+      if (spawningTrait || layoutReq || reproComments) {
+        html += `
+          <div class="section-card">
+            <h2 class="section-title"><span class="icon">🧬</span> Reproduction & Breeding</h2>
+            <div class="section-text">
+              ${spawningTrait ? `<p><strong>Spawning Type:</strong> ${spawningTrait}</p>` : ''}
+              ${layoutReq ? `<p style="margin-top:12px;"><strong>Tank Setup for Breeding:</strong> ${layoutReq}</p>` : ''}
+              ${reproComments ? `<p style="margin-top:12px;"><strong>Breeding Notes:</strong> ${reproComments}</p>` : ''}
+            </div>
+          </div>`;
+      }
+
+      // 5. Personality / Keeper Notes
+      const vibeLinePro = sp.personality?.vibeLine?.pro;
+      const flavorPro = sp.personality?.flavorText?.pro;
+      const flavorCasual = sp.personality?.flavorText?.casual;
+
+      if (vibeLinePro || flavorPro || flavorCasual) {
+        html += `
+          <div class="section-card full-width">
+            <h2 class="section-title"><span class="icon">💬</span> Personality & Keeper Notes</h2>
+            <div class="section-text">
+              ${flavorCasual ? `<p style="font-style:italic; font-size:1rem; color: var(--text-primary); margin-bottom:12px;">"${flavorCasual}"</p>` : ''}
+              ${flavorPro ? `<p style="margin-top:12px;"><strong>Technical Summary:</strong> ${flavorPro}</p>` : ''}
+            </div>
+          </div>`;
+      }
+
+      // 6. Compatibility (inferred from social behavior + difficulty)
+      const compat = inferCompatibility(sp);
+      if (compat.length > 0) {
+        html += `
+          <div class="section-card full-width">
+            <h2 class="section-title"><span class="icon">🤝</span> Compatibility Notes</h2>
+            <div class="compat-grid">
+              ${compat.map(c => `<div class="compat-chip ${c.type}">${c.icon} ${c.label}</div>`).join('')}
+            </div>
+            <p class="section-text" style="margin-top:16px; font-size:0.78rem; color: var(--text-muted);">
+              Compatibility is inferred from social behavior, size, and temperament data. Always research specific pairings before stocking.
+            </p>
+          </div>`;
+      }
+
+      html += `</div>`; // close section-grid
+
+      // FishBase source link
+      if (sp.specCode) {
+        html += `
+          <a href="https://www.fishbase.se/summary/${sp.specCode}" target="_blank" rel="noopener noreferrer" class="source-link">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            View on FishBase (SpecCode ${sp.specCode})
+          </a>`;
+      }
+
+      // Compare link
+      const slug = toSlug(sp.scientificName);
+      html += `
+        <a href="/compare?s1=${slug}" class="source-link" style="margin-left:12px;color:var(--cyan-300);background:rgba(34,211,238,0.08);border-color:rgba(34,211,238,0.2);">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/></svg>
+          Compare with other species
+        </a>`;
+
+      html += `</div>`; // close content-sections
+
+      document.getElementById('mainContent').innerHTML = html;
+
+      // Animate gauges in after render
+      requestAnimationFrame(() => {
+        document.querySelectorAll('.gauge-fill').forEach(g => {
+          const w = g.style.width;
+          g.style.width = '0%';
+          setTimeout(() => { g.style.width = w; }, 100);
+        });
+      });
+    }
+
+    // Infer compatibility traits from available data
+    function inferCompatibility(sp) {
+      const chips = [];
+      const social = (sp.ecology?.socialBehavior || '').toLowerCase();
+      const difficulty = (sp.tankMetrics?.difficulty || '').toLowerCase();
+      const maxSize = sp.maxLengthCm || 0;
+
+      // Temperament-based
+      if (social.includes('peaceful') || social.includes('community')) {
+        chips.push({ type: 'good', icon: '✓', label: 'Community-friendly' });
+      }
+      if (social.includes('schooling') || social.includes('group') || social.includes('shoal')) {
+        chips.push({ type: 'good', icon: '👥', label: 'Schooling fish' });
+      }
+      if (social.includes('territorial') || social.includes('aggressive')) {
+        chips.push({ type: 'caution', icon: '⚠️', label: 'Territorial' });
+      }
+      if (social.includes('solitary') || social.includes('single')) {
+        chips.push({ type: 'caution', icon: '🔶', label: 'Best kept alone/pair' });
+      }
+      if (social.includes('predator') || social.includes('eat') || social.includes('prey')) {
+        chips.push({ type: 'avoid', icon: '✗', label: 'Predatory' });
+      }
+
+      // Size-based
+      if (maxSize <= 5) {
+        chips.push({ type: 'good', icon: '🐠', label: 'Nano-friendly' });
+        chips.push({ type: 'avoid', icon: '✗', label: 'Avoid large tankmates' });
+      } else if (maxSize >= 20) {
+        chips.push({ type: 'caution', icon: '📏', label: 'Large — needs space' });
+        chips.push({ type: 'avoid', icon: '✗', label: 'May eat small fish' });
+      }
+
+      // Difficulty-based
+      if (difficulty === 'beginner') {
+        chips.push({ type: 'good', icon: '🌱', label: 'Great for beginners' });
+      }
+      if (difficulty === 'difficult') {
+        chips.push({ type: 'caution', icon: '🔬', label: 'Expert-level care' });
+      }
+
+      return chips;
+    }
+
+    // Boot
+    init();
+  </script>
+</body>
+</html>
