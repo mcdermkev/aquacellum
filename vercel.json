@@ -9,14 +9,14 @@
     }
   },
   "rewrites": [
-    { "source": "/store/:slug*", "destination": "/store.html" },
+    { "source": "/store/(.*)", "destination": "/store.html" },
+    { "source": "/species/(.*)", "destination": "/species.html" },
     { "source": "/app", "destination": "/app.html" },
     { "source": "/hobbyist", "destination": "/hobbyist.html" },
     { "source": "/breeder", "destination": "/breeder.html" },
     { "source": "/database", "destination": "/database.html" },
     { "source": "/marketplace", "destination": "/marketplace.html" },
     { "source": "/reef", "destination": "/reef.html" },
-    { "source": "/species/:slug*", "destination": "/species.html" },
     { "source": "/compare", "destination": "/compare.html" },
     { "source": "/how-it-works", "destination": "/how-it-works.html" },
     { "source": "/breeders", "destination": "/breeders.html" },
