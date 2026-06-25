@@ -1,7 +1,7 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "cleanUrls": true,
+  "trailingSlash": false,
   "functions": {
     "api/*.js": {
       "includeFiles": "public/fishbase_master.json"
@@ -24,4 +24,5 @@
     { "source": "/legal", "destination": "/legal.html" }
   ]
 }
+
 
