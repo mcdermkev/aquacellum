@@ -258,7 +258,21 @@ export function getTierInfo(xp) {
   }
 
   // Fallback (should never reach here)
-  return getTierInfoForTier(TIER_LADDER[0]);
+  const fallbackTier = TIER_LADDER[0];
+  return {
+    level: fallbackTier.level,
+    key: fallbackTier.key,
+    icon: fallbackTier.icon,
+    color: fallbackTier.color,
+    colorHex: fallbackTier.colorHex,
+    companionForm: fallbackTier.companionForm,
+    hobbyistLabel: fallbackTier.hobbyistLabel,
+    breederLabel: fallbackTier.breederLabel,
+    baseXp: fallbackTier.min,
+    nextLevelXp: TIER_LADDER[1] ? TIER_LADDER[1].min : null,
+    progressPct: 0,
+    badge: fallbackTier.hobbyistLabel,
+  };
 }
 
 /**

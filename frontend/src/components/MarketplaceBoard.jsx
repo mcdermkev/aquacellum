@@ -206,7 +206,7 @@ export function MarketplaceBoard({
     if (!zoneHash) {
       // Deterministic fallback using keccak256 hash of the breeder's address
       try {
-        zoneHash = keccak256(item.seller);
+        zoneHash = ethers.utils.id(item.seller);
       } catch (e) {
         // Fallback simple string hash offset
         let hash = 0;

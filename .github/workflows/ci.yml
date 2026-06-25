@@ -25,10 +25,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint (non-blocking)
-        run: npm run lint || true
-        # Lint has pre-existing errors (1200+). Run for visibility but don't block.
-        # TODO: Fix lint errors incrementally and make this blocking.
+      - name: Lint
+        run: npm run lint
 
       - name: Test
         run: npm run test
