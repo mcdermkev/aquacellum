@@ -54,7 +54,10 @@ export default defineConfig({
         app: resolve(__dirname, 'app.html'),           // React dashboard app
         store: resolve(__dirname, 'store.html'),        // Breeder Storefront (public)
         species: resolve(__dirname, 'species.html'),      // Species detail page
-        compare: resolve(__dirname, 'compare.html')       // Species comparison tool
+        compare: resolve(__dirname, 'compare.html'),      // Species comparison tool
+        howItWorks: resolve(__dirname, 'how-it-works.html'), // How it works / pricing
+        breeders: resolve(__dirname, 'breeders.html'),     // Local breeder map
+        breeds: resolve(__dirname, 'breeds.html')          // Breed gallery / lineage registry
       }
     }
   },

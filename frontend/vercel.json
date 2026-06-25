@@ -18,6 +18,9 @@
     { "source": "/reef", "destination": "/reef.html" },
     { "source": "/species/:slug", "destination": "/species.html" },
     { "source": "/compare", "destination": "/compare.html" },
+    { "source": "/how-it-works", "destination": "/how-it-works.html" },
+    { "source": "/breeders", "destination": "/breeders.html" },
+    { "source": "/breeds", "destination": "/breeds.html" },
     { "source": "/about", "destination": "/about.html" },
     { "source": "/legal", "destination": "/legal.html" }
   ]

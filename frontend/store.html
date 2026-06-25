@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,12 +8,617 @@
   <meta property="og:title" content="Breeder Storefront — Aquacellum">
   <meta property="og:description" content="Tank-raised fish from a verified breeder. Protected by smart contract escrow with live-arrival guarantee.">
   <meta property="og:type" content="website">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* =========================================
+       STOREFRONT — DESIGN SYSTEM
+    ========================================= */
+    :root {
+      --bg-void:      #060710;
+      --bg-deep:      #0a0b14;
+      --bg-surface:   #0f1020;
+      --violet-300:   #c4b5fd;
+      --violet-400:   #a78bfa;
+      --violet-500:   #8b5cf6;
+      --violet-600:   #7c3aed;
+      --purple-300:   #d8b4fe;
+      --purple-400:   #c084fc;
+      --emerald-300:  #6ee7b7;
+      --emerald-400:  #34d399;
+      --teal-300:     #5eead4;
+      --teal-400:     #2dd4bf;
+      --cyan-300:     #67e8f9;
+      --cyan-400:     #22d3ee;
+      --amber-300:    #fcd34d;
+      --amber-400:    #fbbf24;
+      --rose-400:     #fb7185;
+      --blue-400:     #60a5fa;
+      --text-primary: #f5f3ff;
+      --text-secondary: #a8a0c4;
+      --text-muted:   #4a3f6b;
+      --glass-bg:     rgba(15, 12, 31, 0.7);
+      --glass-border: rgba(167, 139, 250, 0.1);
+      --radius-sm: 12px;
+      --radius-md: 18px;
+      --radius-lg: 24px;
+      --radius-xl: 32px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; background-color: var(--bg-void); color: var(--text-primary); overflow-x: hidden; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: inherit; border: none; background: none; }
+
+    /* Ambient */
+    .ambient-layer { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(120px); animation: orb-drift 18s ease-in-out infinite; }
+    .orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%); top: -150px; left: -80px; }
+    .orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(52,211,153,0.07) 0%, transparent 70%); bottom: -100px; right: -80px; animation-delay: -6s; }
+    @keyframes orb-drift { 0%, 100% { transform: translate(0,0) scale(1); } 33% { transform: translate(30px,-20px) scale(1.05); } 66% { transform: translate(-20px,15px) scale(0.95); } }
+
+    /* Nav */
+    .nav { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(20px) saturate(1.4); background: rgba(6,7,16,0.88); border-bottom: 1px solid var(--glass-border); padding: 0 24px; }
+    .nav-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; }
+    .nav-logo { display: flex; align-items: center; gap: 12px; }
+    .nav-logo-mark { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(52,211,153,0.1)); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; box-shadow: 0 0 16px rgba(139,92,246,0.25); }
+    .nav-logo-text { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1rem; letter-spacing: 0.1em; color: #fff; }
+    .nav-logo-sub { display: block; font-size: 9px; letter-spacing: 0.15em; color: var(--violet-400); font-weight: 600; text-transform: uppercase; margin-top: -2px; }
+    .nav-links { display: flex; align-items: center; gap: 20px; list-style: none; }
+    .nav-links a { font-size: 0.82rem; font-weight: 500; color: var(--text-secondary); transition: color 0.2s; }
+    .nav-links a:hover { color: var(--violet-300); }
+    .nav-cta { display: flex; align-items: center; gap: 8px; padding: 9px 20px; font-size: 0.82rem; font-weight: 600; color: #fff; background: linear-gradient(135deg, var(--violet-600), var(--purple-400)); border-radius: 10px; transition: var(--transition); }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(139,92,246,0.3); }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+    /* =========================================
+       BANNER & PROFILE
+    ========================================= */
+    .store-banner { position: relative; width: 100%; height: 220px; overflow: hidden; background: linear-gradient(135deg, rgba(139,92,246,0.08), rgba(52,211,153,0.05)); }
+    .store-banner img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.6s ease; }
+    .store-banner img.loaded { opacity: 1; }
+    .store-banner-overlay { position: absolute; inset: 0; background: linear-gradient(to top, var(--bg-void) 0%, transparent 60%); pointer-events: none; }
+    .store-banner-fallback { width: 100%; height: 100%; background: linear-gradient(135deg, rgba(139,92,246,0.06), rgba(52,211,153,0.04), rgba(96,165,250,0.04)); animation: banner-drift 12s ease-in-out infinite alternate; }
+    @keyframes banner-drift { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
+
+    .store-profile { display: flex; align-items: flex-start; gap: 1.25rem; margin-top: -56px; padding: 0 1rem; position: relative; z-index: 2; margin-bottom: 2rem; }
+    .store-avatar-wrap { position: relative; flex-shrink: 0; }
+    .store-avatar { width: 96px; height: 96px; border-radius: 50%; border: 3px solid rgba(139,92,246,0.3); box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 0 4px var(--bg-void); object-fit: cover; }
+    .store-avatar-placeholder { width: 96px; height: 96px; border-radius: 50%; border: 3px solid rgba(139,92,246,0.3); box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 0 4px var(--bg-void); display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--violet-500), var(--purple-400)); font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 700; color: #fff; }
+    .store-master-crown { position: absolute; top: -4px; right: -4px; width: 28px; height: 28px; border-radius: 50%; background: rgba(251,191,36,0.15); border: 2px solid rgba(251,191,36,0.4); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; animation: crown-glow 2.5s ease-in-out infinite alternate; }
+    @keyframes crown-glow { 0% { box-shadow: 0 0 6px rgba(251,191,36,0.2); } 100% { box-shadow: 0 0 16px rgba(251,191,36,0.5); } }
+
+    .store-info { padding-top: 20px; flex: 1; min-width: 0; }
+    .store-name-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+    .store-name { font-family: 'Outfit', sans-serif; font-size: 1.6rem; font-weight: 800; color: #fff; margin: 0; }
+    .store-trust-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 50px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); color: var(--emerald-300); }
+    .store-bio { margin-top: 10px; font-size: 0.88rem; line-height: 1.6; color: var(--text-secondary); max-width: 600px; }
+    .store-meta { display: flex; align-items: center; gap: 1rem; margin-top: 10px; flex-wrap: wrap; }
+    .store-location { display: inline-flex; align-items: center; gap: 4px; font-size: 0.78rem; color: var(--text-muted); }
+    .store-specialties { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .store-specialty { padding: 3px 10px; border-radius: 50px; font-size: 0.65rem; font-weight: 600; background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.2); color: var(--violet-300); }
+    /* =========================================
+       STATS BAR
+    ========================================= */
+    .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 2.5rem; }
+    .stat-card { display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); backdrop-filter: blur(12px); transition: var(--transition); }
+    .stat-card:hover { border-color: rgba(139,92,246,0.2); transform: translateY(-2px); }
+    .stat-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; }
+    .stat-value { font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; color: #fff; }
+    .stat-label { font-size: 0.65rem; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+
+    /* =========================================
+       LISTINGS SECTION
+    ========================================= */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .section-title { font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 10px; }
+    .section-count { font-size: 0.7rem; font-weight: 500; color: var(--text-muted); background: rgba(255,255,255,0.04); padding: 3px 10px; border-radius: 50px; }
+
+    .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 20px; margin-bottom: 3rem; }
+    .listing-card {
+      aspect-ratio: 3 / 4; border-radius: var(--radius-md); overflow: hidden; cursor: pointer;
+      position: relative; background: var(--glass-bg); border: 1px solid var(--glass-border);
+      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.35s ease, border-color 0.35s ease;
+      display: flex; flex-direction: column; opacity: 0; transform: translateY(20px);
+    }
+    .listing-card.visible { opacity: 1; transform: translateY(0); transition: transform 0.5s cubic-bezier(0.4,0,0.2,1), opacity 0.4s ease, box-shadow 0.35s, border-color 0.35s; }
+    .listing-card:hover { border-color: rgba(139,92,246,0.3); transform: translateY(-4px); box-shadow: 0 16px 48px rgba(139,92,246,0.08); }
+    .listing-card.tier-wild { border-width: 2px; border-color: rgba(251,191,36,0.25); }
+    .listing-card.tier-wild::before { content: ''; position: absolute; inset: -2px; border-radius: var(--radius-md); padding: 2px; background: linear-gradient(135deg, rgba(251,191,36,0.5), rgba(232,121,249,0.4), rgba(139,92,246,0.4), rgba(96,165,250,0.3), rgba(251,191,36,0.5)); background-size: 300% 300%; animation: holo 6s ease-in-out infinite; -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; z-index: 3; opacity: 0.6; }
+    .listing-card.tier-wild:hover::before { opacity: 1; }
+    @keyframes holo { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+    .listing-card.tier-purebred { border-color: rgba(52,211,153,0.12); border-width: 1.5px; }
+    .listing-card.tier-purebred:hover { box-shadow: 0 14px 44px rgba(52,211,153,0.12); border-color: rgba(52,211,153,0.35); }
+
+    .card-image { flex: 1; position: relative; overflow: hidden; background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; }
+    .card-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.45s ease; }
+    .listing-card:hover .card-image img { transform: scale(1.06); }
+    .card-image .placeholder-icon { font-size: 3rem; opacity: 0.4; }
+    .card-badge { position: absolute; top: 10px; left: 10px; z-index: 4; padding: 4px 10px; border-radius: 20px; font-size: 0.6rem; font-weight: 700; backdrop-filter: blur(8px); }
+    .badge-wild { background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.4); color: #fbbf24; }
+    .badge-purebred { background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.35); color: #34d399; }
+    .badge-f1 { background: rgba(96,165,250,0.12); border: 1px solid rgba(96,165,250,0.35); color: #60a5fa; }
+    .badge-batch { background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.35); color: #7dd3fc; }
+    .card-price { position: absolute; top: 10px; right: 10px; z-index: 4; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.35); color: var(--emerald-300); backdrop-filter: blur(8px); }
+    .card-info { padding: 14px 16px 12px; background: linear-gradient(180deg, rgba(15,12,31,0.95), rgba(10,8,22,1)); border-top: 1px solid var(--glass-border); }
+    .card-name { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.9rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-sci { font-size: 0.68rem; font-style: italic; color: var(--violet-400); margin-top: 2px; }
+    .card-cta { font-size: 0.65rem; font-weight: 600; color: var(--violet-300); opacity: 0; transition: opacity 0.3s; margin-top: 6px; }
+    .listing-card:hover .card-cta { opacity: 1; }
+    /* =========================================
+       REVIEWS & EMPTY/LOADING STATES
+    ========================================= */
+    .reviews-section { margin-bottom: 3rem; }
+    .review-card { padding: 16px 20px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); margin-bottom: 10px; transition: var(--transition); }
+    .review-card:hover { border-color: rgba(139,92,246,0.2); }
+    .review-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .review-author { font-size: 0.78rem; font-weight: 600; color: var(--text-primary); }
+    .review-stars { font-size: 0.82rem; color: var(--amber-400); }
+    .review-body { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6; }
+    .review-date { font-size: 0.62rem; color: var(--text-muted); margin-top: 8px; }
+
+    .loading-state { text-align: center; padding: 80px 24px; color: var(--text-secondary); }
+    .loading-spinner { width: 40px; height: 40px; border: 3px solid rgba(167,139,250,0.15); border-top-color: var(--violet-400); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty-state { text-align: center; padding: 60px 24px; color: var(--text-muted); }
+    .empty-state h3 { font-family: 'Outfit', sans-serif; font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 6px; }
+
+    /* Footer */
+    .footer { position: relative; z-index: 1; padding: 40px 0; border-top: 1px solid var(--glass-border); text-align: center; }
+    .footer p { font-size: 0.78rem; color: var(--text-muted); }
+    .footer-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 12px; flex-wrap: wrap; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-secondary); transition: color 0.2s; }
+    .footer-links a:hover { color: var(--violet-300); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .store-banner { height: 160px; }
+      .store-profile { flex-direction: column; align-items: center; text-align: center; margin-top: -40px; gap: 12px; }
+      .store-avatar, .store-avatar-placeholder { width: 80px; height: 80px; }
+      .store-name { font-size: 1.3rem; }
+      .store-name-row { justify-content: center; }
+      .store-bio { margin-left: auto; margin-right: auto; }
+      .store-meta { justify-content: center; }
+      .store-specialties { justify-content: center; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+      .listings-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+      .listing-card { aspect-ratio: 2.5 / 4; }
+      .card-info { padding: 10px 12px 8px; }
+      .card-name { font-size: 0.8rem; }
+    }
+    @media (max-width: 480px) {
+      .stats-bar { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .stat-card { padding: 10px 12px; }
+      .listings-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    }
+  </style>
 </head>
 <body>
-  <div id="storefront-root"></div>
-  <script type="module" src="/src/storefront-entry.jsx"></script>
+  <div class="ambient-layer"><div class="orb orb-1"></div><div class="orb orb-2"></div></div>
+
+  <!-- Navigation -->
+  <header class="nav">
+    <nav class="nav-inner">
+      <a href="/" class="nav-logo">
+        <div class="nav-logo-mark">
+          <svg width="28" height="28" viewBox="0 0 38 38" fill="none">
+            <defs><linearGradient id="ng" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#a78bfa"/><stop offset="50%" stop-color="#c084fc"/><stop offset="100%" stop-color="#60a5fa"/></linearGradient></defs>
+            <circle cx="19" cy="19" r="15" stroke="url(#ng)" stroke-width="2.4" fill="none"/>
+            <path d="M19 4 C22.5 9.5,24 14,22.8 19 C21.6 24,22.5 28.5,19 34" stroke="url(#ng)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <path d="M19 4 C15.5 9.5,14 14,15.2 19 C16.4 24,15.5 28.5,19 34" stroke="url(#ng)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <circle cx="19" cy="19" r="4" fill="url(#ng)"/><circle cx="17.5" cy="17.5" r="1.3" fill="#fff" opacity="0.7"/>
+          </svg>
+        </div>
+        <div>
+          <span class="nav-logo-text">AQUACELLUM</span>
+          <span class="nav-logo-sub">Storefront</span>
+        </div>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/marketplace">Marketplace</a></li>
+        <li><a href="/database">Species Database</a></li>
+        <li><a href="/breeds">Breed Gallery</a></li>
+        <li><a href="/breeders">Find Breeders</a></li>
+        <li><a href="/how-it-works">How It Works</a></li>
+      </ul>
+      <a href="/marketplace" class="nav-cta">Browse All Listings</a>
+    </nav>
+  </header>
+
+  <!-- Loading State -->
+  <div id="loadingState" class="loading-state">
+    <div class="loading-spinner"></div>
+    <p>Loading storefront...</p>
+  </div>
+
+  <!-- Main Content (hidden until loaded) -->
+  <div id="storeContent" style="display:none;">
+    <!-- Banner -->
+    <div class="store-banner" id="storeBanner">
+      <div class="store-banner-fallback"></div>
+      <div class="store-banner-overlay"></div>
+    </div>
+
+    <!-- Profile -->
+    <div class="container">
+      <div class="store-profile" id="storeProfile"></div>
+
+      <!-- Stats -->
+      <div class="stats-bar" id="statsBar"></div>
+
+      <!-- Listings -->
+      <div class="section-header">
+        <div class="section-title">🐟 Active Listings <span class="section-count" id="listingCount">0</span></div>
+      </div>
+      <div class="listings-grid" id="listingsGrid"></div>
+
+      <!-- Reviews -->
+      <div class="reviews-section" id="reviewsSection" style="display:none;">
+        <div class="section-header">
+          <div class="section-title">⭐ Reviews</div>
+        </div>
+        <div id="reviewsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/marketplace">Marketplace</a>
+        <a href="/breeders">Find Breeders</a>
+        <a href="/database">Species Database</a>
+        <a href="/how-it-works">How It Works</a>
+      </div>
+      <p>&copy; 2026 Aquacellum Protocol. All rights reserved.</p>
+    </div>
+  </footer>
+  <script>
+    // ── Configuration ──────────────────────────────────────────────────────
+    const SUPABASE_URL = 'https://yahsdztnvsykzecjatsl.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaHNkenRudnN5a3plY2phdHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQwMDgsImV4cCI6MjA5NjA3MDAwOH0.3anqDFU9hUjZg2AFWJlXSBbwSM-knNrmb-uQ_Baq98I';
+    const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs';
+
+    // ── Alias Generator ───────────────────────────────────────────────────
+    const ADJECTIVES = ["Coral","Sapphire","Drift","Lunar","Ember","Misty","Crystal","Tide","Storm","Solar","Velvet","Copper","Silver","Frost","Dusk","Reef","Azure","Pearl","Golden","Moss"];
+    const FISH_NAMES = ["Tetra","Guppy","Betta","Pleco","Rasbora","Danio","Cory","Molly","Barb","Loach","Killi","Goby","Wrasse","Tang","Angel","Discus","Oscar","Arowana","Pike","Darter"];
+    function generateAlias(address) {
+      if (!address || address.length < 10) return "Unknown Keeper";
+      const n = address.toLowerCase().replace("0x", "");
+      return ADJECTIVES[parseInt(n.slice(0,4),16) % ADJECTIVES.length] + ' ' + FISH_NAMES[parseInt(n.slice(4,8),16) % FISH_NAMES.length] + ' ' + ((parseInt(n.slice(8,12),16) % 9000) + 1000);
+    }
+
+    // ── Get Slug from URL ─────────────────────────────────────────────────
+    function getSlugFromUrl() {
+      const path = window.location.pathname;
+      const match = path.match(/\/store\/(.+)/);
+      return match ? match[1].replace(/\/$/, '') : null;
+    }
+
+    // ── Price Helper ──────────────────────────────────────────────────────
+    function ethToUSD(priceEth) {
+      const usd = parseFloat(priceEth || 0) * 1000;
+      if (usd <= 0) return 'Free';
+      return '$' + usd.toFixed(2);
+    }
+
+    // ── Pedigree ──────────────────────────────────────────────────────────
+    function getPedigree(item) {
+      if (item.isBatch) return { label: 'Batch Fry', cls: 'batch', tier: '' };
+      const s = Number(item.sireId || 0), d = Number(item.damId || 0);
+      if (s === 0 && d === 0) return { label: 'Wild Caught', cls: 'wild', tier: 'tier-wild' };
+      if ((s !== 0 && d === 0) || (s === 0 && d !== 0)) return { label: 'F1 Bred', cls: 'f1', tier: '' };
+      return { label: 'Purebred', cls: 'purebred', tier: 'tier-purebred' };
+    }
+    // ── Initialize ─────────────────────────────────────────────────────────
+    async function init() {
+      const slug = getSlugFromUrl();
+      if (!slug) { showError('No storefront specified.'); return; }
+
+      try {
+        // Fetch storefront data via API
+        const res = await fetch(`/api/storefront-detail?id=${encodeURIComponent(slug)}`);
+        if (!res.ok) throw new Error('Storefront not found');
+        const data = await res.json();
+        renderStorefront(data);
+      } catch (e) {
+        // Fallback: try direct Supabase query
+        try {
+          const profileRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/breeder_profiles?or=(slug.eq.${slug},wallet_address.eq.${slug})&limit=1`,
+            { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
+          );
+          if (profileRes.ok) {
+            const profiles = await profileRes.json();
+            if (profiles.length > 0) {
+              const p = profiles[0];
+              // Fetch stats
+              const statsRes = await fetch(
+                `${SUPABASE_URL}/rest/v1/breeder_stats?wallet_address=eq.${p.wallet_address}`,
+                { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
+              );
+              let stats = {};
+              if (statsRes.ok) { const s = await statsRes.json(); stats = s[0] || {}; }
+              // Fetch listings
+              const listingsRes = await fetch(
+                `${SUPABASE_URL}/rest/v1/aquadex_listings?is_active=eq.true&order=created_at.desc&limit=50`,
+                { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
+              );
+              let listings = [];
+              if (listingsRes.ok) {
+                const rows = await listingsRes.json();
+                listings = rows.map(r => { try { return typeof r.data === 'string' ? JSON.parse(r.data) : r.data; } catch { return null; } }).filter(Boolean);
+                listings = listings.filter(l => l.seller?.toLowerCase() === p.wallet_address.toLowerCase());
+              }
+              renderStorefront({ profile: p, stats, listings, reviews: [] });
+              return;
+            }
+          }
+          showError('Storefront not found. This breeder may not have set up their page yet.');
+        } catch (e2) {
+          showError('Unable to load storefront. Please try again later.');
+        }
+      }
+    }
+
+    function showError(msg) {
+      // Before showing error, check if it's a demo slug
+      const slug = getSlugFromUrl();
+      const demoData = getDemoStorefront(slug);
+      if (demoData) { renderStorefront(demoData); return; }
+      document.getElementById('loadingState').innerHTML = `<div class="empty-state"><h3>😔 ${msg}</h3><p><a href="/breeders" style="color:var(--violet-400);">Browse all breeders →</a></p></div>`;
+    }
+
+    // ── Demo Storefronts ──────────────────────────────────────────────────
+    function getDemoStorefront(slug) {
+      const demos = {
+        'coral-cichlid': {
+          profile: { display_name: 'Coral Cichlid 4201', slug: 'coral-cichlid', bio: 'Specializing in dwarf cichlids since 2019. Fourth-generation Triple Red Apistogramma line. Based in Austin, TX — shipping nationwide with insulated overnight boxes.', location: 'Austin, TX', specialties: ['Cichlids', 'Apistogramma', 'Dwarf Cichlids'], is_master_breeder: true },
+          stats: { avg_rating: 4.9, review_count: 38, species_count: 8, total_listings: 12, total_sales: 47 },
+          listings: [
+            { commonName: 'Triple Red Apistogramma', scientificName: 'Apistogramma cacatuoides', price: '0.035', sireId: 7, damId: 3, isBatch: false, isShipping: true },
+            { commonName: 'German Blue Ram', scientificName: 'Mikrogeophagus ramirezi', price: '0.018', sireId: 0, damId: 0, isBatch: false, isShipping: true },
+            { commonName: 'Apistogramma Agassizii', scientificName: 'Apistogramma agassizii', price: '0.028', sireId: 2, damId: 5, isBatch: false, isShipping: true },
+            { commonName: 'Cockatoo Cichlid Fry Batch', scientificName: 'Apistogramma cacatuoides', price: '0.008', isBatch: true, quantity: 12, isShipping: true },
+            { commonName: 'Bolivian Ram Pair', scientificName: 'Mikrogeophagus altispinosus', price: '0.042', sireId: 1, damId: 1, isBatch: false, isShipping: true },
+          ],
+          reviews: [
+            { author: 'Jade Tetra 1177', rating: 5, body: 'Incredible color on the Triple Reds. Arrived healthy and already showing full fin extension within a week. Will buy again.', date: '2026-05-12' },
+            { author: 'Reef Cory 4455', rating: 5, body: 'Best apistos I\'ve ever received shipped. Perfectly packed with heat pack and breather bags. Fish were calm and unstressed.', date: '2026-04-28' },
+            { author: 'Crystal Rasbora 9187', rating: 4, body: 'Beautiful fish. One arrived a bit stressed but recovered fully within 48 hours. Great communication from the breeder.', date: '2026-03-15' },
+          ]
+        },
+        'drift-pleco': {
+          profile: { display_name: 'Drift Pleco 5519', slug: 'drift-pleco', bio: 'One of few documented captive breeders of Gold Nugget L018. Cave-spawned in dedicated systems with precise water chemistry. 15+ species in rotation including rare L-numbers.', location: 'Miami, FL', specialties: ['Plecos', 'L-Numbers', 'Corydoras', 'Cave Spawners'], is_master_breeder: true },
+          stats: { avg_rating: 5.0, review_count: 72, species_count: 15, total_listings: 24, total_sales: 89 },
+          listings: [
+            { commonName: 'Gold Nugget L018', scientificName: 'Baryancistrus xanthellus', price: '0.095', sireId: 0, damId: 0, isBatch: false, isShipping: true },
+            { commonName: 'Super Red Bristlenose', scientificName: 'Ancistrus sp.', price: '0.022', sireId: 4, damId: 7, isBatch: false, isShipping: true },
+            { commonName: 'Blue Diamond Sailfin', scientificName: 'Pterygoplichthys gibbiceps', price: '0.065', sireId: 1, damId: 2, isBatch: false, isShipping: true },
+            { commonName: 'Bristlenose Fry Batch (x8)', scientificName: 'Ancistrus sp.', price: '0.012', isBatch: true, quantity: 8, isShipping: true },
+            { commonName: 'Corydoras Sterbai', scientificName: 'Corydoras sterbai', price: '0.015', sireId: 0, damId: 0, isBatch: false, isShipping: true },
+            { commonName: 'Zebra Pleco L046', scientificName: 'Hypancistrus zebra', price: '0.185', sireId: 1, damId: 1, isBatch: false, isShipping: true },
+          ],
+          reviews: [
+            { author: 'Golden Oscar 8811', rating: 5, body: 'The Gold Nugget arrived in pristine condition. Incredible specimen — spots are huge and contrast is unreal. Worth every penny.', date: '2026-06-01' },
+            { author: 'Coral Cichlid 4201', rating: 5, body: 'Bought bristlenose from Drift multiple times now. Always top quality, healthy, and well-grown. The standard for pleco breeders.', date: '2026-05-20' },
+            { author: 'Velvet Molly 3366', rating: 5, body: 'Perfect 5-star experience from start to finish. Communication, packing, fish quality — all exceptional.', date: '2026-04-08' },
+          ]
+        },
+        'sapphire-betta': {
+          profile: { display_name: 'Sapphire Betta 7832', slug: 'sapphire-betta', bio: 'Platinum dumbo and galaxy koi lines. Every betta hand-raised in individual conditioned tanks with daily water changes. Based in Portland, OR.', location: 'Portland, OR', specialties: ['Bettas', 'Wild Types', 'Halfmoon', 'Dumbo Ear'], is_master_breeder: false },
+          stats: { avg_rating: 4.7, review_count: 19, species_count: 4, total_listings: 6, total_sales: 23 },
+          listings: [
+            { commonName: 'Platinum Dumbo Male', scientificName: 'Betta splendens', price: '0.045', sireId: 2, damId: 5, isBatch: false, isShipping: true },
+            { commonName: 'Galaxy Koi Halfmoon Male', scientificName: 'Betta splendens', price: '0.038', sireId: 1, damId: 4, isBatch: false, isShipping: true },
+            { commonName: 'Wild-Type Betta Imbellis', scientificName: 'Betta imbellis', price: '0.025', sireId: 0, damId: 0, isBatch: false, isShipping: true },
+            { commonName: 'Koi Plakat Female', scientificName: 'Betta splendens', price: '0.022', sireId: 1, damId: 4, isBatch: false, isShipping: true },
+          ],
+          reviews: [
+            { author: 'Frost Killi 2298', rating: 5, body: 'The platinum dumbo is absolutely stunning. Photos don\'t do it justice — the pectoral fins are massive. Shipped perfectly.', date: '2026-05-30' },
+            { author: 'Jade Tetra 1177', rating: 4, body: 'Beautiful galaxy koi. Took a day to color up fully but now looks incredible in the planted tank.', date: '2026-04-15' },
+          ]
+        },
+        'tidal-guppy': {
+          profile: { display_name: 'Tidal Guppy 3044', slug: 'tidal-guppy', bio: 'Sixth-generation Moscow Blue and pure N-class Endler Tiger lines. Colony-separated for genetic purity. High-volume breeder with 150+ sales and counting.', location: 'Denver, CO', specialties: ['Livebearers', 'Guppies', 'Endlers', 'Moscow Lines'], is_master_breeder: false },
+          stats: { avg_rating: 4.8, review_count: 120, species_count: 6, total_listings: 30, total_sales: 156 },
+          listings: [
+            { commonName: 'Moscow Blue Delta Trio', scientificName: 'Poecilia reticulata', price: '0.025', sireId: 12, damId: 12, isBatch: false, isShipping: true },
+            { commonName: 'Endler Tiger Males (x6)', scientificName: 'Poecilia wingei', price: '0.018', isBatch: true, quantity: 6, isShipping: true },
+            { commonName: 'Moscow Blue Pair', scientificName: 'Poecilia reticulata', price: '0.020', sireId: 12, damId: 12, isBatch: false, isShipping: true },
+            { commonName: 'Endler N-class Females (x4)', scientificName: 'Poecilia wingei', price: '0.012', isBatch: true, quantity: 4, isShipping: true },
+            { commonName: 'Red Lace Snakeskin Guppy', scientificName: 'Poecilia reticulata', price: '0.015', sireId: 3, damId: 8, isBatch: false, isShipping: true },
+          ],
+          reviews: [
+            { author: 'Velvet Molly 3366', rating: 5, body: 'Moscow Blues arrived vibrant and active. Already breeding in my colony tank. Genetics are rock solid.', date: '2026-06-10' },
+            { author: 'Crystal Rasbora 9187', rating: 5, body: 'Pure N-class endlers — verified no hybridization. Exactly what was advertised. Great communication.', date: '2026-05-22' },
+            { author: 'Reef Cory 4455', rating: 4, body: 'Good fish, fast shipping. One female was gravid on arrival which was a nice bonus!', date: '2026-04-30' },
+          ]
+        },
+        'ember-discus': {
+          profile: { display_name: 'Ember Discus 6620', slug: 'ember-discus', bio: 'Pigeon Blood and Electric Blue Acara lines. Raised worm-free from F2 with strong parental instincts. All discus on premium beef heart and bloodworm diet.', location: 'Atlanta, GA', specialties: ['Discus', 'Angelfish', 'Cichlids', 'Electric Blue Acara'], is_master_breeder: true },
+          stats: { avg_rating: 4.9, review_count: 55, species_count: 7, total_listings: 15, total_sales: 62 },
+          listings: [
+            { commonName: 'Pigeon Blood Discus (3")', scientificName: 'Symphysodon sp.', price: '0.075', sireId: 2, damId: 6, isBatch: false, isShipping: true },
+            { commonName: 'Electric Blue Acara Pair', scientificName: 'Andinoacara pulcher', price: '0.048', sireId: 3, damId: 2, isBatch: false, isShipping: true },
+            { commonName: 'Blue Diamond Angelfish', scientificName: 'Pterophyllum scalare', price: '0.032', sireId: 1, damId: 1, isBatch: false, isShipping: true },
+            { commonName: 'Pigeon Blood Juvies (x3)', scientificName: 'Symphysodon sp.', price: '0.055', isBatch: true, quantity: 3, isShipping: true },
+          ],
+          reviews: [
+            { author: 'Golden Oscar 8811', rating: 5, body: 'Healthiest discus I\'ve ever received shipped. Eating pellets within hours of arrival. Worm-free claim checks out.', date: '2026-06-05' },
+            { author: 'Azure Angel 5533', rating: 5, body: 'The Electric Blue Acaras are stunning — full metallic coverage and already pairing up. Exceptional genetics.', date: '2026-05-14' },
+          ]
+        },
+        'azure-angel': {
+          profile: { display_name: 'Azure Angel 5533', slug: 'azure-angel', bio: 'Established angelfish and albino kribensis lines. Strong pair bonds and proven parental care. Shipping nationwide from Nashville, TN.', location: 'Nashville, TN', specialties: ['Angelfish', 'Breeding Pairs', 'Kribensis'], is_master_breeder: true },
+          stats: { avg_rating: 4.9, review_count: 61, species_count: 4, total_listings: 18, total_sales: 73 },
+          listings: [
+            { commonName: 'Blue Pinoy Angelfish Pair', scientificName: 'Pterophyllum scalare', price: '0.055', sireId: 9, damId: 6, isBatch: false, isShipping: true },
+            { commonName: 'Albino Kribensis Pair', scientificName: 'Pelvicachromis pulcher', price: '0.028', sireId: 9, damId: 6, isBatch: false, isShipping: true },
+            { commonName: 'Koi Angelfish Juvenile', scientificName: 'Pterophyllum scalare', price: '0.018', sireId: 3, damId: 2, isBatch: false, isShipping: true },
+            { commonName: 'Albino Kribensis Fry (x10)', scientificName: 'Pelvicachromis pulcher', price: '0.008', isBatch: true, quantity: 10, isShipping: true },
+          ],
+          reviews: [
+            { author: 'Ember Discus 6620', rating: 5, body: 'Angelfish pair spawned within 2 weeks of arriving. Incredible pair bond — best angels I\'ve worked with.', date: '2026-05-28' },
+            { author: 'Coral Cichlid 4201', rating: 5, body: 'Albino kribs are perfect. Both coloring up beautifully and already showing breeding behavior. A+ breeder.', date: '2026-04-20' },
+          ]
+        },
+      };
+      return demos[slug] || null;
+    }
+    // ── Render Storefront ────────────────────────────────────────────────
+    function renderStorefront(data) {
+      const profile = data.profile || {};
+      const stats = data.stats || {};
+      const listings = data.listings || [];
+      const reviews = data.reviews || [];
+
+      const name = profile.display_name || generateAlias(profile.wallet_address);
+      const initial = name.charAt(0).toUpperCase();
+      const isMaster = profile.is_master_breeder || false;
+      const specialties = profile.specialties || [];
+      const location = profile.location || '';
+      const bio = profile.bio || '';
+
+      // Update page title
+      document.title = `${name} — Breeder Storefront | Aquacellum`;
+
+      // Banner
+      const bannerEl = document.getElementById('storeBanner');
+      if (profile.banner_cid) {
+        bannerEl.innerHTML = `<img src="${IPFS_GATEWAY}/${profile.banner_cid}" alt="Banner" onload="this.classList.add('loaded')"><div class="store-banner-overlay"></div>`;
+      }
+
+      // Profile
+      const avatarHtml = profile.avatar_cid
+        ? `<img class="store-avatar" src="${IPFS_GATEWAY}/${profile.avatar_cid}" alt="${name}">`
+        : `<div class="store-avatar-placeholder">${initial}</div>`;
+
+      document.getElementById('storeProfile').innerHTML = `
+        <div class="store-avatar-wrap">
+          ${avatarHtml}
+          ${isMaster ? '<div class="store-master-crown">👑</div>' : ''}
+        </div>
+        <div class="store-info">
+          <div class="store-name-row">
+            <h1 class="store-name">${name}</h1>
+            <span class="store-trust-badge">✓ Verified Breeder</span>
+          </div>
+          ${bio ? `<p class="store-bio">${bio}</p>` : ''}
+          <div class="store-meta">
+            ${location ? `<span class="store-location">📍 ${location}</span>` : ''}
+          </div>
+          ${specialties.length ? `<div class="store-specialties">${specialties.map(s => `<span class="store-specialty">${s}</span>`).join('')}</div>` : ''}
+        </div>
+      `;
+
+      // Stats
+      const rating = stats.avg_rating ? parseFloat(stats.avg_rating).toFixed(1) : '—';
+      document.getElementById('statsBar').innerHTML = `
+        <div class="stat-card"><div class="stat-icon">⭐</div><div><div class="stat-value">${rating}</div><div class="stat-label">Rating (${stats.review_count || 0} reviews)</div></div></div>
+        <div class="stat-card"><div class="stat-icon">🐟</div><div><div class="stat-value">${stats.species_count || 0}</div><div class="stat-label">Species</div></div></div>
+        <div class="stat-card"><div class="stat-icon">📦</div><div><div class="stat-value">${stats.total_listings || listings.length}</div><div class="stat-label">Active Listings</div></div></div>
+        <div class="stat-card"><div class="stat-icon">✓</div><div><div class="stat-value">${stats.total_sales || 0}</div><div class="stat-label">Completed Sales</div></div></div>
+      `;
+
+      // Listings
+      document.getElementById('listingCount').textContent = listings.length;
+      if (listings.length === 0) {
+        document.getElementById('listingsGrid').innerHTML = '<div class="empty-state"><h3>No active listings</h3><p>This breeder hasn\'t listed any specimens yet. Check back soon!</p></div>';
+      } else {
+        renderListings(listings);
+      }
+
+      // Reviews
+      if (reviews.length > 0) {
+        document.getElementById('reviewsSection').style.display = '';
+        document.getElementById('reviewsList').innerHTML = reviews.map(r => `
+          <div class="review-card">
+            <div class="review-header">
+              <span class="review-author">${r.author || 'Anonymous'}</span>
+              <span class="review-stars">${'⭐'.repeat(r.rating || 5)}</span>
+            </div>
+            <div class="review-body">${r.body || ''}</div>
+            <div class="review-date">${r.date || ''}</div>
+          </div>
+        `).join('');
+      }
+
+      // Show content
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('storeContent').style.display = '';
+    }
+    // ── Render Listings Grid ──────────────────────────────────────────────
+    function renderListings(listings) {
+      const grid = document.getElementById('listingsGrid');
+
+      // Try to get species images from fishbase
+      let fishbaseData = [];
+      fetch('/fishbase_master.json').then(r => r.ok ? r.json() : []).then(data => {
+        fishbaseData = data;
+        // Re-render with images
+        grid.innerHTML = listings.map((item, idx) => buildListingCard(item, idx, fishbaseData)).join('');
+        animateCards(grid);
+      }).catch(() => {
+        grid.innerHTML = listings.map((item, idx) => buildListingCard(item, idx, [])).join('');
+        animateCards(grid);
+      });
+    }
+
+    function buildListingCard(item, idx, fishbaseData) {
+      const pedigree = getPedigree(item);
+      const price = ethToUSD(item.price);
+      const imgUrl = getSpeciesImage(item.scientificName, fishbaseData);
+      const imageHtml = imgUrl
+        ? `<img src="${imgUrl}" alt="${item.commonName || 'Fish'}" loading="lazy">`
+        : '<span class="placeholder-icon">🐟</span>';
+
+      return `
+        <div class="listing-card ${pedigree.tier}" data-idx="${idx}">
+          <div class="card-image">
+            ${imageHtml}
+            <span class="card-badge badge-${pedigree.cls}">${pedigree.label}</span>
+            <span class="card-price">${price}</span>
+          </div>
+          <div class="card-info">
+            <div class="card-name">${item.commonName || 'Unknown Species'}</div>
+            <div class="card-sci">${item.scientificName || ''}</div>
+            <div class="card-cta">View Details →</div>
+          </div>
+        </div>`;
+    }
+
+    function getSpeciesImage(scientificName, fishbaseData) {
+      if (!scientificName || !fishbaseData.length) return '';
+      const match = fishbaseData.find(f => f.scientificName?.toLowerCase() === scientificName.toLowerCase());
+      return match?.masterPhotoUrl || '';
+    }
+
+    function animateCards(grid) {
+      requestAnimationFrame(() => {
+        const cards = grid.querySelectorAll('.listing-card');
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const idx = Array.from(cards).indexOf(entry.target) % 6;
+              setTimeout(() => entry.target.classList.add('visible'), idx * 70);
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.05, rootMargin: '50px' });
+        cards.forEach(card => observer.observe(card));
+      });
+    }
+
+    // ── Boot ───────────────────────────────────────────────────────────────
+    init();
+  </script>
 </body>
 </html>

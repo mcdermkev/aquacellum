@@ -264,7 +264,40 @@
       .nav-links { display: none; }
       .hero-common-name { font-size: 1.8rem; }
       .gauge-row { grid-template-columns: 1fr; }
+      .marketplace-listings { grid-template-columns: 1fr; }
+      .related-scroll { gap: 12px; }
     }
+
+    /* =========================================
+       MARKETPLACE CROSS-LINK SECTION
+    ========================================= */
+    .marketplace-section { margin-top: 40px; padding: 28px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); }
+    .marketplace-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .marketplace-section-title { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .marketplace-section-link { font-size: 0.72rem; font-weight: 600; color: var(--emerald-400); transition: color 0.2s; }
+    .marketplace-section-link:hover { color: var(--emerald-300); }
+    .marketplace-listings { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+    .mp-listing-card { padding: 14px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--radius-sm); transition: var(--transition); cursor: pointer; }
+    .mp-listing-card:hover { border-color: rgba(52,211,153,0.25); background: rgba(52,211,153,0.03); }
+    .mp-listing-name { font-family: 'Outfit', sans-serif; font-size: 0.82rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .mp-listing-price { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; font-weight: 700; color: var(--emerald-300); margin-bottom: 6px; }
+    .mp-listing-meta { font-size: 0.62rem; color: var(--text-muted); }
+    .mp-empty { font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 20px; }
+
+    /* =========================================
+       RELATED SPECIES SECTION
+    ========================================= */
+    .related-section { margin-top: 32px; }
+    .related-section-title { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .related-scroll { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 12px; scrollbar-width: thin; scrollbar-color: rgba(139,92,246,0.2) transparent; }
+    .related-scroll::-webkit-scrollbar { height: 4px; }
+    .related-scroll::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 4px; }
+    .related-card { flex-shrink: 0; width: 180px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); overflow: hidden; cursor: pointer; transition: var(--transition); }
+    .related-card:hover { border-color: rgba(52,211,153,0.3); transform: translateY(-2px); }
+    .related-card-img { width: 100%; height: 100px; object-fit: cover; background: rgba(0,0,0,0.2); }
+    .related-card-info { padding: 10px 12px; }
+    .related-card-name { font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .related-card-sci { font-size: 0.62rem; font-style: italic; color: var(--emerald-400); }
   </style>
 </head>
 <body>
@@ -297,12 +330,13 @@
         </div>
       </a>
       <ul class="nav-links">
-        <li><a href="/">Home</a></li>
-        <li><a href="/database">Database</a></li>
-        <li><a href="/hobbyist">For Hobbyists</a></li>
-        <li><a href="/breeder">For Breeders</a></li>
+        <li><a href="/marketplace">Marketplace</a></li>
+        <li><a href="/database">Species Database</a></li>
+        <li><a href="/breeds">Breed Gallery</a></li>
+        <li><a href="/breeders">Find Breeders</a></li>
+        <li><a href="/how-it-works">How It Works</a></li>
       </ul>
-      <a href="/app.html" class="nav-cta">Open Logbook</a>
+      <a href="/marketplace" class="nav-cta">Browse Marketplace</a>
     </nav>
   </header>
 
@@ -319,10 +353,11 @@
     <div class="container">
       <div class="footer-links">
         <a href="/">Home</a>
-        <a href="/database">Database</a>
-        <a href="/hobbyist">For Hobbyists</a>
-        <a href="/breeder">For Breeders</a>
-        <a href="/app.html">Open Logbook</a>
+        <a href="/marketplace">Marketplace</a>
+        <a href="/database">Species Database</a>
+        <a href="/breeds">Breed Gallery</a>
+        <a href="/breeders">Find Breeders</a>
+        <a href="/how-it-works">How It Works</a>
       </div>
       <p>&copy; 2026 Aquacellum. All species data validated against FishBase & WoRMS.</p>
     </div>
@@ -358,6 +393,8 @@
       return { left: Math.max(0, left), width: Math.min(100 - left, width) };
     }
 
+    let allSpecies = [];
+
     async function init() {
       // Extract slug from URL path
       const pathParts = window.location.pathname.split('/').filter(Boolean);
@@ -372,7 +409,7 @@
       try {
         const res = await fetch('/fishbase_master.json');
         if (!res.ok) throw new Error('Failed to load species data');
-        const allSpecies = await res.json();
+        allSpecies = await res.json();
 
         // Find species by slug match on scientific name or common name
         const species = allSpecies.find(sp => {
@@ -635,6 +672,10 @@
           setTimeout(() => { g.style.width = w; }, 100);
         });
       });
+
+      // Render marketplace cross-link and related species
+      renderMarketplaceSection(sp);
+      renderRelatedSpecies(sp);
     }
 
     // Infer compatibility traits from available data
@@ -679,6 +720,101 @@
       }
 
       return chips;
+    }
+
+    // ── Marketplace Cross-Link ────────────────────────────────────────────
+    async function renderMarketplaceSection(sp) {
+      const SUPABASE_URL = 'https://yahsdztnvsykzecjatsl.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaHNkenRudnN5a3plY2phdHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQwMDgsImV4cCI6MjA5NjA3MDAwOH0.3anqDFU9hUjZg2AFWJlXSBbwSM-knNrmb-uQ_Baq98I';
+
+      const container = document.getElementById('mainContent');
+      let listings = [];
+
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/aquadex_listings?is_active=eq.true&order=created_at.desc&limit=50`,
+          { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
+        );
+        if (res.ok) {
+          const rows = await res.json();
+          const all = rows.map(r => { try { return typeof r.data === 'string' ? JSON.parse(r.data) : r.data; } catch { return null; } }).filter(Boolean);
+          listings = all.filter(l => l.scientificName && l.scientificName.toLowerCase() === sp.scientificName.toLowerCase());
+        }
+      } catch (e) { /* silent fail */ }
+
+      // Build the section HTML
+      let mpHtml = `<div class="marketplace-section">
+        <div class="marketplace-section-header">
+          <div class="marketplace-section-title">🛒 Available on Marketplace</div>
+          <a href="/marketplace" class="marketplace-section-link">View All Listings →</a>
+        </div>`;
+
+      if (listings.length > 0) {
+        mpHtml += `<div class="marketplace-listings">`;
+        listings.forEach(l => {
+          const price = parseFloat(l.price || 0) * 1000;
+          const priceStr = price > 0 ? '$' + price.toFixed(2) : 'Free';
+          const pedigree = l.isBatch ? 'Batch Fry' : (Number(l.sireId||0)===0 && Number(l.damId||0)===0) ? 'Wild Caught' : 'Bred';
+          mpHtml += `
+            <div class="mp-listing-card" onclick="window.location='/marketplace'">
+              <div class="mp-listing-name">${l.commonName || sp.commonName}</div>
+              <div class="mp-listing-price">${priceStr}</div>
+              <div class="mp-listing-meta">${pedigree} · ${l.isShipping ? '🚚 Ships' : '📍 Local'}</div>
+            </div>`;
+        });
+        mpHtml += `</div>`;
+      } else {
+        mpHtml += `<div class="mp-empty">No active listings for this species right now. <a href="/marketplace" style="color:var(--emerald-400);">Browse the full marketplace →</a></div>`;
+      }
+
+      mpHtml += `</div>`;
+      container.insertAdjacentHTML('beforeend', mpHtml);
+    }
+
+    // ── Related Species ───────────────────────────────────────────────────
+    function renderRelatedSpecies(sp) {
+      if (!allSpecies || allSpecies.length === 0) return;
+
+      // Find related: same family, excluding self
+      let related = allSpecies.filter(s =>
+        s.family && s.family === sp.family &&
+        s.scientificName !== sp.scientificName
+      );
+
+      // If fewer than 4, supplement with same difficulty
+      if (related.length < 4) {
+        const sameDiff = allSpecies.filter(s =>
+          s.tankMetrics?.difficulty === sp.tankMetrics?.difficulty &&
+          s.scientificName !== sp.scientificName &&
+          !related.includes(s)
+        ).slice(0, 8 - related.length);
+        related = [...related, ...sameDiff];
+      }
+
+      related = related.slice(0, 8);
+      if (related.length === 0) return;
+
+      let html = `<div class="related-section">
+        <div class="related-section-title">🐠 Related Species</div>
+        <div class="related-scroll">`;
+
+      related.forEach(r => {
+        const slug = toSlug(r.scientificName);
+        const imgHtml = r.masterPhotoUrl
+          ? `<img class="related-card-img" src="${r.masterPhotoUrl}" alt="${r.commonName}" loading="lazy">`
+          : `<div class="related-card-img" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem;opacity:0.3;">🐟</div>`;
+        html += `
+          <a href="/species/${slug}" class="related-card">
+            ${imgHtml}
+            <div class="related-card-info">
+              <div class="related-card-name">${r.commonName || 'Unknown'}</div>
+              <div class="related-card-sci">${r.scientificName}</div>
+            </div>
+          </a>`;
+      });
+
+      html += `</div></div>`;
+      document.getElementById('mainContent').insertAdjacentHTML('beforeend', html);
     }
 
     // Boot

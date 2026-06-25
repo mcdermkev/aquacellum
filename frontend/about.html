@@ -4,145 +4,151 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>About — Aquacellum</title>
-  <meta name="description" content="Learn about the team and mission behind Aquacellum, the living aquatic registry built for hobbyists and professional breeders.">
+  <meta name="description" content="Learn about the team and mission behind Aquacellum — the living aquatic registry and marketplace built for hobbyists and professional breeders.">
+  <meta property="og:title" content="About Aquacellum">
+  <meta property="og:description" content="Built by fishkeepers, for fishkeepers. Transparent lineage tracking, escrow-protected marketplace, and conservation-backed community.">
 
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   <style>
-    /* =========================================
-       DESIGN SYSTEM — ROOT TOKENS
-    ========================================= */
     :root {
-      --bg-void:      #060814;
-      --bg-deep:      #080c1a;
-      --bg-surface:   #0d1229;
-      --teal-100:     #ccfbf1;
-      --teal-300:     #5eead4;
-      --teal-400:     #2dd4bf;
-      --teal-500:     #14b8a6;
-      --teal-600:     #0d9488;
-      --cyan-300:     #67e8f9;
-      --cyan-400:     #22d3ee;
-      --cyan-500:     #06b6d4;
+      --bg-void:      #060710;
+      --bg-deep:      #0a0b14;
+      --bg-surface:   #0f1020;
+      --violet-300:   #c4b5fd;
       --violet-400:   #a78bfa;
       --violet-500:   #8b5cf6;
       --violet-600:   #7c3aed;
+      --purple-300:   #d8b4fe;
+      --purple-400:   #c084fc;
+      --emerald-300:  #6ee7b7;
+      --emerald-400:  #34d399;
+      --teal-300:     #5eead4;
+      --teal-400:     #2dd4bf;
+      --cyan-300:     #67e8f9;
       --amber-300:    #fcd34d;
       --amber-400:    #fbbf24;
-      --emerald-400:  #34d399;
-      --emerald-500:  #10b981;
-      --text-primary: #f0f4ff;
-      --text-secondary: #94a3b8;
-      --text-muted:   #475569;
-      --glass-bg:     rgba(13, 18, 41, 0.6);
-      --glass-border: rgba(255,255,255,0.07);
-      --radius-sm: 12px;
-      --radius-md: 18px;
-      --radius-lg: 24px;
-      --radius-xl: 32px;
+      --blue-400:     #60a5fa;
+      --text-primary: #f5f3ff;
+      --text-secondary: #a8a0c4;
+      --text-muted:   #4a3f6b;
+      --glass-bg:     rgba(15, 12, 31, 0.7);
+      --glass-border: rgba(167, 139, 250, 0.1);
+      --radius-sm: 12px; --radius-md: 18px; --radius-lg: 24px; --radius-xl: 32px;
       --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { font-size: 16px; scroll-behavior: smooth; }
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: var(--bg-void);
-      color: var(--text-primary);
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-    }
-    a { color: inherit; text-decoration: none; }
-    button { cursor: pointer; font-family: inherit; border: none; background: none; }
-
+    body { font-family: 'Inter', sans-serif; background: var(--bg-void); color: var(--text-primary); overflow-x: hidden; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+    a { color: inherit; text-decoration: none; } button { cursor: pointer; font-family: inherit; border: none; background: none; }
     /* Ambient */
     .ambient-layer { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
     .orb { position: absolute; border-radius: 50%; filter: blur(120px); animation: orb-drift 18s ease-in-out infinite; }
-    .orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, rgba(20,184,166,0.12) 0%, transparent 70%); top: -200px; left: -100px; }
-    .orb-2 { width: 700px; height: 700px; background: radial-gradient(circle, rgba(139,92,246,0.10) 0%, transparent 70%); top: 30%; right: -200px; animation-delay: 6s; }
-    @keyframes orb-drift { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(40px,-30px) scale(1.08); } 66% { transform: translate(-20px,25px) scale(0.95); } }
+    .orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(139,92,246,0.09) 0%, transparent 70%); top: -150px; left: -80px; }
+    .orb-2 { width: 450px; height: 450px; background: radial-gradient(circle, rgba(52,211,153,0.07) 0%, transparent 70%); bottom: -100px; right: -80px; animation-delay: -6s; }
+    .orb-3 { width: 350px; height: 350px; background: radial-gradient(circle, rgba(251,191,36,0.04) 0%, transparent 70%); top: 50%; left: 50%; animation-delay: -12s; }
+    @keyframes orb-drift { 0%, 100% { transform: translate(0,0) scale(1); } 33% { transform: translate(30px,-20px) scale(1.05); } 66% { transform: translate(-20px,15px) scale(0.95); } }
 
     /* Nav */
-    .nav { position: sticky; top: 0; z-index: 100; background: rgba(6,8,20,0.8); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
+    .nav { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(20px) saturate(1.4); background: rgba(6,7,16,0.88); border-bottom: 1px solid var(--glass-border); padding: 0 24px; }
+    .nav-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; }
     .nav-logo { display: flex; align-items: center; gap: 12px; }
-    .nav-logo-mark { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, rgba(20,184,166,0.15), rgba(139,92,246,0.15)); border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(20,184,166,0.3); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .nav-logo-mark:hover { box-shadow: 0 0 30px rgba(20,184,166,0.5); transform: scale(1.05); }
-    .nav-logo-text { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.1rem; letter-spacing: 0.12em; color: #fff; }
-    .nav-logo-sub { display: block; font-size: 9px; letter-spacing: 0.18em; color: var(--teal-400); font-weight: 600; text-transform: uppercase; margin-top: -3px; }
-    .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
-    .nav-links a { font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); transition: var(--transition); }
-    .nav-links a:hover { color: var(--text-primary); }
-    .nav-cta { display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: var(--radius-sm); background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.3); font-size: 0.85rem; font-weight: 600; color: var(--teal-300); transition: var(--transition); }
-    .nav-cta:hover { background: rgba(20,184,166,0.2); border-color: rgba(20,184,166,0.5); }
-    .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--emerald-400); }
+    .nav-logo-mark { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(52,211,153,0.1)); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; box-shadow: 0 0 16px rgba(139,92,246,0.25); }
+    .nav-logo-text { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1rem; letter-spacing: 0.1em; color: #fff; }
+    .nav-logo-sub { display: block; font-size: 9px; letter-spacing: 0.15em; color: var(--teal-300); font-weight: 600; text-transform: uppercase; margin-top: -2px; }
+    .nav-links { display: flex; align-items: center; gap: 20px; list-style: none; }
+    .nav-links a { font-size: 0.82rem; font-weight: 500; color: var(--text-secondary); transition: color 0.2s; }
+    .nav-links a:hover { color: var(--violet-300); }
+    .nav-cta { display: flex; align-items: center; gap: 8px; padding: 9px 20px; font-size: 0.82rem; font-weight: 600; color: #fff; background: linear-gradient(135deg, var(--violet-600), var(--purple-400)); border-radius: 10px; transition: var(--transition); }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(139,92,246,0.3); }
 
-    /* Layout */
-    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
-    .section { padding: 100px 0; }
+    /* Container */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+    .section { padding: 60px 0; }
+    .section-divider { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, var(--glass-border), transparent); }
+    /* Hero */
+    .hero { padding: 80px 0 60px; text-align: center; position: relative; }
+    .hero::before { content: ''; position: absolute; top: 50%; left: 50%; width: 600px; height: 600px; transform: translate(-50%,-50%); background: radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 60%); pointer-events: none; }
+    .hero h1 { font-family: 'Outfit', sans-serif; font-size: clamp(2.2rem, 5vw, 3.2rem); font-weight: 900; line-height: 1.15; margin-bottom: 20px; }
+    .gradient-text { background: linear-gradient(135deg, var(--violet-300), var(--teal-300)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero p { font-size: 1.05rem; color: var(--text-secondary); max-width: 620px; margin: 0 auto; line-height: 1.7; }
 
-    /* Typography */
-    .font-display { font-family: 'Outfit', sans-serif; }
-    .text-gradient-teal { background: linear-gradient(135deg, var(--teal-300) 0%, var(--cyan-300) 50%, var(--teal-400) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .text-gradient-violet { background: linear-gradient(135deg, var(--violet-400) 0%, var(--cyan-400) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    /* Mission Cards */
+    .mission-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 32px; }
+    .mission-card { padding: 28px 24px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); backdrop-filter: blur(12px); transition: var(--transition); }
+    .mission-card:hover { border-color: rgba(139,92,246,0.25); transform: translateY(-3px); box-shadow: 0 12px 40px rgba(139,92,246,0.06); }
+    .mission-card-icon { font-size: 1.5rem; margin-bottom: 14px; }
+    .mission-card h3 { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .mission-card p { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.7; }
 
-    /* Glass cards */
-    .glass-card { background: rgba(13,18,41,0.55); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-lg); transition: var(--transition); }
-
-    /* Page content */
-    .page-header { text-align: center; padding: 80px 0 40px; }
-    .page-header h1 { font-family: 'Outfit', sans-serif; font-weight: 900; font-size: clamp(2.4rem, 5vw, 3.5rem); color: #fff; margin-bottom: 16px; }
-    .page-header p { font-size: 1.1rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto; line-height: 1.7; }
-
-    .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 48px; }
-    .about-card { padding: 40px; }
-    .about-card h3 { font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 700; color: #fff; margin-bottom: 12px; }
-    .about-card p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7; }
-
-    .mission-section { max-width: 800px; margin: 0 auto; text-align: center; }
-    .mission-section h2 { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 20px; }
-    .mission-section p { font-size: 1rem; color: var(--text-secondary); line-height: 1.8; margin-bottom: 16px; }
-
-    .team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-top: 48px; }
-    .team-card { padding: 32px; text-align: center; }
-    .team-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, var(--teal-400), var(--violet-500)); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 1.8rem; }
+    /* Team */
+    .team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-top: 32px; }
+    .team-card { padding: 28px 24px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); text-align: center; transition: var(--transition); }
+    .team-card:hover { border-color: rgba(139,92,246,0.25); transform: translateY(-3px); }
+    .team-avatar { width: 72px; height: 72px; margin: 0 auto 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(52,211,153,0.1)); border: 2px solid rgba(139,92,246,0.2); }
     .team-name { font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
-    .team-role { font-size: 0.8rem; color: var(--text-secondary); letter-spacing: 0.06em; text-transform: uppercase; }
+    .team-role { font-size: 0.75rem; color: var(--violet-400); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+    .team-bio { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6; }
 
-    .values-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 48px; }
-    .value-card { padding: 32px; text-align: center; }
-    .value-icon { font-size: 2rem; margin-bottom: 16px; }
-    .value-card h4 { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
-    .value-card p { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; }
+    /* Values */
+    .values-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-top: 32px; }
+    .value-card { display: flex; align-items: flex-start; gap: 14px; padding: 20px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); transition: var(--transition); }
+    .value-card:hover { border-color: rgba(139,92,246,0.2); }
+    .value-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; }
+    .value-info h4 { font-family: 'Outfit', sans-serif; font-size: 0.9rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .value-info p { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6; }
 
-    .contact-section { text-align: center; margin-top: 60px; padding: 48px; border-radius: var(--radius-lg); background: rgba(20,184,166,0.04); border: 1px solid rgba(20,184,166,0.12); }
-    .contact-section h3 { font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 12px; }
-    .contact-section p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7; }
-    .contact-section a { color: var(--teal-300); text-decoration: underline; text-underline-offset: 3px; }
+    /* Roadmap */
+    .roadmap { position: relative; padding-left: 32px; margin-top: 32px; }
+    .roadmap::before { content: ''; position: absolute; left: 12px; top: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, var(--violet-500), var(--emerald-400), var(--amber-400)); border-radius: 2px; opacity: 0.3; }
+    .roadmap-item { position: relative; padding: 20px 0; }
+    .roadmap-dot { position: absolute; left: -26px; top: 24px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid; }
+    .roadmap-dot.done { background: var(--emerald-400); border-color: rgba(52,211,153,0.4); box-shadow: 0 0 8px rgba(52,211,153,0.3); }
+    .roadmap-dot.current { background: var(--violet-400); border-color: rgba(139,92,246,0.4); box-shadow: 0 0 8px rgba(139,92,246,0.3); animation: pulse-dot 2s infinite; }
+    .roadmap-dot.upcoming { background: transparent; border-color: var(--text-muted); }
+    @keyframes pulse-dot { 0%, 100% { box-shadow: 0 0 8px rgba(139,92,246,0.3); } 50% { box-shadow: 0 0 16px rgba(139,92,246,0.5); } }
+    .roadmap-phase { font-size: 0.62rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+    .roadmap-title { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .roadmap-desc { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6; }
+
+    /* Conservation */
+    .conservation-banner { padding: 32px; background: linear-gradient(135deg, rgba(52,211,153,0.06), rgba(139,92,246,0.04)); border: 1px solid rgba(52,211,153,0.15); border-radius: var(--radius-lg); margin-top: 32px; display: flex; align-items: flex-start; gap: 20px; }
+    .conservation-icon { width: 56px; height: 56px; border-radius: 14px; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
+    .conservation-text h3 { font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .conservation-text p { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.7; }
+
+    /* Tech Stack */
+    .tech-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
+    .tech-chip { padding: 6px 14px; border-radius: 20px; font-size: 0.68rem; font-weight: 600; color: var(--text-secondary); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+
+    /* Section titles */
+    .section-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--violet-400); margin-bottom: 8px; }
+    .section-title { font-family: 'Outfit', sans-serif; font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800; color: var(--text-primary); margin-bottom: 12px; }
+    .section-desc { font-size: 0.92rem; color: var(--text-secondary); max-width: 600px; line-height: 1.7; }
 
     /* Footer */
-    .footer { border-top: 1px solid rgba(255,255,255,0.05); padding: 48px 0; background: rgba(6,8,20,0.8); }
-    .footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
-    .footer-links { display: flex; gap: 24px; }
-    .footer-links a { font-size: 0.8rem; color: var(--text-muted); transition: color 0.2s; }
-    .footer-links a:hover { color: var(--text-secondary); }
-    .footer-copy { font-size: 0.78rem; color: var(--text-muted); }
+    .footer { position: relative; z-index: 1; padding: 40px 0; border-top: 1px solid var(--glass-border); text-align: center; }
+    .footer p { font-size: 0.78rem; color: var(--text-muted); }
+    .footer-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 12px; flex-wrap: wrap; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-secondary); transition: color 0.2s; }
+    .footer-links a:hover { color: var(--violet-300); }
 
+    /* Responsive */
     @media (max-width: 768px) {
-      .about-grid, .values-grid { grid-template-columns: 1fr; }
       .nav-links { display: none; }
+      .hero { padding: 48px 0 32px; }
+      .section { padding: 40px 0; }
+      .mission-grid { grid-template-columns: 1fr; }
+      .team-grid { grid-template-columns: 1fr; }
+      .values-grid { grid-template-columns: 1fr; }
+      .conservation-banner { flex-direction: column; gap: 14px; padding: 24px; }
     }
   </style>
 </head>
 <body>
-
-  <div class="ambient-layer">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-  </div>
+  <div class="ambient-layer"><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
 
   <!-- Navigation -->
   <header class="nav">
@@ -150,171 +156,259 @@
       <a href="/" class="nav-logo">
         <div class="nav-logo-mark">
           <svg width="28" height="28" viewBox="0 0 38 38" fill="none">
-            <defs><linearGradient id="nav-g" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#5eead4"/><stop offset="50%" stop-color="#22d3ee"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs>
-            <circle cx="19" cy="19" r="15" stroke="url(#nav-g)" stroke-width="2.4" fill="none"/>
-            <path d="M19 4 C22.5 9.5, 24 14, 22.8 19 C21.6 24, 22.5 28.5, 19 34" stroke="url(#nav-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-            <path d="M19 4 C15.5 9.5, 14 14, 15.2 19 C16.4 24, 15.5 28.5, 19 34" stroke="url(#nav-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-            <path d="M4 19 C9.5 17, 14 16.2, 19 16.2 C24 16.2, 28.5 17, 34 19" stroke="#5eead4" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.9"/>
-            <path d="M4 19 C9.5 21, 14 21.8, 19 21.8 C24 21.8, 28.5 21, 34 19" stroke="#a78bfa" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.9"/>
-            <circle cx="19" cy="19" r="4" fill="url(#nav-g)"/>
-            <circle cx="17.5" cy="17.5" r="1.3" fill="#fff" opacity="0.7"/>
+            <defs><linearGradient id="ng" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#a78bfa"/><stop offset="50%" stop-color="#34d399"/><stop offset="100%" stop-color="#60a5fa"/></linearGradient></defs>
+            <circle cx="19" cy="19" r="15" stroke="url(#ng)" stroke-width="2.4" fill="none"/>
+            <path d="M19 4 C22.5 9.5,24 14,22.8 19 C21.6 24,22.5 28.5,19 34" stroke="url(#ng)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <path d="M19 4 C15.5 9.5,14 14,15.2 19 C16.4 24,15.5 28.5,19 34" stroke="url(#ng)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <circle cx="19" cy="19" r="4" fill="url(#ng)"/><circle cx="17.5" cy="17.5" r="1.3" fill="#fff" opacity="0.7"/>
           </svg>
         </div>
         <div>
           <span class="nav-logo-text">AQUACELLUM</span>
-          <span class="nav-logo-sub">Living Aquatic Registry</span>
+          <span class="nav-logo-sub">About</span>
         </div>
       </a>
       <ul class="nav-links">
-        <li><a href="/">Home</a></li>
-        <li><a href="/database">Database</a></li>
-        <li><a href="/reef">The Reef</a></li>
-        <li><a href="/about">About</a></li>
-        <li><a href="/legal">Legal</a></li>
+        <li><a href="/marketplace">Marketplace</a></li>
+        <li><a href="/database">Species Database</a></li>
+        <li><a href="/breeds">Breed Gallery</a></li>
+        <li><a href="/breeders">Find Breeders</a></li>
+        <li><a href="/how-it-works">How It Works</a></li>
       </ul>
-      <a href="/app.html" class="nav-cta">
-        <div class="pulse-dot"></div>
-        Open Logbook
-      </a>
+      <a href="/app" class="nav-cta">Open App</a>
     </nav>
   </header>
 
-  <!-- Page Header -->
-  <section class="page-header">
+  <!-- Hero -->
+  <section class="hero">
     <div class="container">
-      <h1 class="font-display">About <span class="text-gradient-teal">Aquacellum</span></h1>
-      <p>Built by fishkeepers, for fishkeepers. We're building the platform we wished existed when we started keeping tanks.</p>
+      <h1>Built by Fishkeepers,<br>for <span class="gradient-text">Fishkeepers</span></h1>
+      <p>We're building the platform we wished existed when we started keeping tanks. Transparent records, verified breeders, and a community rooted in trust — not hype.</p>
     </div>
   </section>
 
-  <!-- Mission -->
-  <section class="section" style="padding-top: 20px;">
+  <div class="section-divider"></div>
+  <!-- What We're Building -->
+  <section class="section">
     <div class="container">
-      <div class="mission-section">
-        <h2 class="font-display">Our Mission</h2>
-        <p>Aquacellum exists to bridge the gap between casual aquarium hobbyists and professional breeders through transparent record-keeping, verified lineage tracking, and a community built on trust.</p>
-        <p>We believe that every fishkeeper — from the person with a single betta on their desk to the operator running a multi-rack hatchery — deserves tools that respect their time, protect their data, and make the hobby more enjoyable.</p>
-        <p>A portion of every marketplace transaction is directed toward marine conservation initiatives, because preserving aquatic biodiversity in captivity only matters if we're also protecting it in the wild.</p>
-      </div>
+      <div class="section-label">🏗️ What We're Building</div>
+      <h2 class="section-title">One Platform, Every Side of the Hobby</h2>
+      <p class="section-desc">Whether you have a single betta on your desk or run a multi-rack hatchery, Aquacellum gives you tools that respect your time and protect your fish.</p>
 
-      <!-- What We're Building -->
-      <div class="about-grid">
-        <div class="about-card glass-card">
-          <h3>🐠 For Hobbyists</h3>
-          <p>A digital logbook that feels like a game, not a chore. Track your tanks, log water parameters with a single tap, discover compatible species, find trusted local sellers, and watch your companion Echo evolve alongside your care streak.</p>
+      <div class="mission-grid">
+        <div class="mission-card">
+          <div class="mission-card-icon">🐠</div>
+          <h3>For Hobbyists</h3>
+          <p>A digital logbook that feels like a game, not a chore. Track your tanks, log water parameters with a single tap, discover compatible species, and watch your companion Echo evolve alongside your care streak.</p>
         </div>
-        <div class="about-card glass-card">
-          <h3>🔬 For Breeders</h3>
-          <p>An operational terminal built for serious aquaculture. Encrypted pedigree records, facility-wide metrics, batch shipping logistics, fraud-resistant handshake verification, and expo-mode tools for high-volume swap meets.</p>
+        <div class="mission-card">
+          <div class="mission-card-icon">🔬</div>
+          <h3>For Breeders</h3>
+          <p>An operational terminal for serious aquaculture. Pedigree records, facility metrics, batch shipping logistics, fraud-resistant handshake verification, and expo-mode tools for swap meets.</p>
         </div>
-        <div class="about-card glass-card">
-          <h3>🌊 The Reef — Social Layer</h3>
-          <p>A living social network where every post, reaction, and conversation is tied to real aquaculture data. Share your tank updates, connect with local breeders, join Schools, attend Tides events, and build your reputation through genuine care.</p>
+        <div class="mission-card">
+          <div class="mission-card-icon">🛒</div>
+          <h3>Marketplace</h3>
+          <p>Buy and sell live fish with escrow protection. No more sending money to strangers and hoping for the best. Every transaction is protected from checkout to arrival.</p>
         </div>
-        <div class="about-card glass-card">
-          <h3>🧠 AI-Powered Intelligence</h3>
-          <p>Poseidon parses your natural-language notes into structured data. Echo responds emotionally to your tank's state. Together they make your aquarium feel genuinely alive — without requiring you to fill out forms or learn blockchain terminology.</p>
+        <div class="mission-card">
+          <div class="mission-card-icon">🧠</div>
+          <h3>AI Intelligence</h3>
+          <p>Poseidon parses your natural-language notes into structured data. Echo responds emotionally to your tank's state. Your aquarium feels genuinely alive — no forms required.</p>
         </div>
       </div>
     </div>
   </section>
+
+  <div class="section-divider"></div>
 
   <!-- Team -->
-  <section class="section" style="padding-top: 0;">
+  <section class="section">
     <div class="container">
-      <div style="text-align: center;">
-        <h2 class="font-display" style="font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 8px;">The Team</h2>
-        <p style="font-size: 0.95rem; color: var(--text-secondary);">Small team. Big tanks. Building in public.</p>
-      </div>
+      <div class="section-label">👥 The Team</div>
+      <h2 class="section-title">Small Team. Big Tanks.</h2>
+      <p class="section-desc">Building in public. Keeping fish in private. (Just kidding — we post our tanks on The Reef too.)</p>
 
       <div class="team-grid">
-        <div class="team-card glass-card">
+        <div class="team-card">
           <div class="team-avatar">🐟</div>
           <div class="team-name">GGSteve92</div>
-          <div class="team-role">Founder</div>
+          <div class="team-role">Co-Founder</div>
+          <div class="team-bio">Product vision & community. Keeping planted tanks since 2015. Believes every fish deserves a documented lineage and every hobbyist deserves better tools.</div>
         </div>
-        <div class="team-card glass-card">
+        <div class="team-card">
           <div class="team-avatar">🧬</div>
           <div class="team-name">McDermKev81</div>
-          <div class="team-role">Founder</div>
+          <div class="team-role">Co-Founder</div>
+          <div class="team-bio">Engineering & protocol design. Smart contracts, AI integrations, and the infrastructure that makes it all work without you needing to think about it.</div>
         </div>
-        <div class="team-card glass-card" style="opacity: 0.5;">
-          <div class="team-avatar" style="background: rgba(255,255,255,0.1);">?</div>
-          <div class="team-name" style="color: var(--text-secondary);">TBD</div>
+        <div class="team-card" style="opacity:0.6;">
+          <div class="team-avatar" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);">?</div>
+          <div class="team-name" style="color:var(--text-secondary);">Open Role</div>
           <div class="team-role">Third Co-Founder</div>
+          <div class="team-bio">We're looking for a third co-founder who bleeds aquaculture and wants to help shape the future of this hobby. Reach out if that's you.</div>
         </div>
       </div>
     </div>
   </section>
 
+  <div class="section-divider"></div>
   <!-- Values -->
-  <section class="section" style="padding-top: 0;">
+  <section class="section">
     <div class="container">
-      <div style="text-align: center; margin-bottom: 8px;">
-        <h2 class="font-display" style="font-size: 2rem; font-weight: 800; color: #fff;">What We Stand For</h2>
-      </div>
+      <div class="section-label">💎 What We Stand For</div>
+      <h2 class="section-title">Our Principles</h2>
+
       <div class="values-grid">
-        <div class="value-card glass-card">
+        <div class="value-card">
           <div class="value-icon">🔒</div>
-          <h4>Privacy First</h4>
-          <p>Your facility location is fuzzed. Your data stays local until you choose to publish. No tracking, no analytics, no selling your information.</p>
+          <div class="value-info">
+            <h4>Privacy First</h4>
+            <p>Your facility location is fuzzed. Your data stays local until you choose to publish. No tracking, no analytics, no selling your information.</p>
+          </div>
         </div>
-        <div class="value-card glass-card">
+        <div class="value-card">
           <div class="value-icon">🌍</div>
-          <h4>Conservation Backed</h4>
-          <p>A portion of marketplace fees funds marine conservation initiatives. Preserving captive biodiversity means protecting wild populations too.</p>
+          <div class="value-info">
+            <h4>Conservation Backed</h4>
+            <p>A percentage of marketplace fees funds aquatic conservation. Preserving captive biodiversity means protecting wild populations too.</p>
+          </div>
         </div>
-        <div class="value-card glass-card">
+        <div class="value-card">
           <div class="value-icon">🤝</div>
-          <h4>Community Driven</h4>
-          <p>Species catalog additions are community-proposed and AI-audited. The platform grows with its users, not ahead of them.</p>
+          <div class="value-info">
+            <h4>Community Driven</h4>
+            <p>Species catalog additions are community-proposed and AI-audited. The platform grows with its users, not ahead of them.</p>
+          </div>
         </div>
-        <div class="value-card glass-card">
+        <div class="value-card">
           <div class="value-icon">⚡</div>
-          <h4>Local-First</h4>
-          <p>Everything works offline. Your tanks, logs, and species data live on your device first. The network is a bonus, not a requirement.</p>
+          <div class="value-info">
+            <h4>Local-First</h4>
+            <p>Everything works offline. Your tanks, logs, and species data live on your device first. The network is a bonus, not a requirement.</p>
+          </div>
         </div>
-        <div class="value-card glass-card">
+        <div class="value-card">
           <div class="value-icon">🎮</div>
-          <h4>Fun, Not Friction</h4>
-          <p>Logging a water change should feel rewarding, not tedious. We build tools that make good husbandry habits feel like second nature.</p>
+          <div class="value-info">
+            <h4>Fun, Not Friction</h4>
+            <p>Logging a water change should feel rewarding, not tedious. We build tools that make good husbandry habits feel natural.</p>
+          </div>
         </div>
-        <div class="value-card glass-card">
+        <div class="value-card">
           <div class="value-icon">🔓</div>
-          <h4>Open & Transparent</h4>
-          <p>Open-source protocol. Public smart contracts. Verifiable on-chain records. Trust through transparency, not authority.</p>
+          <div class="value-info">
+            <h4>Open & Transparent</h4>
+            <p>Open-source protocol. Public smart contracts. Verifiable on-chain records. Trust through transparency, not authority.</p>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Contact -->
-  <section class="section" style="padding-top: 0; padding-bottom: 80px;">
+  <div class="section-divider"></div>
+
+  <!-- Conservation -->
+  <section class="section">
     <div class="container">
-      <div class="contact-section">
-        <h3>Get in Touch</h3>
-        <p>Questions, feedback, partnership inquiries, or just want to talk fish?</p>
-        <p style="margin-top: 12px;">
-          Email us at <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a>
-        </p>
-        <p style="margin-top: 8px; font-size: 0.82rem; color: var(--text-muted);">
-          Bug reports and feature requests are also welcome at that address during beta.
-        </p>
+      <div class="section-label">🌊 Conservation</div>
+      <h2 class="section-title">Every Sale Protects the Wild</h2>
+      <p class="section-desc">We're not just building a marketplace. We're funding the preservation of the ecosystems our fish come from.</p>
+
+      <div class="conservation-banner">
+        <div class="conservation-icon">🌿</div>
+        <div class="conservation-text">
+          <h3>Direct Conservation Funding</h3>
+          <p>A percentage of every 4% platform fee goes directly to freshwater habitat preservation and species conservation programs. When you buy or sell on Aquacellum, you're funding real-world protection of aquatic ecosystems. We believe the hobby and conservation aren't at odds — responsible captive breeding reduces pressure on wild populations, and our marketplace makes it economically viable for breeders to do it right.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+  <!-- Roadmap -->
+  <section class="section">
+    <div class="container">
+      <div class="section-label">🗺️ Roadmap</div>
+      <h2 class="section-title">Where We're Headed</h2>
+      <p class="section-desc">Building incrementally. Shipping constantly. Here's what's done, what's live, and what's next.</p>
+
+      <div class="roadmap">
+        <div class="roadmap-item">
+          <div class="roadmap-dot done"></div>
+          <div class="roadmap-phase">Phase 1 — Foundation</div>
+          <div class="roadmap-title">Species Database & Logbook</div>
+          <div class="roadmap-desc">326+ species validated against FishBase. Local-first tank logbook with offline sync. AI companion Echo. Water parameter tracking.</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-dot done"></div>
+          <div class="roadmap-phase">Phase 2 — Community</div>
+          <div class="roadmap-title">The Reef Social Layer & Breeder Tools</div>
+          <div class="roadmap-desc">Social feed for tank updates. Breeder hatchery logs with grow-out tracking. Spawn recording and pedigree trees. Storefront pages.</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-dot current"></div>
+          <div class="roadmap-phase">Phase 3 — Marketplace (Current)</div>
+          <div class="roadmap-title">Escrow-Protected Commerce</div>
+          <div class="roadmap-desc">Smart contract marketplace with live-arrival guarantee. Verified breeder identity. Stripe + crypto payments. Shipping coordination and DOA protection.</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-dot upcoming"></div>
+          <div class="roadmap-phase">Phase 4 — Scale</div>
+          <div class="roadmap-title">Mobile App & Conservation Partnerships</div>
+          <div class="roadmap-desc">Native iOS/Android app. Formal conservation partnerships. Expanded species database with invertebrates and plants. International shipping support.</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-dot upcoming"></div>
+          <div class="roadmap-phase">Phase 5 — Future</div>
+          <div class="roadmap-title">Governance & Protocol Expansion</div>
+          <div class="roadmap-desc">Community governance for species catalog curation. Cross-chain support. Wholesale/retail tiers. API for third-party integrations. Aquaculture data marketplace.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+
+  <!-- Tech Stack -->
+  <section class="section">
+    <div class="container">
+      <div class="section-label">⚙️ Under the Hood</div>
+      <h2 class="section-title">Tech Stack</h2>
+      <p class="section-desc">Modern, performant, and built to last. The blockchain is the infrastructure — not the user experience.</p>
+
+      <div class="tech-chips">
+        <span class="tech-chip">React 18</span>
+        <span class="tech-chip">Vite</span>
+        <span class="tech-chip">Supabase</span>
+        <span class="tech-chip">Base L2 (Ethereum)</span>
+        <span class="tech-chip">Solidity</span>
+        <span class="tech-chip">Privy Auth</span>
+        <span class="tech-chip">Vertex AI</span>
+        <span class="tech-chip">Dexie (IndexedDB)</span>
+        <span class="tech-chip">Vercel Edge</span>
+        <span class="tech-chip">Stripe</span>
+        <span class="tech-chip">Mux Video</span>
+        <span class="tech-chip">Three.js / WebXR</span>
+        <span class="tech-chip">FishBase API</span>
+        <span class="tech-chip">WoRMS Validation</span>
       </div>
     </div>
   </section>
 
   <!-- Footer -->
   <footer class="footer">
-    <div class="footer-inner">
+    <div class="container">
       <div class="footer-links">
-        <a href="/about">About</a>
-        <a href="/legal#terms">Terms of Service</a>
-        <a href="/legal#privacy">Privacy Policy</a>
-        <a href="/legal#beta">Beta Terms</a>
-        <a href="/legal#community">Community Guidelines</a>
+        <a href="/">Home</a>
+        <a href="/marketplace">Marketplace</a>
+        <a href="/database">Species Database</a>
+        <a href="/breeds">Breed Gallery</a>
+        <a href="/breeders">Find Breeders</a>
+        <a href="/how-it-works">How It Works</a>
+        <a href="/legal">Legal</a>
       </div>
-      <div class="footer-copy">&copy; 2026 Aquacellum. All rights reserved.</div>
+      <p>&copy; 2026 Aquacellum Protocol. All rights reserved.</p>
     </div>
   </footer>
 

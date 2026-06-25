@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How It Works — Aquacellum Marketplace</title>
+  <meta name="description" content="Learn how buying live fish on Aquacellum works. Escrow-protected payments, live-arrival guarantees, transparent pricing, and step-by-step purchasing guide.">
+  <meta name="keywords" content="how to buy fish online, aquarium fish escrow, live fish shipping guarantee, aquacellum marketplace guide, buy aquarium fish safely">
+  <meta property="og:title" content="How It Works — Aquacellum Marketplace">
+  <meta property="og:description" content="Smart-contract escrow, live-arrival guarantees, and verified breeders. See exactly how your purchase is protected from checkout to tank.">
+  <meta property="og:type" content="website">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* =========================================
+       HOW IT WORKS — DESIGN SYSTEM
+       Bridging violet marketplace + teal brand
+    ========================================= */
+    :root {
+      --bg-void:      #060710;
+      --bg-deep:      #0a0b14;
+      --bg-surface:   #0f1020;
+      --violet-100:   #ede9fe;
+      --violet-200:   #ddd6fe;
+      --violet-300:   #c4b5fd;
+      --violet-400:   #a78bfa;
+      --violet-500:   #8b5cf6;
+      --violet-600:   #7c3aed;
+      --purple-300:   #d8b4fe;
+      --purple-400:   #c084fc;
+      --purple-500:   #a855f7;
+      --emerald-300:  #6ee7b7;
+      --emerald-400:  #34d399;
+      --emerald-500:  #10b981;
+      --teal-300:     #5eead4;
+      --teal-400:     #2dd4bf;
+      --cyan-300:     #67e8f9;
+      --cyan-400:     #22d3ee;
+      --amber-300:    #fcd34d;
+      --amber-400:    #fbbf24;
+      --rose-400:     #fb7185;
+      --blue-400:     #60a5fa;
+      --text-primary: #f5f3ff;
+      --text-secondary: #a8a0c4;
+      --text-muted:   #4a3f6b;
+      --glass-bg:     rgba(15, 12, 31, 0.7);
+      --glass-border: rgba(167, 139, 250, 0.1);
+      --radius-sm: 12px;
+      --radius-md: 18px;
+      --radius-lg: 24px;
+      --radius-xl: 32px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-void);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: inherit; border: none; background: none; }
+
+    /* =========================================
+       AMBIENT BACKGROUND
+    ========================================= */
+    .ambient-layer { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(120px); animation: orb-drift 18s ease-in-out infinite; }
+    .orb-1 { width: 550px; height: 550px; background: radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%); top: -180px; left: -100px; }
+    .orb-2 { width: 450px; height: 450px; background: radial-gradient(circle, rgba(52,211,153,0.08) 0%, transparent 70%); bottom: -100px; right: -80px; animation-delay: -6s; }
+    .orb-3 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(96,165,250,0.06) 0%, transparent 70%); top: 50%; left: 40%; animation-delay: -12s; }
+    @keyframes orb-drift {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -20px) scale(1.05); }
+      66% { transform: translate(-20px, 15px) scale(0.95); }
+    }
+
+    /* =========================================
+       NAVIGATION
+    ========================================= */
+    .nav { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(20px) saturate(1.4); background: rgba(6,7,16,0.88); border-bottom: 1px solid var(--glass-border); padding: 0 24px; }
+    .nav-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; }
+    .nav-logo { display: flex; align-items: center; gap: 12px; }
+    .nav-logo-mark { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(52,211,153,0.1)); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; box-shadow: 0 0 20px rgba(139,92,246,0.25); transition: var(--transition); }
+    .nav-logo-mark:hover { box-shadow: 0 0 30px rgba(139,92,246,0.4); transform: scale(1.05); }
+    .nav-logo-text { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1rem; letter-spacing: 0.1em; color: #fff; }
+    .nav-logo-sub { display: block; font-size: 9px; letter-spacing: 0.15em; color: var(--violet-400); font-weight: 600; text-transform: uppercase; margin-top: -2px; }
+    .nav-links { display: flex; align-items: center; gap: 20px; list-style: none; }
+    .nav-links a { font-size: 0.82rem; font-weight: 500; color: var(--text-secondary); transition: color 0.2s; }
+    .nav-links a:hover { color: var(--violet-300); }
+    .nav-cta { display: flex; align-items: center; gap: 8px; padding: 9px 20px; font-size: 0.82rem; font-weight: 600; color: #fff; background: linear-gradient(135deg, var(--violet-600), var(--purple-500)); border-radius: 10px; transition: var(--transition); }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(139,92,246,0.3); }
+    /* =========================================
+       CONTAINER & HERO
+    ========================================= */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+    .hero { position: relative; padding: 80px 0 60px; text-align: center; overflow: hidden; }
+    .hero::before {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      width: 700px; height: 700px; transform: translate(-50%, -50%);
+      background: radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 60%);
+      animation: hero-pulse 6s ease-in-out infinite; pointer-events: none;
+    }
+    @keyframes hero-pulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 50% { transform: translate(-50%, -50%) scale(1.12); opacity: 0.7; } }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 18px; font-size: 0.72rem; font-weight: 600;
+      color: var(--emerald-300); background: rgba(52,211,153,0.08);
+      border: 1px solid rgba(52,211,153,0.2); border-radius: 50px;
+      margin-bottom: 24px; backdrop-filter: blur(8px);
+    }
+    .hero h1 {
+      font-family: 'Outfit', sans-serif; font-size: clamp(2.2rem, 5vw, 3.2rem);
+      font-weight: 900; letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 20px;
+      background: linear-gradient(135deg, #fff 0%, var(--violet-200) 50%, var(--teal-300) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero-subtitle { font-size: 1.05rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto 40px; line-height: 1.7; }
+
+    /* Trust numbers */
+    .trust-numbers { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; }
+    .trust-num { text-align: center; }
+    .trust-num-value { font-family: 'Outfit', sans-serif; font-size: 1.6rem; font-weight: 800; background: linear-gradient(135deg, var(--violet-300), var(--emerald-300)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .trust-num-label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-top: 4px; }
+
+    /* =========================================
+       SECTION COMMONS
+    ========================================= */
+    .section { padding: 60px 0; position: relative; z-index: 1; }
+    .section-divider { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, var(--glass-border), transparent); margin: 0; }
+    .section-label {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em;
+      color: var(--violet-400); margin-bottom: 12px;
+    }
+    .section-title { font-family: 'Outfit', sans-serif; font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800; color: var(--text-primary); margin-bottom: 16px; line-height: 1.2; }
+    .section-desc { font-size: 0.95rem; color: var(--text-secondary); max-width: 600px; line-height: 1.7; margin-bottom: 40px; }
+    /* =========================================
+       STEPS TIMELINE
+    ========================================= */
+    .steps-grid { display: flex; flex-direction: column; gap: 0; position: relative; }
+    .steps-grid::before {
+      content: ''; position: absolute; left: 32px; top: 40px; bottom: 40px;
+      width: 2px; background: linear-gradient(180deg, var(--violet-500), var(--emerald-400), var(--violet-500));
+      border-radius: 2px; opacity: 0.3;
+    }
+    .step {
+      display: flex; gap: 24px; align-items: flex-start; padding: 28px 0;
+      position: relative;
+    }
+    .step-number {
+      width: 64px; height: 64px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 800;
+      background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(52,211,153,0.1));
+      border: 2px solid rgba(139,92,246,0.25); color: var(--violet-300);
+      position: relative; z-index: 2;
+      box-shadow: 0 0 20px rgba(139,92,246,0.1);
+      transition: var(--transition);
+    }
+    .step:hover .step-number { border-color: var(--violet-400); box-shadow: 0 0 30px rgba(139,92,246,0.2); transform: scale(1.05); }
+    .step-content { flex: 1; padding-top: 8px; }
+    .step-title { font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .step-desc { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7; max-width: 520px; }
+    .step-note {
+      margin-top: 10px; padding: 10px 14px; border-radius: 10px;
+      background: rgba(139,92,246,0.04); border: 1px solid rgba(139,92,246,0.12);
+      font-size: 0.75rem; color: var(--text-secondary); line-height: 1.5;
+    }
+    .step-note strong { color: var(--violet-300); }
+
+    /* =========================================
+       ESCROW DIAGRAM
+    ========================================= */
+    .escrow-visual {
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+      padding: 40px 24px; margin: 32px 0;
+      background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg); backdrop-filter: blur(12px);
+      flex-wrap: wrap;
+    }
+    .escrow-node {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      padding: 16px 20px; min-width: 120px;
+    }
+    .escrow-icon {
+      width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; transition: var(--transition);
+    }
+    .escrow-icon-buyer { background: rgba(96,165,250,0.12); border: 1px solid rgba(96,165,250,0.25); }
+    .escrow-icon-contract { background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.3); animation: contract-glow 3s ease-in-out infinite; }
+    @keyframes contract-glow { 0%, 100% { box-shadow: 0 0 12px rgba(139,92,246,0.1); } 50% { box-shadow: 0 0 28px rgba(139,92,246,0.25); } }
+    .escrow-icon-seller { background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.25); }
+    .escrow-label { font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); text-align: center; }
+    .escrow-sublabel { font-size: 0.62rem; color: var(--text-muted); text-align: center; }
+    .escrow-arrow {
+      font-size: 1.2rem; color: var(--text-muted); opacity: 0.6;
+      animation: arrow-pulse 2s ease-in-out infinite;
+    }
+    @keyframes arrow-pulse { 0%, 100% { opacity: 0.4; transform: translateX(0); } 50% { opacity: 0.8; transform: translateX(3px); } }
+    /* =========================================
+       PRICING TABLE
+    ========================================= */
+    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 32px; }
+    .pricing-card {
+      padding: 28px 24px; background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg); backdrop-filter: blur(12px); transition: var(--transition);
+      position: relative; overflow: hidden;
+    }
+    .pricing-card:hover { border-color: rgba(139,92,246,0.25); transform: translateY(-3px); box-shadow: 0 12px 40px rgba(139,92,246,0.08); }
+    .pricing-card-icon { font-size: 1.5rem; margin-bottom: 14px; }
+    .pricing-card-title { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .pricing-card-value {
+      font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--emerald-300), var(--teal-300));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: 10px;
+    }
+    .pricing-card-desc { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6; }
+    .pricing-card-note { font-size: 0.65rem; color: var(--text-muted); margin-top: 10px; font-style: italic; }
+    .pricing-card.featured { border-color: rgba(139,92,246,0.3); }
+    .pricing-card.featured::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--violet-500), var(--purple-400), var(--emerald-400));
+    }
+
+    /* Fee breakdown list */
+    .fee-breakdown { margin-top: 24px; }
+    .fee-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 14px 18px; border-radius: 10px; margin-bottom: 8px;
+      background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04);
+      transition: var(--transition);
+    }
+    .fee-row:hover { background: rgba(139,92,246,0.03); border-color: rgba(139,92,246,0.1); }
+    .fee-row-left { display: flex; align-items: center; gap: 10px; }
+    .fee-row-icon { font-size: 1rem; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: rgba(255,255,255,0.03); }
+    .fee-row-label { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); }
+    .fee-row-desc { font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; }
+    .fee-row-value { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 700; color: var(--emerald-300); white-space: nowrap; }
+    .fee-row-free { color: var(--emerald-400); }
+    .fee-total {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 18px; border-radius: 12px; margin-top: 12px;
+      background: linear-gradient(135deg, rgba(139,92,246,0.06), rgba(52,211,153,0.04));
+      border: 1px solid rgba(139,92,246,0.15);
+    }
+    .fee-total-label { font-size: 0.85rem; font-weight: 700; color: #fff; }
+    .fee-total-value { font-family: 'JetBrains Mono', monospace; font-size: 1rem; font-weight: 700; color: var(--emerald-300); }
+    /* =========================================
+       GUARANTEE CARDS
+    ========================================= */
+    .guarantee-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .guarantee-card {
+      padding: 28px 24px; background: var(--glass-bg); border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg); backdrop-filter: blur(12px); transition: var(--transition);
+    }
+    .guarantee-card:hover { border-color: rgba(52,211,153,0.25); transform: translateY(-3px); box-shadow: 0 12px 40px rgba(52,211,153,0.06); }
+    .guarantee-card-icon { font-size: 1.8rem; margin-bottom: 14px; }
+    .guarantee-card-title { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .guarantee-card-desc { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.7; }
+    .guarantee-card-list { list-style: none; margin-top: 12px; }
+    .guarantee-card-list li { font-size: 0.78rem; color: var(--text-secondary); padding: 4px 0; padding-left: 16px; position: relative; line-height: 1.5; }
+    .guarantee-card-list li::before { content: '✓'; position: absolute; left: 0; color: var(--emerald-400); font-weight: 700; font-size: 0.7rem; }
+
+    /* =========================================
+       FAQ ACCORDION
+    ========================================= */
+    .faq-list { display: flex; flex-direction: column; gap: 8px; max-width: 800px; }
+    .faq-item { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); overflow: hidden; transition: var(--transition); }
+    .faq-item:hover { border-color: rgba(139,92,246,0.2); }
+    .faq-item.open { border-color: rgba(139,92,246,0.25); background: rgba(139,92,246,0.03); }
+    .faq-question {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 18px 20px; cursor: pointer; user-select: none;
+      font-size: 0.88rem; font-weight: 600; color: var(--text-primary);
+      transition: color 0.2s;
+    }
+    .faq-question:hover { color: var(--violet-300); }
+    .faq-toggle { font-size: 1.2rem; color: var(--text-muted); transition: transform 0.3s; flex-shrink: 0; }
+    .faq-item.open .faq-toggle { transform: rotate(45deg); color: var(--violet-400); }
+    .faq-answer {
+      max-height: 0; overflow: hidden; transition: max-height 0.4s ease, padding 0.3s ease;
+      padding: 0 20px;
+    }
+    .faq-item.open .faq-answer { max-height: 300px; padding: 0 20px 18px; }
+    .faq-answer p { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.7; }
+
+    /* =========================================
+       CTA BANNER
+    ========================================= */
+    .cta-banner {
+      text-align: center; padding: 60px 24px; margin: 40px 0;
+      background: linear-gradient(135deg, rgba(139,92,246,0.06), rgba(52,211,153,0.04));
+      border: 1px solid rgba(139,92,246,0.12); border-radius: var(--radius-xl);
+      position: relative; overflow: hidden;
+    }
+    .cta-banner::before {
+      content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+      background: radial-gradient(circle at 60% 40%, rgba(139,92,246,0.04) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .cta-banner h2 { font-family: 'Outfit', sans-serif; font-size: 1.6rem; font-weight: 800; color: #fff; margin-bottom: 12px; position: relative; }
+    .cta-banner p { font-size: 0.92rem; color: var(--text-secondary); margin-bottom: 28px; max-width: 480px; margin-left: auto; margin-right: auto; line-height: 1.6; position: relative; }
+    .cta-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 32px; font-size: 0.9rem; font-weight: 700; color: #fff;
+      background: linear-gradient(135deg, var(--violet-600), var(--purple-500));
+      border-radius: 12px; transition: var(--transition); position: relative;
+    }
+    .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(139,92,246,0.3); }
+    .cta-btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 28px; font-size: 0.85rem; font-weight: 600; color: var(--violet-300);
+      border: 1px solid rgba(139,92,246,0.3); border-radius: 12px;
+      margin-left: 12px; transition: var(--transition); position: relative;
+    }
+    .cta-btn-secondary:hover { background: rgba(139,92,246,0.08); border-color: rgba(139,92,246,0.5); }
+    /* =========================================
+       FOOTER
+    ========================================= */
+    .footer { position: relative; z-index: 1; padding: 40px 0; border-top: 1px solid var(--glass-border); text-align: center; }
+    .footer p { font-size: 0.78rem; color: var(--text-muted); }
+    .footer-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 12px; flex-wrap: wrap; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-secondary); transition: color 0.2s; }
+    .footer-links a:hover { color: var(--violet-300); }
+
+    /* =========================================
+       RESPONSIVE
+    ========================================= */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hero { padding: 48px 0 32px; }
+      .section { padding: 40px 0; }
+      .steps-grid::before { left: 24px; }
+      .step-number { width: 48px; height: 48px; font-size: 1rem; }
+      .step { gap: 16px; padding: 20px 0; }
+      .escrow-visual { flex-direction: column; gap: 12px; padding: 24px 16px; }
+      .escrow-arrow { transform: rotate(90deg); }
+      .pricing-grid { grid-template-columns: 1fr; }
+      .guarantee-grid { grid-template-columns: 1fr; }
+      .trust-numbers { gap: 24px; }
+      .cta-btn-secondary { margin-left: 0; margin-top: 12px; display: flex; }
+      .cta-banner { padding: 40px 16px; }
+    }
+    @media (max-width: 480px) {
+      .hero h1 { font-size: 1.8rem; }
+      .section-title { font-size: 1.3rem; }
+      .fee-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+      .fee-row-value { margin-left: 42px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Background -->
+  <div class="ambient-layer">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- ========== NAVIGATION ========== -->
+  <header class="nav">
+    <nav class="nav-inner">
+      <a href="/" class="nav-logo">
+        <div class="nav-logo-mark">
+          <svg width="28" height="28" viewBox="0 0 38 38" fill="none">
+            <defs><linearGradient id="nav-g" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#a78bfa"/><stop offset="50%" stop-color="#c084fc"/><stop offset="100%" stop-color="#60a5fa"/></linearGradient></defs>
+            <circle cx="19" cy="19" r="15" stroke="url(#nav-g)" stroke-width="2.4" fill="none"/>
+            <path d="M19 4 C22.5 9.5, 24 14, 22.8 19 C21.6 24, 22.5 28.5, 19 34" stroke="url(#nav-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <path d="M19 4 C15.5 9.5, 14 14, 15.2 19 C16.4 24, 15.5 28.5, 19 34" stroke="url(#nav-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <path d="M4 19 C9.5 17, 14 16.2, 19 16.2 C24 16.2, 28.5 17, 34 19" stroke="#a78bfa" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.9"/>
+            <path d="M4 19 C9.5 21, 14 21.8, 19 21.8 C24 21.8, 28.5 21, 34 19" stroke="#60a5fa" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.9"/>
+            <circle cx="19" cy="19" r="4" fill="url(#nav-g)"/>
+            <circle cx="17.5" cy="17.5" r="1.3" fill="#fff" opacity="0.7"/>
+          </svg>
+        </div>
+        <div>
+          <span class="nav-logo-text">AQUACELLUM</span>
+          <span class="nav-logo-sub">How It Works</span>
+        </div>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/marketplace">Marketplace</a></li>
+        <li><a href="/database">Species Database</a></li>
+        <li><a href="/breeds">Breed Gallery</a></li>
+        <li><a href="/breeders">Find Breeders</a></li>
+        <li><a href="/how-it-works">How It Works</a></li>
+      </ul>
+      <a href="/marketplace" class="nav-cta">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Browse Marketplace
+      </a>
+    </nav>
+  </header>
+  <!-- ========== HERO ========== -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge">🔒 Protected by Smart Contract Escrow</div>
+      <h1>Buy Live Fish Online<br>Without the Risk</h1>
+      <p class="hero-subtitle">
+        Every purchase on Aquacellum is protected by on-chain escrow. You never pay a seller directly — funds are locked until you confirm healthy arrival.
+      </p>
+      <div class="trust-numbers">
+        <div class="trust-num">
+          <div class="trust-num-value">0%</div>
+          <div class="trust-num-label">Buyer Fee</div>
+        </div>
+        <div class="trust-num">
+          <div class="trust-num-value">72hr</div>
+          <div class="trust-num-label">Arrival Window</div>
+        </div>
+        <div class="trust-num">
+          <div class="trust-num-value">100%</div>
+          <div class="trust-num-label">Refund on DOA</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+
+  <!-- ========== HOW BUYING WORKS ========== -->
+  <section class="section">
+    <div class="container">
+      <div class="section-label">📋 Step by Step</div>
+      <h2 class="section-title">How Buying Works</h2>
+      <p class="section-desc">From browsing to fish-in-tank, here's exactly what happens at every stage.</p>
+
+      <div class="steps-grid">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Browse & Discover</div>
+            <div class="step-desc">Explore the marketplace without an account. Filter by species, price, pedigree, or shipping availability. Every listing shows the breeder's verified identity and care parameters.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">Place Your Order</div>
+            <div class="step-desc">Found something you want? Open the app, connect your wallet (social login works too), and hit Purchase. Your payment is sent to the escrow smart contract — not to the seller.</div>
+            <div class="step-note"><strong>Note:</strong> Sellers cannot access your funds until you confirm receipt. They're locked on-chain.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">Seller Ships or Arranges Pickup</div>
+            <div class="step-desc">The breeder is notified and prepares your specimen. For shipped orders, they pack using insulated boxes with heat/cold packs and overnight delivery. Local orders are arranged for in-person handoff.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <div class="step-title">Receive & Inspect (72-Hour Window)</div>
+            <div class="step-desc">When your fish arrives, you have 72 hours to acclimate and inspect. If everything looks healthy, confirm receipt in the app and funds release to the seller.</div>
+            <div class="step-note"><strong>If there's a problem:</strong> Open a dispute within the 72-hour window. Provide photos/video and our resolution process kicks in automatically.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">5</div>
+          <div class="step-content">
+            <div class="step-title">Funds Release & Review</div>
+            <div class="step-desc">Once confirmed, the seller receives payment minus the 4% platform fee (a portion of which goes to aquatic conservation). You can leave a review that's permanently attached to their breeder profile. The specimen is minted to your logbook.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+  <!-- ========== ESCROW EXPLAINED ========== -->
+  <section class="section">
+    <div class="container">
+      <div class="section-label">🔐 The Safety Layer</div>
+      <h2 class="section-title">How Escrow Protects You</h2>
+      <p class="section-desc">Your money never goes directly to a stranger on the internet. It sits in a transparent smart contract that both parties can verify.</p>
+
+      <div class="escrow-visual">
+        <div class="escrow-node">
+          <div class="escrow-icon escrow-icon-buyer">🧑</div>
+          <div class="escrow-label">You (Buyer)</div>
+          <div class="escrow-sublabel">Sends payment</div>
+        </div>
+        <div class="escrow-arrow">→</div>
+        <div class="escrow-node">
+          <div class="escrow-icon escrow-icon-contract">📜</div>
+          <div class="escrow-label">Smart Contract</div>
+          <div class="escrow-sublabel">Holds funds securely</div>
+        </div>
+        <div class="escrow-arrow">→</div>
+        <div class="escrow-node">
+          <div class="escrow-icon escrow-icon-seller">🐟</div>
+          <div class="escrow-label">Breeder (Seller)</div>
+          <div class="escrow-sublabel">Receives after confirmation</div>
+        </div>
+      </div>
+
+      <div style="max-width:700px; margin-top: 32px;">
+        <div class="step-note" style="margin-bottom:12px;">
+          <strong>What happens if the fish arrives dead?</strong> Full refund, automatically. The escrow releases funds back to you. No arguing with a seller. No PayPal disputes. The contract handles it.
+        </div>
+        <div class="step-note" style="margin-bottom:12px;">
+          <strong>What if I don't confirm within 72 hours?</strong> After the window expires, funds auto-release to the seller. This prevents buyers from holding funds hostage. Make sure to inspect promptly.
+        </div>
+        <div class="step-note">
+          <strong>Can the seller take my money and not ship?</strong> No. They can't touch escrow funds until you confirm. If they never ship, you open a dispute and get refunded. The contract is publicly auditable on Base Sepolia.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+  <!-- ========== PRICING & FEES ========== -->
+  <section class="section">
+    <div class="container">
+      <div class="section-label">💰 Transparent Pricing</div>
+      <h2 class="section-title">Fees & Costs</h2>
+      <p class="section-desc">We believe in transparent pricing. Buyers pay nothing extra. Sellers pay a small platform fee that funds escrow infrastructure, breeder verification, and aquatic conservation efforts.</p>
+
+      <div class="pricing-grid">
+        <div class="pricing-card featured">
+          <div class="pricing-card-icon">🧑</div>
+          <div class="pricing-card-title">For Buyers</div>
+          <div class="pricing-card-value">$0 Platform Fee</div>
+          <div class="pricing-card-desc">You pay only the listing price plus any shipping fee set by the seller. Zero hidden costs, zero markup, zero service charges.</div>
+          <div class="pricing-card-note">What you see is what you pay.</div>
+        </div>
+        <div class="pricing-card">
+          <div class="pricing-card-icon">🐟</div>
+          <div class="pricing-card-title">For Sellers</div>
+          <div class="pricing-card-value">4% per sale</div>
+          <div class="pricing-card-desc">A flat 4% platform fee is deducted when escrow releases. A portion goes directly to aquatic conservation programs — every sale helps protect the species we love.</div>
+          <div class="pricing-card-note">Only charged on successful sales. No listing fees, no monthly subscription. Part of your fee funds real conservation.</div>
+        </div>
+        <div class="pricing-card">
+          <div class="pricing-card-icon">🚚</div>
+          <div class="pricing-card-title">Shipping</div>
+          <div class="pricing-card-value">Set by Seller</div>
+          <div class="pricing-card-desc">Each breeder sets their own shipping rate (usually $15–$45 depending on distance and weather). Local pickup orders have no shipping cost.</div>
+          <div class="pricing-card-note">Shipping fee is clearly shown before checkout.</div>
+        </div>
+      </div>
+
+      <!-- Example fee breakdown -->
+      <h3 style="font-family:'Outfit',sans-serif; font-size:1rem; font-weight:700; color:#fff; margin-bottom:16px; margin-top:40px;">🌊 Conservation Built In</h3>
+      <div class="fee-row" style="margin-bottom:32px; background:rgba(52,211,153,0.04); border-color:rgba(52,211,153,0.15);">
+        <div class="fee-row-left">
+          <div class="fee-row-icon" style="background:rgba(52,211,153,0.1);">🌿</div>
+          <div>
+            <div class="fee-row-label" style="color:var(--emerald-300);">Every Sale Funds Conservation</div>
+            <div class="fee-row-desc">A percentage of every platform fee is directed to aquatic habitat preservation and species conservation programs. When you buy or sell on Aquacellum, you're directly funding the protection of freshwater ecosystems.</div>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="font-family:'Outfit',sans-serif; font-size:1rem; font-weight:700; color:#fff; margin-bottom:16px;">Example: Buying a $35 Apistogramma</h3>
+      <div class="fee-breakdown">
+        <div class="fee-row">
+          <div class="fee-row-left">
+            <div class="fee-row-icon">🐟</div>
+            <div>
+              <div class="fee-row-label">Specimen Price</div>
+              <div class="fee-row-desc">Apistogramma cacatuoides — Triple Red</div>
+            </div>
+          </div>
+          <div class="fee-row-value">$35.00</div>
+        </div>
+        <div class="fee-row">
+          <div class="fee-row-left">
+            <div class="fee-row-icon">🚚</div>
+            <div>
+              <div class="fee-row-label">Shipping</div>
+              <div class="fee-row-desc">Overnight insulated — set by breeder</div>
+            </div>
+          </div>
+          <div class="fee-row-value">$25.00</div>
+        </div>
+        <div class="fee-row">
+          <div class="fee-row-left">
+            <div class="fee-row-icon">🏷️</div>
+            <div>
+              <div class="fee-row-label">Buyer Platform Fee</div>
+              <div class="fee-row-desc">Always zero for buyers</div>
+            </div>
+          </div>
+          <div class="fee-row-value fee-row-free">$0.00</div>
+        </div>
+        <div class="fee-row">
+          <div class="fee-row-left">
+            <div class="fee-row-icon">⛽</div>
+            <div>
+              <div class="fee-row-label">Gas / Network Fee</div>
+              <div class="fee-row-desc">We cover gas — you pay nothing</div>
+            </div>
+          </div>
+          <div class="fee-row-value fee-row-free">$0.00</div>
+        </div>
+        <div class="fee-total">
+          <div class="fee-total-label">Your Total</div>
+          <div class="fee-total-value">$60.00</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+  <!-- ========== GUARANTEES ========== -->
+  <section class="section">
+    <div class="container">
+      <div class="section-label">🛡️ Buyer Protection</div>
+      <h2 class="section-title">Our Guarantees</h2>
+      <p class="section-desc">We built Aquacellum because buying live fish online shouldn't feel like a gamble. Here's how we eliminate the risk.</p>
+
+      <div class="guarantee-grid">
+        <div class="guarantee-card">
+          <div class="guarantee-card-icon">🐟</div>
+          <div class="guarantee-card-title">Live Arrival Guarantee</div>
+          <div class="guarantee-card-desc">If your fish arrives dead or in critical condition, you receive a full refund from escrow. No questions, no runaround.</div>
+          <ul class="guarantee-card-list">
+            <li>Photo/video required within 1 hour of delivery</li>
+            <li>Full refund including shipping</li>
+            <li>Applies to all shipped orders automatically</li>
+          </ul>
+        </div>
+        <div class="guarantee-card">
+          <div class="guarantee-card-icon">🔒</div>
+          <div class="guarantee-card-title">Escrow-Locked Funds</div>
+          <div class="guarantee-card-desc">Your payment sits in an auditable smart contract. Sellers have zero access until you confirm the fish is healthy and acclimated.</div>
+          <ul class="guarantee-card-list">
+            <li>On-chain transparency — verify the contract yourself</li>
+            <li>72-hour inspection window after delivery</li>
+            <li>Automatic refund if seller never ships</li>
+          </ul>
+        </div>
+        <div class="guarantee-card">
+          <div class="guarantee-card-icon">✓</div>
+          <div class="guarantee-card-title">Verified Breeders Only</div>
+          <div class="guarantee-card-desc">Every seller on Aquacellum is identity-verified. No anonymous dropshippers, no pet store rejects, no imported wild-caught sold as tank-raised.</div>
+          <ul class="guarantee-card-list">
+            <li>Real hobbyists with verifiable breeding programs</li>
+            <li>Permanent on-chain review history</li>
+            <li>Trust scores visible on every listing</li>
+          </ul>
+        </div>
+        <div class="guarantee-card">
+          <div class="guarantee-card-icon">📦</div>
+          <div class="guarantee-card-title">Shipping Standards</div>
+          <div class="guarantee-card-desc">All shipped orders must meet our packing requirements. We don't allow USPS ground or uninsulated boxes during extreme weather.</div>
+          <ul class="guarantee-card-list">
+            <li>Insulated styro-lined boxes required</li>
+            <li>Heat packs in winter, cold packs in summer</li>
+            <li>Overnight or next-day delivery only</li>
+            <li>Weather delay holds available</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+  <!-- ========== FAQ ========== -->
+  <section class="section">
+    <div class="container">
+      <div class="section-label">❓ Common Questions</div>
+      <h2 class="section-title">Frequently Asked Questions</h2>
+      <p class="section-desc">Quick answers to the things most people ask before their first purchase.</p>
+
+      <div class="faq-list">
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>Do I need a crypto wallet to buy?</span>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p>You can sign in with Google, Apple, or email — a wallet is created for you behind the scenes. You never need to manage seed phrases or buy crypto directly. Payments are processed in USD and converted automatically.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>How do I pay? Do I need cryptocurrency?</span>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p>You can pay with a credit card via Stripe. The system handles the on-chain escrow deposit for you. If you prefer, you can also pay directly with ETH on Base. Either way, the escrow protection is identical.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>What if my fish arrives stressed but alive?</span>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p>Shipping stress is normal — most fish recover within 24-48 hours after proper acclimation. The 72-hour window gives you time to assess. If the fish dies within that window, the live arrival guarantee still applies. Document everything with photos.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>Can I buy from any state? Are there restrictions?</span>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p>Most freshwater species ship nationwide with no restrictions. Some states have regulations on certain species (e.g., snakeheads, certain crayfish). Breeders are responsible for knowing shipping restrictions. If a species can't ship to your state, the listing will indicate it.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>What happens during extreme weather?</span>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p>Sellers can place a weather hold on your order if temperatures at origin or destination are below 20°F or above 100°F. You'll be notified and shipping resumes when conditions improve. Your escrow remains locked and protected throughout the delay.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>How do I become a seller?</span>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p>Open the app, switch to Breeder mode, and complete identity verification. Once approved, you can list specimens from your logbook directly onto the marketplace. There's no listing fee — you only pay the 4% platform fee when a sale completes, and part of that goes to conservation.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>Is local pickup available?</span>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p>Yes. Many breeders offer local pickup with no shipping fee. Filter the marketplace by "Local Pickup" to find breeders near you. The escrow still applies — funds release after you inspect the fish in person and confirm in the app.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>What blockchain is this on? Do I need to care?</span>
+            <span class="faq-toggle">+</span>
+          </div>
+          <div class="faq-answer">
+            <p>Aquacellum runs on Base (an Ethereum L2). But you don't need to think about this at all. Gas fees are covered by us, wallet creation is automatic, and the escrow works in the background. The blockchain is the infrastructure — not the user experience.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="section-divider"></div>
+  <!-- ========== CTA BANNER ========== -->
+  <section class="section">
+    <div class="container">
+      <div class="cta-banner">
+        <h2>Ready to Browse?</h2>
+        <p>The marketplace has live listings from verified breeders right now. No account needed to look around.</p>
+        <a href="/marketplace" class="cta-btn">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          Browse Marketplace
+        </a>
+        <a href="/database" class="cta-btn-secondary">Explore Species Database</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/marketplace">Marketplace</a>
+        <a href="/database">Species Database</a>
+        <a href="/about">About</a>
+        <a href="/legal">Legal</a>
+        <a href="/app">Launch App</a>
+      </div>
+      <p>&copy; 2026 Aquacellum Protocol. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- ========== FAQ SCRIPT ========== -->
+  <script>
+    function toggleFaq(el) {
+      const item = el.closest('.faq-item');
+      const wasOpen = item.classList.contains('open');
+      // Close all others
+      document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+      // Toggle current
+      if (!wasOpen) item.classList.add('open');
+    }
+  </script>
+
+</body>
+</html>

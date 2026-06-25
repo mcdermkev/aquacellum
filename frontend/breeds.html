@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Breed Gallery — Aquacellum Lineage Registry</title>
+  <meta name="description" content="Explore verified breeding programs and lineage strains from Aquacellum's community of hobbyist breeders. Documented generations, spawn histories, and pedigree-tracked specimens.">
+  <meta name="keywords" content="fish breeding programs, aquarium lineage registry, pedigree fish, breed strains, aquacellum breeding, fish genetics, spawn history">
+  <meta property="og:title" content="Breed Gallery — Aquacellum Lineage Registry">
+  <meta property="og:description" content="Browse documented breeding programs from verified breeders. Every lineage tracked on-chain from spawn to sale.">
+  <meta property="og:type" content="website">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* =========================================
+       BREED GALLERY — DESIGN SYSTEM
+    ========================================= */
+    :root {
+      --bg-void:      #060710;
+      --bg-deep:      #0a0b14;
+      --bg-surface:   #0f1020;
+      --violet-200:   #ddd6fe;
+      --violet-300:   #c4b5fd;
+      --violet-400:   #a78bfa;
+      --violet-500:   #8b5cf6;
+      --violet-600:   #7c3aed;
+      --purple-300:   #d8b4fe;
+      --purple-400:   #c084fc;
+      --emerald-300:  #6ee7b7;
+      --emerald-400:  #34d399;
+      --teal-300:     #5eead4;
+      --teal-400:     #2dd4bf;
+      --cyan-300:     #67e8f9;
+      --cyan-400:     #22d3ee;
+      --amber-300:    #fcd34d;
+      --amber-400:    #fbbf24;
+      --rose-400:     #fb7185;
+      --blue-400:     #60a5fa;
+      --text-primary: #f5f3ff;
+      --text-secondary: #a8a0c4;
+      --text-muted:   #4a3f6b;
+      --glass-bg:     rgba(15, 12, 31, 0.7);
+      --glass-border: rgba(167, 139, 250, 0.1);
+      --radius-sm: 12px;
+      --radius-md: 18px;
+      --radius-lg: 24px;
+      --radius-xl: 32px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-void);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; font-family: inherit; border: none; background: none; }
+
+    /* Ambient */
+    .ambient-layer { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(120px); animation: orb-drift 18s ease-in-out infinite; }
+    .orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%); top: -150px; left: -80px; }
+    .orb-2 { width: 450px; height: 450px; background: radial-gradient(circle, rgba(52,211,153,0.07) 0%, transparent 70%); bottom: -120px; right: -100px; animation-delay: -6s; }
+    .orb-3 { width: 350px; height: 350px; background: radial-gradient(circle, rgba(251,191,36,0.05) 0%, transparent 70%); top: 45%; left: 55%; animation-delay: -12s; }
+    @keyframes orb-drift { 0%, 100% { transform: translate(0, 0) scale(1); } 33% { transform: translate(30px, -20px) scale(1.05); } 66% { transform: translate(-20px, 15px) scale(0.95); } }
+
+    /* Navigation */
+    .nav { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(20px) saturate(1.4); background: rgba(6,7,16,0.88); border-bottom: 1px solid var(--glass-border); padding: 0 24px; }
+    .nav-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; }
+    .nav-logo { display: flex; align-items: center; gap: 12px; }
+    .nav-logo-mark { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(52,211,153,0.1)); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; box-shadow: 0 0 20px rgba(139,92,246,0.25); }
+    .nav-logo-text { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1rem; letter-spacing: 0.1em; color: #fff; }
+    .nav-logo-sub { display: block; font-size: 9px; letter-spacing: 0.15em; color: var(--emerald-400); font-weight: 600; text-transform: uppercase; margin-top: -2px; }
+    .nav-links { display: flex; align-items: center; gap: 20px; list-style: none; }
+    .nav-links a { font-size: 0.82rem; font-weight: 500; color: var(--text-secondary); transition: color 0.2s; }
+    .nav-links a:hover { color: var(--violet-300); }
+    .nav-cta { display: flex; align-items: center; gap: 8px; padding: 9px 20px; font-size: 0.82rem; font-weight: 600; color: #fff; background: linear-gradient(135deg, var(--violet-600), var(--purple-400)); border-radius: 10px; transition: var(--transition); }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(139,92,246,0.3); }
+
+    /* Container & Hero */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+    .hero { padding: 80px 0 48px; text-align: center; position: relative; z-index: 1; }
+    .hero h1 { font-family: 'Outfit', sans-serif; font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; line-height: 1.15; margin-bottom: 16px; }
+    .gradient-text { background: linear-gradient(135deg, var(--violet-300), var(--emerald-300)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero p { font-size: 1.05rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto 32px; line-height: 1.7; }
+    .hero-stats { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; }
+    .hero-stat { text-align: center; }
+    .hero-stat-num { font-family: 'Outfit', sans-serif; font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, var(--violet-300), var(--emerald-300)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero-stat-label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-top: 4px; }
+    /* Filters Bar */
+    .filters-bar { max-width: 100%; margin: 0 auto 2.5rem; padding: 20px 24px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); backdrop-filter: blur(12px); display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; }
+    .search-wrap svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+    .search-input { width: 100%; padding: 10px 16px 10px 40px; font-size: 0.88rem; color: var(--text-primary); background: rgba(255,255,255,0.04); border: 1px solid rgba(167,139,250,0.15); border-radius: var(--radius-sm); outline: none; transition: var(--transition); }
+    .search-input:focus { border-color: var(--violet-500); box-shadow: 0 0 0 3px rgba(139,92,246,0.1); }
+    .search-input::placeholder { color: var(--text-muted); }
+    .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; }
+    .filter-chip { padding: 6px 12px; border-radius: 20px; font-size: 0.68rem; font-weight: 600; color: var(--text-muted); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .filter-chip:hover { color: var(--violet-300); border-color: rgba(139,92,246,0.25); background: rgba(139,92,246,0.06); }
+    .filter-chip.active { color: var(--violet-300); background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.3); }
+    .sort-chips { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; margin-top: 4px; }
+    .sort-chip { padding: 6px 14px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .sort-chip:hover { color: var(--text-secondary); border-color: rgba(255,255,255,0.12); }
+    .sort-chip.active { color: var(--violet-300); background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.25); }
+    .result-count { font-size: 0.75rem; color: var(--text-muted); margin-left: auto; white-space: nowrap; }
+
+    /* Breed Grid */
+    .breed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; margin-bottom: 3rem; position: relative; z-index: 1; }
+    .breed-card {
+      background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-lg);
+      backdrop-filter: blur(12px); overflow: hidden; cursor: pointer; transition: var(--transition);
+      opacity: 0; transform: translateY(20px);
+    }
+    .breed-card.visible { opacity: 1; transform: translateY(0); transition: transform 0.5s cubic-bezier(0.4,0,0.2,1), opacity 0.4s ease, box-shadow 0.3s ease, border-color 0.3s ease; }
+    .breed-card:hover { border-color: rgba(139,92,246,0.3); transform: translateY(-4px); box-shadow: 0 16px 48px rgba(139,92,246,0.08), 0 0 24px rgba(139,92,246,0.04); }
+
+    /* Card header with lineage tree visual */
+    .breed-card-header { position: relative; padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .breed-card-species { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 4px; }
+    .breed-card-strain { font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #fff; margin-bottom: 4px; }
+    .breed-card-sci { font-size: 0.72rem; font-style: italic; color: var(--violet-400); margin-bottom: 10px; }
+    .breed-card-gen-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; font-weight: 700; }
+    .gen-f1 { background: rgba(96,165,250,0.1); border: 1px solid rgba(96,165,250,0.25); color: var(--blue-400); }
+    .gen-f2 { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.25); color: var(--emerald-300); }
+    .gen-f3 { background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.25); color: var(--violet-300); }
+    .gen-f4 { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); color: var(--amber-300); }
+    .gen-wild { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); color: var(--amber-400); }
+    /* Lineage tree mini visual */
+    .lineage-mini { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding: 10px 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 10px; }
+    .lineage-node { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .lineage-node-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.55rem; font-weight: 700; color: #fff; }
+    .lineage-node-dot.sire { background: linear-gradient(135deg, var(--blue-400), var(--cyan-400)); }
+    .lineage-node-dot.dam { background: linear-gradient(135deg, var(--rose-400), var(--purple-400)); }
+    .lineage-node-dot.offspring { background: linear-gradient(135deg, var(--emerald-400), var(--teal-400)); }
+    .lineage-node-label { font-size: 0.5rem; color: var(--text-muted); font-weight: 600; }
+    .lineage-connector { width: 16px; height: 2px; background: rgba(255,255,255,0.1); position: relative; }
+    .lineage-connector::before { content: '→'; position: absolute; top: -7px; left: 4px; font-size: 0.6rem; color: var(--text-muted); }
+
+    /* Card body */
+    .breed-card-body { padding: 16px 20px 20px; }
+    .breed-card-stats { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
+    .breed-stat { display: flex; align-items: center; gap: 5px; }
+    .breed-stat-icon { font-size: 0.75rem; }
+    .breed-stat-value { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--text-primary); }
+    .breed-stat-label { font-size: 0.6rem; color: var(--text-muted); }
+
+    /* Breeder attribution */
+    .breed-card-breeder { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: rgba(139,92,246,0.03); border: 1px solid rgba(139,92,246,0.08); border-radius: 8px; }
+    .breed-breeder-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--violet-500), var(--purple-400)); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .breed-breeder-name { font-size: 0.75rem; font-weight: 600; color: #fff; }
+    .breed-breeder-label { font-size: 0.6rem; color: var(--text-muted); }
+    .breed-breeder-info { flex: 1; }
+
+    /* Traits */
+    .breed-card-traits { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px; }
+    .trait-chip { font-size: 0.58rem; font-weight: 600; padding: 3px 8px; border-radius: 10px; background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.15); color: var(--emerald-300); }
+
+    /* CTA */
+    .breed-card-cta { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 10px; margin-top: 12px; font-size: 0.72rem; font-weight: 600; color: var(--violet-300); background: rgba(139,92,246,0.06); border: 1px solid rgba(139,92,246,0.15); border-radius: 8px; transition: var(--transition); }
+    .breed-card-cta:hover { background: rgba(139,92,246,0.12); border-color: rgba(139,92,246,0.35); }
+    /* Detail Popup */
+    .popup-overlay { display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(6,5,15,0.92); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 24px; }
+    .popup-overlay.active { display: flex; }
+    .popup-card { width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; background: rgba(15,12,31,0.97); border: 1px solid rgba(167,139,250,0.2); border-radius: var(--radius-xl); backdrop-filter: blur(24px); box-shadow: 0 40px 100px rgba(0,0,0,0.5), 0 0 40px rgba(139,92,246,0.08); padding: 28px; transform: scale(0.95); transition: transform 0.3s ease; }
+    .popup-overlay.active .popup-card { transform: scale(1); }
+    .popup-close { position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); }
+    .popup-close:hover { background: rgba(139,92,246,0.3); }
+    .popup-header { margin-bottom: 20px; }
+    .popup-species-label { font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 4px; }
+    .popup-strain { font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 800; color: #fff; margin-bottom: 4px; }
+    .popup-sci { font-size: 0.85rem; font-style: italic; color: var(--violet-400); }
+    .popup-section { margin-bottom: 20px; }
+    .popup-section-title { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--violet-400); margin-bottom: 10px; }
+    .popup-params { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .popup-param { padding: 10px 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; }
+    .popup-param-label { font-size: 0.6rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+    .popup-param-value { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--text-primary); }
+    /* Lineage tree in popup */
+    .lineage-tree { padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; }
+    .lineage-tree-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .lineage-tree-row:last-child { margin-bottom: 0; }
+    .lt-node { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .lt-node.sire { background: linear-gradient(135deg, var(--blue-400), var(--cyan-300)); }
+    .lt-node.dam { background: linear-gradient(135deg, var(--rose-400), var(--purple-300)); }
+    .lt-node.result { background: linear-gradient(135deg, var(--emerald-400), var(--teal-300)); border: 2px solid rgba(52,211,153,0.4); }
+    .lt-info { flex: 1; }
+    .lt-role { font-size: 0.6rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .lt-name { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); }
+    .lt-connector { width: 100%; height: 1px; background: linear-gradient(90deg, rgba(139,92,246,0.2), rgba(52,211,153,0.2)); margin: 6px 0; }
+
+    /* Footer, Loading, Empty */
+    .loading-state { text-align: center; padding: 80px 24px; color: var(--text-secondary); }
+    .loading-spinner { width: 40px; height: 40px; border: 3px solid rgba(167,139,250,0.15); border-top-color: var(--violet-400); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty-state { text-align: center; padding: 80px 24px; color: var(--text-muted); grid-column: 1 / -1; }
+    .empty-state h3 { font-family: 'Outfit', sans-serif; font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 8px; }
+    .footer { position: relative; z-index: 1; padding: 40px 0; border-top: 1px solid var(--glass-border); text-align: center; }
+    .footer p { font-size: 0.78rem; color: var(--text-muted); }
+    .footer-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 12px; flex-wrap: wrap; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-secondary); transition: color 0.2s; }
+    .footer-links a:hover { color: var(--violet-300); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hero { padding: 48px 0 24px; }
+      .hero-stats { gap: 20px; }
+      .hero-stat-num { font-size: 1.4rem; }
+      .filters-bar { padding: 14px 16px; gap: 10px; border-radius: var(--radius-md); }
+      .breed-grid { grid-template-columns: 1fr; gap: 16px; }
+      .popup-card { padding: 20px; max-width: 100%; margin: 12px; }
+      .popup-params { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      .hero h1 { font-size: 1.7rem; }
+      .breed-card-strain { font-size: 1rem; }
+      .breed-card-stats { gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-layer"><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
+
+  <!-- Navigation -->
+  <header class="nav">
+    <nav class="nav-inner">
+      <a href="/" class="nav-logo">
+        <div class="nav-logo-mark">
+          <svg width="28" height="28" viewBox="0 0 38 38" fill="none">
+            <defs><linearGradient id="nav-g" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#a78bfa"/><stop offset="50%" stop-color="#34d399"/><stop offset="100%" stop-color="#60a5fa"/></linearGradient></defs>
+            <circle cx="19" cy="19" r="15" stroke="url(#nav-g)" stroke-width="2.4" fill="none"/>
+            <path d="M19 4 C22.5 9.5, 24 14, 22.8 19 C21.6 24, 22.5 28.5, 19 34" stroke="url(#nav-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <path d="M19 4 C15.5 9.5, 14 14, 15.2 19 C16.4 24, 15.5 28.5, 19 34" stroke="url(#nav-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <circle cx="19" cy="19" r="4" fill="url(#nav-g)"/><circle cx="17.5" cy="17.5" r="1.3" fill="#fff" opacity="0.7"/>
+          </svg>
+        </div>
+        <div>
+          <span class="nav-logo-text">AQUACELLUM</span>
+          <span class="nav-logo-sub">Breed Gallery</span>
+        </div>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/marketplace">Marketplace</a></li>
+        <li><a href="/database">Species Database</a></li>
+        <li><a href="/breeds">Breed Gallery</a></li>
+        <li><a href="/breeders">Find Breeders</a></li>
+        <li><a href="/how-it-works">How It Works</a></li>
+      </ul>
+      <a href="/marketplace" class="nav-cta">Browse Marketplace</a>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <h1>The <span class="gradient-text">Lineage Registry</span></h1>
+      <p>Every breeding program documented on-chain. Browse verified strains, generation histories, and pedigree-tracked specimens from our community of hobbyist breeders.</p>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="hero-stat-num" id="statPrograms">—</div><div class="hero-stat-label">Breeding Programs</div></div>
+        <div class="hero-stat"><div class="hero-stat-num" id="statGenerations">—</div><div class="hero-stat-label">Generations Tracked</div></div>
+        <div class="hero-stat"><div class="hero-stat-num" id="statBreeders">—</div><div class="hero-stat-label">Active Breeders</div></div>
+      </div>
+    </div>
+  </section>
+  <!-- Main Content -->
+  <main class="container">
+    <div class="filters-bar">
+      <div class="search-wrap">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="search-input" id="searchInput" placeholder="Search strain, species, or breeder..." oninput="applyFilters()">
+      </div>
+      <span class="result-count" id="resultCount"></span>
+      <div class="filter-chips">
+        <button class="filter-chip" onclick="toggleFilter(this,'cichlids')">🐠 Cichlids</button>
+        <button class="filter-chip" onclick="toggleFilter(this,'livebearers')">🐟 Livebearers</button>
+        <button class="filter-chip" onclick="toggleFilter(this,'bettas')">💜 Bettas</button>
+        <button class="filter-chip" onclick="toggleFilter(this,'plecos')">🪨 Plecos</button>
+        <button class="filter-chip" onclick="toggleFilter(this,'tetras')">✨ Tetras</button>
+        <button class="filter-chip" onclick="toggleFilter(this,'rare')">🏆 Rare Lines</button>
+      </div>
+      <div class="sort-chips">
+        <button class="sort-chip active" data-sort="popular" onclick="setSort('popular')">🔥 Popular</button>
+        <button class="sort-chip" data-sort="newest" onclick="setSort('newest')">✦ Newest</button>
+        <button class="sort-chip" data-sort="generation" onclick="setSort('generation')">🧬 Generation</button>
+        <button class="sort-chip" data-sort="alpha" onclick="setSort('alpha')">A→Z</button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="loadingState" class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Loading breeding programs...</p>
+    </div>
+
+    <!-- Grid -->
+    <div id="breedGrid" class="breed-grid" style="display:none;"></div>
+  </main>
+
+  <!-- Detail Popup -->
+  <div class="popup-overlay" id="popupOverlay" onclick="if(event.target===this)closePopup()">
+    <div class="popup-card" id="popupCard"></div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/marketplace">Marketplace</a>
+        <a href="/database">Species Database</a>
+        <a href="/breeders">Find Breeders</a>
+        <a href="/how-it-works">How It Works</a>
+        <a href="/app">Launch App</a>
+      </div>
+      <p>&copy; 2026 Aquacellum Protocol. All rights reserved.</p>
+    </div>
+  </footer>
+  <script>
+    // ── Configuration ──────────────────────────────────────────────────────
+    const SUPABASE_URL = 'https://yahsdztnvsykzecjatsl.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaHNkenRudnN5a3plY2phdHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQwMDgsImV4cCI6MjA5NjA3MDAwOH0.3anqDFU9hUjZg2AFWJlXSBbwSM-knNrmb-uQ_Baq98I';
+
+    // ── State ──────────────────────────────────────────────────────────────
+    let allBreeds = [];
+    let filteredBreeds = [];
+    let activeFilters = new Set();
+    let currentSort = 'popular';
+
+    // ── Demo Breed Data ───────────────────────────────────────────────────
+    function getDemoBreeds() {
+      return [
+        { id: 1, strain: 'Triple Red', species: 'Apistogramma cacatuoides', sciName: 'A. cacatuoides', category: 'cichlids', generation: 'F4', genNum: 4, spawns: 12, totalFry: 340, survivalRate: 82, breeder: 'Coral Cichlid 4201', breederSlug: 'coral-cichlid', traits: ['Intense Red Fins', 'Extended Dorsal', 'High Color Retention'], sire: 'Alpha Red #7', dam: 'Ruby Queen #3', description: 'Fourth-generation line selected for maximum red saturation in dorsal and caudal fins. This strain shows consistent coloration from juvenile stage.', startDate: '2024-08', isRare: true },
+        { id: 2, strain: 'Platinum Dumbo', species: 'Betta splendens', sciName: 'B. splendens', category: 'bettas', generation: 'F3', genNum: 3, spawns: 8, totalFry: 210, survivalRate: 75, breeder: 'Sapphire Betta 7832', breederSlug: 'sapphire-betta', traits: ['Platinum Wash', 'Oversized Pectorals', 'Short Body'], sire: 'Ghost King #2', dam: 'Pearl Empress #5', description: 'Platinum dumbo line with exceptional pectoral spread. Selected for short-body phenotype with full platinum wash coverage.', startDate: '2025-01', isRare: true },
+        { id: 3, strain: 'Blue Diamond', species: 'Pterygoplichthys gibbiceps', sciName: 'P. gibbiceps', category: 'plecos', generation: 'F2', genNum: 2, spawns: 4, totalFry: 45, survivalRate: 91, breeder: 'Drift Pleco 5519', breederSlug: 'drift-pleco', traits: ['Blue Shimmer', 'High Dorsal', 'Peaceful Temperament'], sire: 'Midnight #1', dam: 'Sapphire Belle #2', description: 'Rare blue-shimmer line of sailfin plecos. Cave-spawned in dedicated breeding tanks with controlled water parameters.', startDate: '2024-11', isRare: true },
+        { id: 4, strain: 'Moscow Blue', species: 'Poecilia reticulata', sciName: 'P. reticulata', category: 'livebearers', generation: 'F6', genNum: 6, spawns: 48, totalFry: 1200, survivalRate: 88, breeder: 'Tidal Guppy 3044', breederSlug: 'tidal-guppy', traits: ['Full Body Blue', 'Delta Tail', 'No Markings'], sire: 'Moscow Line Male', dam: 'Moscow Female #12', description: 'Sixth-generation Moscow Blue guppy line. Pure delta tail with full-body blue coverage and no extraneous markings. Consistently stable genetics.', startDate: '2023-06', isRare: false },
+        { id: 5, strain: 'Galaxy Koi', species: 'Betta splendens', sciName: 'B. splendens', category: 'bettas', generation: 'F2', genNum: 2, spawns: 5, totalFry: 130, survivalRate: 72, breeder: 'Sapphire Betta 7832', breederSlug: 'sapphire-betta', traits: ['Koi Pattern', 'Galaxy Iridescence', 'Halfmoon Spread'], sire: 'Cosmos #1', dam: 'Koi Princess #4', description: 'Galaxy koi line combining classic koi patterning with iridescent galaxy overlay. Each fish has unique pattern distribution.', startDate: '2025-03', isRare: false },
+        { id: 6, strain: 'Super Red Bristlenose', species: 'Ancistrus sp.', sciName: 'Ancistrus sp.', category: 'plecos', generation: 'F3', genNum: 3, spawns: 9, totalFry: 180, survivalRate: 90, breeder: 'Drift Pleco 5519', breederSlug: 'drift-pleco', traits: ['Deep Cherry Red', 'Long Bristles', 'Compact Body'], sire: 'Red Baron #4', dam: 'Cherry #7', description: 'Third-gen super red bristlenose with intense cherry coloration that holds through adulthood. Males develop impressive bristle arrays.', startDate: '2024-04', isRare: false },
+        { id: 7, strain: 'Electric Blue Acara', species: 'Andinoacara pulcher', sciName: 'A. pulcher', category: 'cichlids', generation: 'F3', genNum: 3, spawns: 7, totalFry: 280, survivalRate: 85, breeder: 'Ember Discus 6620', breederSlug: 'ember-discus', traits: ['Full Metallic Blue', 'Peaceful', 'Early Maturation'], sire: 'Cobalt King #3', dam: 'Azure Flame #2', description: 'Selectively bred for maximum metallic blue coverage. These are notably peaceful for cichlids and reach breeding condition faster than wild-type.', startDate: '2024-09', isRare: false },
+        { id: 8, strain: 'Endler Tiger', species: 'Poecilia wingei', sciName: 'P. wingei', category: 'livebearers', generation: 'F5', genNum: 5, spawns: 35, totalFry: 890, survivalRate: 92, breeder: 'Tidal Guppy 3044', breederSlug: 'tidal-guppy', traits: ['Tiger Barring', 'N-class Pure', 'Nano Size'], sire: 'Tiger Line Male', dam: 'N-class Female #8', description: 'Pure N-class Endler line with consistent tiger barring pattern. Maintained with strict colony separation to prevent hybridization with guppies.', startDate: '2023-09', isRare: false },
+        { id: 9, strain: 'Emerald Rasbora Select', species: 'Microdevario kubotai', sciName: 'M. kubotai', category: 'tetras', generation: 'F2', genNum: 2, spawns: 6, totalFry: 150, survivalRate: 68, breeder: 'Crystal Rasbora 9187', breederSlug: 'crystal-rasbora', traits: ['Enhanced Green', 'Schooling Behavior', 'Nano Tank Suitable'], sire: 'Wild Import Male', dam: 'F1 Female #3', description: 'Selected from wild imports for intensified emerald coloration. Second-generation tank-bred showing excellent schooling behavior in groups of 10+.', startDate: '2025-02', isRare: false },
+        { id: 10, strain: 'Pigeon Blood Discus', species: 'Symphysodon sp.', sciName: 'Symphysodon sp.', category: 'cichlids', generation: 'F4', genNum: 4, spawns: 6, totalFry: 95, survivalRate: 70, breeder: 'Ember Discus 6620', breederSlug: 'ember-discus', traits: ['Clean Pattern', 'Strong Parenting', 'Worm-Free Line'], sire: 'PB Alpha #2', dam: 'PB Queen #6', description: 'Fourth-generation pigeon blood discus bred for clean patterning and strong parental instincts. This line has been raised worm-free from F2.', startDate: '2024-01', isRare: true },
+        { id: 11, strain: 'Gold Nugget L018', species: 'Baryancistrus xanthellus', sciName: 'B. xanthellus', category: 'plecos', generation: 'F1', genNum: 1, spawns: 2, totalFry: 12, survivalRate: 83, breeder: 'Drift Pleco 5519', breederSlug: 'drift-pleco', traits: ['Large Spots', 'High Contrast', 'Cave Spawned'], sire: 'Wild Import Male', dam: 'Wild Import Female', description: 'First-generation captive-bred Gold Nugget plecos from verified wild imports. One of very few documented captive spawnings of this species.', startDate: '2025-05', isRare: true },
+        { id: 12, strain: 'Albino Kribensis', species: 'Pelvicachromis pulcher', sciName: 'P. pulcher', category: 'cichlids', generation: 'F5', genNum: 5, spawns: 14, totalFry: 420, survivalRate: 87, breeder: 'Azure Angel 5533', breederSlug: 'azure-angel', traits: ['True Albino', 'Strong Pairs', 'Community Safe'], sire: 'Albino Male #9', dam: 'Albino Female #6', description: 'Established albino kribensis line with strong pair bonding and excellent parental care. Confirmed safe in planted community tanks.', startDate: '2023-11', isRare: false },
+      ];
+    }
+    // ── Init ─────────────────────────────────────────────────────────────
+    async function init() {
+      // Try fetching from Supabase spawn data (future: real data)
+      // For now, use rich demo data
+      allBreeds = getDemoBreeds();
+
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('breedGrid').style.display = '';
+      updateStats();
+      applyFilters();
+    }
+
+    function updateStats() {
+      document.getElementById('statPrograms').textContent = allBreeds.length;
+      const maxGen = Math.max(...allBreeds.map(b => b.genNum));
+      document.getElementById('statGenerations').textContent = 'F' + maxGen;
+      const breeders = new Set(allBreeds.map(b => b.breeder));
+      document.getElementById('statBreeders').textContent = breeders.size;
+    }
+
+    // ── Filtering & Sorting ────────────────────────────────────────────────
+    function toggleFilter(btn, filter) {
+      btn.classList.toggle('active');
+      if (activeFilters.has(filter)) activeFilters.delete(filter);
+      else activeFilters.add(filter);
+      applyFilters();
+    }
+
+    function setSort(sort) {
+      currentSort = sort;
+      document.querySelectorAll('.sort-chip').forEach(c => c.classList.toggle('active', c.dataset.sort === sort));
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+
+      filteredBreeds = allBreeds.filter(b => {
+        if (query) {
+          const searchable = [b.strain, b.species, b.sciName, b.breeder, ...(b.traits || [])].join(' ').toLowerCase();
+          if (!searchable.includes(query)) return false;
+        }
+        if (activeFilters.size > 0) {
+          let matches = false;
+          if (activeFilters.has(b.category)) matches = true;
+          if (activeFilters.has('rare') && b.isRare) matches = true;
+          // If none of the active filters match this breed
+          if (!matches) return false;
+        }
+        return true;
+      });
+
+      filteredBreeds.sort((a, b) => {
+        switch (currentSort) {
+          case 'newest': return (b.startDate || '').localeCompare(a.startDate || '');
+          case 'generation': return b.genNum - a.genNum;
+          case 'alpha': return a.strain.localeCompare(b.strain);
+          default: return (b.spawns * b.totalFry) - (a.spawns * a.totalFry); // popular
+        }
+      });
+
+      document.getElementById('resultCount').textContent = `${filteredBreeds.length} program${filteredBreeds.length !== 1 ? 's' : ''}`;
+      renderGrid();
+    }
+    // ── Render Grid ───────────────────────────────────────────────────────
+    function renderGrid() {
+      const grid = document.getElementById('breedGrid');
+
+      if (filteredBreeds.length === 0) {
+        grid.innerHTML = '<div class="empty-state"><h3>No breeding programs found</h3><p>Try adjusting your search or filters.</p></div>';
+        return;
+      }
+
+      grid.innerHTML = filteredBreeds.map((b, idx) => {
+        const initial = b.breeder.charAt(0).toUpperCase();
+        const genClass = b.genNum >= 4 ? 'gen-f4' : b.genNum === 3 ? 'gen-f3' : b.genNum === 2 ? 'gen-f2' : b.genNum === 1 ? 'gen-wild' : 'gen-f1';
+        const traitsHtml = (b.traits || []).slice(0, 3).map(t => `<span class="trait-chip">${t}</span>`).join('');
+
+        return `
+          <div class="breed-card" data-idx="${idx}" onclick="openPopup(${idx})">
+            <div class="breed-card-header">
+              <div class="breed-card-species">${b.species}</div>
+              <div class="breed-card-strain">${b.strain}</div>
+              <div class="breed-card-sci">${b.sciName}</div>
+              <span class="breed-card-gen-badge ${genClass}">${b.generation} Generation</span>
+
+              <div class="lineage-mini">
+                <div class="lineage-node">
+                  <div class="lineage-node-dot sire">♂</div>
+                  <span class="lineage-node-label">Sire</span>
+                </div>
+                <div class="lineage-connector"></div>
+                <div class="lineage-node">
+                  <div class="lineage-node-dot dam">♀</div>
+                  <span class="lineage-node-label">Dam</span>
+                </div>
+                <div class="lineage-connector"></div>
+                <div class="lineage-node">
+                  <div class="lineage-node-dot offspring">✦</div>
+                  <span class="lineage-node-label">${b.generation}</span>
+                </div>
+              </div>
+            </div>
+            <div class="breed-card-body">
+              <div class="breed-card-stats">
+                <div class="breed-stat"><span class="breed-stat-icon">🥚</span><span class="breed-stat-value">${b.spawns}</span><span class="breed-stat-label">spawns</span></div>
+                <div class="breed-stat"><span class="breed-stat-icon">🐟</span><span class="breed-stat-value">${b.totalFry.toLocaleString()}</span><span class="breed-stat-label">fry</span></div>
+                <div class="breed-stat"><span class="breed-stat-icon">💚</span><span class="breed-stat-value">${b.survivalRate}%</span><span class="breed-stat-label">survival</span></div>
+              </div>
+              <div class="breed-card-breeder">
+                <div class="breed-breeder-avatar">${initial}</div>
+                <div class="breed-breeder-info">
+                  <div class="breed-breeder-name">${b.breeder}</div>
+                  <div class="breed-breeder-label">Verified Breeder</div>
+                </div>
+              </div>
+              <div class="breed-card-traits">${traitsHtml}</div>
+              <a href="/store/${b.breederSlug}" class="breed-card-cta" onclick="event.stopPropagation()">View Storefront →</a>
+            </div>
+          </div>`;
+      }).join('');
+
+      // Staggered entrance
+      requestAnimationFrame(() => {
+        const cards = grid.querySelectorAll('.breed-card');
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const idx = Array.from(cards).indexOf(entry.target) % 6;
+              setTimeout(() => entry.target.classList.add('visible'), idx * 80);
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.05, rootMargin: '50px' });
+        cards.forEach(card => observer.observe(card));
+      });
+    }
+    // ── Detail Popup ─────────────────────────────────────────────────────
+    function openPopup(idx) {
+      const b = filteredBreeds[idx];
+      if (!b) return;
+
+      const initial = b.breeder.charAt(0).toUpperCase();
+      const genClass = b.genNum >= 4 ? 'gen-f4' : b.genNum === 3 ? 'gen-f3' : b.genNum === 2 ? 'gen-f2' : b.genNum === 1 ? 'gen-wild' : 'gen-f1';
+      const traitsHtml = (b.traits || []).map(t => `<span class="trait-chip">${t}</span>`).join('');
+
+      document.getElementById('popupCard').innerHTML = `
+        <div class="popup-header">
+          <div class="popup-species-label">${b.species}</div>
+          <div class="popup-strain">${b.strain}</div>
+          <div class="popup-sci">${b.sciName}</div>
+          <span class="breed-card-gen-badge ${genClass}" style="margin-top:10px;">${b.generation} Generation</span>
+        </div>
+
+        <div class="popup-section">
+          <div class="popup-section-title">Lineage Tree</div>
+          <div class="lineage-tree">
+            <div class="lineage-tree-row">
+              <div class="lt-node sire">♂</div>
+              <div class="lt-info"><div class="lt-role">Sire</div><div class="lt-name">${b.sire}</div></div>
+            </div>
+            <div class="lt-connector"></div>
+            <div class="lineage-tree-row">
+              <div class="lt-node dam">♀</div>
+              <div class="lt-info"><div class="lt-role">Dam</div><div class="lt-name">${b.dam}</div></div>
+            </div>
+            <div class="lt-connector"></div>
+            <div class="lineage-tree-row">
+              <div class="lt-node result">✦</div>
+              <div class="lt-info"><div class="lt-role">Offspring Line</div><div class="lt-name">${b.strain} (${b.generation})</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="popup-section">
+          <div class="popup-section-title">Program Stats</div>
+          <div class="popup-params">
+            <div class="popup-param"><div class="popup-param-label">Total Spawns</div><div class="popup-param-value">${b.spawns}</div></div>
+            <div class="popup-param"><div class="popup-param-label">Total Fry</div><div class="popup-param-value">${b.totalFry.toLocaleString()}</div></div>
+            <div class="popup-param"><div class="popup-param-label">Survival Rate</div><div class="popup-param-value">${b.survivalRate}%</div></div>
+            <div class="popup-param"><div class="popup-param-label">Generation</div><div class="popup-param-value">${b.generation}</div></div>
+            <div class="popup-param"><div class="popup-param-label">Program Start</div><div class="popup-param-value">${b.startDate}</div></div>
+            <div class="popup-param"><div class="popup-param-label">Category</div><div class="popup-param-value" style="text-transform:capitalize;">${b.category}</div></div>
+          </div>
+        </div>
+
+        <div class="popup-section">
+          <div class="popup-section-title">Selected Traits</div>
+          <div class="breed-card-traits">${traitsHtml}</div>
+        </div>
+
+        <div class="popup-section">
+          <div class="popup-section-title">About This Program</div>
+          <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.7;">${b.description}</p>
+        </div>
+
+        <div class="breed-card-breeder" style="margin-bottom:16px;">
+          <div class="breed-breeder-avatar">${initial}</div>
+          <div class="breed-breeder-info">
+            <div class="breed-breeder-name">${b.breeder}</div>
+            <div class="breed-breeder-label">Verified Breeder · Program Owner</div>
+          </div>
+        </div>
+
+        <a href="/store/${b.breederSlug}" class="breed-card-cta" style="display:flex;">Visit Storefront →</a>
+      `;
+
+      document.getElementById('popupOverlay').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closePopup() {
+      document.getElementById('popupOverlay').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closePopup(); });
+
+    // ── Boot ───────────────────────────────────────────────────────────────
+    init();
+  </script>
+</body>
+</html>
