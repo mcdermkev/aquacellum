@@ -1,5 +1,4 @@
 {
-  "framework": null,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "cleanUrls": true,
@@ -9,8 +8,8 @@
     }
   },
   "rewrites": [
-    { "source": "/store/(.*)", "destination": "/store.html" },
-    { "source": "/species/(.*)", "destination": "/species.html" },
+    { "source": "/store/:path*", "destination": "/store.html" },
+    { "source": "/species/:path*", "destination": "/species.html" },
     { "source": "/app", "destination": "/app.html" },
     { "source": "/hobbyist", "destination": "/hobbyist.html" },
     { "source": "/breeder", "destination": "/breeder.html" },
