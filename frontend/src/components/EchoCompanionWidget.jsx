@@ -75,16 +75,42 @@ export function EchoCompanionWidget({ casualModeActive = true, compact = false }
 
     const loadState = async () => {
       try {
-        const profile = await db.userProfile.get(account);
-        const companion = await db.breederCompanion.get(account);
+        // Canonical address rule: Dexie profiles may be stored lowercase.
+        // Try the raw account first, then lowercase fallback.
+        const acct = account;
+        const acctLower = account.toLowerCase();
+        let profile = await db.userProfile.get(acct);
+        if (!profile && acctLower !== acct) {
+          profile = await db.userProfile.get(acctLower);
+        }
+
+        let companion = await db.breederCompanion.get(acct);
+        if (!companion && acctLower !== acct) {
+          companion = await db.breederCompanion.get(acctLower);
+        }
+
+        // Fallback: if Dexie has no profile, derive XP from localStorage
+        // (the legacy xp.js addXp() path writes there)
+        const dexieXp = profile?.totalXp || 0;
+        const localStorageXp = Number(localStorage.getItem("aquadex_xp") || "0");
+        const effectiveXp = Math.max(dexieXp, localStorageXp);
 
         if (profile) {
           setEchoState({
-            totalXp: profile.totalXp || 0,
+            totalXp: effectiveXp,
             currentTier: profile.currentTier || "Shallow",
             streakDays: profile.streakDays || 0,
             lastActiveDate: profile.lastActiveDate || null,
-            eggState: companion?.eggState || 0,
+            eggState: companion?.eggState ?? (effectiveXp >= 500 ? 1 : 0),
+          });
+        } else {
+          // No Dexie profile at all — use localStorage XP
+          setEchoState({
+            totalXp: effectiveXp,
+            currentTier: effectiveXp >= 1500 ? "Coastal" : "Shallow",
+            streakDays: 0,
+            lastActiveDate: null,
+            eggState: effectiveXp >= 500 ? 1 : 0,
           });
         }
 
