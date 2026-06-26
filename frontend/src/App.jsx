@@ -341,8 +341,26 @@ export default function App() {
 
   useEffect(() => {
     const handleXpAdded = (e) => {
-      const { points, label, newXp, levelChanged, newLevel } = e.detail;
-      setXp(newXp);
+      const d = e.detail || {};
+      // Field names vary by dispatcher: xp.js / useXPSync send actionLabel/totalXp,
+      // while older callers send label/newXp. Normalize both shapes.
+      const points = Number(d.points);
+      const label = d.label || d.actionLabel || "Husbandry Activity";
+      const totalXp = d.newXp ?? d.totalXp;
+      const levelChanged = d.levelChanged ?? d.tierChanged ?? false;
+      const newLevel = d.newLevel;
+
+      // Keep the XP bar in sync only when a real total is provided.
+      if (Number.isFinite(Number(totalXp))) {
+        setXp(Number(totalXp));
+      }
+
+      // Some dispatchers (cloud sync restore, Poseidon bridge) fire this event
+      // purely as a refresh signal with no point value. Skip the toast for those
+      // instead of rendering a stuck "+undefined ... earned undefined" popup.
+      if (!Number.isFinite(points) || points <= 0) {
+        return;
+      }
 
       // Create unique ID for the toast notification
       const toastId = Date.now() + Math.random();

@@ -75,8 +75,18 @@ Always respond with valid JSON matching this schema:
 function buildUserContext(sessionData) {
   const parts = [];
 
+  // User's loyalty/XP stats
+  if (sessionData.userStats) {
+    const stats = sessionData.userStats;
+    parts.push("## USER STATS");
+    parts.push(`- Loyalty Points (XP): ${stats.totalXp} total`);
+    parts.push(`- Current Tier: ${stats.currentTier}`);
+    if (stats.streakDays > 0) parts.push(`- Care Streak: ${stats.streakDays} days`);
+    if (stats.monthlyXp > 0) parts.push(`- This Month: ${stats.monthlyXp} pts earned`);
+  }
+
   if (sessionData.tanks && sessionData.tanks.length > 0) {
-    parts.push("## USER'S TANKS");
+    parts.push("\n## USER'S TANKS");
     for (const tank of sessionData.tanks.slice(0, 5)) {
       parts.push(`- Tank "${tank.name}" (${tank.volumeLiters}L, ${tank.tankType === 2 ? 'Saltwater' : 'Freshwater'})`);
       if (tank.logs && tank.logs.length > 0) {

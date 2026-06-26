@@ -74,9 +74,29 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
    * Gather session context from Dexie for grounding Poseidon's responses.
    */
   const gatherSessionContext = useCallback(async () => {
-    const context = { tanks: [], recentLogs: [], speciesContext: [], tankSpeciesCodes: [] };
+    const context = { tanks: [], recentLogs: [], speciesContext: [], tankSpeciesCodes: [], userStats: null };
 
     try {
+      // Get user's XP/loyalty stats for accurate reporting
+      if (walletAddress) {
+        try {
+          let userProfile = await db.userProfile.get(walletAddress);
+          if (!userProfile) {
+            userProfile = await db.userProfile.get(walletAddress.toLowerCase());
+          }
+          if (userProfile) {
+            context.userStats = {
+              totalXp: userProfile.totalXp || 0,
+              currentTier: userProfile.currentTier || "Shallow",
+              streakDays: userProfile.streakDays || 0,
+              monthlyXp: userProfile.monthlyXp || 0,
+            };
+          }
+        } catch (err) {
+          console.warn('[usePoseidon] Error reading user stats:', err);
+        }
+      }
+
       // Get user's tanks (limit 5)
       const tanks = await db.tanks.where('active').equals(1).limit(5).toArray();
       context.tanks = tanks.map(t => ({
@@ -114,7 +134,7 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
     }
 
     return context;
-  }, [tankId]);
+  }, [tankId, walletAddress]);
 
   /**
    * Check rate limit — returns true if request is allowed.

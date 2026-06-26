@@ -13,8 +13,12 @@ import { createRemoteJWKSet, jwtVerify } from "jose";
 
 const PRIVY_APP_ID = process.env.VITE_PRIVY_APP_ID || process.env.PRIVY_APP_ID || "cmprm8kqd000l0cl54w0e9jn3";
 
-// JWKS endpoint for verifying Privy-issued tokens
-const PRIVY_JWKS_URL = `https://auth.privy.io/api/v1/apps/${PRIVY_APP_ID}/.well-known/jwks.json`;
+// JWKS endpoint for verifying Privy-issued tokens.
+// NOTE: Privy serves the key set at `/apps/<app-id>/jwks.json`. The `.well-known`
+// variant returns 404, which makes jose throw "Expected 200 OK from the JSON Web
+// Key Set HTTP response" and breaks every authenticated API route (mint-session,
+// relay-transaction, validate-xp) — cascading into Supabase RLS/406 failures.
+const PRIVY_JWKS_URL = `https://auth.privy.io/api/v1/apps/${PRIVY_APP_ID}/jwks.json`;
 
 // Cache the JWKS keyset (jose handles refresh internally)
 let _jwks = null;

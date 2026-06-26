@@ -8,9 +8,15 @@ export function useUserTanks(contractAddress, walletAccount) {
   return useQuery({
     queryKey: ["tanks", walletAccount],
     queryFn: async () => {
+      // CANONICAL ADDRESS RULE (see relayer.js): every ownerAddress written to
+      // Dexie is lowercased. Privy hands us a checksummed (mixed-case) address,
+      // and Dexie's .equals() is case-sensitive — so we MUST lowercase before
+      // querying or every lookup returns 0 rows ("0 Units Found").
+      const owner = (walletAccount || "").toLowerCase();
+
       // Beta: Read from Dexie first (local-first approach)
       // Tanks are stored locally via relayer.js during beta
-      const localTanks = await db.tanks.where("ownerAddress").equals(walletAccount).toArray();
+      const localTanks = await db.tanks.where("ownerAddress").equals(owner).toArray();
 
       // Also try on-chain for any historically registered tanks
       let onChainTanks = [];
@@ -90,7 +96,7 @@ export function useUserTanks(contractAddress, walletAccount) {
 
               return {
                 id,
-                ownerAddress: walletAccount,
+                ownerAddress: owner,
                 name: tankData.name,
                 tankType: Number(tankData.tankType),
                 volumeLiters: Number(tankData.volumeLiters),
@@ -127,7 +133,7 @@ export function useUserTanks(contractAddress, walletAccount) {
       // not appearing in tanks when they were minted against an on-chain tank ID).
       try {
         const allLocalSpecimens = await db.specimens
-          .where("ownerAddress").equals(walletAccount)
+          .where("ownerAddress").equals(owner)
           .filter(s => Number(s.status) === 0 && s.currentTankId && Number(s.currentTankId) !== 0)
           .toArray();
 

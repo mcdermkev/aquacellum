@@ -117,7 +117,7 @@ describe("Reef Integration Tests", () => {
 
       // In anon mode this may fail due to RLS — that's expected
       if (!error) {
-        expect(data.wallet_address).toBe(TEST_WALLET);
+        expect(data.wallet_address).toBe(TEST_WALLET.toLowerCase());
         expect(data.display_name).toBe("Test User");
       }
     });
@@ -126,7 +126,7 @@ describe("Reef Integration Tests", () => {
       const { data, error } = await getProfile(TEST_WALLET);
       // May be null if previous test failed due to auth
       if (data) {
-        expect(data.wallet_address).toBe(TEST_WALLET);
+        expect(data.wallet_address).toBe(TEST_WALLET.toLowerCase());
       }
     });
 
