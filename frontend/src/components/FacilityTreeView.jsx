@@ -43,6 +43,8 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
   const [currentSelectSpeciesId, setCurrentSelectSpeciesId] = useState("");
   const [currentSelectQty, setCurrentSelectQty] = useState(1);
   const [addedFishList, setAddedFishList] = useState([]);
+  const [fishSearchQuery, setFishSearchQuery] = useState("");
+  const [fishDropdownOpen, setFishDropdownOpen] = useState(false);
 
   const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
@@ -94,6 +96,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
 
     setCurrentSelectSpeciesId("");
     setCurrentSelectQty(1);
+    setFishSearchQuery("");
   };
 
   const handleRemoveFishFromList = (index) => {
@@ -105,6 +108,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
     setSelectedPhoto("");
     setCurrentSelectSpeciesId("");
     setCurrentSelectQty(1);
+    setFishSearchQuery("");
     setAddedFishList([]);
     if (onCloseRegister) onCloseRegister();
   };
@@ -310,6 +314,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
       setSelectedPhoto("");
       setCurrentSelectSpeciesId("");
       setCurrentSelectQty(1);
+      setFishSearchQuery("");
       setAddedFishList([]);
       handleCloseRegisterModal();
       await fetchTanksData();
@@ -701,20 +706,88 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                   </label>
                   
                   <div style={{ display: "flex", gap: "0.5rem", alignItems: "end" }}>
-                    <div style={{ flex: 2 }}>
+                    <div style={{ flex: 2, position: "relative" }}>
                       <span style={{ display: "block", fontSize: "0.65rem", color: "var(--text-muted)", marginBottom: "0.2rem" }}>Select Fish</span>
-                      <select 
-                        value={currentSelectSpeciesId}
-                        onChange={(e) => setCurrentSelectSpeciesId(e.target.value)}
+                      <input
+                        type="text"
+                        value={fishSearchQuery}
+                        onChange={(e) => {
+                          setFishSearchQuery(e.target.value);
+                          setFishDropdownOpen(true);
+                          if (!e.target.value) setCurrentSelectSpeciesId("");
+                        }}
+                        onFocus={() => setFishDropdownOpen(true)}
+                        placeholder="Type to search fish..."
+                        autoComplete="off"
                         style={{ width: "100%", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.8rem" }}
-                      >
-                        <option value="">-- Choose Fish --</option>
-                        {contractSpecies.map(s => (
-                          <option key={s.speciesId} value={s.speciesId}>
-                            {s.commonName}
-                          </option>
-                        ))}
-                      </select>
+                      />
+                      {fishDropdownOpen && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: "100%",
+                            left: 0,
+                            right: 0,
+                            maxHeight: "180px",
+                            overflowY: "auto",
+                            background: "rgba(8,12,20,0.97)",
+                            border: "1px solid var(--glass-border)",
+                            borderTop: "none",
+                            borderRadius: "0 0 4px 4px",
+                            zIndex: 100,
+                          }}
+                        >
+                          {contractSpecies
+                            .filter(s => {
+                              if (!fishSearchQuery) return true;
+                              const q = fishSearchQuery.toLowerCase();
+                              return (
+                                s.commonName.toLowerCase().includes(q) ||
+                                s.scientificName.toLowerCase().includes(q)
+                              );
+                            })
+                            .slice(0, 50)
+                            .map(s => (
+                              <div
+                                key={s.speciesId}
+                                onClick={() => {
+                                  setCurrentSelectSpeciesId(String(s.speciesId));
+                                  setFishSearchQuery(s.commonName);
+                                  setFishDropdownOpen(false);
+                                }}
+                                style={{
+                                  padding: "0.4rem 0.6rem",
+                                  fontSize: "0.8rem",
+                                  color: String(s.speciesId) === String(currentSelectSpeciesId) ? "var(--accent-blue)" : "#fff",
+                                  cursor: "pointer",
+                                  borderBottom: "1px solid rgba(255,255,255,0.03)",
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(56,189,248,0.1)"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                              >
+                                <span style={{ fontWeight: 500 }}>{s.commonName}</span>
+                                <span style={{ marginLeft: "0.5rem", fontSize: "0.7rem", color: "var(--text-muted)", fontStyle: "italic" }}>{s.scientificName}</span>
+                              </div>
+                            ))
+                          }
+                          {contractSpecies.filter(s => {
+                            if (!fishSearchQuery) return true;
+                            const q = fishSearchQuery.toLowerCase();
+                            return s.commonName.toLowerCase().includes(q) || s.scientificName.toLowerCase().includes(q);
+                          }).length === 0 && (
+                            <div style={{ padding: "0.6rem", fontSize: "0.75rem", color: "var(--text-muted)", textAlign: "center" }}>
+                              No species match "{fishSearchQuery}"
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {/* Click-away listener */}
+                      {fishDropdownOpen && (
+                        <div
+                          style={{ position: "fixed", inset: 0, zIndex: 99 }}
+                          onClick={() => setFishDropdownOpen(false)}
+                        />
+                      )}
                     </div>
                     <div style={{ width: "80px" }}>
                       <span style={{ display: "block", fontSize: "0.65rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>Qty</span>
