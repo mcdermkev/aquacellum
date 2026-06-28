@@ -31,6 +31,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { ethers } from "ethers";
 import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
 import { handleCorsPreFlight } from "./_lib/cors.js";
 import { checkRateLimit } from "./_lib/rateLimiter.js";
@@ -94,6 +95,14 @@ export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
+
+  // ── Route: ?action=review-morph → curator morph status flip ──────────────
+  const action = req.query?.action || req.body?.action;
+  if (action === "review-morph") {
+    return handleMorphReview(req, res);
+  }
+
+  // ── Default route: XP validation ─────────────────────────────────────────
 
   // ── Rate limit (100 XP claims/hr per user — generous but prevents scripts) ──
   const { verified, userId, walletAddress: tokenWallet, error: authError } = await verifyPrivyToken(req);
@@ -272,5 +281,97 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error("[validate-xp] Unexpected error:", err);
     return res.status(500).json({ error: "Internal validation error" });
+  }
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MORPH REVIEW — curator-gated status flip for morph submissions.
+// Folded into validate-xp to stay within Vercel Hobby's 12-function limit.
+// Called via POST /api/validate-xp?action=review-morph
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MANAGER_ADDRESS =
+  process.env.MANAGER_ADDRESS ||
+  process.env.VITE_MANAGER_ADDRESS ||
+  process.env.VITE_CONTRACT_ADDRESS ||
+  "";
+const RPC_URL =
+  process.env.RPC_URL ||
+  process.env.VITE_RPC_URL ||
+  process.env.BASE_SEPOLIA_RPC_URL ||
+  "";
+
+const VALID_MORPH_STATUSES = ["pending", "verified", "rejected"];
+
+async function getOnChainCurator() {
+  if (!MANAGER_ADDRESS || !RPC_URL) return { error: "not_configured" };
+  try {
+    const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+    const contract = new ethers.Contract(
+      MANAGER_ADDRESS,
+      ["function curator() view returns (address)"],
+      provider
+    );
+    const addr = await contract.curator();
+    return { curator: String(addr).toLowerCase() };
+  } catch (err) {
+    console.error("[review-morph] curator() read failed:", err.message);
+    return { error: "rpc_failed" };
+  }
+}
+
+async function handleMorphReview(req, res) {
+  const supabase = getSupabase();
+  if (!supabase) {
+    return res.status(503).json({ error: "Service not configured (missing Supabase env vars)" });
+  }
+
+  const { id, status, callerWallet, note } = req.body || {};
+
+  if (!id || typeof id !== "string") {
+    return res.status(400).json({ error: "id is required" });
+  }
+  if (!VALID_MORPH_STATUSES.includes(status)) {
+    return res.status(400).json({ error: `status must be one of: ${VALID_MORPH_STATUSES.join(", ")}` });
+  }
+  if (!callerWallet || typeof callerWallet !== "string") {
+    return res.status(400).json({ error: "callerWallet is required" });
+  }
+
+  // Verify the caller is the on-chain curator.
+  const { curator, error: curatorErr } = await getOnChainCurator();
+  if (curatorErr === "not_configured") {
+    return res.status(503).json({ error: "Curator verification not configured (missing manager address / RPC URL)" });
+  }
+  if (curatorErr === "rpc_failed" || !curator) {
+    return res.status(502).json({ error: "Could not verify curator on-chain. Try again." });
+  }
+  if (callerWallet.toLowerCase() !== curator) {
+    return res.status(403).json({ error: "Only the curator can review morph submissions." });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("morph_submissions")
+      .update({
+        status,
+        reviewer_wallet: callerWallet.toLowerCase(),
+        review_note: typeof note === "string" && note.trim() ? note.trim() : null,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("[review-morph] Update failed:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json({ data });
+  } catch (err) {
+    console.error("[review-morph] Unexpected error:", err);
+    return res.status(500).json({ error: err.message });
   }
 }

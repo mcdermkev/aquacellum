@@ -82,7 +82,7 @@ export async function getAllMorphSubmissions({ limit = 200 } = {}) {
  */
 export async function reviewMorphSubmission({ id, status, callerWallet, note }) {
   try {
-    const res = await fetch("/api/update-morph-status", {
+    const res = await fetch("/api/validate-xp?action=review-morph", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status, callerWallet, note }),
