@@ -3,6 +3,8 @@ import { MintSpecimen } from "./MintSpecimen";
 import { SpecimenLineage } from "./SpecimenLineage";
 import { SpawningWizard } from "./SpawningWizard";
 import { SpawningDashboard } from "./SpawningDashboard";
+import { GrowOutSection } from "./GrowOutSection";
+import { MorphRegistration } from "./MorphRegistration";
 
 /**
  * BreederTools — Combined pro-mode panel that unifies Register, Lineage, and
@@ -30,6 +32,8 @@ export function BreederTools({
     { id: "register", icon: "✦", label: "Register" },
     { id: "lineage", icon: "🌿", label: "Lineage" },
     { id: "spawning", icon: "🥚", label: "Spawning" },
+    { id: "growout", icon: "📊", label: "Grow-Out" },
+    { id: "morphs", icon: "🎨", label: "Morphs" },
   ];
 
   return (
@@ -110,6 +114,21 @@ export function BreederTools({
             casualModeActive={casualModeActive}
           />
         </>
+      )}
+
+      {activeSection === "growout" && (
+        <GrowOutSection
+          walletAccount={walletAccount}
+          casualModeActive={casualModeActive}
+        />
+      )}
+
+      {activeSection === "morphs" && (
+        <MorphRegistration
+          walletAccount={walletAccount}
+          casualModeActive={casualModeActive}
+          contractAddress={contractAddress}
+        />
       )}
     </div>
   );

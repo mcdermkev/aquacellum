@@ -1,14 +1,9 @@
 import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import "./styles/index.css";
 import "./styles/storefront-setup.css";
 import { GlobeHemisphereWest } from "@phosphor-icons/react";
 import { ConnectWallet } from "./components/ConnectWallet";
-import { TankList } from "./components/TankList";
-import { BreederTools } from "./components/BreederTools";
-import { MarketplaceBoard } from "./components/MarketplaceBoard";
-import { BreedGallery } from "./components/BreedGallery";
-import { LocalBreederMap } from "./components/LocalBreederMap";
-import { CheckoutSummary } from "./components/CheckoutSummary";
 import { SpecimenDetailModal } from "./components/SpecimenDetailModal";
 import { getLevelInfo, getXp } from "./utils/xp";
 import { haptic } from "./utils/haptics";
@@ -20,13 +15,11 @@ import marketplaceAbi from "./abi/AquadexMarketplace.json";
 import { useXPSync } from "./hooks/useXPSync";
 import { LandingHobbyist } from "./components/LandingHobbyist";
 import { LandingBreeder } from "./components/LandingBreeder";
-import { DataPortabilityWidget } from "./components/DataPortabilityWidget";
 import { ModeSegmentedControl } from "./components/ModeSegmentedControl";
 import { OnboardingWizard } from "./components/OnboardingWizard";
 import { useOnboardingGate } from "./hooks/useOnboardingGate";
 import { useAuth } from "./contexts/AuthContext";
 import { pullCloudDataForWallet, pushAllLocalDataToCloud } from "./services/cloudSync";
-import { FoundersDashboard } from "./components/FoundersDashboard";
 import { ZoneLeaderboardWidget } from "./components/ZoneLeaderboardWidget";
 import { RewardCreditsCard } from "./components/RewardCreditsCard";
 import { EchoCompanionWidget } from "./components/EchoCompanionWidget";
@@ -38,7 +31,6 @@ import { NetworkStatusBanner } from "./components/NetworkStatusBanner";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 import { PoseidonGlobalWidget } from "./components/PoseidonGlobalWidget";
 import { WhatsNewModal } from "./components/WhatsNewModal";
-import { IncomingSpecimens } from "./components/IncomingSpecimens";
 import { IncomingBadge } from "./components/IncomingBadge";
 import { useArrivalNudge } from "./hooks/useArrivalNudge";
 import {
@@ -52,6 +44,38 @@ import {
   formatSyncTime,
 } from "./config/appConfig";
 
+
+// ── Code-split tab views ───────────────────────────────────────────────────
+// Each main tab is lazy-loaded so it ships as its own chunk instead of bloating
+// the entry bundle. They render inside the existing <Suspense> boundary around
+// renderContent(), which shows a skeleton fallback while a chunk loads.
+const TankList = lazy(() =>
+  import("./components/TankList").then((m) => ({ default: m.TankList }))
+);
+const BreederTools = lazy(() =>
+  import("./components/BreederTools").then((m) => ({ default: m.BreederTools }))
+);
+const MarketplaceBoard = lazy(() =>
+  import("./components/MarketplaceBoard").then((m) => ({ default: m.MarketplaceBoard }))
+);
+const BreedGallery = lazy(() =>
+  import("./components/BreedGallery").then((m) => ({ default: m.BreedGallery }))
+);
+const LocalBreederMap = lazy(() =>
+  import("./components/LocalBreederMap").then((m) => ({ default: m.LocalBreederMap }))
+);
+const CheckoutSummary = lazy(() =>
+  import("./components/CheckoutSummary").then((m) => ({ default: m.CheckoutSummary }))
+);
+const IncomingSpecimens = lazy(() =>
+  import("./components/IncomingSpecimens").then((m) => ({ default: m.IncomingSpecimens }))
+);
+const DataPortabilityWidget = lazy(() =>
+  import("./components/DataPortabilityWidget").then((m) => ({ default: m.DataPortabilityWidget }))
+);
+const FoundersDashboard = lazy(() =>
+  import("./components/FoundersDashboard").then((m) => ({ default: m.FoundersDashboard }))
+);
 
 // Lazy-load The Reef social layer (code-split for performance)
 const ReefFeed = lazy(() =>
@@ -184,12 +208,34 @@ export default function App() {
   // Storefront beta: all authenticated users can access "My Store" during closed beta
   const isStorefrontBeta = !!account;
 
-  const [activeTab, setActiveTab] = useState(() => {
-    // Quick Win 10: Restore tab from URL hash on load
+  // ─── Router-driven tab state ──────────────────────────────────────────────
+  // The active tab is derived from the URL path (/app/<tab>) instead of local
+  // state + URL hash. This gives real URLs, deep-linking, and proper
+  // back/forward without full page reloads.
+  const navigate = useNavigate();
+  const location = useLocation();
+  const tabFromPath = location.pathname.replace(/^\/app\/?/, "").split("/")[0];
+  const activeTab = VALID_TABS.includes(tabFromPath) ? tabFromPath : "tanks";
+
+  // Navigate to a tab while preserving any query string (e.g. ?view=breeder).
+  // Reads window.location.search at call time so it stays correct even when
+  // invoked from event handlers registered once on mount.
+  const goToTab = (tab) => {
+    navigate(`/app/${tab}${window.location.search}`);
+  };
+
+  // Backward-compat: redirect legacy hash deep links (/app#directory) and bare
+  // /app to the canonical path-based route. Runs once on mount.
+  useEffect(() => {
     const hash = window.location.hash.replace("#", "");
-    const validTabs = ["tanks", "breeder", "directory", "gallery", "map", "orders", "incoming", "reef", "settings", "founders", "storefront"];
-    return validTabs.includes(hash) ? hash : "tanks";
-  });
+    if (VALID_TABS.includes(hash)) {
+      navigate(`/app/${hash}${window.location.search}`, { replace: true });
+    } else if (!VALID_TABS.includes(tabFromPath)) {
+      navigate(`/app/tanks${window.location.search}`, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [preselectedLineageId, setPreselectedLineageId] = useState(null);
   const [breederToolsSection, setBreederToolsSection] = useState("register");
   const [selectedBreedId, setSelectedBreedId] = useState(null);
@@ -229,19 +275,10 @@ export default function App() {
     return () => window.removeEventListener("aquadex_first_current_posted", handleFirstCurrentPosted);
   }, []);
   const [triggerLoginOnEntry, setTriggerLoginOnEntry] = useState(false);
-  const [viewParam, setViewParam] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get("view") || "hobbyist";
-  });
-
-  useEffect(() => {
-    const handlePopState = () => {
-      const params = new URLSearchParams(window.location.search);
-      setViewParam(params.get("view") || "hobbyist");
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
+  // View mode (hobbyist | breeder) is derived from the ?view= query param.
+  // location.search updates on router navigation and browser back/forward, so
+  // no manual popstate listener is needed.
+  const viewParam = new URLSearchParams(location.search).get("view") || "hobbyist";
   const [displayTank, setDisplayTank] = useState(() => {
     const cached = localStorage.getItem("aquadex_display_tank");
     if (cached) {
@@ -400,8 +437,7 @@ export default function App() {
   useEffect(() => {
     const handleShareOnReef = (e) => {
       // Navigate to reef tab
-      setActiveTab("reef");
-      window.history.pushState({ tab: "reef" }, "", "#reef");
+      goToTab("reef");
       // Dispatch event with the tank detail for ReefFeed to capture in React state
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent("reef_open_composer", { detail: e.detail }));
@@ -416,8 +452,7 @@ export default function App() {
     const handlePoseidonNav = (e) => {
       const { tab, search } = e.detail || {};
       if (tab) {
-        setActiveTab(tab);
-        window.history.pushState({ tab }, "", `#${tab}`);
+        goToTab(tab);
       }
       // If a species search query is provided, dispatch it for the gallery to pick up
       if (search) {
@@ -452,45 +487,29 @@ export default function App() {
     if (tabName !== "directory") {
       setActiveSellerFilter(null);
     }
-    setActiveTab(tabName);
-    // Quick Win 10: Sync tab to browser history
-    window.history.pushState({ tab: tabName }, "", `#${tabName}`);
+    goToTab(tabName);
   };
-
-  // Quick Win 10: Listen for browser back/forward to restore tab
-  useEffect(() => {
-    const handlePopState = (e) => {
-      const hash = window.location.hash.replace("#", "");
-      const validTabs = VALID_TABS;
-      if (validTabs.includes(hash)) {
-        setActiveTab(hash);
-      }
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
 
   const handleLineageSelect = (tokenId) => {
     setPreselectedLineageId(tokenId);
     setBreederToolsSection("lineage");
-    setActiveTab("breeder");
-    window.history.pushState({ tab: "breeder" }, "", "#breeder");
+    goToTab("breeder");
   };
 
   const handleListOnMarketplace = (tank, specimen) => {
     setPreselectedListSpecimen(specimen);
     setPreselectedListTank(tank);
-    setActiveTab("directory");
+    goToTab("directory");
   };
 
   const handleSelectCheckoutOrder = (type, id) => {
     setPreselectedOrderForCheckout({ type, id });
-    setActiveTab("orders");
+    goToTab("orders");
   };
 
   const handleCheckoutSuccessRedirect = (sellerAddress) => {
     setActiveSellerFilter(sellerAddress);
-    setActiveTab("directory");
+    goToTab("directory");
   };
 
   const levelInfo = getLevelInfo(xp);

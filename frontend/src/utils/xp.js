@@ -35,6 +35,7 @@ export const XP_ACTIONS = {
 
   // Breeding & Operational
   MINT_SPECIMEN: { points: 50, label: "Registered Birth Certificate" },
+  MORPH_REGISTERED: { points: 30, label: "Submitted Morph for Verification" },
   SPAWN_BREED: { points: 150, label: "Successful Breeding Spawn" },
   BATCH_SHIPPING: { points: 35, label: "Batch Shipping Dispatched" },
   AUDIT_GIVEN: { points: 60, label: "Pedigree Audit Completed" },
@@ -43,6 +44,7 @@ export const XP_ACTIONS = {
   // Arrival Flow
   ARRIVAL_CONFIRMED: { points: 25, label: "Confirmed Specimen Arrival" },
   BATCH_ARRIVAL_CONFIRMED: { points: 15, label: "Confirmed Batch Arrival" },
+  ACCLIMATION_COMPLETED: { points: 20, label: "Completed Acclimation" },
 
   // Community & Social
   POST_CURRENT: { points: 10, label: "Posted Tank Current", dailyMax: 2 },

@@ -1286,6 +1286,45 @@
     </div>
   </section>
 
+  <!-- ========== GET THE APP ========== -->
+  <section id="install" style="padding:80px 24px 64px; text-align:center;">
+    <div style="max-width:680px; margin:0 auto;">
+      <div style="display:inline-flex;align-items:center;gap:8px;padding:5px 14px;border-radius:100px;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:20px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.25);color:var(--violet-400);">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Install the Operator Terminal
+      </div>
+      <h2 style="font-family:'Outfit',sans-serif;font-weight:900;font-size:clamp(1.8rem,4vw,2.6rem);color:#fff;line-height:1.15;margin-bottom:16px;">
+        Your breeding operation,<br><span style="background:linear-gradient(135deg,var(--violet-400),var(--purple-400));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">one tap away.</span>
+      </h2>
+      <p style="font-size:1rem;color:var(--text-secondary);line-height:1.7;max-width:520px;margin:0 auto 36px;">
+        Install the Aquadex Operator Terminal for full-screen, app-like access to lineage records, facility metrics, and dispatch management. No app store required.
+      </p>
+      <div id="installCard" style="max-width:440px;margin:0 auto;padding:32px 36px;background:var(--glass-bg);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid rgba(139,92,246,0.2);border-radius:20px;box-shadow:0 0 60px rgba(139,92,246,0.06),0 40px 80px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.06);">
+        <div style="margin-bottom:20px;display:flex;justify-content:center;">
+          <div style="width:72px;height:72px;border-radius:18px;overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,0.5),0 0 0 1px rgba(139,92,246,0.2);">
+            <img src="/icons/icon-192.png" alt="Aquadex app icon" width="72" height="72" style="display:block;">
+          </div>
+        </div>
+        <div style="font-family:'Outfit',sans-serif;font-size:1.1rem;font-weight:700;color:#fff;margin-bottom:4px;">Aquadex</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:24px;">aquadex.fish · ~1 MB install</div>
+        <button id="installBtn" onclick="triggerInstall()" style="display:none;width:100%;padding:14px;border-radius:10px;background:linear-gradient(135deg,var(--violet-500),var(--purple-500));color:#fff;font-family:'Outfit',sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;border:none;margin-bottom:12px;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 24px rgba(139,92,246,0.25);">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle;margin-right:6px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Install Operator Terminal
+        </button>
+        <div id="installIos" style="display:none;padding:16px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08);border-radius:12px;font-size:0.82rem;color:var(--text-secondary);line-height:1.6;text-align:left;">
+          <strong style="color:#fff;display:block;margin-bottom:6px;">📲 Add to Home Screen</strong>
+          Tap the <strong style="color:var(--violet-400);">Share</strong> button in Safari, then scroll down and tap <strong style="color:var(--violet-400);">Add to Home Screen</strong>.
+        </div>
+        <div id="installDone" style="display:none;padding:14px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:10px;font-size:0.85rem;color:var(--emerald-400);font-weight:600;">✓ Aquadex is installed</div>
+        <a id="installFallback" href="/app" style="display:inline-flex;align-items:center;gap:8px;margin-top:12px;font-size:0.85rem;font-weight:600;color:var(--violet-400);text-decoration:none;">
+          Open in browser
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+      </div>
+      <div style="margin-top:24px;font-size:0.72rem;color:var(--text-muted);">Works on Android, iOS, Mac, Windows & ChromeOS · No app store fees</div>
+    </div>
+  </section>
+
   <!-- ========== FOOTER ========== -->
   <footer class="footer">
     <div class="container">
@@ -1372,5 +1411,6 @@
       }
     }, 3000);
   </script>
+  <script src="/js/install-cta.js"></script>
 </body>
 </html>

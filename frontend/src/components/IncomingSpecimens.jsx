@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { db } from "../db";
 import { ArrivalModal } from "./ArrivalModal";
+import { AcclimationChecklist } from "./AcclimationChecklist";
 import { generateAlias } from "../utils/generateAlias";
 import { isNudgeActive, isBatchNudgeActive, getRelativeTime, getPurchaseTypeLabel } from "../utils/arrivalNudge";
 
@@ -12,7 +13,7 @@ import { isNudgeActive, isBatchNudgeActive, getRelativeTime, getPurchaseTypeLabe
 
 const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || "";
 
-function IncomingCard({ specimen, casualModeActive, onMarkArrived }) {
+function IncomingCard({ specimen, casualModeActive, onMarkArrived, onAcclimate }) {
   const nudge = isNudgeActive(specimen);
   const typeLabel = getPurchaseTypeLabel(specimen.purchaseType, casualModeActive);
   const timeAgo = getRelativeTime(specimen.purchasedAt);
@@ -113,6 +114,23 @@ function IncomingCard({ specimen, casualModeActive, onMarkArrived }) {
         )}
         <button
           type="button"
+          onClick={() => onAcclimate(specimen)}
+          title="Guided acclimation timer"
+          style={{
+            fontSize: "0.7rem",
+            padding: "0.35rem 0.55rem",
+            whiteSpace: "nowrap",
+            background: "transparent",
+            border: "1px solid rgba(34,211,238,0.35)",
+            borderRadius: "8px",
+            color: "var(--accent-cyan, #22d3ee)",
+            cursor: "pointer",
+          }}
+        >
+          {specimen.acclimationCompletedAt ? "✅ Acclimated" : "💧 Acclimate"}
+        </button>
+        <button
+          type="button"
           className={casualModeActive ? "btn-primary" : "btn-primary-pro"}
           onClick={() => onMarkArrived(specimen)}
           style={{
@@ -128,7 +146,7 @@ function IncomingCard({ specimen, casualModeActive, onMarkArrived }) {
   );
 }
 
-function IncomingBatchCard({ order, casualModeActive, onBatchArrived }) {
+function IncomingBatchCard({ order, casualModeActive, onBatchArrived, onAcclimate }) {
   const nudge = isBatchNudgeActive(order);
   const timeAgo = getRelativeTime(order.createdAt);
 
@@ -194,6 +212,23 @@ function IncomingBatchCard({ order, casualModeActive, onBatchArrived }) {
         )}
         <button
           type="button"
+          onClick={() => onAcclimate(order)}
+          title="Guided acclimation timer"
+          style={{
+            fontSize: "0.7rem",
+            padding: "0.35rem 0.55rem",
+            whiteSpace: "nowrap",
+            background: "transparent",
+            border: "1px solid rgba(34,211,238,0.35)",
+            borderRadius: "8px",
+            color: "var(--accent-cyan, #22d3ee)",
+            cursor: "pointer",
+          }}
+        >
+          {order.acclimationCompletedAt ? "✅ Acclimated" : "💧 Acclimate"}
+        </button>
+        <button
+          type="button"
           className={casualModeActive ? "btn-primary" : "btn-primary-pro"}
           onClick={() => onBatchArrived(order)}
           style={{
@@ -221,6 +256,9 @@ function IncomingSpecimens({
   const [arrivalModalOpen, setArrivalModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedItemType, setSelectedItemType] = useState("specimen");
+  const [acclimationOpen, setAcclimationOpen] = useState(false);
+  const [acclimationItem, setAcclimationItem] = useState(null);
+  const [acclimationType, setAcclimationType] = useState("specimen");
 
   const fetchIncoming = useCallback(async () => {
     if (!walletAccount) return;
@@ -279,6 +317,22 @@ function IncomingSpecimens({
     setSelectedItem(order);
     setSelectedItemType("batch");
     setArrivalModalOpen(true);
+  };
+
+  const handleAcclimateSpecimen = (specimen) => {
+    setAcclimationItem(specimen);
+    setAcclimationType("specimen");
+    setAcclimationOpen(true);
+  };
+
+  const handleAcclimateBatch = (order) => {
+    setAcclimationItem(order);
+    setAcclimationType("batch");
+    setAcclimationOpen(true);
+  };
+
+  const handleAcclimationComplete = () => {
+    fetchIncoming(); // Refresh so the card reflects the ✅ Acclimated state
   };
 
   const handleModalComplete = (result) => {
@@ -384,6 +438,7 @@ function IncomingSpecimens({
             specimen={spec}
             casualModeActive={casualModeActive}
             onMarkArrived={handleMarkArrived}
+            onAcclimate={handleAcclimateSpecimen}
           />
         ))}
         {incomingBatches.map((order) => (
@@ -392,6 +447,7 @@ function IncomingSpecimens({
             order={order}
             casualModeActive={casualModeActive}
             onBatchArrived={handleBatchArrived}
+            onAcclimate={handleAcclimateBatch}
           />
         ))}
       </div>
@@ -407,6 +463,16 @@ function IncomingSpecimens({
         contractAddress={address}
         casualModeActive={casualModeActive}
         onComplete={handleModalComplete}
+      />
+
+      {/* Timed Acclimation Checklist */}
+      <AcclimationChecklist
+        isOpen={acclimationOpen}
+        onClose={() => setAcclimationOpen(false)}
+        item={acclimationItem}
+        itemType={acclimationType}
+        casualModeActive={casualModeActive}
+        onComplete={handleAcclimationComplete}
       />
     </div>
   );

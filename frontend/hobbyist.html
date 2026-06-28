@@ -12,6 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/shared.css">
 
   <style>
     /* =========================================
@@ -48,18 +49,6 @@
       --glass-bg:     rgba(7, 18, 32, 0.65);
       --glass-border: rgba(56, 189, 248, 0.1);
     }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: var(--bg-void);
-      color: var(--text-primary);
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-    }
-    a { color: inherit; text-decoration: none; }
-    button { cursor: pointer; font-family: inherit; border: none; background: none; }
 
     /* =========================================
        AMBIENT LAYER
@@ -120,10 +109,6 @@
     /* =========================================
        UTILITIES
     ========================================= */
-    .container { max-width: 1160px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
-    .section    { padding: 100px 0; }
-    .section-sm { padding: 60px 0; }
-
     .glass-card {
       background: var(--glass-bg);
       backdrop-filter: blur(24px);
@@ -202,37 +187,17 @@
     .badge-amber { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.25); color: var(--amber-300); }
 
     /* =========================================
-       NAVIGATION
+       NAVIGATION — Sky palette overrides
     ========================================= */
     .nav {
-      position: sticky; top: 0; z-index: 100;
       background: rgba(4,12,24,0.85);
-      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
       border-bottom: 1px solid rgba(56,189,248,0.08);
     }
-    .nav-inner {
-      max-width: 1160px; margin: 0 auto; padding: 0 24px;
-      height: 66px;
-      display: flex; align-items: center; justify-content: space-between;
-      position: relative; z-index: 1;
-    }
-    .nav-logo { display: flex; align-items: center; gap: 10px; }
     .nav-logo-mark {
-      width: 38px; height: 38px; border-radius: 10px;
       background: linear-gradient(135deg, rgba(20,184,166,0.15), rgba(139,92,246,0.15));
-      border: 1px solid rgba(255,255,255,0.08);
-      display: flex; align-items: center; justify-content: center;
       box-shadow: 0 0 20px rgba(20,184,166,0.3);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .nav-logo-mark:hover { box-shadow: 0 0 30px rgba(20,184,166,0.5); transform: scale(1.05); }
-    .nav-back {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 0.8rem; font-weight: 500;
-      color: var(--text-secondary);
-      transition: color 0.2s;
-    }
-    .nav-back:hover { color: var(--sky-300); }
+    .nav-logo-mark:hover { box-shadow: 0 0 30px rgba(20,184,166,0.5); }
 
     /* =========================================
        HERO
@@ -625,20 +590,6 @@
     .success-window p { font-size:0.82rem; color:var(--text-secondary); line-height:1.6; }
 
     /* =========================================
-       FOOTER
-    ========================================= */
-    .footer {
-      border-top:1px solid rgba(56,189,248,0.07);
-      padding:44px 0;
-      background:rgba(4,12,24,0.8);
-    }
-    .footer-inner {
-      display:flex; align-items:center;
-      justify-content:space-between; flex-wrap:wrap; gap:16px;
-    }
-    .footer-copy { font-size:0.78rem; color:var(--text-muted); }
-
-    /* =========================================
        RESPONSIVE
     ========================================= */
     @media(max-width:900px){
@@ -670,36 +621,7 @@
   <div class="bubbles" id="bubbles"></div>
 
   <!-- ========== NAVIGATION ========== -->
-  <header class="nav">
-    <nav class="nav-inner">
-      <a href="/" class="nav-logo">
-        <div class="nav-logo-mark">
-          <svg width="28" height="28" viewBox="0 0 38 38" fill="none">
-            <defs><linearGradient id="nav-g" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#5eead4"/><stop offset="50%" stop-color="#22d3ee"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs>
-            <circle cx="19" cy="19" r="15" stroke="url(#nav-g)" stroke-width="2.4" fill="none"/>
-            <path d="M19 4 C22.5 9.5, 24 14, 22.8 19 C21.6 24, 22.5 28.5, 19 34" stroke="url(#nav-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-            <path d="M19 4 C15.5 9.5, 14 14, 15.2 19 C16.4 24, 15.5 28.5, 19 34" stroke="url(#nav-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-            <path d="M4 19 C9.5 17, 14 16.2, 19 16.2 C24 16.2, 28.5 17, 34 19" stroke="#5eead4" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.9"/>
-            <path d="M4 19 C9.5 21, 14 21.8, 19 21.8 C24 21.8, 28.5 21, 34 19" stroke="#a78bfa" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="0.9"/>
-            <circle cx="19" cy="19" r="4" fill="url(#nav-g)"/>
-            <circle cx="17.5" cy="17.5" r="1.3" fill="#fff" opacity="0.7"/>
-          </svg>
-        </div>
-        <div>
-          <span style="font-family:'Outfit',sans-serif;font-weight:800;font-size:1rem;letter-spacing:0.1em;color:#fff;">AQUACELLUM</span>
-          <span style="display:block;font-size:9px;letter-spacing:0.15em;color:var(--sky-300);font-weight:600;text-transform:uppercase;margin-top:-2px;">For Hobbyists</span>
-        </div>
-      </a>
-
-      <div style="display:flex;align-items:center;gap:20px;">
-        <a href="#features" style="font-size:0.82rem;font-weight:500;color:var(--text-secondary);">Features</a>
-        <a href="#companion" style="font-size:0.82rem;font-weight:500;color:var(--text-secondary);">Companion</a>
-        <a href="/database" style="font-size:0.82rem;font-weight:500;color:var(--text-secondary);">Database</a>
-        <a href="/breeder" style="font-size:0.82rem;font-weight:500;color:var(--text-secondary);">For Breeders →</a>
-        <a href="/app.html" class="btn-sky" style="padding:9px 20px;font-size:0.82rem;">Open My Logbook</a>
-      </div>
-    </nav>
-  </header>
+  <header id="site-nav"></header>
 
   <!-- ========== HERO ========== -->
   <section class="hero">
@@ -710,7 +632,7 @@
       <div class="hero-content">
 
         <div class="hero-eyebrow">
-          <a href="/" class="back-link">
+          <a href="/index.html" class="back-link">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
             Back to main
           </a>
@@ -727,7 +649,7 @@
         </p>
 
         <div class="hero-ctas">
-          <a href="/app.html" class="btn-sky">
+          <a href="/app/tanks" class="btn-sky">
             Open My Logbook
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </a>
@@ -1143,30 +1065,47 @@
     </div>
   </section>
 
-  <!-- ========== FOOTER ========== -->
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-inner">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <svg width="22" height="22" viewBox="0 0 38 38" fill="none">
-            <defs><linearGradient id="ft-g" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#5eead4"/><stop offset="50%" stop-color="#22d3ee"/><stop offset="100%" stop-color="#a78bfa"/></linearGradient></defs>
-            <circle cx="19" cy="19" r="15" stroke="url(#ft-g)" stroke-width="2.2" fill="none"/>
-            <path d="M19 4 C22.5 9.5, 24 14, 22.8 19 C21.6 24, 22.5 28.5, 19 34" stroke="url(#ft-g)" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-            <path d="M19 4 C15.5 9.5, 14 14, 15.2 19 C16.4 24, 15.5 28.5, 19 34" stroke="url(#ft-g)" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-            <circle cx="19" cy="19" r="3.5" fill="url(#ft-g)"/>
-          </svg>
-          <span style="font-family:'Outfit',sans-serif;font-weight:800;font-size:0.9rem;letter-spacing:0.1em;color:#fff;">AQUACELLUM</span>
-          <span style="font-size:0.78rem;color:var(--text-muted);margin-left:4px;">· For Hobbyists</span>
-        </div>
-        <div style="display:flex;gap:20px;">
-          <a href="/" style="font-size:0.78rem;color:var(--text-muted);">Main Site</a>
-          <a href="/breeder" style="font-size:0.78rem;color:var(--text-muted);">For Breeders</a>
-          <a href="mailto:kevin@aquacellum.com" style="font-size:0.78rem;color:var(--text-muted);">Contact</a>
-        </div>
-        <p class="footer-copy">© 2026 Aquacellum. 25% of all platform fees support marine conservation.</p>
+  <!-- ========== GET THE APP ========== -->
+  <section id="install" style="padding:80px 24px 64px; text-align:center;">
+    <div style="max-width:680px; margin:0 auto;">
+      <div style="display:inline-flex;align-items:center;gap:8px;padding:5px 14px;border-radius:100px;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:20px;background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.25);color:var(--sky-400);">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Install the App
       </div>
+      <h2 style="font-family:'Outfit',sans-serif;font-weight:900;font-size:clamp(1.8rem,4vw,2.6rem);color:#fff;line-height:1.15;margin-bottom:16px;">
+        Your tank logbook,<br><span style="background:linear-gradient(135deg,var(--sky-400),var(--cyan-400));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">always in your pocket.</span>
+      </h2>
+      <p style="font-size:1rem;color:var(--text-secondary);line-height:1.7;max-width:520px;margin:0 auto 36px;">
+        Install Aquadex on your home screen for instant access, full-screen mode, and offline-first speed. No app store required.
+      </p>
+      <div id="installCard" style="max-width:440px;margin:0 auto;padding:32px 36px;background:var(--glass-bg);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid rgba(56,189,248,0.2);border-radius:20px;box-shadow:0 0 60px rgba(56,189,248,0.06),0 40px 80px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.06);">
+        <div style="margin-bottom:20px;display:flex;justify-content:center;">
+          <div style="width:72px;height:72px;border-radius:18px;overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,0.5),0 0 0 1px rgba(56,189,248,0.2);">
+            <img src="/icons/icon-192.png" alt="Aquadex app icon" width="72" height="72" style="display:block;">
+          </div>
+        </div>
+        <div style="font-family:'Outfit',sans-serif;font-size:1.1rem;font-weight:700;color:#fff;margin-bottom:4px;">Aquadex</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:24px;">aquadex.fish · ~1 MB install</div>
+        <button id="installBtn" onclick="triggerInstall()" style="display:none;width:100%;padding:14px;border-radius:10px;background:linear-gradient(135deg,var(--sky-400),var(--cyan-400));color:#fff;font-family:'Outfit',sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;border:none;margin-bottom:12px;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 24px rgba(56,189,248,0.25);">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle;margin-right:6px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Install Aquadex
+        </button>
+        <div id="installIos" style="display:none;padding:16px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08);border-radius:12px;font-size:0.82rem;color:var(--text-secondary);line-height:1.6;text-align:left;">
+          <strong style="color:#fff;display:block;margin-bottom:6px;">📲 Add to Home Screen</strong>
+          Tap the <strong style="color:var(--sky-400);">Share</strong> button in Safari, then scroll down and tap <strong style="color:var(--sky-400);">Add to Home Screen</strong>.
+        </div>
+        <div id="installDone" style="display:none;padding:14px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:10px;font-size:0.85rem;color:var(--emerald-400);font-weight:600;">✓ Aquadex is installed</div>
+        <a id="installFallback" href="/app" style="display:inline-flex;align-items:center;gap:8px;margin-top:12px;font-size:0.85rem;font-weight:600;color:var(--sky-400);text-decoration:none;">
+          Open in browser
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+      </div>
+      <div style="margin-top:24px;font-size:0.72rem;color:var(--text-muted);">Works on Android, iOS, Mac, Windows & ChromeOS · No app store fees</div>
     </div>
-  </footer>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer id="site-footer"></footer>
 
   <!-- ========== JAVASCRIPT ========== -->
   <script>
@@ -1556,5 +1495,10 @@
       }
     }
   </script>
+
+  <script src="/js/nav.js"></script>
+  <script src="/js/footer.js"></script>
+  <script src="/js/reveal.js"></script>
+  <script src="/js/install-cta.js"></script>
 </body>
 </html>

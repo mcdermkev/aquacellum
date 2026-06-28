@@ -7,10 +7,20 @@
       "includeFiles": "public/fishbase_master.json"
     }
   },
+  "redirects": [
+    { "source": "/tanks", "destination": "/app/tanks", "permanent": false },
+    { "source": "/breeder-tools", "destination": "/app/breeder", "permanent": false },
+    { "source": "/orders", "destination": "/app/orders", "permanent": false },
+    { "source": "/incoming", "destination": "/app/incoming", "permanent": false },
+    { "source": "/my-store", "destination": "/app/storefront", "permanent": false },
+    { "source": "/settings", "destination": "/app/settings", "permanent": false },
+    { "source": "/reef-social", "destination": "/app/reef", "permanent": false }
+  ],
   "rewrites": [
     { "source": "/store/:path*", "destination": "/store.html" },
     { "source": "/species/:path*", "destination": "/species.html" },
     { "source": "/app", "destination": "/app.html" },
+    { "source": "/app/:path*", "destination": "/app.html" },
     { "source": "/hobbyist", "destination": "/hobbyist.html" },
     { "source": "/breeder", "destination": "/breeder.html" },
     { "source": "/database", "destination": "/database.html" },

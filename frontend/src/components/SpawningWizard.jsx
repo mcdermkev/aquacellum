@@ -3,7 +3,7 @@ import { ethers, Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { addXp, XP_ACTIONS } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
-import { relaySpawn } from "../services/relayer";
+import { relaySpawn, relayRegisterTank } from "../services/relayer";
 import { compressImage } from "../utils/imageCompression";
 import { db } from "../db";
 
@@ -46,6 +46,32 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
   });
   const [offspringCount, setOffspringCount] = useState(1);
   const [selectedCohortPhoto, setSelectedCohortPhoto] = useState("");
+
+  // Inline "create a new tank" state for Step 2
+  const [creatingTank, setCreatingTank] = useState(false);
+  const [newTankName, setNewTankName] = useState("");
+  const [tankBusy, setTankBusy] = useState(false);
+
+  const handleCreateTank = async () => {
+    const name = newTankName.trim();
+    if (!name) return;
+    setTankBusy(true);
+    try {
+      const res = await relayRegisterTank({ name, ownerAddress: walletAccount });
+      if (!res.success) throw new Error(res.error || "Failed to create tank");
+      const newTank = { id: Number(res.tankId), name, volumeLiters: 75, latestLog: null };
+      setTanks(prev => [...prev, newTank]);
+      setSelectedTankId(String(res.tankId));
+      setSnappedParameters(null);
+      setCreatingTank(false);
+      setNewTankName("");
+    } catch (err) {
+      console.error("[SpawningWizard] Tank creation failed:", err);
+      showToast(err.message || "Failed to create tank");
+    } finally {
+      setTankBusy(false);
+    }
+  };
 
   const handleCohortPhotoChange = async (e) => {
     const file = e.target.files[0];
@@ -114,7 +140,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
       let specimenToLocation = {};
       let localSpecimens = [];
       try {
-        const cachedTanks = await db.tanks.where("ownerAddress").equals(walletAccount).toArray();
+        const cachedTanks = await db.tanks.where("ownerAddress").equals((walletAccount || "").toLowerCase()).toArray();
         for (const tank of cachedTanks) {
           if (tank.specimens) {
             for (const spec of tank.specimens) {
@@ -146,7 +172,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
 
       // Also check the specimens table directly for any not attached to tanks
       try {
-        const dexieSpecimens = await db.specimens.where("ownerAddress").equals(walletAccount).toArray();
+        const dexieSpecimens = await db.specimens.where("ownerAddress").equals((walletAccount || "").toLowerCase()).toArray();
         for (const spec of dexieSpecimens) {
           if (!localSpecimens.some(ls => ls.id === Number(spec.id)) && Number(spec.status || 0) === 0) {
             const loc = specimenToLocation[Number(spec.id)] || { tankId: 0, facility: "Unknown", parentUnitId: 0 };
@@ -235,7 +261,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
       // 3. Load user tanks (local-first from Dexie, then on-chain fallback)
       let localTanks = [];
       try {
-        const dexieTanks = await db.tanks.where("ownerAddress").equals(walletAccount).toArray();
+        const dexieTanks = await db.tanks.where("ownerAddress").equals((walletAccount || "").toLowerCase()).toArray();
         localTanks = dexieTanks.filter(t => t.active !== false).map(t => ({
           id: Number(t.id),
           name: t.name,
@@ -545,9 +571,17 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                     style={{ width: "100%", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.8rem", marginBottom: "0.5rem" }}
                   >
                     <option value="0">🐟 Select a Male Fish…</option>
-                    {specimens.map(s => (
-                      <option key={`sire-${s.id}`} value={s.id}>{getSpecimenLabel(s)}</option>
-                    ))}
+                    {specimens
+                      .filter(s => {
+                        if (selectedDamId === "0") return true;
+                        const dam = specimens.find(x => x.id === Number(selectedDamId));
+                        if (!dam) return true;
+                        if (s.id === dam.id) return false;
+                        return s.speciesId === dam.speciesId;
+                      })
+                      .map(s => (
+                        <option key={`sire-${s.id}`} value={s.id}>{getSpecimenLabel(s)}</option>
+                      ))}
                   </select>
                   
                   {selectedSireId !== "0" && selectedSire ? (
@@ -611,18 +645,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                         const sire = specimens.find(s => s.id === Number(selectedSireId));
                         if (!sire) return true;
                         if (d.id === sire.id) return false;
-                        if (d.speciesId !== sire.speciesId) return false;
-                        if (!casualModeActive) {
-                          const sameFacility = d.facility && sire.facility && d.facility.toLowerCase() === sire.facility.toLowerCase() && d.facility !== "Unknown";
-                          const sameTank = d.tankId > 0 && sire.tankId > 0 && d.tankId === sire.tankId;
-                          const sireTankParent = sire.parentUnitId || 0;
-                          const damTankParent = d.parentUnitId || 0;
-                          const sameParentUnit = (sireTankParent > 0 && sireTankParent === damTankParent) ||
-                                                 (sireTankParent > 0 && sireTankParent === d.tankId) ||
-                                                 (damTankParent > 0 && damTankParent === sire.tankId);
-                          return sameFacility || sameTank || sameParentUnit;
-                        }
-                        return true;
+                        return d.speciesId === sire.speciesId;
                       })
                       .map(d => (
                         <option key={`dam-${d.id}`} value={d.id}>{getSpecimenLabel(d)}</option>
@@ -707,14 +730,53 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                 <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>Which tank will they breed in?</label>
                 <select 
                   value={selectedTankId}
-                  onChange={(e) => handleTankSelect(e.target.value)}
+                  onChange={(e) => {
+                    if (e.target.value === "__new__") {
+                      setCreatingTank(true);
+                      return;
+                    }
+                    setCreatingTank(false);
+                    handleTankSelect(e.target.value);
+                  }}
                   style={{ width: "100%", padding: "0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
                 >
                   <option value="0">🧴 Pick a tank…</option>
                   {tanks.map(t => (
                     <option key={`tank-${t.id}`} value={t.id}>{t.name} (Serial No. {t.id.toString().padStart(3, "0")})</option>
                   ))}
+                  <option value="__new__">➕ Create a new tank…</option>
                 </select>
+
+                {creatingTank && (
+                  <div style={{ marginTop: "0.75rem", display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                    <input
+                      type="text"
+                      value={newTankName}
+                      onChange={(e) => setNewTankName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleCreateTank(); }}
+                      placeholder={casualModeActive ? "Name your new tank (e.g. Breeding Tank)" : "New containment unit name"}
+                      autoFocus
+                      style={{ flex: 1, padding: "0.6rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.85rem" }}
+                    />
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={handleCreateTank}
+                      disabled={tankBusy || !newTankName.trim()}
+                      style={{ padding: "0.6rem 1rem", fontSize: "0.8rem", whiteSpace: "nowrap", opacity: tankBusy || !newTankName.trim() ? 0.6 : 1 }}
+                    >
+                      {tankBusy ? "Creating…" : "Create"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setCreatingTank(false); setNewTankName(""); }}
+                      style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "1rem", padding: "0 0.25rem" }}
+                      aria-label="Cancel"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
               </div>
 
               {selectedTankId !== "0" && (
