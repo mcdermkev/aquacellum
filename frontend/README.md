@@ -1,103 +1,98 @@
-# Aquadex Protocol — Frontend
+# Aquacellum — Static Frontend
 
-The Aquadex Protocol frontend is a React 18 + Vite application deployed on Vercel. It connects to smart contracts on **Base Sepolia** testnet for species cataloging, specimen management, tank tracking, and peer-to-peer marketplace trading.
+Premium multi-page marketing site for the Aquacellum aquarium registry, breeding platform, and marketplace.
 
-## 🌐 Live Demo
+## Quick Start
 
-**https://aquacellum.com**
+This is a static site — no build step required. Serve the `frontend/` directory with any static file server.
 
-Connect a MetaMask wallet on Base Sepolia to interact with the full app.
-
----
-
-## 📜 Deployed Contracts (Base Sepolia)
-
-| Contract | Address | Explorer |
-|----------|---------|----------|
-| **AquadexManager** | `0x351ca8f34D94F29F6f865Afa419A636324473DeF` | [BaseScan](https://sepolia.basescan.org/address/0x351ca8f34D94F29F6f865Afa419A636324473DeF) |
-| **AquadexMarketplace** | `0x16168B514144e0380610b78d904a4de51ba03Ca3` | [BaseScan](https://sepolia.basescan.org/address/0x16168B514144e0380610b78d904a4de51ba03Ca3) |
-
-**Network:** Base Sepolia (Chain ID: 84532)  
-**Curator:** `0xc42eD9F8Fc56F89380a8eD337169899f425Dc934`
-
----
-
-## 🪙 Getting Base Sepolia Testnet ETH
-
-To test transactions you need free testnet ETH. Options:
-
-1. **Alchemy Faucet** — https://www.alchemy.com/faucets/base-sepolia  
-2. **QuickNode Faucet** — https://faucet.quicknode.com/base/sepolia  
-3. **Superchain Faucet** — https://app.optimism.io/faucet (select Base Sepolia)
-
-Most faucets require a wallet address and give 0.01–0.1 ETH per request. That's more than enough for dozens of test transactions (gas is extremely cheap on Base Sepolia).
-
----
-
-## 🛠 Local Development
+### Option 1: Python (built-in)
 
 ```bash
 cd frontend
-npm install
-npm run dev
+python -m http.server 8080
 ```
 
-The app runs at `http://localhost:5173` by default.
-
-### Environment Variables
-
-Create a `frontend/.env` file (already present in the repo):
-
-```
-VITE_MANAGER_ADDRESS=0x351ca8f34D94F29F6f865Afa419A636324473DeF
-VITE_MARKETPLACE_ADDRESS=0x16168B514144e0380610b78d904a4de51ba03Ca3
-VITE_CHAIN_ID=84532
-VITE_RPC_URL=https://sepolia.base.org
-VITE_BLOCK_EXPLORER=https://sepolia.basescan.org
-```
-
-### Build for Production
+### Option 2: Node.js (npx)
 
 ```bash
-npm run build
+npx serve frontend
 ```
 
-Output goes to `frontend/dist/`.
+### Option 3: VS Code Live Server
 
----
+Install the "Live Server" extension, right-click `index.html`, and select **Open with Live Server**.
 
-## 🧪 Testing the Marketplace
+Then open [http://localhost:8080](http://localhost:8080) (or whatever port your server uses).
 
-Since this is a testnet deployment, you can test buying and selling using **two MetaMask accounts** in the same browser:
+## Site Structure
 
-1. In MetaMask, create a second account (Account 2).
-2. Send a small amount of testnet ETH from your main wallet to Account 2 (or use a faucet).
-3. With Account 1: list a specimen for sale on the marketplace.
-4. Switch to Account 2 in MetaMask: purchase the listing.
-5. The app will detect the account switch automatically.
+```
+frontend/
+├── css/
+│   └── shared.css          # Unified design system (tokens, layout, components)
+├── js/
+│   ├── nav.js              # Shared navigation (injected into #site-nav)
+│   ├── footer.js           # Shared footer (injected into #site-footer)
+│   └── reveal.js           # Scroll-reveal animations (IntersectionObserver)
+├── index.html              # Landing page with waitlist
+├── database.html           # Species database (326+ species)
+├── species.html            # Individual species profile (dynamic via JS)
+├── breeds.html             # Breed gallery / lineage registry
+├── breeders.html           # Interactive breeder map (Leaflet)
+├── marketplace.html        # Live livestock marketplace
+├── store.html              # Individual breeder storefront
+├── how-it-works.html       # Escrow guide, pricing, FAQ
+├── reef.html               # The Reef — social layer
+├── hobbyist.html           # For Hobbyists landing page
+├── poseidon.html           # Poseidon AI chat assistant
+└── about.html              # Team, mission, roadmap
+```
 
-This lets you exercise the full buy/sell/escrow flow solo.
+## Design System
 
----
+All pages share `css/shared.css` which provides:
 
-## 📁 Key Frontend Files
+- **Tokens** — colors (violet, emerald, teal, cyan, amber), typography, spacing, radii
+- **Base** — reset, body, scrollbar, selection
+- **Layout** — container, sections, grid utilities
+- **Ambient** — floating orb background with blur
+- **Glassmorphism** — glass cards with backdrop-filter
+- **Navigation** — sticky nav with mobile toggle
+- **Components** — buttons, badges, chips, cards, inputs, breadcrumbs, toasts
+- **Footer** — 4-column responsive footer
+- **Animations** — fade-in-up, reveal on scroll, pulse dot
+- **Responsive** — mobile-first breakpoints at 480px, 768px, 1024px
 
-| Path | Purpose |
-|------|---------|
-| `src/App.jsx` | Root component, contract address constants |
-| `src/utils/smartAccount.js` | Provider/signer setup, chain switching |
-| `src/components/ConnectWallet.jsx` | MetaMask connection + network guard |
-| `src/abi/AquadexManager.json` | Manager contract ABI |
-| `src/abi/AquadexMarketplace.json` | Marketplace contract ABI |
-| `public/species-images/` | Local species imagery (95 images) |
-| `public/fishbase_master.json` | Full species reference database |
+Pages override tokens via `:root` when using alternate palettes (e.g., reef.html uses coral/ocean, hobbyist.html uses sky-blue).
 
----
+## Adding a New Page
 
-## 🏗 Tech Stack
+1. Create your `.html` file in `frontend/`
+2. Include in `<head>`:
+   ```html
+   <link rel="stylesheet" href="/css/shared.css">
+   ```
+3. Add navigation and footer targets in `<body>`:
+   ```html
+   <header id="site-nav"></header>
+   <!-- your content -->
+   <footer id="site-footer"></footer>
+   ```
+4. Include shared scripts before `</body>`:
+   ```html
+   <script src="/js/nav.js"></script>
+   <script src="/js/footer.js"></script>
+   <script src="/js/reveal.js"></script>
+   ```
 
-- **React 18.3** + **Vite 8**
-- **ethers.js v6** (loaded via CDN to avoid bundling issues)
-- **Base Sepolia** (EVM L2 testnet)
-- **Vercel** (hosting + serverless functions)
-- **Gemini 1.5 Flash** (AI species validation via `/api/suggest-species`)
+## Fonts
+
+The site uses Google Fonts loaded via CDN:
+- **Inter** — body text
+- **Outfit** — headings and display
+- **JetBrains Mono** — code and data values
+
+## Browser Support
+
+Modern browsers (Chrome, Firefox, Safari, Edge). Requires CSS `backdrop-filter` support for glassmorphism effects.

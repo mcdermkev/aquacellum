@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Zone Leaderboard — Aquacellum</title>
+  <meta name="description" content="See the top fishkeepers and breeders in your region. Climb the ranks by breeding, posting, and helping the community.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/js/shared-styles.css">
+  <style>
+    :root{--bg-void:#060810;--bg-deep:#080b16;--bg-surface:#0c1020;--bg-elevated:#101428;--emerald-400:#34d399;--ocean-400:#38bdf8;--violet-400:#a78bfa;--coral-400:#f97066;--amber-400:#fbbf24;--text-primary:#f0f4ff;--text-secondary:#94a3b8;--text-muted:#475569;--glass-bg:rgba(12,16,32,0.7);--glass-border:rgba(255,255,255,0.06);--radius-sm:10px;--radius-md:14px;--radius-lg:18px;--radius-full:100px;--transition:all 0.25s cubic-bezier(0.4,0,0.2,1)}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:'Inter',sans-serif;background:var(--bg-void);color:var(--text-primary);min-height:100vh;-webkit-font-smoothing:antialiased}a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:inherit;border:none;background:none;color:inherit}
+    .ambient-layer{position:fixed;inset:0;pointer-events:none;z-index:0}.orb{position:absolute;border-radius:50%;filter:blur(120px);animation:od 20s ease-in-out infinite}.orb-1{width:450px;height:450px;background:radial-gradient(circle,rgba(251,191,36,0.08) 0%,transparent 70%);top:-100px;left:30%}.orb-2{width:380px;height:380px;background:radial-gradient(circle,rgba(249,112,102,0.06) 0%,transparent 70%);bottom:5%;right:-50px;animation-delay:9s}@keyframes od{0%,100%{transform:translate(0,0)}50%{transform:translate(15px,-10px)}}
+    .topnav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:56px;background:rgba(6,8,16,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--glass-border)}.topnav-logo{display:flex;align-items:center;gap:10px}.topnav-logo-mark{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(251,191,36,0.12),rgba(249,112,102,0.1));border:1px solid rgba(255,255,255,0.08);border-radius:8px;font-size:0.9rem}.topnav-logo-text{font-family:'Outfit',sans-serif;font-weight:800;font-size:0.9rem;letter-spacing:0.1em}.topnav-links{display:flex;gap:20px}.topnav-links a{font-size:0.8rem;font-weight:500;color:var(--text-secondary)}.topnav-links a:hover{color:var(--text-primary)}
+    .main{max-width:750px;margin:0 auto;padding:36px 24px 80px;position:relative;z-index:1}
+    .page-title{font-family:'Outfit',sans-serif;font-size:1.5rem;font-weight:800;margin-bottom:6px}
+    .page-subtitle{font-size:0.82rem;color:var(--text-secondary);margin-bottom:24px}
+    .filter-row{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap}
+    .filter-btn{padding:8px 16px;font-size:0.72rem;font-weight:600;border-radius:var(--radius-full);color:var(--text-muted);background:rgba(255,255,255,0.03);border:1px solid var(--glass-border);transition:var(--transition)}.filter-btn:hover{color:var(--text-secondary);border-color:rgba(255,255,255,0.1)}.filter-btn.active{color:var(--amber-400);background:rgba(251,191,36,0.08);border-color:rgba(251,191,36,0.2)}
+    .podium{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:32px;text-align:center}
+    .podium-card{padding:20px 12px;border-radius:var(--radius-lg);background:var(--glass-bg);border:1px solid var(--glass-border);transition:var(--transition)}.podium-card:hover{transform:translateY(-4px)}
+    .podium-card:nth-child(1){order:2;border-color:rgba(251,191,36,0.2);background:rgba(251,191,36,0.04)}.podium-card:nth-child(2){order:1}.podium-card:nth-child(3){order:3}
+    .podium-rank{font-family:'Outfit',sans-serif;font-size:1.4rem;font-weight:900;margin-bottom:6px}.rank-1{color:var(--amber-400)}.rank-2{color:var(--text-secondary)}.rank-3{color:#cd7f32}
+    .podium-avatar{width:48px;height:48px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:700;color:#fff}
+    .podium-name{font-weight:600;font-size:0.82rem;margin-bottom:2px}.podium-xp{font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--amber-400)}.podium-tier{font-size:0.62rem;color:var(--text-muted)}
+    .leaderboard-list{display:flex;flex-direction:column;gap:6px}
+    .lb-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:var(--radius-md);background:var(--glass-bg);border:1px solid var(--glass-border);transition:var(--transition)}.lb-row:hover{border-color:rgba(251,191,36,0.12)}
+    .lb-rank{font-family:'JetBrains Mono',monospace;font-size:0.75rem;font-weight:700;color:var(--text-muted);min-width:24px;text-align:center}
+    .lb-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#fff;flex-shrink:0}
+    .lb-info{flex:1;min-width:0}.lb-name{font-weight:600;font-size:0.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lb-species{font-size:0.65rem;color:var(--text-muted)}
+    .lb-xp{font-family:'JetBrains Mono',monospace;font-size:0.78rem;font-weight:700;color:var(--amber-400);text-align:right}
+    .lb-tier{font-size:0.6rem;font-weight:600;padding:2px 7px;border-radius:6px;white-space:nowrap}
+    .tier-hadal{background:rgba(249,112,102,0.1);color:var(--coral-400)}.tier-abyssal{background:rgba(56,189,248,0.1);color:var(--ocean-400)}.tier-pelagic{background:rgba(167,139,250,0.1);color:var(--violet-400)}.tier-coastal{background:rgba(52,211,153,0.1);color:var(--emerald-400)}.tier-shallow{background:rgba(255,255,255,0.04);color:var(--text-muted)}
+    @media(max-width:768px){.topnav-links{display:none}.main{padding:24px 14px 60px}.podium{grid-template-columns:1fr 1fr 1fr;gap:8px}}
+  </style>
+</head>
+<body>
+  <div class="ambient-layer"><div class="orb orb-1"></div><div class="orb orb-2"></div></div>
+  <header id="aqua-nav"></header>
+  <script type="module" src="/js/privy-auth.js"></script>
+  <script type="module" src="/js/shared-nav.js"></script>
+  <main class="main">
+    <h1 class="page-title">Zone Leaderboard</h1>
+    <p class="page-subtitle">Top fishkeepers ranked by Depth Score. Breed, post, and contribute to climb.</p>
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="setFilter('all',this)">🌍 Global</button>
+      <button class="filter-btn" onclick="setFilter('breeders',this)">🧬 Top Breeders</button>
+      <button class="filter-btn" onclick="setFilter('social',this)">🪸 Most Social</button>
+      <button class="filter-btn" onclick="setFilter('helpful',this)">🤝 Most Helpful</button>
+    </div>
+    <div class="podium" id="podium"></div>
+    <div class="leaderboard-list" id="lbList"></div>
+  </main>
+  <script>
+    const COLORS=['linear-gradient(135deg,#f97066,#fb923c)','linear-gradient(135deg,#38bdf8,#a78bfa)','linear-gradient(135deg,#34d399,#2dd4bf)','linear-gradient(135deg,#a78bfa,#e879f9)','linear-gradient(135deg,#fbbf24,#f97316)'];
+    const USERS=[
+      {name:'AquaJen',xp:1247,tier:'Hadal',species:'Discus, Altums',avatar:'AJ'},
+      {name:'PlecoPrince',xp:1089,tier:'Hadal',species:'L046, L201, BN Plecos',avatar:'PP'},
+      {name:'TankGuru',xp:934,tier:'Abyssal',species:'Aquascaping, Planted',avatar:'TG'},
+      {name:'BettaQueen',xp:812,tier:'Abyssal',species:'Betta splendens',avatar:'BQ'},
+      {name:'ShrimpLord99',xp:756,tier:'Pelagic',species:'Caridina, Neocaridina',avatar:'SL'},
+      {name:'CichlidSam',xp:698,tier:'Pelagic',species:'Mbuna, Peacocks',avatar:'CS'},
+      {name:'CorydorasKing',xp:623,tier:'Pelagic',species:'C. sterbai, C. panda',avatar:'CK'},
+      {name:'RainbowRita',xp:541,tier:'Coastal',species:'Boesemani, Praecox',avatar:'RR'},
+      {name:'NanoNate',xp:487,tier:'Coastal',species:'Endlers, Chili Rasbora',avatar:'NN'},
+      {name:'ReefRunner',xp:412,tier:'Coastal',species:'Marine, Coral frags',avatar:'RR'},
+      {name:'GoldfishGary',xp:356,tier:'Shallow',species:'Fancy Goldfish',avatar:'GG'},
+      {name:'AxolotlAmy',xp:298,tier:'Shallow',species:'Axolotls, Newts',avatar:'AA'},
+    ];
+
+    function render(){
+      const top3=USERS.slice(0,3);
+      document.getElementById('podium').innerHTML=top3.map((u,i)=>`
+        <div class="podium-card">
+          <div class="podium-rank rank-${i+1}">#${i+1}</div>
+          <div class="podium-avatar" style="background:${COLORS[i]}">${u.avatar}</div>
+          <div class="podium-name">${u.name}</div>
+          <div class="podium-xp">${u.xp} XP</div>
+          <div class="podium-tier">${u.tier}</div>
+        </div>`).join('');
+
+      document.getElementById('lbList').innerHTML=USERS.slice(3).map((u,i)=>`
+        <div class="lb-row">
+          <span class="lb-rank">${i+4}</span>
+          <div class="lb-avatar" style="background:${COLORS[(i+3)%COLORS.length]}">${u.avatar}</div>
+          <div class="lb-info"><div class="lb-name">${u.name}</div><div class="lb-species">${u.species}</div></div>
+          <span class="lb-tier tier-${u.tier.toLowerCase()}">${u.tier}</span>
+          <span class="lb-xp">${u.xp}</span>
+        </div>`).join('');
+    }
+
+    function setFilter(type, btn){
+      document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      // Shuffle for demo effect
+      if(type!=='all') USERS.sort(()=>Math.random()-0.5);
+      else USERS.sort((a,b)=>b.xp-a.xp);
+      render();
+    }
+    render();
+  </script>
+</body>
+</html>

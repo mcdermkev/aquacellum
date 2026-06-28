@@ -13,7 +13,6 @@
  */
 
 import { useEffect, useState } from "react";
-// eslint-disable-next-line import/no-unresolved
 import { useRegisterSW } from "virtual:pwa-register/react";
 
 const IOS_HINT_DISMISS_KEY = "aquadex_ios_install_hint_dismissed";

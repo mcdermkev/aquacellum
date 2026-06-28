@@ -7,68 +7,17 @@
   <meta name="description" content="Learn about the team and mission behind Aquacellum — the living aquatic registry and marketplace built for hobbyists and professional breeders.">
   <meta property="og:title" content="About Aquacellum">
   <meta property="og:description" content="Built by fishkeepers, for fishkeepers. Transparent lineage tracking, escrow-protected marketplace, and conservation-backed community.">
+  <meta property="og:type" content="website">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
+  <!-- Shared Design System -->
+  <link rel="stylesheet" href="/css/shared.css">
+
   <style>
-    :root {
-      --bg-void:      #060710;
-      --bg-deep:      #0a0b14;
-      --bg-surface:   #0f1020;
-      --violet-300:   #c4b5fd;
-      --violet-400:   #a78bfa;
-      --violet-500:   #8b5cf6;
-      --violet-600:   #7c3aed;
-      --purple-300:   #d8b4fe;
-      --purple-400:   #c084fc;
-      --emerald-300:  #6ee7b7;
-      --emerald-400:  #34d399;
-      --teal-300:     #5eead4;
-      --teal-400:     #2dd4bf;
-      --cyan-300:     #67e8f9;
-      --amber-300:    #fcd34d;
-      --amber-400:    #fbbf24;
-      --blue-400:     #60a5fa;
-      --text-primary: #f5f3ff;
-      --text-secondary: #a8a0c4;
-      --text-muted:   #4a3f6b;
-      --glass-bg:     rgba(15, 12, 31, 0.7);
-      --glass-border: rgba(167, 139, 250, 0.1);
-      --radius-sm: 12px; --radius-md: 18px; --radius-lg: 24px; --radius-xl: 32px;
-      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 16px; scroll-behavior: smooth; }
-    body { font-family: 'Inter', sans-serif; background: var(--bg-void); color: var(--text-primary); overflow-x: hidden; -webkit-font-smoothing: antialiased; min-height: 100vh; }
-    a { color: inherit; text-decoration: none; } button { cursor: pointer; font-family: inherit; border: none; background: none; }
-    /* Ambient */
-    .ambient-layer { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-    .orb { position: absolute; border-radius: 50%; filter: blur(120px); animation: orb-drift 18s ease-in-out infinite; }
-    .orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(139,92,246,0.09) 0%, transparent 70%); top: -150px; left: -80px; }
-    .orb-2 { width: 450px; height: 450px; background: radial-gradient(circle, rgba(52,211,153,0.07) 0%, transparent 70%); bottom: -100px; right: -80px; animation-delay: -6s; }
-    .orb-3 { width: 350px; height: 350px; background: radial-gradient(circle, rgba(251,191,36,0.04) 0%, transparent 70%); top: 50%; left: 50%; animation-delay: -12s; }
-    @keyframes orb-drift { 0%, 100% { transform: translate(0,0) scale(1); } 33% { transform: translate(30px,-20px) scale(1.05); } 66% { transform: translate(-20px,15px) scale(0.95); } }
-
-    /* Nav */
-    .nav { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(20px) saturate(1.4); background: rgba(6,7,16,0.88); border-bottom: 1px solid var(--glass-border); padding: 0 24px; }
-    .nav-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; }
-    .nav-logo { display: flex; align-items: center; gap: 12px; }
-    .nav-logo-mark { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(52,211,153,0.1)); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; box-shadow: 0 0 16px rgba(139,92,246,0.25); }
-    .nav-logo-text { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1rem; letter-spacing: 0.1em; color: #fff; }
-    .nav-logo-sub { display: block; font-size: 9px; letter-spacing: 0.15em; color: var(--teal-300); font-weight: 600; text-transform: uppercase; margin-top: -2px; }
-    .nav-links { display: flex; align-items: center; gap: 20px; list-style: none; }
-    .nav-links a { font-size: 0.82rem; font-weight: 500; color: var(--text-secondary); transition: color 0.2s; }
-    .nav-links a:hover { color: var(--violet-300); }
-    .nav-cta { display: flex; align-items: center; gap: 8px; padding: 9px 20px; font-size: 0.82rem; font-weight: 600; color: #fff; background: linear-gradient(135deg, var(--violet-600), var(--purple-400)); border-radius: 10px; transition: var(--transition); }
-    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(139,92,246,0.3); }
-
-    /* Container */
-    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
-    .section { padding: 60px 0; }
-    .section-divider { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, var(--glass-border), transparent); }
-    /* Hero */
+    /* About Page — Specific Styles */
     .hero { padding: 80px 0 60px; text-align: center; position: relative; }
     .hero::before { content: ''; position: absolute; top: 50%; left: 50%; width: 600px; height: 600px; transform: translate(-50%,-50%); background: radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 60%); pointer-events: none; }
     .hero h1 { font-family: 'Outfit', sans-serif; font-size: clamp(2.2rem, 5vw, 3.2rem); font-weight: 900; line-height: 1.15; margin-bottom: 20px; }
@@ -123,25 +72,9 @@
     .tech-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
     .tech-chip { padding: 6px 14px; border-radius: 20px; font-size: 0.68rem; font-weight: 600; color: var(--text-secondary); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
 
-    /* Section titles */
-    .section-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--violet-400); margin-bottom: 8px; }
-    .section-title { font-family: 'Outfit', sans-serif; font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800; color: var(--text-primary); margin-bottom: 12px; }
-    .section-desc { font-size: 0.92rem; color: var(--text-secondary); max-width: 600px; line-height: 1.7; }
-
-    /* Footer */
-    .footer { position: relative; z-index: 1; padding: 40px 0; border-top: 1px solid var(--glass-border); text-align: center; }
-    .footer p { font-size: 0.78rem; color: var(--text-muted); }
-    .footer-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 12px; flex-wrap: wrap; }
-    .footer-links a { font-size: 0.8rem; color: var(--text-secondary); transition: color 0.2s; }
-    .footer-links a:hover { color: var(--violet-300); }
-
     /* Responsive */
     @media (max-width: 768px) {
-      .nav-links { display: none; }
-      .hero { padding: 48px 0 32px; }
-      .section { padding: 40px 0; }
-      .mission-grid { grid-template-columns: 1fr; }
-      .team-grid { grid-template-columns: 1fr; }
+      .mission-grid, .team-grid { grid-template-columns: 1fr; }
       .values-grid { grid-template-columns: 1fr; }
       .conservation-banner { flex-direction: column; gap: 14px; padding: 24px; }
     }
@@ -150,34 +83,8 @@
 <body>
   <div class="ambient-layer"><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
 
-  <!-- Navigation -->
-  <header class="nav">
-    <nav class="nav-inner">
-      <a href="/" class="nav-logo">
-        <div class="nav-logo-mark">
-          <svg width="28" height="28" viewBox="0 0 38 38" fill="none">
-            <defs><linearGradient id="ng" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#a78bfa"/><stop offset="50%" stop-color="#34d399"/><stop offset="100%" stop-color="#60a5fa"/></linearGradient></defs>
-            <circle cx="19" cy="19" r="15" stroke="url(#ng)" stroke-width="2.4" fill="none"/>
-            <path d="M19 4 C22.5 9.5,24 14,22.8 19 C21.6 24,22.5 28.5,19 34" stroke="url(#ng)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-            <path d="M19 4 C15.5 9.5,14 14,15.2 19 C16.4 24,15.5 28.5,19 34" stroke="url(#ng)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-            <circle cx="19" cy="19" r="4" fill="url(#ng)"/><circle cx="17.5" cy="17.5" r="1.3" fill="#fff" opacity="0.7"/>
-          </svg>
-        </div>
-        <div>
-          <span class="nav-logo-text">AQUACELLUM</span>
-          <span class="nav-logo-sub">About</span>
-        </div>
-      </a>
-      <ul class="nav-links">
-        <li><a href="/marketplace">Marketplace</a></li>
-        <li><a href="/database">Species Database</a></li>
-        <li><a href="/breeds">Breed Gallery</a></li>
-        <li><a href="/breeders">Find Breeders</a></li>
-        <li><a href="/how-it-works">How It Works</a></li>
-      </ul>
-      <a href="/app" class="nav-cta">Open App</a>
-    </nav>
-  </header>
+  <!-- Shared Navigation -->
+  <header id="site-nav"></header>
 
   <!-- Hero -->
   <section class="hero">
@@ -188,34 +95,18 @@
   </section>
 
   <div class="section-divider"></div>
+
   <!-- What We're Building -->
-  <section class="section">
+  <section class="section-sm">
     <div class="container">
       <div class="section-label">🏗️ What We're Building</div>
       <h2 class="section-title">One Platform, Every Side of the Hobby</h2>
       <p class="section-desc">Whether you have a single betta on your desk or run a multi-rack hatchery, Aquacellum gives you tools that respect your time and protect your fish.</p>
-
       <div class="mission-grid">
-        <div class="mission-card">
-          <div class="mission-card-icon">🐠</div>
-          <h3>For Hobbyists</h3>
-          <p>A digital logbook that feels like a game, not a chore. Track your tanks, log water parameters with a single tap, discover compatible species, and watch your companion Echo evolve alongside your care streak.</p>
-        </div>
-        <div class="mission-card">
-          <div class="mission-card-icon">🔬</div>
-          <h3>For Breeders</h3>
-          <p>An operational terminal for serious aquaculture. Pedigree records, facility metrics, batch shipping logistics, fraud-resistant handshake verification, and expo-mode tools for swap meets.</p>
-        </div>
-        <div class="mission-card">
-          <div class="mission-card-icon">🛒</div>
-          <h3>Marketplace</h3>
-          <p>Buy and sell live fish with escrow protection. No more sending money to strangers and hoping for the best. Every transaction is protected from checkout to arrival.</p>
-        </div>
-        <div class="mission-card">
-          <div class="mission-card-icon">🧠</div>
-          <h3>AI Intelligence</h3>
-          <p>Poseidon parses your natural-language notes into structured data. Echo responds emotionally to your tank's state. Your aquarium feels genuinely alive — no forms required.</p>
-        </div>
+        <div class="mission-card reveal"><div class="mission-card-icon">🐠</div><h3>For Hobbyists</h3><p>A digital logbook that feels like a game, not a chore. Track your tanks, log water parameters with a single tap, discover compatible species, and watch your companion Echo evolve alongside your care streak.</p></div>
+        <div class="mission-card reveal"><div class="mission-card-icon">🔬</div><h3>For Breeders</h3><p>An operational terminal for serious aquaculture. Pedigree records, facility metrics, batch shipping logistics, fraud-resistant handshake verification, and expo-mode tools for swap meets.</p></div>
+        <div class="mission-card reveal"><div class="mission-card-icon">🛒</div><h3>Marketplace</h3><p>Buy and sell live fish with escrow protection. No more sending money to strangers and hoping for the best. Every transaction is protected from checkout to arrival.</p></div>
+        <div class="mission-card reveal"><div class="mission-card-icon">🧠</div><h3>AI Intelligence</h3><p>Poseidon parses your natural-language notes into structured data. Echo responds emotionally to your tank's state. Your aquarium feels genuinely alive — no forms required.</p></div>
       </div>
     </div>
   </section>
@@ -223,85 +114,33 @@
   <div class="section-divider"></div>
 
   <!-- Team -->
-  <section class="section">
+  <section class="section-sm">
     <div class="container">
       <div class="section-label">👥 The Team</div>
       <h2 class="section-title">Small Team. Big Tanks.</h2>
       <p class="section-desc">Building in public. Keeping fish in private. (Just kidding — we post our tanks on The Reef too.)</p>
-
       <div class="team-grid">
-        <div class="team-card">
-          <div class="team-avatar">🐟</div>
-          <div class="team-name">GGSteve92</div>
-          <div class="team-role">Co-Founder</div>
-          <div class="team-bio">Product vision & community. Keeping planted tanks since 2015. Believes every fish deserves a documented lineage and every hobbyist deserves better tools.</div>
-        </div>
-        <div class="team-card">
-          <div class="team-avatar">🧬</div>
-          <div class="team-name">McDermKev81</div>
-          <div class="team-role">Co-Founder</div>
-          <div class="team-bio">Engineering & protocol design. Smart contracts, AI integrations, and the infrastructure that makes it all work without you needing to think about it.</div>
-        </div>
-        <div class="team-card" style="opacity:0.6;">
-          <div class="team-avatar" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);">?</div>
-          <div class="team-name" style="color:var(--text-secondary);">Open Role</div>
-          <div class="team-role">Third Co-Founder</div>
-          <div class="team-bio">We're looking for a third co-founder who bleeds aquaculture and wants to help shape the future of this hobby. Reach out if that's you.</div>
-        </div>
+        <div class="team-card reveal"><div class="team-avatar">🐟</div><div class="team-name">GGSteve92</div><div class="team-role">Co-Founder</div><div class="team-bio">Product vision & community. Keeping planted tanks since 2015. Believes every fish deserves a documented lineage and every hobbyist deserves better tools.</div></div>
+        <div class="team-card reveal"><div class="team-avatar">🧬</div><div class="team-name">McDermKev81</div><div class="team-role">Co-Founder</div><div class="team-bio">Engineering & protocol design. Smart contracts, AI integrations, and the infrastructure that makes it all work without you needing to think about it.</div></div>
+        <div class="team-card reveal" style="opacity:0.6;"><div class="team-avatar" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);">?</div><div class="team-name" style="color:var(--text-secondary);">Open Role</div><div class="team-role">Third Co-Founder</div><div class="team-bio">We're looking for a third co-founder who bleeds aquaculture and wants to help shape the future of this hobby. Reach out if that's you.</div></div>
       </div>
     </div>
   </section>
 
   <div class="section-divider"></div>
+
   <!-- Values -->
-  <section class="section">
+  <section class="section-sm">
     <div class="container">
       <div class="section-label">💎 What We Stand For</div>
       <h2 class="section-title">Our Principles</h2>
-
       <div class="values-grid">
-        <div class="value-card">
-          <div class="value-icon">🔒</div>
-          <div class="value-info">
-            <h4>Privacy First</h4>
-            <p>Your facility location is fuzzed. Your data stays local until you choose to publish. No tracking, no analytics, no selling your information.</p>
-          </div>
-        </div>
-        <div class="value-card">
-          <div class="value-icon">🌍</div>
-          <div class="value-info">
-            <h4>Conservation Backed</h4>
-            <p>A percentage of marketplace fees funds aquatic conservation. Preserving captive biodiversity means protecting wild populations too.</p>
-          </div>
-        </div>
-        <div class="value-card">
-          <div class="value-icon">🤝</div>
-          <div class="value-info">
-            <h4>Community Driven</h4>
-            <p>Species catalog additions are community-proposed and AI-audited. The platform grows with its users, not ahead of them.</p>
-          </div>
-        </div>
-        <div class="value-card">
-          <div class="value-icon">⚡</div>
-          <div class="value-info">
-            <h4>Local-First</h4>
-            <p>Everything works offline. Your tanks, logs, and species data live on your device first. The network is a bonus, not a requirement.</p>
-          </div>
-        </div>
-        <div class="value-card">
-          <div class="value-icon">🎮</div>
-          <div class="value-info">
-            <h4>Fun, Not Friction</h4>
-            <p>Logging a water change should feel rewarding, not tedious. We build tools that make good husbandry habits feel natural.</p>
-          </div>
-        </div>
-        <div class="value-card">
-          <div class="value-icon">🔓</div>
-          <div class="value-info">
-            <h4>Open & Transparent</h4>
-            <p>Open-source protocol. Public smart contracts. Verifiable on-chain records. Trust through transparency, not authority.</p>
-          </div>
-        </div>
+        <div class="value-card reveal"><div class="value-icon">🔒</div><div class="value-info"><h4>Privacy First</h4><p>Your facility location is fuzzed. Your data stays local until you choose to publish. No tracking, no analytics, no selling your information.</p></div></div>
+        <div class="value-card reveal"><div class="value-icon">🌍</div><div class="value-info"><h4>Conservation Backed</h4><p>A percentage of marketplace fees funds aquatic conservation. Preserving captive biodiversity means protecting wild populations too.</p></div></div>
+        <div class="value-card reveal"><div class="value-icon">🤝</div><div class="value-info"><h4>Community Driven</h4><p>Species catalog additions are community-proposed and AI-audited. The platform grows with its users, not ahead of them.</p></div></div>
+        <div class="value-card reveal"><div class="value-icon">⚡</div><div class="value-info"><h4>Local-First</h4><p>Everything works offline. Your tanks, logs, and species data live on your device first. The network is a bonus, not a requirement.</p></div></div>
+        <div class="value-card reveal"><div class="value-icon">🎮</div><div class="value-info"><h4>Fun, Not Friction</h4><p>Logging a water change should feel rewarding, not tedious. We build tools that make good husbandry habits feel natural.</p></div></div>
+        <div class="value-card reveal"><div class="value-icon">🔓</div><div class="value-info"><h4>Open & Transparent</h4><p>Open-source protocol. Public smart contracts. Verifiable on-chain records. Trust through transparency, not authority.</p></div></div>
       </div>
     </div>
   </section>
@@ -309,61 +148,35 @@
   <div class="section-divider"></div>
 
   <!-- Conservation -->
-  <section class="section">
+  <section class="section-sm" id="conservation">
     <div class="container">
       <div class="section-label">🌊 Conservation</div>
       <h2 class="section-title">Every Sale Protects the Wild</h2>
       <p class="section-desc">We're not just building a marketplace. We're funding the preservation of the ecosystems our fish come from.</p>
-
-      <div class="conservation-banner">
+      <div class="conservation-banner reveal">
         <div class="conservation-icon">🌿</div>
         <div class="conservation-text">
           <h3>Direct Conservation Funding</h3>
-          <p>A percentage of every 4% platform fee goes directly to freshwater habitat preservation and species conservation programs. When you buy or sell on Aquacellum, you're funding real-world protection of aquatic ecosystems. We believe the hobby and conservation aren't at odds — responsible captive breeding reduces pressure on wild populations, and our marketplace makes it economically viable for breeders to do it right.</p>
+          <p>A percentage of every 4% platform fee goes directly to freshwater habitat preservation and species conservation programs. When you buy or sell on Aquacellum, you're funding real-world protection of aquatic ecosystems. Responsible captive breeding reduces pressure on wild populations, and our marketplace makes it economically viable for breeders to do it right.</p>
         </div>
       </div>
     </div>
   </section>
 
   <div class="section-divider"></div>
+
   <!-- Roadmap -->
-  <section class="section">
+  <section class="section-sm" id="roadmap">
     <div class="container">
       <div class="section-label">🗺️ Roadmap</div>
       <h2 class="section-title">Where We're Headed</h2>
       <p class="section-desc">Building incrementally. Shipping constantly. Here's what's done, what's live, and what's next.</p>
-
       <div class="roadmap">
-        <div class="roadmap-item">
-          <div class="roadmap-dot done"></div>
-          <div class="roadmap-phase">Phase 1 — Foundation</div>
-          <div class="roadmap-title">Species Database & Logbook</div>
-          <div class="roadmap-desc">326+ species validated against FishBase. Local-first tank logbook with offline sync. AI companion Echo. Water parameter tracking.</div>
-        </div>
-        <div class="roadmap-item">
-          <div class="roadmap-dot done"></div>
-          <div class="roadmap-phase">Phase 2 — Community</div>
-          <div class="roadmap-title">The Reef Social Layer & Breeder Tools</div>
-          <div class="roadmap-desc">Social feed for tank updates. Breeder hatchery logs with grow-out tracking. Spawn recording and pedigree trees. Storefront pages.</div>
-        </div>
-        <div class="roadmap-item">
-          <div class="roadmap-dot current"></div>
-          <div class="roadmap-phase">Phase 3 — Marketplace (Current)</div>
-          <div class="roadmap-title">Escrow-Protected Commerce</div>
-          <div class="roadmap-desc">Smart contract marketplace with live-arrival guarantee. Verified breeder identity. Stripe + crypto payments. Shipping coordination and DOA protection.</div>
-        </div>
-        <div class="roadmap-item">
-          <div class="roadmap-dot upcoming"></div>
-          <div class="roadmap-phase">Phase 4 — Scale</div>
-          <div class="roadmap-title">Mobile App & Conservation Partnerships</div>
-          <div class="roadmap-desc">Native iOS/Android app. Formal conservation partnerships. Expanded species database with invertebrates and plants. International shipping support.</div>
-        </div>
-        <div class="roadmap-item">
-          <div class="roadmap-dot upcoming"></div>
-          <div class="roadmap-phase">Phase 5 — Future</div>
-          <div class="roadmap-title">Governance & Protocol Expansion</div>
-          <div class="roadmap-desc">Community governance for species catalog curation. Cross-chain support. Wholesale/retail tiers. API for third-party integrations. Aquaculture data marketplace.</div>
-        </div>
+        <div class="roadmap-item reveal"><div class="roadmap-dot done"></div><div class="roadmap-phase">Phase 1 — Foundation</div><div class="roadmap-title">Species Database & Logbook</div><div class="roadmap-desc">326+ species validated against FishBase. Local-first tank logbook with offline sync. AI companion Echo. Water parameter tracking.</div></div>
+        <div class="roadmap-item reveal"><div class="roadmap-dot done"></div><div class="roadmap-phase">Phase 2 — Community</div><div class="roadmap-title">The Reef Social Layer & Breeder Tools</div><div class="roadmap-desc">Social feed for tank updates. Breeder hatchery logs with grow-out tracking. Spawn recording and pedigree trees. Storefront pages.</div></div>
+        <div class="roadmap-item reveal"><div class="roadmap-dot current"></div><div class="roadmap-phase">Phase 3 — Marketplace (Current)</div><div class="roadmap-title">Escrow-Protected Commerce</div><div class="roadmap-desc">Smart contract marketplace with live-arrival guarantee. Verified breeder identity. Stripe + crypto payments. Shipping coordination and DOA protection.</div></div>
+        <div class="roadmap-item reveal"><div class="roadmap-dot upcoming"></div><div class="roadmap-phase">Phase 4 — Scale</div><div class="roadmap-title">Mobile App & Conservation Partnerships</div><div class="roadmap-desc">Native iOS/Android app. Formal conservation partnerships. Expanded species database with invertebrates and plants. International shipping support.</div></div>
+        <div class="roadmap-item reveal"><div class="roadmap-dot upcoming"></div><div class="roadmap-phase">Phase 5 — Future</div><div class="roadmap-title">Governance & Protocol Expansion</div><div class="roadmap-desc">Community governance for species catalog curation. Cross-chain support. Wholesale/retail tiers. API for third-party integrations.</div></div>
       </div>
     </div>
   </section>
@@ -371,12 +184,11 @@
   <div class="section-divider"></div>
 
   <!-- Tech Stack -->
-  <section class="section">
+  <section class="section-sm">
     <div class="container">
       <div class="section-label">⚙️ Under the Hood</div>
       <h2 class="section-title">Tech Stack</h2>
       <p class="section-desc">Modern, performant, and built to last. The blockchain is the infrastructure — not the user experience.</p>
-
       <div class="tech-chips">
         <span class="tech-chip">React 18</span>
         <span class="tech-chip">Vite</span>
@@ -396,21 +208,12 @@
     </div>
   </section>
 
-  <!-- Footer -->
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-links">
-        <a href="/">Home</a>
-        <a href="/marketplace">Marketplace</a>
-        <a href="/database">Species Database</a>
-        <a href="/breeds">Breed Gallery</a>
-        <a href="/breeders">Find Breeders</a>
-        <a href="/how-it-works">How It Works</a>
-        <a href="/legal">Legal</a>
-      </div>
-      <p>&copy; 2026 Aquacellum Protocol. All rights reserved.</p>
-    </div>
-  </footer>
+  <!-- Shared Footer -->
+  <footer id="site-footer"></footer>
 
+  <!-- Shared Scripts -->
+  <script src="/js/nav.js"></script>
+  <script src="/js/footer.js"></script>
+  <script src="/js/reveal.js"></script>
 </body>
 </html>

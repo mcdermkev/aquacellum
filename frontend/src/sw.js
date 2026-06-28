@@ -1,4 +1,4 @@
-/* eslint-disable no-restricted-globals */
+/* global clients, self */
 /**
  * sw.js — Aquadex combined service worker (injectManifest source)
  *
