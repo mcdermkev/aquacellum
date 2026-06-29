@@ -179,6 +179,8 @@ export function BreedGallery({
   const [showMyFishOnly, setShowMyFishOnly] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [galleryDropPhoto, setGalleryDropPhoto] = useState(null); // { preview }
+  const galleryPhotoInputRef = useRef(null);
 
   // New States for Spawning Logs and Tank Compatibility Simulation
   const [contractInstance, setContractInstance] = useState(null);
@@ -1853,6 +1855,87 @@ export function BreedGallery({
             </button>
           )}
         </div>
+      </div>
+
+      {/* Picture Drop Bar — upload a photo for species identification */}
+      <div
+        style={{
+          marginBottom: "1rem",
+          padding: galleryDropPhoto ? "0.6rem" : "0.75rem 1rem",
+          borderRadius: "12px",
+          border: `1.5px dashed ${galleryDropPhoto ? "rgba(52, 211, 153, 0.4)" : (casualModeActive ? "rgba(56, 189, 248, 0.25)" : "rgba(168, 85, 247, 0.25)")}`,
+          background: galleryDropPhoto ? "rgba(52, 211, 153, 0.04)" : (casualModeActive ? "rgba(56, 189, 248, 0.03)" : "rgba(168, 85, 247, 0.03)"),
+          display: "flex",
+          alignItems: "center",
+          gap: "0.75rem",
+          cursor: "pointer",
+          transition: "all 0.2s ease",
+        }}
+        onClick={() => !galleryDropPhoto && galleryPhotoInputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = "rgba(56, 189, 248, 0.6)"; }}
+        onDragLeave={(e) => { e.currentTarget.style.borderColor = ""; }}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.currentTarget.style.borderColor = "";
+          const file = e.dataTransfer.files?.[0];
+          if (file && file.type.startsWith("image/")) {
+            setGalleryDropPhoto({ preview: URL.createObjectURL(file) });
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label={casualModeActive ? "Drop or tap to add a photo" : "Upload a reference photo"}
+      >
+        {galleryDropPhoto ? (
+          <>
+            <img
+              src={galleryDropPhoto.preview}
+              alt="Uploaded reference"
+              style={{ width: "48px", height: "48px", objectFit: "cover", borderRadius: "8px", border: "1px solid var(--glass-border)" }}
+            />
+            <span style={{ flex: 1, fontSize: "0.78rem", color: "var(--accent-green, #34d399)" }}>
+              📷 Photo added — visible on your gallery
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setGalleryDropPhoto(null);
+                if (galleryPhotoInputRef.current) galleryPhotoInputRef.current.value = "";
+              }}
+              style={{
+                background: "rgba(248, 113, 113, 0.1)",
+                border: "1px solid rgba(248, 113, 113, 0.3)",
+                color: "var(--accent-red, #f87171)",
+                borderRadius: "6px",
+                padding: "0.3rem 0.6rem",
+                fontSize: "0.7rem",
+                cursor: "pointer",
+              }}
+            >
+              Remove
+            </button>
+          </>
+        ) : (
+          <>
+            <span style={{ fontSize: "1.4rem" }}>📷</span>
+            <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+              {casualModeActive ? "Drop or tap to add a picture" : "Drop image or click to upload a reference photo"}
+            </span>
+          </>
+        )}
+        <input
+          ref={galleryPhotoInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              setGalleryDropPhoto({ preview: URL.createObjectURL(file) });
+            }
+          }}
+        />
       </div>
 
       {/* Residing Species Quick-Tap Badges */}

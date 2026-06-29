@@ -231,16 +231,12 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
               role="menuitem"
               onClick={() => {
                 setMenuOpen(false);
-                // Navigate to Reef profile via existing event system
-                const hash = window.location.hash.replace("#", "");
-                if (hash !== "reef") {
-                  window.history.pushState({ tab: "reef" }, "", "#reef");
-                  window.dispatchEvent(new PopStateEvent("popstate"));
-                }
+                // Navigate to Reef tab via React Router, then trigger profile view
+                window.dispatchEvent(new CustomEvent("poseidon:navigate", { detail: { tab: "reef" } }));
                 // Small delay to ensure reef tab is active, then trigger profile view
                 setTimeout(() => {
                   window.dispatchEvent(new CustomEvent("reef_view_profile", { detail: { wallet: account } }));
-                }, 100);
+                }, 300);
               }}
               style={{
                 display: "flex",

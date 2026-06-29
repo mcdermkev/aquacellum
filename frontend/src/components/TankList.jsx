@@ -1600,6 +1600,90 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                         </div>
                       )}
 
+                      {/* Quick actions: Remove / Reset */}
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "0.5rem",
+                          marginTop: "0.75rem",
+                          paddingTop: "0.6rem",
+                          borderTop: "1px solid rgba(255, 255, 255, 0.04)",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          type="button"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!window.confirm(
+                              casualModeActive
+                                ? `Reset "${tank.name}"? This clears all water logs and action history but keeps your fish.`
+                                : `Reset unit "${tank.name}"? Purges telemetry & action logs. Specimens preserved.`
+                            )) return;
+                            try {
+                              await db.actionLogs.where("tankId").equals(tank.id).delete();
+                              await db.tanks.update(tank.id, {
+                                latestTestTimestamp: null,
+                                latestChangeTimestamp: null,
+                                waterParams: null,
+                              });
+                              queryClient.invalidateQueries({ queryKey: ["tanks", walletAccount] });
+                              showToast(casualModeActive ? "🔄 Tank reset! Starting fresh." : "Unit telemetry purged.");
+                            } catch (err) {
+                              console.error("Reset tank failed:", err);
+                              showToast("Failed to reset tank.");
+                            }
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: "0.4rem 0.6rem",
+                            fontSize: "0.72rem",
+                            fontWeight: 500,
+                            borderRadius: "6px",
+                            border: "1px solid rgba(251, 191, 36, 0.25)",
+                            background: "rgba(251, 191, 36, 0.06)",
+                            color: "var(--accent-amber, #fbbf24)",
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                          }}
+                        >
+                          🔄 {casualModeActive ? "Reset Tank" : "Reset Unit"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!window.confirm(
+                              casualModeActive
+                                ? `Remove "${tank.name}"? This hides it from your dashboard. Your fish records are preserved.`
+                                : `Decommission unit "${tank.name}"? Sets active=false. Specimen records retained.`
+                            )) return;
+                            try {
+                              await db.tanks.update(tank.id, { active: false });
+                              queryClient.invalidateQueries({ queryKey: ["tanks", walletAccount] });
+                              showToast(casualModeActive ? "🗑️ Tank removed from dashboard." : "Unit decommissioned.");
+                            } catch (err) {
+                              console.error("Remove tank failed:", err);
+                              showToast("Failed to remove tank.");
+                            }
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: "0.4rem 0.6rem",
+                            fontSize: "0.72rem",
+                            fontWeight: 500,
+                            borderRadius: "6px",
+                            border: "1px solid rgba(248, 113, 113, 0.25)",
+                            background: "rgba(248, 113, 113, 0.06)",
+                            color: "var(--accent-red, #f87171)",
+                            cursor: "pointer",
+                            transition: "all 0.15s ease",
+                          }}
+                        >
+                          🗑️ {casualModeActive ? "Remove Tank" : "Decommission"}
+                        </button>
+                      </div>
+
                       {/* Recursive nested child containers */}
                       {renderNestedChildren(tank.id)}
                     </div>

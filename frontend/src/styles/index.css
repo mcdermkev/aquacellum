@@ -7022,6 +7022,31 @@ input:checked + .broadcast-slider:before {
   }
 }
 
+/* Mobile FAB: move to bottom-left so it doesn't overlap page action buttons */
+@media (max-width: 480px) {
+  .poseidon-global-fab {
+    bottom: 1.25rem;
+    right: auto;
+    left: 1rem;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.75rem;
+  }
+
+  .poseidon-global-fab__label {
+    display: none;
+  }
+
+  .poseidon-global-fab--active {
+    padding: 0.6rem;
+  }
+
+  .poseidon-global-pill {
+    bottom: 4rem;
+    left: 1rem;
+    right: 1.5rem;
+  }
+}
+
 /* ── Poseidon Deep Links (inline clickable species/nav links in messages) ─── */
 .poseidon-deep-link {
   display: inline;

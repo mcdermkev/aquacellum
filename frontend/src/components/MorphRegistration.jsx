@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { getProvider } from "../utils/smartAccount";
@@ -47,6 +47,8 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
     description: "",
     proofUrl: "",
   });
+  const [proofPhoto, setProofPhoto] = useState(null); // { file, preview }
+  const proofInputRef = useRef(null);
   const [submissions, setSubmissions] = useState([]);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -159,12 +161,29 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
 
     setSubmitting(true);
     try {
+      // Handle photo upload: compress and convert to data URL for proof
+      let finalProofUrl = form.proofUrl;
+      if (proofPhoto?.file) {
+        try {
+          const { compressImage } = await import("../utils/imageCompression");
+          finalProofUrl = await compressImage(proofPhoto.file, { maxWidth: 1200, quality: 0.8 });
+        } catch (compressErr) {
+          // Fallback: read as data URL without compression
+          finalProofUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(proofPhoto.file);
+          });
+        }
+      }
+
       const { error: err } = await createMorphSubmission({
         baseSpecies,
         morphName,
         traitType: form.traitType,
         description: form.description,
-        proofUrl: form.proofUrl,
+        proofUrl: finalProofUrl,
       });
       if (err) throw new Error(err.message || err);
 
@@ -176,6 +195,8 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
           : `"${morphName}" queued for curator verification.`
       );
       setForm({ baseSpecies: "", morphName: "", traitType: "color", description: "", proofUrl: "" });
+      setProofPhoto(null);
+      if (proofInputRef.current) proofInputRef.current.value = "";
       await loadMine();
       if (isCurator) await loadReviewQueue();
     } catch (err) {
@@ -382,14 +403,95 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
         </div>
 
         <div>
-          <label style={labelStyle}>Photo / reference URL (optional)</label>
-          <input
-            type="url"
-            value={form.proofUrl}
-            onChange={(e) => update("proofUrl", e.target.value)}
-            placeholder="https://…"
-            style={inputStyle}
-          />
+          <label style={labelStyle}>Morph evidence photo</label>
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.6rem",
+          }}>
+            {/* Photo preview or upload trigger */}
+            {proofPhoto?.preview ? (
+              <div style={{ position: "relative", display: "inline-block" }}>
+                <img
+                  src={proofPhoto.preview}
+                  alt="Morph evidence preview"
+                  style={{
+                    width: "100%",
+                    maxHeight: "180px",
+                    objectFit: "cover",
+                    borderRadius: "8px",
+                    border: "1px solid var(--glass-border)",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProofPhoto(null);
+                    if (proofInputRef.current) proofInputRef.current.value = "";
+                  }}
+                  style={{
+                    position: "absolute",
+                    top: "0.4rem",
+                    right: "0.4rem",
+                    background: "rgba(0, 0, 0, 0.7)",
+                    border: "none",
+                    color: "#fff",
+                    borderRadius: "50%",
+                    width: "24px",
+                    height: "24px",
+                    cursor: "pointer",
+                    fontSize: "0.8rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  aria-label="Remove photo"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => proofInputRef.current?.click()}
+                style={{
+                  padding: "1.25rem",
+                  borderRadius: "8px",
+                  border: "2px dashed " + (casualModeActive ? "rgba(56, 189, 248, 0.3)" : "rgba(168, 85, 247, 0.3)"),
+                  background: casualModeActive ? "rgba(56, 189, 248, 0.04)" : "rgba(168, 85, 247, 0.04)",
+                  color: "var(--text-muted, #94a3b8)",
+                  fontSize: "0.8rem",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                📷 {casualModeActive ? "Tap to add a photo of your morph" : "Upload morph evidence photo"}
+              </button>
+            )}
+            <input
+              ref={proofInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const preview = URL.createObjectURL(file);
+                setProofPhoto({ file, preview });
+              }}
+            />
+            {/* Fallback: paste a URL if no photo uploaded */}
+            {!proofPhoto && (
+              <input
+                type="url"
+                value={form.proofUrl}
+                onChange={(e) => update("proofUrl", e.target.value)}
+                placeholder={casualModeActive ? "Or paste a link to a photo…" : "Or paste reference URL…"}
+                style={{ ...inputStyle, fontSize: "0.78rem" }}
+              />
+            )}
+          </div>
         </div>
 
         {error && (
