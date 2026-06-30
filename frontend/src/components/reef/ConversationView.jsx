@@ -9,6 +9,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useConversationMessages, useSendMessage, useMarkConversationRead } from "../../hooks/useMessages";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import { sameWallet } from "../../utils/wallet";
 import { useAuth } from "../../contexts/AuthContext";
 import { ProfileCard } from "./ProfileCard";
 
@@ -121,7 +122,7 @@ export function ConversationView({ conversationId, otherWallet, otherProfile, on
         )}
 
         {messages.map((msg) => {
-          const isOwn = msg.sender_wallet === walletAddress;
+          const isOwn = sameWallet(msg.sender_wallet, walletAddress);
           return (
             <div
               key={msg.id}

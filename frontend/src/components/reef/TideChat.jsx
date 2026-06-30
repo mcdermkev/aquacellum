@@ -11,6 +11,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useTideChat } from "../../hooks/useTides";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import { sameWallet } from "../../utils/wallet";
 import { ProfileCard } from "./ProfileCard";
 
 function ChatMessage({ msg, isOwn }) {
@@ -99,7 +100,7 @@ export function TideChat({ tideId, enabled = true }) {
             <ChatMessage
               key={msg.id}
               msg={msg}
-              isOwn={msg.author_wallet === walletAddress}
+              isOwn={sameWallet(msg.author_wallet, walletAddress)}
             />
           ))
         )}

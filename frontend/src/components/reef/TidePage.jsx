@@ -10,6 +10,7 @@
 import { useState } from "react";
 import { useTide, useTideAttendees, useMyRsvp, useRsvp, useCancelRsvp, useCheckIn } from "../../hooks/useTides";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import { sameWallet } from "../../utils/wallet";
 import { useAuth } from "../../contexts/AuthContext";
 import { ProfileCard } from "./ProfileCard";
 import TideLiveFeed from "./TideLiveFeed";
@@ -64,7 +65,7 @@ export function TidePage({ tideId, onBack }) {
   const [activeTab, setActiveTab] = useState("details");
   const { account } = useAuth();
   const walletAddress = account || getCurrentWallet();
-  const isHost = tide?.host_wallet === walletAddress;
+  const isHost = sameWallet(tide?.host_wallet, walletAddress);
 
   if (isLoading) {
     return (

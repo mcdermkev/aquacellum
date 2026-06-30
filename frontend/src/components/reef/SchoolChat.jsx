@@ -8,6 +8,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useSchoolChat } from "../../hooks/useSchoolChat";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import { sameWallet } from "../../utils/wallet";
 
 export function SchoolChat({ schoolId, isAdmin }) {
   const [input, setInput] = useState("");
@@ -134,7 +135,7 @@ export function SchoolChat({ schoolId, isAdmin }) {
             const msgDate = formatDate(msg.created_at);
             const showDateSeparator = msgDate !== lastDate;
             lastDate = msgDate;
-            const isOwn = msg.author_wallet === currentWallet;
+            const isOwn = sameWallet(msg.author_wallet, currentWallet);
             const profile = msg.profile;
 
             return (

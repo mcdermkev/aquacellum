@@ -12,6 +12,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useAuction } from "../../hooks/useTides";
 import { getAuctionItems } from "../../services/tidesApi";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import { sameWallet } from "../../utils/wallet";
 import { ProfileCard } from "./ProfileCard";
 
 /**
@@ -93,7 +94,7 @@ function AuctionItemCard({ tideId, item, endTime, isLive }) {
     setSubmitting(false);
   };
 
-  const isWinning = highestBid?.bidder_wallet === walletAddress;
+  const isWinning = sameWallet(highestBid?.bidder_wallet, walletAddress);
 
   return (
     <article className="auction-item" aria-label={`Auction item: Token #${item.token_id}`}>

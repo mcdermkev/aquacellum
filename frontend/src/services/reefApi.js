@@ -344,14 +344,23 @@ export async function getFollowingFeed(walletAddress, { cursor, limit = 20 } = {
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  // Build OR filter: author in followed wallets OR tank in watched tanks OR user's own posts
+  // Build OR filter: author in followed wallets OR tank in watched tanks OR user's own posts.
+  //
+  // IMPORTANT: author_wallet may be stored in mixed casing (legacy checksummed
+  // profiles) while the session wallet and follow targets arrive lowercase. A
+  // case-sensitive `.eq`/`.in` would silently miss those rows, so the post never
+  // appears in the Following feed even though it's in the table (and visible in
+  // Discover, which has no wallet filter). Use case-insensitive `ilike` — the
+  // same pattern already used for follower_wallet and reactions. Wallet addresses
+  // are 0x + 40 hex chars, so they contain no LIKE wildcards (% or _).
   const orConditions = [];
 
-  // Always include the user's own posts in their Following feed
-  orConditions.push(`author_wallet.eq.${normalized}`);
+  // Always include the user's own posts in their Following feed (case-insensitive)
+  orConditions.push(`author_wallet.ilike.${normalized}`);
 
-  if (followedWallets.length > 0) {
-    orConditions.push(`author_wallet.in.(${followedWallets.join(",")})`);
+  // Followed wallets — one case-insensitive condition each so mixed-casing rows match
+  for (const w of followedWallets) {
+    if (w) orConditions.push(`author_wallet.ilike.${w.toLowerCase()}`);
   }
   if (watchedTanks.length > 0) {
     orConditions.push(`linked_tank_id.in.(${watchedTanks.join(",")})`);
@@ -423,7 +432,7 @@ export async function getCurrentsByAuthor(walletAddress, { cursor, limit = 20 } 
         companion_tier
       )
     `)
-    .eq("author_wallet", normalized)
+    .ilike("author_wallet", normalized)
     .in("visibility", visibilityFilter)
     .order("created_at", { ascending: false })
     .limit(limit);

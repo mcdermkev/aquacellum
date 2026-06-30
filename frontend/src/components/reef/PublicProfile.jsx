@@ -17,6 +17,7 @@ import { MessageButton } from "./MessageButton";
 import { useProfile, useTankmates, useRelationshipStatus, useSendTankmateRequest, useUpdateProfile, useEnsureProfile } from "../../hooks/useReefProfile";
 import { useUserCurrents } from "../../hooks/useReefFeed";
 import { getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
+import { sameWallet } from "../../utils/wallet";
 import { useAuth } from "../../contexts/AuthContext";
 import { getFollowerCount, getFollowingCount } from "../../services/reefApi";
 import { db } from "../../db";
@@ -84,7 +85,7 @@ function ConnectionButton({ targetWallet, casualModeActive }) {
   const [message, setMessage] = useState("");
   const [showMessageInput, setShowMessageInput] = useState(false);
 
-  if (!currentWallet || currentWallet === targetWallet) return null;
+  if (!currentWallet || sameWallet(currentWallet, targetWallet)) return null;
   if (isLoading) return null;
 
   if (status === "tankmate") {

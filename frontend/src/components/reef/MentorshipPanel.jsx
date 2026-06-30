@@ -17,10 +17,11 @@ import {
   useToggleAcceptingMentees,
 } from "../../hooks/useAudits";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import { sameWallet } from "../../utils/wallet";
 
 export function MentorshipPanel({ walletAddress, companionTier, onViewProfile }) {
   const currentWallet = getCurrentWallet();
-  const isOwnProfile = currentWallet === walletAddress;
+  const isOwnProfile = sameWallet(currentWallet, walletAddress);
   const isMasterPlus = companionTier === "Master" || companionTier === "God-Tier";
 
   const { data: mentorshipsResult } = useMentorships(walletAddress);
