@@ -328,6 +328,12 @@ export function CheckoutSummary({
 
   const fetchOrders = async () => {
     if (!walletAccount || !marketplaceAddress) {
+      // Don't set loading=false here — keep showing skeleton until account resolves.
+      // Only bail if we explicitly know there's no wallet to fetch for.
+      if (walletAccount === null && marketplaceAddress) {
+        // Account not yet resolved — stay in loading state
+        return;
+      }
       setLoading(false);
       return;
     }
@@ -492,6 +498,16 @@ export function CheckoutSummary({
   useEffect(() => {
     fetchOrders();
   }, [contractAddress, marketplaceAddress, walletAccount]);
+
+  // Safety: if wallet never resolves after 3s, stop loading so the empty state shows
+  useEffect(() => {
+    if (!walletAccount && loading) {
+      const timer = setTimeout(() => {
+        setLoading(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [walletAccount, loading]);
 
   const handleKeypadPress = (val) => {
     if (val === "C") {
@@ -714,7 +730,21 @@ export function CheckoutSummary({
   };
 
   if (loading) {
-    return <div className="glass-card shimmer-placeholder" style={{ height: "300px", borderRadius: "var(--radius-md)" }} />;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <h3 style={{ fontSize: "1.25rem", color: "#fff", margin: "0 0 0.25rem 0" }}>My Orders</h3>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: 0 }}>Loading your order history...</p>
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.5rem" }}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="glass-card shimmer-placeholder" style={{ height: "200px", borderRadius: "var(--radius-md, 12px)" }} />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   const cartItems = pendingTokenIds.map(tid => allActiveListings.find(l => Number(l.tokenId) === tid)).filter(Boolean);
@@ -808,6 +838,33 @@ export function CheckoutSummary({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      {error && (
+        <div 
+          className="glass-card" 
+          style={{ 
+            padding: "1rem 1.25rem", 
+            border: "1px solid rgba(248, 113, 113, 0.3)", 
+            background: "rgba(248, 113, 113, 0.05)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "1rem"
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <span style={{ fontSize: "1.25rem" }}>⚠️</span>
+            <span style={{ color: "var(--accent-red, #f87171)", fontSize: "0.85rem" }}>{error}</span>
+          </div>
+          <button 
+            className="btn-secondary" 
+            style={{ padding: "0.3rem 0.75rem", fontSize: "0.75rem", flexShrink: 0 }}
+            onClick={() => { setError(null); fetchOrders(); }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {pendingTokenIds.length > 0 && (
         <div 
           className="glass-card" 
@@ -1209,8 +1266,28 @@ export function CheckoutSummary({
         </div>
       )}
 
-      <h3 style={{ fontSize: "1.25rem", color: "#fff" }}>Order Tracking & Protections</h3>
+      <h3 style={{ fontSize: "1.25rem", color: "#fff", marginBottom: "0.25rem" }}>Order Tracking & Protections</h3>
+      <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: "0 0 1.25rem 0" }}>
+        All your purchases and sales with escrow protection, shipping tracking, and fulfillment actions.
+      </p>
 
+      {shippingEscrows.length === 0 && purchases.length === 0 ? (
+        <div 
+          className="glass-card" 
+          style={{ 
+            padding: "3rem 2rem", 
+            textAlign: "center", 
+            border: "1px dashed rgba(255, 255, 255, 0.1)",
+            background: "rgba(255, 255, 255, 0.01)"
+          }}
+        >
+          <div style={{ fontSize: "3rem", marginBottom: "1rem", opacity: 0.6 }}>📦</div>
+          <h4 style={{ color: "#fff", fontSize: "1.1rem", marginBottom: "0.5rem" }}>No Orders Yet</h4>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", maxWidth: "400px", margin: "0 auto", lineHeight: "1.5" }}>
+            When you buy or sell specimens through the marketplace, your orders will appear here with full escrow tracking, shipping updates, and fulfillment controls.
+          </p>
+        </div>
+      ) : (
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.5rem" }}>
         {/* Shipping orders */}
         {shippingEscrows.map((order) => (
@@ -1324,6 +1401,7 @@ export function CheckoutSummary({
           </div>
         ))}
       </div>
+      )}
 
       {/* Selected Order Detail Drawer / Overlay */}
       {selectedOrder && (
