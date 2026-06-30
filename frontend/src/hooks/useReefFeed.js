@@ -23,8 +23,8 @@ import { getCurrentWallet } from "../services/supabaseClient";
  * Hook for the Following feed (Tankmates + watched tanks).
  * Infinite scroll with cursor-based pagination.
  */
-export function useFollowingFeed(enabled = true) {
-  const walletAddress = getCurrentWallet();
+export function useFollowingFeed(enabled = true, walletOverride = null) {
+  const walletAddress = walletOverride || getCurrentWallet();
 
   return useInfiniteQuery({
     queryKey: ["reef", "following", walletAddress],

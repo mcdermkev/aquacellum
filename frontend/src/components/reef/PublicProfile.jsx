@@ -17,6 +17,7 @@ import { MessageButton } from "./MessageButton";
 import { useProfile, useTankmates, useRelationshipStatus, useSendTankmateRequest, useUpdateProfile, useEnsureProfile } from "../../hooks/useReefProfile";
 import { useUserCurrents } from "../../hooks/useReefFeed";
 import { getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
+import { useAuth } from "../../contexts/AuthContext";
 import { getFollowerCount, getFollowingCount } from "../../services/reefApi";
 import { db } from "../../db";
 
@@ -74,7 +75,8 @@ function FollowerCounts({ walletAddress }) {
 }
 
 function ConnectionButton({ targetWallet, casualModeActive }) {
-  const currentWallet = getCurrentWallet();
+  const { account } = useAuth();
+  const currentWallet = account || getCurrentWallet();
   const { data: status, isLoading } = useRelationshipStatus(targetWallet);
   const sendRequest = useSendTankmateRequest();
   const [message, setMessage] = useState("");
@@ -202,7 +204,8 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
   const currents = userCurrents.data?.pages?.flatMap((p) => p.data) || [];
   const [editing, setEditing] = useState(false);
   const [creatingProfile, setCreatingProfile] = useState(false);
-  const currentWallet = getCurrentWallet();
+  const { account } = useAuth();
+  const currentWallet = account || getCurrentWallet();
   const isOwnProfile = currentWallet && currentWallet.toLowerCase() === walletAddress?.toLowerCase();
 
   // Auto-ensure profile exists for the user's own profile when it's not found

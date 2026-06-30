@@ -8,6 +8,7 @@
 import React, { useState, useEffect } from "react";
 import { getMySchools, inviteToSchool, getMySchoolRole } from "../../services/schoolsApi";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import { useAuth } from "../../contexts/AuthContext";
 
 export function SchoolInviteButton({ targetWallet }) {
   const [mySchools, setMySchools] = useState([]);
@@ -15,13 +16,12 @@ export function SchoolInviteButton({ targetWallet }) {
   const [sending, setSending] = useState(null);
   const [sent, setSent] = useState({});
   const [error, setError] = useState(null);
-  const currentWallet = getCurrentWallet();
-
-  // Don't show for own profile
-  if (!currentWallet || currentWallet === targetWallet) return null;
+  const { account } = useAuth();
+  const currentWallet = account || getCurrentWallet();
 
   // Load schools where the user is founder/elder
   useEffect(() => {
+    if (!currentWallet || currentWallet === targetWallet?.toLowerCase()) return;
     async function load() {
       const { data } = await getMySchools();
       if (!data) return;
@@ -36,7 +36,10 @@ export function SchoolInviteButton({ targetWallet }) {
       setMySchools(eligible);
     }
     load();
-  }, []);
+  }, [currentWallet, targetWallet]);
+
+  // Don't show for own profile or if not connected
+  if (!currentWallet || currentWallet === targetWallet?.toLowerCase()) return null;
 
   // Don't render if user has no schools to invite to
   if (mySchools.length === 0) return null;

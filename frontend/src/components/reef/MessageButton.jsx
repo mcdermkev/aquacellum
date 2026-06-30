@@ -8,22 +8,27 @@
 import React, { useState } from "react";
 import { getOrCreateConversation } from "../../services/messagesApi";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import { useAuth } from "../../contexts/AuthContext";
 import { getRelationshipStatus } from "../../services/reefApi";
 
 export function MessageButton({ targetWallet, onOpenConversation }) {
   const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(null); // null = checking
-  const currentWallet = getCurrentWallet();
-
-  if (!currentWallet || currentWallet === targetWallet) return null;
+  const { account } = useAuth();
+  const currentWallet = account || getCurrentWallet();
 
   // Check if they're tankmates (only show for mutual connections)
   React.useEffect(() => {
+    if (!currentWallet || currentWallet === targetWallet?.toLowerCase()) {
+      setVisible(false);
+      return;
+    }
     getRelationshipStatus(targetWallet).then((status) => {
       setVisible(status === "tankmate");
     });
-  }, [targetWallet]);
+  }, [targetWallet, currentWallet]);
 
+  if (!currentWallet || currentWallet === targetWallet?.toLowerCase()) return null;
   if (visible === null || !visible) return null;
 
   const handleClick = async () => {

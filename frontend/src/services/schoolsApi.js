@@ -540,7 +540,7 @@ export async function getMySchoolInvites() {
         banner_url,
         member_count
       ),
-      inviter:invited_by (
+      inviter:profiles!school_invites_invited_by_fkey (
         wallet_address,
         display_name,
         avatar_url,
@@ -550,6 +550,48 @@ export async function getMySchoolInvites() {
     .eq("invited_wallet", walletAddress)
     .eq("status", "pending")
     .order("created_at", { ascending: false });
+
+  // Fallback if FK hint syntax fails
+  if (error && (error.message?.includes("relationship") || error.message?.includes("could not"))) {
+    const { data: rawInvites } = await supabase
+      .from("school_invites")
+      .select("*")
+      .eq("invited_wallet", walletAddress)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+
+    if (!rawInvites?.length) return { data: [], error: null };
+
+    // Batch fetch schools
+    const schoolIds = [...new Set(rawInvites.map((i) => i.school_id).filter(Boolean))];
+    const inviterWallets = [...new Set(rawInvites.map((i) => i.invited_by).filter(Boolean))];
+
+    let schoolMap = {};
+    if (schoolIds.length > 0) {
+      const { data: schools } = await supabase
+        .from("schools")
+        .select("id, name, slug, school_type, banner_url, member_count")
+        .in("id", schoolIds);
+      for (const s of schools || []) schoolMap[s.id] = s;
+    }
+
+    let inviterMap = {};
+    if (inviterWallets.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("wallet_address, display_name, avatar_url, companion_tier")
+        .in("wallet_address", inviterWallets);
+      for (const p of profiles || []) inviterMap[p.wallet_address] = p;
+    }
+
+    const enriched = rawInvites.map((inv) => ({
+      ...inv,
+      school: schoolMap[inv.school_id] || null,
+      inviter: inviterMap[inv.invited_by] || null,
+    }));
+
+    return { data: enriched, error: null };
+  }
 
   return { data: data || [], error };
 }
@@ -564,7 +606,7 @@ export async function getSchoolPendingInvites(schoolId) {
     .from("school_invites")
     .select(`
       *,
-      invitee:invited_wallet (
+      invitee:profiles!school_invites_invited_wallet_fkey (
         wallet_address,
         display_name,
         avatar_url,
@@ -574,6 +616,35 @@ export async function getSchoolPendingInvites(schoolId) {
     .eq("school_id", schoolId)
     .eq("status", "pending")
     .order("created_at", { ascending: false });
+
+  // Fallback if FK hint fails
+  if (error && (error.message?.includes("relationship") || error.message?.includes("could not"))) {
+    const { data: rawInvites } = await supabase
+      .from("school_invites")
+      .select("*")
+      .eq("school_id", schoolId)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+
+    if (!rawInvites?.length) return { data: [], error: null };
+
+    const invitedWallets = [...new Set(rawInvites.map((i) => i.invited_wallet).filter(Boolean))];
+    let profileMap = {};
+    if (invitedWallets.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("wallet_address, display_name, avatar_url, companion_tier")
+        .in("wallet_address", invitedWallets);
+      for (const p of profiles || []) profileMap[p.wallet_address] = p;
+    }
+
+    const enriched = rawInvites.map((inv) => ({
+      ...inv,
+      invitee: profileMap[inv.invited_wallet] || null,
+    }));
+
+    return { data: enriched, error: null };
+  }
 
   return { data: data || [], error };
 }

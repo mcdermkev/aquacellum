@@ -8,13 +8,15 @@
 import React, { useState, useEffect } from "react";
 import { getMySchoolInvites, acceptSchoolInvite, declineSchoolInvite } from "../../services/schoolsApi";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import { useAuth } from "../../contexts/AuthContext";
 import { ProfileCard } from "./ProfileCard";
 
 export function SchoolInvites({ onNavigateSchool }) {
   const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [responding, setResponding] = useState(null);
-  const walletAddress = getCurrentWallet();
+  const { account } = useAuth();
+  const walletAddress = account || getCurrentWallet();
 
   useEffect(() => {
     if (!walletAddress) return;

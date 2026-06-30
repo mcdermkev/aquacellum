@@ -24,6 +24,9 @@ import { ZoneLeaderboardWidget } from "./components/ZoneLeaderboardWidget";
 import { RewardCreditsCard } from "./components/RewardCreditsCard";
 import { EchoCompanionWidget } from "./components/EchoCompanionWidget";
 import { EchoWhispers } from "./components/EchoWhispers";
+import { EchoAmbient } from "./components/EchoAmbient";
+import { useEchoState } from "./hooks/useEchoState";
+import { useEchoRareMoments } from "./hooks/useEchoRareMoments";
 import { BetaBanner } from "./components/BetaBanner";
 import { db } from "./db";
 import { TabErrorBoundary } from "./components/TabErrorBoundary";
@@ -85,6 +88,16 @@ const ReefFeed = lazy(() =>
 // Lazy-load Storefront Setup (only needed for beta breeders)
 const StorefrontSetup = lazy(() =>
   import("./components/StorefrontSetup").then((m) => ({ default: m.StorefrontSetup }))
+);
+
+// Lazy-load Echo Living Companion (full-screen interactive experience)
+const EchoLivingCompanion = lazy(() =>
+  import("./components/EchoLivingCompanion").then((m) => ({ default: m.EchoLivingCompanion }))
+);
+
+// Lazy-load Echo Rare Moment Overlay (special animation events)
+const EchoRareMomentOverlay = lazy(() =>
+  import("./components/EchoRareMomentOverlay").then((m) => ({ default: m.EchoRareMomentOverlay }))
 );
 
 export default function App() {
@@ -295,6 +308,13 @@ export default function App() {
   // Echo Whispers — real user state from Dexie (replaces hardcoded values)
   const [echoUserState, setEchoUserState] = useState({ totalXp: 0, streakDays: 0, lastActiveDate: null, currentTier: "Shallow" });
   const [echoTankData, setEchoTankData] = useState({});
+
+  // Echo Living Companion — unified state hook for the new Tamagotchi system
+  const echoState = useEchoState(account);
+  const [echoFullScreenOpen, setEchoFullScreenOpen] = useState(false);
+
+  // Echo Rare Moments — time-gated special animations
+  const { activeMoment, dismissMoment } = useEchoRareMoments(echoState);
 
   const [marketplaceContract, setMarketplaceContract] = useState(null);
 
@@ -1075,6 +1095,49 @@ export default function App() {
           userState={echoUserState}
           tankData={echoTankData}
         />
+      )}
+
+      {/* Echo Ambient Presence — persistent floating companion (casual mode only) */}
+      {casualModeActive && echoState.hasEcho && !echoFullScreenOpen && (
+        <EchoAmbient
+          dna={echoState.dna}
+          stage={echoState.stage}
+          needs={echoState.needs}
+          personality={echoState.personality}
+          mood={echoState.mood}
+          streak={echoState.streak}
+          onOpenFull={() => setEchoFullScreenOpen(true)}
+          visible={true}
+        />
+      )}
+
+      {/* Echo Living Companion — full-screen interactive experience */}
+      {echoFullScreenOpen && echoState.hasEcho && (
+        <Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#0a0f1e", zIndex: 9500 }} />}>
+          <EchoLivingCompanion
+            dna={echoState.dna}
+            stage={echoState.stage}
+            needs={echoState.needs}
+            personality={echoState.personality}
+            streak={echoState.streak}
+            totalCareDays={echoState.totalCareDays}
+            tricksUnlocked={echoState.tricksUnlocked}
+            onInteraction={(type, xp) => echoState.recordInteraction(type)}
+            onClose={() => setEchoFullScreenOpen(false)}
+            casualModeActive={casualModeActive}
+          />
+        </Suspense>
+      )}
+
+      {/* Echo Rare Moment Overlay — special time-gated animations */}
+      {activeMoment && casualModeActive && (
+        <Suspense fallback={null}>
+          <EchoRareMomentOverlay
+            moment={activeMoment}
+            dna={echoState.dna}
+            onComplete={dismissMoment}
+          />
+        </Suspense>
       )}
 
       {/* Feedback Widget — floating bug report / feedback button */}

@@ -9,6 +9,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useConversationMessages, useSendMessage, useMarkConversationRead } from "../../hooks/useMessages";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import { useAuth } from "../../contexts/AuthContext";
 import { ProfileCard } from "./ProfileCard";
 
 function timeAgo(dateString) {
@@ -27,7 +28,8 @@ export function ConversationView({ conversationId, otherWallet, otherProfile, on
   const markRead = useMarkConversationRead();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef(null);
-  const walletAddress = getCurrentWallet();
+  const { account } = useAuth();
+  const walletAddress = account || getCurrentWallet();
 
   // Mark as read on open
   useEffect(() => {

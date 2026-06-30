@@ -306,11 +306,13 @@ export async function getCurrent(currentId) {
 export async function getFollowingFeed(walletAddress, { cursor, limit = 20 } = {}) {
   if (!isSupabaseConfigured()) return { data: [], error: "Not configured" };
 
+  const normalized = walletAddress ? walletAddress.toLowerCase() : walletAddress;
+
   // Step 1: Get list of wallets/tanks the user follows
   const { data: follows, error: followsError } = await supabase
     .from("follows")
     .select("follow_type, target_wallet, target_tank_id")
-    .eq("follower_wallet", walletAddress);
+    .eq("follower_wallet", normalized);
 
   if (followsError) return { data: [], error: followsError };
 
@@ -346,7 +348,7 @@ export async function getFollowingFeed(walletAddress, { cursor, limit = 20 } = {
   const orConditions = [];
 
   // Always include the user's own posts in their Following feed
-  orConditions.push(`author_wallet.eq.${walletAddress}`);
+  orConditions.push(`author_wallet.eq.${normalized}`);
 
   if (followedWallets.length > 0) {
     orConditions.push(`author_wallet.in.(${followedWallets.join(",")})`);
@@ -404,8 +406,9 @@ export async function getDiscoverFeed({ cursor, limit = 20 } = {}) {
 export async function getCurrentsByAuthor(walletAddress, { cursor, limit = 20 } = {}) {
   if (!isSupabaseConfigured()) return { data: [], error: "Not configured" };
 
+  const normalized = walletAddress ? walletAddress.toLowerCase() : walletAddress;
   const currentWallet = getCurrentWallet();
-  const visibilityFilter = walletAddress === currentWallet
+  const visibilityFilter = normalized === currentWallet
     ? ["public", "tankmates", "private"]
     : ["public"];
 
@@ -420,7 +423,7 @@ export async function getCurrentsByAuthor(walletAddress, { cursor, limit = 20 } 
         companion_tier
       )
     `)
-    .eq("author_wallet", walletAddress)
+    .eq("author_wallet", normalized)
     .in("visibility", visibilityFilter)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -619,12 +622,14 @@ export async function watchTank(targetWallet, tankId) {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { data: null, error: "Not connected" };
 
+  const normalizedTarget = targetWallet ? targetWallet.toLowerCase() : targetWallet;
+
   const { data, error } = await supabase
     .from("follows")
     .insert({
       follower_wallet: walletAddress,
       follow_type: "watch_tank",
-      target_wallet: targetWallet,
+      target_wallet: normalizedTarget,
       target_tank_id: tankId,
     })
     .select()
@@ -642,12 +647,14 @@ export async function unwatchTank(targetWallet, tankId) {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { error: "Not connected" };
 
+  const normalizedTarget = targetWallet ? targetWallet.toLowerCase() : targetWallet;
+
   const { error } = await supabase
     .from("follows")
     .delete()
     .eq("follower_wallet", walletAddress)
     .eq("follow_type", "watch_tank")
-    .eq("target_wallet", targetWallet)
+    .eq("target_wallet", normalizedTarget)
     .eq("target_tank_id", tankId);
 
   return { error };
@@ -662,12 +669,14 @@ export async function isWatchingTank(targetWallet, tankId) {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return false;
 
+  const normalizedTarget = targetWallet ? targetWallet.toLowerCase() : targetWallet;
+
   const { data } = await supabase
     .from("follows")
     .select("id")
     .eq("follower_wallet", walletAddress)
     .eq("follow_type", "watch_tank")
-    .eq("target_wallet", targetWallet)
+    .eq("target_wallet", normalizedTarget)
     .eq("target_tank_id", tankId)
     .single();
 
@@ -683,11 +692,13 @@ export async function sendTankmateRequest(targetWallet, message = "") {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { data: null, error: "Not connected" };
 
+  const normalizedTarget = targetWallet ? targetWallet.toLowerCase() : targetWallet;
+
   const { data, error } = await supabase
     .from("connection_requests")
     .insert({
       from_wallet: walletAddress,
-      to_wallet: targetWallet,
+      to_wallet: normalizedTarget,
       message: message || null,
     })
     .select()
@@ -766,7 +777,7 @@ export async function getPendingRequests() {
     .from("connection_requests")
     .select(`
       *,
-      from_profile:from_wallet (
+      from_profile:profiles!connection_requests_from_wallet_fkey (
         wallet_address,
         display_name,
         avatar_url,
@@ -776,6 +787,36 @@ export async function getPendingRequests() {
     .eq("to_wallet", walletAddress)
     .eq("status", "pending")
     .order("created_at", { ascending: false });
+
+  // Fallback if FK hint syntax fails (constraint name mismatch)
+  if (error && error.message?.includes("relationship")) {
+    const { data: rawRequests } = await supabase
+      .from("connection_requests")
+      .select("*")
+      .eq("to_wallet", walletAddress)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+
+    if (!rawRequests?.length) return { data: [], error: null };
+
+    const fromWallets = rawRequests.map((r) => r.from_wallet).filter(Boolean);
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("wallet_address, display_name, avatar_url, companion_tier")
+      .in("wallet_address", [...new Set(fromWallets)]);
+
+    const profileMap = {};
+    for (const p of profiles || []) {
+      profileMap[p.wallet_address] = p;
+    }
+
+    const enriched = rawRequests.map((r) => ({
+      ...r,
+      from_profile: profileMap[r.from_wallet] || null,
+    }));
+
+    return { data: enriched, error: null };
+  }
 
   return { data: data || [], error };
 }
@@ -788,7 +829,8 @@ export async function getRelationshipStatus(targetWallet) {
   if (!isSupabaseConfigured()) return "none";
 
   const walletAddress = getCurrentWallet();
-  if (!walletAddress || walletAddress === targetWallet) return "self";
+  const normalizedTarget = targetWallet ? targetWallet.toLowerCase() : targetWallet;
+  if (!walletAddress || walletAddress === normalizedTarget) return "self";
 
   // Check mutual tankmate follow
   const { data: follow } = await supabase
@@ -796,7 +838,7 @@ export async function getRelationshipStatus(targetWallet) {
     .select("id")
     .eq("follower_wallet", walletAddress)
     .eq("follow_type", "tankmate")
-    .eq("target_wallet", targetWallet)
+    .eq("target_wallet", normalizedTarget)
     .single();
 
   if (follow) return "tankmate";
@@ -806,7 +848,7 @@ export async function getRelationshipStatus(targetWallet) {
     .from("connection_requests")
     .select("id")
     .eq("from_wallet", walletAddress)
-    .eq("to_wallet", targetWallet)
+    .eq("to_wallet", normalizedTarget)
     .eq("status", "pending")
     .single();
 
@@ -816,7 +858,7 @@ export async function getRelationshipStatus(targetWallet) {
   const { data: receivedRequest } = await supabase
     .from("connection_requests")
     .select("id, from_wallet")
-    .eq("from_wallet", targetWallet)
+    .eq("from_wallet", normalizedTarget)
     .eq("to_wallet", walletAddress)
     .eq("status", "pending")
     .single();
@@ -832,11 +874,13 @@ export async function getRelationshipStatus(targetWallet) {
 export async function getTankmates(walletAddress) {
   if (!isSupabaseConfigured()) return { data: [], error: "Not configured" };
 
+  const normalized = walletAddress ? walletAddress.toLowerCase() : walletAddress;
+
   const { data, error } = await supabase
     .from("follows")
     .select(`
       target_wallet,
-      profiles:target_wallet (
+      profiles:profiles!follows_target_wallet_fkey (
         wallet_address,
         display_name,
         avatar_url,
@@ -844,8 +888,37 @@ export async function getTankmates(walletAddress) {
         xp_total
       )
     `)
-    .eq("follower_wallet", walletAddress)
+    .eq("follower_wallet", normalized)
     .eq("follow_type", "tankmate");
+
+  // If the FK join fails (PostgREST ambiguity), fall back to manual lookup
+  if (error && error.message?.includes("relationship")) {
+    const { data: rawFollows, error: rawErr } = await supabase
+      .from("follows")
+      .select("target_wallet")
+      .eq("follower_wallet", normalized)
+      .eq("follow_type", "tankmate");
+
+    if (rawErr || !rawFollows?.length) return { data: [], error: rawErr };
+
+    const targetWallets = rawFollows.map((f) => f.target_wallet);
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("wallet_address, display_name, avatar_url, companion_tier, xp_total")
+      .in("wallet_address", targetWallets);
+
+    const profileMap = {};
+    for (const p of profiles || []) {
+      profileMap[p.wallet_address] = p;
+    }
+
+    const result = rawFollows.map((f) => ({
+      target_wallet: f.target_wallet,
+      profiles: profileMap[f.target_wallet] || null,
+    }));
+
+    return { data: result, error: null };
+  }
 
   return { data: data || [], error };
 }
@@ -859,18 +932,20 @@ export async function removeTankmate(targetWallet) {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { error: "Not connected" };
 
+  const normalizedTarget = targetWallet ? targetWallet.toLowerCase() : targetWallet;
+
   // Delete both follow directions
   await supabase
     .from("follows")
     .delete()
     .eq("follower_wallet", walletAddress)
     .eq("follow_type", "tankmate")
-    .eq("target_wallet", targetWallet);
+    .eq("target_wallet", normalizedTarget);
 
   await supabase
     .from("follows")
     .delete()
-    .eq("follower_wallet", targetWallet)
+    .eq("follower_wallet", normalizedTarget)
     .eq("follow_type", "tankmate")
     .eq("target_wallet", walletAddress);
 
@@ -889,14 +964,16 @@ export async function followUser(targetWallet) {
 
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { data: null, error: "Not connected" };
-  if (walletAddress === targetWallet) return { data: null, error: "Cannot follow yourself" };
+
+  const normalizedTarget = targetWallet ? targetWallet.toLowerCase() : targetWallet;
+  if (walletAddress === normalizedTarget) return { data: null, error: "Cannot follow yourself" };
 
   const { data, error } = await supabase
     .from("follows")
     .insert({
       follower_wallet: walletAddress,
       follow_type: "follow",
-      target_wallet: targetWallet,
+      target_wallet: normalizedTarget,
     })
     .select()
     .single();
@@ -913,12 +990,14 @@ export async function unfollowUser(targetWallet) {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { error: "Not connected" };
 
+  const normalizedTarget = targetWallet ? targetWallet.toLowerCase() : targetWallet;
+
   const { error } = await supabase
     .from("follows")
     .delete()
     .eq("follower_wallet", walletAddress)
     .eq("follow_type", "follow")
-    .eq("target_wallet", targetWallet);
+    .eq("target_wallet", normalizedTarget);
 
   return { error };
 }
@@ -930,14 +1009,16 @@ export async function isFollowingUser(targetWallet) {
   if (!isSupabaseConfigured()) return false;
 
   const walletAddress = getCurrentWallet();
-  if (!walletAddress || walletAddress === targetWallet) return false;
+  if (!walletAddress || walletAddress === targetWallet?.toLowerCase()) return false;
+
+  const normalizedTarget = targetWallet ? targetWallet.toLowerCase() : targetWallet;
 
   const { data } = await supabase
     .from("follows")
     .select("id")
     .eq("follower_wallet", walletAddress)
     .eq("follow_type", "follow")
-    .eq("target_wallet", targetWallet)
+    .eq("target_wallet", normalizedTarget)
     .single();
 
   return !!data;
@@ -949,12 +1030,18 @@ export async function isFollowingUser(targetWallet) {
 export async function getFollowerCount(walletAddress) {
   if (!isSupabaseConfigured()) return 0;
 
-  const { count } = await supabase
+  const normalized = walletAddress ? walletAddress.toLowerCase() : walletAddress;
+
+  const { count, error } = await supabase
     .from("follows")
     .select("*", { count: "exact", head: true })
-    .eq("target_wallet", walletAddress)
+    .eq("target_wallet", normalized)
     .in("follow_type", ["follow", "tankmate"]);
 
+  if (error) {
+    console.warn("[Reef] getFollowerCount error:", error.message);
+    return 0;
+  }
   return count || 0;
 }
 
@@ -964,12 +1051,18 @@ export async function getFollowerCount(walletAddress) {
 export async function getFollowingCount(walletAddress) {
   if (!isSupabaseConfigured()) return 0;
 
-  const { count } = await supabase
+  const normalized = walletAddress ? walletAddress.toLowerCase() : walletAddress;
+
+  const { count, error } = await supabase
     .from("follows")
     .select("*", { count: "exact", head: true })
-    .eq("follower_wallet", walletAddress)
+    .eq("follower_wallet", normalized)
     .in("follow_type", ["follow", "tankmate"]);
 
+  if (error) {
+    console.warn("[Reef] getFollowingCount error:", error.message);
+    return 0;
+  }
   return count || 0;
 }
 

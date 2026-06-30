@@ -21,7 +21,7 @@ import {
   getSchoolChallenges,
   createChallenge,
 } from "../services/schoolsApi";
-import { getCurrentWallet } from "../services/supabaseClient";
+import { getCurrentWallet, isSupabaseConfigured } from "../services/supabaseClient";
 
 /**
  * Fetch all schools with optional type filter and search.
@@ -42,13 +42,13 @@ export function useSchoolDirectory({ type, search } = {}) {
 /**
  * Fetch schools the current user belongs to.
  */
-export function useMySchools() {
-  const walletAddress = getCurrentWallet();
+export function useMySchools(walletOverride = null) {
+  const walletAddress = walletOverride || getCurrentWallet();
 
   return useQuery({
     queryKey: ["schools", "mine", walletAddress],
     queryFn: () => getMySchools(),
-    enabled: !!walletAddress,
+    enabled: !!walletAddress && isSupabaseConfigured(),
     staleTime: 30 * 1000,
   });
 }
@@ -80,13 +80,13 @@ export function useSchoolById(schoolId) {
 /**
  * Fetch current user's role in a school.
  */
-export function useMySchoolRole(schoolId) {
-  const walletAddress = getCurrentWallet();
+export function useMySchoolRole(schoolId, walletOverride = null) {
+  const walletAddress = walletOverride || getCurrentWallet();
 
   return useQuery({
     queryKey: ["schools", "role", schoolId, walletAddress],
     queryFn: () => getMySchoolRole(schoolId),
-    enabled: !!schoolId && !!walletAddress,
+    enabled: !!schoolId && !!walletAddress && isSupabaseConfigured(),
     staleTime: 30 * 1000,
   });
 }

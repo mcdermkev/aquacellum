@@ -1,0 +1,1296 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_relayer",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "AlreadyHatched",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "CallerNotRelayer",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "ERC721IncorrectOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "ERC721InsufficientApproval",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "approver",
+        "type": "address"
+      }
+    ],
+    "name": "ERC721InvalidApprover",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      }
+    ],
+    "name": "ERC721InvalidOperator",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "ERC721InvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      }
+    ],
+    "name": "ERC721InvalidReceiver",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      }
+    ],
+    "name": "ERC721InvalidSender",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "ERC721NonexistentToken",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EvolutionRequirementsNotMet",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InsufficientXpToHatch",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidStageTransition",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotHatched",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotTokenOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Soulbound",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "approved",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "Approval",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "approved",
+        "type": "bool"
+      }
+    ],
+    "name": "ApprovalForAll",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum AquadexCompanion.Stage",
+        "name": "fromStage",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum AquadexCompanion.Stage",
+        "name": "toStage",
+        "type": "uint8"
+      }
+    ],
+    "name": "EchoEvolved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "seed",
+        "type": "uint256"
+      }
+    ],
+    "name": "EchoHatched",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint32",
+        "name": "totalCareDays",
+        "type": "uint32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint16",
+        "name": "longestStreak",
+        "type": "uint16"
+      }
+    ],
+    "name": "EchoStatsUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "PersonalityUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "oldRelayer",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newRelayer",
+        "type": "address"
+      }
+    ],
+    "name": "RelayerUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "Transfer",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "HATCH_THRESHOLD",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "approve",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "balanceOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "echoDna",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "seed",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "bodyShape",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "pattern",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "finStyle",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "eyeType",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "signatureMark",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint16",
+        "name": "baseHue",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint16",
+        "name": "secondaryHue",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "echoOf",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "echoState",
+    "outputs": [
+      {
+        "internalType": "enum AquadexCompanion.Stage",
+        "name": "currentStage",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint32",
+        "name": "totalCareDays",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint16",
+        "name": "longestStreak",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint16",
+        "name": "speciesWitnessed",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint16",
+        "name": "rareMoments",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint40",
+        "name": "birthTimestamp",
+        "type": "uint40"
+      },
+      {
+        "internalType": "uint40",
+        "name": "lastEvolution",
+        "type": "uint40"
+      },
+      {
+        "internalType": "uint8",
+        "name": "personalityNurturing",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "personalityAnalytical",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "personalityAdventurous",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "personalitySocial",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "personalityCalm",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "personalityCreative",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "enum AquadexCompanion.Stage",
+        "name": "newStage",
+        "type": "uint8"
+      }
+    ],
+    "name": "evolve",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getApproved",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getDna",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "seed",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint8",
+            "name": "bodyShape",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "pattern",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "finStyle",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "eyeType",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "signatureMark",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint16",
+            "name": "baseHue",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "secondaryHue",
+            "type": "uint16"
+          }
+        ],
+        "internalType": "struct AquadexCompanion.EchoDNA",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      }
+    ],
+    "name": "getEchoByWallet",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      }
+    ],
+    "name": "getFullEcho",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "seed",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint8",
+            "name": "bodyShape",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "pattern",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "finStyle",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "eyeType",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "signatureMark",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint16",
+            "name": "baseHue",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "secondaryHue",
+            "type": "uint16"
+          }
+        ],
+        "internalType": "struct AquadexCompanion.EchoDNA",
+        "name": "dna",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "enum AquadexCompanion.Stage",
+            "name": "currentStage",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint32",
+            "name": "totalCareDays",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint16",
+            "name": "longestStreak",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "speciesWitnessed",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "rareMoments",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint40",
+            "name": "birthTimestamp",
+            "type": "uint40"
+          },
+          {
+            "internalType": "uint40",
+            "name": "lastEvolution",
+            "type": "uint40"
+          },
+          {
+            "internalType": "uint8",
+            "name": "personalityNurturing",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "personalityAnalytical",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "personalityAdventurous",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "personalitySocial",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "personalityCalm",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "personalityCreative",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct AquadexCompanion.EchoState",
+        "name": "state",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getState",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "enum AquadexCompanion.Stage",
+            "name": "currentStage",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint32",
+            "name": "totalCareDays",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint16",
+            "name": "longestStreak",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "speciesWitnessed",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "rareMoments",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint40",
+            "name": "birthTimestamp",
+            "type": "uint40"
+          },
+          {
+            "internalType": "uint40",
+            "name": "lastEvolution",
+            "type": "uint40"
+          },
+          {
+            "internalType": "uint8",
+            "name": "personalityNurturing",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "personalityAnalytical",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "personalityAdventurous",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "personalitySocial",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "personalityCalm",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "personalityCreative",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct AquadexCompanion.EchoState",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      }
+    ],
+    "name": "hasEcho",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "hatch",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "operator",
+        "type": "address"
+      }
+    ],
+    "name": "isApprovedForAll",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "name",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "ownerOf",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "recordRareMoment",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "relayer",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "safeTransferFrom",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "safeTransferFrom",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "name": "setApprovalForAll",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newRelayer",
+        "type": "address"
+      }
+    ],
+    "name": "setRelayer",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "interfaceId",
+        "type": "bytes4"
+      }
+    ],
+    "name": "supportsInterface",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "symbol",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "tokenURI",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      }
+    ],
+    "name": "transferFrom",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "nurturing",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "analytical",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "adventurous",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "social",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "calm",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "creative",
+        "type": "uint8"
+      }
+    ],
+    "name": "updatePersonality",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint32",
+        "name": "newTotalCareDays",
+        "type": "uint32"
+      },
+      {
+        "internalType": "uint16",
+        "name": "newLongestStreak",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint16",
+        "name": "newSpeciesWitnessed",
+        "type": "uint16"
+      }
+    ],
+    "name": "updateStats",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

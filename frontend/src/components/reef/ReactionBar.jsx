@@ -9,13 +9,16 @@
 import React, { useState, useEffect } from "react";
 import { getReactions, toggleReaction } from "../../services/reefApi";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import { useAuth } from "../../contexts/AuthContext";
 
 const EMOJIS = ["🔥", "🐟", "💧", "🌿", "👏", "⭐"];
 
 export function ReactionBar({ currentId, compact = false }) {
   const [reactions, setReactions] = useState({});
   const [loading, setLoading] = useState(false);
-  const walletAddress = getCurrentWallet();
+  const { account } = useAuth();
+  // Use reactive account from context, falling back to module-level getter
+  const walletAddress = account || getCurrentWallet();
 
   // Fetch reactions on mount
   useEffect(() => {

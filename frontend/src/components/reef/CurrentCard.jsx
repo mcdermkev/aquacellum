@@ -13,6 +13,7 @@ import { CommentThread } from "./CommentThread";
 import { FollowButton } from "./FollowButton";
 import { watchTank, unwatchTank, isWatchingTank } from "../../services/reefApi";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import { useAuth } from "../../contexts/AuthContext";
 import { VideoPlayer } from "../video/VideoPlayer";
 import { VideoThumbnail } from "../video/VideoThumbnail";
 
@@ -129,7 +130,8 @@ export function CurrentCard({ current, onProfileClick, casualModeActive = false 
   const body = current.body || "";
   const isLong = body.length > 300;
   const displayBody = isLong && !showFullBody ? body.slice(0, 300) + "..." : body;
-  const currentWallet = getCurrentWallet();
+  const { account } = useAuth();
+  const currentWallet = account || getCurrentWallet();
   const isOwnPost = currentWallet && current.author_wallet === currentWallet;
 
   // Check watch status on mount for posts with linked tanks

@@ -65,11 +65,13 @@ export async function getMyConversations() {
   if (!walletAddress) return { data: [], error: "Not connected" };
 
   // Query conversations where user is participant_a OR participant_b
+  // Use PostgREST FK hint syntax (profiles!column_name) to disambiguate
+  // since conversations has two FKs to profiles (participant_a, participant_b).
   const { data: asA, error: errA } = await supabase
     .from("conversations")
     .select(`
       *,
-      other_profile:participant_b (
+      other_profile:profiles!conversations_participant_b_fkey (
         wallet_address,
         display_name,
         avatar_url,
@@ -83,7 +85,7 @@ export async function getMyConversations() {
     .from("conversations")
     .select(`
       *,
-      other_profile:participant_a (
+      other_profile:profiles!conversations_participant_a_fkey (
         wallet_address,
         display_name,
         avatar_url,
@@ -92,6 +94,56 @@ export async function getMyConversations() {
     `)
     .eq("participant_b", walletAddress)
     .order("last_message_at", { ascending: false });
+
+  // If the FK hint syntax fails (e.g. constraint names differ), fall back to manual profile lookup
+  if ((errA && errA.message?.includes("relationship")) || (errB && errB.message?.includes("relationship"))) {
+    // Fallback: fetch conversations without profile joins, then look up profiles manually
+    const { data: rawA } = await supabase
+      .from("conversations")
+      .select("*")
+      .eq("participant_a", walletAddress)
+      .order("last_message_at", { ascending: false });
+
+    const { data: rawB } = await supabase
+      .from("conversations")
+      .select("*")
+      .eq("participant_b", walletAddress)
+      .order("last_message_at", { ascending: false });
+
+    // Collect all "other" wallet addresses for batch profile lookup
+    const otherWallets = [
+      ...(rawA || []).map((c) => c.participant_b),
+      ...(rawB || []).map((c) => c.participant_a),
+    ].filter(Boolean);
+
+    let profileMap = {};
+    if (otherWallets.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("wallet_address, display_name, avatar_url, companion_tier")
+        .in("wallet_address", [...new Set(otherWallets)]);
+      for (const p of profiles || []) {
+        profileMap[p.wallet_address] = p;
+      }
+    }
+
+    const all = [
+      ...(rawA || []).map((c) => ({
+        ...c,
+        otherWallet: c.participant_b,
+        otherProfile: profileMap[c.participant_b] || null,
+        myUnread: c.unread_a,
+      })),
+      ...(rawB || []).map((c) => ({
+        ...c,
+        otherWallet: c.participant_a,
+        otherProfile: profileMap[c.participant_a] || null,
+        myUnread: c.unread_b,
+      })),
+    ].sort((a, b) => new Date(b.last_message_at) - new Date(a.last_message_at));
+
+    return { data: all, error: null };
+  }
 
   if (errA || errB) return { data: [], error: errA || errB };
 

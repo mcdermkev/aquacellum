@@ -8,20 +8,22 @@
 import React, { useState, useEffect } from "react";
 import { followUser, unfollowUser, isFollowingUser } from "../../services/reefApi";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import { useAuth } from "../../contexts/AuthContext";
 
 export function FollowButton({ targetWallet, compact = false, onFollowChange }) {
   const [following, setFollowing] = useState(null); // null = loading
   const [loading, setLoading] = useState(false);
-  const currentWallet = getCurrentWallet();
-
-  // Don't render for own profile or if not connected
-  if (!currentWallet || currentWallet === targetWallet) return null;
+  const { account } = useAuth();
+  const currentWallet = account || getCurrentWallet();
 
   // Check follow status on mount
   useEffect(() => {
-    if (!targetWallet) return;
+    if (!targetWallet || !currentWallet || currentWallet === targetWallet?.toLowerCase()) return;
     isFollowingUser(targetWallet).then(setFollowing);
-  }, [targetWallet]);
+  }, [targetWallet, currentWallet]);
+
+  // Don't render for own profile or if not connected
+  if (!currentWallet || currentWallet === targetWallet?.toLowerCase()) return null;
 
   const handleToggle = async (e) => {
     e.stopPropagation();

@@ -76,8 +76,8 @@ export function usePastTides() {
 /**
  * Fetch tides the current user is attending.
  */
-export function useMyTides() {
-  const wallet = getCurrentWallet();
+export function useMyTides(walletOverride = null) {
+  const wallet = walletOverride || getCurrentWallet();
   return useQuery({
     queryKey: ["reef", "tides", "mine", wallet],
     queryFn: getMyTides,
@@ -103,8 +103,8 @@ export function useTideAttendees(tideId) {
 /**
  * Get current user's RSVP for a tide.
  */
-export function useMyRsvp(tideId) {
-  const wallet = getCurrentWallet();
+export function useMyRsvp(tideId, walletOverride = null) {
+  const wallet = walletOverride || getCurrentWallet();
   return useQuery({
     queryKey: ["reef", "my-rsvp", tideId, wallet],
     queryFn: () => getMyRsvp(tideId),

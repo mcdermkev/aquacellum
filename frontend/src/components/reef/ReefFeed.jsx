@@ -67,8 +67,8 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
     return () => window.removeEventListener("reef_view_profile", handleViewProfile);
   }, []);
 
-  // Feed queries
-  const following = useFollowingFeed(activeTab === "following");
+  // Feed queries — pass walletAddress prop so the hook gets a reactive value
+  const following = useFollowingFeed(activeTab === "following", walletAddress);
   const discover = useDiscoverFeed(activeTab === "discover");
 
   const activeFeed = activeTab === "following" ? following : discover;

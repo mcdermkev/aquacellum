@@ -10,6 +10,7 @@
 // Deployed: May 29, 2026 | Chain ID: 84532
 export const CONTRACT_ADDRESS = "0x351ca8f34D94F29F6f865Afa419A636324473DeF";
 export const MARKETPLACE_ADDRESS = "0x16168B514144e0380610b78d904a4de51ba03Ca3";
+export const COMPANION_ADDRESS = import.meta.env.VITE_COMPANION_ADDRESS || "0x90EB869AE5c7b0BcecF1b0BFE74A148A50C653B8";
 
 // ── Founders Dashboard Access Control ──────────────────────────────────────
 // Only these wallet addresses can see the "Founders" tab.
