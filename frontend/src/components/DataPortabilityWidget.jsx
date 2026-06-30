@@ -756,9 +756,204 @@ export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
       </div>
     </div>
 
+    {/* ─── Install App ─── */}
+    <InstallAppSection casualModeActive={casualModeActive} />
+
     {/* ─── Reset Local Data (Beta Escape Hatch) ─── */}
     <ResetLocalDataSection casualModeActive={casualModeActive} />
   </>
+  );
+}
+
+/**
+ * InstallAppSection — Permanent "Install App" option that shows platform-appropriate
+ * install instructions. On iOS (which never fires beforeinstallprompt), this gives users
+ * a reliable way to find the Add to Home Screen flow without relying on the dismissable
+ * PwaManager banner.
+ */
+function InstallAppSection({ casualModeActive }) {
+  const [installEvent, setInstallEvent] = useState(null);
+  const [installed, setInstalled] = useState(false);
+  const [showIosSteps, setShowIosSteps] = useState(false);
+
+  const isIos =
+    typeof navigator !== "undefined" &&
+    /iphone|ipad|ipod/i.test(navigator.userAgent) &&
+    !window.MSStream;
+
+  const isStandalone =
+    typeof window !== "undefined" &&
+    (window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone === true);
+
+  // Capture Android/desktop install prompt
+  useEffect(() => {
+    if (isStandalone) {
+      setInstalled(true);
+      return;
+    }
+    const onBeforeInstall = (e) => {
+      e.preventDefault();
+      setInstallEvent(e);
+    };
+    const onInstalled = () => {
+      setInstalled(true);
+      setInstallEvent(null);
+    };
+    window.addEventListener("beforeinstallprompt", onBeforeInstall);
+    window.addEventListener("appinstalled", onInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installEvent) return;
+    installEvent.prompt();
+    try { await installEvent.userChoice; } catch { /* dismissed */ }
+    setInstallEvent(null);
+  };
+
+  return (
+    <div
+      className="glass-card"
+      style={{
+        padding: "2rem",
+        borderRadius: "var(--radius-md)",
+        border: "1px solid rgba(56, 189, 248, 0.15)",
+        background: "rgba(10, 15, 30, 0.7)",
+        backdropFilter: "blur(12px)",
+        boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
+        maxWidth: "600px",
+        margin: "0 auto 3rem auto",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1rem" }}>
+        <span style={{ fontSize: "1.5rem" }}>📲</span>
+        <h3 style={{ fontSize: "1.25rem", fontWeight: "700", color: "#fff", margin: 0 }}>
+          {casualModeActive ? "Install App" : "Install Progressive Web App"}
+        </h3>
+        {installed && (
+          <span style={{
+            fontSize: "0.6rem",
+            padding: "0.15rem 0.5rem",
+            borderRadius: "20px",
+            background: "rgba(52, 211, 153, 0.15)",
+            color: "#4ade80",
+            border: "1px solid rgba(52, 211, 153, 0.3)",
+            fontWeight: "700",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+          }}>
+            Installed
+          </span>
+        )}
+      </div>
+
+      <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", lineHeight: "1.5", marginBottom: "1.25rem" }}>
+        {installed
+          ? (casualModeActive
+              ? "Aquadex is already installed on this device. You're getting the full app experience!"
+              : "PWA is installed and running in standalone display mode.")
+          : (casualModeActive
+              ? "Install Aquadex to your home screen for a full-screen, app-like experience with faster loading and offline access."
+              : "Install the PWA for standalone display mode, offline shell caching, and native-like navigation without browser chrome.")}
+      </p>
+
+      {!installed && (
+        <>
+          {/* Android/Desktop: native install prompt available */}
+          {installEvent && (
+            <button
+              className="btn-primary"
+              onClick={handleInstall}
+              style={{
+                padding: "0.75rem 1.5rem",
+                fontSize: "0.875rem",
+                minHeight: "44px",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.5rem",
+              }}
+            >
+              Install Aquadex
+            </button>
+          )}
+
+          {/* iOS: manual instructions */}
+          {isIos && !installEvent && (
+            <div>
+              <button
+                className="btn-primary"
+                onClick={() => setShowIosSteps((v) => !v)}
+                style={{
+                  padding: "0.75rem 1.5rem",
+                  fontSize: "0.875rem",
+                  minHeight: "44px",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                {showIosSteps ? "Hide Instructions" : "How to Install"}
+              </button>
+
+              {showIosSteps && (
+                <div style={{
+                  marginTop: "1.25rem",
+                  padding: "1.25rem",
+                  background: "rgba(56, 189, 248, 0.04)",
+                  border: "1px solid rgba(56, 189, 248, 0.15)",
+                  borderRadius: "var(--radius-sm)",
+                }}>
+                  <p style={{ fontSize: "0.8rem", color: "#fff", fontWeight: "600", marginBottom: "1rem" }}>
+                    Follow these steps in Safari:
+                  </p>
+                  <ol style={{
+                    fontSize: "0.8rem",
+                    color: "var(--text-muted)",
+                    lineHeight: "2",
+                    paddingLeft: "1.25rem",
+                    margin: 0,
+                  }}>
+                    <li>Tap the <strong style={{ color: "#38bdf8" }}>Share</strong> button <span style={{ fontSize: "1rem" }}>&#x2B06;&#xFE0F;</span> (the square with an arrow at the bottom of Safari)</li>
+                    <li>Scroll down and tap <strong style={{ color: "#38bdf8" }}>Add to Home Screen</strong></li>
+                    <li>Tap <strong style={{ color: "#38bdf8" }}>Add</strong> in the top-right corner</li>
+                  </ol>
+                  <div style={{
+                    marginTop: "1rem",
+                    padding: "0.6rem 0.85rem",
+                    background: "rgba(251, 191, 36, 0.06)",
+                    border: "1px solid rgba(251, 191, 36, 0.2)",
+                    borderRadius: "6px",
+                    display: "flex",
+                    gap: "0.5rem",
+                    alignItems: "flex-start",
+                  }}>
+                    <span style={{ fontSize: "0.8rem" }}>💡</span>
+                    <span style={{ fontSize: "0.72rem", color: "rgba(251, 191, 36, 0.9)", lineHeight: "1.4" }}>
+                      This must be done in Safari. Other browsers on iPhone (Chrome, Firefox) don't support installing PWAs.
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Desktop/Android without prompt (hasn't fired yet or unsupported browser) */}
+          {!isIos && !installEvent && (
+            <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontStyle: "italic" }}>
+              {casualModeActive
+                ? "Your browser will show an install option in the address bar, or try visiting this page in Chrome or Edge."
+                : "The install prompt will appear when browser installability criteria are met. Ensure you're using a Chromium-based browser with a valid service worker."}
+            </p>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 
