@@ -5,7 +5,7 @@
  * Tables: expert_audits, audit_requests, mentorships
  */
 
-import { supabase, getCurrentWallet, isSupabaseConfigured } from "./supabaseClient";
+import { supabase, getCurrentWallet, isSupabaseConfigured, resolveProfileWallet } from "./supabaseClient";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EXPERT AUDITS
@@ -33,8 +33,8 @@ export async function createAudit({
   const { data, error } = await supabase
     .from("expert_audits")
     .insert({
-      auditor_wallet: walletAddress,
-      recipient_wallet: recipientWallet,
+      auditor_wallet: await resolveProfileWallet(walletAddress),
+      recipient_wallet: await resolveProfileWallet(recipientWallet),
       target_tank_id: targetTankId || null,
       target_current_id: targetCurrentId || null,
       water_quality_score: waterQualityScore,
@@ -81,7 +81,7 @@ export async function getAuditsForUser(walletAddress, { limit = 10 } = {}) {
         companion_tier
       )
     `)
-    .eq("recipient_wallet", walletAddress)
+    .ilike("recipient_wallet", (walletAddress || "").toLowerCase())
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -105,7 +105,7 @@ export async function getAuditsByAuditor(walletAddress, { limit = 10 } = {}) {
         companion_tier
       )
     `)
-    .eq("auditor_wallet", walletAddress)
+    .ilike("auditor_wallet", (walletAddress || "").toLowerCase())
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -169,9 +169,9 @@ export async function requestAudit({
   const { data, error } = await supabase
     .from("audit_requests")
     .insert({
-      requester_wallet: walletAddress,
+      requester_wallet: await resolveProfileWallet(walletAddress),
       target_current_id: targetCurrentId,
-      target_auditor_wallet: targetAuditorWallet,
+      target_auditor_wallet: targetAuditorWallet ? await resolveProfileWallet(targetAuditorWallet) : null,
       message: message || null,
     })
     .select()
@@ -210,8 +210,8 @@ export async function getAuditRequests({ forAuditor = false, limit = 20 } = {}) 
     .limit(limit);
 
   if (forAuditor && walletAddress) {
-    // Show requests targeted at this auditor + open public ones
-    query = query.or(`target_auditor_wallet.eq.${walletAddress},target_auditor_wallet.is.null`)
+    // Show requests targeted at this auditor + open public ones (case-insensitive)
+    query = query.or(`target_auditor_wallet.ilike.${walletAddress.toLowerCase()},target_auditor_wallet.is.null`)
       .eq("status", "open");
   } else {
     query = query.eq("status", "open");
@@ -234,7 +234,7 @@ export async function claimAuditRequest(requestId) {
     .from("audit_requests")
     .update({
       status: "claimed",
-      claimed_by_wallet: walletAddress,
+      claimed_by_wallet: await resolveProfileWallet(walletAddress),
     })
     .eq("id", requestId);
 
@@ -285,8 +285,8 @@ export async function requestMentorship(mentorWallet, message = "") {
   const { data, error } = await supabase
     .from("mentorships")
     .insert({
-      mentor_wallet: mentorWallet,
-      mentee_wallet: walletAddress,
+      mentor_wallet: await resolveProfileWallet(mentorWallet),
+      mentee_wallet: await resolveProfileWallet(walletAddress),
       message: message || null,
     })
     .select()
@@ -342,7 +342,7 @@ export async function getMentorships(walletAddress) {
         xp_total
       )
     `)
-    .eq("mentor_wallet", walletAddress)
+    .ilike("mentor_wallet", (walletAddress || "").toLowerCase())
     .in("status", ["pending", "active"])
     .order("created_at", { ascending: false });
 
@@ -359,7 +359,7 @@ export async function getMentorships(walletAddress) {
         xp_total
       )
     `)
-    .eq("mentee_wallet", walletAddress)
+    .ilike("mentee_wallet", (walletAddress || "").toLowerCase())
     .in("status", ["pending", "active"])
     .order("created_at", { ascending: false });
 
@@ -384,7 +384,7 @@ export async function toggleAcceptingMentees(accepting) {
   const { error } = await supabase
     .from("profiles")
     .update({ accepting_mentees: accepting })
-    .eq("wallet_address", walletAddress);
+    .ilike("wallet_address", walletAddress.toLowerCase());
 
   return { error };
 }

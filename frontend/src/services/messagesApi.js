@@ -9,7 +9,7 @@
  * unique row per user pair regardless of who messages first.
  */
 
-import { supabase, getCurrentWallet, isSupabaseConfigured } from "./supabaseClient";
+import { supabase, getCurrentWallet, isSupabaseConfigured, resolveProfileWallet } from "./supabaseClient";
 import { checkRateLimit, recordAction } from "./rateLimiter";
 
 /**
@@ -30,15 +30,19 @@ export async function getOrCreateConversation(targetWallet) {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { data: null, error: "Not connected" };
 
-  const [participantA, participantB] = orderPair(walletAddress, targetWallet);
+  // Resolve both wallets to the casing stored in profiles so the conversation
+  // participant FKs (participant_a/b -> profiles.wallet_address) are satisfied.
+  const me = await resolveProfileWallet(walletAddress);
+  const them = await resolveProfileWallet(targetWallet);
+  const [participantA, participantB] = orderPair(me, them);
 
-  // Check if conversation exists
+  // Check if conversation exists (case-insensitive — rows may be mixed casing)
   const { data: existing } = await supabase
     .from("conversations")
     .select("*")
-    .eq("participant_a", participantA)
-    .eq("participant_b", participantB)
-    .single();
+    .ilike("participant_a", participantA.toLowerCase())
+    .ilike("participant_b", participantB.toLowerCase())
+    .maybeSingle();
 
   if (existing) return { data: existing, error: null };
 
@@ -52,6 +56,7 @@ export async function getOrCreateConversation(targetWallet) {
     .select()
     .single();
 
+  if (error) console.warn("[Reef] getOrCreateConversation error:", error.message || error);
   return { data, error };
 }
 
@@ -78,7 +83,7 @@ export async function getMyConversations() {
         companion_tier
       )
     `)
-    .eq("participant_a", walletAddress)
+    .ilike("participant_a", walletAddress.toLowerCase())
     .order("last_message_at", { ascending: false });
 
   const { data: asB, error: errB } = await supabase
@@ -92,7 +97,7 @@ export async function getMyConversations() {
         companion_tier
       )
     `)
-    .eq("participant_b", walletAddress)
+    .ilike("participant_b", walletAddress.toLowerCase())
     .order("last_message_at", { ascending: false });
 
   // If the FK hint syntax fails (e.g. constraint names differ), fall back to manual profile lookup
@@ -101,13 +106,13 @@ export async function getMyConversations() {
     const { data: rawA } = await supabase
       .from("conversations")
       .select("*")
-      .eq("participant_a", walletAddress)
+      .ilike("participant_a", walletAddress.toLowerCase())
       .order("last_message_at", { ascending: false });
 
     const { data: rawB } = await supabase
       .from("conversations")
       .select("*")
-      .eq("participant_b", walletAddress)
+      .ilike("participant_b", walletAddress.toLowerCase())
       .order("last_message_at", { ascending: false });
 
     // Collect all "other" wallet addresses for batch profile lookup
@@ -178,13 +183,13 @@ export async function getTotalUnreadCount() {
   const { data: asA } = await supabase
     .from("conversations")
     .select("unread_a")
-    .eq("participant_a", walletAddress)
+    .ilike("participant_a", walletAddress.toLowerCase())
     .gt("unread_a", 0);
 
   const { data: asB } = await supabase
     .from("conversations")
     .select("unread_b")
-    .eq("participant_b", walletAddress)
+    .ilike("participant_b", walletAddress.toLowerCase())
     .gt("unread_b", 0);
 
   const countA = (asA || []).reduce((sum, c) => sum + c.unread_a, 0);
@@ -236,7 +241,7 @@ export async function sendMessage(conversationId, body) {
     .from("messages")
     .insert({
       conversation_id: conversationId,
-      sender_wallet: walletAddress,
+      sender_wallet: await resolveProfileWallet(walletAddress),
       body: trimmed,
     })
     .select()
@@ -255,7 +260,7 @@ export async function sendMessage(conversationId, body) {
     .single();
 
   if (convo) {
-    const isParticipantA = convo.participant_a === walletAddress;
+    const isParticipantA = convo.participant_a?.toLowerCase() === walletAddress.toLowerCase();
     const updates = {
       last_message_preview: preview,
       last_message_at: new Date().toISOString(),
@@ -292,7 +297,7 @@ export async function markConversationRead(conversationId) {
     .from("messages")
     .update({ is_read: true })
     .eq("conversation_id", conversationId)
-    .neq("sender_wallet", walletAddress)
+    .neq("sender_wallet", await resolveProfileWallet(walletAddress))
     .eq("is_read", false);
 
   // Reset unread counter
@@ -303,7 +308,7 @@ export async function markConversationRead(conversationId) {
     .single();
 
   if (convo) {
-    const isParticipantA = convo.participant_a === walletAddress;
+    const isParticipantA = convo.participant_a?.toLowerCase() === walletAddress.toLowerCase();
     const updates = isParticipantA ? { unread_a: 0 } : { unread_b: 0 };
 
     await supabase

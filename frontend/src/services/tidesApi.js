@@ -5,7 +5,7 @@
  * Handles: tide creation, RSVP, chat, auctions, lifecycle queries.
  */
 
-import { supabase, getCurrentWallet, isSupabaseConfigured } from "./supabaseClient";
+import { supabase, getCurrentWallet, isSupabaseConfigured, resolveProfileWallet } from "./supabaseClient";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIDES — CRUD
@@ -35,13 +35,15 @@ export async function createTide({
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { data: null, error: "Not connected" };
 
+  const hostWallet = await resolveProfileWallet(walletAddress);
+
   const { data, error } = await supabase
     .from("tides")
     .insert({
       title,
       description,
       tide_type: tideType,
-      host_wallet: walletAddress,
+      host_wallet: hostWallet,
       host_school_id: hostSchoolId,
       start_time: startTime,
       end_time: endTime,
@@ -170,7 +172,7 @@ export async function getMyTides() {
         )
       )
     `)
-    .eq("wallet_address", walletAddress)
+    .ilike("wallet_address", walletAddress.toLowerCase())
     .order("created_at", { ascending: false });
 
   // Flatten the response
@@ -223,7 +225,7 @@ export async function rsvpTide(tideId, status = "going") {
     .upsert(
       {
         tide_id: tideId,
-        wallet_address: walletAddress,
+        wallet_address: await resolveProfileWallet(walletAddress),
         rsvp_status: status,
       },
       { onConflict: "tide_id,wallet_address" }
@@ -247,7 +249,7 @@ export async function cancelRsvp(tideId) {
     .from("tide_attendees")
     .delete()
     .eq("tide_id", tideId)
-    .eq("wallet_address", walletAddress);
+    .ilike("wallet_address", walletAddress.toLowerCase());
 
   return { error };
 }
@@ -266,7 +268,7 @@ export async function checkInToTide(tideId) {
     .upsert(
       {
         tide_id: tideId,
-        wallet_address: walletAddress,
+        wallet_address: await resolveProfileWallet(walletAddress),
         rsvp_status: "checked_in",
         checked_in_at: new Date().toISOString(),
       },
@@ -312,8 +314,8 @@ export async function getMyRsvp(tideId) {
     .from("tide_attendees")
     .select("rsvp_status, checked_in_at, bringing_species")
     .eq("tide_id", tideId)
-    .eq("wallet_address", walletAddress)
-    .single();
+    .ilike("wallet_address", walletAddress.toLowerCase())
+    .maybeSingle();
 
   return data;
 }
@@ -335,7 +337,7 @@ export async function updateBringingSpecies(tideId, speciesList) {
     .from("tide_attendees")
     .update({ bringing_species: speciesList })
     .eq("tide_id", tideId)
-    .eq("wallet_address", walletAddress);
+    .ilike("wallet_address", walletAddress.toLowerCase());
 
   return { error };
 }
@@ -382,7 +384,7 @@ export async function sendTideChatMessage(tideId, body) {
     .from("tide_chat")
     .insert({
       tide_id: tideId,
-      author_wallet: walletAddress,
+      author_wallet: await resolveProfileWallet(walletAddress),
       body: body.trim(),
     })
     .select(`
@@ -435,7 +437,7 @@ export async function placeBid(tideId, tokenId, amountWei) {
     .insert({
       tide_id: tideId,
       token_id: tokenId,
-      bidder_wallet: walletAddress,
+      bidder_wallet: await resolveProfileWallet(walletAddress),
       amount_wei: amountWei,
     })
     .select()
