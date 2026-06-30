@@ -8,7 +8,7 @@
  *         connection_requests, sonar_notifications
  */
 
-import { supabase, getCurrentWallet, isSupabaseConfigured } from "./supabaseClient";
+import { supabase, getCurrentWallet, isSupabaseConfigured, resolveProfileWallet } from "./supabaseClient";
 import { checkRateLimit, recordAction } from "./rateLimiter";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -247,7 +247,7 @@ export async function createCurrent({
 
   // Build insert payload — only include video fields if present
   const insertPayload = {
-    author_wallet: authorWallet,
+    author_wallet: await resolveProfileWallet(authorWallet),
     title,
     body,
     media_urls: mediaUrls,
@@ -312,7 +312,7 @@ export async function getFollowingFeed(walletAddress, { cursor, limit = 20 } = {
   const { data: follows, error: followsError } = await supabase
     .from("follows")
     .select("follow_type, target_wallet, target_tank_id")
-    .eq("follower_wallet", normalized);
+    .ilike("follower_wallet", normalized);
 
   if (followsError) return { data: [], error: followsError };
 
@@ -466,14 +466,14 @@ export async function toggleReaction(currentId, emoji) {
   // Client-side rate limit check (only for adding, not removing)
   const rateCheck = checkRateLimit("reaction");
 
-  // Check if reaction exists
+  // Check if reaction exists (case-insensitive on wallet)
   const { data: existing } = await supabase
     .from("reactions")
     .select("id")
-    .eq("user_wallet", walletAddress)
+    .ilike("user_wallet", walletAddress.toLowerCase())
     .eq("target_id", currentId)
     .eq("emoji", emoji)
-    .single();
+    .maybeSingle();
 
   if (existing) {
     // Remove reaction (no rate limit on removal)
@@ -490,7 +490,7 @@ export async function toggleReaction(currentId, emoji) {
     const { data, error } = await supabase
       .from("reactions")
       .insert({
-        user_wallet: walletAddress,
+        user_wallet: await resolveProfileWallet(walletAddress),
         target_id: currentId,
         emoji,
       })
@@ -517,13 +517,13 @@ export async function getReactions(currentId) {
 
   // Group by emoji
   const grouped = {};
-  const currentWallet = getCurrentWallet();
+  const currentWallet = (getCurrentWallet() || "").toLowerCase();
   for (const r of data || []) {
     if (!grouped[r.emoji]) {
       grouped[r.emoji] = { count: 0, userReacted: false };
     }
     grouped[r.emoji].count++;
-    if (r.user_wallet === currentWallet) {
+    if ((r.user_wallet || "").toLowerCase() === currentWallet) {
       grouped[r.emoji].userReacted = true;
     }
   }
@@ -551,7 +551,7 @@ export async function postComment(currentId, body, parentCommentId = null) {
   const { data, error } = await supabase
     .from("comments")
     .insert({
-      author_wallet: walletAddress,
+      author_wallet: await resolveProfileWallet(walletAddress),
       current_id: currentId,
       parent_comment_id: parentCommentId,
       body,
@@ -622,19 +622,18 @@ export async function watchTank(targetWallet, tankId) {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { data: null, error: "Not connected" };
 
-  const normalizedTarget = targetWallet ? targetWallet.toLowerCase() : targetWallet;
-
   const { data, error } = await supabase
     .from("follows")
     .insert({
-      follower_wallet: walletAddress,
+      follower_wallet: await resolveProfileWallet(walletAddress),
       follow_type: "watch_tank",
-      target_wallet: normalizedTarget,
+      target_wallet: await resolveProfileWallet(targetWallet),
       target_tank_id: tankId,
     })
     .select()
     .single();
 
+  if (error) console.warn("[Reef] watchTank error:", error.message || error);
   return { data, error };
 }
 
@@ -647,14 +646,12 @@ export async function unwatchTank(targetWallet, tankId) {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { error: "Not connected" };
 
-  const normalizedTarget = targetWallet ? targetWallet.toLowerCase() : targetWallet;
-
   const { error } = await supabase
     .from("follows")
     .delete()
-    .eq("follower_wallet", walletAddress)
+    .ilike("follower_wallet", walletAddress.toLowerCase())
     .eq("follow_type", "watch_tank")
-    .eq("target_wallet", normalizedTarget)
+    .ilike("target_wallet", (targetWallet || "").toLowerCase())
     .eq("target_tank_id", tankId);
 
   return { error };
@@ -669,16 +666,14 @@ export async function isWatchingTank(targetWallet, tankId) {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return false;
 
-  const normalizedTarget = targetWallet ? targetWallet.toLowerCase() : targetWallet;
-
   const { data } = await supabase
     .from("follows")
     .select("id")
-    .eq("follower_wallet", walletAddress)
+    .ilike("follower_wallet", walletAddress.toLowerCase())
     .eq("follow_type", "watch_tank")
-    .eq("target_wallet", normalizedTarget)
+    .ilike("target_wallet", (targetWallet || "").toLowerCase())
     .eq("target_tank_id", tankId)
-    .single();
+    .maybeSingle();
 
   return !!data;
 }
@@ -692,18 +687,22 @@ export async function sendTankmateRequest(targetWallet, message = "") {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { data: null, error: "Not connected" };
 
-  const normalizedTarget = targetWallet ? targetWallet.toLowerCase() : targetWallet;
+  // Resolve to the exact casing stored in profiles so the connection_requests
+  // FKs (from_wallet/to_wallet -> profiles.wallet_address) are satisfied.
+  const fromWallet = await resolveProfileWallet(walletAddress);
+  const toWallet = await resolveProfileWallet(targetWallet);
 
   const { data, error } = await supabase
     .from("connection_requests")
     .insert({
-      from_wallet: walletAddress,
-      to_wallet: normalizedTarget,
+      from_wallet: fromWallet,
+      to_wallet: toWallet,
       message: message || null,
     })
     .select()
     .single();
 
+  if (error) console.warn("[Reef] sendTankmateRequest error:", error.message || error);
   return { data, error };
 }
 
@@ -965,19 +964,29 @@ export async function followUser(targetWallet) {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { data: null, error: "Not connected" };
 
-  const normalizedTarget = targetWallet ? targetWallet.toLowerCase() : targetWallet;
-  if (walletAddress === normalizedTarget) return { data: null, error: "Cannot follow yourself" };
+  if (walletAddress.toLowerCase() === (targetWallet || "").toLowerCase()) {
+    return { data: null, error: "Cannot follow yourself" };
+  }
+
+  // The follows table has FOREIGN KEYs (follower_wallet, target_wallet) →
+  // profiles.wallet_address. That match is CASE-SENSITIVE. Profile rows exist in
+  // mixed casing (legacy checksummed rows + newer lowercase rows), so we MUST
+  // insert the exact casing that lives in profiles or the FK silently rejects
+  // the row. Resolve both wallets before inserting.
+  const follower = await resolveProfileWallet(walletAddress);
+  const target = await resolveProfileWallet(targetWallet);
 
   const { data, error } = await supabase
     .from("follows")
     .insert({
-      follower_wallet: walletAddress,
+      follower_wallet: follower,
       follow_type: "follow",
-      target_wallet: normalizedTarget,
+      target_wallet: target,
     })
     .select()
     .single();
 
+  if (error) console.warn("[Reef] followUser error:", error.message || error);
   return { data, error };
 }
 
@@ -990,15 +999,16 @@ export async function unfollowUser(targetWallet) {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { error: "Not connected" };
 
-  const normalizedTarget = targetWallet ? targetWallet.toLowerCase() : targetWallet;
-
+  // Case-insensitive match so we delete the row regardless of the casing it was
+  // stored with (profiles/follows may hold checksummed or lowercase wallets).
   const { error } = await supabase
     .from("follows")
     .delete()
-    .eq("follower_wallet", walletAddress)
+    .ilike("follower_wallet", walletAddress.toLowerCase())
     .eq("follow_type", "follow")
-    .eq("target_wallet", normalizedTarget);
+    .ilike("target_wallet", (targetWallet || "").toLowerCase());
 
+  if (error) console.warn("[Reef] unfollowUser error:", error.message || error);
   return { error };
 }
 
@@ -1009,17 +1019,16 @@ export async function isFollowingUser(targetWallet) {
   if (!isSupabaseConfigured()) return false;
 
   const walletAddress = getCurrentWallet();
-  if (!walletAddress || walletAddress === targetWallet?.toLowerCase()) return false;
+  if (!walletAddress || walletAddress.toLowerCase() === targetWallet?.toLowerCase()) return false;
 
-  const normalizedTarget = targetWallet ? targetWallet.toLowerCase() : targetWallet;
-
+  // Case-insensitive match — follows rows may use checksummed or lowercase casing.
   const { data } = await supabase
     .from("follows")
     .select("id")
-    .eq("follower_wallet", walletAddress)
+    .ilike("follower_wallet", walletAddress.toLowerCase())
     .eq("follow_type", "follow")
-    .eq("target_wallet", normalizedTarget)
-    .single();
+    .ilike("target_wallet", targetWallet.toLowerCase())
+    .maybeSingle();
 
   return !!data;
 }
@@ -1035,7 +1044,7 @@ export async function getFollowerCount(walletAddress) {
   const { count, error } = await supabase
     .from("follows")
     .select("*", { count: "exact", head: true })
-    .eq("target_wallet", normalized)
+    .ilike("target_wallet", normalized)
     .in("follow_type", ["follow", "tankmate"]);
 
   if (error) {
@@ -1056,7 +1065,7 @@ export async function getFollowingCount(walletAddress) {
   const { count, error } = await supabase
     .from("follows")
     .select("*", { count: "exact", head: true })
-    .eq("follower_wallet", normalized)
+    .ilike("follower_wallet", normalized)
     .in("follow_type", ["follow", "tankmate"]);
 
   if (error) {
@@ -1082,7 +1091,7 @@ export async function getNotifications({ limit = 20, unreadOnly = false } = {}) 
   let query = supabase
     .from("sonar_notifications")
     .select("*")
-    .eq("recipient_wallet", walletAddress)
+    .ilike("recipient_wallet", walletAddress.toLowerCase())
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -1106,7 +1115,7 @@ export async function getUnreadCount() {
   const { count, error } = await supabase
     .from("sonar_notifications")
     .select("*", { count: "exact", head: true })
-    .eq("recipient_wallet", walletAddress)
+    .ilike("recipient_wallet", walletAddress.toLowerCase())
     .eq("is_read", false);
 
   return error ? 0 : (count || 0);

@@ -5,7 +5,7 @@
  * Tables: schools, school_members, school_challenges, school_chat
  */
 
-import { supabase, getCurrentWallet, isSupabaseConfigured } from "./supabaseClient";
+import { supabase, getCurrentWallet, isSupabaseConfigured, resolveProfileWallet } from "./supabaseClient";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SCHOOLS
@@ -30,6 +30,9 @@ export async function createSchool({
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { data: null, error: "Not connected" };
 
+  // Resolve to the casing stored in profiles so founder/member FKs are satisfied.
+  const founderWallet = await resolveProfileWallet(walletAddress);
+
   // Create the school
   const { data: school, error: schoolError } = await supabase
     .from("schools")
@@ -39,7 +42,7 @@ export async function createSchool({
       description: description || null,
       banner_url: bannerUrl || null,
       school_type: schoolType,
-      founder_wallet: walletAddress,
+      founder_wallet: founderWallet,
       member_cap: memberCap || null,
       is_invite_only: isInviteOnly || false,
       tracked_species: trackedSpecies,
@@ -54,7 +57,7 @@ export async function createSchool({
     .from("school_members")
     .insert({
       school_id: school.id,
-      wallet_address: walletAddress,
+      wallet_address: founderWallet,
       role: "founder",
     });
 
@@ -173,7 +176,7 @@ export async function getMySchools() {
         is_invite_only
       )
     `)
-    .eq("wallet_address", walletAddress)
+    .ilike("wallet_address", walletAddress.toLowerCase())
     .order("joined_at", { ascending: false });
 
   return { data: data || [], error };
@@ -223,14 +226,17 @@ export async function joinSchool(schoolId) {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { error: "Not connected" };
 
+  const memberWallet = await resolveProfileWallet(walletAddress);
+
   const { error } = await supabase
     .from("school_members")
     .insert({
       school_id: schoolId,
-      wallet_address: walletAddress,
+      wallet_address: memberWallet,
       role: "member",
     });
 
+  if (error) console.warn("[Reef] joinSchool error:", error.message || error);
   return { error };
 }
 
@@ -247,7 +253,7 @@ export async function leaveSchool(schoolId) {
     .from("school_members")
     .delete()
     .eq("school_id", schoolId)
-    .eq("wallet_address", walletAddress);
+    .ilike("wallet_address", walletAddress.toLowerCase());
 
   return { error };
 }
@@ -290,8 +296,8 @@ export async function getMySchoolRole(schoolId) {
     .from("school_members")
     .select("role")
     .eq("school_id", schoolId)
-    .eq("wallet_address", walletAddress)
-    .single();
+    .ilike("wallet_address", walletAddress.toLowerCase())
+    .maybeSingle();
 
   return data?.role || null;
 }
@@ -306,7 +312,7 @@ export async function updateMemberRole(schoolId, targetWallet, newRole) {
     .from("school_members")
     .update({ role: newRole })
     .eq("school_id", schoolId)
-    .eq("wallet_address", targetWallet);
+    .ilike("wallet_address", (targetWallet || "").toLowerCase());
 
   return { error };
 }
@@ -321,7 +327,7 @@ export async function removeMember(schoolId, targetWallet) {
     .from("school_members")
     .delete()
     .eq("school_id", schoolId)
-    .eq("wallet_address", targetWallet);
+    .ilike("wallet_address", (targetWallet || "").toLowerCase());
 
   return { error };
 }
@@ -339,11 +345,13 @@ export async function sendSchoolMessage(schoolId, body) {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { data: null, error: "Not connected" };
 
+  const authorWallet = await resolveProfileWallet(walletAddress);
+
   const { data, error } = await supabase
     .from("school_chat")
     .insert({
       school_id: schoolId,
-      author_wallet: walletAddress,
+      author_wallet: authorWallet,
       body,
     })
     .select(`
@@ -427,11 +435,13 @@ export async function createChallenge(schoolId, {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { data: null, error: "Not connected" };
 
+  const creatorWallet = await resolveProfileWallet(walletAddress);
+
   const { data, error } = await supabase
     .from("school_challenges")
     .insert({
       school_id: schoolId,
-      creator_wallet: walletAddress,
+      creator_wallet: creatorWallet,
       title,
       description: description || null,
       challenge_type: challengeType,
@@ -494,14 +504,19 @@ export async function inviteToSchool(schoolId, targetWallet) {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { data: null, error: "Not connected" };
 
+  // Resolve both wallets to the casing stored in profiles so the
+  // school_invites FKs (invited_wallet/invited_by -> profiles) are satisfied.
+  const inviterWallet = await resolveProfileWallet(walletAddress);
+  const inviteeWallet = await resolveProfileWallet(targetWallet);
+
   // Check if already invited or already a member
   const { data: existing } = await supabase
     .from("school_invites")
     .select("id, status")
     .eq("school_id", schoolId)
-    .eq("invited_wallet", targetWallet)
+    .ilike("invited_wallet", (targetWallet || "").toLowerCase())
     .eq("status", "pending")
-    .single();
+    .maybeSingle();
 
   if (existing) return { data: null, error: "User already has a pending invite" };
 
@@ -509,13 +524,14 @@ export async function inviteToSchool(schoolId, targetWallet) {
     .from("school_invites")
     .insert({
       school_id: schoolId,
-      invited_wallet: targetWallet,
-      invited_by: walletAddress,
+      invited_wallet: inviteeWallet,
+      invited_by: inviterWallet,
       status: "pending",
     })
     .select()
     .single();
 
+  if (error) console.warn("[Reef] inviteToSchool error:", error.message || error);
   return { data, error };
 }
 
@@ -547,7 +563,7 @@ export async function getMySchoolInvites() {
         companion_tier
       )
     `)
-    .eq("invited_wallet", walletAddress)
+    .ilike("invited_wallet", walletAddress.toLowerCase())
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
@@ -556,7 +572,7 @@ export async function getMySchoolInvites() {
     const { data: rawInvites } = await supabase
       .from("school_invites")
       .select("*")
-      .eq("invited_wallet", walletAddress)
+      .ilike("invited_wallet", walletAddress.toLowerCase())
       .eq("status", "pending")
       .order("created_at", { ascending: false });
 
@@ -667,11 +683,12 @@ export async function acceptSchoolInvite(inviteId, schoolId) {
   if (updateError) return { error: updateError };
 
   // Add as member
+  const memberWallet = await resolveProfileWallet(walletAddress);
   const { error: memberError } = await supabase
     .from("school_members")
     .insert({
       school_id: schoolId,
-      wallet_address: walletAddress,
+      wallet_address: memberWallet,
       role: "member",
     });
 

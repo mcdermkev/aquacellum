@@ -18,12 +18,12 @@ export function FollowButton({ targetWallet, compact = false, onFollowChange }) 
 
   // Check follow status on mount
   useEffect(() => {
-    if (!targetWallet || !currentWallet || currentWallet === targetWallet?.toLowerCase()) return;
+    if (!targetWallet || !currentWallet || currentWallet.toLowerCase() === targetWallet?.toLowerCase()) return;
     isFollowingUser(targetWallet).then(setFollowing);
   }, [targetWallet, currentWallet]);
 
   // Don't render for own profile or if not connected
-  if (!currentWallet || currentWallet === targetWallet?.toLowerCase()) return null;
+  if (!currentWallet || currentWallet.toLowerCase() === targetWallet?.toLowerCase()) return null;
 
   const handleToggle = async (e) => {
     e.stopPropagation();
@@ -44,8 +44,11 @@ export function FollowButton({ targetWallet, compact = false, onFollowChange }) 
         if (error) throw error;
       }
       if (onFollowChange) onFollowChange(!previousState);
-    } catch {
-      // Revert on error
+    } catch (err) {
+      // Surface the real reason instead of silently swallowing it — a swallowed
+      // FK/constraint error here is what made this bug look like "nothing happens".
+      console.error("[FollowButton] follow toggle failed:", err?.message || err);
+      // Revert optimistic update on error
       setFollowing(previousState);
     } finally {
       setLoading(false);

@@ -141,6 +141,56 @@ export function isSupabaseConfigured() {
 }
 
 /**
+ * Cache of lowercased-wallet -> exact-casing-stored-in-profiles.
+ * Avoids repeated profile lookups for the same wallet within a session.
+ */
+const _walletCaseCache = new Map();
+
+/**
+ * Resolve a wallet address to the EXACT casing stored in the profiles table.
+ *
+ * Social tables (follows, school_members, school_invites, tide_attendees,
+ * conversations, messages, connection_requests, mentorships, ...) have foreign
+ * keys to profiles.wallet_address, and that equality is CASE-SENSITIVE. Profiles
+ * exist in mixed casing — most are legacy checksummed rows, some are newer
+ * lowercase rows — so a blindly-lowercased wallet (what getCurrentWallet returns)
+ * frequently matches no profile row and every INSERT is rejected by the FK.
+ *
+ * Looking up the stored value first keeps the write valid regardless of how the
+ * profile was saved. Falls back to the lowercased input when no profile exists.
+ */
+export async function resolveProfileWallet(walletAddress) {
+  if (!walletAddress) return walletAddress;
+  const lower = walletAddress.toLowerCase();
+  if (_walletCaseCache.has(lower)) return _walletCaseCache.get(lower);
+  if (!isSupabaseConfigured()) return lower;
+
+  // Exact lowercase match (newer profile rows)
+  const { data: exact } = await supabase
+    .from("profiles")
+    .select("wallet_address")
+    .eq("wallet_address", lower)
+    .maybeSingle();
+  if (exact?.wallet_address) {
+    _walletCaseCache.set(lower, exact.wallet_address);
+    return exact.wallet_address;
+  }
+
+  // Case-insensitive match (legacy checksummed profile rows)
+  const { data: legacy } = await supabase
+    .from("profiles")
+    .select("wallet_address")
+    .ilike("wallet_address", lower)
+    .maybeSingle();
+  if (legacy?.wallet_address) {
+    _walletCaseCache.set(lower, legacy.wallet_address);
+    return legacy.wallet_address;
+  }
+
+  return lower;
+}
+
+/**
  * Authenticate the Supabase session using the connected wallet address.
  * 
  * Calls the /api/mint-session endpoint with the Privy access token to get
