@@ -313,18 +313,21 @@ export async function getFollowingFeed(walletAddress, { cursor, limit = 20 } = {
     .eq("follower_wallet", walletAddress);
 
   if (followsError) return { data: [], error: followsError };
-  if (!follows || follows.length === 0) return { data: [], error: null };
 
   // Separate followed wallets and watched tanks
   const followedWallets = follows
-    .filter((f) => (f.follow_type === "tankmate" || f.follow_type === "follow") && f.target_wallet)
-    .map((f) => f.target_wallet);
+    ? follows
+        .filter((f) => (f.follow_type === "tankmate" || f.follow_type === "follow") && f.target_wallet)
+        .map((f) => f.target_wallet)
+    : [];
 
   const watchedTanks = follows
-    .filter((f) => f.follow_type === "watch_tank" && f.target_tank_id)
-    .map((f) => f.target_tank_id);
+    ? follows
+        .filter((f) => f.follow_type === "watch_tank" && f.target_tank_id)
+        .map((f) => f.target_tank_id)
+    : [];
 
-  // Step 2: Query currents from followed wallets OR watched tanks
+  // Step 2: Query currents from followed wallets, watched tanks, AND the user's own posts
   let query = supabase
     .from("currents")
     .select(`
@@ -339,8 +342,12 @@ export async function getFollowingFeed(walletAddress, { cursor, limit = 20 } = {
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  // Build OR filter: author in followed wallets OR tank in watched tanks
+  // Build OR filter: author in followed wallets OR tank in watched tanks OR user's own posts
   const orConditions = [];
+
+  // Always include the user's own posts in their Following feed
+  orConditions.push(`author_wallet.eq.${walletAddress}`);
+
   if (followedWallets.length > 0) {
     orConditions.push(`author_wallet.in.(${followedWallets.join(",")})`);
   }
@@ -348,9 +355,7 @@ export async function getFollowingFeed(walletAddress, { cursor, limit = 20 } = {
     orConditions.push(`linked_tank_id.in.(${watchedTanks.join(",")})`);
   }
 
-  if (orConditions.length > 0) {
-    query = query.or(orConditions.join(","));
-  }
+  query = query.or(orConditions.join(","));
 
   // Visibility filter: public or tankmates-only (if user is a tankmate)
   query = query.in("visibility", ["public", "tankmates"]);
