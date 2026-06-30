@@ -20,6 +20,8 @@ import { getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseC
 import { useAuth } from "../../contexts/AuthContext";
 import { getFollowerCount, getFollowingCount } from "../../services/reefApi";
 import { db } from "../../db";
+import { EchoRenderer } from "../EchoRenderer";
+import { useEchoState } from "../../hooks/useEchoState";
 
 const TIER_COLORS = {
   Bronze: "#cd7f32",
@@ -207,6 +209,9 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
   const { account } = useAuth();
   const currentWallet = account || getCurrentWallet();
   const isOwnProfile = currentWallet && currentWallet.toLowerCase() === walletAddress?.toLowerCase();
+
+  // Echo companion state for profile display
+  const echoState = useEchoState(walletAddress);
 
   // Auto-ensure profile exists for the user's own profile when it's not found
   const { data: ensuredProfile } = useEnsureProfile(
@@ -401,6 +406,33 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
           filter: "blur(40px)",
           pointerEvents: "none",
         }} />
+
+        {/* Echo companion swimming in the header */}
+        {echoState.hasEcho && echoState.dna && (
+          <div
+            style={{
+              position: "absolute",
+              top: "1rem",
+              right: "1rem",
+              width: "100px",
+              height: "60px",
+              pointerEvents: "none",
+              opacity: 0.85,
+              zIndex: 1,
+            }}
+            title={`Echo — Stage: ${["Egg","Larva","Fry","Juvenile","Adult","Elder","Legendary"][echoState.stage] || "Unknown"}`}
+            aria-label={`Echo companion, ${["Egg","Larva","Fry","Juvenile","Adult","Elder","Legendary"][echoState.stage]} stage`}
+          >
+            <EchoRenderer
+              dna={echoState.dna}
+              stage={echoState.stage}
+              needs={echoState.needs}
+              personality={echoState.personality}
+              size={100}
+              animated={true}
+            />
+          </div>
+        )}
         {/* Avatar + Name row */}
         <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" }} className="reef-profile-header-row">
           <div
