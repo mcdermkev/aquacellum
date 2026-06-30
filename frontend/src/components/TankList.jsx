@@ -11,6 +11,7 @@ import { PoseidonChatConsole } from "./PoseidonChatConsole";
 import { mapContractError } from "../utils/errorHandler";
 import { TankQRCode } from "./TankQRCode";
 import { CompanionFishEntity } from "./CompanionFishEntity";
+import { TankFishVisualization } from "./TankFishVisualization";
 import { useUserTanks } from "../hooks/useUserTanks";
 import { useSpeciesData } from "../hooks/useSpeciesData";
 import { useContractSpecies } from "../hooks/useSpeciesData";
@@ -1809,6 +1810,15 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               }}
             >
               <div className="biotope-banner-overlay"></div>
+
+              {/* Dynamic Tank Fish — renders species-accurate SVG fish for each specimen */}
+              {activeTank.specimens && activeTank.specimens.length > 0 && (
+                <TankFishVisualization
+                  specimens={activeTank.specimens}
+                  fishbaseData={fishbaseData}
+                  containerHeight={200}
+                />
+              )}
 
               {/* Companion Fish Entity (swimming fry or hatched tier) — hidden in Pro mode */}
               {casualModeActive && companionData && companionData.eggState >= 1 && (
