@@ -12,6 +12,16 @@ import { useState } from "react";
 import { useDepthScore, useDepthScoreHistory } from "../../hooks/useDepthScore";
 import { DEPTH_TIERS } from "../../services/depthScoreApi";
 
+/**
+ * Derive tier key from a raw XP score using DEPTH_TIERS thresholds.
+ */
+function deriveTierFromScore(score) {
+  for (let i = DEPTH_TIERS.length - 1; i >= 0; i--) {
+    if (score >= DEPTH_TIERS[i].min) return DEPTH_TIERS[i].key;
+  }
+  return "Shallow";
+}
+
 function ScoreEventRow({ event }) {
   const isPositive = event.delta > 0;
   return (
@@ -27,12 +37,17 @@ function ScoreEventRow({ event }) {
   );
 }
 
-export function DepthScoreMeter({ walletAddress, compact = false, casualModeActive = false }) {
+export function DepthScoreMeter({ walletAddress, compact = false, casualModeActive = false, fallbackScore, fallbackTier }) {
   const { data: scoreData, isLoading } = useDepthScore(walletAddress);
   const [showDetails, setShowDetails] = useState(false);
   const { data: history = [] } = useDepthScoreHistory(walletAddress, { limit: 10 });
 
-  if (isLoading || !scoreData) {
+  // Use Supabase depth_score if available, otherwise fall back to profile xp_total
+  const resolvedScore = scoreData?.depth_score ?? fallbackScore ?? 0;
+  const resolvedTier = scoreData?.depth_tier ?? fallbackTier ?? deriveTierFromScore(resolvedScore);
+
+  // If still loading from Supabase AND no fallback was provided, show skeleton
+  if (isLoading && fallbackScore == null) {
     return compact ? null : (
       <div className="depth-meter depth-meter--loading">
         <div className="skeleton-text" style={{ width: "120px", height: "1.2rem" }} />
@@ -40,7 +55,8 @@ export function DepthScoreMeter({ walletAddress, compact = false, casualModeActi
     );
   }
 
-  const { depth_score: score, depth_tier: tier } = scoreData;
+  const score = resolvedScore;
+  const tier = resolvedTier;
   const currentTierInfo = DEPTH_TIERS.find((t) => t.key === tier) || DEPTH_TIERS[0];
   const currentTierIndex = DEPTH_TIERS.findIndex((t) => t.key === tier);
   const nextTier = DEPTH_TIERS[currentTierIndex + 1];

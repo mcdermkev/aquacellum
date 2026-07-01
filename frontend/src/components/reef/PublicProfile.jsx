@@ -652,7 +652,12 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
         <h3 style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.6rem" }}>
           {casualModeActive ? "⭐ Level & Reputation" : "⭐ Depth Score"}
         </h3>
-        <DepthScoreMeter walletAddress={walletAddress} casualModeActive={casualModeActive} />
+        <DepthScoreMeter
+          walletAddress={walletAddress}
+          casualModeActive={casualModeActive}
+          fallbackScore={profile.depth_score ?? profile.xp_total ?? 0}
+          fallbackTier={profile.depth_tier ?? profile.companion_tier ?? "Shallow"}
+        />
       </div>
 
       {/* Expert Audits Received */}
