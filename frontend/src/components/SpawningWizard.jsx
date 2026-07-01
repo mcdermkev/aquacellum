@@ -519,10 +519,54 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
       )}
 
       {txState.status === "success" && (
-        <div className="glass-card" style={{ padding: "2rem", border: "1px solid var(--accent-green)", textAlign: "center" }}>
+        <div className="glass-card" style={{ padding: "2rem", border: "1px solid var(--accent-green)", textAlign: "center", position: "relative", overflow: "hidden" }}>
           <span style={{ fontSize: "2rem" }}>🎉</span>
           <h3 style={{ color: "var(--accent-green)", marginTop: "0.5rem" }}>Spawn Logged!</h3>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", margin: "0.75rem 0" }}>{txState.message}</p>
+
+          {/* Morph Registration Prompt — shown when non-standard traits were selected */}
+          {(geneticMarkers.albino || geneticMarkers.longfin || geneticMarkers.veil || geneticMarkers.melanistic || geneticMarkers.metallic || geneticMarkers.custom) && (
+            <div style={{
+              margin: "1rem 0", padding: "0.85rem 1rem", borderRadius: "10px",
+              background: "rgba(232, 121, 249, 0.06)", border: "1px solid rgba(232, 121, 249, 0.2)",
+              textAlign: "left",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.4rem" }}>
+                <span style={{ fontSize: "1rem" }}>🎨</span>
+                <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#e879f9" }}>Novel Traits Detected!</span>
+              </div>
+              <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: "0 0 0.6rem", lineHeight: "1.5" }}>
+                You selected non-standard phenotypes for this spawn ({[
+                  geneticMarkers.albino && "Albino",
+                  geneticMarkers.longfin && "Longfin",
+                  geneticMarkers.veil && "Veiltail",
+                  geneticMarkers.melanistic && "Melanistic",
+                  geneticMarkers.metallic && "Metallic",
+                  geneticMarkers.custom,
+                ].filter(Boolean).join(", ")}). If this is a new morph or strain, consider registering it for verification.
+              </p>
+              <button
+                onClick={() => {
+                  setStep(1);
+                  setSelectedSireId("0");
+                  setSelectedDamId("0");
+                  setSelectedTankId("0");
+                  setSnappedParameters(null);
+                  setSelectedCohortPhoto("");
+                  setTxState({ status: "idle", message: "", txHash: "" });
+                  if (onComplete) onComplete("morphs");
+                }}
+                style={{
+                  padding: "0.5rem 1rem", borderRadius: "8px", fontSize: "0.78rem", fontWeight: "600",
+                  background: "rgba(232, 121, 249, 0.1)", border: "1px solid rgba(232, 121, 249, 0.3)",
+                  color: "#e879f9", cursor: "pointer", transition: "all 0.2s",
+                }}
+              >
+                🎨 Register New Morph →
+              </button>
+            </div>
+          )}
+
           <button className="btn-primary" onClick={() => {
             setStep(1);
             setSelectedSireId("0");

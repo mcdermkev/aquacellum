@@ -36,6 +36,7 @@ import { PoseidonGlobalWidget } from "./components/PoseidonGlobalWidget";
 import { WhatsNewModal } from "./components/WhatsNewModal";
 import { IncomingBadge } from "./components/IncomingBadge";
 import { useArrivalNudge } from "./hooks/useArrivalNudge";
+import { initGrowoutReminders } from "./utils/growoutReminders";
 import {
   CONTRACT_ADDRESS,
   MARKETPLACE_ADDRESS,
@@ -115,6 +116,9 @@ export default function App() {
       window.removeEventListener("offline", handleOffline);
     };
   }, []);
+
+  // Initialize Poseidon grow-out checkpoint reminders (PWA notifications)
+  useEffect(() => { initGrowoutReminders(); }, []);
 
   // Cloud sync: on login, pull cloud data to this device then push any local-only data up.
   // This is what makes tanks appear on any device the user signs in to.

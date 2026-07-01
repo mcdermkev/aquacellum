@@ -3,6 +3,8 @@ import { ethers, Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { getProvider } from "../utils/smartAccount";
 import { db } from "../db";
+import { PedigreeTree } from "./PedigreeTree";
+import { downloadPedigreeCertificate, printPedigreeCertificate } from "../utils/pedigreeExport";
 
 
 export function SpecimenLineage({ contractAddress, walletAccount, preselectedTokenId, onSelectBreed }) {
@@ -134,95 +136,6 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
     fetchLineage(tokenId);
   };
 
-  const renderCard = (node, relationLabel) => {
-    if (!node) {
-      return (
-        <div 
-          className="glass-card" 
-          style={{ 
-            padding: "1rem", 
-            textAlign: "center", 
-            border: "1px dashed var(--glass-border)", 
-            background: "rgba(0,0,0,0.1)",
-            minHeight: "100px",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            opacity: 0.5
-          }}
-        >
-          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>{relationLabel}</span>
-          <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: "500" }}>Unknown Ancestry</span>
-        </div>
-      );
-    }
-
-    const formatDate = (ts) => {
-      if (ts === 0) return "Wild-Caught / Unknown";
-      return new Date(ts * 1000).toLocaleDateString();
-    };
-
-    const statusLabels = ["Active", "Deceased", "Rehomed"];
-    const statusBadges = ["badge-green", "badge-red", "badge-amber"];
-
-    return (
-      <div 
-        className="glass-card" 
-        style={{ 
-          padding: "1rem", 
-          display: "flex", 
-          flexDirection: "column", 
-          gap: "0.5rem",
-          background: "rgba(255,255,255,0.02)",
-          borderLeft: `4px solid ${relationLabel.includes("Sire") ? "var(--accent-blue)" : "var(--accent-green)"}`,
-          cursor: "pointer",
-          transition: "transform 0.2s, box-shadow 0.2s"
-        }}
-        onClick={() => {
-          if (onSelectBreed && node.speciesId) {
-            onSelectBreed(node.speciesId);
-          }
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "scale(1.02)";
-          e.currentTarget.style.boxShadow = "0 4px 15px rgba(255, 255, 255, 0.05)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "scale(1)";
-          e.currentTarget.style.boxShadow = "none";
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>
-            {relationLabel}
-          </span>
-          <span className={`badge ${statusBadges[node.status]}`} style={{ fontSize: "0.6rem", padding: "0.1rem 0.4rem" }}>
-            {statusLabels[node.status]}
-          </span>
-        </div>
-
-        <div>
-          <h4 style={{ fontSize: "0.95rem", color: "#fff", display: "flex", justifyContent: "space-between" }}>
-            <span>{node.speciesName}</span>
-            <span style={{ color: "var(--accent-blue)", fontFamily: "monospace" }}>Cert. No. {node.id.toString().padStart(3, "0")}</span>
-          </h4>
-          {node.scientificName && (
-            <span style={{ fontSize: "0.75rem", fontStyle: "italic", color: "var(--text-secondary)", display: "block" }}>
-              {node.scientificName}
-            </span>
-          )}
-        </div>
-
-        <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "0.4rem" }}>
-          <div>Hatch: {formatDate(node.birthTimestamp)}</div>
-          <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            Registrant: {node.breeder.substring(0, 8)}...
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
       <div className="glass-card" style={{ padding: "2rem", marginBottom: "2rem" }}>
@@ -257,58 +170,60 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
       )}
 
       {tree && (
-        <div className="glass-card" style={{ padding: "2.5rem", overflowX: "auto" }}>
-          <h3 style={{ fontSize: "1.25rem", marginBottom: "2rem", textAlign: "center", color: "var(--text-secondary)" }}>
-            Ancestry Family Tree for Cert. Serial No. {tree.target.id.toString().padStart(3, "0")} ({tree.target.speciesName})
-          </h3>
-
-          {/* Tree layout grid */}
-          <div style={{ display: "flex", gap: "2rem", minWidth: "800px", position: "relative", justifyContent: "space-between" }}>
-            
-            {/* Gen 0: Target */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <div style={{ width: "100%" }}>
-                {renderCard(tree.target, "Target Certificate")}
-              </div>
+        <div className="glass-card" style={{ padding: "2rem", overflow: "hidden" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+            <h3 style={{ fontSize: "1.25rem", color: "var(--text-secondary)", margin: 0 }}>
+              Ancestry Family Tree for Cert. Serial No. {tree.target.id.toString().padStart(3, "0")} ({tree.target.speciesName})
+            </h3>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button
+                onClick={() => downloadPedigreeCertificate(tree, { breederWallet: walletAccount })}
+                style={{
+                  fontSize: "0.65rem", padding: "4px 10px", borderRadius: "8px",
+                  background: "rgba(96, 165, 250, 0.08)", border: "1px solid rgba(96, 165, 250, 0.2)",
+                  color: "#60a5fa", fontWeight: "600", cursor: "pointer", transition: "all 0.2s",
+                  display: "flex", alignItems: "center", gap: "4px",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(96, 165, 250, 0.15)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(96, 165, 250, 0.08)"; }}
+              >
+                ⬇ Download PNG
+              </button>
+              <button
+                onClick={() => printPedigreeCertificate(tree, { breederWallet: walletAccount })}
+                style={{
+                  fontSize: "0.65rem", padding: "4px 10px", borderRadius: "8px",
+                  background: "rgba(167, 139, 250, 0.08)", border: "1px solid rgba(167, 139, 250, 0.2)",
+                  color: "#a78bfa", fontWeight: "600", cursor: "pointer", transition: "all 0.2s",
+                  display: "flex", alignItems: "center", gap: "4px",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(167, 139, 250, 0.15)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(167, 139, 250, 0.08)"; }}
+              >
+                🖨 Print
+              </button>
+              <span style={{
+                fontSize: "0.65rem",
+                padding: "4px 10px",
+                borderRadius: "12px",
+                background: "rgba(52, 211, 153, 0.08)",
+                border: "1px solid rgba(52, 211, 153, 0.2)",
+                color: "#34d399",
+                fontWeight: "600",
+              }}>
+                3 Generations
+              </span>
             </div>
-
-            {/* Tree Branch Line Indicators (Simple visual separation column) */}
-            <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-around", color: "var(--text-muted)", fontSize: "1.5rem", userSelect: "none" }}>
-              <div>◀</div>
-              <div>◀</div>
-            </div>
-
-            {/* Gen 1: Parents */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-around", gap: "2rem" }}>
-              <div style={{ width: "100%" }}>
-                {renderCard(tree.parents.sire, "Sire (Father)")}
-              </div>
-              <div style={{ width: "100%" }}>
-                {renderCard(tree.parents.dam, "Dam (Mother)")}
-              </div>
-            </div>
-
-            {/* Tree Branch Line Indicators */}
-            <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-around", color: "var(--text-muted)", fontSize: "1.5rem", userSelect: "none" }}>
-              <div style={{ height: "50%", display: "flex", flexDirection: "column", justifyContent: "space-around" }}>
-                <div>◀</div>
-                <div>◀</div>
-              </div>
-              <div style={{ height: "50%", display: "flex", flexDirection: "column", justifyContent: "space-around" }}>
-                <div>◀</div>
-                <div>◀</div>
-              </div>
-            </div>
-
-            {/* Gen 2: Grandparents */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", gap: "1rem" }}>
-              {renderCard(tree.grandparents.sireSire, "Sire's Sire (Grandfather)")}
-              {renderCard(tree.grandparents.sireDam, "Sire's Dam (Grandmother)")}
-              {renderCard(tree.grandparents.damSire, "Dam's Sire (Grandfather)")}
-              {renderCard(tree.grandparents.damDam, "Dam's Dam (Grandmother)")}
-            </div>
-
           </div>
+
+          <PedigreeTree
+            tree={tree}
+            onNodeClick={(node) => {
+              if (onSelectBreed && node?.speciesId) {
+                onSelectBreed(node.speciesId);
+              }
+            }}
+          />
         </div>
       )}
     </div>

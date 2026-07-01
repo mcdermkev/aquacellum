@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../db";
 import { SpawnGrowoutTracker } from "./SpawnGrowoutTracker";
+import { getOverdueSpawns } from "../utils/growoutReminders";
+import { BatchGrowOutPanel } from "./BatchGrowOutPanel";
+import { EmptyStateIllustration, BreederSkeleton } from "./BreederUXPolish";
 
 /**
  * GrowOutSection — Breeder Tools sub-section that surfaces the grow-out
@@ -13,6 +16,12 @@ export function GrowOutSection({ walletAccount, casualModeActive }) {
   const [spawns, setSpawns] = useState([]);
   const [speciesCatalog, setSpeciesCatalog] = useState({});
   const [loading, setLoading] = useState(true);
+  const [overdueSpawns, setOverdueSpawns] = useState([]);
+
+  // Check for overdue spawns on mount
+  useEffect(() => {
+    getOverdueSpawns().then(setOverdueSpawns).catch(() => {});
+  }, [spawns]);
 
   useEffect(() => {
     if (!walletAccount) {
@@ -92,11 +101,7 @@ export function GrowOutSection({ walletAccount, casualModeActive }) {
   }
 
   if (loading) {
-    return (
-      <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-        Loading your spawns…
-      </div>
-    );
+    return <BreederSkeleton rows={3} type="card" />;
   }
 
   if (spawns.length === 0) {
@@ -110,7 +115,7 @@ export function GrowOutSection({ walletAccount, casualModeActive }) {
           border: "1px dashed var(--glass-border)",
         }}
       >
-        <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>📊</div>
+        <EmptyStateIllustration type="growout" size={100} />
         <div style={{ fontSize: "0.95rem", fontWeight: "600", color: "#fff", marginBottom: "0.35rem" }}>
           No spawns to track yet
         </div>
@@ -125,6 +130,26 @@ export function GrowOutSection({ walletAccount, casualModeActive }) {
 
   return (
     <div>
+      {/* Overdue spawns nudge banner */}
+      {overdueSpawns.length > 0 && (
+        <div style={{
+          marginBottom: "1rem", padding: "0.75rem 1rem", borderRadius: "10px",
+          background: "rgba(251, 191, 36, 0.05)", border: "1px solid rgba(251, 191, 36, 0.15)",
+          display: "flex", alignItems: "flex-start", gap: "0.6rem",
+        }}>
+          <img src="/poseidon-avatar.jpg" alt="" style={{ width: "24px", height: "24px", borderRadius: "50%", objectFit: "cover", flexShrink: 0, marginTop: "1px" }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: "0.75rem", fontWeight: "600", color: "#fbbf24", marginBottom: "3px" }}>
+              Poseidon nudge — {overdueSpawns.length} spawn{overdueSpawns.length > 1 ? "s" : ""} overdue
+            </div>
+            <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", lineHeight: "1.4" }}>
+              {overdueSpawns.slice(0, 3).map(s => `${s.speciesName} (#${String(s.spawnId).slice(-4)}) — ${s.daysSince}d`).join(" · ")}
+              {overdueSpawns.length > 3 && ` +${overdueSpawns.length - 3} more`}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ marginBottom: "1.25rem" }}>
         <h2 style={{ fontSize: "1.1rem", fontWeight: "700", color: "#fff", margin: "0 0 0.25rem" }}>
           📊 Grow-Out Tracker
@@ -172,6 +197,9 @@ export function GrowOutSection({ walletAccount, casualModeActive }) {
           );
         })}
       </div>
+
+      {/* Batch Operations Panel (for breeders with many spawns) */}
+      <BatchGrowOutPanel walletAccount={walletAccount} casualModeActive={casualModeActive} />
     </div>
   );
 }

@@ -5,6 +5,9 @@ import { SpawningWizard } from "./SpawningWizard";
 import { SpawningDashboard } from "./SpawningDashboard";
 import { GrowOutSection } from "./GrowOutSection";
 import { MorphRegistration } from "./MorphRegistration";
+import { GeneticsPrediction } from "./GeneticsPrediction";
+import { COICalculator } from "./COICalculator";
+import { BreederAchievements } from "./BreederAchievements";
 
 /**
  * BreederTools — Combined pro-mode panel that unifies Register, Lineage, and
@@ -32,8 +35,10 @@ export function BreederTools({
     { id: "register", icon: "✦", label: "Register" },
     { id: "lineage", icon: "🌿", label: "Lineage" },
     { id: "spawning", icon: "🥚", label: "Spawning" },
+    { id: "genetics", icon: "🧬", label: "Genetics" },
     { id: "growout", icon: "📊", label: "Grow-Out" },
     { id: "morphs", icon: "🎨", label: "Morphs" },
+    { id: "achievements", icon: "🏆", label: "Achievements" },
   ];
 
   return (
@@ -110,9 +115,22 @@ export function BreederTools({
           <SpawningWizard
             contractAddress={contractAddress}
             walletAccount={walletAccount}
-            onComplete={onSpawningComplete}
+            onComplete={(targetSection) => {
+              if (targetSection === "morphs") {
+                setActiveSection("morphs");
+              } else if (onSpawningComplete) {
+                onSpawningComplete();
+              }
+            }}
             casualModeActive={casualModeActive}
           />
+        </>
+      )}
+
+      {activeSection === "genetics" && (
+        <>
+          <GeneticsPrediction casualModeActive={casualModeActive} />
+          <COICalculator contractAddress={contractAddress} walletAccount={walletAccount} />
         </>
       )}
 
@@ -129,6 +147,10 @@ export function BreederTools({
           casualModeActive={casualModeActive}
           contractAddress={contractAddress}
         />
+      )}
+
+      {activeSection === "achievements" && (
+        <BreederAchievements walletAccount={walletAccount} />
       )}
     </div>
   );
