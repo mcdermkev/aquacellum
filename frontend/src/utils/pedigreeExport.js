@@ -290,7 +290,7 @@ export async function printPedigreeCertificate(tree, options = {}) {
         <head><title>Pedigree Certificate #${tree.target?.id || "000"}</title></head>
         <body style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#111;">
           <img src="${dataUrl}" style="max-width:100%;height:auto;" />
-          <script>window.onload = function() { window.print(); }<\/script>
+          <script>window.onload = function() { window.print(); }</` + `script>
         </body>
       </html>
     `);
