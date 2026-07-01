@@ -42,7 +42,7 @@ export function BetaBanner() {
           <div style={styles.badge}>BETA</div>
           <p style={styles.text}>
             You're part of the Aquacellum closed beta — thank you for helping us build this!
-            Everything runs on <strong>Base Sepolia testnet</strong> (no real money involved).
+            Everything is in <strong>test mode</strong> (no real money involved).
             Tap the <strong>Feedback</strong> button anytime to report issues or share ideas.
           </p>
           <button
@@ -88,8 +88,8 @@ export function BetaBanner() {
             <li style={styles.limitationItem}>
               <span style={styles.limitationIcon}>⛽</span>
               <span>
-                <strong>On-chain writes share a single sponsor wallet.</strong> You never pay gas, but transactions 
-                might be slow during peak usage. If one fails, just retry in a couple minutes.
+                <strong>Background sync may be slow during peak hours.</strong> Everything saves instantly on your device, 
+                but syncing to our servers might take a moment during busy periods. If something seems stuck, just retry.
               </span>
             </li>
             <li style={styles.limitationItem}>

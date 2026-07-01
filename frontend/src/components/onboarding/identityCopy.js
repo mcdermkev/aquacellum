@@ -15,14 +15,14 @@
 // Persona-aware copy for the identity step.
 export const IDENTITY_COPY = Object.freeze({
   // Primary CTA label.
-  cta: { casual: "Create My Logbook", pro: "Initialize Node" },
-  // Disabled label while the embedded wallet is being provisioned.
-  ctaBusy: { casual: "Setting up your logbook…", pro: "Provisioning node…" },
+  cta: { casual: "Create My Logbook", pro: "Initialize Profile" },
+  // Disabled label while the account is being provisioned.
+  ctaBusy: { casual: "Setting up your logbook…", pro: "Setting up profile…" },
   // Friendly retry line shown when Privy login fails / is cancelled (5.4).
   retry: {
     casual:
       "Hmm, the tide pulled that one back before we finished. No harm done — tap to try again whenever you're ready.",
-    pro: "Node provisioning was interrupted. Re-attempt initialization when ready.",
+    pro: "Profile setup was interrupted. Try again when ready.",
   },
 });
 

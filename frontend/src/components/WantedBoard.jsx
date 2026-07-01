@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase, isSupabaseConfigured, getCurrentWallet } from "../services/supabaseClient";
+import { notifyWantedMatch } from "../services/marketplaceNotifications";
+import { db } from "../db";
 
 /**
  * WantedBoard — "Looking For" section in the marketplace.
@@ -38,6 +40,8 @@ export function WantedBoard({ casualModeActive = false, walletAccount }) {
 
       if (!error && data) {
         setListings(data);
+        // Check for matches with user's species (non-blocking)
+        checkWantedMatches(data).catch(() => {});
       }
     } catch (_e) {
       // Graceful fallback
@@ -45,6 +49,43 @@ export function WantedBoard({ casualModeActive = false, walletAccount }) {
       setLoading(false);
     }
   }, []);
+
+  // Check if any wanted posts match species the current user is breeding
+  const checkWantedMatches = async (wantedPosts) => {
+    if (!walletAccount) return;
+    try {
+      // Get user's listings to find their species
+      const userListings = await db.localListings.where("seller").equals(walletAccount.toLowerCase()).toArray();
+      if (userListings.length === 0) return;
+
+      const userSpeciesNames = new Set(userListings.map(l => (l.commonName || "").toLowerCase().replace(/ fry batch$/i, "")));
+
+      // Check last-notified timestamp to avoid duplicate notifications
+      const lastChecked = localStorage.getItem("aquadex_wanted_match_last_check") || "1970-01-01";
+
+      for (const wanted of wantedPosts) {
+        if (!wanted.species_name) continue;
+        if (wanted.wallet_address?.toLowerCase() === walletAccount.toLowerCase()) continue; // skip own posts
+        if (wanted.created_at <= lastChecked) continue; // already processed
+
+        const wantedName = wanted.species_name.toLowerCase();
+        for (const specName of userSpeciesNames) {
+          if (wantedName.includes(specName) || specName.includes(wantedName)) {
+            notifyWantedMatch({
+              speciesName: wanted.species_name,
+              buyerName: wanted.profiles?.display_name || "A buyer",
+              maxBudget: wanted.max_price_eth ? parseFloat(wanted.max_price_eth) * 1000 : null,
+            });
+            break;
+          }
+        }
+      }
+
+      localStorage.setItem("aquadex_wanted_match_last_check", new Date().toISOString());
+    } catch (e) {
+      // Non-critical
+    }
+  };
 
   useEffect(() => {
     fetchListings();

@@ -62,7 +62,7 @@ export function BreederProfileCard({ profile, companion }) {
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', gap: '1rem' }}>
         <span style={{ fontWeight: 'bold', letterSpacing: '1px' }}>
-          🪪 {profile.walletAddress.substring(0, 6)}...{profile.walletAddress.substring(38)}
+          🪪 Member ID: {profile.walletAddress.substring(0, 6)}...{profile.walletAddress.substring(38)}
         </span>
         <span style={{
           fontSize: '10px',

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Purchase Complete — Aquacellum</title>
+  <meta name="description" content="Your purchase was successful. Your fish is on its way!">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/shared.css">
+
+  <style>
+    .success-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .success-card {
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+      padding: 3rem 2.5rem;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(52,211,153,0.2);
+      border-radius: 20px;
+      backdrop-filter: blur(12px);
+    }
+    .success-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      border-radius: 50%;
+      background: rgba(52,211,153,0.1);
+      border: 2px solid rgba(52,211,153,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      animation: pop 0.5s ease-out;
+    }
+    @keyframes pop {
+      0% { transform: scale(0.5); opacity: 0; }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .success-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 0.75rem;
+    }
+    .success-subtitle {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+    .success-steps {
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .success-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 10px;
+    }
+    .success-step-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(52,211,153,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .success-step-text {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .success-step-text strong {
+      color: #fff;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .success-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .success-btn-primary {
+      display: block;
+      width: 100%;
+      padding: 0.85rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #fff;
+      text-align: center;
+      text-decoration: none;
+      background: linear-gradient(135deg, var(--violet-600), var(--purple-500));
+      border-radius: 10px;
+      transition: all 0.2s ease;
+    }
+    .success-btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(139,92,246,0.3);
+    }
+    .success-btn-secondary {
+      display: block;
+      width: 100%;
+      padding: 0.7rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-align: center;
+      text-decoration: none;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      transition: all 0.2s ease;
+    }
+    .success-btn-secondary:hover {
+      background: rgba(255,255,255,0.06);
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient Background -->
+  <div class="ambient-layer">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <header id="site-nav"></header>
+
+  <main class="success-page">
+    <div class="success-card">
+      <div class="success-icon">🐟</div>
+      <h1 class="success-title">Purchase Complete!</h1>
+      <p class="success-subtitle">
+        Your payment was successful. The breeder has been notified and will begin preparing your fish for delivery.
+      </p>
+
+      <div class="success-steps">
+        <div class="success-step">
+          <div class="success-step-icon">✓</div>
+          <div class="success-step-text">
+            <strong>Payment confirmed</strong>
+            Your payment is held securely. The breeder only receives payment after you confirm delivery.
+          </div>
+        </div>
+        <div class="success-step">
+          <div class="success-step-icon">📦</div>
+          <div class="success-step-text">
+            <strong>Breeder prepares your order</strong>
+            You'll receive an email when your fish is shipped with tracking information.
+          </div>
+        </div>
+        <div class="success-step">
+          <div class="success-step-icon">🏠</div>
+          <div class="success-step-text">
+            <strong>Confirm safe arrival</strong>
+            You have 3 days after delivery to confirm your fish arrived healthy.
+          </div>
+        </div>
+      </div>
+
+      <div class="success-actions">
+        <a href="/app" class="success-btn-primary">
+          Create an Account to Track Your Order
+        </a>
+        <a href="/marketplace" class="success-btn-secondary">
+          Continue Browsing
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <footer id="site-footer"></footer>
+  <script src="/js/nav.js"></script>
+  <script src="/js/footer.js"></script>
+</body>
+</html>

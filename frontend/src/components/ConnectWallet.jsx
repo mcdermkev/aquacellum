@@ -87,17 +87,17 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
           }}
         >
           <span style={{ fontSize: "0.875rem", color: "#f87171", fontWeight: 600 }}>
-            ⚠️ Wrong Network
+            ⚠️ Connection Issue
           </span>
           <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-            Switch to Base Sepolia
+            Please reconnect
           </span>
           <button
             className="btn-primary"
             onClick={handleSwitchNetwork}
             style={{ padding: "0.25rem 0.75rem", fontSize: "0.75rem", borderRadius: "4px" }}
           >
-            Switch Network
+            Reconnect
           </button>
         </div>
       </div>

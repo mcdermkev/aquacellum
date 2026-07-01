@@ -17,6 +17,7 @@
     { "source": "/reef-social", "destination": "/app/reef", "permanent": false }
   ],
   "rewrites": [
+    { "source": "/checkout/success", "destination": "/checkout-success.html" },
     { "source": "/store/:path*", "destination": "/store.html" },
     { "source": "/species/:path*", "destination": "/species.html" },
     { "source": "/app", "destination": "/app.html" },

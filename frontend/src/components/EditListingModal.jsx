@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Modal } from "./Modal";
 import { compressImage } from "../utils/imageCompression";
 import { relayUpdateListing } from "../services/relayer";
+import { syncListingToCloud } from "../services/cloudSync";
+import { uploadSpecimenPhoto } from "../services/photoUpload";
 
 const getSpecimenPhotoUrl = (commonName) => {
   if (!commonName) return "";
@@ -118,8 +120,27 @@ export function EditListingModal({ isOpen, onClose, item, onSuccess }) {
         } else {
           localStorage.setItem(`aquadex_specimen_photo_${tokenId}`, tempPhotos[0]);
           localStorage.setItem(`aquadex_specimen_photos_${tokenId}`, JSON.stringify(tempPhotos.slice(1)));
+
+          // Upload primary photo to cloud storage (non-blocking)
+          uploadSpecimenPhoto(tempPhotos[0], item.seller || "", tokenId)
+            .then((result) => {
+              if (result.success && result.url) {
+                // Store cloud URL for cross-device access
+                localStorage.setItem(`aquadex_specimen_photo_url_${tokenId}`, result.url);
+              }
+            })
+            .catch(() => { /* localStorage fallback is fine */ });
         }
       }
+
+      // Re-sync listing to cloud so photos are visible to other users
+      try {
+        const { db } = await import("../db");
+        const listing = await db.localListings.get(Number(item.tokenId || item.listingId));
+        if (listing) {
+          syncListingToCloud(listing).catch(() => {});
+        }
+      } catch (e) { /* non-critical */ }
 
       if (onSuccess) onSuccess();
       onClose();

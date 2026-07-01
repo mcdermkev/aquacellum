@@ -188,6 +188,30 @@ async function handleWebhook(req, res) {
         return res.status(200).json({ received: true, action: "ignored" });
       }
 
+      // Guest purchases: defer on-chain settlement until buyer links an account
+      if (metadata.isGuestPurchase === "true" || metadata.buyerWallet === "guest") {
+        console.log(`[Stripe Webhook] Guest purchase — deferring settlement: ${paymentIntentId}`);
+
+        await supabase.from("fiat_settlements").insert({
+          stripe_payment_intent_id: paymentIntentId,
+          stripe_payment_hash: computeStripePaymentHash(paymentIntentId),
+          purchase_type: purchaseType,
+          buyer_wallet: null,
+          seller_wallet: metadata.sellerWallet,
+          amount_cents_usd: amountCents,
+          tx_hash: null,
+          block_number: null,
+          status: "pending_claim",
+          metadata: JSON.stringify(metadata),
+          created_at: new Date().toISOString(),
+        });
+
+        return res.status(200).json({
+          received: true,
+          action: "deferred_guest",
+        });
+      }
+
       console.log(`[Stripe Webhook] Processing ${purchaseType} purchase: ${paymentIntentId}`);
 
       try {

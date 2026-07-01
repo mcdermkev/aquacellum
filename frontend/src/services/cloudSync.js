@@ -428,6 +428,19 @@ export async function pullXpProfileFromCloud(walletAddress) {
  * Serialize a local listing object for the aquadex_listings Supabase table.
  */
 function listingToRow(listing) {
+  // Attach local specimen photo to the listing data for cross-user visibility
+  let enrichedListing = { ...listing };
+  if (!listing.isBatch && listing.tokenId) {
+    try {
+      const photo = typeof localStorage !== 'undefined' 
+        ? localStorage.getItem(`aquadex_specimen_photo_${listing.tokenId}`) 
+        : null;
+      if (photo) {
+        enrichedListing.photoUrl = photo;
+      }
+    } catch (e) { /* localStorage not available */ }
+  }
+
   return {
     id: String(listing.id || listing.tokenId || listing.listingId),
     seller_address: (listing.seller || "").toLowerCase(),
@@ -437,7 +450,7 @@ function listingToRow(listing) {
     is_batch: !!listing.isBatch,
     is_active: listing.active !== false,
     updated_at: new Date().toISOString(),
-    data: JSON.stringify(listing),
+    data: JSON.stringify(enrichedListing),
   };
 }
 

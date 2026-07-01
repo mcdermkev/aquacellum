@@ -6,6 +6,8 @@ import aquadexAbi from "../abi/AquadexManager.json";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
 import { ListSpecimenModal } from "./ListSpecimenModal";
 import { EditListingModal } from "./EditListingModal";
+import { BatchListingWizard } from "./BatchListingWizard";
+import { OfferModal } from "./OfferModal";
 import { addXp, XP_ACTIONS } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
 import { relayPurchaseSpecimen, relayPurchaseBatch, relayCancelListing, relayCancelBatchListing } from "../services/relayer";
@@ -48,7 +50,13 @@ export function MarketplaceBoard({
   const loading = listingsLoading;
   const error = listingsError ? (listingsError.message || "Failed to load listings") : null;
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBatchWizardOpen, setIsBatchWizardOpen] = useState(false);
+  const [offerListing, setOfferListing] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
+  const [savedItems, setSavedItems] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('aquadex_watchlist') || '[]')); }
+    catch { return new Set(); }
+  });
   const [cardImageIndexMap, setCardImageIndexMap] = useState({});
   const [activeSubTab, setActiveSubTab] = useState("listings"); // "listings" | "wanted" | "analytics"
   const [actionLoading, setActionLoading] = useState({});
@@ -371,6 +379,42 @@ export function MarketplaceBoard({
     return BigInt(whole) * 1000000000000000000n + BigInt(fraction);
   };
 
+  // Watchlist toggle
+  const toggleSaveItem = (e, item) => {
+    e.stopPropagation();
+    const key = `${item.isBatch ? 'b' : 's'}-${item.id || item.tokenId || item.listingId}`;
+    setSavedItems(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      localStorage.setItem('aquadex_watchlist', JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  const isItemSaved = (item) => {
+    const key = `${item.isBatch ? 'b' : 's'}-${item.id || item.tokenId || item.listingId}`;
+    return savedItems.has(key);
+  };
+
+  // Breeder reputation tiers derived from listing count
+  const breederReputation = useMemo(() => {
+    const counts = {};
+    listings.forEach(item => {
+      if (!item.seller) return;
+      const key = item.seller.toLowerCase();
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    const rep = {};
+    Object.entries(counts).forEach(([wallet, count]) => {
+      if (count >= 10) rep[wallet] = { tier: 'master', label: 'Master Breeder', icon: '🏆' };
+      else if (count >= 5) rep[wallet] = { tier: 'established', label: 'Established', icon: '⭐' };
+      else if (count >= 3) rep[wallet] = { tier: 'trusted', label: 'Trusted', icon: '✓' };
+      else rep[wallet] = { tier: 'new', label: '', icon: '' };
+    });
+    return rep;
+  }, [listings]);
+
   const filteredAndSortedListings = [...searchedListings]
     .filter((item) => {
       if (activeSellerFilter && item.seller) {
@@ -381,6 +425,11 @@ export function MarketplaceBoard({
       return true;
     })
     .sort((a, b) => {
+      // Boosted listings always appear first
+      const aBoosted = a.isBoosted ? 1 : 0;
+      const bBoosted = b.isBoosted ? 1 : 0;
+      if (aBoosted !== bBoosted) return bBoosted - aBoosted;
+
       if (sortBy === "price-asc") {
         return parseFloat(a.price) - parseFloat(b.price);
       }
@@ -843,10 +892,26 @@ export function MarketplaceBoard({
             </p>
           </div>
           {!casualModeActive && walletAccount && (
-            <button className="btn-primary-pro" onClick={() => setIsModalOpen(true)}>
-              <Plus size={18} weight="bold" />
-              Publish Entry
-            </button>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button className="btn-primary-pro" onClick={() => setIsModalOpen(true)}>
+                <Plus size={18} weight="bold" />
+                Publish Entry
+              </button>
+              <button className="btn-secondary" onClick={() => setIsBatchWizardOpen(true)} style={{ fontSize: "0.75rem", padding: "0.4rem 0.75rem" }}>
+                🐟 List Fry Batch
+              </button>
+            </div>
+          )}
+          {casualModeActive && walletAccount && (
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
+                <Plus size={18} weight="bold" />
+                Sell a Fish
+              </button>
+              <button className="btn-secondary" onClick={() => setIsBatchWizardOpen(true)} style={{ fontSize: "0.75rem", padding: "0.4rem 0.75rem" }}>
+                🐟 Sell Fry Batch
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -1144,7 +1209,9 @@ export function MarketplaceBoard({
                           console.warn("Error parsing additional photos:", e);
                         }
                       }
-                      const allPhotos = [customPhoto, ...additionalPhotos].filter(Boolean);
+                      // Cloud-synced photo from other sellers' listings (cross-device visibility)
+                      const cloudPhoto = item.photoUrl || null;
+                      const allPhotos = [customPhoto, cloudPhoto, ...additionalPhotos].filter(Boolean);
                       const activePhotoIdx = cardImageIndexMap[identifier] || 0;
 
                       const matchedSpecies = fishbaseData.find(
@@ -1313,6 +1380,34 @@ export function MarketplaceBoard({
                                     </div>
                                   </>
                                 )}
+
+                                {/* Save/Watchlist Button */}
+                                <button
+                                  onClick={(e) => toggleSaveItem(e, item)}
+                                  style={{
+                                    position: "absolute",
+                                    top: "0.5rem",
+                                    right: "0.5rem",
+                                    width: "30px",
+                                    height: "30px",
+                                    borderRadius: "50%",
+                                    background: isItemSaved(item) ? "rgba(244,63,94,0.15)" : "rgba(0,0,0,0.5)",
+                                    backdropFilter: "blur(4px)",
+                                    border: isItemSaved(item) ? "1px solid rgba(244,63,94,0.4)" : "1px solid rgba(255,255,255,0.1)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    cursor: "pointer",
+                                    zIndex: 5,
+                                    transition: "all 0.2s ease",
+                                    fontSize: "0.85rem",
+                                    lineHeight: 1,
+                                  }}
+                                  title={isItemSaved(item) ? "Remove from saved" : "Save for later"}
+                                  aria-label={isItemSaved(item) ? "Remove from saved" : "Save for later"}
+                                >
+                                  {isItemSaved(item) ? "❤️" : "🤍"}
+                                </button>
 
                                 {/* Glassmorphic Verified Master Badge */}
                                 <span style={{
@@ -1544,71 +1639,130 @@ export function MarketplaceBoard({
                             </div>
 
                             {isOwner ? (
-                              <div style={{ display: "flex", gap: "0.5rem" }}>
-                                {!casualModeActive && (
+                              <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                                <div style={{ display: "flex", gap: "0.5rem" }}>
+                                  {!casualModeActive && (
+                                    <button 
+                                      className="btn-primary-pro" 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingItem(item);
+                                      }}
+                                      style={{ flex: 1, padding: "0.4rem", fontSize: "0.75rem", justifyContent: "center" }}
+                                    >
+                                      Edit Listing
+                                    </button>
+                                  )}
                                   <button 
-                                    className="btn-primary-pro" 
+                                    className="btn-secondary" 
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setEditingItem(item);
-                                    }}
-                                    style={{ flex: 1, padding: "0.4rem", fontSize: "0.75rem", justifyContent: "center" }}
-                                  >
-                                    Edit Listing
-                                  </button>
-                                )}
-                                <button 
-                                  className="btn-secondary" 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (item.isBatch) {
-                                      handleCancelBatchListing(item.listingId);
-                                    } else {
-                                      handleCancelListing(item.tokenId);
-                                    }
+                                      if (item.isBatch) {
+                                        handleCancelBatchListing(item.listingId);
+                                      } else {
+                                        handleCancelListing(item.tokenId);
+                                      }
                                   }}
                                   disabled={claiming}
                                   style={{ flex: 1, padding: "0.4rem", fontSize: "0.75rem", justifyContent: "center" }}
                                 >
                                   {claiming ? (casualModeActive ? "Removing..." : "Withdrawing...") : (casualModeActive ? "Remove Listing" : "Withdraw Entry")}
                                 </button>
+                                </div>
+                                {/* Boost / Analytics row for owners */}
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
+                                  <span style={{ fontSize: "0.62rem", color: "var(--text-muted)" }}>
+                                    👁 {(() => { try { const v = JSON.parse(localStorage.getItem('aquadex_listing_views') || '{}'); return v[`${item.isBatch ? 'b' : 's'}-${item.id}`] || 0; } catch { return 0; } })()} views
+                                  </span>
+                                  {!item.isBoosted && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        // Mark as boosted in local listing
+                                        const id = item.isBatch ? item.listingId : item.tokenId;
+                                        import("../db").then(({ db }) => {
+                                          db.localListings.update(Number(id), { isBoosted: true, boostedAt: Date.now() });
+                                          import("../services/cloudSync").then(({ syncListingToCloud }) => {
+                                            syncListingToCloud({ ...item, isBoosted: true, boostedAt: Date.now() }).catch(() => {});
+                                          });
+                                          fetchListings();
+                                        });
+                                      }}
+                                      style={{ fontSize: "0.6rem", padding: "0.2rem 0.5rem", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24", borderRadius: "6px", cursor: "pointer", fontWeight: "600" }}
+                                    >
+                                      ⚡ Boost Listing
+                                    </button>
+                                  )}
+                                  {item.isBoosted && (
+                                    <span style={{ fontSize: "0.6rem", padding: "0.2rem 0.5rem", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24", borderRadius: "6px", fontWeight: "600" }}>
+                                      ⚡ Boosted
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             ) : (
-                              <button 
-                                className={casualModeActive ? "btn-primary" : "btn-primary-pro"} 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (item.isBatch) {
-                                    handlePurchaseBatch(item.listingId, checkoutQuantityMap[item.listingId] || 1, item.price);
-                                  } else {
-                                    if (onSelectCheckoutOrder) {
-                                      onSelectCheckoutOrder("pending_purchase", item.tokenId);
+                              <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                                <button 
+                                  className={casualModeActive ? "btn-primary" : "btn-primary-pro"} 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (item.isBatch) {
+                                      handlePurchaseBatch(item.listingId, checkoutQuantityMap[item.listingId] || 1, item.price);
+                                    } else {
+                                      if (onSelectCheckoutOrder) {
+                                        onSelectCheckoutOrder("pending_purchase", item.tokenId);
+                                      }
                                     }
-                                  }
-                                }}
-                                disabled={claiming || !walletAccount}
-                                style={{ width: "100%", padding: "0.4rem 1rem", fontSize: "0.75rem", justifyContent: "center" }}
-                              >
-                                {claiming ? (casualModeActive ? "Purchasing..." : "Securing...") : (casualModeActive ? "Purchase" : "Secure Livestock")}
-                              </button>
+                                  }}
+                                  disabled={claiming || !walletAccount}
+                                  style={{ width: "100%", padding: "0.4rem 1rem", fontSize: "0.75rem", justifyContent: "center" }}
+                                >
+                                  {claiming ? (casualModeActive ? "Purchasing..." : "Securing...") : (casualModeActive ? "Purchase" : "Secure Livestock")}
+                                </button>
+                                <button
+                                  className="btn-secondary"
+                                  onClick={(e) => { e.stopPropagation(); setOfferListing(item); }}
+                                  disabled={!walletAccount}
+                                  style={{ width: "100%", padding: "0.35rem 1rem", fontSize: "0.7rem", justifyContent: "center" }}
+                                >
+                                  💬 Make an Offer
+                                </button>
+                              </div>
                             )}
                           </div>
 
                           {/* Telemetry/Tx status */}
                           {txHash && (
                             <div style={{ fontSize: "0.65rem", color: "var(--accent-blue)", background: "var(--accent-blue-glow)", padding: "0.35rem", borderRadius: "4px", textAlign: "center" }}>
-                              Tx Confirmed... waiting on blockchain
+                              Confirmed — syncing your purchase...
                             </div>
                           )}
 
                           {/* Seller info row — masked in Casual Mode */}
                           <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.25rem" }}>
                             <span>{casualModeActive ? "🧑‍🌾 Breeder:" : "🧑‍🌾 Listed by:"}</span>
-                            {casualModeActive ? (
-                              <span style={{ color: "#34d399", fontWeight: "600" }}>✅ Verified Local Breeder</span>
-                            ) : (
-                              <span style={{ fontFamily: "monospace", color: "var(--text-secondary)" }}>{item.seller?.slice(0,6)}…{item.seller?.slice(-4)}</span>
-                            )}
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                              {casualModeActive ? (
+                                <span style={{ color: "#34d399", fontWeight: "600" }}>✅ Verified Local Breeder</span>
+                              ) : (
+                                <span style={{ fontFamily: "monospace", color: "var(--text-secondary)" }}>{item.seller?.slice(0,6)}…{item.seller?.slice(-4)}</span>
+                              )}
+                              {(() => {
+                                const rep = breederReputation[item.seller?.toLowerCase()];
+                                if (!rep || rep.tier === 'new') return null;
+                                const colors = {
+                                  trusted: { bg: "rgba(56,189,248,0.08)", border: "rgba(56,189,248,0.2)", text: "#7dd3fc" },
+                                  established: { bg: "rgba(251,191,36,0.08)", border: "rgba(251,191,36,0.2)", text: "#fbbf24" },
+                                  master: { bg: "rgba(52,211,153,0.08)", border: "rgba(52,211,153,0.2)", text: "#34d399" },
+                                };
+                                const c = colors[rep.tier];
+                                return (
+                                  <span style={{ fontSize: "0.55rem", fontWeight: "600", padding: "1px 5px", borderRadius: "6px", background: c.bg, border: `1px solid ${c.border}`, color: c.text, whiteSpace: "nowrap" }}>
+                                    {rep.icon} {rep.label}
+                                  </span>
+                                );
+                              })()}
+                            </div>
                           </div>
                         </div>
                       );
@@ -1735,6 +1889,24 @@ export function MarketplaceBoard({
         onClose={() => setEditingItem(null)}
         item={editingItem}
         onSuccess={fetchListings}
+      />
+
+      {/* Batch Listing Wizard */}
+      <BatchListingWizard
+        isOpen={isBatchWizardOpen}
+        onClose={() => setIsBatchWizardOpen(false)}
+        walletAccount={walletAccount}
+        onSuccess={fetchListings}
+      />
+
+      {/* Offer Modal */}
+      <OfferModal
+        isOpen={!!offerListing}
+        onClose={() => setOfferListing(null)}
+        listing={offerListing}
+        walletAccount={walletAccount}
+        casualModeActive={casualModeActive}
+        onSuccess={() => setOfferListing(null)}
       />
     </div>
   );

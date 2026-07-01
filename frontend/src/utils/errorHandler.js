@@ -4,7 +4,7 @@ export const mapContractError = (err, isCasual, metadata = {}) => {
   if (errStr.includes("maxbatchexceeded") || errStr.includes("batchquantityexceeded")) {
     return isCasual 
       ? "Whoops! To ensure safe transport, you can only bundle up to 6 fish per order. Let's split this into two boxes!" 
-      : "Security Protocol: Shipping box allocation limits reached. Consolidate current queue or initialize a secondary transport manifest (Max 6 specimens per batch).";
+      : "Shipping box allocation limits reached. Maximum 6 specimens per consolidated order.";
   }
   
   if (errStr.includes("safetywindownotelapsed") || errStr.includes("escrowlocked") || errStr.includes("escrownotdispatched")) {
@@ -18,39 +18,39 @@ export const mapContractError = (err, isCasual, metadata = {}) => {
     }
     
     return isCasual
-      ? `Security Notice: This specimen is safely secured in transit escrow protection. Custody transfer controls unlock automatically once the standard transit safety window closes.${suffix}`
-      : `Security Notice: This specimen is safely secured in transit escrow protection. Custody transfer controls unlock automatically once the standard transit safety window closes.${suffix}`;
+      ? `This fish is currently in transit and protected. You'll be able to confirm delivery once the safety window closes.${suffix}`
+      : `This specimen is in transit protection. Transfer controls unlock automatically once the 3-day safety window closes.${suffix}`;
   }
   
   if (errStr.includes("invalidcommitment")) {
-    return "Verification Fault: Handshake security tokens or PIN parameters do not match. Please re-scan the secure handshake voucher.";
+    return "Verification failed: The PIN doesn't match. Please re-scan the QR code or double-check your PIN.";
   }
   
   if (errStr.includes("insufficientpayment") || errStr.includes("insufficient funds")) {
     return isCasual
-      ? "It looks like you need a bit more balance to complete this transaction."
-      : "Transaction rejected: Insufficient ledger balance.";
+      ? "It looks like there's not enough balance to complete this purchase."
+      : "Purchase rejected: Insufficient balance.";
   }
   
   if (errStr.includes("listingnotactive")) {
     return isCasual
       ? "Oh no! It looks like this fish just found another home."
-      : "Action failed: Registry entry is no longer active.";
+      : "This listing is no longer active — it may have been sold or removed.";
   }
   
   if (errStr.includes("unauthorized") || errStr.includes("callernotowner") || errStr.includes("callernotseller")) {
     return isCasual
       ? "Oops, you don't have permission to do that."
-      : "Access Denied: Unrecognized cryptographic signer.";
+      : "Access denied: You are not authorized to perform this action.";
   }
   
   if (errStr.includes("timeout") || errStr.includes("network error") || errStr.includes("could not connect")) {
     return isCasual
-      ? "We're having trouble connecting to the network right now. Please try again."
-      : "Network latency timeout. Node connection unstable.";
+      ? "We're having trouble connecting right now. Please try again in a moment."
+      : "Connection timeout. Please check your internet and try again.";
   }
   
   return isCasual 
-    ? "Oops, something went wrong with the transaction. Please try again."
-    : (err.reason || err.message || "Encrypted Ledger Transaction Failed.");
+    ? "Oops, something went wrong. Please try again."
+    : (err.reason || err.message || "Something went wrong. Please try again.");
 };

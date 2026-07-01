@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Aquacellum Marketplace — Browse Live Livestock Listings</title>
-  <meta name="description" content="Browse live aquarium livestock listings from verified local breeders. Tank-raised specimens with escrow-backed health guarantees. No account needed to browse.">
+  <meta name="description" content="Browse live aquarium livestock listings from verified local breeders. Tank-raised specimens with buyer-protection guarantees. No account needed to browse.">
   <meta name="keywords" content="aquarium fish for sale, buy fish online, local fish breeder, tank-raised fish, aquarium marketplace, live fish listings, aquacellum marketplace">
   <meta property="og:title" content="Aquacellum Marketplace — Live Livestock Listings">
-  <meta property="og:description" content="Browse verified breeder listings. Tank-raised specimens with escrow-backed health guarantees and live-arrival protection.">
+  <meta property="og:description" content="Browse verified breeder listings. Tank-raised specimens with buyer-protection guarantees and live-arrival protection.">
   <meta property="og:type" content="website">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -278,6 +278,16 @@
     .card-seller-avatar { width: 18px; height: 18px; border-radius: 50%; background: linear-gradient(135deg, var(--violet-500), var(--purple-400)); display: flex; align-items: center; justify-content: center; font-size: 0.45rem; font-weight: 700; color: #fff; flex-shrink: 0; }
     .card-seller-name { font-size: 0.65rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .card-seller-verified { font-size: 0.55rem; flex-shrink: 0; }
+    .card-seller-tier { font-size: 0.5rem; font-weight: 600; padding: 1px 6px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; margin-left: auto; }
+    .card-seller-tier.tier-trusted { color: var(--blue-300); background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.15); }
+    .card-seller-tier.tier-established { color: var(--amber-300); background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.15); }
+    .card-seller-tier.tier-master { color: var(--emerald-300); background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.15); }
+
+    /* Save/Watchlist button on cards */
+    .card-save-btn { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 5; transition: all 0.2s ease; font-size: 0.85rem; line-height: 1; }
+    .card-save-btn:hover { background: rgba(0,0,0,0.7); border-color: rgba(244,63,94,0.4); transform: scale(1.1); }
+    .card-save-btn.saved { background: rgba(244,63,94,0.15); border-color: rgba(244,63,94,0.4); }
+    .card-save-btn.saved:hover { background: rgba(244,63,94,0.25); }
 
     /* Micro parameter gauges on cards */
     .card-params { display: flex; gap: 8px; margin-top: 6px; align-items: center; }
@@ -345,8 +355,15 @@
     .back-seller-info { flex: 1; }
     .back-seller-name { font-size: 0.82rem; font-weight: 600; color: #fff; }
     .back-seller-label { font-size: 0.62rem; color: var(--text-muted); }
-    .back-cta { display: block; width: 100%; padding: 0.75rem; font-size: 0.85rem; font-weight: 700; color: #fff; text-align: center; background: linear-gradient(135deg, var(--violet-600), var(--purple-500)); border-radius: 10px; transition: var(--transition); margin-top: 8px; }
+    .back-cta { display: block; width: 100%; padding: 0.75rem; font-size: 0.85rem; font-weight: 700; color: #fff; text-align: center; background: linear-gradient(135deg, var(--violet-600), var(--purple-500)); border-radius: 10px; transition: var(--transition); margin-top: 8px; cursor: pointer; border: none; text-decoration: none; }
     .back-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(139,92,246,0.3); }
+    .back-cta:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+    .back-cta-secondary { display: block; width: 100%; padding: 0.5rem; font-size: 0.72rem; font-weight: 500; color: var(--text-secondary); text-align: center; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 8px; transition: var(--transition); margin-top: 6px; text-decoration: none; }
+    .back-cta-secondary:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: #fff; }
+    .back-cta-price { display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .back-cta-price-amount { font-size: 1rem; }
+    .back-cta-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
     .flip-back-hint { padding: 12px 20px; border-top: 1px solid var(--glass-border); text-align: center; font-size: 0.68rem; color: var(--text-muted); }
     /* =========================================
        WANTED LISTINGS SECTION
@@ -450,14 +467,14 @@
       </div>
       <h1>Tank-Raised Fish From<br>Verified Local Breeders</h1>
       <p class="hero-subtitle">
-        Every listing is backed by smart-contract escrow. Browse confidently knowing your purchase is protected from checkout to arrival.
+        Every listing is backed by our Buyer Protection program. Browse confidently knowing your purchase is protected from checkout to arrival.
       </p>
 
       <div class="hero-pillars">
         <div class="hero-pillar">
           <div class="hero-pillar-icon hero-pillar-icon-escrow">🔒</div>
           <div class="hero-pillar-text">
-            <div class="hero-pillar-title">Escrow-Locked Payments</div>
+            <div class="hero-pillar-title">Buyer-Protected Payments</div>
             <div class="hero-pillar-desc">Funds release only after you confirm receipt</div>
           </div>
         </div>
@@ -532,6 +549,7 @@
       <span class="result-count" id="resultCount"></span>
       <!-- Quick filter chips -->
       <div class="filter-chips">
+        <button class="filter-chip" id="savedFilterChip" onclick="toggleFilterChip(this, 'saved')">❤️ Saved</button>
         <button class="filter-chip" onclick="toggleFilterChip(this, 'ships')">🚚 Ships Nationwide</button>
         <button class="filter-chip" onclick="toggleFilterChip(this, 'local')">📍 Local Pickup</button>
         <button class="filter-chip" onclick="toggleFilterChip(this, 'wild')">🌿 Wild Caught</button>
@@ -621,7 +639,9 @@
     let filteredListings = [];
     let fishbaseData = [];
     let breederProfiles = {};
+    let breederStats = {}; // { walletLower: { listings: N, tier: 'new'|'trusted'|'established'|'master' } }
     let wantedListings = [];
+    let savedListings = new Set(JSON.parse(localStorage.getItem('aquadex_watchlist') || '[]'));
     let visibleCount = 24;
     let currentSort = 'newest';
     let activeFilters = new Set();
@@ -660,6 +680,8 @@
 
       applyFilters();
       updateStats();
+      computeBreederStats();
+      updateSavedChipCount();
       renderFeaturedBreeders();
       renderWantedSection();
 
@@ -687,6 +709,70 @@
     function getBreederName(seller) {
       if (!seller) return 'Unknown Breeder';
       return breederProfiles[seller.toLowerCase()] || generateAlias(seller);
+    }
+
+    function computeBreederStats() {
+      const counts = {};
+      allListings.forEach(item => {
+        if (!item.seller) return;
+        const key = item.seller.toLowerCase();
+        counts[key] = (counts[key] || 0) + 1;
+      });
+      Object.entries(counts).forEach(([wallet, count]) => {
+        let tier = 'new';
+        let label = 'New Breeder';
+        let icon = '🌱';
+        if (count >= 10) { tier = 'master'; label = 'Master Breeder'; icon = '🏆'; }
+        else if (count >= 5) { tier = 'established'; label = 'Established'; icon = '⭐'; }
+        else if (count >= 3) { tier = 'trusted'; label = 'Trusted'; icon = '✓'; }
+        breederStats[wallet] = { listings: count, tier, label, icon };
+      });
+    }
+
+    function getBreederBadge(seller) {
+      if (!seller) return '';
+      const stats = breederStats[seller.toLowerCase()];
+      if (!stats || stats.tier === 'new') return '';
+      return `<span class="card-seller-tier tier-${stats.tier}" title="${stats.label} — ${stats.listings} listings">${stats.icon} ${stats.label}</span>`;
+    }
+
+    // ── Watchlist / Save for Later ─────────────────────────────────────────
+    function getListingKey(item) {
+      return `${item.isBatch ? 'b' : 's'}-${item.id}`;
+    }
+
+    function isListingSaved(item) {
+      return savedListings.has(getListingKey(item));
+    }
+
+    function toggleSaveListing(event, idx) {
+      event.stopPropagation();
+      event.preventDefault();
+      const item = filteredListings[idx];
+      if (!item) return;
+      const key = getListingKey(item);
+      if (savedListings.has(key)) {
+        savedListings.delete(key);
+      } else {
+        savedListings.add(key);
+      }
+      localStorage.setItem('aquadex_watchlist', JSON.stringify([...savedListings]));
+      // Re-render the affected card's save button
+      const btn = event.currentTarget;
+      const isSaved = savedListings.has(key);
+      btn.classList.toggle('saved', isSaved);
+      btn.innerHTML = isSaved ? '❤️' : '🤍';
+      btn.title = isSaved ? 'Remove from saved' : 'Save for later';
+      // Update filter chip count if showing saved
+      updateSavedChipCount();
+    }
+
+    function updateSavedChipCount() {
+      const chip = document.getElementById('savedFilterChip');
+      if (chip) {
+        const count = savedListings.size;
+        chip.textContent = `❤️ Saved${count > 0 ? ` (${count})` : ''}`;
+      }
     }
 
     // ── Fetch Wanted Listings ──────────────────────────────────────────────
@@ -837,6 +923,8 @@
         if (activeBreederFilter && item.seller?.toLowerCase() !== activeBreederFilter) return false;
         // Chip filters
         if (activeFilters.size > 0) {
+          // Saved filter — special: only show saved items
+          if (activeFilters.has('saved') && !isListingSaved(item)) return false;
           const pedigree = getPedigreeInfo(item);
           const usd = ethToUSDRaw(item.price);
           if (activeFilters.has('ships') && !item.isShipping) return false;
@@ -892,7 +980,7 @@
       const visible = filteredListings.slice(0, visibleCount);
 
       grid.innerHTML = visible.map((item, idx) => {
-        const imgUrl = getSpeciesImage(item.scientificName);
+        const imgUrl = item.photoUrl || getSpeciesImage(item.scientificName);
         const pedigree = getPedigreeInfo(item);
         const tierClass = getTierClass(item);
         const priceDisplay = ethToUSD(item.price);
@@ -926,6 +1014,7 @@
             <div class="card-image">
               ${imageHtml}
               <div class="card-vignette"></div>
+              <button class="card-save-btn ${isListingSaved(item) ? 'saved' : ''}" onclick="toggleSaveListing(event, ${idx})" title="${isListingSaved(item) ? 'Remove from saved' : 'Save for later'}">${isListingSaved(item) ? '❤️' : '🤍'}</button>
               <span class="card-pedigree-badge badge-${pedigree.cls}">${pedigree.label}</span>
               <span class="card-price-badge">${priceDisplay}</span>
               ${item.isShipping ? '<span class="card-shipping-badge">🚚 Ships</span>' : ''}
@@ -937,6 +1026,7 @@
                 <span class="card-seller-avatar">${initial}</span>
                 <span class="card-seller-name">${breederName}</span>
                 <span class="card-seller-verified">✓</span>
+                ${getBreederBadge(item.seller)}
               </div>
               ${paramsHtml}
               <div class="card-cta">Inspect Listing →</div>
@@ -968,7 +1058,20 @@
       const item = filteredListings[idx];
       if (!item) return;
 
-      const imgUrl = getSpeciesImage(item.scientificName);
+      // Track listing view
+      const viewKey = `${item.isBatch ? 'b' : 's'}-${item.id}`;
+      try {
+        const views = JSON.parse(localStorage.getItem('aquadex_listing_views') || '{}');
+        const sessionViewed = JSON.parse(sessionStorage.getItem('aquadex_listings_viewed_this_session') || '[]');
+        if (!sessionViewed.includes(viewKey)) {
+          sessionViewed.push(viewKey);
+          sessionStorage.setItem('aquadex_listings_viewed_this_session', JSON.stringify(sessionViewed));
+          views[viewKey] = (views[viewKey] || 0) + 1;
+          localStorage.setItem('aquadex_listing_views', JSON.stringify(views));
+        }
+      } catch (e) { /* non-critical */ }
+
+      const imgUrl = item.photoUrl || getSpeciesImage(item.scientificName);
       const pedigree = getPedigreeInfo(item);
       const priceDisplay = ethToUSD(item.price);
       const breederName = getBreederName(item.seller);
@@ -1026,7 +1129,13 @@
               <div class="back-seller-label">Verified Breeder</div>
             </div>
           </div>
-          <a href="/app#directory" class="back-cta">Purchase in App →</a>
+          <button onclick="buyNow(event, ${idx})" class="back-cta" id="buyNowBtn">
+            <span class="back-cta-price">
+              <span>${item.isBatch ? 'Buy 1 Fish' : 'Buy Now'}</span>
+              <span class="back-cta-price-amount">${priceDisplay}${item.isBatch ? ' each' : ''}${item.isShipping && parseFloat(item.shippingFee) > 0 ? ' + shipping' : ''}</span>
+            </span>
+          </button>
+          <a href="/app#marketplace?listing=${item.isBatch ? 'b' : 's'}-${item.id}" class="back-cta-secondary">${item.isBatch ? 'Buy Multiple in App →' : 'View Full Details in App →'}</a>
         </div>
         <div class="flip-back-hint">Click to flip back</div>
       `;
@@ -1046,7 +1155,7 @@
 
     // Flip on click
     document.getElementById('flipCardContainer').addEventListener('click', (e) => {
-      if (e.target.closest('.back-cta')) return; // Don't flip on CTA click
+      if (e.target.closest('.back-cta') || e.target.closest('.back-cta-secondary')) return; // Don't flip on CTA click
       isFlipped = !isFlipped;
       document.getElementById('flipCard').classList.toggle('flipped', isFlipped);
     });
@@ -1058,6 +1167,81 @@
 
     // Close on Escape
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePopup(); });
+
+    // ── Buy Now (Direct Stripe Checkout) ──────────────────────────────────
+    async function buyNow(event, idx) {
+      event.stopPropagation();
+      event.preventDefault();
+
+      const item = filteredListings[idx];
+      if (!item) return;
+
+      const btn = event.currentTarget;
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="back-cta-spinner"></span> Preparing checkout...';
+
+      try {
+        const priceCentsUSD = Math.round(ethToUSDRaw(item.price) * 100);
+        const shippingFeeCents = item.isShipping ? Math.round(ethToUSDRaw(item.shippingFee) * 100) : 0;
+        const imgUrl = item.photoUrl || getSpeciesImage(item.scientificName);
+
+        const purchaseType = item.isBatch ? 'batch' : (item.isShipping ? 'shipping' : 'specimen');
+
+        const itemPayload = {
+          tokenId: item.tokenId || item.id,
+          listingId: item.listingId || item.id,
+          commonName: item.commonName || 'Live Specimen',
+          scientificName: item.scientificName || '',
+          priceCentsUSD: priceCentsUSD,
+          imageUrl: imgUrl || undefined,
+        };
+
+        if (purchaseType === 'shipping') {
+          itemPayload.shippingFeeCents = shippingFeeCents;
+        }
+        if (purchaseType === 'batch') {
+          itemPayload.pricePerFishCents = priceCentsUSD;
+          itemPayload.quantity = item.quantity || 1;
+        }
+
+        const body = {
+          purchaseType,
+          buyerWallet: 'guest', // Guest buyer — account linkage happens post-purchase
+          sellerWallet: item.seller,
+          items: [itemPayload],
+          successUrl: window.location.origin + '/checkout/success?session_id={CHECKOUT_SESSION_ID}',
+          cancelUrl: window.location.href,
+        };
+
+        const res = await fetch('/api/create-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+
+        const data = await res.json();
+
+        if (data.success && data.checkoutUrl) {
+          window.location.href = data.checkoutUrl;
+        } else {
+          throw new Error(data.error || 'Failed to create checkout');
+        }
+      } catch (err) {
+        console.error('Buy Now failed:', err);
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+        // Show inline error briefly
+        const errDiv = document.createElement('div');
+        errDiv.style.cssText = 'padding: 8px 12px; background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); border-radius: 6px; color: #f87171; font-size: 0.75rem; margin-top: 8px; text-align: center;';
+        errDiv.textContent = err.message === 'SELLER_NOT_CONNECTED' 
+          ? 'This breeder hasn\'t enabled card payments yet. Try the app for other options.'
+          : 'Something went wrong. Please try again.';
+        btn.parentElement.appendChild(errDiv);
+        setTimeout(() => errDiv.remove(), 5000);
+      }
+    }
+
     // ── Featured Breeders ─────────────────────────────────────────────────
     function renderFeaturedBreeders() {
       const sellerCounts = {};

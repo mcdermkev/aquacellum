@@ -225,7 +225,7 @@ export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
         <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.6rem 0.85rem", background: "rgba(0,0,0,0.25)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)" }}>
             <div>
-              <span style={{ display: "block", fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.2rem" }}>Smart Wallet Address</span>
+              <span style={{ display: "block", fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.2rem" }}>Account ID</span>
               <span style={{ fontSize: "0.8rem", color: "#fff", fontFamily: "monospace" }}>
                 {smartWalletAddress.slice(0, 6)}...{smartWalletAddress.slice(-4)}
               </span>

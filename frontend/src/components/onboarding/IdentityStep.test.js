@@ -36,9 +36,9 @@ const IDENTITY_STEP_SOURCE = readFileSync(
 const IDENTITY_STEP_CODE = stripComments(IDENTITY_STEP_SOURCE);
 
 describe("IdentityStep copy surface — Privy only (Req 5.1)", () => {
-  it("exposes a single Privy CTA with persona-aware logbook/node wording", () => {
+  it("exposes a single Privy CTA with persona-aware logbook/profile wording", () => {
     expect(resolveCopy(IDENTITY_COPY.cta, true)).toBe("Create My Logbook");
-    expect(resolveCopy(IDENTITY_COPY.cta, false)).toBe("Initialize Node");
+    expect(resolveCopy(IDENTITY_COPY.cta, false)).toBe("Initialize Profile");
   });
 
   it("never surfaces MetaMask or external-wallet wording in any copy entry", () => {

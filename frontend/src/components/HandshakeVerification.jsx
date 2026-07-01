@@ -490,11 +490,11 @@ export function HandshakeVerification({
                 }}>
                   {isCashHandshake ? (
                     <span>
-                      🤝 <strong>Cash Handshake Bypass Mode</strong>: You are bypassing the standard escrow lock. Settle the cash amount of <strong>${(parseFloat(listing.price) * quantity * 1000).toFixed(2)}</strong> directly with the breeder. Establish a 4-digit PIN for tracking. Breeder will scan the QR code to log provenance.
+                      🤝 <strong>Cash Handshake Mode</strong>: You are paying <strong>${(parseFloat(listing.price) * quantity * 1000).toFixed(2)}</strong> directly to the breeder in cash. Establish a 4-digit PIN for tracking. Breeder will scan the QR code to log provenance.
                     </span>
                   ) : (
                     <span>
-                      🔐 You are locking <strong>${(parseFloat(formatEther(BigInt(listing.pricePerFish) * BigInt(quantity))) * 1000).toFixed(2)}</strong> in secure holding. Establish a 4-digit verification PIN. Give this PIN or the QR code to the breeder ONLY when you have the fish in hand.
+                      🔐 Your payment of <strong>${(parseFloat(formatEther(BigInt(listing.pricePerFish) * BigInt(quantity))) * 1000).toFixed(2)}</strong> will be held securely until pickup is confirmed. Establish a 4-digit verification PIN. Give this PIN or the QR code to the breeder ONLY when you have the fish in hand.
                     </span>
                   )}
                 </div>

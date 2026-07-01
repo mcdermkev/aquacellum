@@ -63,8 +63,8 @@ function DisplayName({ address }) {
   return <>{name}</>;
 }
 
-const ESCROW_STATES = ["LOCKED", "RELEASED", "REFUNDED"];
-const SHIPPING_STATUSES = ["LOCKED", "DISPATCHED", "RELEASED", "DISPUTED", "REFUNDED"];
+const ESCROW_STATES = ["HELD", "COMPLETED", "REFUNDED"];
+const SHIPPING_STATUSES = ["PROCESSING", "SHIPPED", "DELIVERED", "UNDER REVIEW", "REFUNDED"];
 
 const mapContractError = (err, isCasual) => {
   const errStr = (err.reason || err.message || err.data?.message || "").toLowerCase();
@@ -75,10 +75,10 @@ const mapContractError = (err, isCasual) => {
       : "Security Protocol: Shipping box allocation limits reached. Consolidate current queue or initialize a secondary transport manifest (Max 6 specimens per batch).";
   }
   if (errStr.includes("safetywindownotelapsed") || errStr.includes("escrowlocked") || errStr.includes("escrownotdispatched")) {
-    return "Security Notice: This specimen is safely secured in transit escrow protection. Custody transfer controls unlock automatically once the standard transit safety window closes.";
+    return "Security Notice: This specimen is safely secured in transit protection. Transfer controls unlock automatically once the standard safety window closes.";
   }
   if (errStr.includes("invalidcommitment")) {
-    return "Verification Fault: Handshake security tokens or PIN parameters do not match. Please re-scan the secure handshake voucher.";
+    return "Verification Fault: Handshake PIN does not match. Please re-scan the secure handshake voucher.";
   }
   
   return isCasual 
@@ -901,7 +901,7 @@ export function CheckoutSummary({
 
           {actionTx && (
             <div style={{ padding: "0.75rem", background: "var(--accent-blue-glow)", border: "1px solid rgba(56, 189, 248, 0.3)", color: "var(--accent-blue)", fontSize: "0.8rem", borderRadius: "4px", marginBottom: "1rem", wordBreak: "break-all" }}>
-              <strong>Transaction pending:</strong> {actionTx}
+              <strong>Processing order...</strong> Securing your purchase protection.
             </div>
           )}
 
@@ -1152,7 +1152,7 @@ export function CheckoutSummary({
                     <h5 style={{ color: "#fff", margin: "0 0 0.5rem 0", fontSize: "0.85rem" }}>What happens next?</h5>
                     <ul style={{ margin: 0, paddingLeft: "1.2rem", color: "var(--text-muted)", fontSize: "0.75rem", lineHeight: "1.5" }}>
                       <li>The breeder is notified and begins preparing your fish.</li>
-                      <li>Your payment is locked securely in escrow.</li>
+                      <li>Your payment is held securely until delivery is confirmed.</li>
                       <li>Payment is only released when your fish arrives safely or you pick it up!</li>
                     </ul>
                   </div>
@@ -1268,7 +1268,7 @@ export function CheckoutSummary({
 
       <h3 style={{ fontSize: "1.25rem", color: "#fff", marginBottom: "0.25rem" }}>Order Tracking & Protections</h3>
       <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: "0 0 1.25rem 0" }}>
-        All your purchases and sales with escrow protection, shipping tracking, and fulfillment actions.
+        All your purchases and sales with buyer protection, shipping tracking, and fulfillment actions.
       </p>
 
       {shippingEscrows.length === 0 && purchases.length === 0 ? (
@@ -1284,7 +1284,7 @@ export function CheckoutSummary({
           <div style={{ fontSize: "3rem", marginBottom: "1rem", opacity: 0.6 }}>📦</div>
           <h4 style={{ color: "#fff", fontSize: "1.1rem", marginBottom: "0.5rem" }}>No Orders Yet</h4>
           <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", maxWidth: "400px", margin: "0 auto", lineHeight: "1.5" }}>
-            When you buy or sell specimens through the marketplace, your orders will appear here with full escrow tracking, shipping updates, and fulfillment controls.
+            When you buy or sell specimens through the marketplace, your orders will appear here with full buyer protection, shipping updates, and fulfillment controls.
           </p>
         </div>
       ) : (
@@ -1323,21 +1323,89 @@ export function CheckoutSummary({
               <strong style={{ fontFamily: "monospace" }}>${(parseFloat(order.shippingFee) * 1000).toFixed(2)}</strong>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "0.25rem" }}>
-              <span>Total Locked:</span>
+              <span>Total Protected:</span>
               <strong style={{ fontFamily: "monospace", color: "var(--accent-green)" }}>${(parseFloat(order.amountLocked) * 1000).toFixed(2)}</strong>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.5rem" }}>
-              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Status:</span>
-              <span className={`badge ${
-                order.status === 2 ? "badge-green" : 
-                order.status === 3 ? "badge-red" : 
-                order.status === 4 ? "badge-amber" : 
-                "badge-blue"
-              }`} style={{ fontSize: "0.65rem" }}>
-                {SHIPPING_STATUSES[order.status]}
-              </span>
-            </div>
+            {/* Visual Shipping Progress Stepper */}
+            {(() => {
+              const steps = [
+                { label: "Paid", icon: "💳" },
+                { label: "Preparing", icon: "📋" },
+                { label: "Shipped", icon: "🚚" },
+                { label: "Delivered", icon: "🏠" },
+              ];
+              // Map status enum to step index: 0=PROCESSING→1, 1=SHIPPED→2, 2=DELIVERED/RELEASED→3, 3=DISPUTED→special, 4=REFUNDED→special
+              let activeStep = 0;
+              if (order.status === 0) activeStep = 1; // Processing / waiting for dispatch
+              else if (order.status === 1) activeStep = 2; // Shipped
+              else if (order.status === 2) activeStep = 3; // Delivered/Released
+              else if (order.status === 3) activeStep = -1; // Disputed — show red
+              else if (order.status === 4) activeStep = -2; // Refunded — show amber
+
+              if (activeStep < 0) {
+                // Special states
+                const isDisputed = activeStep === -1;
+                return (
+                  <div style={{ marginTop: "0.75rem", padding: "0.6rem", borderRadius: "8px", background: isDisputed ? "rgba(248,113,113,0.06)" : "rgba(251,191,36,0.06)", border: `1px solid ${isDisputed ? "rgba(248,113,113,0.2)" : "rgba(251,191,36,0.2)"}`, textAlign: "center" }}>
+                    <span style={{ fontSize: "0.75rem", fontWeight: "600", color: isDisputed ? "#f87171" : "#fbbf24" }}>
+                      {isDisputed ? "⚠️ Under Review" : "↩️ Refunded"}
+                    </span>
+                  </div>
+                );
+              }
+
+              return (
+                <div style={{ marginTop: "0.75rem" }}>
+                  {/* Progress bar */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "0", marginBottom: "0.4rem" }}>
+                    {steps.map((step, i) => (
+                      <React.Fragment key={i}>
+                        <div style={{
+                          width: "24px", height: "24px", borderRadius: "50%", flexShrink: 0,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: i <= activeStep ? "0.7rem" : "0.55rem",
+                          background: i <= activeStep ? "rgba(52,211,153,0.15)" : "rgba(255,255,255,0.03)",
+                          border: i <= activeStep ? "1.5px solid rgba(52,211,153,0.5)" : "1.5px solid rgba(255,255,255,0.08)",
+                          color: i <= activeStep ? "#34d399" : "var(--text-muted)",
+                          transition: "all 0.3s ease",
+                        }}>
+                          {i < activeStep ? "✓" : step.icon}
+                        </div>
+                        {i < steps.length - 1 && (
+                          <div style={{
+                            flex: 1, height: "2px",
+                            background: i < activeStep ? "rgba(52,211,153,0.4)" : "rgba(255,255,255,0.06)",
+                            transition: "background 0.3s ease",
+                          }} />
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                  {/* Labels */}
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    {steps.map((step, i) => (
+                      <span key={i} style={{
+                        fontSize: "0.55rem",
+                        color: i <= activeStep ? "#34d399" : "var(--text-muted)",
+                        fontWeight: i === activeStep ? "700" : "400",
+                        textAlign: "center",
+                        width: "24%",
+                      }}>
+                        {step.label}
+                      </span>
+                    ))}
+                  </div>
+                  {/* Tracking number if shipped */}
+                  {order.status >= 1 && order.trackingNumber && (
+                    <div style={{ marginTop: "0.4rem", fontSize: "0.68rem", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                      <span>📦</span>
+                      <span>Tracking: <strong style={{ fontFamily: "monospace", color: "#fff" }}>{order.trackingNumber}</strong></span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             <button 
               className="btn-secondary" 
@@ -1376,19 +1444,25 @@ export function CheckoutSummary({
             </div>
 
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem" }}>
-              <span>Total Locked:</span>
+              <span>Total Protected:</span>
               <strong style={{ fontFamily: "monospace", color: "var(--accent-green)" }}>${(parseFloat(order.amountLocked) * 1000).toFixed(2)}</strong>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.5rem" }}>
-              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Status:</span>
-              <span className={`badge ${
-                order.state === 1 ? "badge-green" : 
-                order.state === 2 ? "badge-red" : 
-                "badge-blue"
-              }`} style={{ fontSize: "0.65rem" }}>
-                {ESCROW_STATES[order.state]}
-              </span>
+            {/* Batch order progress */}
+            <div style={{ marginTop: "0.25rem", padding: "0.5rem 0.75rem", borderRadius: "8px", background: order.state === 1 ? "rgba(52,211,153,0.06)" : order.state === 2 ? "rgba(251,191,36,0.06)" : "rgba(56,189,248,0.06)", border: `1px solid ${order.state === 1 ? "rgba(52,211,153,0.15)" : order.state === 2 ? "rgba(251,191,36,0.15)" : "rgba(56,189,248,0.15)"}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ fontSize: "1rem" }}>
+                  {order.state === 0 ? "🔒" : order.state === 1 ? "✅" : "↩️"}
+                </span>
+                <div>
+                  <div style={{ fontSize: "0.75rem", fontWeight: "600", color: order.state === 1 ? "#34d399" : order.state === 2 ? "#fbbf24" : "#7dd3fc" }}>
+                    {order.state === 0 ? "Payment Held — Awaiting Fulfillment" : order.state === 1 ? "Completed Successfully" : "Refunded to Buyer"}
+                  </div>
+                  <div style={{ fontSize: "0.62rem", color: "var(--text-muted)", marginTop: "1px" }}>
+                    {order.state === 0 ? (order.fulfillmentType === 1 ? "Meet the breeder and exchange your PIN to complete" : "Breeder is preparing your order") : order.state === 1 ? "Fish delivered and payment released to breeder" : "Full refund processed"}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <button 

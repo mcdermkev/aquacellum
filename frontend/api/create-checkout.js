@@ -64,6 +64,10 @@ export default async function handler(req, res) {
     });
   }
 
+  // Guest purchases from the public marketplace page use 'guest' as a placeholder.
+  // On-chain settlement will be deferred until the buyer links an account.
+  const isGuestPurchase = buyerWallet === 'guest' || buyerWallet === '0x0000000000000000000000000000000000000000';
+
   const SUCCESS_URL = successUrl
     || process.env.CHECKOUT_SUCCESS_URL
     || "https://aquadex.fish/checkout/success?session_id={CHECKOUT_SESSION_ID}";
@@ -101,6 +105,7 @@ export default async function handler(req, res) {
       buyerWallet: buyerWallet.toLowerCase(),
       sellerWallet: sellerWallet.toLowerCase(),
       sellerStripeAccountId: sellerAccount.stripe_account_id,
+      isGuestPurchase: isGuestPurchase ? "true" : "false",
     };
 
     switch (purchaseType) {
@@ -111,10 +116,10 @@ export default async function handler(req, res) {
           price_data: {
             currency: "usd",
             product_data: {
-              name: item.commonName || `Specimen #${item.tokenId}`,
+              name: item.commonName || `Live Specimen`,
               description: item.scientificName
-                ? `${item.scientificName} — Token #${item.tokenId}`
-                : `Live specimen — Token #${item.tokenId}`,
+                ? `${item.scientificName} — Verified breeder specimen`
+                : `Live specimen from verified breeder`,
               images: item.imageUrl ? [item.imageUrl] : [],
             },
             unit_amount: item.priceCentsUSD,
@@ -133,10 +138,10 @@ export default async function handler(req, res) {
           price_data: {
             currency: "usd",
             product_data: {
-              name: item.commonName || `Specimen #${item.tokenId}`,
+              name: item.commonName || `Live Specimen`,
               description: item.scientificName
-                ? `${item.scientificName} — Token #${item.tokenId} (Live Arrival Guaranteed)`
-                : `Live specimen — Token #${item.tokenId} (Live Arrival Guaranteed)`,
+                ? `${item.scientificName} — Live Arrival Guaranteed`
+                : `Live specimen — Live Arrival Guaranteed`,
               images: item.imageUrl ? [item.imageUrl] : [],
             },
             unit_amount: item.priceCentsUSD,
@@ -170,7 +175,7 @@ export default async function handler(req, res) {
             currency: "usd",
             product_data: {
               name: `${item.commonName || "Juvenile Fish"} (x${item.quantity})`,
-              description: `Batch of ${item.quantity} juvenile specimens from spawn`,
+              description: `Batch of ${item.quantity} tank-raised juveniles from verified breeder`,
               images: item.imageUrl ? [item.imageUrl] : [],
             },
             unit_amount: item.pricePerFishCents,
@@ -191,8 +196,8 @@ export default async function handler(req, res) {
             price_data: {
               currency: "usd",
               product_data: {
-                name: item.commonName || `Specimen #${item.tokenId}`,
-                description: `Live specimen — Token #${item.tokenId}`,
+                name: item.commonName || `Live Specimen`,
+                description: `Live specimen from verified breeder`,
                 images: item.imageUrl ? [item.imageUrl] : [],
               },
               unit_amount: item.priceCentsUSD,

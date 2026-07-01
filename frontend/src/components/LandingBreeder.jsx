@@ -122,7 +122,7 @@ export function LandingBreeder({ onEnter }) {
             margin: "0 auto",
             lineHeight: "1.6"
           }}>
-            Initialize high-fidelity node terminals for EVM-based lineage registry, multi-box shipping logistics calculations, escrow verification, and regional ranking models.
+            Access professional-grade breeding tools including lineage tracking, multi-box shipping logistics, buyer protection, and regional breeder rankings.
           </p>
         </div>
 
@@ -179,7 +179,7 @@ export function LandingBreeder({ onEnter }) {
               [02] SECURE HANDSHAKE FRAUD PROTECTION
             </strong>
             <p style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)", lineHeight: "1.6", margin: 0 }}>
-              Execute secure in-person handshakes using offline pre-image proof tokens. Bypasses typical multi-party online risks with automated escrow settlements to ensure secure physical local-pickup verification.
+              Execute secure in-person handshakes using verification PINs. Our buyer protection ensures safe local-pickup transactions with automatic confirmation and provenance tracking.
             </p>
           </div>
 
@@ -204,7 +204,7 @@ export function LandingBreeder({ onEnter }) {
               [03] AUTOMATED LOGISTICS & BUNDLED SHIPPING
             </strong>
             <p style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)", lineHeight: "1.6", margin: 0 }}>
-              Group shipping calculations dynamically using box-grouping logic: Math.ceil(tokenIds.length / 3). Matches smart contract constraints with automatic refunding mechanics for smart shipping box consolidation.
+              Group shipping calculations dynamically using box-grouping logic. Up to 3 fish per box with automatic refunding when consolidation saves you money.
             </p>
           </div>
 

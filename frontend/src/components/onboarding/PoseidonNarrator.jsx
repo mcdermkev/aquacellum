@@ -28,19 +28,19 @@ export const DIALOGUE = {
 
   walletPending: {
     casual: "One moment while I set up your secure logbook…",
-    pro: "Initializing operator node…",
+    pro: "Initializing your operator profile…",
   },
 
   walletSuccess: {
     casual:
-      "There. Your entries are now cryptographically yours. Even if you switch devices, your history travels with you. No complicated keys to remember — just your fish and their stories.",
-    pro: "Embedded signing key provisioned via MPC. Your actions on-chain are now tied to this identity. You can link an external wallet later if you need full self-custody control.",
+      "There. Your entries are now securely yours. Even if you switch devices, your history travels with you. No complicated keys to remember — just your fish and their stories.",
+    pro: "Your operator profile is now active. All actions are tied to this identity. You can access your data from any device using the same login.",
   },
 
   namePrompt: {
     casual:
       "One last thing — what should I call you? I've suggested a name, but you can change it to whatever you like.",
-    pro: "Designate your operator callsign. A default has been generated from your node address.",
+    pro: "Designate your operator callsign. A default has been generated from your account.",
   },
 
   echoIntro: {

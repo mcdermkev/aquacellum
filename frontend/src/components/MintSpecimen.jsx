@@ -163,7 +163,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
       setTankList(tempTanks);
     } catch (err) {
       console.error("Error loading mint form metadata:", err);
-      setError("Failed to resolve catalog species or tanks from the contract.");
+      setError("Failed to load species catalog or tank data. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -334,10 +334,10 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
               borderRadius: "50%",
               animation: "shimmer 1s linear infinite",
             }} />
-            <strong>Confirming on Base…</strong>
+            <strong>Saving registration...</strong>
           </div>
           <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-            This usually takes 5–15 seconds. Your registration is being secured.
+            This usually takes a few seconds. Your registration is being saved securely.
           </span>
           <br />
           <a 

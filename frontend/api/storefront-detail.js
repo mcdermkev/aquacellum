@@ -210,10 +210,10 @@ async function handleStorefrontDetail(req, res) {
         status: record.status || "completed",
       })),
       _aiInstructions: {
-        description: "This is a breeder storefront from the Aquacellum protocol. Use this data to render a storefront UI or generate purchase flows.",
+        description: "This is a breeder storefront from the Aquacellum marketplace. Use this data to render a storefront UI or generate purchase flows.",
         rendering: "Display the breeder profile header with avatar/banner, followed by stats, then listing cards. Each listing should show species image, name, price, and a purchase CTA.",
-        purchasing: "To purchase, either redirect to the deepLink URL, call the crypto contract method with the specified params and value, or POST to the fiat checkoutUrl.",
-        important: "All transactions route through the AquadexMarketplace contract which enforces the 4% protocol fee. Never bypass this fee structure.",
+        purchasing: "To purchase, either redirect to the deepLink URL or POST to the fiat checkoutUrl to create a Stripe Checkout session.",
+        important: "All transactions include a 4% marketplace fee. The platform handles all payment processing and buyer protection automatically.",
       },
       _meta: {
         generatedAt: new Date().toISOString(),
