@@ -27,7 +27,7 @@ function ScoreEventRow({ event }) {
   );
 }
 
-export function DepthScoreMeter({ walletAddress, compact = false }) {
+export function DepthScoreMeter({ walletAddress, compact = false, casualModeActive = false }) {
   const { data: scoreData, isLoading } = useDepthScore(walletAddress);
   const [showDetails, setShowDetails] = useState(false);
   const { data: history = [] } = useDepthScoreHistory(walletAddress, { limit: 10 });
@@ -55,9 +55,12 @@ export function DepthScoreMeter({ walletAddress, compact = false }) {
       <span
         className="depth-meter-compact"
         style={{ color: currentTierInfo.color }}
-        title={`Depth Score: ${score} (${tier})`}
+        title={casualModeActive
+          ? `Level: ${currentTierInfo.hobbyistLabel || tier} (${score} XP)`
+          : `Depth Score: ${score} (${tier})`
+        }
       >
-        {currentTierInfo.icon} {tier}
+        {currentTierInfo.icon} {casualModeActive ? (currentTierInfo.hobbyistLabel || tier) : tier}
       </span>
     );
   }
@@ -91,10 +94,25 @@ export function DepthScoreMeter({ walletAddress, compact = false }) {
         </div>
         {nextTier && (
           <span className="depth-meter__next">
-            {nextTier.icon} {nextTier.label} at {nextTier.min}
+            {nextTier.icon} {casualModeActive
+              ? `Next: ${nextTier.hobbyistLabel || nextTier.label} at ${nextTier.min} XP`
+              : `${nextTier.label} at ${nextTier.min}`
+            }
           </span>
         )}
       </div>
+
+      {/* Level-up hint */}
+      <p className="depth-meter__hint" style={{
+        margin: "0.4rem 0 0",
+        fontSize: "0.62rem",
+        color: "var(--text-muted)",
+        lineHeight: 1.4,
+      }}>
+        {casualModeActive
+          ? "💡 Post updates, join groups, give reviews, and help others to earn XP and unlock features."
+          : "💡 Earn Depth by posting Currents, giving Audits, breeding success, and mentoring."}
+      </p>
 
       {/* Expandable details */}
       {showDetails && (

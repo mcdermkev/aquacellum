@@ -136,7 +136,7 @@ export function SonarBell() {
             borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
           }}>
             <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#fff" }}>
-              Sonar
+              Notifications
             </span>
             {unreadCount > 0 && (
               <button

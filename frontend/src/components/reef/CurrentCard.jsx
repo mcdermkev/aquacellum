@@ -11,6 +11,8 @@ import { ProfileCard } from "./ProfileCard";
 import { ReactionBar } from "./ReactionBar";
 import { CommentThread } from "./CommentThread";
 import { FollowButton } from "./FollowButton";
+import { ExpertAuditForm } from "./ExpertAuditForm";
+import { useUnlockGate } from "./UnlockPrompt";
 import { watchTank, unwatchTank, isWatchingTank } from "../../services/reefApi";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { sameWallet } from "../../utils/wallet";
@@ -127,6 +129,8 @@ function ParameterChips({ snapshot }) {
 export function CurrentCard({ current, onProfileClick, casualModeActive = false }) {
   const [showFullBody, setShowFullBody] = useState(false);
   const [watching, setWatching] = useState(null); // null = unknown, true/false
+  const [showAuditForm, setShowAuditForm] = useState(false);
+  const auditGate = useUnlockGate("canGiveAudits");
   const profile = current.profiles;
   const body = current.body || "";
   const isLong = body.length > 300;
@@ -287,36 +291,83 @@ export function CurrentCard({ current, onProfileClick, casualModeActive = false 
         </div>
       )}
 
-      {/* Reactions + Watch Tank */}
+      {/* Reactions + Watch Tank + Give Audit */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
         <ReactionBar currentId={current.id} />
-        {current.linked_tank_id && !isOwnPost && watching !== null && (
-          <button
-            onClick={handleToggleWatch}
-            style={{
-              padding: "0.25rem 0.5rem",
-              borderRadius: "50px",
-              border: watching
-                ? "1px solid rgba(52, 211, 153, 0.3)"
-                : "1px solid rgba(255, 255, 255, 0.08)",
-              background: watching
-                ? "rgba(52, 211, 153, 0.08)"
-                : "rgba(255, 255, 255, 0.03)",
-              color: watching ? "var(--accent-green, #34d399)" : "var(--text-muted)",
-              fontSize: "0.65rem",
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-              whiteSpace: "nowrap",
-            }}
-            title={watching ? "Stop watching this tank" : "Watch this tank for updates"}
-          >
-            {watching ? "👁️ Watching" : "👁️ Watch Tank"}
-          </button>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+          {/* Give Audit button (only on others' posts with linked tanks) */}
+          {current.linked_tank_id && !isOwnPost && (
+            <button
+              onClick={() => {
+                if (auditGate.checkAccess()) {
+                  setShowAuditForm(true);
+                }
+              }}
+              style={{
+                padding: "0.25rem 0.5rem",
+                borderRadius: "50px",
+                border: "1px solid rgba(251, 191, 36, 0.2)",
+                background: "rgba(251, 191, 36, 0.05)",
+                color: "var(--text-muted)",
+                fontSize: "0.65rem",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+                whiteSpace: "nowrap",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent-amber, #fbbf24)"; e.currentTarget.style.borderColor = "rgba(251, 191, 36, 0.4)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "rgba(251, 191, 36, 0.2)"; }}
+              title={casualModeActive ? "Give this tank a review" : "Submit an Expert Audit"}
+            >
+              ⭐ {casualModeActive ? "Review" : "Audit"}
+            </button>
+          )}
+          {current.linked_tank_id && !isOwnPost && watching !== null && (
+            <button
+              onClick={handleToggleWatch}
+              style={{
+                padding: "0.25rem 0.5rem",
+                borderRadius: "50px",
+                border: watching
+                  ? "1px solid rgba(52, 211, 153, 0.3)"
+                  : "1px solid rgba(255, 255, 255, 0.08)",
+                background: watching
+                  ? "rgba(52, 211, 153, 0.08)"
+                  : "rgba(255, 255, 255, 0.03)",
+                color: watching ? "var(--accent-green, #34d399)" : "var(--text-muted)",
+                fontSize: "0.65rem",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+                whiteSpace: "nowrap",
+              }}
+              title={watching ? "Stop watching this tank" : "Watch this tank for updates"}
+            >
+              {watching ? "👁️ Watching" : "👁️ Watch Tank"}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Comments */}
       <CommentThread currentId={current.id} />
+
+      {/* Expert Audit Form Modal */}
+      {showAuditForm && (
+        <ExpertAuditForm
+          recipientWallet={current.author_wallet}
+          targetCurrentId={current.id}
+          targetTankId={current.linked_tank_id}
+          casualModeActive={casualModeActive}
+          onClose={() => setShowAuditForm(false)}
+          onSubmitted={() => setShowAuditForm(false)}
+        />
+      )}
+
+      {/* XP Unlock Prompt for Audit gate */}
+      {auditGate.showPrompt && (
+        <div>
+          {/* Rendered from UnlockPrompt inside ExpertAuditForm now handles this */}
+        </div>
+      )}
     </article>
   );
 }

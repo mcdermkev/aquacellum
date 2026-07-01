@@ -8,6 +8,7 @@
 
 import React, { useState } from "react";
 import { useCreateAudit } from "../../hooks/useAudits";
+import { UnlockPrompt, useUnlockGate } from "./UnlockPrompt";
 
 const CATEGORIES = [
   { key: "waterQuality", label: "💧 Water Quality", desc: "Parameters, clarity, maintenance" },
@@ -16,7 +17,7 @@ const CATEGORIES = [
   { key: "aesthetics", label: "🎨 Aesthetics", desc: "Layout, planting, visual appeal" },
 ];
 
-export function ExpertAuditForm({ recipientWallet, targetCurrentId, targetTankId, onClose, onSubmitted }) {
+export function ExpertAuditForm({ recipientWallet, targetCurrentId, targetTankId, onClose, onSubmitted, casualModeActive = false }) {
   const [scores, setScores] = useState({
     waterQuality: 3,
     stocking: 3,
@@ -27,6 +28,19 @@ export function ExpertAuditForm({ recipientWallet, targetCurrentId, targetTankId
   const [error, setError] = useState("");
 
   const createAuditMutation = useCreateAudit();
+
+  // XP gate — user must be Abyssal tier to give audits
+  const auditGate = useUnlockGate("canGiveAudits");
+
+  if (!auditGate.hasAccess) {
+    return (
+      <UnlockPrompt
+        privilege="canGiveAudits"
+        casualModeActive={casualModeActive}
+        onClose={onClose}
+      />
+    );
+  }
 
   const handleSubmit = async () => {
     setError("");

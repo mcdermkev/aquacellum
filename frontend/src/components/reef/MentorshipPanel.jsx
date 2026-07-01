@@ -18,11 +18,15 @@ import {
 } from "../../hooks/useAudits";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { sameWallet } from "../../utils/wallet";
+import { UnlockPrompt, useUnlockGate } from "./UnlockPrompt";
 
-export function MentorshipPanel({ walletAddress, companionTier, onViewProfile }) {
+export function MentorshipPanel({ walletAddress, companionTier, onViewProfile, casualModeActive = false }) {
   const currentWallet = getCurrentWallet();
   const isOwnProfile = sameWallet(currentWallet, walletAddress);
   const isMasterPlus = companionTier === "Master" || companionTier === "God-Tier";
+
+  // XP unlock gate for mentor features
+  const mentorGate = useUnlockGate("canMentor");
 
   const { data: mentorshipsResult } = useMentorships(walletAddress);
   const { data: mentorsResult } = useAvailableMentors(!isMasterPlus);
@@ -56,8 +60,17 @@ export function MentorshipPanel({ walletAddress, companionTier, onViewProfile })
 
   return (
     <div className="mentorship-panel" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+      {/* XP Unlock Prompt */}
+      {mentorGate.showPrompt && (
+        <UnlockPrompt
+          privilege="canMentor"
+          casualModeActive={casualModeActive}
+          onClose={() => mentorGate.setShowPrompt(false)}
+        />
+      )}
+
       {/* Accepting Mentees Toggle (Master+ only, own profile) */}
-      {isOwnProfile && isMasterPlus && (
+      {isOwnProfile && isMasterPlus && mentorGate.hasAccess && (
         <div className="glass-card" style={{
           padding: "1rem 1.25rem",
           borderRadius: "var(--radius-sm)",
@@ -99,6 +112,42 @@ export function MentorshipPanel({ walletAddress, companionTier, onViewProfile })
               left: "23px",
               transition: "left 0.2s ease",
             }} />
+          </button>
+        </div>
+      )}
+
+      {/* Mentor unlock teaser — shows when user hasn't unlocked mentorship yet */}
+      {isOwnProfile && !mentorGate.hasAccess && (
+        <div className="glass-card" style={{
+          padding: "1rem 1.25rem",
+          borderRadius: "var(--radius-sm)",
+          border: "1px solid rgba(168, 85, 247, 0.1)",
+          textAlign: "center",
+        }}>
+          <p style={{ fontSize: "1.3rem", margin: "0 0 0.5rem" }}>🎓</p>
+          <p style={{ fontSize: "0.8rem", color: "#fff", fontWeight: 600, margin: "0 0 0.3rem" }}>
+            {casualModeActive ? "Become a Mentor" : "Unlock Mentorship"}
+          </p>
+          <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", margin: "0 0 0.75rem", lineHeight: 1.4 }}>
+            {casualModeActive
+              ? "Help newer fishkeepers by sharing your experience. Keep leveling up to unlock this!"
+              : "Abyssal tier operators can accept mentees. Continue earning Depth to qualify."
+            }
+          </p>
+          <button
+            onClick={() => mentorGate.checkAccess()}
+            style={{
+              padding: "0.4rem 1rem",
+              borderRadius: "8px",
+              border: "1px solid rgba(168, 85, 247, 0.2)",
+              background: "rgba(168, 85, 247, 0.08)",
+              color: "#fff",
+              fontSize: "0.72rem",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            {casualModeActive ? "See how to unlock" : "View Requirements"}
           </button>
         </div>
       )}

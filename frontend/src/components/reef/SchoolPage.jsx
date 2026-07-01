@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from "react";
-import { useSchoolById, useMySchoolRole, useSchoolMembers, useSchoolChallenges, useLeaveSchool, useUpdateMemberRole, useRemoveMember } from "../../hooks/useSchools";
+import { useSchoolById, useMySchoolRole, useSchoolMembers, useSchoolChallenges, useLeaveSchool, useUpdateMemberRole, useRemoveMember, useCreateChallenge, useUpdateSchool } from "../../hooks/useSchools";
 import { ProfileCard } from "./ProfileCard";
 import { SchoolChat } from "./SchoolChat";
 import { ChallengeCard } from "./ChallengeCard";
@@ -184,7 +184,7 @@ export function SchoolPage({ schoolId, onBack, onViewProfile }) {
       )}
 
       {activeTab === "settings" && isAdmin && (
-        <SettingsTab school={school} />
+        <SettingsTab school={school} schoolId={schoolId} />
       )}
     </div>
   );
@@ -291,17 +291,51 @@ function MembersTab({ members, isAdmin, schoolId, onViewProfile, onPromote, onDe
 }
 
 function ChallengesTab({ challenges, schoolId, isAdmin }) {
+  const [showForm, setShowForm] = useState(false);
   const active = challenges.filter((c) => c.status === "active" || c.status === "upcoming");
   const completed = challenges.filter((c) => c.status === "completed");
 
   return (
     <div>
-      {active.length === 0 && completed.length === 0 ? (
+      {/* Create Challenge button for admins */}
+      {isAdmin && (
+        <div style={{ marginBottom: "1rem" }}>
+          {!showForm ? (
+            <button
+              onClick={() => setShowForm(true)}
+              style={{
+                padding: "0.5rem 1rem",
+                borderRadius: "8px",
+                border: "none",
+                background: "linear-gradient(135deg, #f59e0b, #d97706)",
+                color: "#fff",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                boxShadow: "0 3px 10px rgba(245, 158, 11, 0.2)",
+              }}
+            >
+              🏆 + Create Challenge
+            </button>
+          ) : (
+            <CreateChallengeForm
+              schoolId={schoolId}
+              onCancel={() => setShowForm(false)}
+              onCreated={() => setShowForm(false)}
+            />
+          )}
+        </div>
+      )}
+
+      {active.length === 0 && completed.length === 0 && !showForm ? (
         <div style={{ textAlign: "center", padding: "2rem 1rem", color: "var(--text-muted)" }}>
           <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>🏆</div>
           <p style={{ fontSize: "0.85rem" }}>No challenges yet.</p>
           {isAdmin && (
-            <p style={{ fontSize: "0.7rem" }}>As a Founder/Elder, you can create challenges for your school.</p>
+            <p style={{ fontSize: "0.7rem" }}>Click "Create Challenge" above to get your school started!</p>
+          )}
+          {!isAdmin && (
+            <p style={{ fontSize: "0.7rem" }}>Your school's admins can create challenges for members to compete in.</p>
           )}
         </div>
       ) : (
@@ -323,12 +357,397 @@ function ChallengesTab({ challenges, schoolId, isAdmin }) {
   );
 }
 
-function SettingsTab({ school }) {
+const CHALLENGE_TYPES = [
+  { value: "breeding_sprint", label: "🧬 Breeding Sprint", desc: "Race to breed a target species" },
+  { value: "growout_race", label: "📈 Grow-Out Race", desc: "Grow fry to a target size fastest" },
+  { value: "photo_contest", label: "📷 Photo Contest", desc: "Best tank photo wins" },
+  { value: "care_streak", label: "🔥 Care Streak", desc: "Longest streak of daily parameter logs" },
+];
+
+function CreateChallengeForm({ schoolId, onCancel, onCreated }) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [challengeType, setChallengeType] = useState("photo_contest");
+  const [targetSpecies, setTargetSpecies] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [rewardXp, setRewardXp] = useState(100);
+  const [error, setError] = useState("");
+
+  const createChallengeMutation = useCreateChallenge();
+
+  const handleSubmit = async () => {
+    setError("");
+    if (!title.trim()) { setError("Title is required."); return; }
+    if (!startTime || !endTime) { setError("Start and end times are required."); return; }
+    if (new Date(endTime) <= new Date(startTime)) { setError("End time must be after start time."); return; }
+
+    const result = await createChallengeMutation.mutateAsync({
+      schoolId,
+      title: title.trim(),
+      description: description.trim() || null,
+      challengeType,
+      targetSpecies: targetSpecies.trim() || null,
+      startTime: new Date(startTime).toISOString(),
+      endTime: new Date(endTime).toISOString(),
+      rewardXp: Number(rewardXp) || 100,
+    });
+
+    if (result?.error) {
+      setError(result.error.message || "Failed to create challenge.");
+    } else {
+      onCreated?.();
+    }
+  };
+
   return (
-    <div style={{ textAlign: "center", padding: "2rem 1rem", color: "var(--text-muted)" }}>
-      <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>⚙️</div>
-      <p style={{ fontSize: "0.85rem" }}>School settings panel coming soon.</p>
-      <p style={{ fontSize: "0.7rem" }}>Edit name, description, banner, and manage invites.</p>
+    <div className="glass-card" style={{
+      padding: "1.25rem",
+      borderRadius: "var(--radius-sm)",
+      border: "1px solid rgba(245, 158, 11, 0.2)",
+      background: "rgba(245, 158, 11, 0.03)",
+    }}>
+      <h4 style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "#fff" }}>🏆 New Challenge</h4>
+
+      {/* Title */}
+      <div style={{ marginBottom: "0.75rem" }}>
+        <label style={{ display: "block", fontSize: "0.7rem", color: "var(--text-secondary)", marginBottom: "0.3rem" }}>Title *</label>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value.slice(0, 80))}
+          placeholder="e.g. Spring Breeding Sprint"
+          style={{
+            width: "100%", padding: "0.5rem 0.75rem", borderRadius: "8px",
+            border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
+            color: "#fff", fontSize: "0.8rem",
+          }}
+        />
+      </div>
+
+      {/* Description */}
+      <div style={{ marginBottom: "0.75rem" }}>
+        <label style={{ display: "block", fontSize: "0.7rem", color: "var(--text-secondary)", marginBottom: "0.3rem" }}>Description</label>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value.slice(0, 500))}
+          placeholder="Explain the rules and objectives..."
+          rows={3}
+          style={{
+            width: "100%", padding: "0.5rem 0.75rem", borderRadius: "8px",
+            border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
+            color: "#fff", fontSize: "0.8rem", resize: "vertical",
+          }}
+        />
+      </div>
+
+      {/* Challenge Type */}
+      <div style={{ marginBottom: "0.75rem" }}>
+        <label style={{ display: "block", fontSize: "0.7rem", color: "var(--text-secondary)", marginBottom: "0.3rem" }}>Type *</label>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+          {CHALLENGE_TYPES.map((ct) => (
+            <button
+              key={ct.value}
+              type="button"
+              onClick={() => setChallengeType(ct.value)}
+              style={{
+                padding: "0.35rem 0.7rem",
+                borderRadius: "50px",
+                border: `1px solid ${challengeType === ct.value ? "rgba(245, 158, 11, 0.4)" : "rgba(255,255,255,0.1)"}`,
+                background: challengeType === ct.value ? "rgba(245, 158, 11, 0.12)" : "rgba(255,255,255,0.03)",
+                color: challengeType === ct.value ? "#fff" : "var(--text-secondary)",
+                fontSize: "0.68rem",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+              title={ct.desc}
+            >
+              {ct.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Target Species (optional) */}
+      <div style={{ marginBottom: "0.75rem" }}>
+        <label style={{ display: "block", fontSize: "0.7rem", color: "var(--text-secondary)", marginBottom: "0.3rem" }}>Target Species (optional)</label>
+        <input
+          type="text"
+          value={targetSpecies}
+          onChange={(e) => setTargetSpecies(e.target.value)}
+          placeholder="e.g. Apistogramma cacatuoides"
+          style={{
+            width: "100%", padding: "0.5rem 0.75rem", borderRadius: "8px",
+            border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
+            color: "#fff", fontSize: "0.8rem",
+          }}
+        />
+      </div>
+
+      {/* Start / End */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" }}>
+        <div>
+          <label style={{ display: "block", fontSize: "0.7rem", color: "var(--text-secondary)", marginBottom: "0.3rem" }}>Start *</label>
+          <input
+            type="datetime-local"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            style={{
+              width: "100%", padding: "0.5rem 0.6rem", borderRadius: "8px",
+              border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
+              color: "#fff", fontSize: "0.75rem",
+            }}
+          />
+        </div>
+        <div>
+          <label style={{ display: "block", fontSize: "0.7rem", color: "var(--text-secondary)", marginBottom: "0.3rem" }}>End *</label>
+          <input
+            type="datetime-local"
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+            style={{
+              width: "100%", padding: "0.5rem 0.6rem", borderRadius: "8px",
+              border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
+              color: "#fff", fontSize: "0.75rem",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Reward XP */}
+      <div style={{ marginBottom: "1rem" }}>
+        <label style={{ display: "block", fontSize: "0.7rem", color: "var(--text-secondary)", marginBottom: "0.3rem" }}>Reward XP</label>
+        <input
+          type="number"
+          value={rewardXp}
+          onChange={(e) => setRewardXp(Math.max(10, Math.min(1000, Number(e.target.value))))}
+          min={10}
+          max={1000}
+          style={{
+            width: "100px", padding: "0.5rem 0.75rem", borderRadius: "8px",
+            border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
+            color: "#fff", fontSize: "0.8rem",
+          }}
+        />
+        <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginLeft: "0.5rem" }}>XP for winner (10–1000)</span>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div style={{
+          marginBottom: "0.75rem", padding: "0.5rem 0.75rem",
+          background: "rgba(248, 113, 113, 0.1)", border: "1px solid rgba(248, 113, 113, 0.2)",
+          borderRadius: "8px", color: "var(--accent-red)", fontSize: "0.75rem",
+        }}>
+          {error}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+        <button
+          onClick={onCancel}
+          style={{
+            padding: "0.5rem 1rem", borderRadius: "8px",
+            border: "1px solid rgba(255,255,255,0.1)", background: "transparent",
+            color: "var(--text-muted)", fontSize: "0.75rem", cursor: "pointer",
+          }}
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSubmit}
+          disabled={createChallengeMutation.isPending}
+          style={{
+            padding: "0.5rem 1.25rem", borderRadius: "8px", border: "none",
+            background: "linear-gradient(135deg, #f59e0b, #d97706)",
+            color: "#fff", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer",
+            opacity: createChallengeMutation.isPending ? 0.6 : 1,
+          }}
+        >
+          {createChallengeMutation.isPending ? "Creating..." : "🏆 Create Challenge"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SettingsTab({ school, schoolId }) {
+  const [name, setName] = useState(school.name || "");
+  const [description, setDescription] = useState(school.description || "");
+  const [bannerUrl, setBannerUrl] = useState(school.banner_url || "");
+  const [isInviteOnly, setIsInviteOnly] = useState(school.is_invite_only || false);
+  const [memberCap, setMemberCap] = useState(school.member_cap || "");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  const updateSchoolMutation = useUpdateSchool();
+
+  const handleSave = async () => {
+    setError("");
+    setSaved(false);
+    if (!name.trim()) { setError("School name is required."); return; }
+
+    setSaving(true);
+    const result = await updateSchoolMutation.mutateAsync({
+      schoolId: schoolId || school.id,
+      updates: {
+        name: name.trim(),
+        description: description.trim() || null,
+        banner_url: bannerUrl.trim() || null,
+        is_invite_only: isInviteOnly,
+        member_cap: memberCap ? Number(memberCap) : null,
+      },
+    });
+
+    setSaving(false);
+    if (result?.error) {
+      setError(result.error.message || "Failed to update school.");
+    } else {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    }
+  };
+
+  return (
+    <div className="glass-card" style={{
+      padding: "1.5rem",
+      borderRadius: "var(--radius-sm)",
+      border: "1px solid rgba(255,255,255,0.06)",
+    }}>
+      <h3 style={{ margin: "0 0 1.25rem", fontSize: "1rem", color: "#fff" }}>⚙️ School Settings</h3>
+
+      {/* Name */}
+      <div style={{ marginBottom: "1rem" }}>
+        <label style={{ display: "block", fontSize: "0.72rem", color: "var(--text-secondary)", marginBottom: "0.3rem", fontWeight: 600 }}>School Name *</label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value.slice(0, 60))}
+          style={{
+            width: "100%", padding: "0.55rem 0.85rem", borderRadius: "8px",
+            border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
+            color: "#fff", fontSize: "0.85rem",
+          }}
+        />
+      </div>
+
+      {/* Description */}
+      <div style={{ marginBottom: "1rem" }}>
+        <label style={{ display: "block", fontSize: "0.72rem", color: "var(--text-secondary)", marginBottom: "0.3rem", fontWeight: 600 }}>Description</label>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value.slice(0, 500))}
+          placeholder="What is this school about?"
+          rows={3}
+          style={{
+            width: "100%", padding: "0.55rem 0.85rem", borderRadius: "8px",
+            border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
+            color: "#fff", fontSize: "0.85rem", resize: "vertical",
+          }}
+        />
+      </div>
+
+      {/* Banner URL */}
+      <div style={{ marginBottom: "1rem" }}>
+        <label style={{ display: "block", fontSize: "0.72rem", color: "var(--text-secondary)", marginBottom: "0.3rem", fontWeight: 600 }}>Banner Image URL</label>
+        <input
+          type="url"
+          value={bannerUrl}
+          onChange={(e) => setBannerUrl(e.target.value)}
+          placeholder="https://example.com/banner.jpg"
+          style={{
+            width: "100%", padding: "0.55rem 0.85rem", borderRadius: "8px",
+            border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
+            color: "#fff", fontSize: "0.85rem",
+          }}
+        />
+        {bannerUrl && (
+          <div style={{ marginTop: "0.5rem", borderRadius: "8px", overflow: "hidden", height: "80px" }}>
+            <img src={bannerUrl} alt="Banner preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.target.style.display = "none"; }} />
+          </div>
+        )}
+      </div>
+
+      {/* Invite Only Toggle */}
+      <div style={{ marginBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <label style={{ fontSize: "0.72rem", color: "var(--text-secondary)", fontWeight: 600 }}>🔒 Invite Only</label>
+          <p style={{ margin: "0.1rem 0 0", fontSize: "0.62rem", color: "var(--text-muted)" }}>Only invited members can join</p>
+        </div>
+        <button
+          onClick={() => setIsInviteOnly(!isInviteOnly)}
+          style={{
+            width: "44px", height: "24px", borderRadius: "12px", border: "none",
+            background: isInviteOnly ? "rgba(56, 189, 248, 0.5)" : "rgba(255,255,255,0.12)",
+            cursor: "pointer", position: "relative", transition: "background 0.2s ease",
+          }}
+          role="switch"
+          aria-checked={isInviteOnly}
+        >
+          <div style={{
+            width: "18px", height: "18px", borderRadius: "50%", background: "#fff",
+            position: "absolute", top: "3px",
+            left: isInviteOnly ? "23px" : "3px",
+            transition: "left 0.2s ease",
+          }} />
+        </button>
+      </div>
+
+      {/* Member Cap */}
+      <div style={{ marginBottom: "1.25rem" }}>
+        <label style={{ display: "block", fontSize: "0.72rem", color: "var(--text-secondary)", marginBottom: "0.3rem", fontWeight: 600 }}>Member Limit</label>
+        <input
+          type="number"
+          value={memberCap}
+          onChange={(e) => setMemberCap(e.target.value)}
+          placeholder="No limit"
+          min={1}
+          style={{
+            width: "120px", padding: "0.55rem 0.85rem", borderRadius: "8px",
+            border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)",
+            color: "#fff", fontSize: "0.85rem",
+          }}
+        />
+        <span style={{ fontSize: "0.62rem", color: "var(--text-muted)", marginLeft: "0.5rem" }}>Leave empty for unlimited</span>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div style={{
+          marginBottom: "0.75rem", padding: "0.5rem 0.75rem",
+          background: "rgba(248, 113, 113, 0.1)", border: "1px solid rgba(248, 113, 113, 0.2)",
+          borderRadius: "8px", color: "var(--accent-red)", fontSize: "0.75rem",
+        }}>
+          {error}
+        </div>
+      )}
+
+      {/* Success */}
+      {saved && (
+        <div style={{
+          marginBottom: "0.75rem", padding: "0.5rem 0.75rem",
+          background: "rgba(52, 211, 153, 0.08)", border: "1px solid rgba(52, 211, 153, 0.2)",
+          borderRadius: "8px", color: "var(--accent-green)", fontSize: "0.75rem",
+        }}>
+          ✓ Settings saved!
+        </div>
+      )}
+
+      {/* Save button */}
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        style={{
+          padding: "0.6rem 1.5rem", borderRadius: "8px", border: "none",
+          background: "linear-gradient(135deg, #0ea5e9, #0369a1)",
+          color: "#fff", fontSize: "0.8rem", fontWeight: 600, cursor: "pointer",
+          opacity: saving ? 0.6 : 1, transition: "opacity 0.15s ease",
+        }}
+      >
+        {saving ? "Saving..." : "💾 Save Changes"}
+      </button>
     </div>
   );
 }

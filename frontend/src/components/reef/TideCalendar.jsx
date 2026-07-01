@@ -138,7 +138,7 @@ function TideCard({ tide, onSelect, onRsvp }) {
   );
 }
 
-export function TideCalendar({ onSelectTide }) {
+export function TideCalendar({ onSelectTide, casualModeActive = false }) {
   const [filterType, setFilterType] = useState(null);
   const [viewMode, setViewMode] = useState("grid"); // grid | list
 
@@ -158,10 +158,10 @@ export function TideCalendar({ onSelectTide }) {
   );
 
   return (
-    <section className="tide-calendar" aria-label="Tides Events Calendar">
+    <section className="tide-calendar" aria-label={casualModeActive ? "Events Calendar" : "Tides Events Calendar"}>
       {/* Header */}
       <header className="tide-calendar__header">
-        <h2>🌊 Tides</h2>
+        <h2>{casualModeActive ? "📅 Events" : "🌊 Tides"}</h2>
         <div className="tide-calendar__controls">
           {/* Type filter */}
           <div className="tide-calendar__filters" role="tablist" aria-label="Filter by type">
@@ -210,8 +210,8 @@ export function TideCalendar({ onSelectTide }) {
 
       {/* My Upcoming Tides */}
       {myUpcoming.length > 0 && (
-        <section className="tide-calendar__my-tides" aria-label="My Upcoming Tides">
-          <h3>My Upcoming Tides</h3>
+        <section className="tide-calendar__my-tides" aria-label={casualModeActive ? "My Upcoming Events" : "My Upcoming Tides"}>
+          <h3>{casualModeActive ? "My Upcoming Events" : "My Upcoming Tides"}</h3>
           <div className="tide-calendar__my-tides-list">
             {myUpcoming.map((tide) => (
               <TideCard
@@ -239,9 +239,12 @@ export function TideCalendar({ onSelectTide }) {
           </div>
         ) : upcomingTides.length === 0 ? (
           <div className="tide-calendar__empty">
-            <p>🌊 No upcoming tides.</p>
+            <p>{casualModeActive ? "📅 No upcoming events." : "🌊 No upcoming tides."}</p>
             <p className="tide-calendar__empty-sub">
-              Check back soon or create one from your School.
+              {casualModeActive
+                ? "Check back soon or host your own event!"
+                : "Check back soon or create one from your School."
+              }
             </p>
           </div>
         ) : (

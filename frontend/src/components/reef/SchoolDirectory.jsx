@@ -28,7 +28,7 @@ const TYPE_EMOJI = {
   open: "🌊",
 };
 
-export function SchoolDirectory({ onSelectSchool, onCreateSchool }) {
+export function SchoolDirectory({ onSelectSchool, onCreateSchool, casualModeActive = false }) {
   const [typeFilter, setTypeFilter] = useState("all");
   const [search, setSearch] = useState("");
 
@@ -58,15 +58,23 @@ export function SchoolDirectory({ onSelectSchool, onCreateSchool }) {
     <div className="school-directory" style={{ maxWidth: "800px", margin: "0 auto" }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-        <h2 style={{ margin: 0, fontSize: "1.2rem", color: "#fff" }}>
-          🏫 Schools
-        </h2>
+        <div>
+          <h2 style={{ margin: 0, fontSize: "1.2rem", color: "#fff" }}>
+            {casualModeActive ? "👥 Groups" : "🏫 Schools"}
+          </h2>
+          <p style={{ margin: "0.2rem 0 0", fontSize: "0.68rem", color: "var(--text-muted)" }}>
+            {casualModeActive
+              ? "Join communities of fishkeepers who share your interests"
+              : "Faction clusters organized by species, zone, or focus"
+            }
+          </p>
+        </div>
         <button
           onClick={onCreateSchool}
           className="btn-primary"
           style={{ padding: "0.5rem 1rem", fontSize: "0.8rem" }}
         >
-          + Create School
+          + {casualModeActive ? "Create Group" : "Create School"}
         </button>
       </div>
 
@@ -74,7 +82,7 @@ export function SchoolDirectory({ onSelectSchool, onCreateSchool }) {
       {mySchools.length > 0 && (
         <div style={{ marginBottom: "2rem" }}>
           <h3 style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "0.75rem", fontWeight: "600" }}>
-            My Schools
+            {casualModeActive ? "My Groups" : "My Schools"}
           </h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "0.75rem" }}>
             {mySchools.map((membership) => {
@@ -119,7 +127,7 @@ export function SchoolDirectory({ onSelectSchool, onCreateSchool }) {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search schools..."
+          placeholder={casualModeActive ? "Search groups..." : "Search schools..."}
           style={{
             flex: "1 1 200px",
             padding: "0.6rem 1rem",
@@ -171,10 +179,10 @@ export function SchoolDirectory({ onSelectSchool, onCreateSchool }) {
           color: "var(--text-muted)",
           fontSize: "0.85rem",
         }}>
-          <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>🏫</div>
-          <p>No schools found. Be the first to create one!</p>
+          <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>{casualModeActive ? "👥" : "🏫"}</div>
+          <p>{casualModeActive ? "No groups found. Be the first to create one!" : "No schools found. Be the first to create one!"}</p>
           <button onClick={onCreateSchool} className="btn-primary" style={{ marginTop: "0.75rem", padding: "0.5rem 1.25rem", fontSize: "0.8rem" }}>
-            + Create School
+            + {casualModeActive ? "Create Group" : "Create School"}
           </button>
         </div>
       ) : (

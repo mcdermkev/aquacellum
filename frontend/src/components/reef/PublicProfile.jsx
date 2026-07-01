@@ -14,8 +14,14 @@ import { BadgeShelf } from "./BadgeShelf";
 import { FollowButton } from "./FollowButton";
 import { SchoolInviteButton } from "./SchoolInviteButton";
 import { MessageButton } from "./MessageButton";
+import { DepthScoreMeter } from "./DepthScoreMeter";
+import { MentorshipPanel } from "./MentorshipPanel";
+import { ExpertAuditCard } from "./ExpertAuditCard";
+import { ModerationPanel } from "./ModerationPanel";
 import { useProfile, useTankmates, useRelationshipStatus, useSendTankmateRequest, useUpdateProfile, useEnsureProfile } from "../../hooks/useReefProfile";
 import { useUserCurrents } from "../../hooks/useReefFeed";
+import { useAuditsReceived } from "../../hooks/useAudits";
+import { getTierPrivileges } from "../../services/depthScoreApi";
 import { getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
 import { sameWallet } from "../../utils/wallet";
 import { useAuth } from "../../contexts/AuthContext";
@@ -213,6 +219,14 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
 
   // Echo companion state for profile display
   const echoState = useEchoState(walletAddress);
+
+  // Audits received by this user
+  const { data: auditsResult } = useAuditsReceived(walletAddress);
+  const audits = auditsResult?.data || [];
+
+  // Moderation panel state (Hadal-tier only)
+  const [showModeration, setShowModeration] = useState(false);
+  const profilePrivileges = getTierPrivileges(profile?.companion_tier || "Shallow");
 
   // Auto-ensure profile exists for the user's own profile when it's not found
   const { data: ensuredProfile } = useEnsureProfile(
@@ -632,6 +646,82 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
           casualModeActive={casualModeActive}
         />
       </div>
+
+      {/* Depth Score / Reputation Meter */}
+      <div style={{ marginBottom: "1.5rem" }}>
+        <h3 style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.6rem" }}>
+          {casualModeActive ? "⭐ Level & Reputation" : "⭐ Depth Score"}
+        </h3>
+        <DepthScoreMeter walletAddress={walletAddress} casualModeActive={casualModeActive} />
+      </div>
+
+      {/* Expert Audits Received */}
+      {audits.length > 0 && (
+        <div style={{ marginBottom: "1.5rem" }}>
+          <h3 style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.6rem" }}>
+            {casualModeActive ? "⭐ Tank Reviews" : "⭐ Expert Audits"} ({audits.length})
+          </h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {audits.slice(0, 3).map((audit) => (
+              <ExpertAuditCard
+                key={audit.id}
+                audit={audit}
+                onViewProfile={onNavigateProfile}
+              />
+            ))}
+            {audits.length > 3 && (
+              <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", textAlign: "center", margin: 0 }}>
+                +{audits.length - 3} more {casualModeActive ? "reviews" : "audits"}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Mentorship Panel */}
+      <div style={{ marginBottom: "1.5rem" }}>
+        <h3 style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.6rem" }}>
+          🎓 Mentorship
+        </h3>
+        <MentorshipPanel
+          walletAddress={walletAddress}
+          companionTier={profile.companion_tier || "Shallow"}
+          onViewProfile={onNavigateProfile}
+          casualModeActive={casualModeActive}
+        />
+      </div>
+
+      {/* Moderation Panel (Hadal-tier on own profile) */}
+      {isOwnProfile && profilePrivileges.canModerate && (
+        <div style={{ marginBottom: "1.5rem" }}>
+          <button
+            onClick={() => setShowModeration(!showModeration)}
+            style={{
+              width: "100%",
+              padding: "0.6rem 1rem",
+              borderRadius: "8px",
+              border: "1px solid rgba(239, 68, 68, 0.2)",
+              background: "rgba(239, 68, 68, 0.04)",
+              color: "var(--text-secondary)",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.4rem",
+              transition: "all 0.15s ease",
+            }}
+          >
+            🛡️ {showModeration ? "Hide Moderation Tools" : "Moderation Tools"}
+          </button>
+          {showModeration && (
+            <div style={{ marginTop: "0.75rem" }}>
+              <ModerationPanel onBack={() => setShowModeration(false)} />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tankmates section */}
       {tankmates && tankmates.length > 0 && (

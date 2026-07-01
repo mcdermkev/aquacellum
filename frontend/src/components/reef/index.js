@@ -47,3 +47,8 @@ export { DiscoveryPanel } from "./DiscoveryPanel";
 export { ReefSearchBar } from "./ReefSearchBar";
 export { ModerationPanel } from "./ModerationPanel";
 export { DataPrivacySettings } from "./DataPrivacySettings";
+
+// Phase 6: Clarity & Onboarding
+export { ReefOnboarding } from "./ReefOnboarding";
+export { UnlockPrompt, useUnlockGate } from "./UnlockPrompt";
+export { InboxPanel } from "./InboxPanel";
