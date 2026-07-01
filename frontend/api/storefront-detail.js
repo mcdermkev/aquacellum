@@ -345,20 +345,20 @@ async function handleDiscover(req, res) {
 // POST /api/storefront-detail?action=setup
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// Beta allowlist
-const HARDCODED_BETA_WALLETS = [
-  "0x53d3c6f4f11b0b08bc1a5034bbce7d46198b6851",
-  "0x9174d162ed1ab6594064fa0ffbfaf063dc20f3c6",
-  "0x41e562ee88825ad8d79b48311a30742ac276c9eb",
-];
-
-function getBetaWallets() {
-  const envWallets = process.env.STOREFRONT_BETA_WALLETS;
-  if (envWallets) {
-    return envWallets.split(",").map((w) => w.trim().toLowerCase());
-  }
-  return HARDCODED_BETA_WALLETS.map((w) => w.toLowerCase());
-}
+// Beta allowlist — DISABLED: open to all authenticated users for testing
+// const HARDCODED_BETA_WALLETS = [
+//   "0x53d3c6f4f11b0b08bc1a5034bbce7d46198b6851",
+//   "0x9174d162ed1ab6594064fa0ffbfaf063dc20f3c6",
+//   "0x41e562ee88825ad8d79b48311a30742ac276c9eb",
+// ];
+//
+// function getBetaWallets() {
+//   const envWallets = process.env.STOREFRONT_BETA_WALLETS;
+//   if (envWallets) {
+//     return envWallets.split(",").map((w) => w.trim().toLowerCase());
+//   }
+//   return HARDCODED_BETA_WALLETS.map((w) => w.toLowerCase());
+// }
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/;
 
@@ -379,14 +379,7 @@ async function handleSetup(req, res) {
 
   const wallet = walletAddress.toLowerCase();
 
-  // Beta gate check
-  const betaWallets = getBetaWallets();
-  if (!betaWallets.includes(wallet)) {
-    return res.status(403).json({
-      error: "Storefront creation is currently in beta. Your wallet is not on the allowlist.",
-      code: "BETA_GATED",
-    });
-  }
+  // Beta gate removed — storefront open to all authenticated users
 
   // Slug format validation
   if (!SLUG_REGEX.test(slug)) {

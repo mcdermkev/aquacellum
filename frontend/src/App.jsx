@@ -42,7 +42,6 @@ import {
   MARKETPLACE_ADDRESS,
   FOUNDER_WALLETS,
   FOUNDER_WALLET_PATTERNS,
-  STOREFRONT_BETA_WALLETS,
   VALID_TABS,
   isFounderWallet,
   formatSyncTime,
@@ -681,7 +680,7 @@ export default function App() {
             </div>
           }>
             <StorefrontSetup
-              walletAccount={account}
+              walletAccount={smartWalletForFounderCheck || account}
               casualModeActive={casualModeActive}
             />
           </Suspense>
