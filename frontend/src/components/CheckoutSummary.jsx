@@ -20,6 +20,11 @@ import { getProfile } from "../services/reefApi";
 import { useRewardCredits, useApplyCredits } from "../hooks/useRewardsPool";
 import { calculateCheckoutDiscount } from "../services/rewardsPoolApi";
 import { ArrivalModal } from "./ArrivalModal";
+import { pushOrderToCloud, pullOrdersFromCloud, subscribeToOrderUpdates } from "../services/ordersSync";
+import { OrderReceipt } from "./OrderReceipt";
+import { OrderAnalytics } from "./OrderAnalytics";
+import { OrderWatchlistReorder } from "./OrderWatchlistReorder";
+import { isFeatureUnlocked, getFeatureStatus, getNextTierUnlocks } from "../utils/orderFeatureGates";
 
 /**
  * DisplayName — Resolves a wallet address to a human-readable display name.
@@ -132,6 +137,16 @@ export function CheckoutSummary({
   const [arrivalModalOpen, setArrivalModalOpen] = useState(false);
   const [arrivalSpecimen, setArrivalSpecimen] = useState(null);
   const [arrivalShippingOrder, setArrivalShippingOrder] = useState(null);
+
+  // Order Filter & Search States
+  const [orderFilter, setOrderFilter] = useState("all"); // "all" | "active" | "completed" | "disputed"
+  const [orderSearch, setOrderSearch] = useState("");
+  const [orderSort, setOrderSort] = useState("newest"); // "newest" | "oldest" | "price_high" | "price_low"
+  const [expandedReceipt, setExpandedReceipt] = useState(null); // "ship-{tokenId}" or "batch-{purchaseId}"
+
+  // User tier for XP-gated features
+  const [userTier, setUserTier] = useState("Shallow");
+  const [totalXp, setTotalXp] = useState(0);
 
   useEffect(() => {
     if (preselectedOrderForCheckout && !loading) {
@@ -267,6 +282,11 @@ export function CheckoutSummary({
       if (!result.success) throw new Error(result.error || "Checkout failed");
 
       addXp(XP_ACTIONS.CLAIM_EXCHANGE.points * pendingTokenIds.length, `Consolidated checkout: ${pendingTokenIds.length} specimens`);
+
+      // Push newly created orders to cloud
+      for (const tid of pendingTokenIds) {
+        pushOrderAfterAction("shipping", tid);
+      }
 
       setPendingTokenIds([]);
       await fetchOrders();
@@ -499,6 +519,50 @@ export function CheckoutSummary({
     fetchOrders();
   }, [contractAddress, marketplaceAddress, walletAccount]);
 
+  // Cloud sync: pull orders from Supabase and subscribe to realtime updates
+  useEffect(() => {
+    if (!walletAccount) return;
+
+    // Load user tier for XP-gated features
+    (async () => {
+      try {
+        const profile = await db.userProfile.get(walletAccount);
+        if (profile) {
+          setUserTier(profile.currentTier || "Shallow");
+          setTotalXp(profile.totalXp || 0);
+        }
+      } catch (e) {}
+    })();
+
+    // Pull cloud orders on mount (merges into local Dexie)
+    pullOrdersFromCloud(walletAccount).then(({ pulled, updated }) => {
+      if (updated > 0) fetchOrders(); // Refresh UI if cloud had newer data
+    });
+
+    // Subscribe to live order status changes from the other party
+    const unsubscribe = subscribeToOrderUpdates(walletAccount, (updatedOrder) => {
+      // Re-fetch local orders when a realtime update arrives
+      fetchOrders();
+    });
+
+    return () => unsubscribe();
+  }, [walletAccount]);
+
+  // Push order to cloud after local state changes (fire-and-forget)
+  const pushOrderAfterAction = async (orderType, identifier) => {
+    try {
+      let order;
+      if (orderType === "shipping") {
+        order = await db.marketOrders.where({ orderType: "shipping", tokenId: Number(identifier) }).first();
+      } else if (orderType === "batch") {
+        order = await db.marketOrders.where({ orderType: "batch", purchaseId: Number(identifier) }).first();
+      }
+      if (order) await pushOrderToCloud(order);
+    } catch (e) {
+      // Non-critical — cloud sync is best-effort
+    }
+  };
+
   // Safety: if wallet never resolves after 3s, stop loading so the empty state shows
   useEffect(() => {
     if (!walletAccount && loading) {
@@ -576,6 +640,7 @@ export function CheckoutSummary({
       setTrackingInput("");
       setSelectedOrder(null);
       await fetchOrders();
+      pushOrderAfterAction("shipping", selectedOrder.data.tokenId);
     } catch (err) {
       console.error("Dispatch shipping failed:", err);
       setActionError(mapContractError(err, casualModeActive));
@@ -1267,30 +1332,194 @@ export function CheckoutSummary({
       )}
 
       <h3 style={{ fontSize: "1.25rem", color: "#fff", marginBottom: "0.25rem" }}>Order Tracking & Protections</h3>
-      <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: "0 0 1.25rem 0" }}>
+      <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: "0 0 1rem 0" }}>
         All your purchases and sales with buyer protection, shipping tracking, and fulfillment actions.
       </p>
 
-      {shippingEscrows.length === 0 && purchases.length === 0 ? (
-        <div 
-          className="glass-card" 
-          style={{ 
-            padding: "3rem 2rem", 
-            textAlign: "center", 
-            border: "1px dashed rgba(255, 255, 255, 0.1)",
-            background: "rgba(255, 255, 255, 0.01)"
-          }}
-        >
-          <div style={{ fontSize: "3rem", marginBottom: "1rem", opacity: 0.6 }}>📦</div>
-          <h4 style={{ color: "#fff", fontSize: "1.1rem", marginBottom: "0.5rem" }}>No Orders Yet</h4>
-          <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", maxWidth: "400px", margin: "0 auto", lineHeight: "1.5" }}>
-            When you buy or sell specimens through the marketplace, your orders will appear here with full buyer protection, shipping updates, and fulfillment controls.
-          </p>
+      {/* Order Filters & Search Bar */}
+      {(shippingEscrows.length > 0 || purchases.length > 0) && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.25rem" }}>
+          {/* Filter Tabs */}
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            {[
+              { key: "all", label: "All Orders", icon: "📋" },
+              { key: "active", label: "Active", icon: "⏳" },
+              { key: "completed", label: "Completed", icon: "✅" },
+              { key: "disputed", label: "Disputed", icon: "⚠️" },
+            ].map((tab) => {
+              const isActive = orderFilter === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setOrderFilter(tab.key)}
+                  style={{
+                    padding: "0.4rem 0.85rem",
+                    fontSize: "0.72rem",
+                    fontWeight: isActive ? "700" : "500",
+                    background: isActive ? "rgba(56, 189, 248, 0.1)" : "rgba(255, 255, 255, 0.02)",
+                    border: isActive ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid rgba(255, 255, 255, 0.08)",
+                    borderRadius: "20px",
+                    color: isActive ? "var(--accent-blue)" : "var(--text-secondary)",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  {tab.icon} {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search + Sort Row */}
+          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+            <div style={{ flex: 1, position: "relative" }}>
+              <input
+                type="text"
+                value={orderSearch}
+                onChange={(e) => setOrderSearch(e.target.value)}
+                placeholder="Search by species name, tracking #, or serial..."
+                style={{
+                  width: "100%",
+                  padding: "0.5rem 0.75rem 0.5rem 2rem",
+                  background: "rgba(255, 255, 255, 0.03)",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  borderRadius: "6px",
+                  color: "#fff",
+                  fontSize: "0.78rem",
+                }}
+              />
+              <span style={{ position: "absolute", left: "0.6rem", top: "50%", transform: "translateY(-50%)", fontSize: "0.85rem", opacity: 0.5 }}>🔍</span>
+            </div>
+            <select
+              value={orderSort}
+              onChange={(e) => setOrderSort(e.target.value)}
+              style={{
+                padding: "0.5rem 0.6rem",
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                borderRadius: "6px",
+                color: "#fff",
+                fontSize: "0.72rem",
+                cursor: "pointer",
+              }}
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="price_high">Price: High → Low</option>
+              <option value="price_low">Price: Low → High</option>
+            </select>
+          </div>
         </div>
-      ) : (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.5rem" }}>
-        {/* Shipping orders */}
-        {shippingEscrows.map((order) => (
+      )}
+
+      {/* Apply filters to orders */}
+      {(() => {
+        // Filter shipping orders
+        let filteredShipping = [...shippingEscrows];
+        let filteredBatches = [...purchases];
+
+        // Status filter
+        if (orderFilter === "active") {
+          filteredShipping = filteredShipping.filter(o => o.status === 0 || o.status === 1);
+          filteredBatches = filteredBatches.filter(o => o.state === 0);
+        } else if (orderFilter === "completed") {
+          filteredShipping = filteredShipping.filter(o => o.status === 2 || o.status === 4);
+          filteredBatches = filteredBatches.filter(o => o.state === 1 || o.state === 2);
+        } else if (orderFilter === "disputed") {
+          filteredShipping = filteredShipping.filter(o => o.status === 3);
+          filteredBatches = []; // Batches don't have disputed state
+        }
+
+        // Search filter
+        if (orderSearch.trim()) {
+          const q = orderSearch.trim().toLowerCase();
+          filteredShipping = filteredShipping.filter(o =>
+            (o.commonName || "").toLowerCase().includes(q) ||
+            (o.trackingNumber || "").toLowerCase().includes(q) ||
+            String(o.tokenId).includes(q)
+          );
+          filteredBatches = filteredBatches.filter(o =>
+            (o.commonName || "").toLowerCase().includes(q) ||
+            String(o.purchaseId).includes(q)
+          );
+        }
+
+        // Sort
+        const getPrice = (o) => parseFloat(o.amountLocked || o.price || "0");
+        const getTime = (o) => o.createdAt || 0;
+        const sortFn = (a, b) => {
+          switch (orderSort) {
+            case "oldest": return getTime(a) - getTime(b);
+            case "price_high": return getPrice(b) - getPrice(a);
+            case "price_low": return getPrice(a) - getPrice(b);
+            default: return getTime(b) - getTime(a); // newest
+          }
+        };
+        filteredShipping.sort(sortFn);
+        filteredBatches.sort(sortFn);
+
+        const totalFiltered = filteredShipping.length + filteredBatches.length;
+        const totalAll = shippingEscrows.length + purchases.length;
+
+        if (totalAll === 0) {
+          return (
+            <div 
+              className="glass-card" 
+              style={{ 
+                padding: "3rem 2rem", 
+                textAlign: "center", 
+                border: "1px dashed rgba(255, 255, 255, 0.1)",
+                background: "rgba(255, 255, 255, 0.01)"
+              }}
+            >
+              <div style={{ fontSize: "3rem", marginBottom: "1rem", opacity: 0.6 }}>📦</div>
+              <h4 style={{ color: "#fff", fontSize: "1.1rem", marginBottom: "0.5rem" }}>No Orders Yet</h4>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", maxWidth: "400px", margin: "0 auto", lineHeight: "1.5" }}>
+                When you buy or sell specimens through the marketplace, your orders will appear here with full buyer protection, shipping updates, and fulfillment controls.
+              </p>
+            </div>
+          );
+        }
+
+        if (totalFiltered === 0) {
+          return (
+            <div 
+              className="glass-card" 
+              style={{ 
+                padding: "2rem", 
+                textAlign: "center", 
+                border: "1px dashed rgba(255, 255, 255, 0.08)",
+                background: "rgba(255, 255, 255, 0.01)"
+              }}
+            >
+              <div style={{ fontSize: "2rem", marginBottom: "0.75rem", opacity: 0.5 }}>🔍</div>
+              <h4 style={{ color: "var(--text-secondary)", fontSize: "0.95rem", marginBottom: "0.25rem" }}>No Matching Orders</h4>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.78rem", margin: 0 }}>
+                Try adjusting your filters or search query.
+              </p>
+              <button
+                onClick={() => { setOrderFilter("all"); setOrderSearch(""); }}
+                className="btn-secondary"
+                style={{ marginTop: "0.75rem", padding: "0.3rem 0.75rem", fontSize: "0.72rem" }}
+              >
+                Clear Filters
+              </button>
+            </div>
+          );
+        }
+
+        return (
+          <>
+            {/* Filter results count */}
+            {(orderFilter !== "all" || orderSearch.trim()) && (
+              <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: "0.75rem" }}>
+                Showing {totalFiltered} of {totalAll} orders
+              </div>
+            )}
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.5rem" }}>
+              {/* Shipping orders */}
+              {filteredShipping.map((order) => (
           <div 
             key={`ship-${order.tokenId}`} 
             className="glass-card" 
@@ -1414,11 +1643,19 @@ export function CheckoutSummary({
             >
               Fulfillment Detail
             </button>
+
+            {/* Inline Receipt (expandable) */}
+            <OrderReceipt
+              order={order}
+              isExpanded={expandedReceipt === `ship-${order.tokenId}`}
+              onToggle={() => setExpandedReceipt(expandedReceipt === `ship-${order.tokenId}` ? null : `ship-${order.tokenId}`)}
+              casualModeActive={casualModeActive}
+            />
           </div>
         ))}
 
         {/* Batch / In-Person Orders */}
-        {purchases.map((order) => (
+        {filteredBatches.map((order) => (
           <div 
             key={`batch-${order.purchaseId}`} 
             className="glass-card" 
@@ -1472,9 +1709,103 @@ export function CheckoutSummary({
             >
               Fulfillment Detail
             </button>
+
+            {/* Inline Receipt (expandable) */}
+            <OrderReceipt
+              order={order}
+              isExpanded={expandedReceipt === `batch-${order.purchaseId}`}
+              onToggle={() => setExpandedReceipt(expandedReceipt === `batch-${order.purchaseId}` ? null : `batch-${order.purchaseId}`)}
+              casualModeActive={casualModeActive}
+            />
           </div>
         ))}
       </div>
+          </>
+        );
+      })()}
+
+      {/* ─── XP-Gated Advanced Features Section ──────────────────────── */}
+      {(shippingEscrows.length > 0 || purchases.length > 0) && (
+        <div style={{ marginTop: "2rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          {/* Order Analytics (Pelagic+ / 2,500 XP) */}
+          <div>
+            <h3 style={{ fontSize: "1.1rem", color: "#fff", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <span>📊</span> {casualModeActive ? "Your Stats" : "Order Analytics"}
+              {!isFeatureUnlocked(userTier, "ORDER_ANALYTICS") && (
+                <span style={{ fontSize: "0.6rem", padding: "0.15rem 0.4rem", borderRadius: "8px", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24" }}>
+                  🔒 Pelagic
+                </span>
+              )}
+            </h3>
+            <OrderAnalytics
+              walletAccount={walletAccount}
+              userTier={userTier}
+              totalXp={totalXp}
+              casualModeActive={casualModeActive}
+            />
+          </div>
+
+          {/* Watchlist & Smart Reorder (Pelagic+ / Abyssal+) */}
+          <div>
+            <h3 style={{ fontSize: "1.1rem", color: "#fff", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <span>👁️</span> {casualModeActive ? "Watchlist & Reorder" : "Species Watchlist & Smart Reorder"}
+              {!isFeatureUnlocked(userTier, "SPECIES_WATCHLIST") && (
+                <span style={{ fontSize: "0.6rem", padding: "0.15rem 0.4rem", borderRadius: "8px", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24" }}>
+                  🔒 Pelagic
+                </span>
+              )}
+            </h3>
+            <OrderWatchlistReorder
+              walletAccount={walletAccount}
+              userTier={userTier}
+              totalXp={totalXp}
+              casualModeActive={casualModeActive}
+              onReorder={(info) => {
+                // Navigate to marketplace with species filter applied
+                console.log("[Reorder] Searching marketplace for:", info.speciesName);
+                // Could emit a custom event or update parent state to trigger marketplace search
+              }}
+            />
+          </div>
+
+          {/* XP Progress Teaser — Show next unlockable features */}
+          {(() => {
+            const next = getNextTierUnlocks(userTier, totalXp);
+            if (!next.nextTier || next.features.length === 0) return null;
+
+            return (
+              <div
+                className="glass-card"
+                style={{
+                  padding: "1rem 1.25rem",
+                  border: "1px solid rgba(251, 191, 36, 0.12)",
+                  background: "rgba(251, 191, 36, 0.02)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "1rem",
+                }}
+              >
+                <div style={{ fontSize: "1.5rem" }}>🎯</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: "0.78rem", fontWeight: "600", color: "#fff" }}>
+                    {next.xpNeeded.toLocaleString()} XP to {next.nextTier}
+                  </div>
+                  <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
+                    Unlocks: {next.features.map((f) => `${f.icon} ${f.label}`).join(" • ")}
+                  </div>
+                  <div style={{ marginTop: "0.4rem", height: "4px", borderRadius: "2px", background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                    <div style={{
+                      height: "100%",
+                      width: `${Math.min(100, ((totalXp || 0) / (totalXp + next.xpNeeded)) * 100)}%`,
+                      background: "linear-gradient(90deg, #fbbf24, #f59e0b)",
+                      borderRadius: "2px",
+                    }} />
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
       )}
 
       {/* Selected Order Detail Drawer / Overlay */}
