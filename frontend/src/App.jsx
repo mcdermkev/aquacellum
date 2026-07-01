@@ -224,6 +224,43 @@ export default function App() {
   // Storefront beta: all authenticated users can access "My Store" during closed beta
   const isStorefrontBeta = !!account;
 
+  // Load the user's existing storefront profile (if any) so the "My Store" tab
+  // opens in edit mode with fields pre-filled, and a user can't accidentally
+  // create a second storefront. Fetched by the same wallet used at setup
+  // (smart wallet, falling back to EOA).
+  const [storefrontProfile, setStorefrontProfile] = useState(null);
+  const [storefrontProfileLoaded, setStorefrontProfileLoaded] = useState(false);
+  useEffect(() => {
+    const wallet = smartWalletForFounderCheck || account;
+    if (!wallet) {
+      setStorefrontProfile(null);
+      setStorefrontProfileLoaded(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/storefront-detail?id=${encodeURIComponent(wallet)}`);
+        if (cancelled) return;
+        if (res.ok) {
+          const data = await res.json();
+          // API returns the profile under `breeder` (camelCase). StorefrontSetup
+          // reads slug/displayName/bio/specialties/location, all present here.
+          setStorefrontProfile(data.breeder || null);
+        } else {
+          // 404 = no storefront yet → create mode
+          setStorefrontProfile(null);
+        }
+      } catch (err) {
+        console.warn("[App] Storefront profile fetch failed:", err);
+        if (!cancelled) setStorefrontProfile(null);
+      } finally {
+        if (!cancelled) setStorefrontProfileLoaded(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [account, smartWalletForFounderCheck]);
+
   // ─── Router-driven tab state ──────────────────────────────────────────────
   // The active tab is derived from the URL path (/app/<tab>) instead of local
   // state + URL hash. This gives real URLs, deep-linking, and proper
@@ -679,10 +716,18 @@ export default function App() {
               <div className="shimmer-placeholder" style={{ width: "100%", height: "300px", borderRadius: "16px" }} />
             </div>
           }>
-            <StorefrontSetup
-              walletAccount={smartWalletForFounderCheck || account}
-              casualModeActive={casualModeActive}
-            />
+            {storefrontProfileLoaded ? (
+              <StorefrontSetup
+                key={storefrontProfile?.slug || "new-storefront"}
+                walletAccount={smartWalletForFounderCheck || account}
+                casualModeActive={casualModeActive}
+                existingProfile={storefrontProfile}
+              />
+            ) : (
+              <div style={{ maxWidth: "640px", margin: "0 auto", padding: "2rem 0" }}>
+                <div className="shimmer-placeholder" style={{ width: "100%", height: "300px", borderRadius: "16px" }} />
+              </div>
+            )}
           </Suspense>
         );
       case "tanks":

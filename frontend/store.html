@@ -208,6 +208,45 @@
       if ((s !== 0 && d === 0) || (s === 0 && d !== 0)) return { label: 'F1 Bred', cls: 'f1', tier: '' };
       return { label: 'Purebred', cls: 'purebred', tier: 'tier-purebred' };
     }
+    // ── Normalize API response shape ──────────────────────────────────────
+    // The /api/storefront-detail endpoint returns the profile under `breeder`
+    // with camelCase stats and nested listing objects. renderStorefront()
+    // expects `profile` with snake_case stats and flat listings. Map between them.
+    function normalizeApiResponse(data) {
+      if (!data || !data.breeder) return data; // already in {profile,stats,...} shape
+      const b = data.breeder || {};
+      const s = data.stats || {};
+      return {
+        profile: {
+          display_name: b.displayName,
+          wallet_address: b.walletAddress,
+          slug: b.slug,
+          bio: b.bio,
+          location: b.location,
+          specialties: b.specialties || [],
+          is_master_breeder: b.isMasterBreeder,
+          avatar_url: b.avatarUrl || null,
+          banner_url: b.bannerUrl || null,
+        },
+        stats: {
+          avg_rating: s.avgRating,
+          review_count: s.reviewCount,
+          species_count: s.speciesCount,
+          total_listings: s.totalListings,
+          total_sales: s.totalSales,
+        },
+        listings: (data.listings || []).map(l => ({
+          commonName: l.species?.commonName,
+          scientificName: l.species?.scientificName,
+          price: l.price?.eth,
+          isBatch: l.type === 'batch',
+          quantity: l.quantity,
+          imageUrl: l.imageUrl,
+        })),
+        reviews: data.reviews || [],
+      };
+    }
+
     // ── Initialize ─────────────────────────────────────────────────────────
     async function init() {
       const slug = getSlugFromUrl();
@@ -218,7 +257,7 @@
         const res = await fetch(`/api/storefront-detail?id=${encodeURIComponent(slug)}`);
         if (!res.ok) throw new Error('Storefront not found');
         const data = await res.json();
-        renderStorefront(data);
+        renderStorefront(normalizeApiResponse(data));
       } catch (e) {
         // Fallback: try direct Supabase query
         try {
@@ -383,13 +422,15 @@
 
       // Banner
       const bannerEl = document.getElementById('storeBanner');
-      if (profile.banner_cid) {
-        bannerEl.innerHTML = `<img src="${IPFS_GATEWAY}/${profile.banner_cid}" alt="Banner" onload="this.classList.add('loaded')"><div class="store-banner-overlay"></div>`;
+      const bannerSrc = profile.banner_url || (profile.banner_cid ? `${IPFS_GATEWAY}/${profile.banner_cid}` : null);
+      if (bannerSrc) {
+        bannerEl.innerHTML = `<img src="${bannerSrc}" alt="Banner" onload="this.classList.add('loaded')"><div class="store-banner-overlay"></div>`;
       }
 
       // Profile
-      const avatarHtml = profile.avatar_cid
-        ? `<img class="store-avatar" src="${IPFS_GATEWAY}/${profile.avatar_cid}" alt="${name}">`
+      const avatarSrc = profile.avatar_url || (profile.avatar_cid ? `${IPFS_GATEWAY}/${profile.avatar_cid}` : null);
+      const avatarHtml = avatarSrc
+        ? `<img class="store-avatar" src="${avatarSrc}" alt="${name}">`
         : `<div class="store-avatar-placeholder">${initial}</div>`;
 
       document.getElementById('storeProfile').innerHTML = `

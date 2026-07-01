@@ -89,11 +89,13 @@ async function handleStorefrontDetail(req, res) {
     const wallet = profile.wallet_address;
 
     const [listingsResult, statsResult, historyResult] = await Promise.all([
+      // Listings live in aquadex_listings (the table the app writes to via
+      // cloudSync). The full listing object is stored as a JSON blob in `data`.
       supabase
-        .from("cloud_listings")
+        .from("aquadex_listings")
         .select("*")
-        .eq("seller", wallet)
-        .eq("status", "active")
+        .eq("seller_address", wallet)
+        .eq("is_active", true)
         .order("created_at", { ascending: false }),
       supabase
         .from("breeder_stats")
@@ -108,7 +110,37 @@ async function handleStorefrontDetail(req, res) {
         .limit(30),
     ]);
 
-    const listings = listingsResult.data || [];
+    // Normalize aquadex_listings rows (top-level columns + `data` JSON blob)
+    // into the snake_case shape the response mapper below expects.
+    const listings = (listingsResult.data || []).map((row) => {
+      let d = {};
+      try {
+        d = typeof row.data === "string" ? JSON.parse(row.data) : (row.data || {});
+      } catch {
+        d = {};
+      }
+      return {
+        id: row.id,
+        is_batch: row.is_batch ?? d.isBatch ?? false,
+        token_id: d.tokenId || null,
+        listing_id: d.listingId || row.id,
+        common_name: row.common_name || d.commonName || "Unknown Species",
+        scientific_name: d.scientificName || null,
+        species_id: row.species_id || d.speciesId || null,
+        price_eth: row.price || d.price || "0",
+        price: row.price || d.price || "0",
+        price_usd: d.priceUsd || null,
+        image_cid: d.imageCid || null,
+        image_url: d.photoUrl || d.imageUrl || null,
+        quantity: d.quantity || 0,
+        quantity_remaining: d.quantityRemaining || d.quantity || 0,
+        pedigree: (d.sireId || d.damId) ? { sireId: d.sireId, damId: d.damId } : null,
+        shipping_available: d.isShipping || false,
+        local_pickup: d.localPickup || false,
+        description: d.description || null,
+        created_at: row.created_at,
+      };
+    });
     const stats = statsResult.data || {};
     const breedingHistory = historyResult.data || [];
 
