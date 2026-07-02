@@ -289,6 +289,11 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Scroll to top when switching tabs (prevents reef/other tabs from rendering mid-page)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeTab]);
+
   const [preselectedLineageId, setPreselectedLineageId] = useState(null);
   const [breederToolsSection, setBreederToolsSection] = useState("register");
   const [selectedBreedId, setSelectedBreedId] = useState(null);

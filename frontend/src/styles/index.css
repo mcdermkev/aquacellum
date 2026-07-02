@@ -594,6 +594,12 @@ h1, h2, h3, h4, h5, h6 {
   animation: slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+@media (max-width: 640px) {
+  .sliding-drawer-content {
+    padding-bottom: 4rem;
+  }
+}
+
 @keyframes slide-in {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
@@ -2092,6 +2098,7 @@ textarea:focus:not(:focus-visible) {
     height: 100% !important;
     border-radius: 0 !important;
     border: none !important;
+    overflow-y: auto !important;
   }
 }
 

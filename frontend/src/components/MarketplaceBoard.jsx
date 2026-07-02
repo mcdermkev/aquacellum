@@ -1607,6 +1607,100 @@ export function MarketplaceBoard({
                             </div>
                           )}
 
+                          {/* Enhanced Specimen Details — visible to buyers */}
+                          {(item.description || item.age || item.size || item.diet || item.temperament || item.healthStatus) && (
+                            <div style={{
+                              padding: "0.75rem",
+                              background: "rgba(255,255,255,0.02)",
+                              borderRadius: "6px",
+                              fontSize: "0.75rem",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "0.4rem",
+                              border: "1px solid rgba(255,255,255,0.04)"
+                            }}>
+                              <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600" }}>Specimen Details:</span>
+
+                              {/* Age & Size chips */}
+                              {(item.age || item.size) && (
+                                <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+                                  {item.age && (
+                                    <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.2)", color: "#7dd3fc" }}>
+                                      📅 {item.age}
+                                    </span>
+                                  )}
+                                  {item.size && (
+                                    <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.2)", color: "#c4b5fd" }}>
+                                      📏 {item.size}
+                                    </span>
+                                  )}
+                                  {item.temperament && (
+                                    <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "#34d399" }}>
+                                      {item.temperament === "Peaceful" ? "🕊️" : item.temperament === "Aggressive" ? "⚔️" : item.temperament === "Schooling" ? "🐠" : "⚡"} {item.temperament}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Diet */}
+                              {item.diet && (
+                                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                  <span style={{ color: "var(--text-muted)" }}>Diet:</span>
+                                  <span style={{ color: "#fff" }}>{item.diet}</span>
+                                </div>
+                              )}
+
+                              {/* Water params */}
+                              {(item.minTemp > 0 || item.minPh > 0 || item.tankSizeMin > 0) && (
+                                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.15rem" }}>
+                                  {item.minTemp > 0 && item.maxTemp > 0 && (
+                                    <span style={{ fontSize: "0.6rem", padding: "0.1rem 0.35rem", borderRadius: "4px", background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.15)", color: "#fbbf24" }}>
+                                      🌡️ {item.minTemp}–{item.maxTemp}°F
+                                    </span>
+                                  )}
+                                  {item.minPh > 0 && item.maxPh > 0 && (
+                                    <span style={{ fontSize: "0.6rem", padding: "0.1rem 0.35rem", borderRadius: "4px", background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.15)", color: "#7dd3fc" }}>
+                                      💧 pH {item.minPh}–{item.maxPh}
+                                    </span>
+                                  )}
+                                  {item.tankSizeMin > 0 && (
+                                    <span style={{ fontSize: "0.6rem", padding: "0.1rem 0.35rem", borderRadius: "4px", background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.15)", color: "#22d3ee" }}>
+                                      🏠 {item.tankSizeMin}+ gal
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Health & DOA */}
+                              {(item.healthStatus || item.doaGuarantee !== undefined) && (
+                                <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", marginTop: "0.15rem" }}>
+                                  {item.healthStatus && item.healthStatus !== "healthy" && (
+                                    <span style={{ fontSize: "0.6rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: item.healthStatus === "treated" ? "rgba(251,191,36,0.08)" : "rgba(248,113,113,0.08)", border: item.healthStatus === "treated" ? "1px solid rgba(251,191,36,0.2)" : "1px solid rgba(248,113,113,0.2)", color: item.healthStatus === "treated" ? "#fbbf24" : "#f87171" }}>
+                                      {item.healthStatus === "treated" ? "💊 Recently Treated" : "🔬 In Quarantine"}
+                                    </span>
+                                  )}
+                                  {item.healthStatus === "healthy" && (
+                                    <span style={{ fontSize: "0.6rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "#34d399" }}>
+                                      ✅ Healthy
+                                    </span>
+                                  )}
+                                  {item.doaGuarantee && (
+                                    <span style={{ fontSize: "0.6rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "#34d399" }}>
+                                      🛡️ DOA Guarantee
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Description */}
+                              {item.description && (
+                                <p style={{ margin: "0.25rem 0 0 0", color: "var(--text-secondary)", fontSize: "0.72rem", lineHeight: 1.4, fontStyle: "italic" }}>
+                                  "{item.description.length > 120 ? item.description.slice(0, 120) + "..." : item.description}"
+                                </p>
+                              )}
+                            </div>
+                          )}
+
                           {/* Listing pricing detail & actions */}
                           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "0.75rem", marginTop: "auto" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

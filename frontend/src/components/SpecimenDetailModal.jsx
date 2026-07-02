@@ -174,7 +174,11 @@ export function SpecimenDetailModal({
         };
       } else {
         // Fallback to local Dexie database
-        const localSpec = await db.specimens.get(Number(activeId));
+        const numericId = Number(activeId);
+        if (!numericId || isNaN(numericId)) {
+          throw new Error("Invalid specimen ID — cannot look up this record.");
+        }
+        const localSpec = await db.specimens.get(numericId);
         if (!localSpec) {
           throw new Error("Specimen certificate does not exist in registry.");
         }

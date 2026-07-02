@@ -2610,7 +2610,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                         />
                       )}
 
-                      {activeTank.specimens.map(spec => {
+                      {activeTank.specimens.filter(s => !s.isBatchPlaceholder).map(spec => {
                         const matchedSpecies = fishbaseData.find(f => Number(f.speciesId) === Number(spec.speciesId));
                         const masterPhotoUrl = matchedSpecies?.masterPhotoUrl || "";
                         const customPhoto = localStorage.getItem(`aquadex_specimen_photo_${spec.id}`);
@@ -2936,6 +2936,50 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           </div>
                         );
                       })}
+
+                      {/* Batch placeholders — shown as info cards without action buttons */}
+                      {activeTank.specimens.filter(s => s.isBatchPlaceholder).map(spec => (
+                        <div
+                          key={spec.id}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "0.6rem 0.75rem",
+                            background: "rgba(56, 189, 248, 0.04)",
+                            borderRadius: "8px",
+                            border: "1px solid rgba(56, 189, 248, 0.12)",
+                            fontSize: "0.85rem",
+                            marginBottom: "0.5rem",
+                            gap: "0.75rem"
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1, minWidth: 0 }}>
+                            <div style={{
+                              width: "44px",
+                              height: "44px",
+                              borderRadius: "8px",
+                              background: "linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(14, 165, 233, 0.2))",
+                              border: "1px solid rgba(56, 189, 248, 0.2)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "1.2rem",
+                              flexShrink: 0
+                            }}>
+                              🐣
+                            </div>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <span style={{ color: "#fff", fontWeight: "600", display: "block" }}>
+                                {spec.quantity || 1}x {spec.commonName || "Juvenile Fry"}
+                              </span>
+                              <span style={{ display: "block", fontSize: "0.7rem", color: "var(--text-muted)" }}>
+                                Pending individual registration
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </>
                   )}
                 </div>

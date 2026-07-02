@@ -405,8 +405,27 @@ export async function relayCreateListing({
   maxTemp = 0,
   minPh = 0,
   maxPh = 0,
+  // Enhanced listing fields
+  description = "",
+  age = "",
+  size = "",
+  diet = "",
+  temperament = "",
+  tankSizeMin = 0,
+  healthStatus = "healthy",
+  doaGuarantee = true,
+  photoDataUrl = "",
 } = {}) {
   try {
+    // Store photo in localStorage for cross-session persistence
+    if (photoDataUrl) {
+      try {
+        localStorage.setItem(`aquadex_specimen_photo_${Number(tokenId)}`, photoDataUrl);
+      } catch (e) {
+        console.warn("[Relayer] Photo storage failed (quota?):", e);
+      }
+    }
+
     const listing = {
       id: Number(tokenId),
       tokenId: Number(tokenId),
@@ -426,6 +445,16 @@ export async function relayCreateListing({
       maxTemp: Number(maxTemp),
       minPh: Number(minPh),
       maxPh: Number(maxPh),
+      // Enhanced fields
+      description: String(description || ""),
+      age: String(age || ""),
+      size: String(size || ""),
+      diet: String(diet || ""),
+      temperament: String(temperament || ""),
+      tankSizeMin: Number(tankSizeMin || 0),
+      healthStatus: String(healthStatus || "healthy"),
+      doaGuarantee: !!doaGuarantee,
+      photoUrl: photoDataUrl || "",
       isBatch: false,
       active: true,
       fuzzedLocation: { lat: 37.7749, lng: -122.4194 },

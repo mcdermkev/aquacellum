@@ -30,6 +30,20 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
   const [shippingFee, setShippingFee] = useState("5.00");
   const [description, setDescription] = useState("");
 
+  // Enhanced batch listing fields
+  const [fryAge, setFryAge] = useState("");
+  const [fryAgeUnit, setFryAgeUnit] = useState("weeks");
+  const [frySize, setFrySize] = useState("");
+  const [careLevel, setCareLevel] = useState(0);
+  const [minTemp, setMinTemp] = useState("");
+  const [maxTemp, setMaxTemp] = useState("");
+  const [minPh, setMinPh] = useState("");
+  const [maxPh, setMaxPh] = useState("");
+  const [tankSizeMin, setTankSizeMin] = useState("");
+  const [healthStatus, setHealthStatus] = useState("healthy");
+  const [doaGuarantee, setDoaGuarantee] = useState(true);
+  const [diet, setDiet] = useState("");
+
   // Reset on close
   useEffect(() => {
     if (!isOpen) {
@@ -41,6 +55,19 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
       setShippingFee("5.00");
       setDescription("");
       setError(null);
+      // Reset enhanced fields
+      setFryAge("");
+      setFryAgeUnit("weeks");
+      setFrySize("");
+      setCareLevel(0);
+      setMinTemp("");
+      setMaxTemp("");
+      setMinPh("");
+      setMaxPh("");
+      setTankSizeMin("");
+      setHealthStatus("healthy");
+      setDoaGuarantee(true);
+      setDiet("");
     }
   }, [isOpen]);
 
@@ -119,6 +146,18 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
         isBatch: true,
         active: true,
         description: description || "",
+        // Enhanced batch fields
+        age: fryAge ? `${fryAge} ${fryAgeUnit}` : "",
+        size: frySize ? `${frySize} inches` : "",
+        diet: diet || "",
+        careLevel: Number(careLevel),
+        minTemp: minTemp ? Number(minTemp) : 0,
+        maxTemp: maxTemp ? Number(maxTemp) : 0,
+        minPh: minPh ? Number(minPh) : 0,
+        maxPh: maxPh ? Number(maxPh) : 0,
+        tankSizeMin: tankSizeMin ? Number(tankSizeMin) : 0,
+        healthStatus: healthStatus || "healthy",
+        doaGuarantee: !!doaGuarantee,
         createdAt: Math.floor(Date.now() / 1000),
       };
 
@@ -359,15 +398,190 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
           {/* Description */}
           <div>
             <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-              Notes (optional)
+              Description / Seller Notes
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Age, size, feeding routine, health notes..."
+              placeholder="e.g. Active, eating well, growing fast. Parents are proven breeders with vibrant coloration..."
               rows={3}
+              maxLength={500}
               style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none", resize: "vertical", fontFamily: "inherit", fontSize: "0.85rem" }}
             />
+            <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", float: "right" }}>{description.length}/500</span>
+          </div>
+
+          {/* --- Enhanced Fry Details Section --- */}
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "1rem", marginTop: "0.25rem" }}>
+            <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600", letterSpacing: "0.04em" }}>
+              Fry Details (helps buyers decide)
+            </span>
+          </div>
+
+          {/* Age & Size Row */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                Fry Age
+              </label>
+              <div style={{ display: "flex", gap: "0.35rem" }}>
+                <input
+                  type="number"
+                  min="0"
+                  value={fryAge}
+                  onChange={(e) => setFryAge(e.target.value)}
+                  placeholder="e.g. 4"
+                  style={{ flex: 1, padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+                />
+                <select
+                  value={fryAgeUnit}
+                  onChange={(e) => setFryAgeUnit(e.target.value)}
+                  style={{ padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none", fontSize: "0.75rem" }}
+                >
+                  <option value="days">days</option>
+                  <option value="weeks">wks</option>
+                  <option value="months">mo</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                Current Size (inches)
+              </label>
+              <input
+                type="number"
+                step="0.25"
+                min="0"
+                value={frySize}
+                onChange={(e) => setFrySize(e.target.value)}
+                placeholder="e.g. 0.75"
+                style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+              />
+            </div>
+          </div>
+
+          {/* Diet */}
+          <div>
+            <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+              Current Diet
+            </label>
+            <input
+              type="text"
+              value={diet}
+              onChange={(e) => setDiet(e.target.value)}
+              placeholder="e.g. Baby brine shrimp, crushed flake"
+              style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+            />
+          </div>
+
+          {/* Care Level */}
+          <div>
+            <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+              Care Level
+            </label>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              {[
+                { val: 0, label: "Beginner", icon: "✨", color: "rgba(34,211,238,0.15)", border: "rgba(34,211,238,0.4)" },
+                { val: 1, label: "Intermediate", icon: "⚡", color: "rgba(251,191,36,0.15)", border: "rgba(251,191,36,0.4)" },
+                { val: 2, label: "Advanced", icon: "🔥", color: "rgba(248,113,113,0.15)", border: "rgba(248,113,113,0.4)" },
+              ].map(({ val, label, icon, color, border }) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setCareLevel(val)}
+                  style={{
+                    flex: 1, padding: "0.5rem 0.25rem", borderRadius: "6px", cursor: "pointer",
+                    background: careLevel === val ? color : "rgba(255,255,255,0.02)",
+                    border: `1px solid ${careLevel === val ? border : "var(--glass-border)"}`,
+                    color: careLevel === val ? "#fff" : "var(--text-muted)",
+                    fontSize: "0.7rem", fontWeight: careLevel === val ? "600" : "400",
+                    transition: "all 0.15s ease", textAlign: "center"
+                  }}
+                >
+                  {icon} {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Water Parameters */}
+          <div>
+            <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+              Water Parameters (recommended)
+            </label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+              <div>
+                <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", display: "block", marginBottom: "0.2rem" }}>Temp (°F)</span>
+                <div style={{ display: "flex", gap: "0.2rem", alignItems: "center" }}>
+                  <input type="number" value={minTemp} onChange={(e) => setMinTemp(e.target.value)} placeholder="72" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                  <span style={{ color: "var(--text-muted)", fontSize: "0.7rem" }}>-</span>
+                  <input type="number" value={maxTemp} onChange={(e) => setMaxTemp(e.target.value)} placeholder="82" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                </div>
+              </div>
+              <div>
+                <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", display: "block", marginBottom: "0.2rem" }}>pH</span>
+                <div style={{ display: "flex", gap: "0.2rem", alignItems: "center" }}>
+                  <input type="number" step="0.1" value={minPh} onChange={(e) => setMinPh(e.target.value)} placeholder="6.5" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                  <span style={{ color: "var(--text-muted)", fontSize: "0.7rem" }}>-</span>
+                  <input type="number" step="0.1" value={maxPh} onChange={(e) => setMaxPh(e.target.value)} placeholder="7.5" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                </div>
+              </div>
+              <div>
+                <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", display: "block", marginBottom: "0.2rem" }}>Min Tank (gal)</span>
+                <input type="number" value={tankSizeMin} onChange={(e) => setTankSizeMin(e.target.value)} placeholder="10" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Health & DOA Guarantee */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                Health Status
+              </label>
+              <select
+                value={healthStatus}
+                onChange={(e) => setHealthStatus(e.target.value)}
+                style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+              >
+                <option value="healthy">Healthy — No Issues</option>
+                <option value="treated">Recently Treated</option>
+                <option value="quarantine">In Quarantine</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                DOA Guarantee
+              </label>
+              <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.2rem" }}>
+                <button
+                  type="button"
+                  onClick={() => setDoaGuarantee(true)}
+                  style={{
+                    flex: 1, padding: "0.5rem", borderRadius: "6px", cursor: "pointer",
+                    background: doaGuarantee ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.02)",
+                    border: `1px solid ${doaGuarantee ? "rgba(34,197,94,0.4)" : "var(--glass-border)"}`,
+                    color: doaGuarantee ? "#34d399" : "var(--text-muted)",
+                    fontSize: "0.7rem", fontWeight: doaGuarantee ? "600" : "400"
+                  }}
+                >
+                  ✓ Yes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDoaGuarantee(false)}
+                  style={{
+                    flex: 1, padding: "0.5rem", borderRadius: "6px", cursor: "pointer",
+                    background: !doaGuarantee ? "rgba(248,113,113,0.12)" : "rgba(255,255,255,0.02)",
+                    border: `1px solid ${!doaGuarantee ? "rgba(248,113,113,0.4)" : "var(--glass-border)"}`,
+                    color: !doaGuarantee ? "#f87171" : "var(--text-muted)",
+                    fontSize: "0.7rem", fontWeight: !doaGuarantee ? "600" : "400"
+                  }}
+                >
+                  ✕ No
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Revenue calculator */}

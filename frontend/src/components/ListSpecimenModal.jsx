@@ -36,6 +36,24 @@ export function ListSpecimenModal({
   const [error, setError] = useState(null);
   const [specimenInfo, setSpecimenInfo] = useState(null);
 
+  // Enhanced listing fields
+  const [description, setDescription] = useState("");
+  const [age, setAge] = useState("");
+  const [ageUnit, setAgeUnit] = useState("months");
+  const [size, setSize] = useState("");
+  const [diet, setDiet] = useState("");
+  const [temperament, setTemperament] = useState("");
+  const [careLevel, setCareLevel] = useState(0); // 0=Beginner, 1=Intermediate, 2=Advanced
+  const [minTemp, setMinTemp] = useState("");
+  const [maxTemp, setMaxTemp] = useState("");
+  const [minPh, setMinPh] = useState("");
+  const [maxPh, setMaxPh] = useState("");
+  const [tankSizeMin, setTankSizeMin] = useState("");
+  const [healthStatus, setHealthStatus] = useState("healthy"); // healthy, treated, quarantine
+  const [doaGuarantee, setDoaGuarantee] = useState(true);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+
   useEffect(() => {
     if (!isOpen) {
       // Reset state on close
@@ -48,22 +66,57 @@ export function ListSpecimenModal({
       setError(null);
       setSpecimenInfo(null);
       setTxHash(null);
+      // Reset enhanced fields
+      setDescription("");
+      setAge("");
+      setAgeUnit("months");
+      setSize("");
+      setDiet("");
+      setTemperament("");
+      setCareLevel(0);
+      setMinTemp("");
+      setMaxTemp("");
+      setMinPh("");
+      setMaxPh("");
+      setTankSizeMin("");
+      setHealthStatus("healthy");
+      setDoaGuarantee(true);
+      setPhotoFile(null);
+      setPhotoPreview(null);
     }
   }, [isOpen]);
+
+  const handlePhotoSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Photo must be under 5MB.");
+      return;
+    }
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setPhotoPreview(reader.result);
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     if (isOpen && preselectedListSpecimen) {
       const tid = preselectedListSpecimen.id || preselectedListSpecimen.specimenId || preselectedListSpecimen.tokenId;
-      if (tid) {
+      if (tid && !isNaN(Number(tid))) {
         setTokenId(tid.toString());
         verifyToken(Number(tid));
+      } else {
+        setError("This specimen cannot be listed (batch pending individual registration).");
       }
     }
   }, [isOpen, preselectedListSpecimen]);
 
 
   const verifyToken = async (idToVerify) => {
-    if (!idToVerify || isNaN(idToVerify)) return;
+    if (!idToVerify || isNaN(idToVerify)) {
+      setError("Invalid specimen ID. Please enter a valid Certificate Serial No.");
+      return;
+    }
 
     setChecking(true);
     setError(null);
@@ -193,6 +246,21 @@ export function ListSpecimenModal({
         scientificName: specimenInfo?.scientificName || "Unknown",
         sireId: specimenInfo?.sireId || 0,
         damId: specimenInfo?.damId || 0,
+        // Enhanced listing details
+        description: description.trim(),
+        age: age ? `${age} ${ageUnit}` : "",
+        size: size ? `${size} inches` : "",
+        diet: diet.trim(),
+        temperament: temperament.trim(),
+        careLevel: Number(careLevel),
+        minTemp: minTemp ? Number(minTemp) : 0,
+        maxTemp: maxTemp ? Number(maxTemp) : 0,
+        minPh: minPh ? Number(minPh) : 0,
+        maxPh: maxPh ? Number(maxPh) : 0,
+        tankSizeMin: tankSizeMin ? Number(tankSizeMin) : 0,
+        healthStatus,
+        doaGuarantee,
+        photoDataUrl: photoPreview || "",
       });
 
       if (!result.success) {
@@ -500,6 +568,259 @@ export function ListSpecimenModal({
                       />
                     </div>
                   )}
+
+                  {/* --- Enhanced Listing Details Section --- */}
+                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "1rem", marginTop: "0.5rem" }}>
+                    <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600", letterSpacing: "0.04em" }}>
+                      Specimen Details (helps buyers decide)
+                    </span>
+                  </div>
+
+                  {/* Photo Upload */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                      Specimen Photo
+                    </label>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                      {photoPreview ? (
+                        <div style={{ position: "relative" }}>
+                          <img
+                            src={photoPreview}
+                            alt="Specimen preview"
+                            style={{ width: "64px", height: "64px", borderRadius: "8px", objectFit: "cover", border: "1px solid var(--glass-border)" }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => { setPhotoFile(null); setPhotoPreview(null); }}
+                            style={{ position: "absolute", top: "-6px", right: "-6px", width: "18px", height: "18px", borderRadius: "50%", background: "rgba(248,113,113,0.9)", border: "none", color: "#fff", fontSize: "0.6rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <label style={{
+                          width: "64px", height: "64px", borderRadius: "8px",
+                          border: "2px dashed var(--glass-border)", cursor: "pointer",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          flexDirection: "column", gap: "0.15rem",
+                          background: "rgba(255,255,255,0.02)", transition: "border-color 0.2s"
+                        }}>
+                          <span style={{ fontSize: "1.2rem" }}>📷</span>
+                          <span style={{ fontSize: "0.55rem", color: "var(--text-muted)" }}>Add</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePhotoSelect}
+                            style={{ display: "none" }}
+                          />
+                        </label>
+                      )}
+                      <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", maxWidth: "180px" }}>
+                        Upload a clear photo of this specific fish. Max 5MB.
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                      Description / Seller Notes
+                    </label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="e.g. Beautiful coloration, eats pellets eagerly, peaceful in community tank..."
+                      rows={3}
+                      maxLength={500}
+                      style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none", resize: "vertical", fontSize: "0.8rem", fontFamily: "inherit" }}
+                    />
+                    <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", float: "right" }}>{description.length}/500</span>
+                  </div>
+
+                  {/* Age & Size Row */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                        Age
+                      </label>
+                      <div style={{ display: "flex", gap: "0.35rem" }}>
+                        <input
+                          type="number"
+                          min="0"
+                          value={age}
+                          onChange={(e) => setAge(e.target.value)}
+                          placeholder="e.g. 6"
+                          style={{ flex: 1, padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+                        />
+                        <select
+                          value={ageUnit}
+                          onChange={(e) => setAgeUnit(e.target.value)}
+                          style={{ padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none", fontSize: "0.75rem" }}
+                        >
+                          <option value="weeks">wks</option>
+                          <option value="months">mo</option>
+                          <option value="years">yr</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                        Size (inches)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.25"
+                        min="0"
+                        value={size}
+                        onChange={(e) => setSize(e.target.value)}
+                        placeholder="e.g. 3.5"
+                        style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Diet & Temperament Row */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                        Diet
+                      </label>
+                      <input
+                        type="text"
+                        value={diet}
+                        onChange={(e) => setDiet(e.target.value)}
+                        placeholder="e.g. Pellets, frozen brine"
+                        style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                        Temperament
+                      </label>
+                      <select
+                        value={temperament}
+                        onChange={(e) => setTemperament(e.target.value)}
+                        style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+                      >
+                        <option value="">Select...</option>
+                        <option value="Peaceful">Peaceful</option>
+                        <option value="Semi-Aggressive">Semi-Aggressive</option>
+                        <option value="Aggressive">Aggressive</option>
+                        <option value="Schooling">Schooling</option>
+                        <option value="Territorial">Territorial</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Care Level */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                      Care Level
+                    </label>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      {[
+                        { val: 0, label: "Beginner", icon: "✨", color: "rgba(34,211,238,0.15)", border: "rgba(34,211,238,0.4)" },
+                        { val: 1, label: "Intermediate", icon: "⚡", color: "rgba(251,191,36,0.15)", border: "rgba(251,191,36,0.4)" },
+                        { val: 2, label: "Advanced", icon: "🔥", color: "rgba(248,113,113,0.15)", border: "rgba(248,113,113,0.4)" },
+                      ].map(({ val, label, icon, color, border }) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setCareLevel(val)}
+                          style={{
+                            flex: 1, padding: "0.5rem 0.25rem", borderRadius: "6px", cursor: "pointer",
+                            background: careLevel === val ? color : "rgba(255,255,255,0.02)",
+                            border: `1px solid ${careLevel === val ? border : "var(--glass-border)"}`,
+                            color: careLevel === val ? "#fff" : "var(--text-muted)",
+                            fontSize: "0.7rem", fontWeight: careLevel === val ? "600" : "400",
+                            transition: "all 0.15s ease", textAlign: "center"
+                          }}
+                        >
+                          {icon} {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Water Parameters Row */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                      Water Parameters (recommended range)
+                    </label>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+                      <div>
+                        <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", display: "block", marginBottom: "0.2rem" }}>Temp (°F)</span>
+                        <div style={{ display: "flex", gap: "0.2rem", alignItems: "center" }}>
+                          <input type="number" value={minTemp} onChange={(e) => setMinTemp(e.target.value)} placeholder="72" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                          <span style={{ color: "var(--text-muted)", fontSize: "0.7rem" }}>-</span>
+                          <input type="number" value={maxTemp} onChange={(e) => setMaxTemp(e.target.value)} placeholder="82" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                        </div>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", display: "block", marginBottom: "0.2rem" }}>pH</span>
+                        <div style={{ display: "flex", gap: "0.2rem", alignItems: "center" }}>
+                          <input type="number" step="0.1" value={minPh} onChange={(e) => setMinPh(e.target.value)} placeholder="6.5" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                          <span style={{ color: "var(--text-muted)", fontSize: "0.7rem" }}>-</span>
+                          <input type="number" step="0.1" value={maxPh} onChange={(e) => setMaxPh(e.target.value)} placeholder="7.5" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                        </div>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", display: "block", marginBottom: "0.2rem" }}>Min Tank (gal)</span>
+                        <input type="number" value={tankSizeMin} onChange={(e) => setTankSizeMin(e.target.value)} placeholder="20" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Health & Guarantee Row */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                        Health Status
+                      </label>
+                      <select
+                        value={healthStatus}
+                        onChange={(e) => setHealthStatus(e.target.value)}
+                        style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+                      >
+                        <option value="healthy">Healthy — No Issues</option>
+                        <option value="treated">Recently Treated</option>
+                        <option value="quarantine">In Quarantine</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                        DOA Guarantee
+                      </label>
+                      <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.2rem" }}>
+                        <button
+                          type="button"
+                          onClick={() => setDoaGuarantee(true)}
+                          style={{
+                            flex: 1, padding: "0.5rem", borderRadius: "6px", cursor: "pointer",
+                            background: doaGuarantee ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.02)",
+                            border: `1px solid ${doaGuarantee ? "rgba(34,197,94,0.4)" : "var(--glass-border)"}`,
+                            color: doaGuarantee ? "#34d399" : "var(--text-muted)",
+                            fontSize: "0.7rem", fontWeight: doaGuarantee ? "600" : "400"
+                          }}
+                        >
+                          ✓ Yes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDoaGuarantee(false)}
+                          style={{
+                            flex: 1, padding: "0.5rem", borderRadius: "6px", cursor: "pointer",
+                            background: !doaGuarantee ? "rgba(248,113,113,0.12)" : "rgba(255,255,255,0.02)",
+                            border: `1px solid ${!doaGuarantee ? "rgba(248,113,113,0.4)" : "var(--glass-border)"}`,
+                            color: !doaGuarantee ? "#f87171" : "var(--text-muted)",
+                            fontSize: "0.7rem", fontWeight: !doaGuarantee ? "600" : "400"
+                          }}
+                        >
+                          ✕ No
+                        </button>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Dynamic Pricing Calculator Ledger */}
                   {parseVal > 0 && (
