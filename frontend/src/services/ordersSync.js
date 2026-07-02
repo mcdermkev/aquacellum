@@ -259,6 +259,33 @@ export async function fetchBuyerAnalytics(walletAddress) {
 }
 
 /**
+ * Fetch a seller's own orders (seller-scoped) for analytics aggregation.
+ * Unlike fetchOrderHistory (which returns both buyer + seller rows), this
+ * returns only orders where the wallet is the SELLER — used to build the
+ * seller revenue timeline, order mix, and top-species breakdowns.
+ *
+ * @param {string} walletAddress - Seller wallet
+ * @param {Object} options - { limit? }
+ * @returns {Promise<Array>}
+ */
+export async function fetchSellerOrders(walletAddress, options = {}) {
+  if (!isSupabaseConfigured()) return [];
+
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("seller_wallet", walletAddress.toLowerCase())
+    .order("created_at", { ascending: false })
+    .limit(options.limit || 500);
+
+  if (error) {
+    console.warn("[OrdersSync] Seller orders fetch failed:", error.message);
+    return [];
+  }
+  return data || [];
+}
+
+/**
  * Fetch full order history from cloud (paginated).
  *
  * @param {string} walletAddress

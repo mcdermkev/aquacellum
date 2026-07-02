@@ -163,14 +163,20 @@ async function handleStorefrontDetail(req, res) {
         slug: profile.slug || null,
         displayName: profile.display_name || truncateAddr(wallet),
         bio: profile.bio || "",
-        avatarUrl: profile.avatar_cid ? `${IPFS_GATEWAY}/${profile.avatar_cid}` : null,
-        bannerUrl: profile.banner_cid ? `${IPFS_GATEWAY}/${profile.banner_cid}` : null,
+        // Prefer full public URLs (Supabase Storage); fall back to IPFS CID via gateway.
+        avatarUrl: profile.avatar_url || (profile.avatar_cid ? `${IPFS_GATEWAY}/${profile.avatar_cid}` : null),
+        bannerUrl: profile.banner_url || (profile.banner_cid ? `${IPFS_GATEWAY}/${profile.banner_cid}` : null),
         specialties: profile.specialties || [],
         location: profile.location || null,
         isMasterBreeder: profile.is_master_breeder || false,
         currentTier: profile.current_tier || "Shallow",
         storefrontUrl: `${BASE_URL}/store/${profile.slug || wallet}`,
         socialLinks: profile.social_links || {},
+        policies: {
+          shipping: profile.shipping_policy || null,
+          doa: profile.doa_policy || null,
+          handshake: profile.handshake_policy || null,
+        },
         memberSince: profile.created_at,
       },
       stats: {
@@ -343,8 +349,8 @@ async function handleDiscover(req, res) {
       slug: profile.slug || null,
       displayName: profile.display_name || truncateAddr(profile.wallet_address),
       bio: profile.bio || "",
-      avatarUrl: profile.avatar_cid ? `${IPFS_GATEWAY}/${profile.avatar_cid}` : null,
-      bannerUrl: profile.banner_cid ? `${IPFS_GATEWAY}/${profile.banner_cid}` : null,
+      avatarUrl: profile.avatar_url || (profile.avatar_cid ? `${IPFS_GATEWAY}/${profile.avatar_cid}` : null),
+      bannerUrl: profile.banner_url || (profile.banner_cid ? `${IPFS_GATEWAY}/${profile.banner_cid}` : null),
       specialties: profile.specialties || [],
       location: profile.location || null,
       isMasterBreeder: profile.is_master_breeder || false,
@@ -401,7 +407,19 @@ async function handleSetup(req, res) {
     return res.status(405).json({ error: "Method not allowed. Use POST." });
   }
 
-  const { walletAddress, slug, displayName, bio, specialties, location } = req.body;
+  const {
+    walletAddress,
+    slug,
+    displayName,
+    bio,
+    specialties,
+    location,
+    avatarUrl,
+    bannerUrl,
+    shippingPolicy,
+    doaPolicy,
+    handshakePolicy,
+  } = req.body;
 
   if (!walletAddress || !slug || !displayName) {
     return res.status(400).json({
@@ -445,6 +463,48 @@ async function handleSetup(req, res) {
     });
   }
 
+  // Policy length limits (mirror the DB CHECK constraints)
+  const POLICY_MAX = 1500;
+  for (const [field, val] of [
+    ["shippingPolicy", shippingPolicy],
+    ["doaPolicy", doaPolicy],
+    ["handshakePolicy", handshakePolicy],
+  ]) {
+    if (val && String(val).length > POLICY_MAX) {
+      return res.status(400).json({
+        error: `${field} must be ${POLICY_MAX} characters or fewer.`,
+        code: "POLICY_TOO_LONG",
+      });
+    }
+  }
+
+  // Only accept image URLs from trusted origins (Supabase Storage / IPFS gateway).
+  const isSafeImageUrl = (url) => {
+    if (!url) return true; // null/empty is fine (clears the field)
+    try {
+      const u = new URL(url);
+      return (
+        u.protocol === "https:" &&
+        (u.hostname.endsWith(".supabase.co") ||
+          u.hostname === "gateway.pinata.cloud" ||
+          u.hostname.endsWith(".ipfs.dweb.link"))
+      );
+    } catch {
+      return false;
+    }
+  };
+  if (!isSafeImageUrl(avatarUrl) || !isSafeImageUrl(bannerUrl)) {
+    return res.status(400).json({
+      error: "Image URLs must be https and hosted on an allowed origin.",
+      code: "INVALID_IMAGE_URL",
+    });
+  }
+
+  const clean = (val) => {
+    const trimmed = (val ?? "").toString().trim();
+    return trimmed ? trimmed.slice(0, POLICY_MAX) : null;
+  };
+
   try {
     // Check slug availability
     const { data: existing } = await supabase
@@ -471,6 +531,11 @@ async function handleSetup(req, res) {
           bio: (bio || "").trim().slice(0, 280),
           specialties: (specialties || []).slice(0, 5),
           location: location ? location.trim().slice(0, 60) : null,
+          avatar_url: avatarUrl || null,
+          banner_url: bannerUrl || null,
+          shipping_policy: clean(shippingPolicy),
+          doa_policy: clean(doaPolicy),
+          handshake_policy: clean(handshakePolicy),
           storefront_active: true,
           is_master_breeder: true,
           updated_at: new Date().toISOString(),

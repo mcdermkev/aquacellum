@@ -7,7 +7,7 @@
  *
  * Gated by beta allowlist in the parent (App.jsx passes `isEligible` prop).
  */
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Storefront,
   Check,
@@ -18,11 +18,22 @@ import {
   Eye,
   Plus,
   X,
+  ImageSquare,
+  UploadSimple,
+  Trash,
+  Truck,
+  FirstAid,
+  Handshake,
+  UserCircle,
 } from "@phosphor-icons/react";
+import { uploadImage, createPreviewUrl, revokePreviewUrl } from "../services/mediaUpload";
+import { getProfile } from "../services/reefApi";
+import { SellerAnalytics } from "./storefront/SellerAnalytics";
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/;
 const MAX_BIO = 280;
 const MAX_SPECIALTIES = 5;
+const MAX_POLICY = 1500;
 
 const SPECIALTY_SUGGESTIONS = [
   "Dwarf Cichlids", "African Cichlids", "Livebearers", "Corydoras",
@@ -39,6 +50,22 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
   const [location, setLocation] = useState(existingProfile?.location || "");
   const [newSpecialty, setNewSpecialty] = useState("");
 
+  // Branding: banner (uploadable) + avatar (pulled from the app profile)
+  const [bannerUrl, setBannerUrl] = useState(existingProfile?.bannerUrl || existingProfile?.banner_url || "");
+  const [bannerPreview, setBannerPreview] = useState(existingProfile?.bannerUrl || existingProfile?.banner_url || null);
+  const [bannerUploading, setBannerUploading] = useState(false);
+  const [bannerError, setBannerError] = useState(null);
+  const bannerInputRef = useRef(null);
+
+  const [appAvatarUrl, setAppAvatarUrl] = useState(
+    existingProfile?.avatarUrl || existingProfile?.avatar_url || null
+  );
+
+  // Store policies
+  const [shippingPolicy, setShippingPolicy] = useState(existingProfile?.policies?.shipping || "");
+  const [doaPolicy, setDoaPolicy] = useState(existingProfile?.policies?.doa || "");
+  const [handshakePolicy, setHandshakePolicy] = useState(existingProfile?.policies?.handshake || "");
+
   // UI state
   const [slugStatus, setSlugStatus] = useState(null); // null | "checking" | "available" | "taken" | "invalid"
   const [saving, setSaving] = useState(false);
@@ -46,6 +73,32 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
   const [showPreview, setShowPreview] = useState(false);
 
   const isEditing = !!existingProfile;
+
+  // Pull the breeder's avatar from their existing in-app profile so the
+  // storefront stays visually consistent with the rest of Aquacellum.
+  // We don't ask them to upload a second one — it mirrors profiles.avatar_url.
+  useEffect(() => {
+    if (!walletAccount) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await getProfile(walletAccount);
+        if (!cancelled && data?.avatar_url) {
+          setAppAvatarUrl(data.avatar_url);
+        }
+      } catch {
+        // Best-effort — fall back to whatever the storefront already had.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [walletAccount]);
+
+  // Clean up any object URL preview on unmount
+  useEffect(() => {
+    return () => {
+      if (bannerPreview && bannerPreview.startsWith("blob:")) revokePreviewUrl(bannerPreview);
+    };
+  }, [bannerPreview]);
 
   // Slug validation with debounce
   useEffect(() => {
@@ -96,6 +149,43 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
     setSpecialties(specialties.filter((s) => s !== spec));
   };
 
+  const handleBannerSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBannerError(null);
+
+    // Immediate local preview while the upload runs
+    if (bannerPreview && bannerPreview.startsWith("blob:")) revokePreviewUrl(bannerPreview);
+    const localPreview = createPreviewUrl(file);
+    setBannerPreview(localPreview);
+    setBannerUploading(true);
+
+    try {
+      const { url, error } = await uploadImage(file);
+      if (error || !url) {
+        setBannerError(error || "Upload failed. Try again.");
+        setBannerPreview(bannerUrl || null);
+      } else {
+        setBannerUrl(url);
+        setBannerPreview(url);
+      }
+    } catch (err) {
+      setBannerError(err.message || "Upload failed. Try again.");
+      setBannerPreview(bannerUrl || null);
+    } finally {
+      setBannerUploading(false);
+      if (localPreview.startsWith("blob:")) revokePreviewUrl(localPreview);
+    }
+  };
+
+  const removeBanner = () => {
+    if (bannerPreview && bannerPreview.startsWith("blob:")) revokePreviewUrl(bannerPreview);
+    setBannerUrl("");
+    setBannerPreview(null);
+    setBannerError(null);
+    if (bannerInputRef.current) bannerInputRef.current.value = "";
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!slug || slugStatus === "taken" || slugStatus === "invalid") return;
@@ -115,6 +205,11 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
           bio: bio.trim(),
           specialties,
           location: location.trim() || null,
+          avatarUrl: appAvatarUrl || null,
+          bannerUrl: bannerUrl || null,
+          shippingPolicy: shippingPolicy.trim() || null,
+          doaPolicy: doaPolicy.trim() || null,
+          handshakePolicy: handshakePolicy.trim() || null,
         }),
       });
 
@@ -153,6 +248,90 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
       </div>
 
       <form className="sf-setup__form" onSubmit={handleSubmit}>
+        {/* Branding: banner + avatar */}
+        <div className="sf-setup__field">
+          <label className="sf-setup__label">Store Banner</label>
+          <div className="sf-setup__banner-editor">
+            <div
+              className={`sf-setup__banner-drop ${bannerPreview ? "sf-setup__banner-drop--has-image" : ""}`}
+              onClick={() => !bannerUploading && bannerInputRef.current?.click()}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if ((e.key === "Enter" || e.key === " ") && !bannerUploading) {
+                  e.preventDefault();
+                  bannerInputRef.current?.click();
+                }
+              }}
+              aria-label="Upload store banner image"
+            >
+              {bannerPreview ? (
+                <img src={bannerPreview} alt="Store banner preview" className="sf-setup__banner-img" />
+              ) : (
+                <div className="sf-setup__banner-empty">
+                  <ImageSquare weight="duotone" size={26} />
+                  <span>Add a banner or background</span>
+                  <small>Wide image works best — 1500×500</small>
+                </div>
+              )}
+
+              {bannerUploading && (
+                <div className="sf-setup__banner-overlay">
+                  <SpinnerGap size={22} className="sf-setup__spinner" />
+                  <span>Uploading…</span>
+                </div>
+              )}
+
+              {/* Avatar preview, pulled from the app profile, floating on the banner */}
+              <div className="sf-setup__avatar-float" title="Pulled from your app profile">
+                {appAvatarUrl ? (
+                  <img src={appAvatarUrl} alt="Your avatar" className="sf-setup__avatar-img" />
+                ) : (
+                  <div className="sf-setup__avatar-placeholder">
+                    {displayName?.charAt(0)?.toUpperCase() || <UserCircle weight="duotone" size={28} />}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="sf-setup__banner-actions">
+              <button
+                type="button"
+                className="sf-setup__banner-btn"
+                onClick={() => bannerInputRef.current?.click()}
+                disabled={bannerUploading}
+              >
+                <UploadSimple size={14} weight="bold" />
+                {bannerPreview ? "Replace banner" : "Upload banner"}
+              </button>
+              {bannerPreview && (
+                <button
+                  type="button"
+                  className="sf-setup__banner-btn sf-setup__banner-btn--danger"
+                  onClick={removeBanner}
+                  disabled={bannerUploading}
+                >
+                  <Trash size={14} weight="bold" /> Remove
+                </button>
+              )}
+            </div>
+            <input
+              ref={bannerInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={handleBannerSelect}
+              style={{ display: "none" }}
+            />
+          </div>
+          <span className="sf-setup__hint">
+            {bannerError ? (
+              <span style={{ color: "#f87171" }}>{bannerError}</span>
+            ) : (
+              <>Your avatar is pulled automatically from your app profile.</>
+            )}
+          </span>
+        </div>
+
         {/* Slug */}
         <div className="sf-setup__field">
           <label className="sf-setup__label" htmlFor="sf-slug">
@@ -302,6 +481,67 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
           </div>
         </div>
 
+        {/* Store Policies */}
+        <div className="sf-setup__policies">
+          <div className="sf-setup__policies-head">
+            <h3 className="sf-setup__policies-title">Store Policies</h3>
+            <p className="sf-setup__policies-sub">
+              Set buyer expectations up front. These show on your public storefront.
+            </p>
+          </div>
+
+          <div className="sf-setup__field">
+            <label className="sf-setup__label" htmlFor="sf-shipping">
+              <Truck size={15} weight="duotone" style={{ color: "var(--accent-blue)" }} />
+              Shipping Policy
+              <span className="sf-setup__char-count">{shippingPolicy.length}/{MAX_POLICY}</span>
+            </label>
+            <textarea
+              id="sf-shipping"
+              value={shippingPolicy}
+              onChange={(e) => setShippingPolicy(e.target.value.slice(0, MAX_POLICY))}
+              placeholder="How you ship (carrier, ship days, heat/cold packs), live-arrival guarantee, and who covers shipping costs."
+              rows={3}
+              maxLength={MAX_POLICY}
+              className="sf-setup__textarea"
+            />
+          </div>
+
+          <div className="sf-setup__field">
+            <label className="sf-setup__label" htmlFor="sf-doa">
+              <FirstAid size={15} weight="duotone" style={{ color: "#f87171" }} />
+              Dead-on-Arrival (DOA) Policy
+              <span className="sf-setup__char-count">{doaPolicy.length}/{MAX_POLICY}</span>
+            </label>
+            <textarea
+              id="sf-doa"
+              value={doaPolicy}
+              onChange={(e) => setDoaPolicy(e.target.value.slice(0, MAX_POLICY))}
+              placeholder="Your DOA guarantee — claim window (e.g. photos within 2 hours of delivery), what's covered, and how refunds or replacements work."
+              rows={3}
+              maxLength={MAX_POLICY}
+              className="sf-setup__textarea"
+            />
+          </div>
+
+          <div className="sf-setup__field">
+            <label className="sf-setup__label" htmlFor="sf-handshake">
+              <Handshake size={15} weight="duotone" style={{ color: "var(--accent-green)" }} />
+              In-Person / Handshake Rules
+              <span className="sf-setup__char-count">{handshakePolicy.length}/{MAX_POLICY}</span>
+            </label>
+            <textarea
+              id="sf-handshake"
+              value={handshakePolicy}
+              onChange={(e) => setHandshakePolicy(e.target.value.slice(0, MAX_POLICY))}
+              placeholder="Local pickup / meetup rules — accepted payment, where you meet, bag/acclimation guidance, and any local-only terms."
+              rows={3}
+              maxLength={MAX_POLICY}
+              className="sf-setup__textarea"
+            />
+          </div>
+        </div>
+
         {/* Actions */}
         <div className="sf-setup__actions">
           <button
@@ -347,6 +587,11 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
           </div>
         )}
       </form>
+
+      {/* Premium seller analytics — visible once the store is published */}
+      {isEditing && (
+        <SellerAnalytics walletAccount={walletAccount} casualModeActive={casualModeActive} />
+      )}
     </div>
   );
 }

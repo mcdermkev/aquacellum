@@ -1531,3 +1531,62 @@
     backdrop-filter: none;
   }
 }
+
+/* =========================================================================
+   STORE POLICIES (public storefront)
+   ========================================================================= */
+.sf-policies {
+  margin-bottom: 3rem;
+}
+
+.sf-policies__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.sf-policies__card {
+  padding: 1.25rem 1.35rem;
+  border-radius: 16px;
+  border-top: 2px solid var(--policy-color, var(--accent-blue));
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sf-policies__card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.sf-policies__card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0.75rem;
+}
+
+.sf-policies__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--policy-color, #38bdf8) 12%, transparent);
+  flex-shrink: 0;
+}
+
+.sf-policies__label {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.sf-policies__text {
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  margin: 0;
+  white-space: pre-wrap;
+}

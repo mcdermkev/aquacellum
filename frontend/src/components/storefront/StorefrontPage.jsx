@@ -13,6 +13,7 @@ import { StorefrontStats } from "./StorefrontStats";
 import { StorefrontFilters } from "./StorefrontFilters";
 import { ListingCard } from "./ListingCard";
 import { BreedingTimeline } from "./BreedingTimeline";
+import { StorePolicies } from "./StorePolicies";
 import { StorefrontSkeleton } from "./StorefrontSkeleton";
 import { useStorefront, useStorefrontCache } from "../../hooks/useStorefront";
 import { WifiSlash, ArrowClockwise, Storefront as StorefrontIcon } from "@phosphor-icons/react";
@@ -56,6 +57,11 @@ const DEMO_STOREFRONT_DATA = {
     currentTier: "Abyssal",
     socialLinks: {},
     createdAt: "2024-08-15T00:00:00Z",
+    policies: {
+      shipping: "Overnight UPS/USPS Priority, shipped Tue–Thu to avoid weekend transit. Heat or cold packs included based on your local forecast. Live Arrival Guarantee on all overnight shipments. Buyer pays actual shipping.",
+      doa: "DOA covered when you send a clear photo of the unopened bag within 2 hours of delivery. I'll replace on the next ship day or refund the specimen cost. Shipping on replacements is split 50/50.",
+      handshake: "Local pickup in the Portland metro. Cash or in-app checkout. We meet at my fish room by appointment so you can see the parent stock. Bring an insulated container — I bag with pure O2 for the ride home.",
+    },
   },
   stats: {
     totalSales: 47,
@@ -385,6 +391,9 @@ function StorefrontContent() {
             </div>
           )}
         </section>
+
+        {/* Store policies (shipping, DOA, in-person handshake) */}
+        <StorePolicies policies={profile.policies} />
 
         {/* Breeding history */}
         <BreedingTimeline history={breedingHistory || []} />

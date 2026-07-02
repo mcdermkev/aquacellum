@@ -197,6 +197,9 @@ function normalizeBreederProfile(row) {
     bio: row.bio || "",
     avatarCid: row.avatar_cid || null,
     bannerCid: row.banner_cid || null,
+    // Full public URLs (preferred); components fall back to CID gateway if absent.
+    avatarUrl: row.avatar_url || (row.avatar_cid ? `https://gateway.pinata.cloud/ipfs/${row.avatar_cid}` : null),
+    bannerUrl: row.banner_url || (row.banner_cid ? `https://gateway.pinata.cloud/ipfs/${row.banner_cid}` : null),
     specialties: row.specialties || [],
     location: row.location || null,
     isMasterBreeder: row.is_master_breeder || false,
@@ -205,6 +208,11 @@ function normalizeBreederProfile(row) {
     currentTier: row.current_tier || "Shallow",
     themeConfig: row.theme_config || null,
     socialLinks: row.social_links || {},
+    policies: {
+      shipping: row.shipping_policy || null,
+      doa: row.doa_policy || null,
+      handshake: row.handshake_policy || null,
+    },
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     // Joined stats if present

@@ -22,8 +22,8 @@ export function BreederHeader({ profile, stats }) {
   const [bannerLoaded, setBannerLoaded] = useState(false);
   const [avatarLoaded, setAvatarLoaded] = useState(false);
 
-  const bannerUrl = profile.bannerCid ? `${IPFS_GATEWAY}/${profile.bannerCid}` : null;
-  const avatarUrl = profile.avatarCid ? `${IPFS_GATEWAY}/${profile.avatarCid}` : null;
+  const bannerUrl = profile.bannerUrl || (profile.bannerCid ? `${IPFS_GATEWAY}/${profile.bannerCid}` : null);
+  const avatarUrl = profile.avatarUrl || (profile.avatarCid ? `${IPFS_GATEWAY}/${profile.avatarCid}` : null);
   const tierStyle = TIER_COLORS[profile.currentTier] || TIER_COLORS["Shallow"];
 
   return (

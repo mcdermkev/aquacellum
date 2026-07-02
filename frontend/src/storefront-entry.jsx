@@ -6,10 +6,13 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { StorefrontPage } from "./components/storefront/StorefrontPage";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./styles/storefront.css";
 
 ReactDOM.createRoot(document.getElementById("storefront-root")).render(
   <React.StrictMode>
-    <StorefrontPage />
+    <ErrorBoundary>
+      <StorefrontPage />
+    </ErrorBoundary>
   </React.StrictMode>
 );
