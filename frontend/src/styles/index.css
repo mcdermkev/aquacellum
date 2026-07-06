@@ -605,6 +605,35 @@ h1, h2, h3, h4, h5, h6 {
   to { transform: translateX(0); }
 }
 
+/* Mobile Quick Log FAB — floating button visible only on small screens */
+.quick-log-fab {
+  display: none;
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.25rem;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.92) 100%);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 16px rgba(56, 189, 248, 0.2);
+  color: #e0f7ff;
+  font-size: 1.4rem;
+  cursor: pointer;
+  z-index: 900;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.quick-log-fab:active {
+  transform: scale(0.92);
+}
+@media (max-width: 640px) {
+  .quick-log-fab {
+    display: flex;
+  }
+}
+
 /* Incoming Badge pulse — gentle attention-getter for unassigned specimens past nudge threshold */
 @keyframes incomingPulse {
   0%, 100% { opacity: 1; transform: scale(1); }
@@ -1625,6 +1654,11 @@ input[type="range"] {
   .tank-action-bar {
     gap: 0.35rem !important;
     padding: 0.4rem !important;
+    /* Disable sticky on mobile to prevent the bar from overlapping
+       Reset/Decommission buttons and native select dropdowns
+       that would otherwise be trapped beneath its stacking context */
+    position: relative !important;
+    z-index: auto !important;
   }
 
   .tank-action-pill {

@@ -3810,6 +3810,21 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         </div>
       )}
 
+      {/* MOBILE FLOATING QUICK LOG FAB — always accessible without scrolling */}
+      {!quickLogOpen && (
+        <button
+          className="quick-log-fab"
+          onClick={() => {
+            setQuickLogMode("water_test");
+            setBulkLogScope("single");
+            setQuickLogOpen(true);
+          }}
+          aria-label="Quick Log"
+        >
+          <span>✍️</span>
+        </button>
+      )}
+
       {/* 4. QUICK LOG SLIDING DRAWER CONTAINER */}
       {quickLogOpen && (
         <div className="sliding-drawer-backdrop" onClick={() => setQuickLogOpen(false)}>
