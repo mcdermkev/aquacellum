@@ -191,8 +191,8 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
 
       setSuccessMsg(
         casualModeActive
-          ? `"${morphName}" submitted! A curator will take a look soon.`
-          : `"${morphName}" queued for curator verification.`
+          ? `"${morphName}" submitted! A curator will review it soon. You can check back here anytime — look for the 🎨 Morphs tab under Breeder Tools to track your status.`
+          : `"${morphName}" queued for curator verification. Track its status below, or bookmark this page: /app/breeder?section=morphs`
       );
       setForm({ baseSpecies: "", morphName: "", traitType: "color", description: "", proofUrl: "" });
       setProofPhoto(null);
@@ -498,7 +498,17 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
           <div style={{ fontSize: "0.78rem", color: "var(--accent-red, #f87171)" }}>{error}</div>
         )}
         {successMsg && (
-          <div style={{ fontSize: "0.78rem", color: "var(--accent-green, #34d399)" }}>{successMsg}</div>
+          <div style={{
+            fontSize: "0.78rem",
+            color: "var(--accent-green, #34d399)",
+            background: "rgba(52, 211, 153, 0.06)",
+            border: "1px solid rgba(52, 211, 153, 0.2)",
+            borderRadius: "8px",
+            padding: "0.6rem 0.85rem",
+            lineHeight: 1.5,
+          }}>
+            ✓ {successMsg}
+          </div>
         )}
 
         <div style={{ display: "flex", justifyContent: "flex-end" }}>

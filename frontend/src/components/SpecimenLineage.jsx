@@ -39,7 +39,13 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
           sireId: Number(data.sireId),
           damId: Number(data.damId),
           ipfsMetadataUri: data.ipfsMetadataUri,
-          status: Number(data.status)
+          status: Number(data.status),
+          breederStockTag: await (async () => {
+            try {
+              const local = await db.specimens.get(Number(id));
+              return local?.breederStockTag || "";
+            } catch (_) { return ""; }
+          })()
         };
       }
     } catch (e) {
@@ -66,7 +72,8 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
           sireId: Number(local.sireId || 0),
           damId: Number(local.damId || 0),
           ipfsMetadataUri: local.ipfsMetadataUri || "",
-          status: local.status ?? 0
+          status: local.status ?? 0,
+          breederStockTag: local.breederStockTag || ""
         };
       }
     } catch (localErr) {

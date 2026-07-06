@@ -75,6 +75,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
     currentTankId: "0",
     sireId: "0",
     damId: "0",
+    breederStockTag: "",
     ipfsMetadataUri: "ipfs://bafybeidflm24zspeciemensample/meta.json"
   });
   const [breederEditable, setBreederEditable] = useState(false);
@@ -201,6 +202,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
         ownerAddress: walletAccount,
         commonName,
         scientificName,
+        breederStockTag: formData.breederStockTag,
       });
 
       if (!result.success) {
@@ -448,6 +450,25 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
               onBlur={handleInputBlur}
             />
           </div>
+        </div>
+
+        <div>
+          <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+            Breeder Stock Tag <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: "400" }}>(optional — e.g. "esgIV")</span>
+          </label>
+          <input 
+            type="text"
+            value={formData.breederStockTag}
+            onChange={(e) => setFormData({ ...formData, breederStockTag: e.target.value.slice(0, 16) })}
+            placeholder="Your personal lineage tag..."
+            maxLength={16}
+            style={inputStyle}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
+          />
+          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>
+            A short tag to trace this specimen back to your personal breedstock lineage.
+          </span>
         </div>
 
         <div>

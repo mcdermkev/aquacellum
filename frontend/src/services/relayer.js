@@ -167,6 +167,7 @@ export async function relayMintSpecimen({
   commonName = "",
   scientificName = "",
   gender = "Unsexed",
+  breederStockTag = "",
 } = {}) {
   try {
     const specimenId = Date.now();
@@ -185,6 +186,7 @@ export async function relayMintSpecimen({
       scientificName,
       status: 0, // Active
       gender,
+      breederStockTag: breederStockTag || "",
       createdAt: Math.floor(Date.now() / 1000),
     };
 

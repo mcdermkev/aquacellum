@@ -15,6 +15,7 @@ import { useSuggestSpecies } from "../hooks/useSuggestSpecies";
 import { BreedersCouncil } from "./BreedersCouncil";
 import { CurationQueuePanel } from "./CurationQueuePanel";
 import { db } from "../db";
+import { syncSpecimenToCloud } from "../services/cloudSync";
 import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";
 import { getPersonality } from "../utils/personality";
 import { SpeciesInsights } from "./reef/SpeciesInsights";
@@ -181,6 +182,43 @@ export function BreedGallery({
   const [notification, setNotification] = useState(null);
   const [galleryDropPhoto, setGalleryDropPhoto] = useState(null); // { preview }
   const galleryPhotoInputRef = useRef(null);
+
+  // Breeder Stock Tag inline editing state
+  const [editingTagId, setEditingTagId] = useState(null); // specimenId being edited
+  const [editingTagValue, setEditingTagValue] = useState("");
+
+  const handleTagEditStart = (e, spec) => {
+    e.stopPropagation();
+    setEditingTagId(spec.specimenId);
+    setEditingTagValue(spec.breederStockTag || "");
+  };
+
+  const handleTagEditSave = async (e, spec) => {
+    e.stopPropagation();
+    const newTag = editingTagValue.trim().slice(0, 16);
+    try {
+      await db.specimens.update(spec.specimenId, { breederStockTag: newTag });
+      // Fire-and-forget cloud sync
+      const updatedSpec = await db.specimens.get(spec.specimenId);
+      if (updatedSpec) syncSpecimenToCloud(updatedSpec).catch(() => {});
+      // Update local state in the displayed list
+      setSelectedBreedSpecs((prev) =>
+        prev.map((s) => s.specimenId === spec.specimenId ? { ...s, breederStockTag: newTag } : s)
+      );
+      showToast(`Stock tag ${newTag ? `"${newTag}"` : "cleared"} saved.`);
+    } catch (err) {
+      console.error("Failed to save breeder stock tag:", err);
+      showToast("Failed to save stock tag.");
+    }
+    setEditingTagId(null);
+    setEditingTagValue("");
+  };
+
+  const handleTagEditCancel = (e) => {
+    if (e) e.stopPropagation();
+    setEditingTagId(null);
+    setEditingTagValue("");
+  };
 
   // New States for Spawning Logs and Tank Compatibility Simulation
   const [contractInstance, setContractInstance] = useState(null);
@@ -498,6 +536,12 @@ export function BreedGallery({
         uniqueTokenIds.map(async (tokenId) => {
           const spec = await contract.specimens(tokenId);
           const owner = await contract.ownerOf(tokenId);
+          // Enrich with local breederStockTag if available
+          let breederStockTag = "";
+          try {
+            const localSpec = await db.specimens.get(Number(tokenId));
+            if (localSpec?.breederStockTag) breederStockTag = localSpec.breederStockTag;
+          } catch (_) {}
           return {
             specimenId: Number(tokenId),
             speciesId: Number(spec.speciesId),
@@ -508,7 +552,8 @@ export function BreedGallery({
             damId: Number(spec.damId),
             ipfsMetadataUri: spec.ipfsMetadataUri,
             status: Number(spec.status),
-            owner: owner
+            owner: owner,
+            breederStockTag
           };
         })
       );
@@ -929,6 +974,99 @@ export function BreedGallery({
                         <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "#fff", marginBottom: "0.75rem", marginTop: 0 }}>
                           {casualModeActive ? selectedBreed.commonName : `Cert. Serial No. ${spec.specimenId.toString().padStart(3, "0")}`}
                         </h3>
+
+                        {editingTagId === spec.specimenId ? (
+                          <div style={{ marginBottom: "0.75rem", marginTop: "-0.5rem", display: "flex", gap: "0.35rem", alignItems: "center" }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <input
+                              type="text"
+                              value={editingTagValue}
+                              onChange={(e) => setEditingTagValue(e.target.value.slice(0, 16))}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleTagEditSave(e, spec);
+                                if (e.key === "Escape") handleTagEditCancel(e);
+                              }}
+                              autoFocus
+                              maxLength={16}
+                              placeholder="e.g. esgIV"
+                              style={{
+                                fontSize: "0.7rem",
+                                fontFamily: "monospace",
+                                padding: "0.2rem 0.5rem",
+                                borderRadius: "4px",
+                                background: "rgba(168, 85, 247, 0.08)",
+                                border: "1px solid rgba(168, 85, 247, 0.5)",
+                                color: "#c084fc",
+                                outline: "none",
+                                width: "100px"
+                              }}
+                            />
+                            <button
+                              onClick={(e) => handleTagEditSave(e, spec)}
+                              style={{
+                                fontSize: "0.6rem",
+                                padding: "0.15rem 0.4rem",
+                                borderRadius: "3px",
+                                background: "rgba(52, 211, 153, 0.15)",
+                                border: "1px solid rgba(52, 211, 153, 0.4)",
+                                color: "#34d399",
+                                cursor: "pointer"
+                              }}
+                            >Save</button>
+                            <button
+                              onClick={(e) => handleTagEditCancel(e)}
+                              style={{
+                                fontSize: "0.6rem",
+                                padding: "0.15rem 0.4rem",
+                                borderRadius: "3px",
+                                background: "rgba(248, 113, 113, 0.1)",
+                                border: "1px solid rgba(248, 113, 113, 0.3)",
+                                color: "#f87171",
+                                cursor: "pointer"
+                              }}
+                            >Cancel</button>
+                          </div>
+                        ) : (
+                          <div style={{ marginBottom: "0.75rem", marginTop: "-0.5rem", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                            {spec.breederStockTag ? (
+                              <span
+                                onClick={(e) => handleTagEditStart(e, spec)}
+                                title="Click to edit stock tag"
+                                style={{
+                                  fontSize: "0.7rem",
+                                  fontWeight: "700",
+                                  padding: "0.2rem 0.6rem",
+                                  borderRadius: "4px",
+                                  background: "rgba(168, 85, 247, 0.12)",
+                                  border: "1px solid rgba(168, 85, 247, 0.35)",
+                                  color: "#c084fc",
+                                  fontFamily: "monospace",
+                                  letterSpacing: "0.04em",
+                                  cursor: "pointer",
+                                  transition: "border-color 0.2s"
+                                }}
+                              >
+                                {spec.breederStockTag}
+                              </span>
+                            ) : (
+                              <button
+                                onClick={(e) => handleTagEditStart(e, spec)}
+                                title="Add breeder stock tag"
+                                style={{
+                                  fontSize: "0.6rem",
+                                  padding: "0.15rem 0.5rem",
+                                  borderRadius: "4px",
+                                  background: "rgba(168, 85, 247, 0.06)",
+                                  border: "1px dashed rgba(168, 85, 247, 0.3)",
+                                  color: "rgba(192, 132, 252, 0.6)",
+                                  cursor: "pointer",
+                                  fontFamily: "monospace"
+                                }}
+                              >+ Tag</button>
+                            )}
+                          </div>
+                        )}
 
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "1.25rem" }}>
                           {proMode && (

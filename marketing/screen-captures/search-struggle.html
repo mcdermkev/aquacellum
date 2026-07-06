@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Search Struggle - Scene 1 Overlay</title>
+<style>
+  /* 9:16 aspect (1080x1920) — this is the full frame the recording captures */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1080px;
+    height: 1920px;
+    overflow: hidden;
+    background: #0a0a14;
+    font-family: 'Courier New', monospace;
+    color: #c8d0e0;
+  }
+
+  /* Retro CRT scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    z-index: 9999;
+  }
+
+  .browser {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #111827;
+  }
+
+  /* Fake browser chrome — retro vibes */
+  .browser-chrome {
+    background: #1e2331;
+    border-bottom: 1px solid #2a3040;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .tab-bar {
+    display: flex;
+    gap: 4px;
+    overflow: hidden;
+  }
+
+  .tab {
+    background: #161b28;
+    border: 1px solid #2a3040;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    padding: 6px 14px;
+    font-size: 11px;
+    color: #6b7280;
+    white-space: nowrap;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .tab.active {
+    background: #111827;
+    color: #e5e7eb;
+    border-color: #374151;
+  }
+
+  .tab.visible { opacity: 1; }
+
+  .address-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .url-bar {
+    flex: 1;
+    background: #0d1117;
+    border: 1px solid #2a3040;
+    border-radius: 20px;
+    padding: 10px 18px;
+    font-size: 14px;
+    color: #9ca3af;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  /* Search input area */
+  .search-container {
+    padding: 60px 40px 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .search-logo {
+    font-size: 42px;
+    font-weight: bold;
+    color: #4b5563;
+    letter-spacing: -1px;
+    opacity: 0.7;
+  }
+
+  .search-box {
+    width: 100%;
+    max-width: 700px;
+    background: #1a2030;
+    border: 2px solid #374151;
+    border-radius: 28px;
+    padding: 16px 24px;
+    font-size: 20px;
+    color: #f0f4ff;
+    font-family: 'Courier New', monospace;
+    position: relative;
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+  }
+
+  .search-box .cursor {
+    display: inline-block;
+    width: 2px;
+    height: 24px;
+    background: #60a5fa;
+    animation: blink 0.8s step-end infinite;
+    margin-left: 2px;
+    vertical-align: middle;
+  }
+
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+
+  /* Search results — bad, sketchy, useless */
+  .results {
+    padding: 20px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .result {
+    padding: 16px 20px;
+    background: #141b2a;
+    border: 1px solid #1e2940;
+    border-radius: 10px;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.35s, transform 0.35s;
+  }
+
+  .result.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .result-url {
+    font-size: 12px;
+    color: #4ade80;
+    margin-bottom: 4px;
+    opacity: 0.7;
+  }
+
+  .result-title {
+    font-size: 17px;
+    color: #60a5fa;
+    margin-bottom: 6px;
+    text-decoration: underline;
+  }
+
+  .result-desc {
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.4;
+  }
+
+  .result-warning {
+    display: inline-block;
+    background: #7f1d1d;
+    color: #fca5a5;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-top: 6px;
+  }
+
+  .result-dead {
+    display: inline-block;
+    background: #374151;
+    color: #9ca3af;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-top: 6px;
+  }
+
+  /* "No good results" frustration state */
+  .frustration-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 10, 20, 0.85);
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.6s;
+    pointer-events: none;
+  }
+
+  .frustration-overlay.visible {
+    opacity: 1;
+  }
+
+  .frustration-text {
+    font-size: 28px;
+    color: #ef4444;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    line-height: 1.5;
+    padding: 40px;
+  }
+</style>
+</head>
+<body>
+<div class="browser" id="browser">
+  <div class="browser-chrome">
+    <div class="tab-bar" id="tabs"></div>
+    <div class="address-bar">
+      <div class="url-bar" id="urlBar">about:blank</div>
+    </div>
+  </div>
+  <div class="search-container">
+    <div class="search-logo">SearchFish</div>
+    <div class="search-box">
+      <span id="typed"></span><span class="cursor"></span>
+    </div>
+  </div>
+  <div class="results" id="results"></div>
+  <div class="frustration-overlay" id="frustration">
+    <div class="frustration-text">
+      Nothing useful...<br>
+      Where do fish people even go??
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Scene 1 Search Struggle Animation ───────────────────────────────────────
+// Auto-plays a sequence of typed queries with bad results, then a frustration state.
+// Total runtime ~8s to match the Veo clip length.
+
+const QUERIES = [
+  {
+    text: "best guppies for sale near me",
+    url: "www.sketchy-fish-deals.biz/guppies",
+    results: [
+      { url: "sketchy-fish-deals.biz", title: "CHEAP GUPPIES $2 EACH!!! Click Now", desc: "Free shipping on all orders over... [site last updated 2019]", tag: "warning", tagText: "Potentially unsafe" },
+      { url: "old-forums.fishkeeping.net/t/2847", title: "Where to buy guppies? - FishForum (2014)", desc: "Thread locked. Original poster hasn't been online since 2016...", tag: "dead", tagText: "Forum archived" },
+    ]
+  },
+  {
+    text: "where to find shrimp breeders",
+    url: "www.google.com/search?q=shrimp+breeders",
+    results: [
+      { url: "amazon.com/frozen-shrimp-bulk", title: "Frozen Shrimp 5lb Bag - Amazon.com", desc: "Not what you're looking for... Raw jumbo shrimp, deveined, farm raised...", tag: "dead", tagText: "Wrong shrimp" },
+      { url: "reddit.com/r/shrimptank/archived", title: "r/shrimptank - Anyone selling CRS? [Archived]", desc: "This community has been set to private. Contact the moderators...", tag: "warning", tagText: "Private community" },
+    ]
+  },
+  {
+    text: "local aquarium club near me",
+    url: "www.google.com/search?q=aquarium+club+near+me",
+    results: [
+      { url: "meetup.com/aquarium-enthusiasts-2018", title: "Aquarium Enthusiasts Meetup - INACTIVE", desc: "This group is no longer active. Last event: March 2020...", tag: "dead", tagText: "Group inactive" },
+      { url: "yelp.com/biz/bobs-fish-world", title: "Bob's Fish World - CLOSED", desc: "This business has been reported as closed. Were you the owner?", tag: "dead", tagText: "Permanently closed" },
+    ]
+  },
+  {
+    text: "how do I sell fish I bred",
+    url: "www.google.com/search?q=sell+bred+fish",
+    results: [
+      { url: "quora.com/how-sell-aquarium-fish", title: "How do I sell my aquarium fish? - Quora (2017)", desc: "Try Craigslist or bring them to PetSmart (they won't buy them)...", tag: "dead", tagText: "Outdated" },
+      { url: "facebook.com/groups/fishselling-local", title: "Local Fish Buy/Sell/Trade - Facebook Group", desc: "Your post is pending approval. Admins are inactive. 47 pending posts...", tag: "warning", tagText: "Unmoderated" },
+    ]
+  },
+];
+
+const typedEl = document.getElementById('typed');
+const urlBar = document.getElementById('urlBar');
+const resultsEl = document.getElementById('results');
+const tabsEl = document.getElementById('tabs');
+const frustrationEl = document.getElementById('frustration');
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function typeText(text, speed = 45) {
+  typedEl.textContent = '';
+  for (let i = 0; i < text.length; i++) {
+    typedEl.textContent += text[i];
+    await sleep(speed);
+  }
+}
+
+function showResults(results) {
+  resultsEl.innerHTML = '';
+  results.forEach((r, i) => {
+    const div = document.createElement('div');
+    div.className = 'result';
+    div.innerHTML = `
+      <div class="result-url">${r.url}</div>
+      <div class="result-title">${r.title}</div>
+      <div class="result-desc">${r.desc}</div>
+      ${r.tag === 'warning' ? `<span class="result-warning">${r.tagText}</span>` : ''}
+      ${r.tag === 'dead' ? `<span class="result-dead">${r.tagText}</span>` : ''}
+    `;
+    resultsEl.appendChild(div);
+    setTimeout(() => div.classList.add('visible'), 120 * (i + 1));
+  });
+}
+
+function addTab(text) {
+  const tab = document.createElement('div');
+  tab.className = 'tab';
+  tab.textContent = text;
+  tabsEl.appendChild(tab);
+  setTimeout(() => tab.classList.add('visible'), 50);
+  // Mark last tab active
+  tabsEl.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+}
+
+async function runSequence() {
+  await sleep(400); // brief pause before starting
+
+  for (let i = 0; i < QUERIES.length; i++) {
+    const q = QUERIES[i];
+
+    // Type the query
+    await typeText(q.text, 40);
+    await sleep(200);
+
+    // "Submit" — update URL bar and show results
+    urlBar.textContent = q.url;
+    addTab(q.text.slice(0, 25) + '...');
+    showResults(q.results);
+
+    // Pause to read results
+    await sleep(1400);
+
+    // Clear for next query (except last one)
+    if (i < QUERIES.length - 1) {
+      resultsEl.innerHTML = '';
+      await sleep(200);
+    }
+  }
+
+  // Final frustration overlay
+  await sleep(400);
+  frustrationEl.classList.add('visible');
+}
+
+// Start animation immediately
+runSequence();
+</script>
+</body>
+</html>

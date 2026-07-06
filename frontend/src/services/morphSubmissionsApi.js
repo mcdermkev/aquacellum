@@ -96,3 +96,42 @@ export async function reviewMorphSubmission({ id, status, callerWallet, note }) 
     return { data: null, error: err.message || "Network error" };
   }
 }
+
+/**
+ * Get count of submissions with status updates since the user last viewed the
+ * Morphs tab. Uses localStorage timestamp to determine "unseen" reviews.
+ */
+const MORPH_LAST_SEEN_KEY = "aquadex_morph_last_seen";
+
+export function markMorphsViewed() {
+  localStorage.setItem(MORPH_LAST_SEEN_KEY, new Date().toISOString());
+}
+
+export function getMorphLastSeenTime() {
+  const raw = localStorage.getItem(MORPH_LAST_SEEN_KEY);
+  return raw ? new Date(raw) : null;
+}
+
+export async function getUnseenMorphUpdates(walletAddress) {
+  if (!isSupabaseConfigured()) return { count: 0, error: "Not configured" };
+
+  const wallet = (walletAddress || getCurrentWallet() || "").toLowerCase();
+  if (!wallet) return { count: 0, error: "Not connected" };
+
+  const lastSeen = getMorphLastSeenTime();
+
+  const { data, error } = await supabase
+    .from("morph_submissions")
+    .select("id, status, reviewed_at")
+    .eq("submitter_wallet", wallet)
+    .neq("status", "pending");
+
+  if (error) return { count: 0, error };
+
+  // If user has never viewed the tab, all non-pending submissions are "unseen"
+  const unseen = lastSeen
+    ? (data || []).filter((m) => m.reviewed_at && new Date(m.reviewed_at) > lastSeen)
+    : (data || []).filter((m) => m.reviewed_at);
+
+  return { count: unseen.length, error: null };
+}

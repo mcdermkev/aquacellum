@@ -66,6 +66,23 @@ function Tooltip({ node, position }) {
       <div style={{ fontSize: "0.65rem", color: "var(--text-muted, #6b7280)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "4px" }}>
         Certificate #{node.id?.toString().padStart(3, "0")}
       </div>
+      {node.breederStockTag && (
+        <div style={{ marginBottom: "4px" }}>
+          <span style={{
+            fontSize: "0.65rem",
+            fontWeight: "700",
+            padding: "1px 6px",
+            borderRadius: "3px",
+            background: "rgba(168, 85, 247, 0.15)",
+            border: "1px solid rgba(168, 85, 247, 0.4)",
+            color: "#c084fc",
+            fontFamily: "'JetBrains Mono', monospace",
+            letterSpacing: "0.04em"
+          }}>
+            {node.breederStockTag}
+          </span>
+        </div>
+      )}
       <div style={{ fontSize: "0.9rem", fontWeight: "700", color: "#fff", marginBottom: "2px" }}>
         {node.speciesName || "Unknown Species"}
       </div>
@@ -223,6 +240,13 @@ function TreeNode({ node, x, y, colorScheme, label, index, onHover, onClick, isC
           <text x={x + NODE_WIDTH - 12} y={y + 18} textAnchor="end" fill="rgba(167, 139, 250, 0.7)" fontSize="9" fontFamily="'JetBrains Mono', monospace">
             #{node.id?.toString().padStart(3, "0")}
           </text>
+
+          {/* Breeder Stock Tag */}
+          {node.breederStockTag && (
+            <text x={x + NODE_WIDTH - 12} y={y + 30} textAnchor="end" fill="#c084fc" fontSize="8" fontWeight="700" fontFamily="'JetBrains Mono', monospace">
+              {node.breederStockTag}
+            </text>
+          )}
 
           {/* Species name */}
           <text x={x + 12} y={y + 38} fill="#ffffff" fontSize="12" fontWeight="700" fontFamily="'Inter', sans-serif">

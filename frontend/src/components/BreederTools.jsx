@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { MintSpecimen } from "./MintSpecimen";
 import { SpecimenLineage } from "./SpecimenLineage";
 import { SpawningWizard } from "./SpawningWizard";
@@ -8,6 +8,10 @@ import { MorphRegistration } from "./MorphRegistration";
 import { GeneticsPrediction } from "./GeneticsPrediction";
 import { COICalculator } from "./COICalculator";
 import { BreederAchievements } from "./BreederAchievements";
+import {
+  getUnseenMorphUpdates,
+  markMorphsViewed,
+} from "../services/morphSubmissionsApi";
 
 /**
  * BreederTools — Combined pro-mode panel that unifies Register, Lineage, and
@@ -30,6 +34,36 @@ export function BreederTools({
       setActiveSection(initialSection);
     }
   }, [initialSection]);
+
+  // ─── Morph notification badge ─────────────────────────────────────────────
+  const [morphBadgeCount, setMorphBadgeCount] = useState(0);
+
+  const refreshMorphBadge = useCallback(async () => {
+    if (!walletAccount) return;
+    const { count } = await getUnseenMorphUpdates(walletAccount);
+    setMorphBadgeCount(count);
+  }, [walletAccount]);
+
+  useEffect(() => {
+    refreshMorphBadge();
+  }, [refreshMorphBadge]);
+
+  // When user navigates to Morphs, mark as viewed and clear badge
+  const handleSectionChange = (sectionId) => {
+    setActiveSection(sectionId);
+    if (sectionId === "morphs") {
+      markMorphsViewed();
+      setMorphBadgeCount(0);
+    }
+  };
+
+  // Also mark as viewed if we land on morphs via initialSection (deep-link)
+  useEffect(() => {
+    if (activeSection === "morphs") {
+      markMorphsViewed();
+      setMorphBadgeCount(0);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sections = [
     { id: "register", icon: "✦", label: "Register" },
@@ -62,7 +96,7 @@ export function BreederTools({
           return (
             <button
               key={section.id}
-              onClick={() => setActiveSection(section.id)}
+              onClick={() => handleSectionChange(section.id)}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -85,7 +119,24 @@ export function BreederTools({
               aria-current={isActive ? "true" : undefined}
             >
               <span>{section.icon}</span>
-              <span>{section.label}</span>
+              <span style={{ position: "relative" }}>
+                {section.label}
+                {section.id === "morphs" && morphBadgeCount > 0 && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: "-4px",
+                      right: "-10px",
+                      width: "8px",
+                      height: "8px",
+                      borderRadius: "50%",
+                      background: "var(--accent-green, #34d399)",
+                      boxShadow: "0 0 6px rgba(52, 211, 153, 0.6)",
+                    }}
+                    aria-label={`${morphBadgeCount} new update${morphBadgeCount > 1 ? "s" : ""}`}
+                  />
+                )}
+              </span>
             </button>
           );
         })}
@@ -117,7 +168,7 @@ export function BreederTools({
             walletAccount={walletAccount}
             onComplete={(targetSection) => {
               if (targetSection === "morphs") {
-                setActiveSection("morphs");
+                handleSectionChange("morphs");
               } else if (onSpawningComplete) {
                 onSpawningComplete();
               }

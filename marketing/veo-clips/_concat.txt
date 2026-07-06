@@ -1,0 +1,8 @@
+file 'shot-01-9x16.mp4'
+file 'shot-02-9x16.mp4'
+file 'shot-03-9x16.mp4'
+file 'shot-04-9x16.mp4'
+file 'shot-05-9x16.mp4'
+file 'shot-06-9x16.mp4'
+file 'shot-07-9x16.mp4'
+file 'shot-08-9x16.mp4'
