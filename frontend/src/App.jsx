@@ -294,6 +294,10 @@ export default function App() {
     window.scrollTo(0, 0);
   }, [activeTab]);
 
+  // Deep-link support: ?section=morphs (or any BreederTools section) navigates
+  // directly into that sub-tab when the breeder page loads.
+  const sectionParam = new URLSearchParams(location.search).get("section");
+
   const [preselectedLineageId, setPreselectedLineageId] = useState(null);
   const [breederToolsSection, setBreederToolsSection] = useState(sectionParam || "register");
   const [selectedBreedId, setSelectedBreedId] = useState(null);
@@ -344,10 +348,6 @@ export default function App() {
   // location.search updates on router navigation and browser back/forward, so
   // no manual popstate listener is needed.
   const viewParam = new URLSearchParams(location.search).get("view") || "hobbyist";
-
-  // Deep-link support: ?section=morphs (or any BreederTools section) navigates
-  // directly into that sub-tab when the breeder page loads.
-  const sectionParam = new URLSearchParams(location.search).get("section");
 
   const [displayTank, setDisplayTank] = useState(() => {
     const cached = localStorage.getItem("aquadex_display_tank");
