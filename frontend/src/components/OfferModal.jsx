@@ -73,8 +73,9 @@ export function OfferModal({ isOpen, onClose, listing, walletAccount, casualMode
         throw new Error(insertError.message || "Failed to submit offer.");
       }
 
-      // Fire local notification for seller (will be visible when they open the app)
+      // Notify the seller via Sonar (delivered to their notification bell).
       notifyOfferReceived({
+        recipientWallet: listing.seller,
         buyerName: generateAlias(walletAccount),
         speciesName: listing.commonName || "Unknown",
         offerAmount: offerVal,

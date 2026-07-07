@@ -1,8 +1,10 @@
 /**
  * MessageButton.jsx
  * 
- * "💬 Message" button shown on Tankmate profiles.
- * Opens/creates a conversation and navigates to it.
+ * "💬 Message" button shown on any user's profile.
+ * Opens/creates a conversation and navigates to it. Messaging is open to all
+ * connected users (not just Tankmates) so buyers, sellers, and new members can
+ * reach anyone during beta.
  */
 
 import React, { useState } from "react";
@@ -10,27 +12,14 @@ import { getOrCreateConversation } from "../../services/messagesApi";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { sameWallet } from "../../utils/wallet";
 import { useAuth } from "../../contexts/AuthContext";
-import { getRelationshipStatus } from "../../services/reefApi";
 
 export function MessageButton({ targetWallet, onOpenConversation }) {
   const [loading, setLoading] = useState(false);
-  const [visible, setVisible] = useState(null); // null = checking
   const { account } = useAuth();
   const currentWallet = account || getCurrentWallet();
 
-  // Check if they're tankmates (only show for mutual connections)
-  React.useEffect(() => {
-    if (!currentWallet || sameWallet(currentWallet, targetWallet)) {
-      setVisible(false);
-      return;
-    }
-    getRelationshipStatus(targetWallet).then((status) => {
-      setVisible(status === "tankmate");
-    });
-  }, [targetWallet, currentWallet]);
-
-  if (!currentWallet || sameWallet(currentWallet, targetWallet)) return null;
-  if (visible === null || !visible) return null;
+  // Show for any other user; only hide for signed-out viewers or self.
+  if (!currentWallet || !targetWallet || sameWallet(currentWallet, targetWallet)) return null;
 
   const handleClick = async () => {
     setLoading(true);

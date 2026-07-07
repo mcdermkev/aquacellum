@@ -27,6 +27,19 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// Emoji shown on the in-app Sonar bell, derived from the notification tag.
+// (The `icon` used for web push is an image path; the bell renders text/emoji.)
+function sonarIconForTag(tag?: string): string {
+  if (!tag) return "🔔";
+  if (tag.startsWith("order-new")) return "🛒";
+  if (tag.startsWith("order-dispatched")) return "📦";
+  if (tag.startsWith("order-released") || tag.startsWith("order-complete")) return "✅";
+  if (tag.startsWith("order-disputed")) return "⚠️";
+  if (tag.startsWith("order-resolved")) return "⚖️";
+  if (tag.startsWith("order-refunded")) return "↩️";
+  return "🔔";
+}
+
 interface OrderRecord {
   id: string;
   order_type: string;
@@ -217,18 +230,31 @@ serve(async (req) => {
         console.error(`[order-notifications] Failed to send to ${notif.wallet_address}:`, e);
       }
 
-      // Also record in social notifications table for in-app badge
+      // Also record in the Sonar notifications table for the in-app bell.
+      // The bell (useSonar / reefApi) reads `sonar_notifications`, keyed by
+      // `recipient_wallet` with category constrained to activity/social/milestone.
       try {
-        await supabase.from("socialNotifications" in {} ? "social_notifications" : "social_notifications").insert({
-          wallet_address: notif.wallet_address,
-          category: "order",
+        // Resolve recipient to the casing stored in profiles so the
+        // recipient_wallet FK (-> profiles.wallet_address) is satisfied.
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("wallet_address")
+          .ilike("wallet_address", notif.wallet_address)
+          .maybeSingle();
+        const recipient = prof?.wallet_address || notif.wallet_address;
+
+        await supabase.from("sonar_notifications").insert({
+          recipient_wallet: recipient,
+          category: "activity",
           title: notif.title,
           body: notif.body,
-          url: notif.url,
-          is_read: false,
-        }).then(() => {});
+          icon: sonarIconForTag(notif.tag),
+          link_type: "order",
+          link_id: order.id ?? null,
+        });
       } catch (e) {
         // Non-critical — in-app notification is best-effort
+        console.error(`[order-notifications] In-app record failed for ${notif.wallet_address}:`, e);
       }
     }
 

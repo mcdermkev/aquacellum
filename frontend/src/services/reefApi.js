@@ -1172,11 +1172,16 @@ export async function createNotification({
   linkId,
 }) {
   if (!isSupabaseConfigured()) return { error: "Not configured" };
+  if (!recipientWallet) return { error: "No recipient" };
+
+  // Resolve to the casing stored in profiles so the recipient_wallet FK
+  // (recipient_wallet -> profiles.wallet_address) is satisfied.
+  const resolvedRecipient = await resolveProfileWallet(recipientWallet);
 
   const { error } = await supabase
     .from("sonar_notifications")
     .insert({
-      recipient_wallet: recipientWallet,
+      recipient_wallet: resolvedRecipient,
       category,
       title,
       body,

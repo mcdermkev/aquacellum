@@ -59,6 +59,25 @@ export function InboxPanel({ casualModeActive = false }) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isOpen]);
 
+  // Open a specific conversation when another component (e.g. a profile's
+  // "Message" button) requests it via the reef_open_conversation event.
+  useEffect(() => {
+    const handleOpenConversation = (e) => {
+      const { conversationId, targetWallet, targetProfile } = e.detail || {};
+      if (!conversationId) return;
+      setIsOpen(true);
+      setActiveInboxTab("messages");
+      setShowPreferences(false);
+      setActiveConvo({
+        id: conversationId,
+        otherWallet: targetWallet,
+        otherProfile: targetProfile || null,
+      });
+    };
+    window.addEventListener("reef_open_conversation", handleOpenConversation);
+    return () => window.removeEventListener("reef_open_conversation", handleOpenConversation);
+  }, []);
+
   const handleNotificationClick = (notification) => {
     if (!notification.is_read) {
       markRead.mutate(notification.id);
