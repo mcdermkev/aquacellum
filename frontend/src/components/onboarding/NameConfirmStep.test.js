@@ -98,29 +98,44 @@ describe("Enter submits the name (Req 7.6)", () => {
   });
 });
 
-describe("Alias prefill — field seeded from generated alias (Req 7.1)", () => {
-  const account = "0x1234567890abcdef1234567890abcdef12345678";
+describe("Random handle — opt-in, lowercase (Req 7.1)", () => {
+  const account = "0x1234567890ABCDEF1234567890abcdef12345678";
 
   it("derives a deterministic, non-empty alias from the account", () => {
     const alias = generateAlias(account);
-    expect(alias).toMatch(/^[A-Za-z]+-[A-Za-z]+-\d{4}$/);
+    expect(alias).toMatch(/^[a-z]+-[a-z]+-\d{4}$/);
     expect(generateAlias(account)).toBe(alias); // deterministic
   });
 
-  it("produces a prefill seed within the 30-char field limit", () => {
+  it("always produces a lowercase alias (no casing introduced by us)", () => {
+    const alias = generateAlias(account);
+    expect(alias).toBe(alias.toLowerCase());
+    // Same address in different casing yields the same lowercase handle.
+    expect(generateAlias(account.toLowerCase())).toBe(alias);
+    expect(generateAlias(account.toUpperCase().replace("0X", "0x"))).toBe(alias);
+  });
+
+  it("produces a handle within the 30-char field limit", () => {
     const seed = normalizeName(generateAlias(account));
     expect(seed).toBe(generateAlias(account));
     expect(seed.length).toBeLessThanOrEqual(MAX_NAME_LENGTH);
     expect(isNameValid(seed)).toBe(true);
   });
 
-  it("seeds the editable field from the generated alias in the component", () => {
-    // The component memoizes `suggestedAlias = generateAlias(account)` and seeds
-    // the input value from it (falling back to any resumed displayName).
-    expect(NAME_STEP_SOURCE).toContain("generateAlias(account)");
-    expect(NAME_STEP_SOURCE).toMatch(
+  it("does NOT auto-seed the field from the alias — new users start empty", () => {
+    // The field seeds only from a resumed-session displayName, never the alias.
+    expect(NAME_STEP_SOURCE).toMatch(/normalizeName\(displayName \|\| ""\)/);
+    expect(NAME_STEP_SOURCE).not.toMatch(
       /normalizeName\(displayName \|\| suggestedAlias\)/
     );
+  });
+
+  it("exposes the alias only through the opt-in random-handle control", () => {
+    // suggestedAlias is still derived from the account, but applied on demand
+    // via the handleUseRandom handler wired to the opt-in button.
+    expect(NAME_STEP_SOURCE).toContain("generateAlias(account)");
+    expect(NAME_STEP_SOURCE).toContain("handleUseRandom");
+    expect(NAME_STEP_SOURCE).toMatch(/setValue\(normalizeName\(suggestedAlias\)\)/);
   });
 });
 

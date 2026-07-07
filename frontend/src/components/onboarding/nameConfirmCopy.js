@@ -18,18 +18,20 @@ export const MAX_NAME_LENGTH = 30;
 // the "operator callsign / node" framing established by the existing wizard.
 // ─────────────────────────────────────────────────────────────────────────────
 export const NAME_CONFIRM_COPY = Object.freeze({
-  // Poseidon's prompt asking the user to confirm/edit the suggested name.
+  // Poseidon's prompt asking the user to choose a name.
   prompt: {
     casual:
-      "One last thing — what should I call you? I've suggested a name, but you can change it to whatever you like.",
-    pro: "Designate your operator callsign. A default has been generated from your node address.",
+      "One last thing — what should I call you? Pick any name you like.",
+    pro: "Designate your operator callsign.",
   },
   // Input placeholder.
-  placeholder: { casual: "Enter your name…", pro: "Enter callsign…" },
+  placeholder: { casual: "Choose a display name…", pro: "Enter callsign…" },
   // Primary confirm CTA label.
   button: { casual: "That's Me", pro: "Confirm Callsign" },
   // Disabled label while persistence is in-flight.
   buttonBusy: { casual: "Saving…", pro: "Registering…" },
+  // Opt-in: generate a random fish-themed handle instead of typing a name.
+  randomButton: { casual: "Use a random handle", pro: "Generate callsign" },
 });
 
 /**

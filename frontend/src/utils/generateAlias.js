@@ -3,8 +3,11 @@
  * 
  * Generates a deterministic, fish-themed friendly alias from a wallet address.
  * The alias is human-readable and consistent — the same address always produces
- * the same alias. Format: "Adjective-Fish-NNNN" (e.g., "Coral-Tetra-4821")
- * 
+ * the same alias. Format: "adjective-fish-nnnn" (e.g., "coral-tetra-4821")
+ *
+ * Output is always lowercase so the app never introduces mixed-casing into
+ * identifiers (matches our canonical lowercase policy).
+ *
  * Used in casual mode to replace hex addresses with friendly identifiers.
  */
 
@@ -34,7 +37,7 @@ const FISH_NAMES = [
  */
 export function generateAlias(address) {
   if (!address || address.length < 10) {
-    return "Unknown-Fish-0000";
+    return "unknown-fish-0000";
   }
 
   // Use different slices of the hex address for each component
@@ -49,5 +52,5 @@ export function generateAlias(address) {
   // Bytes 8-11 → 4-digit numeric suffix
   const numSuffix = (parseInt(normalized.slice(8, 12), 16) % 9000) + 1000;
 
-  return `${ADJECTIVES[adjIndex]}-${FISH_NAMES[fishIndex]}-${numSuffix}`;
+  return `${ADJECTIVES[adjIndex]}-${FISH_NAMES[fishIndex]}-${numSuffix}`.toLowerCase();
 }

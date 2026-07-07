@@ -146,11 +146,12 @@ export function NameConfirmStep({ narrate, className = "" }) {
     [account]
   );
 
-  // Local editable value. Seed from any existing context displayName (resumed
-  // session) and otherwise from the suggested alias.
-  const [value, setValue] = useState(() =>
-    normalizeName(displayName || suggestedAlias)
-  );
+  // Local editable value. Seed only from an existing context displayName
+  // (resumed session). New users start with an EMPTY field and choose their own
+  // name — we no longer auto-fill the random alias (that made everyone keep a
+  // throwaway handle). The random alias is available on demand via the opt-in
+  // "Use a random handle" button below.
+  const [value, setValue] = useState(() => normalizeName(displayName || ""));
   const [busy, setBusy] = useState(false);
   const [nameTaken, setNameTaken] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -168,15 +169,24 @@ export function NameConfirmStep({ narrate, className = "" }) {
     };
   }, []);
 
-  // Prefill once the account (and therefore the suggested alias) resolves, but
-  // only if the field hasn't already been seeded with a meaningful value.
+  // Seed the field from a resumed-session displayName only (never the random
+  // alias). Runs once and never stomps a value the user has started editing.
   useEffect(() => {
     if (seededRef.current) return;
-    const seed = normalizeName(displayName || suggestedAlias);
+    const seed = normalizeName(displayName || "");
     if (!seed) return;
     seededRef.current = true;
     setValue(seed);
-  }, [displayName, suggestedAlias]);
+  }, [displayName]);
+
+  // Opt-in: fill the field with the deterministic random handle for users who
+  // prefer a pseudonymous identity. Marks the field as seeded so the resume
+  // effect doesn't later overwrite it.
+  const handleUseRandom = useCallback(() => {
+    if (!suggestedAlias) return;
+    seededRef.current = true;
+    setValue(normalizeName(suggestedAlias));
+  }, [suggestedAlias]);
 
   // Debounced name-availability check (400ms after the user stops typing).
   useEffect(() => {
@@ -303,6 +313,25 @@ export function NameConfirmStep({ narrate, className = "" }) {
         aria-busy={busy}
       >
         {nameConfirmButtonLabel(isCasual, busy)}
+      </button>
+
+      <button
+        type="button"
+        className="onboarding-name-random"
+        onClick={handleUseRandom}
+        disabled={busy}
+        style={{
+          background: "none",
+          border: "none",
+          color: "var(--text-muted)",
+          fontSize: "0.75rem",
+          textDecoration: "underline",
+          cursor: busy ? "default" : "pointer",
+          marginTop: "0.5rem",
+          padding: "0.25rem",
+        }}
+      >
+        {resolvePersonaCopy(NAME_CONFIRM_COPY.randomButton, isCasual)}
       </button>
     </div>
   );
