@@ -7,12 +7,14 @@ import { compressImage } from "../utils/imageCompression";
 import { mapContractError } from "../utils/errorHandler";
 import { relayMintSpecimen } from "../services/relayer";
 import { db } from "../db";
+import { loadOwnedSpecimens, specimenOptionLabel } from "../utils/ownedSpecimens";
 import { useProfile } from "../hooks/useReefProfile";
 import { generateAlias } from "../utils/generateAlias";
 
 export function MintSpecimen({ contractAddress, walletAccount, casualModeActive }) {
   const [speciesList, setSpeciesList] = useState([]);
   const [tankList, setTankList] = useState([]);
+  const [specimenOptions, setSpecimenOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [txHash, setTxHash] = useState(null);
@@ -162,6 +164,17 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
       }
 
       setTankList(tempTanks);
+
+      // 3. Load owner's existing specimens for the Sire/Dam parent pickers.
+      // Selecting from real specimens stores the correct serial ID automatically,
+      // so parent references resolve in the lineage family tree.
+      try {
+        const ownedSpecimens = await loadOwnedSpecimens(walletAccount);
+        setSpecimenOptions(ownedSpecimens);
+      } catch (e) {
+        console.warn("Could not load specimens for parent pickers:", e);
+        setSpecimenOptions([]);
+      }
     } catch (err) {
       console.error("Error loading mint form metadata:", err);
       setError("Failed to load species catalog or tank data. Please try again.");
@@ -426,31 +439,48 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
         <div className="form-grid-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
           <div>
             <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-              Male Parent (Sire Cert. Serial No.)
+              Male Parent (Sire)
             </label>
-            <input 
-              type="number"
+            <select
               value={formData.sireId}
               onChange={(e) => setFormData({ ...formData, sireId: e.target.value })}
               style={inputStyle}
               onFocus={handleInputFocus}
               onBlur={handleInputBlur}
-            />
+            >
+              <option value="0" style={{ background: "var(--bg-secondary)" }}>None (Wild / Unregistered)</option>
+              {specimenOptions.map((spec) => (
+                <option key={spec.id} value={spec.id} style={{ background: "var(--bg-secondary)" }}>
+                  {specimenOptionLabel(spec)}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-              Female Parent (Dam Cert. Serial No.)
+              Female Parent (Dam)
             </label>
-            <input 
-              type="number"
+            <select
               value={formData.damId}
               onChange={(e) => setFormData({ ...formData, damId: e.target.value })}
               style={inputStyle}
               onFocus={handleInputFocus}
               onBlur={handleInputBlur}
-            />
+            >
+              <option value="0" style={{ background: "var(--bg-secondary)" }}>None (Wild / Unregistered)</option>
+              {specimenOptions.map((spec) => (
+                <option key={spec.id} value={spec.id} style={{ background: "var(--bg-secondary)" }}>
+                  {specimenOptionLabel(spec)}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
+        {specimenOptions.length === 0 && (
+          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "-0.5rem", display: "block" }}>
+            No registered specimens yet — register parents first to link a family tree.
+          </span>
+        )}
 
         <div>
           <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>

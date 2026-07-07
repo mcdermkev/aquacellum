@@ -482,6 +482,43 @@ db.version(20).stores({
   echoCompanionOnChain: "walletAddress, tokenId, cachedAt"
 });
 
+// Version 21: On-chain reconciliation readiness (full-on-chain prep).
+// ADDITIVE / NON-DESTRUCTIVE. Local serials (`id`) remain the stable client-side
+// reference key. These new fields let a record carry its authoritative ERC-721
+// token id once the on-chain mint confirms, without assuming id === tokenId
+// (the contract assigns tokenId = ++totalSpecimensMinted, a global counter that
+// can't be predicted client-side).
+//   - `onChainId` (number|null): the confirmed on-chain token id. Indexed so we
+//       can reverse-resolve a local record from an on-chain id. Null until synced.
+//   - `chainStatus` (string): "local" | "pending" | "synced" | "failed". Indexed
+//       to query un-synced specimens for the eventual backfill/flush. New mints
+//       default to "pending" (an on-chain write is always enqueued); pre-existing
+//       rows have no value (treated as "local").
+//   - `txHash` (string|null): the tx that minted this specimen on-chain (audit).
+db.version(21).stores({
+  species: "specCode, commonName, scientificName, type, difficulty",
+  listings: "id, tokenId, seller, price, isBatch, speciesId",
+  tanks: "id, ownerAddress, name, active",
+  userProfile: "walletAddress, totalXp, currentTier, zoneHash, isCouncilMember, onboardingComplete",
+  breederCompanion: "walletAddress, eggState, currentTier, selectedStats, zoneHash",
+  pendingHandshakes: "purchaseId, pin, salt, buyerAddress",
+  speciesManifest: "speciesId, scientificName, commonName, contractAddress, cachedAt",
+  actionLogs: "++id, tankId, actionType, timestamp, details",
+  spawnGrowout: "++id, spawnId, timestamp, type",
+  feedCache: "++id, contentId, authorWallet, createdAt, [authorWallet+createdAt]",
+  socialNotifications: "++id, category, isRead, createdAt",
+  draftContent: "++id, type, status, createdAt",
+  specimens: "id, ownerAddress, speciesId, currentTankId, status, createdAt, [ownerAddress+arrivalStatus], breederStockTag, onChainId, chainStatus",
+  localListings: "id, seller, speciesId, isBatch, listingId, tokenId",
+  marketOrders: "++key, orderType, status, state, buyer, seller, tokenId, purchaseId, listingId, assignedTankId",
+  spawns: "spawnId, sireId, damId, tankId, speciesId, status, timestamp",
+  tankNotes: "++id, tankId, createdAt",
+  xpCooldowns: "++id, walletAddress, actionType, tankId, timestamp, [walletAddress+actionType+tankId]",
+  storefrontCache: "id, walletAddress, cachedAt",
+  echoNeeds: "walletAddress, lastUpdate",
+  echoCompanionOnChain: "walletAddress, tokenId, cachedAt"
+});
+
 /**
  * Derive tier key from totalXp using the canonical tier ladder.
  * Used by the v15 migration and shared with xp.js.

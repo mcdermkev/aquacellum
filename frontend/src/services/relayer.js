@@ -18,7 +18,9 @@
  *   on-chain UserOperations; it never appears in local data.
  */
 
+import { ethers } from "ethers";
 import { db } from "../db";
+import aquadexAbi from "../abi/AquadexManager.json";
 import { syncTankToCloud, syncSpecimenToCloud, syncListingToCloud, deactivateListingInCloud } from "./cloudSync";
 import {
   submitUserOperation,
@@ -50,10 +52,22 @@ let _flushTimer = null;
 const FLUSH_DELAY_MS = 3000; // Wait 3s to batch multiple rapid actions
 const MAX_BATCH_SIZE = 10;   // Flush immediately if queue hits this size
 
-function enqueueOnChain(call, label = "") {
+// Interface used to decode SpecimenRegistered events from the flushed UserOp
+// receipt, so we can map each on-chain token id back to its local specimen.
+const _managerInterface = new ethers.utils.Interface(aquadexAbi);
+
+/**
+ * Enqueue an on-chain call for batched submission.
+ * @param {object} call - the built contract call
+ * @param {string} label - human label for logging
+ * @param {object|null} meta - optional reconciliation metadata, e.g.
+ *   { type: "mintSpecimen", localId } used to write the confirmed on-chain
+ *   token id back onto the local specimen record after the batch settles.
+ */
+function enqueueOnChain(call, label = "", meta = null) {
   if (!call) return; // Skip null calls (e.g., local-only tank operations)
   
-  _onChainQueue.push({ call, label, timestamp: Date.now() });
+  _onChainQueue.push({ call, label, meta, timestamp: Date.now() });
 
   // Flush immediately if batch is full
   if (_onChainQueue.length >= MAX_BATCH_SIZE) {
@@ -77,11 +91,67 @@ async function flushOnChainQueue() {
   // Drain the queue
   const batch = _onChainQueue.splice(0);
   const calls = batch.map(b => b.call);
-  const labels = batch.map(b => b.label).filter(Boolean).join(", ");
+
+  // Mint items we may need to reconcile with on-chain token ids afterward.
+  const mintItems = batch.filter(b => b.meta && b.meta.type === "mintSpecimen" && b.meta.localId != null);
 
   const result = await submitUserOperation(calls);
+
   if (!result.success) {
     console.warn(`[4337] Batch failed: ${result.error}`);
+    // Mark enqueued mints as failed so the eventual backfill can retry them.
+    for (const item of mintItems) {
+      db.specimens.update(Number(item.meta.localId), { chainStatus: "failed" }).catch(() => {});
+    }
+    return;
+  }
+
+  // Reconcile: map each SpecimenRegistered event to its local specimen record.
+  await reconcileMintedTokenIds(result, mintItems);
+}
+
+/**
+ * Parse SpecimenRegistered events from a settled UserOperation receipt and write
+ * the authoritative on-chain token id back onto the corresponding local records.
+ *
+ * Mapping is positional: within a single transaction the contract assigns
+ * `++totalSpecimensMinted` in call order, so the Nth SpecimenRegistered event
+ * corresponds to the Nth mint call in the batch. To stay safe, we only apply the
+ * mapping when the event count exactly matches the mint count — otherwise (e.g.
+ * a spawn that also emits SpecimenRegistered was batched in) we leave records
+ * "pending" for the reconciliation/backfill pass rather than risk a mis-map.
+ */
+async function reconcileMintedTokenIds(result, mintItems) {
+  if (mintItems.length === 0) return;
+  try {
+    const logs = result.receipt?.receipt?.logs || [];
+    const tokenIds = [];
+    for (const log of logs) {
+      let parsed = null;
+      try { parsed = _managerInterface.parseLog(log); } catch { parsed = null; }
+      if (parsed && parsed.name === "SpecimenRegistered") {
+        const id = parsed.args.specimenId ?? parsed.args.tokenId ?? parsed.args[0];
+        if (id != null) tokenIds.push(Number(id));
+      }
+    }
+
+    if (tokenIds.length !== mintItems.length) {
+      console.warn(
+        `[4337] Token id reconciliation skipped: ${tokenIds.length} SpecimenRegistered events for ${mintItems.length} mint calls. Records left pending for backfill.`
+      );
+      return;
+    }
+
+    const txHash = result.txHash || null;
+    for (let i = 0; i < mintItems.length; i++) {
+      await db.specimens.update(Number(mintItems[i].meta.localId), {
+        onChainId: tokenIds[i],
+        chainStatus: "synced",
+        txHash,
+      }).catch(() => {});
+    }
+  } catch (err) {
+    console.warn("[4337] Could not reconcile minted token ids:", err);
   }
 }
 
@@ -170,7 +240,19 @@ export async function relayMintSpecimen({
   breederStockTag = "",
 } = {}) {
   try {
-    const specimenId = Date.now();
+    // Sequential serial number (beta local-first). Human-friendly serials like
+    // 1, 2, 3… so sire/dam references and the lineage lookup actually resolve,
+    // and the `.padStart(3, "0")` displays render as 001, 002, etc.
+    // Legacy records may carry Date.now() timestamp IDs (~1.7e12); we ignore any
+    // ID at or above SERIAL_CEILING when computing the next serial so new
+    // specimens still get clean, low numbers and never collide with old data.
+    const SERIAL_CEILING = 1_000_000_000;
+    const existing = await db.specimens.toArray();
+    const maxSerial = existing.reduce((max, s) => {
+      const n = Number(s.id);
+      return Number.isFinite(n) && n < SERIAL_CEILING && n > max ? n : max;
+    }, 0);
+    const specimenId = maxSerial + 1;
 
     const specimen = {
       id: specimenId,
@@ -188,6 +270,12 @@ export async function relayMintSpecimen({
       gender,
       breederStockTag: breederStockTag || "",
       createdAt: Math.floor(Date.now() / 1000),
+      // On-chain reconciliation fields (full-on-chain readiness).
+      // `id` above is the local serial (stable client ref). The authoritative
+      // ERC-721 token id is captured into `onChainId` once the mint confirms.
+      onChainId: null,
+      chainStatus: "pending", // an on-chain mint is always enqueued below
+      txHash: null,
     };
 
     // Store in standalone specimens table
@@ -196,7 +284,9 @@ export async function relayMintSpecimen({
     // Fire-and-forget cloud sync (non-blocking)
     syncSpecimenToCloud(specimen).catch(() => {});
 
-    // Fire-and-forget on-chain mint via 4337 (non-blocking, batched)
+    // Fire-and-forget on-chain mint via 4337 (non-blocking, batched).
+    // The meta { type, localId } lets flushOnChainQueue write the confirmed
+    // on-chain token id back onto this local record once the batch settles.
     enqueueOnChain(
       buildMintSpecimenCall({
         speciesId: Number(speciesId),
@@ -207,7 +297,8 @@ export async function relayMintSpecimen({
         damId: Number(damId),
         ipfsMetadataUri: ipfsMetadataUri || ""
       }),
-      `mintSpecimen(species:${speciesId})`
+      `mintSpecimen(species:${speciesId})`,
+      { type: "mintSpecimen", localId: specimenId }
     );
 
     // Also embed in the tank's specimens array if a tank is specified

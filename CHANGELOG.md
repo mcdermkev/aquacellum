@@ -4,6 +4,48 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [0.9.5] — 2026-07-07
+
+### 🧬 Functional Lineage + On-Chain Reconciliation Readiness
+
+Made the Pro-mode Breeder "Lineage" tab actually work, and laid the groundwork for a clean migration to fully on-chain specimens.
+
+#### Lineage / Breeder Tools Fixes
+- **Sequential serial numbers** — Specimen IDs are now generated as clean, sequential serials (`001`, `002`, …) instead of `Date.now()` timestamps. This was the root cause of the "random number" family tree: 13-digit timestamp IDs never matched the small serials the UI displayed or the sire/dam references users entered, so the ancestry tree always came back empty. Legacy timestamp IDs are ignored when computing the next serial, so old test data can't collide with or inflate new serials.
+- **Parent pickers** — The Sire/Dam fields in Register Birth Certificate are now dropdowns of the breeder's actual registered specimens (e.g. `Cert. 001 — Neon Tetra [tag]`). Selecting a parent stores the correct ID automatically, so parentage always links instead of relying on hand-typed serials.
+- **Lineage lookup picker** — The Ancestry Family Tree Lookup gained a "pick one of your specimens" dropdown that generates the tree on selection, with the manual serial box kept as a fallback.
+- **Grandparent bug fix** — Fixed a guard in the pedigree walk where the maternal-grandfather node was gated by `damNode.damId` instead of `damNode.sireId`, causing it to intermittently drop out of the tree.
+
+#### On-Chain Reconciliation Foundation (prep for full on-chain)
+- **ID-mapping schema (Dexie v21)** — Added `onChainId`, `chainStatus` (`local` | `pending` | `synced` | `failed`), and `txHash` to specimen records. Additive and non-destructive; existing rows read as `local`. The local serial (`id`) remains the stable client-side reference key; the authoritative ERC-721 token id lives in `onChainId` once a mint confirms.
+- **Shared ID resolver** — New helper centralizes translation between local refs and on-chain token ids so no other code assumes `id === tokenId` (the contract assigns `++totalSpecimensMinted`, a global counter that can't be predicted client-side).
+- **Token-id capture** — When a batched UserOperation settles, the relayer parses `SpecimenRegistered` events and writes the real token id back onto each local record. Mapping is positional (contract assigns ids in call order) and only applied when event count matches mint count, so a batched spawn can't cause a mis-map; unmatched records stay `pending` for backfill. Batch failures mark mints `failed`.
+- **Lineage nodes carry sync state** — Pedigree nodes now expose `onChainId`/`chainStatus` from both contract and local sources, so the UI can surface on-chain status and prefer the token id once available.
+
+#### New Files
+| File | Purpose |
+|------|---------|
+| `frontend/src/utils/ownedSpecimens.js` | Local-first loader + label helper for specimen pickers |
+| `frontend/src/utils/specimenIds.js` | Local-ref ↔ on-chain token-id resolver and chain-status helpers |
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `frontend/src/services/relayer.js` | Sequential serial generation; specimen records seeded with `onChainId`/`chainStatus`/`txHash`; queue metadata + `reconcileMintedTokenIds` to capture on-chain token ids |
+| `frontend/src/components/MintSpecimen.jsx` | Sire/Dam number inputs replaced with specimen pickers |
+| `frontend/src/components/SpecimenLineage.jsx` | Specimen picker for lookup; grandparent guard fix; nodes carry `onChainId`/`chainStatus` |
+| `frontend/src/db.js` | Dexie v21 schema (specimen on-chain reconciliation fields) |
+
+#### ⛓️ Recommendations for Full On-Chain Cutover (not yet implemented)
+These are the remaining steps to migrate specimens from local-first to fully on-chain, deliberately deferred as they are behavioral rather than foundational:
+- **Parent-ref translation + topological flush** — Before submitting a child mint on-chain, translate its local `sireId`/`damId` to the parents' confirmed `onChainId`, and defer children until their parents are `synced` (the contract reverts with `SireNotFound`/`DamNotFound` if a parent isn't on-chain yet). Flush in dependency waves, roots first.
+- **One-time backfill** — Topologically sort existing local-only specimens, submit roots, record `onChainId` on confirmation, translate the next wave's parent refs, repeat until drained.
+- **`clientRef` contract change (redeploy)** — Add an optional external reference to `mintSpecimen` plus a `mapping(bytes32 => uint256) refToTokenId` guard, and emit the ref in `SpecimenRegistered`. This makes correlation trivial (no positional matching, even in batches) and mints idempotent (retries can't double-mint).
+- **Display rule** — Show the local serial with a "pending" badge until synced, then present the on-chain token id as the canonical Cert. Serial No.
+- **Global counter caveat** — On-chain ids are assigned from a contract-global counter across all users and can never be predicted client-side; always treat the token id as assigned-on-confirmation and reconcile via the mapping layer.
+
+---
+
 ## [0.9.4] — 2026-06-20
 
 ### 🔱 Global Poseidon AI Chat Widget

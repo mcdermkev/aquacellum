@@ -5,6 +5,7 @@ import { getProvider } from "../utils/smartAccount";
 import { db } from "../db";
 import { PedigreeTree } from "./PedigreeTree";
 import { downloadPedigreeCertificate, printPedigreeCertificate } from "../utils/pedigreeExport";
+import { loadOwnedSpecimens, specimenOptionLabel } from "../utils/ownedSpecimens";
 
 
 export function SpecimenLineage({ contractAddress, walletAccount, preselectedTokenId, onSelectBreed }) {
@@ -12,6 +13,7 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
   const [tree, setTree] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [specimenOptions, setSpecimenOptions] = useState([]);
 
   const fetchSpecimenNode = useCallback(async (contract, id) => {
     if (!id || Number(id) === 0) return null;
@@ -45,7 +47,11 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
               const local = await db.specimens.get(Number(id));
               return local?.breederStockTag || "";
             } catch (_) { return ""; }
-          })()
+          })(),
+          // A contract-read specimen is on-chain by definition, so its id IS the
+          // authoritative token id.
+          onChainId: Number(data.specimenId),
+          chainStatus: "synced"
         };
       }
     } catch (e) {
@@ -73,7 +79,13 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
           damId: Number(local.damId || 0),
           ipfsMetadataUri: local.ipfsMetadataUri || "",
           status: local.status ?? 0,
-          breederStockTag: local.breederStockTag || ""
+          breederStockTag: local.breederStockTag || "",
+          // On-chain reconciliation state. Traversal still follows local sire/dam
+          // refs (the authoritative on-chain parent refs only exist after the full
+          // on-chain cutover), but the node now carries its confirmed token id and
+          // sync status so the UI can surface it. Prefer onChainId when displaying.
+          onChainId: local.onChainId ?? null,
+          chainStatus: local.chainStatus || "local"
         };
       }
     } catch (localErr) {
@@ -110,7 +122,7 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
       // Grandparents (Gen 2)
       const sireSireNode = sireNode && sireNode.sireId ? await fetchSpecimenNode(contract, sireNode.sireId) : null;
       const sireDamNode = sireNode && sireNode.damId ? await fetchSpecimenNode(contract, sireNode.damId) : null;
-      const damSireNode = damNode && damNode.damId ? await fetchSpecimenNode(contract, damNode.sireId) : null;
+      const damSireNode = damNode && damNode.sireId ? await fetchSpecimenNode(contract, damNode.sireId) : null;
       const damDamNode = damNode && damNode.damId ? await fetchSpecimenNode(contract, damNode.damId) : null;
 
       setTree({
@@ -138,9 +150,25 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
     }
   }, [preselectedTokenId, fetchLineage]);
 
+  // Load the user's specimens so they can pick one instead of typing a serial.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const specs = await loadOwnedSpecimens(walletAccount);
+      if (active) setSpecimenOptions(specs);
+    })();
+    return () => { active = false; };
+  }, [walletAccount]);
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     fetchLineage(tokenId);
+  };
+
+  const handlePickSpecimen = (e) => {
+    const value = e.target.value;
+    setTokenId(value);
+    if (value) fetchLineage(value);
   };
 
   return (
@@ -150,6 +178,29 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
         <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "1.5rem" }}>
           Lookup and trace the ancestry family tree of any registered birth certificate.
         </p>
+
+        {specimenOptions.length > 0 && (
+          <div style={{ marginBottom: "1rem" }}>
+            <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+              Pick one of your specimens
+            </label>
+            <select
+              value={specimenOptions.some((s) => s.id.toString() === tokenId.toString()) ? tokenId : ""}
+              onChange={handlePickSpecimen}
+              style={{ width: "100%", padding: "0.75rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+            >
+              <option value="" style={{ background: "var(--bg-secondary)" }}>Select a specimen…</option>
+              {specimenOptions.map((spec) => (
+                <option key={spec.id} value={spec.id} style={{ background: "var(--bg-secondary)" }}>
+                  {specimenOptionLabel(spec)}
+                </option>
+              ))}
+            </select>
+            <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.35rem", display: "block" }}>
+              Or enter any registered serial number below.
+            </span>
+          </div>
+        )}
 
         <form onSubmit={handleSearchSubmit} style={{ display: "flex", gap: "1rem" }}>
           <input 
