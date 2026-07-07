@@ -65,21 +65,25 @@ export function useTankData(tankId) {
     }
 
     try {
-      // Fetch tank metadata
-      const { data: tank, error: tankError } = await supabase
-        .from("tanks")
+      // Fetch tank metadata. Cloud tables store the full Dexie object in a
+      // JSONB `data` column; only id/owner_address/name/active are relational.
+      const { data: tankRow, error: tankError } = await supabase
+        .from("aquadex_tanks")
         .select("*")
         .eq("id", id)
         .single();
 
       if (tankError) throw new Error(tankError.message);
-      if (!tank) throw new Error("Tank not found");
+      if (!tankRow) throw new Error("Tank not found");
 
-      // Fetch specimens in this tank
+      const tank = tankRow.data || {};
+
+      // Fetch specimens in this tank (relational: current_tank_id / species_id;
+      // full specimen object lives in `data`).
       const { data: specimens, error: specError } = await supabase
-        .from("specimens")
-        .select("*, species:spec_code(*)")
-        .eq("tank_id", id);
+        .from("aquadex_specimens")
+        .select("*")
+        .eq("current_tank_id", id);
 
       if (specError) throw new Error(specError.message);
 
@@ -88,15 +92,15 @@ export function useTankData(tankId) {
       const speciesInTank = mapSpecimensToSpecies(specimens || [], masterCatalog);
 
       setTankMeta({
-        id: tank.id,
-        name: tank.name || "My Tank",
-        ownerWallet: tank.owner_wallet || tank.wallet_address,
-        volumeLiters: tank.volume_liters || tank.volumeLiters || 100,
-        tankType: tank.tank_type || "freshwater",
-        tempCelsius: tank.temp_celsius || null,
-        ph: tank.ph || null,
+        id: tankRow.id,
+        name: tankRow.name || tank.name || "My Tank",
+        ownerWallet: tankRow.owner_address || tank.ownerAddress || tank.wallet_address,
+        volumeLiters: tank.volumeLiters || tank.volume_liters || 100,
+        tankType: tank.tankType || tank.tank_type || "freshwater",
+        tempCelsius: tank.tempCelsius ?? tank.temp_celsius ?? null,
+        ph: tank.ph ?? null,
         specimenCount: specimens?.length || 0,
-        isPublic: tank.is_public !== false,
+        isPublic: (tank.isPublic ?? tank.is_public) !== false,
         description: tank.description || null
       });
 
@@ -124,22 +128,28 @@ function mapSpecimensToSpecies(specimens, masterCatalog) {
 
   const speciesMap = new Map();
 
-  for (const specimen of specimens) {
-    const specCode = specimen.spec_code || specimen.specCode;
-    if (!specCode) continue;
+  for (const row of specimens) {
+    // Cloud rows carry the full Dexie specimen object in `data`; species_id is
+    // also promoted to a relational column. Fall back across both shapes.
+    const d = row.data || row;
+    const specCode = row.species_id ?? d.speciesId ?? d.specCode ?? d.spec_code;
+    if (specCode === undefined || specCode === null) continue;
 
-    const catalogEntry = catalogMap.get(specCode);
+    const catalogEntry = catalogMap.get(specCode) || catalogMap.get(Number(specCode));
     if (!catalogEntry) continue;
 
+    const key = catalogEntry.specCode;
+    const quantity = d.quantity || 1;
+
     // Track count per species
-    if (speciesMap.has(specCode)) {
-      speciesMap.get(specCode)._tankCount += (specimen.quantity || 1);
+    if (speciesMap.has(key)) {
+      speciesMap.get(key)._tankCount += quantity;
     } else {
-      speciesMap.set(specCode, {
+      speciesMap.set(key, {
         ...catalogEntry,
-        _tankCount: specimen.quantity || 1,
-        _specimenId: specimen.id,
-        _nickname: specimen.nickname || null
+        _tankCount: quantity,
+        _specimenId: row.id,
+        _nickname: d.nickname || null
       });
     }
   }

@@ -424,7 +424,9 @@ export default function App() {
         const waterChanges = logs.filter(l => l.actionType === "Water Change");
         const feedings = logs.filter(l => l.actionType === "Feed");
         const paramTests = logs.filter(l => l.actionType === "Quick Water Test" || l.actionType === "Water Parameters");
-        const tankCount = await db.tanks.where("active").equals(1).count();
+        // Tanks store `active` as a boolean; IndexedDB can't index booleans,
+        // so `.where("active").equals(1)` always matched nothing. Filter in JS.
+        const tankCount = await db.tanks.filter((t) => t.active !== false).count();
 
         setEchoTankData({
           lastWaterChange: waterChanges[0]?.timestamp ? new Date(waterChanges[0].timestamp * 1000).toISOString() : null,

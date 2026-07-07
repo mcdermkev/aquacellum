@@ -201,7 +201,9 @@ async function handleWebhook(req, res) {
           amount_cents_usd: amountCents,
           tx_hash: null,
           block_number: null,
-          status: "pending_claim",
+          // Valid enum value (CHECK allows pending/settled/failed/disputed/refunded).
+          // An unclaimed guest settlement is identified by buyer_wallet IS NULL.
+          status: "pending",
           metadata: JSON.stringify(metadata),
           created_at: new Date().toISOString(),
         });

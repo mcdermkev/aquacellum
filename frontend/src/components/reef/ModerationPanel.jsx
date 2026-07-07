@@ -60,7 +60,7 @@ function FlaggedItemCard({ item, onAction }) {
                 ? "var(--accent-amber)"
                 : "var(--text-muted)",
           }}>
-            {item.flag_reason || "Flagged"}
+            {item.reason || "Flagged"}
           </span>
           <span style={{ marginLeft: "0.5rem", fontSize: "0.65rem", color: "var(--text-muted)" }}>
             {new Date(item.created_at).toLocaleDateString()}
@@ -81,14 +81,14 @@ function FlaggedItemCard({ item, onAction }) {
         color: "var(--text-secondary)",
         lineHeight: 1.5,
       }}>
-        {item.content_preview || item.content_body || "No preview available"}
+        {item.details || `Flagged ${item.target_type || "content"}${item.target_wallet ? ` — ${item.target_wallet.slice(0, 10)}…` : ""}`}
       </div>
 
-      {/* Author info */}
-      {item.reported_profile && (
+      {/* Reporter info */}
+      {item.reporter_profile && (
         <div style={{ marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>By:</span>
-          <ProfileCard profile={item.reported_profile} compact />
+          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Reported by:</span>
+          <ProfileCard profile={item.reporter_profile} compact />
           {item.prior_warnings > 0 && (
             <span style={{
               fontSize: "0.6rem",
@@ -199,7 +199,7 @@ export function ModerationPanel({ onBack }) {
       .from("moderation_flags")
       .select(`
         *,
-        reported_profile:reported_wallet (
+        reporter_profile:reporter_wallet (
           wallet_address, display_name, avatar_url, companion_tier
         )
       `)
@@ -238,14 +238,14 @@ export function ModerationPanel({ onBack }) {
 
     const wallet = getCurrentWallet();
 
-    // Update the flag status
+    // Update the flag status (real columns: reviewer_wallet / action_taken / reviewed_at)
     const { error } = await supabase
       .from("moderation_flags")
       .update({
         status: action === "dismiss" ? "dismissed" : "actioned",
-        resolved_by: wallet,
-        resolved_at: new Date().toISOString(),
-        resolution_action: action,
+        reviewer_wallet: wallet,
+        reviewed_at: new Date().toISOString(),
+        action_taken: action,
       })
       .eq("id", flagId);
 
@@ -254,29 +254,31 @@ export function ModerationPanel({ onBack }) {
       return;
     }
 
-    // Apply the action
-    if (action === "hide" && item.content_id) {
+    // Hide content: currents use an `is_hidden` boolean (the visibility enum
+    // does not include "hidden"). The flagged content id is target_id.
+    if (action === "hide" && item.target_type === "current" && item.target_id) {
       await supabase
         .from("currents")
-        .update({ visibility: "hidden" })
-        .eq("id", item.content_id);
+        .update({ is_hidden: true })
+        .eq("id", item.target_id);
     }
 
-    if ((action === "mute_24h" || action === "mute_7d") && item.reported_wallet) {
+    // Mute/ban act on the flagged user (target_wallet).
+    if ((action === "mute_24h" || action === "mute_7d") && item.target_wallet) {
       const muteUntil = new Date();
       muteUntil.setHours(muteUntil.getHours() + (action === "mute_24h" ? 24 : 168));
 
       await supabase
         .from("profiles")
         .update({ muted_until: muteUntil.toISOString() })
-        .eq("wallet_address", item.reported_wallet);
+        .eq("wallet_address", item.target_wallet);
     }
 
-    if (action === "ban" && item.reported_wallet) {
+    if (action === "ban" && item.target_wallet) {
       await supabase
         .from("profiles")
         .update({ is_banned: true, banned_at: new Date().toISOString() })
-        .eq("wallet_address", item.reported_wallet);
+        .eq("wallet_address", item.target_wallet);
     }
 
     // Refresh the list

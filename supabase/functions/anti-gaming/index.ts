@@ -87,7 +87,7 @@ serve(async (req) => {
             // Create moderation flag
             await supabase.from("moderation_flags").insert({
               target_type: "profile",
-              target_id: walletA, // Using wallet as UUID-like identifier
+              target_wallet: walletA, // profile-target flag: wallet, not a content UUID
               reason: "other",
               auto_flagged: true,
               ai_confidence: 0.8,
@@ -125,7 +125,7 @@ serve(async (req) => {
               flagged.push(wallet);
               await supabase.from("moderation_flags").insert({
                 target_type: "profile",
-                target_id: wallet,
+                target_wallet: wallet, // profile-target flag: wallet, not a content UUID
                 reason: "other",
                 auto_flagged: true,
                 ai_confidence: 0.7,
@@ -179,7 +179,7 @@ serve(async (req) => {
             flagged.push(wallet);
             await supabase.from("moderation_flags").insert({
               target_type: "profile",
-              target_id: wallet,
+              target_wallet: wallet, // profile-target flag: wallet, not a content UUID
               reason: "spam",
               auto_flagged: true,
               ai_confidence: 0.6,

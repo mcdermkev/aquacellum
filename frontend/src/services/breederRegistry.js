@@ -41,17 +41,32 @@ export async function fetchBreederProfile(identifier) {
  */
 export async function fetchBreederListings(walletAddress) {
   const { data, error } = await supabase
-    .from("cloud_listings")
+    .from("aquadex_listings")
     .select("*")
-    .eq("seller", walletAddress.toLowerCase())
-    .eq("status", "active")
-    .order("created_at", { ascending: false });
+    .eq("seller_address", walletAddress.toLowerCase())
+    .eq("is_active", true)
+    .order("updated_at", { ascending: false });
 
   if (error) {
     console.warn("[BreederRegistry] Failed to fetch listings:", error.message);
     return [];
   }
-  return data || [];
+  // Rows carry the full listing object in a JSON `data` column alongside the
+  // relational columns; merge so callers get flat listing objects.
+  return (data || []).map((row) => {
+    let parsed = {};
+    try { parsed = row.data ? JSON.parse(row.data) : {}; } catch { /* ignore malformed */ }
+    return {
+      ...parsed,
+      id: row.id,
+      seller: row.seller_address,
+      speciesId: row.species_id,
+      commonName: parsed.commonName || row.common_name,
+      price: parsed.price ?? row.price,
+      isBatch: row.is_batch,
+      active: row.is_active,
+    };
+  });
 }
 
 /**

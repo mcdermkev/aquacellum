@@ -86,7 +86,7 @@ export async function awardDepthScore({ walletAddress, delta, reason, sourceType
 /**
  * Report content (creates a moderation flag).
  */
-export async function reportContent({ targetType, targetId, reason, details }) {
+export async function reportContent({ targetType, targetId, targetWallet, reason, details }) {
   if (!isSupabaseConfigured()) return { error: "Not configured" };
 
   const wallet = getCurrentWallet();
@@ -97,7 +97,10 @@ export async function reportContent({ targetType, targetId, reason, details }) {
     .insert({
       reporter_wallet: wallet,
       target_type: targetType,
-      target_id: targetId,
+      target_id: targetId || null,
+      // The flagged user (author of the content). Lets curators mute/ban from
+      // the queue without a separate author lookup.
+      target_wallet: targetWallet ? targetWallet.toLowerCase() : null,
       reason,
       details: details || null,
     });

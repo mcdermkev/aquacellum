@@ -97,8 +97,9 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
         }
       }
 
-      // Get user's tanks (limit 5)
-      const tanks = await db.tanks.where('active').equals(1).limit(5).toArray();
+      // Get user's tanks (limit 5). `active` is a boolean; IndexedDB can't index
+      // booleans, so `.where('active').equals(1)` matched nothing. Filter in JS.
+      const tanks = await db.tanks.filter((t) => t.active !== false).limit(5).toArray();
       context.tanks = tanks.map(t => ({
         id: t.id,
         name: t.name,
