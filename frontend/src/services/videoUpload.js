@@ -6,7 +6,7 @@
  * 
  * Upload flow:
  * 1. Client validates video (type, size, duration)
- * 2. Client requests a Mux Direct Upload URL from /api/video-upload
+ * 2. Client requests a Mux Direct Upload URL from /api/mux?action=upload
  * 3. Client PUTs the file directly to Mux's upload endpoint
  * 4. Mux transcodes the video → webhook updates Supabase with playback ID
  * 5. Returns the upload ID for immediate DB reference (playback becomes available async)
@@ -167,7 +167,7 @@ export async function uploadVideo(file, { onProgress } = {}) {
     if (onProgress) onProgress(10);
 
     // ── Step 2: Request upload URL from our API ──
-    const apiResponse = await fetch("/api/video-upload", {
+    const apiResponse = await fetch("/api/mux?action=upload", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ walletAddress }),

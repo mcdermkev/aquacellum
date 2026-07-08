@@ -8,7 +8,7 @@
 
 import { db } from '../db';
 
-const POSEIDON_API_URL = '/api/poseidon';
+const POSEIDON_API_URL = '/api/ai?action=poseidon';
 
 /**
  * Generate a Poseidon narration for a spawn checkpoint event.

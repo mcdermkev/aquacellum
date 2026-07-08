@@ -8,8 +8,8 @@
  *   - Checking payment and seller account status
  *
  * This service talks to the Vercel serverless API endpoints:
- *   /api/create-checkout             → creates a Stripe Checkout session
- *   /api/stripe?action=connect-onboard → seller onboarding & status
+ *   /api/stripe?action=create-checkout  → creates a Stripe Checkout session
+ *   /api/stripe?action=connect-onboard  → seller onboarding & status
  *
  * After payment, the webhook (/api/stripe?action=webhook) handles on-chain
  * settlement automatically — the frontend just needs to poll or listen for confirmation.
@@ -340,7 +340,7 @@ export async function disputeFiatOrder({ tokenId, sessionId, paymentIntentId, re
  * Core checkout creator. Calls the backend, gets a Stripe Checkout URL,
  * and optionally redirects the user or returns the URL.
  *
- * @param {Object} payload - The request body for /api/create-checkout
+ * @param {Object} payload - The request body for /api/stripe?action=create-checkout
  * @param {boolean} [autoRedirect=true] - If true, redirects the browser to Stripe
  * @returns {Promise<Object>} Response from the checkout endpoint
  */
@@ -350,7 +350,7 @@ async function _createCheckout(payload, autoRedirect = true) {
     // verified identity onto the order — this is what enables popup-free release
     // later. Omitted for guests / logged-out buyers (they sign at release).
     const token = await getSessionToken();
-    const response = await fetch(`${API_BASE}/create-checkout`, {
+    const response = await fetch(`${API_BASE}/stripe?action=create-checkout`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

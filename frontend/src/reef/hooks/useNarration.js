@@ -3,7 +3,7 @@
  *
  * Flow:
  * 1. User presses/holds mic button or says something via STT
- * 2. Transcribed text + species context → /api/poseidon
+ * 2. Transcribed text + species context → /api/ai?action=poseidon
  * 3. Response text → TTS spoken aloud in Poseidon's unique voice + displayed in narration panel
  */
 import { useState, useCallback, useRef, useEffect } from "react";
@@ -134,7 +134,7 @@ Species data for context:
 
 Answer naturally as if you're a knowledgeable guide narrating their experience in the reef. Keep it conversational and vivid.`;
 
-      const res = await fetch("/api/poseidon", {
+      const res = await fetch("/api/ai?action=poseidon", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

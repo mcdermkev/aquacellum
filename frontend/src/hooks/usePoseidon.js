@@ -12,7 +12,7 @@ import { db } from '../db';
  * - Rate limiting (20 requests/hour as per spec)
  */
 
-const POSEIDON_API_URL = '/api/poseidon';
+const POSEIDON_API_URL = '/api/ai?action=poseidon';
 const MAX_REQUESTS_PER_HOUR = 20;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const SESSION_STORAGE_KEY = 'aquadex_poseidon_conversation';

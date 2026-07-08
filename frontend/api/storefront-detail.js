@@ -224,7 +224,7 @@ async function handleStorefrontDetail(req, res) {
             value: listing.price_eth || listing.price || "0",
           },
           fiat: {
-            checkoutUrl: `${BASE_URL}/api/create-checkout`,
+            checkoutUrl: `${BASE_URL}/api/stripe?action=create-checkout`,
             method: "POST",
             body: {
               purchaseType: listing.is_batch ? "batch" : "specimen",

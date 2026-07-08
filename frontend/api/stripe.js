@@ -1769,6 +1769,8 @@ export default async function handler(req, res) {
   switch (action) {
     case "webhook":
       return handleWebhook(req, res);
+    case "create-checkout":
+      return handleCreateCheckout(req, res);
     case "connect-onboard":
       return handleConnectOnboard(req, res);
     case "release":
@@ -1794,5 +1796,316 @@ export default async function handler(req, res) {
       return handleShipMargin(req, res);
     default:
       return res.status(400).json({ error: `Unknown action: ${action}` });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CREATE-CHECKOUT HANDLER (previously /api/create-checkout)
+// POST /api/stripe?action=create-checkout — build a Stripe Checkout Session.
+//
+// Funds are captured into the platform balance and HELD, then paid out to the
+// seller via a later Stripe Transfer (see handleWebhook / handleRelease). The
+// platform keeps the 4% goods fee and the full shipping fee (it buys the label
+// centrally on ShipEngine); the seller receives 96% of the goods price.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Platform fee: 4% of the goods price (matches on-chain TOTAL_FEE_BPS = 400).
+const PLATFORM_FEE_PERCENT = 4;
+// Buyer-paid Stripe processing fee (grossed up so the platform nets goods+shipping).
+// US card default is 2.9% + $0.30; the 4% platform margin absorbs cross-border delta.
+const STRIPE_FEE_RATE = 0.029;
+const STRIPE_FEE_FIXED_CENTS = 30;
+
+async function handleCreateCheckout(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS" })) return;
+
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  if (!stripe) {
+    return res.status(500).json({ error: "Stripe not configured" });
+  }
+
+  const {
+    purchaseType,   // "specimen" | "shipping" | "batch" | "multi" | "pickup"
+    buyerWallet,
+    sellerWallet,
+    items,
+    successUrl,
+    cancelUrl,
+  } = req.body;
+
+  if (!purchaseType || !buyerWallet || !sellerWallet || !items || items.length === 0) {
+    return res.status(400).json({
+      error: "Missing required fields: purchaseType, buyerWallet, sellerWallet, items",
+    });
+  }
+
+  // Guest purchases from the public marketplace page use 'guest' as a placeholder.
+  // On-chain settlement is deferred until the buyer links an account.
+  const isGuestPurchase = buyerWallet === 'guest' || buyerWallet === '0x0000000000000000000000000000000000000000';
+
+  // Capture the buyer's VERIFIED Privy identity (DID) so the later release step
+  // can authorize from the logged-in session instead of a wallet-signature popup.
+  // Best-effort — guests / logged-out buyers fall back to the signature path.
+  let buyerUserId = null;
+  try {
+    const authHeader = req.headers["authorization"] || req.headers["Authorization"];
+    if (authHeader) {
+      const { verified, userId } = await verifyPrivyToken(req);
+      if (verified && userId) buyerUserId = userId;
+    }
+  } catch (e) {
+    console.warn("[Stripe Checkout] Buyer identity capture skipped:", e.message);
+  }
+
+  const SUCCESS_URL = successUrl
+    || process.env.CHECKOUT_SUCCESS_URL
+    || "https://aquadex.fish/checkout/success?session_id={CHECKOUT_SESSION_ID}";
+  const CANCEL_URL = cancelUrl
+    || process.env.CHECKOUT_CANCEL_URL
+    || "https://aquadex.fish/marketplace";
+
+  try {
+    // ─── Look up seller's Stripe Connected Account ─────────────────────────
+    const { data: sellerAccount, error: sellerError } = await supabase
+      .from("seller_stripe_accounts")
+      .select("stripe_account_id, onboarding_complete")
+      .eq("wallet_address", sellerWallet.toLowerCase())
+      .single();
+
+    if (sellerError || !sellerAccount) {
+      return res.status(400).json({
+        error: "Seller has not connected their Stripe account",
+        code: "SELLER_NOT_CONNECTED",
+      });
+    }
+
+    if (!sellerAccount.onboarding_complete) {
+      return res.status(400).json({
+        error: "Seller has not completed Stripe onboarding",
+        code: "SELLER_ONBOARDING_INCOMPLETE",
+      });
+    }
+
+    // ─── Build line items based on purchase type ───────────────────────────
+    let lineItems = [];
+    let totalAmountCents = 0;
+    let metadata = {
+      purchaseType,
+      buyerWallet: buyerWallet.toLowerCase(),
+      sellerWallet: sellerWallet.toLowerCase(),
+      sellerStripeAccountId: sellerAccount.stripe_account_id,
+      isGuestPurchase: isGuestPurchase ? "true" : "false",
+      ...(buyerUserId ? { buyerUserId } : {}),
+    };
+
+    switch (purchaseType) {
+      case "specimen":
+      case "pickup": {
+        // "specimen" is a no-handoff sale (paid through); "pickup" is local/
+        // in-person and HELD until the handshake at handoff.
+        const item = items[0];
+        lineItems.push({
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: item.commonName || `Live Specimen`,
+              description: item.scientificName
+                ? `${item.scientificName} — Verified breeder specimen`
+                : `Live specimen from verified breeder`,
+              images: item.imageUrl ? [item.imageUrl] : [],
+            },
+            unit_amount: item.priceCentsUSD,
+          },
+          quantity: 1,
+        });
+        totalAmountCents = item.priceCentsUSD;
+        metadata.tokenId = String(item.tokenId);
+        break;
+      }
+
+      case "shipping": {
+        const item = items[0];
+        lineItems.push({
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: item.commonName || `Live Specimen`,
+              description: item.scientificName
+                ? `${item.scientificName} — Live Arrival Guaranteed`
+                : `Live specimen — Live Arrival Guaranteed`,
+              images: item.imageUrl ? [item.imageUrl] : [],
+            },
+            unit_amount: item.priceCentsUSD,
+          },
+          quantity: 1,
+        });
+        if (item.shippingFeeCents && item.shippingFeeCents > 0) {
+          lineItems.push({
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: "Shipping & handling",
+                description: "Expedited live-fish shipping with heat/cold pack, breather bag, and handling",
+              },
+              unit_amount: item.shippingFeeCents,
+            },
+            quantity: 1,
+          });
+        }
+        totalAmountCents = item.priceCentsUSD + (item.shippingFeeCents || 0);
+        metadata.tokenId = String(item.tokenId);
+        metadata.shippingFeeCents = String(item.shippingFeeCents || 0);
+        // Live-rate context for the seller's in-app label purchase (ShipEngine).
+        if (item.shipServiceCode) metadata.ship_service_code = String(item.shipServiceCode);
+        if (item.shipCarrierId) metadata.ship_carrier_id = String(item.shipCarrierId);
+        if (req.body.shipTo) {
+          metadata.ship_to = JSON.stringify(req.body.shipTo).slice(0, 480);
+        }
+        break;
+      }
+
+      case "batch": {
+        const item = items[0];
+        lineItems.push({
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: `${item.commonName || "Juvenile Fish"} (x${item.quantity})`,
+              description: `Batch of ${item.quantity} tank-raised juveniles from verified breeder`,
+              images: item.imageUrl ? [item.imageUrl] : [],
+            },
+            unit_amount: item.pricePerFishCents,
+          },
+          quantity: item.quantity,
+        });
+        totalAmountCents = item.pricePerFishCents * item.quantity;
+        metadata.listingId = String(item.listingId);
+        metadata.quantity = String(item.quantity);
+        break;
+      }
+
+      case "multi": {
+        const tokenIds = [];
+        for (const item of items) {
+          lineItems.push({
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: item.commonName || `Live Specimen`,
+                description: `Live specimen from verified breeder`,
+                images: item.imageUrl ? [item.imageUrl] : [],
+              },
+              unit_amount: item.priceCentsUSD,
+            },
+            quantity: 1,
+          });
+          totalAmountCents += item.priceCentsUSD;
+          tokenIds.push(String(item.tokenId));
+        }
+        const shippingFee = items[0]?.shippingFeeCents || 0;
+        if (shippingFee > 0) {
+          lineItems.push({
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: "Consolidated Live Fish Shipping",
+                description: `Priority overnight shipping for ${items.length} specimens`,
+              },
+              unit_amount: shippingFee,
+            },
+            quantity: 1,
+          });
+          totalAmountCents += shippingFee;
+        }
+        metadata.tokenIds = JSON.stringify(tokenIds);
+        metadata.shippingFeeCents = String(shippingFee);
+        break;
+      }
+
+      default:
+        return res.status(400).json({ error: `Unknown purchaseType: ${purchaseType}` });
+    }
+
+    // ─── Escrow money model: separate charges + transfers ─────────────────
+    // Funds are captured into the PLATFORM balance and HELD; the seller is paid
+    // later via a Stripe Transfer (shipping → on live-arrival release; instant/
+    // batch/multi → on settlement). Platform keeps 4% of goods + full shipping;
+    // seller gets 96% of the GOODS price only.
+    const shippingCents = Number(metadata.shippingFeeCents || 0);
+    const goodsPriceCents = totalAmountCents - shippingCents;
+    const platformFeeCents = Math.round(goodsPriceCents * (PLATFORM_FEE_PERCENT / 100));
+    const sellerPayoutCents = goodsPriceCents - platformFeeCents; // 96% of goods, shipping excluded
+
+    // Buyer covers Stripe's processing fee (grossed up). Round UP so we never
+    // under-collect and dip into the platform's 4%.
+    const buyerTotalCents = Math.ceil(
+      (totalAmountCents + STRIPE_FEE_FIXED_CENTS) / (1 - STRIPE_FEE_RATE)
+    );
+    const processingFeeCents = buyerTotalCents - totalAmountCents;
+
+    // Surface the processing fee as its own line item so the buyer sees it.
+    if (processingFeeCents > 0) {
+      lineItems.push({
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: "Service & processing fee",
+            description: "Secure checkout, buyer protection, and card processing",
+          },
+          unit_amount: processingFeeCents,
+        },
+        quantity: 1,
+      });
+    }
+
+    // transfer_group links the charge to the later Transfer(s) to the seller.
+    const transferGroup = `aqx_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    metadata.goodsTotalCents = String(totalAmountCents);
+    metadata.platformFeeCents = String(platformFeeCents);
+    metadata.sellerPayoutCents = String(sellerPayoutCents);
+    metadata.processingFeeCents = String(processingFeeCents);
+    metadata.transferGroup = transferGroup;
+
+    // ─── Create Stripe Checkout Session (capture-and-hold) ─────────────────
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      line_items: lineItems,
+      payment_intent_data: {
+        // No transfer_data / application_fee: funds land in the platform balance
+        // and are held. The seller is paid via a later Transfer within transfer_group.
+        transfer_group: transferGroup,
+        metadata,
+      },
+      metadata,
+      success_url: SUCCESS_URL,
+      cancel_url: CANCEL_URL,
+      payment_method_types: ["card"],
+      payment_method_options: {
+        card: {
+          setup_future_usage: undefined,
+        },
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      checkoutUrl: session.url,
+      sessionId: session.id,
+      goodsTotalCents: totalAmountCents,
+      processingFeeCents,
+      buyerTotalCents,
+      platformFeeCents,
+      sellerReceivesCents: sellerPayoutCents,
+    });
+  } catch (err) {
+    console.error("[Stripe Checkout] Session creation failed:", err);
+    return res.status(500).json({
+      error: "Failed to create checkout session",
+      details: err.message,
+    });
   }
 }

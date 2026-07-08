@@ -131,7 +131,7 @@ async function fetchEchoObservation(tankContext) {
 Be warm, poetic, and specific. Reference their actual species or params if possible. Never give medical advice. Just one sentence.`;
 
   try {
-    const response = await fetch("/api/poseidon", {
+    const response = await fetch("/api/ai?action=poseidon", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
