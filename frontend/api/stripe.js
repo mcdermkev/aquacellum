@@ -25,6 +25,7 @@ import Stripe from "stripe";
 import { ethers } from "ethers";
 import { createClient } from "@supabase/supabase-js";
 import { handleCorsPreFlight } from "./_lib/cors.js";
+import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
 
 let stripe;
 try {
@@ -150,6 +151,77 @@ async function transferToSeller({ sellerStripeAccountId, amountCents, transferGr
     ...(transferGroup ? { transfer_group: transferGroup } : {}),
     metadata: { reference: reference || "" },
   });
+}
+
+/**
+ * Finalize a HELD order: perform the on-chain release (NFT → buyer, or the
+ * escrow-marker flip for batch) and pay the held funds out to the seller via
+ * Stripe. Shared by the buyer/seller release path (handleRelease) and the
+ * scheduled auto-release job (handleAutoRelease).
+ *
+ * Ordering is provenance-first, money-second: if the payout fails after the
+ * on-chain release, the settlement is flagged 'failed' for payout retry rather
+ * than leaving the buyer without their specimens. Idempotent at the contract
+ * level (a second release of an already-RELEASED escrow reverts and surfaces as
+ * a handled release_failed).
+ *
+ * @returns {Promise<{ok:boolean, action:string, txHash?:string, transferId?:string, error?:string}>}
+ */
+async function finalizeReleaseAndPayout({ paymentIntentId, metadata, tokenId, purchaseType }) {
+  // 1. On-chain release / settlement (NFT → buyer)
+  let txHash = null;
+  try {
+    const marketplace = getMarketplaceContract();
+    const stripePaymentHash = computeStripePaymentHash(paymentIntentId);
+    let tx;
+    if (purchaseType === "shipping") {
+      // Escrow was created at purchase (purchaseShippingFiat); finalize it now
+      // that arrival is confirmed (buyer, seller-after-window, or auto-release).
+      tx = await marketplace.releaseFiatShippingEscrow(Number(tokenId));
+    } else if (purchaseType === "pickup") {
+      // pickup: settlement was deferred until the in-person handshake. Transfer
+      // the NFT now. Idempotent via the Stripe payment hash.
+      tx = await marketplace.purchaseSpecimenFiat(
+        Number(tokenId),
+        metadata.buyerWallet,
+        Number(metadata.goodsTotalCents || 0),
+        stripePaymentHash
+      );
+    } else if (purchaseType === "multi") {
+      // multi: transfer all held specimen NFTs to the buyer.
+      tx = await marketplace.releaseFiatMultiEscrow(stripePaymentHash);
+    } else {
+      // batch: flip the held escrow marker to RELEASED (no per-unit NFT).
+      tx = await marketplace.releaseFiatBatchEscrow(stripePaymentHash);
+    }
+    const receipt = await tx.wait();
+    txHash = receipt.transactionHash;
+  } catch (err) {
+    console.error("[Stripe Release] On-chain release failed:", err);
+    return { ok: false, action: "release_failed", error: err.message };
+  }
+
+  // 2. Stripe payout (held funds → seller)
+  try {
+    const transfer = await transferToSeller({
+      sellerStripeAccountId: metadata.sellerStripeAccountId,
+      amountCents: Number(metadata.sellerPayoutCents || 0),
+      transferGroup: metadata.transferGroup,
+      reference: paymentIntentId,
+    });
+    await supabase
+      .from("fiat_settlements")
+      .update({ settled_at: new Date().toISOString() })
+      .eq("stripe_payment_intent_id", paymentIntentId);
+    return { ok: true, action: "released", txHash, transferId: transfer.id };
+  } catch (payoutErr) {
+    console.error("[Stripe Release] Seller payout failed after NFT release:", payoutErr.message);
+    await supabase
+      .from("fiat_settlements")
+      .update({ status: "failed", error_message: `release payout failed: ${payoutErr.message}` })
+      .eq("stripe_payment_intent_id", paymentIntentId);
+    return { ok: false, action: "released_payout_pending", txHash, error: payoutErr.message };
+  }
 }
 
 /**
@@ -629,11 +701,14 @@ async function handleConnectOnboard(req, res) {
  * on-chain release, the order is flagged 'failed' for payout retry (recoverable),
  * rather than leaving the buyer without their specimens.
  *
- * Auth: the caller must supply a wallet signature (personal_sign) over the
- * canonical release message. The recovered signer must be the order's buyer
- * (allowed any time) or seller (allowed only for shipping orders, and only once
- * the on-chain dispatch safety window has elapsed). This stops a third party
- * from triggering release/payout.
+ * Auth: the caller proves they're a party to THIS order via either (1) a
+ * verified Privy session token whose user id matches the buyerUserId captured
+ * at checkout (the primary, popup-free path), or (2) a wallet signature over
+ * the canonical release message (fallback for self-custody buyers, seller
+ * force-release, and legacy orders). Either way the caller resolves to the
+ * order's buyer (allowed any time) or seller (shipping only, and only once the
+ * on-chain dispatch safety window has elapsed). This stops a third party from
+ * triggering release/payout.
  */
 async function handleRelease(req, res) {
   if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS" })) return;
@@ -685,54 +760,86 @@ async function handleRelease(req, res) {
     return res.status(400).json({ error: "Missing tokenId" });
   }
 
-  // ─── Authorization: verify a buyer/seller wallet signature ───────────────
-  // The caller signs the canonical release message with their Privy EOA. We
-  // recover the signer and match it against the order's buyer/seller wallet
-  // (both stored lowercase in Stripe metadata). No trusted caller: without a
-  // valid signature from a party to THIS order, release is refused.
-  const { signature, issuedAt, paymentRef } = req.body || {};
-  if (!signature || !issuedAt || !paymentRef) {
-    return res.status(401).json({ error: "Missing release authorization signature" });
-  }
-
-  // Freshness: reject stale (replayed) or future-dated signatures. Allow a
-  // small negative skew for client/server clock drift.
-  const sigAgeMs = Date.now() - Number(issuedAt);
-  if (!Number.isFinite(sigAgeMs) || sigAgeMs > RELEASE_SIG_MAX_AGE_MS || sigAgeMs < -60_000) {
-    return res.status(401).json({ error: "Release authorization expired or has an invalid timestamp" });
-  }
-
-  // Bind the signature to THIS order: the signed ref must be the session id or
-  // the payment intent we just resolved, so a signature for one order can't
-  // release another.
-  if (paymentRef !== sessionId && paymentRef !== paymentIntentId) {
-    return res.status(401).json({ error: "Release authorization does not match this order" });
-  }
-
-  // Recover the signer. The message is rebuilt from the raw request values the
-  // client signed (bodyTokenId, paymentRef, issuedAt).
-  let signer;
-  try {
-    const message = buildReleaseAuthMessage({
-      tokenId: bodyTokenId != null ? bodyTokenId : tokenId,
-      paymentRef,
-      issuedAt,
-    });
-    signer = ethers.utils.verifyMessage(message, signature).toLowerCase();
-  } catch (err) {
-    return res.status(401).json({ error: "Invalid release signature" });
-  }
-
+  // ─── Authorization ───────────────────────────────────────────────────────
+  // Two accepted proofs, checked in order:
+  //
+  //   1. Privy session token (web2-masked, NO wallet popup) — the primary path.
+  //      The caller sends "Authorization: Bearer <privy access token>". We
+  //      verify it against Privy's JWKS and match the verified Privy user id
+  //      against metadata.buyerUserId (captured at checkout). If the verified
+  //      token also carries a wallet claim, we accept a match against the
+  //      order's buyer/seller wallet too — this covers in-flight orders created
+  //      before buyerUserId was stamped.
+  //
+  //   2. Wallet signature (fallback) — self-custody / MetaMask buyers with no
+  //      Privy session, seller force-release, and legacy orders. The caller
+  //      signs the canonical release message; we recover the signer and match
+  //      it against the order's buyer/seller wallet.
+  //
+  // Without one of these, tied to THIS order, release is refused.
   const buyerWallet = (metadata.buyerWallet || "").toLowerCase();
   const sellerWallet = (metadata.sellerWallet || "").toLowerCase();
+  const buyerUserId = metadata.buyerUserId || null;
 
-  let role;
-  if (buyerWallet && signer === buyerWallet) {
-    role = "buyer";
-  } else if (sellerWallet && signer === sellerWallet) {
-    role = "seller";
-  } else {
-    return res.status(403).json({ error: "Signer is not the buyer or seller for this order" });
+  let role = null;
+
+  // Attempt 1: Privy session token (no wallet popup).
+  const authHeader = req.headers["authorization"] || req.headers["Authorization"];
+  if (authHeader) {
+    const { verified, userId, walletAddress } = await verifyPrivyToken(req);
+    if (verified) {
+      const tokenWallet = (walletAddress || "").toLowerCase();
+      if (buyerUserId && userId === buyerUserId) {
+        role = "buyer";
+      } else if (tokenWallet && tokenWallet === buyerWallet) {
+        role = "buyer";
+      } else if (tokenWallet && tokenWallet === sellerWallet) {
+        role = "seller";
+      }
+    }
+  }
+
+  // Attempt 2: wallet signature fallback (self-custody / seller / legacy).
+  if (!role) {
+    const { signature, issuedAt, paymentRef } = req.body || {};
+    if (signature && issuedAt && paymentRef) {
+      // Freshness: reject stale (replayed) or future-dated signatures. Allow a
+      // small negative skew for client/server clock drift.
+      const sigAgeMs = Date.now() - Number(issuedAt);
+      if (!Number.isFinite(sigAgeMs) || sigAgeMs > RELEASE_SIG_MAX_AGE_MS || sigAgeMs < -60_000) {
+        return res.status(401).json({ error: "Release authorization expired or has an invalid timestamp" });
+      }
+      // Bind the signature to THIS order: the signed ref must be the session id
+      // or the payment intent we just resolved, so a signature for one order
+      // can't release another.
+      if (paymentRef !== sessionId && paymentRef !== paymentIntentId) {
+        return res.status(401).json({ error: "Release authorization does not match this order" });
+      }
+      // Recover the signer. The message is rebuilt from the raw request values
+      // the client signed (bodyTokenId, paymentRef, issuedAt).
+      let signer;
+      try {
+        const message = buildReleaseAuthMessage({
+          tokenId: bodyTokenId != null ? bodyTokenId : tokenId,
+          paymentRef,
+          issuedAt,
+        });
+        signer = ethers.utils.verifyMessage(message, signature).toLowerCase();
+      } catch (err) {
+        return res.status(401).json({ error: "Invalid release signature" });
+      }
+      if (buyerWallet && signer === buyerWallet) {
+        role = "buyer";
+      } else if (sellerWallet && signer === sellerWallet) {
+        role = "seller";
+      } else {
+        return res.status(403).json({ error: "Signer is not the buyer or seller for this order" });
+      }
+    }
+  }
+
+  if (!role) {
+    return res.status(401).json({ error: "Missing or invalid release authorization" });
   }
 
   // Seller-initiated release is only allowed for shipping orders (pickup has no
@@ -766,72 +873,29 @@ async function handleRelease(req, res) {
     }
   }
 
-  // 1. On-chain release / settlement (NFT → buyer)
-  let txHash = null;
-  try {
-    const marketplace = getMarketplaceContract();
-    const stripePaymentHash = computeStripePaymentHash(paymentIntentId);
-    let tx;
-    if (purchaseType === "shipping") {
-      // Escrow was created at purchase (purchaseShippingFiat); finalize it now
-      // that the buyer confirmed live arrival.
-      tx = await marketplace.releaseFiatShippingEscrow(Number(tokenId));
-    } else if (purchaseType === "pickup") {
-      // pickup: settlement was deferred until the in-person handshake. Transfer
-      // the NFT now. Idempotent via the Stripe payment hash.
-      tx = await marketplace.purchaseSpecimenFiat(
-        Number(tokenId),
-        metadata.buyerWallet,
-        Number(metadata.goodsTotalCents || 0),
-        stripePaymentHash
-      );
-    } else if (purchaseType === "multi") {
-      // multi: transfer all held specimen NFTs to the buyer.
-      tx = await marketplace.releaseFiatMultiEscrow(stripePaymentHash);
-    } else {
-      // batch: flip the held escrow marker to RELEASED (no per-unit NFT).
-      tx = await marketplace.releaseFiatBatchEscrow(stripePaymentHash);
-    }
-    const receipt = await tx.wait();
-    txHash = receipt.transactionHash;
-  } catch (err) {
-    console.error("[Stripe Release] On-chain release failed:", err);
-    return res.status(200).json({ received: true, action: "release_failed", error: err.message });
-  }
-
-  // 2. Stripe payout (held funds → seller)
-  try {
-    const transfer = await transferToSeller({
-      sellerStripeAccountId: metadata.sellerStripeAccountId,
-      amountCents: Number(metadata.sellerPayoutCents || 0),
-      transferGroup: metadata.transferGroup,
-      reference: paymentIntentId,
-    });
-
-    await supabase
-      .from("fiat_settlements")
-      .update({ settled_at: new Date().toISOString() })
-      .eq("stripe_payment_intent_id", paymentIntentId);
-
+  // Finalize: on-chain release (NFT → buyer) + held funds → seller. Shared with
+  // the scheduled auto-release job so the money/provenance movement lives in one
+  // place.
+  const result = await finalizeReleaseAndPayout({ paymentIntentId, metadata, tokenId, purchaseType });
+  if (result.ok) {
     return res.status(200).json({
       success: true,
-      action: "released",
-      txHash,
-      transferId: transfer.id,
-    });
-  } catch (payoutErr) {
-    console.error("[Stripe Release] Seller payout failed after NFT release:", payoutErr.message);
-    await supabase
-      .from("fiat_settlements")
-      .update({ status: "failed", error_message: `release payout failed: ${payoutErr.message}` })
-      .eq("stripe_payment_intent_id", paymentIntentId);
-    return res.status(200).json({
-      received: true,
-      action: "released_payout_pending",
-      txHash,
-      error: payoutErr.message,
+      action: result.action,
+      txHash: result.txHash,
+      transferId: result.transferId,
     });
   }
+  // Recoverable payout failure after a successful on-chain release: the buyer
+  // has their specimen; the payout is flagged for retry.
+  if (result.action === "released_payout_pending") {
+    return res.status(200).json({
+      received: true,
+      action: result.action,
+      txHash: result.txHash,
+      error: result.error,
+    });
+  }
+  return res.status(200).json({ received: true, action: result.action, error: result.error });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -857,6 +921,16 @@ async function handleRefund(req, res) {
   }
   if (!stripe) {
     return res.status(500).json({ error: "Stripe not configured" });
+  }
+
+  // Authorization: issuing money back to a buyer is an administrative action.
+  // Only the trusted backend (CRON_SECRET) or the curator may call it directly.
+  // Buyers don't hit this endpoint — they file a dispute (?action=dispute),
+  // which a curator then resolves (refund here, or release via the on-chain
+  // relayer path). This closes the previously-unauthenticated refund hole.
+  const auth = await authorizeAdminOrCurator(req);
+  if (!auth.ok) {
+    return res.status(auth.status || 403).json({ error: auth.error || "Not authorized to issue refunds" });
   }
 
   const { paymentIntentId, amountCents } = req.body || {};
@@ -886,6 +960,270 @@ async function handleRefund(req, res) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// AUTHORIZATION HELPERS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Authorize a trusted-administrative request: either the backend/cron (a Bearer
+ * token equal to CRON_SECRET) or the curator (a verified Privy token whose
+ * wallet matches CURATOR_WALLET). Used to gate money-back refunds.
+ *
+ * @returns {Promise<{ok:boolean, via?:string, status?:number, error?:string}>}
+ */
+async function authorizeAdminOrCurator(req) {
+  const authHeader = req.headers["authorization"] || req.headers["Authorization"] || "";
+  const cronSecret = process.env.CRON_SECRET;
+
+  // 1. Backend / cron secret.
+  if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
+    return { ok: true, via: "cron" };
+  }
+
+  // 2. Curator's Privy session token.
+  const curatorWallet = (process.env.CURATOR_WALLET || "").toLowerCase();
+  if (authHeader.startsWith("Bearer ") && curatorWallet) {
+    try {
+      const { verified, walletAddress } = await verifyPrivyToken(req);
+      if (verified && walletAddress && walletAddress.toLowerCase() === curatorWallet) {
+        return { ok: true, via: "curator" };
+      }
+    } catch (e) {
+      // fall through to unauthorized
+    }
+  }
+
+  return { ok: false, status: 403, error: "Not authorized" };
+}
+
+/**
+ * Verify that a request came from Vercel Cron (or the trusted backend) by
+ * matching the Bearer token to CRON_SECRET. Vercel automatically attaches this
+ * header to scheduled cron invocations when CRON_SECRET is configured.
+ */
+function isCronRequest(req) {
+  const authHeader = req.headers["authorization"] || req.headers["Authorization"] || "";
+  const cronSecret = process.env.CRON_SECRET;
+  return !!cronSecret && authHeader === `Bearer ${cronSecret}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DISPUTE HANDLER — buyer reports a problem (e.g. dead/sick on arrival)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * POST /api/stripe?action=dispute  { tokenId?, sessionId|paymentIntentId, reason?, note? }
+ * Headers: Authorization: Bearer <privy access token>
+ *
+ * The buyer flags a problem with a HELD order (the DOA / "arrived dead or sick"
+ * path). This does NOT move money — it opens a dispute so a curator can resolve
+ * it (refund the buyer here, or release to the seller via the relayer). It:
+ *   1. Verifies the caller is the order's buyer (Privy userId === buyerUserId,
+ *      or the verified token wallet === buyerWallet).
+ *   2. Marks the fiat settlement 'disputed'.
+ *   3. For shipping orders still inside the on-chain safety window, opens the
+ *      on-chain dispute (disputeShipping) via the relayer so the funds stay
+ *      locked; best-effort (the window may have passed / order not dispatched).
+ *
+ * Money is only returned once a curator calls ?action=refund.
+ */
+async function handleDispute(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS" })) return;
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+  if (!stripe) {
+    return res.status(500).json({ error: "Stripe not configured" });
+  }
+
+  const { tokenId: bodyTokenId, paymentIntentId: bodyPI, sessionId, reason, note } = req.body || {};
+  if (!bodyPI && !sessionId) {
+    return res.status(400).json({ error: "Missing paymentIntentId or sessionId" });
+  }
+
+  // Resolve the PaymentIntent + metadata (callers usually only have sessionId).
+  let paymentIntentId = bodyPI || null;
+  let metadata = {};
+  try {
+    if (!paymentIntentId && sessionId) {
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      paymentIntentId = typeof session.payment_intent === "string"
+        ? session.payment_intent
+        : session.payment_intent?.id || null;
+      metadata = session.metadata || {};
+    }
+    if (paymentIntentId) {
+      const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+      metadata = pi.metadata || metadata;
+    }
+  } catch (err) {
+    return res.status(400).json({ error: "Could not resolve payment", details: err.message });
+  }
+  if (!paymentIntentId) {
+    return res.status(400).json({ error: "No payment intent found for session" });
+  }
+
+  // ── Authorization: caller must be the order's buyer ──────────────────────
+  const buyerWallet = (metadata.buyerWallet || "").toLowerCase();
+  const buyerUserId = metadata.buyerUserId || null;
+  const authHeader = req.headers["authorization"] || req.headers["Authorization"];
+  let isBuyer = false;
+  if (authHeader) {
+    const { verified, userId, walletAddress } = await verifyPrivyToken(req);
+    if (verified) {
+      const tokenWallet = (walletAddress || "").toLowerCase();
+      if ((buyerUserId && userId === buyerUserId) || (tokenWallet && tokenWallet === buyerWallet)) {
+        isBuyer = true;
+      }
+    }
+  }
+  if (!isBuyer) {
+    return res.status(403).json({ error: "Only the buyer can report a problem with this order" });
+  }
+
+  const purchaseType = metadata.purchaseType;
+  const tokenId = bodyTokenId != null ? bodyTokenId : metadata.tokenId;
+
+  // ── Mark the settlement disputed (money stays held) ──────────────────────
+  try {
+    await supabase
+      .from("fiat_settlements")
+      .update({
+        status: "disputed",
+        disputed_at: new Date().toISOString(),
+        dispute_reason: reason || "buyer_reported_problem",
+      })
+      .eq("stripe_payment_intent_id", paymentIntentId);
+  } catch (err) {
+    console.warn("[Stripe Dispute] Could not flag settlement disputed:", err.message);
+  }
+
+  // ── Open the on-chain dispute for shipping orders (best-effort) ──────────
+  // Keeps the escrow locked while the curator reviews. Only valid inside the
+  // dispatch safety window; failures (window passed / not dispatched / already
+  // resolved) are non-fatal — the off-chain 'disputed' flag still stands.
+  let onChain = { attempted: false };
+  if (purchaseType === "shipping" && tokenId != null) {
+    try {
+      const marketplace = getMarketplaceContract();
+      const tx = await marketplace.disputeShipping(Number(tokenId));
+      const receipt = await tx.wait();
+      onChain = { attempted: true, txHash: receipt.transactionHash };
+    } catch (err) {
+      onChain = { attempted: true, error: err.message };
+    }
+  }
+
+  return res.status(200).json({
+    success: true,
+    action: "disputed",
+    paymentIntentId,
+    reason: reason || "buyer_reported_problem",
+    note: note || null,
+    onChain,
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AUTO-RELEASE HANDLER — scheduled release of shipping orders past the window
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * GET|POST /api/stripe?action=auto-release  (Vercel Cron)
+ *
+ * Releases HELD shipping orders whose on-chain safety window has elapsed with no
+ * open dispute, so a silent buyer never traps the seller's payout. Idempotent:
+ * scans fiat_settlements for shipping orders that are settled-but-not-paid-out
+ * (settled_at IS NULL), verifies the on-chain escrow is DISPATCHED and past the
+ * safety window, then runs the same release+payout as the manual path.
+ *
+ * Auth: Vercel Cron sends "Authorization: Bearer <CRON_SECRET>" automatically
+ * when CRON_SECRET is configured. Requests without it are rejected.
+ */
+async function handleAutoRelease(req, res) {
+  if (!isCronRequest(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  if (!stripe) {
+    return res.status(500).json({ error: "Stripe not configured" });
+  }
+
+  const MAX_PER_RUN = 50;
+  const results = { scanned: 0, released: 0, skipped: 0, failed: 0, details: [] };
+
+  let candidates = [];
+  try {
+    const { data, error } = await supabase
+      .from("fiat_settlements")
+      .select("stripe_payment_intent_id, purchase_type, metadata, status, settled_at")
+      .eq("purchase_type", "shipping")
+      .eq("status", "settled")
+      .is("settled_at", null)
+      .limit(MAX_PER_RUN);
+    if (error) {
+      return res.status(500).json({ error: "Could not query settlements", details: error.message });
+    }
+    candidates = data || [];
+  } catch (err) {
+    return res.status(500).json({ error: "Settlement query failed", details: err.message });
+  }
+
+  const marketplace = getMarketplaceContract();
+  const nowSec = Math.floor(Date.now() / 1000);
+
+  for (const row of candidates) {
+    results.scanned++;
+    const paymentIntentId = row.stripe_payment_intent_id;
+    let metadata = {};
+    try {
+      metadata = typeof row.metadata === "string" ? JSON.parse(row.metadata) : (row.metadata || {});
+    } catch (e) {
+      metadata = {};
+    }
+    const tokenId = metadata.tokenId != null ? Number(metadata.tokenId) : null;
+    if (tokenId == null) {
+      results.skipped++;
+      continue;
+    }
+
+    // Verify the on-chain escrow is DISPATCHED (status 1) and past the window.
+    try {
+      const escrow = await marketplace.shippingEscrows(tokenId);
+      const status = Number(escrow.status); // 0 LOCKED,1 DISPATCHED,2 RELEASED,3 DISPUTED,4 REFUNDED
+      const dispatchTs = Number(escrow.dispatchTimestamp);
+      if (status !== 1 || !dispatchTs) {
+        // Not dispatched yet, or already resolved/disputed → leave it alone.
+        results.skipped++;
+        continue;
+      }
+      if (nowSec < dispatchTs + SHIPPING_SAFETY_WINDOW_SECONDS) {
+        results.skipped++; // still inside the buyer-protection window
+        continue;
+      }
+    } catch (err) {
+      results.skipped++;
+      continue;
+    }
+
+    // Window elapsed, not disputed → release + pay out.
+    const outcome = await finalizeReleaseAndPayout({
+      paymentIntentId,
+      metadata,
+      tokenId,
+      purchaseType: "shipping",
+    });
+    if (outcome.ok) {
+      results.released++;
+      results.details.push({ paymentIntentId, txHash: outcome.txHash });
+    } else {
+      results.failed++;
+      results.details.push({ paymentIntentId, error: outcome.error, action: outcome.action });
+    }
+  }
+
+  return res.status(200).json({ success: true, action: "auto-release", ...results });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // MAIN ROUTER
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -901,6 +1239,10 @@ export default async function handler(req, res) {
       return handleRelease(req, res);
     case "refund":
       return handleRefund(req, res);
+    case "dispute":
+      return handleDispute(req, res);
+    case "auto-release":
+      return handleAutoRelease(req, res);
     default:
       return res.status(400).json({ error: `Unknown action: ${action}` });
   }

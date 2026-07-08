@@ -21,6 +21,35 @@ import { signPersonalMessage } from "./smartAccountClient";
 // ─── Configuration ─────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
+// ─── Session token (web2-masked auth) ───────────────────────────────────────
+// The Privy access-token getter, registered once by AuthContext (mirroring how
+// smartAccountClient registers the signer). Sending this token as a Bearer lets
+// the backend authorize checkout + release from the logged-in session — no
+// wallet-signature popup. Falls back to null for logged-out / self-custody
+// flows, where releaseFiatOrder signs with the wallet instead.
+let _sessionTokenGetter = null;
+
+/**
+ * Register the session-token getter (e.g. Privy's getAccessToken). Pass null to
+ * clear on logout.
+ */
+export function setSessionTokenGetter(getter) {
+  _sessionTokenGetter = typeof getter === "function" ? getter : null;
+}
+
+/**
+ * Resolve the current session token, or null if unavailable. Never throws.
+ */
+async function getSessionToken() {
+  if (!_sessionTokenGetter) return null;
+  try {
+    return (await _sessionTokenGetter()) || null;
+  } catch (err) {
+    console.warn("[StripePayments] Could not resolve session token:", err.message);
+    return null;
+  }
+}
+
 /**
  * Canonical release-authorization message. MUST match the server builder in
  * frontend/api/stripe.js byte-for-byte, or the recovered signer won't match and
@@ -194,11 +223,9 @@ export async function purchasePickupSpecimen({
  * seller and settles the NFT on-chain. Pass the order's Stripe session id (or
  * paymentIntentId); tokenId is optional context.
  *
- * The caller (buyer confirming arrival, or seller after the safety window)
- * signs a canonical authorization message with their wallet so the server can
- * verify who's requesting the release. Whoever is logged in signs; the server
- * derives their role by matching the recovered address to the order's
- * buyer/seller wallet.
+ * Authorization is popup-free for logged-in (Privy) buyers: the session token is
+ * sent as a Bearer and the server matches it to the buyer identity captured at
+ * checkout. Only self-custody / logged-out flows fall back to a wallet signature.
  *
  * @returns {Promise<{success: boolean, txHash?: string, transferId?: string, error?: string}>}
  */
@@ -209,31 +236,39 @@ export async function releaseFiatOrder({ tokenId, sessionId, paymentIntentId } =
       return { success: false, error: "Missing order reference (sessionId or paymentIntentId)" };
     }
 
-    // Sign the release authorization with the logged-in user's wallet.
-    const issuedAt = Date.now();
-    let signature;
-    try {
-      signature = await signPersonalMessage(
-        buildReleaseAuthMessage({ tokenId, paymentRef, issuedAt })
-      );
-    } catch (err) {
-      return {
-        success: false,
-        error: err.message || "Could not sign the release authorization",
-      };
+    const headers = { "Content-Type": "application/json" };
+    const body = { tokenId, sessionId, paymentIntentId };
+
+    // Primary path (web2-masked, no popup): authorize with the logged-in Privy
+    // session token. The backend verifies it and matches the buyer identity
+    // captured at checkout — nothing to sign, no crypto prompt.
+    const token = await getSessionToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    } else {
+      // Fallback for self-custody (MetaMask) users with no Privy session: sign
+      // the canonical release authorization with the wallet.
+      const issuedAt = Date.now();
+      let signature;
+      try {
+        signature = await signPersonalMessage(
+          buildReleaseAuthMessage({ tokenId, paymentRef, issuedAt })
+        );
+      } catch (err) {
+        return {
+          success: false,
+          error: err.message || "Could not authorize the release",
+        };
+      }
+      body.signature = signature;
+      body.issuedAt = issuedAt;
+      body.paymentRef = paymentRef;
     }
 
     const response = await fetch(`${API_BASE}/stripe?action=release`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        tokenId,
-        sessionId,
-        paymentIntentId,
-        signature,
-        issuedAt,
-        paymentRef,
-      }),
+      headers,
+      body: JSON.stringify(body),
     });
     const data = await response.json();
     if (!response.ok) {
@@ -247,6 +282,52 @@ export async function releaseFiatOrder({ tokenId, sessionId, paymentIntentId } =
 }
 
 /**
+ * Report a problem with a HELD order — the "arrived dead or sick" (DOA) path.
+ * Opens a dispute so a curator can resolve it; this does NOT move money and does
+ * NOT release the order to the seller. Authorized from the logged-in buyer's
+ * Privy session (no wallet popup); the server confirms the caller is the buyer.
+ *
+ * @param {Object} params
+ * @param {number} [params.tokenId] - Specimen token id (shipping/pickup context)
+ * @param {string} [params.sessionId] - Stripe Checkout session id
+ * @param {string} [params.paymentIntentId] - Stripe PaymentIntent id
+ * @param {string} [params.reason] - Short reason code (e.g. "dead_on_arrival")
+ * @param {string} [params.note] - Optional free-text detail from the buyer
+ * @returns {Promise<{success: boolean, action?: string, error?: string}>}
+ */
+export async function disputeFiatOrder({ tokenId, sessionId, paymentIntentId, reason, note } = {}) {
+  try {
+    if (!sessionId && !paymentIntentId) {
+      return { success: false, error: "Missing order reference (sessionId or paymentIntentId)" };
+    }
+
+    const token = await getSessionToken();
+    if (!token) {
+      // Reporting a problem requires the logged-in buyer's session so the server
+      // can confirm ownership of the order.
+      return { success: false, error: "Please sign in again to report a problem with this order." };
+    }
+
+    const response = await fetch(`${API_BASE}/stripe?action=dispute`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ tokenId, sessionId, paymentIntentId, reason, note }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, error: data.error || "Could not report the problem" };
+    }
+    return { success: data.success !== false, ...data };
+  } catch (err) {
+    console.error("[StripePayments] Dispute failed:", err);
+    return { success: false, error: err.message || "Network error reporting the problem" };
+  }
+}
+
+/**
  * Core checkout creator. Calls the backend, gets a Stripe Checkout URL,
  * and optionally redirects the user or returns the URL.
  *
@@ -256,9 +337,16 @@ export async function releaseFiatOrder({ tokenId, sessionId, paymentIntentId } =
  */
 async function _createCheckout(payload, autoRedirect = true) {
   try {
+    // Attach the logged-in session token so the backend can stamp the buyer's
+    // verified identity onto the order — this is what enables popup-free release
+    // later. Omitted for guests / logged-out buyers (they sign at release).
+    const token = await getSessionToken();
     const response = await fetch(`${API_BASE}/create-checkout`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify(payload),
     });
 

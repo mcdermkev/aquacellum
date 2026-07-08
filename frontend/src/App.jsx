@@ -526,6 +526,20 @@ export default function App() {
     return () => window.removeEventListener("reef_share_tank", handleShareOnReef);
   }, []);
 
+  // Listen for "Ask the breeder" (and other cross-tab) requests to open a DM.
+  // The inbox lives on the Reef tab, so navigate there first, then re-emit the
+  // open event once ReefFeed's InboxPanel is mounted to catch it.
+  useEffect(() => {
+    const handleOpenConversation = (e) => {
+      goToTab("reef");
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("reef_open_conversation", { detail: e.detail }));
+      }, 300);
+    };
+    window.addEventListener("aquadex_open_conversation", handleOpenConversation);
+    return () => window.removeEventListener("aquadex_open_conversation", handleOpenConversation);
+  }, []);
+
   // Listen for Poseidon deep-link navigation events (species search, tab switches)
   useEffect(() => {
     const handlePoseidonNav = (e) => {

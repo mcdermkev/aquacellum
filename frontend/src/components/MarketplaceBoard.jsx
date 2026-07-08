@@ -18,6 +18,7 @@ import { LazyImage } from "./LazyImage";
 import { useMarketplaceListings } from "../hooks/useMarketplaceListings";
 import { WantedBoard } from "./WantedBoard";
 import { LoadingSkeleton } from "./LoadingSkeleton";
+import { getOrCreateConversation } from "../services/messagesApi";
 
 // Helper: detect if a fishbase record or specCode is a plant entry
 const isPlantEntry = (specCodeOrItem) => {
@@ -633,7 +634,7 @@ export function MarketplaceBoard({
               <span>⚖️</span> Fulfillment Splits
             </h3>
             <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>
-              Comparing physical Cash Handshake bypasses against digital escrow settlements.
+              Compare paying in person (cash) with paying securely online.
             </p>
             
             <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", margin: "auto 0" }}>
@@ -886,7 +887,7 @@ export function MarketplaceBoard({
             </h2>
             <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
               {casualModeActive 
-                ? "Purchase healthy, tank-raised specimens directly from verified local hobbyists. Supported by escrow-backed health & live-arrival guarantees."
+                ? "Purchase healthy, tank-raised specimens directly from verified local hobbyists. Backed by buyer-protected health & live-arrival guarantees."
                 : "Zero-cost peer-to-peer exchange catalog. Browse and share documented specimens with verified ancestry."
               }
             </p>
@@ -1821,6 +1822,68 @@ export function MarketplaceBoard({
                                 >
                                   💬 Make an Offer
                                 </button>
+                                {/* Ask the breeder a question before buying — keeps the
+                                    conversation (and the sale) on-platform. */}
+                                {walletAccount && item.seller &&
+                                  item.seller.toLowerCase() !== walletAccount.toLowerCase() && (
+                                  <button
+                                    className="btn-secondary"
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      try {
+                                        const { data } = await getOrCreateConversation(item.seller);
+                                        if (data?.id) {
+                                          window.dispatchEvent(new CustomEvent("aquadex_open_conversation", {
+                                            detail: { conversationId: data.id, targetWallet: item.seller },
+                                          }));
+                                        }
+                                      } catch (err) {
+                                        console.warn("[MarketplaceBoard] Ask the breeder failed:", err);
+                                      }
+                                    }}
+                                    style={{ width: "100%", padding: "0.35rem 1rem", fontSize: "0.7rem", justifyContent: "center" }}
+                                  >
+                                    🐟 Ask the breeder
+                                  </button>
+                                )}
+                                {/* Consolidated-shipping nudge: same breeder, one box. */}
+                                {(() => {
+                                  const alreadyFiltered =
+                                    activeSellerFilter && item.seller &&
+                                    activeSellerFilter.toLowerCase() === item.seller.toLowerCase();
+                                  if (alreadyFiltered || !item.seller) return null;
+                                  const others = listings.filter((l) =>
+                                    l.seller &&
+                                    l.seller.toLowerCase() === item.seller.toLowerCase() &&
+                                    (l.isBatch
+                                      ? l.listingId !== item.listingId
+                                      : Number(l.tokenId) !== Number(item.tokenId))
+                                  ).length;
+                                  if (others <= 0) return null;
+                                  return (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (setActiveSellerFilter) setActiveSellerFilter(item.seller);
+                                      }}
+                                      title="Buy more from this breeder in one shipping box"
+                                      style={{
+                                        width: "100%",
+                                        marginTop: "0.15rem",
+                                        padding: "0.3rem 0.6rem",
+                                        fontSize: "0.62rem",
+                                        color: "#7dd3fc",
+                                        background: "rgba(56,189,248,0.06)",
+                                        border: "1px dashed rgba(56,189,248,0.3)",
+                                        borderRadius: "6px",
+                                        cursor: "pointer",
+                                        textAlign: "center",
+                                      }}
+                                    >
+                                      📦 {others} more from this breeder — {casualModeActive ? "add them and ship together" : "consolidate into one shipment"}
+                                    </button>
+                                  );
+                                })()}
                               </div>
                             )}
                           </div>

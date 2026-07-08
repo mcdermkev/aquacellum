@@ -23,6 +23,7 @@ import {
 } from "../utils/smartAccount";
 import { authenticateWithWallet, clearReefSession, refreshSession, sessionNeedsRefresh } from "../services/supabaseClient";
 import { setUserSigner, clearUserSigner } from "../services/smartAccountClient";
+import { setSessionTokenGetter } from "../services/stripePayments";
 
 const AuthContext = createContext(null);
 
@@ -277,6 +278,19 @@ export function AuthProvider({ children }) {
 
     return () => clearUserSigner();
   }, [account, wallets, loginMethod]);
+
+  // Register the Privy session-token getter with the payments service so
+  // checkout + release can authorize from the logged-in session (no wallet
+  // signature popup). Cleared when the user isn't Privy-authenticated, so
+  // self-custody / logged-out flows fall back to wallet-signature release.
+  useEffect(() => {
+    if (privyAuthenticated && typeof getAccessToken === "function") {
+      setSessionTokenGetter(getAccessToken);
+    } else {
+      setSessionTokenGetter(null);
+    }
+    return () => setSessionTokenGetter(null);
+  }, [privyAuthenticated, getAccessToken]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // METAMASK PATH: Direct injected wallet connection

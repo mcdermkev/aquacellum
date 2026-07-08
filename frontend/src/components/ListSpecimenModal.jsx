@@ -7,6 +7,7 @@ import { getProvider } from "../utils/smartAccount";
 import { relayCreateListing } from "../services/relayer";
 import { db } from "../db";
 import { Modal } from "./Modal";
+import { loadSpeciesCareLookup, deriveCareFields } from "../utils/speciesCarePrefill";
 
 const getSpecimenPhotoUrl = (commonName) => {
   if (!commonName) return "";
@@ -26,8 +27,13 @@ export function ListSpecimenModal({
 }) {
   const [tokenId, setTokenId] = useState("");
   const [price, setPrice] = useState("");
-  const [isShipping, setIsShipping] = useState(false);
+  // Default to shipping — it reaches the most buyers. Sellers can switch to
+  // local pickup (which is fee-free at live events).
+  const [isShipping, setIsShipping] = useState(true);
   const [shippingFee, setShippingFee] = useState("5.00");
+  // Set when we auto-fill care fields from species reference data, so we can
+  // show a small "prefilled, editable" hint.
+  const [carePrefilled, setCarePrefilled] = useState(false);
   const [step, setStep] = useState(1); // 1: Input/Check, 2: Approve, 3: List
   const [isApproved, setIsApproved] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -59,12 +65,13 @@ export function ListSpecimenModal({
       // Reset state on close
       setTokenId("");
       setPrice("");
-      setIsShipping(false);
+      setIsShipping(true);
       setShippingFee("5.00");
       setStep(1);
       setIsApproved(false);
       setError(null);
       setSpecimenInfo(null);
+      setCarePrefilled(false);
       setTxHash(null);
       // Reset enhanced fields
       setDescription("");
@@ -110,6 +117,35 @@ export function ListSpecimenModal({
       }
     }
   }, [isOpen, preselectedListSpecimen]);
+
+  // Reuse what the fish already is: once the specimen resolves, pre-fill the
+  // species-level care fields (temp/pH/tank/care level) from reference data and
+  // the specimen's own saved photo. Only fills EMPTY fields, so seller edits win.
+  useEffect(() => {
+    if (!isOpen || !specimenInfo?.scientificName) return;
+    let cancelled = false;
+    (async () => {
+      const lookup = await loadSpeciesCareLookup();
+      if (cancelled) return;
+      const care = deriveCareFields(specimenInfo.scientificName, lookup);
+      let filledAny = false;
+      if (care) {
+        if (care.minTemp) { setMinTemp((v) => v || care.minTemp); filledAny = true; }
+        if (care.maxTemp) { setMaxTemp((v) => v || care.maxTemp); filledAny = true; }
+        if (care.minPh) { setMinPh((v) => v || care.minPh); filledAny = true; }
+        if (care.maxPh) { setMaxPh((v) => v || care.maxPh); filledAny = true; }
+        if (care.tankSizeMin) { setTankSizeMin((v) => v || care.tankSizeMin); filledAny = true; }
+        if (care.careLevel != null) setCareLevel(care.careLevel);
+      }
+      // Prefill the specimen's own photo if one was saved locally at mint/list.
+      try {
+        const saved = localStorage.getItem(`aquadex_specimen_photo_${Number(specimenInfo.id)}`);
+        if (saved) setPhotoPreview((p) => p || saved);
+      } catch (e) { /* ignore */ }
+      if (filledAny && !cancelled) setCarePrefilled(true);
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen, specimenInfo]);
 
 
   const verifyToken = async (idToVerify) => {
@@ -534,8 +570,12 @@ export function ListSpecimenModal({
                       >
                         <span className="delivery-tile-icon">🚚</span>
                         <span className="delivery-tile-label">Shipping Available</span>
+                        <span style={{ fontSize: "0.55rem", color: "#34d399", fontWeight: 600 }}>Recommended · reaches the most buyers</span>
                       </div>
                     </div>
+                    <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", margin: "0.4rem 0 0" }}>
+                      Tip: local pickup is fee-free during live events.
+                    </p>
                   </div>
 
                   {/* Price fields */}
@@ -577,6 +617,11 @@ export function ListSpecimenModal({
                     <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600", letterSpacing: "0.04em" }}>
                       Specimen Details (helps buyers decide)
                     </span>
+                    {carePrefilled && (
+                      <div style={{ fontSize: "0.65rem", color: "#34d399", marginTop: "0.35rem" }}>
+                        ✨ Prefilled from {specimenInfo.commonName} care data — edit anything.
+                      </div>
+                    )}
                   </div>
 
                   {/* Photo Upload */}

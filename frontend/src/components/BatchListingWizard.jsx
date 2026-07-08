@@ -3,6 +3,7 @@ import { Modal } from "./Modal";
 import { db } from "../db";
 import { addXp, XP_ACTIONS } from "../utils/xp";
 import { syncListingToCloud } from "../services/cloudSync";
+import { loadSpeciesCareLookup, deriveCareFields } from "../utils/speciesCarePrefill";
 
 /**
  * BatchListingWizard — Guided form for sellers to list fry batches for sale.
@@ -26,9 +27,12 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
   const [selectedSpawn, setSelectedSpawn] = useState(null);
   const [quantity, setQuantity] = useState("");
   const [pricePerFish, setPricePerFish] = useState("");
-  const [isShipping, setIsShipping] = useState(false);
+  // Default to shipping — reaches the most buyers; sellers can switch to local
+  // pickup (fee-free at live events).
+  const [isShipping, setIsShipping] = useState(true);
   const [shippingFee, setShippingFee] = useState("5.00");
   const [description, setDescription] = useState("");
+  const [carePrefilled, setCarePrefilled] = useState(false);
 
   // Enhanced batch listing fields
   const [fryAge, setFryAge] = useState("");
@@ -51,10 +55,11 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
       setSelectedSpawn(null);
       setQuantity("");
       setPricePerFish("");
-      setIsShipping(false);
+      setIsShipping(true);
       setShippingFee("5.00");
       setDescription("");
       setError(null);
+      setCarePrefilled(false);
       // Reset enhanced fields
       setFryAge("");
       setFryAgeUnit("weeks");
@@ -109,9 +114,28 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
     })();
   }, [isOpen, walletAccount]);
 
-  const handleSelectSpawn = (spawn) => {
+  const handleSelectSpawn = async (spawn) => {
     setSelectedSpawn(spawn);
     setStep(2);
+
+    // Reuse what the fry already are: pre-fill species-level care fields from
+    // reference data. Only fills EMPTY fields so any seller edits stick.
+    if (spawn?.scientificName) {
+      try {
+        const lookup = await loadSpeciesCareLookup();
+        const care = deriveCareFields(spawn.scientificName, lookup);
+        if (care) {
+          let filledAny = false;
+          if (care.minTemp) { setMinTemp((v) => v || care.minTemp); filledAny = true; }
+          if (care.maxTemp) { setMaxTemp((v) => v || care.maxTemp); filledAny = true; }
+          if (care.minPh) { setMinPh((v) => v || care.minPh); filledAny = true; }
+          if (care.maxPh) { setMaxPh((v) => v || care.maxPh); filledAny = true; }
+          if (care.tankSizeMin) { setTankSizeMin((v) => v || care.tankSizeMin); filledAny = true; }
+          if (care.careLevel != null) setCareLevel(care.careLevel);
+          if (filledAny) setCarePrefilled(true);
+        }
+      } catch (e) { /* prefill is best-effort */ }
+    }
   };
 
   const handleSubmit = async () => {
@@ -380,8 +404,12 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
               >
                 <span className="delivery-tile-icon">🚚</span>
                 <span className="delivery-tile-label">Shipping Available</span>
+                <span style={{ fontSize: "0.55rem", color: "#34d399", fontWeight: 600 }}>Recommended · reaches the most buyers</span>
               </div>
             </div>
+            <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", margin: "0.4rem 0 0" }}>
+              Tip: local pickup is fee-free during live events.
+            </p>
           </div>
 
           {/* Shipping fee */}
@@ -423,6 +451,11 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
             <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600", letterSpacing: "0.04em" }}>
               Fry Details (helps buyers decide)
             </span>
+            {carePrefilled && (
+              <div style={{ fontSize: "0.65rem", color: "#34d399", marginTop: "0.35rem" }}>
+                ✨ Prefilled from {selectedSpawn.commonName} care data — edit anything.
+              </div>
+            )}
           </div>
 
           {/* Age & Size Row */}

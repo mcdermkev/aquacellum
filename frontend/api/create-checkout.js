@@ -28,6 +28,7 @@
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import { handleCorsPreFlight } from "./_lib/cors.js";
+import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2024-06-20",
@@ -81,6 +82,23 @@ export default async function handler(req, res) {
   // On-chain settlement will be deferred until the buyer links an account.
   const isGuestPurchase = buyerWallet === 'guest' || buyerWallet === '0x0000000000000000000000000000000000000000';
 
+  // Capture the buyer's VERIFIED Privy identity (DID). This is what lets the
+  // later release-on-arrival step authorize from the logged-in session instead
+  // of a wallet-signature popup: the release handler re-verifies the caller's
+  // Privy token and matches its userId against this buyerUserId. Best-effort —
+  // guests / logged-out buyers won't have one and fall back to the signature
+  // path at release. Never throws: a bad/absent token just means "no userId".
+  let buyerUserId = null;
+  try {
+    const authHeader = req.headers["authorization"] || req.headers["Authorization"];
+    if (authHeader) {
+      const { verified, userId } = await verifyPrivyToken(req);
+      if (verified && userId) buyerUserId = userId;
+    }
+  } catch (e) {
+    console.warn("[Stripe Checkout] Buyer identity capture skipped:", e.message);
+  }
+
   const SUCCESS_URL = successUrl
     || process.env.CHECKOUT_SUCCESS_URL
     || "https://aquadex.fish/checkout/success?session_id={CHECKOUT_SESSION_ID}";
@@ -119,6 +137,8 @@ export default async function handler(req, res) {
       sellerWallet: sellerWallet.toLowerCase(),
       sellerStripeAccountId: sellerAccount.stripe_account_id,
       isGuestPurchase: isGuestPurchase ? "true" : "false",
+      // Verified buyer identity for popup-free release authorization (see above).
+      ...(buyerUserId ? { buyerUserId } : {}),
     };
 
     switch (purchaseType) {

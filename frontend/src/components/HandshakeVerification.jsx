@@ -185,7 +185,7 @@ export function HandshakeVerification({
 
       setPurchaseId(pId);
       setStep("qr-display");
-      setToast({ message: "Holding deposit secured in escrow!", type: "success" });
+      setToast({ message: "Deposit secured — your payment is protected!", type: "success" });
       
       // Dispatch XP event for locking escrow (local-first rank system)
       const xpEvent = new CustomEvent("aquadex_xp_added", {

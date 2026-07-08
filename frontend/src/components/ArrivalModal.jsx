@@ -3,8 +3,8 @@ import { Modal } from "./Modal";
 import { TankSelector } from "./TankSelector";
 import { AcclimationNotes } from "./AcclimationNotes";
 import { useUserTanks } from "../hooks/useUserTanks";
-import { relayMoveSpecimen } from "../services/relayer";
-import { releaseFiatOrder } from "../services/stripePayments";
+import { relayMoveSpecimen, relayUpdateShippingOrder } from "../services/relayer";
+import { releaseFiatOrder, disputeFiatOrder } from "../services/stripePayments";
 import { addXp, XP_ACTIONS } from "../utils/xp";
 import { db } from "../db";
 
@@ -65,6 +65,12 @@ function ArrivalModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
+  // "Report a problem" (DOA) flow — only offered for shipping-merge orders.
+  const [showReport, setShowReport] = useState(false);
+  const [reportReason, setReportReason] = useState("dead_on_arrival");
+  const [reportNote, setReportNote] = useState("");
+  const [reportSubmitted, setReportSubmitted] = useState(false);
+
   // Resolve default tank when tanks load
   const defaultResolution = useMemo(() => resolveDefaultTank(tanks), [tanks]);
 
@@ -81,6 +87,10 @@ function ArrivalModal({
       setError(null);
       setSubmitting(false);
       setSelectedTankId(null);
+      setShowReport(false);
+      setReportReason("dead_on_arrival");
+      setReportNote("");
+      setReportSubmitted(false);
     }
   }, [isOpen]);
 
@@ -185,6 +195,37 @@ function ArrivalModal({
       onComplete({ success: true, tankId: null, skipped: true });
     }
     onClose();
+  };
+
+  // Report a problem (DOA): opens a dispute instead of confirming arrival. This
+  // does NOT release payment to the seller — it flags the order for review so
+  // the buyer is protected if the fish arrived dead or sick.
+  const handleReportProblem = async () => {
+    if (submitting || !shippingOrder) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      const tokenId = shippingOrder.tokenId || item?.id;
+      const result = await disputeFiatOrder({
+        tokenId,
+        sessionId: shippingOrder.stripeSessionId,
+        paymentIntentId: shippingOrder.paymentIntentId,
+        reason: reportReason,
+        note: reportNote || null,
+      });
+      if (!result.success) {
+        throw new Error(result.error || "Could not report the problem");
+      }
+      setReportSubmitted(true);
+      if (onComplete) {
+        onComplete({ success: true, disputed: true });
+      }
+    } catch (err) {
+      console.error("[ArrivalModal] Report a problem failed:", err);
+      setError(err.message || "Could not report the problem. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Determine display name
@@ -350,6 +391,122 @@ function ArrivalModal({
             >
               {casualModeActive ? "Skip" : "Defer"}
             </button>
+          </div>
+        )}
+
+        {/* Report a problem (DOA) — only for shipping arrivals */}
+        {isShippingMerge && shippingOrder && (
+          <div style={{ marginTop: "0.85rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            {reportSubmitted ? (
+              <div style={{
+                padding: "0.6rem 0.75rem",
+                borderRadius: "8px",
+                background: "rgba(34,211,238,0.06)",
+                border: "1px solid rgba(34,211,238,0.2)",
+                fontSize: "0.78rem",
+                color: "var(--text-secondary, #cbd5e1)",
+              }}>
+                <strong style={{ color: "var(--text-primary, #f1f5f9)", display: "block", marginBottom: "0.25rem" }}>
+                  Thanks — we're on it.
+                </strong>
+                We've flagged this order for review and put it on hold. Your payment stays protected until it's sorted out.
+                <div style={{ marginTop: "0.6rem" }}>
+                  <button type="button" className="btn-secondary" onClick={onClose} style={{ width: "100%" }}>
+                    Close
+                  </button>
+                </div>
+              </div>
+            ) : !showReport ? (
+              <button
+                type="button"
+                onClick={() => setShowReport(true)}
+                disabled={submitting}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--text-muted, #94a3b8)",
+                  fontSize: "0.75rem",
+                  textDecoration: "underline",
+                  cursor: "pointer",
+                  padding: "0.25rem 0",
+                }}
+              >
+                Something wrong? Report a problem
+              </button>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <div style={{ fontSize: "0.78rem", color: "var(--text-secondary, #cbd5e1)" }}>
+                  {casualModeActive
+                    ? "Sorry to hear it. Tell us what happened and we'll hold your payment while we help."
+                    : "Report an issue. Payment stays held pending review — the seller is not paid until this resolves."}
+                </div>
+                <select
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  disabled={submitting}
+                  style={{
+                    width: "100%",
+                    padding: "0.5rem 0.6rem",
+                    borderRadius: "6px",
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    color: "var(--text-primary, #f1f5f9)",
+                    fontSize: "0.8rem",
+                  }}
+                >
+                  <option value="dead_on_arrival">Arrived dead</option>
+                  <option value="arrived_sick">Arrived sick or injured</option>
+                  <option value="wrong_or_missing">Wrong or missing fish</option>
+                  <option value="other">Something else</option>
+                </select>
+                <textarea
+                  value={reportNote}
+                  onChange={(e) => setReportNote(e.target.value)}
+                  disabled={submitting}
+                  placeholder={casualModeActive ? "Add a few details (optional)" : "Details (optional)"}
+                  rows={3}
+                  style={{
+                    width: "100%",
+                    padding: "0.5rem 0.6rem",
+                    borderRadius: "6px",
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    color: "var(--text-primary, #f1f5f9)",
+                    fontSize: "0.8rem",
+                    resize: "vertical",
+                  }}
+                />
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <button
+                    type="button"
+                    onClick={handleReportProblem}
+                    disabled={submitting}
+                    style={{
+                      flex: 1,
+                      padding: "0.5rem 0.75rem",
+                      borderRadius: "6px",
+                      background: "rgba(239,68,68,0.12)",
+                      border: "1px solid rgba(239,68,68,0.4)",
+                      color: "#fca5a5",
+                      fontSize: "0.8rem",
+                      fontWeight: 600,
+                      cursor: submitting ? "default" : "pointer",
+                    }}
+                  >
+                    {submitting ? "Reporting..." : "Report a problem"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setShowReport(false)}
+                    disabled={submitting}
+                    style={{ flex: 0, whiteSpace: "nowrap", padding: "0.5rem 0.75rem" }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -402,7 +402,7 @@ function StorefrontContent() {
       {/* Footer */}
       <footer className="sf-footer">
         <p>
-          Powered by <a href="/" className="sf-footer__link">Aquacellum</a> — All purchases protected by smart contract escrow
+          Powered by <a href="/" className="sf-footer__link">Aquacellum</a> — All purchases buyer-protected
         </p>
       </footer>
     </div>

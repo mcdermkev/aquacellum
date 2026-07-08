@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { fetchOrderTimeline } from "../services/ordersSync";
+import React from "react";
 import { generateAlias } from "../utils/generateAlias";
+import { OrderTimeline } from "./OrderTimeline";
 import { getRelativeTime } from "../utils/arrivalNudge";
 
 /**
@@ -14,19 +14,6 @@ import { getRelativeTime } from "../utils/arrivalNudge";
  *  - casualModeActive: adjusts language
  */
 export function OrderReceipt({ order, isExpanded, onToggle, casualModeActive = false }) {
-  const [timeline, setTimeline] = useState([]);
-  const [loadingTimeline, setLoadingTimeline] = useState(false);
-
-  // Fetch cloud timeline when expanded (if cloud order ID is available)
-  useEffect(() => {
-    if (isExpanded && order?.cloudId) {
-      setLoadingTimeline(true);
-      fetchOrderTimeline(order.cloudId)
-        .then(setTimeline)
-        .finally(() => setLoadingTimeline(false));
-    }
-  }, [isExpanded, order?.cloudId]);
-
   if (!order) return null;
 
   const isShipping = order.orderType === "shipping";
@@ -248,40 +235,43 @@ export function OrderReceipt({ order, isExpanded, onToggle, casualModeActive = f
             </div>
           )}
 
-          {/* Status Timeline (from cloud) */}
-          {timeline.length > 0 && (
-            <div style={{ marginBottom: "0.5rem" }}>
-              <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "0.5rem" }}>
-                Order Timeline
+          {/* Seller payout transparency — when their held funds land. */}
+          {order.role === "Seller" && (order.orderType === "shipping" || order.isFiat) && (() => {
+            const s = Number(order.status ?? 0);
+            const WINDOW_SEC = 3 * 24 * 60 * 60;
+            let icon = "💵";
+            let color = "var(--text-muted)";
+            let text = "Payout releases after you ship, plus a 3-day arrival check.";
+            if (s === 2) {
+              icon = "✅"; color = "#34d399"; text = "Paid out to you.";
+            } else if (s === 4) {
+              icon = "↩️"; color = "#fbbf24"; text = "Refunded to the buyer.";
+            } else if (s === 3) {
+              icon = "⏳"; color = "#f87171"; text = "On hold — under review.";
+            } else if (s === 1 && order.dispatchTimestamp) {
+              const whenMs = (Number(order.dispatchTimestamp) + WINDOW_SEC) * 1000;
+              if (Date.now() >= whenMs) {
+                icon = "💵"; color = "#34d399"; text = "Payout available now.";
+              } else {
+                const d = new Date(whenMs).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                icon = "💵"; color = "#7dd3fc"; text = `Payout available ${d} (once the arrival window closes).`;
+              }
+            }
+            return (
+              <div style={{
+                display: "flex", alignItems: "center", gap: "0.4rem",
+                fontSize: "0.72rem", color, marginBottom: "0.75rem",
+                padding: "0.4rem 0.6rem", borderRadius: "6px",
+                background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+              }}>
+                <span>{icon}</span>
+                <span>{text}</span>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", paddingLeft: "0.5rem", borderLeft: "2px solid rgba(255,255,255,0.06)" }}>
-                {timeline.map((event, idx) => (
-                  <div key={event.id || idx} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <div style={{
-                      width: "8px", height: "8px", borderRadius: "50%",
-                      background: idx === timeline.length - 1 ? "#34d399" : "rgba(255,255,255,0.2)",
-                      marginLeft: "-5px",
-                      flexShrink: 0,
-                    }} />
-                    <div style={{ flex: 1 }}>
-                      <span style={{ color: "#fff", fontSize: "0.72rem" }}>
-                        {event.from_status ? `${event.from_status} → ` : ""}{event.to_status}
-                      </span>
-                      <span style={{ color: "var(--text-muted)", fontSize: "0.65rem", marginLeft: "0.5rem" }}>
-                        {new Date(event.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
-          {loadingTimeline && (
-            <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", textAlign: "center", padding: "0.5rem" }}>
-              Loading timeline...
-            </div>
-          )}
+          {/* Shared, buyer- and seller-facing status timeline (derived locally) */}
+          <OrderTimeline order={order} casualModeActive={casualModeActive} compact />
         </div>
       )}
     </div>

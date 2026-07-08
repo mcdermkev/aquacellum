@@ -1089,9 +1089,9 @@ export function CheckoutSummary({
                     <span style={{ fontFamily: "monospace" }}>-${excessRefund.toFixed(2)}</span>
                   </div>
                 )}
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.95rem", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "0.75rem", marginTop: "0.25rem" }}>
-                  <strong style={{ color: "#fff" }}>Net Secure Payment:</strong>
-                  <strong style={{ fontFamily: "monospace", color: "var(--accent-green)" }}>${((() => {
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: "1.05rem", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "0.75rem", marginTop: "0.25rem" }}>
+                  <strong style={{ color: "#fff" }}>Total</strong>
+                  <strong style={{ fontFamily: "monospace", color: "var(--accent-green)", fontSize: "1.15rem" }}>${((() => {
                     const discount = calculateCheckoutDiscount(
                       totalCost,
                       creditData?.tier || "Shallow",
@@ -1100,6 +1100,10 @@ export function CheckoutSummary({
                     );
                     return discount.finalPrice;
                   })()).toFixed(2)}</strong>
+                </div>
+
+                <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", textAlign: "right", marginTop: "0.2rem" }}>
+                  {casualModeActive ? "Shipping included · no hidden fees" : "Includes shipping and all fees"}
                 </div>
 
                 {/* Tier Discount + Reward Credits */}
