@@ -7,8 +7,10 @@
  *   - Batch (juvenile) purchase
  *   - Multi-specimen cart checkout
  *
- * Uses Stripe Connect "destination charges" so the platform collects the 4% fee
- * and the remaining 96% (+shipping) routes directly to the seller's connected account.
+ * Funds are captured into the platform balance and held, then paid out to the
+ * seller via a later Stripe Transfer. The platform keeps the 4% goods fee and
+ * the full shipping fee (it buys the label centrally on ShipEngine); the seller
+ * receives 96% of the goods price.
  *
  * Flow:
  *   1. Frontend sends listing details + buyer wallet + purchase type
@@ -40,8 +42,14 @@ const supabase = createClient(
 );
 
 // Platform fee: 4% of the goods price (matches on-chain TOTAL_FEE_BPS = 400).
-// Shipping is passed through to the seller in full (no platform fee on shipping),
-// matching the contract's releaseShippingEscrow math (fee on price only).
+// The platform ALSO keeps the full shipping fee, because it buys the shipping
+// label centrally on its own ShipEngine account (postage is drawn from the
+// platform's prepaid carrier balance). The buyer's shipping payment reimburses
+// that postage. NOTE: this differs from the on-chain crypto path
+// (releaseShippingEscrow), which still pays shipping to the seller — that path
+// uses a flat listing fee and no platform-bought label. The buyer-paid live
+// ShipEngine flow is fiat-only (this file), so the split here is the one that
+// governs real postage reconciliation.
 const PLATFORM_FEE_PERCENT = 4;
 
 // Buyer-paid Stripe processing fee. The buyer covers card processing so the
@@ -169,6 +177,12 @@ export default async function handler(req, res) {
 
       case "shipping": {
         // Shipping specimen: items[0] = { tokenId, commonName, priceCentsUSD, shippingFeeCents, imageUrl? }
+        // Buyer-paid live rate context (from the ShipEngine quote at checkout):
+        //   item.shipServiceCode / item.shipCarrierId — the service the buyer picked
+        //   shipTo (top-level) — the buyer's destination address
+        // These are stamped into metadata so the seller's later in-app label
+        // purchase re-rates the SAME service to the SAME address, and the order
+        // row can auto-dispatch the returned tracking number.
         const item = items[0];
         lineItems.push({
           price_data: {
@@ -189,8 +203,8 @@ export default async function handler(req, res) {
             price_data: {
               currency: "usd",
               product_data: {
-                name: "Insulated Live Fish Shipping",
-                description: "Priority overnight shipping with heat/cold pack and breather bag",
+                name: "Shipping & handling",
+                description: "Expedited live-fish shipping with heat/cold pack, breather bag, and handling",
               },
               unit_amount: item.shippingFeeCents,
             },
@@ -200,6 +214,13 @@ export default async function handler(req, res) {
         totalAmountCents = item.priceCentsUSD + (item.shippingFeeCents || 0);
         metadata.tokenId = String(item.tokenId);
         metadata.shippingFeeCents = String(item.shippingFeeCents || 0);
+        // Live-rate context for the seller's in-app label purchase (ShipEngine).
+        if (item.shipServiceCode) metadata.ship_service_code = String(item.shipServiceCode);
+        if (item.shipCarrierId) metadata.ship_carrier_id = String(item.shipCarrierId);
+        if (req.body.shipTo) {
+          // JSON stays well under Stripe's 500-char metadata value limit.
+          metadata.ship_to = JSON.stringify(req.body.shipTo).slice(0, 480);
+        }
         break;
       }
 
@@ -277,11 +298,20 @@ export default async function handler(req, res) {
     // seller at checkout.
     //
     // Fee split (on the platform-balance amount, i.e. goods + shipping):
-    //   platform keeps 4% of the goods price; seller gets 96% of price + full shipping.
+    //   platform keeps 4% of the goods price AND the full shipping fee; the
+    //   seller gets 96% of the GOODS price only.
+    //
+    // Why the platform keeps shipping: labels are bought centrally on the
+    // platform's ShipEngine account, so the postage is drawn from the platform's
+    // prepaid carrier balance. Keeping the buyer's shipping payment here is what
+    // reimburses that postage. If shipping were passed through to the seller, the
+    // platform would eat the label cost on every order.
     const shippingCents = Number(metadata.shippingFeeCents || 0);
     const goodsPriceCents = totalAmountCents - shippingCents; // specimen/batch price portion
     const platformFeeCents = Math.round(goodsPriceCents * (PLATFORM_FEE_PERCENT / 100));
-    const sellerPayoutCents = totalAmountCents - platformFeeCents; // 96% of price + shipping
+    // Seller is paid 96% of goods; shipping stays with the platform to cover the
+    // label it buys. (Platform net on shipping ≈ shippingFee − actual label cost.)
+    const sellerPayoutCents = goodsPriceCents - platformFeeCents; // 96% of goods, shipping excluded
 
     // Buyer covers Stripe's processing fee (grossed up). Round the buyer total UP
     // so we never under-collect and dip into the platform's 4%.

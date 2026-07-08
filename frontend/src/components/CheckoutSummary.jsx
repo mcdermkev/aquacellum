@@ -27,6 +27,8 @@ import { getProfile } from "../services/reefApi";
 import { useRewardCredits, useApplyCredits } from "../hooks/useRewardsPool";
 import { calculateCheckoutDiscount } from "../services/rewardsPoolApi";
 import { ArrivalModal } from "./ArrivalModal";
+import { ShippingRateModal } from "./ShippingRateModal";
+import { buyShippingLabel } from "../services/shipping";
 import { pushOrderToCloud, pullOrdersFromCloud, subscribeToOrderUpdates } from "../services/ordersSync";
 import { OrderReceipt } from "./OrderReceipt";
 import { OrderAnalytics } from "./OrderAnalytics";
@@ -144,6 +146,12 @@ export function CheckoutSummary({
   const [arrivalModalOpen, setArrivalModalOpen] = useState(false);
   const [arrivalSpecimen, setArrivalSpecimen] = useState(null);
   const [arrivalShippingOrder, setArrivalShippingOrder] = useState(null);
+
+  // Buyer-paid live shipping: rate-selection modal (opens before Stripe checkout
+  // for shipping listings so the buyer picks a real, distance-based rate).
+  const [shipRateModal, setShipRateModal] = useState(null); // { listing } | null
+  // Seller in-app label purchase (auto-dispatch) state.
+  const [labelBuying, setLabelBuying] = useState(false);
 
   // Order Filter & Search States
   const [orderFilter, setOrderFilter] = useState("all"); // "all" | "active" | "completed" | "disputed"
@@ -297,11 +305,17 @@ export function CheckoutSummary({
           buyerWallet: walletAccount,
           sellerWallet: seller,
         };
-        // Shipping → held until live arrival; local pickup → held until the
-        // in-person handshake. Both start a Stripe Checkout (funds held in escrow).
-        result = l.isShipping
-          ? await purchaseShippingSpecimen({ ...base, shippingFeeCents: toShipCents(l) })
-          : await purchasePickupSpecimen(base);
+        if (l.isShipping) {
+          // Buyer-paid live shipping: open the rate modal to collect the buyer's
+          // address and let them pick a real seller→buyer rate. Checkout is
+          // started from the modal's onProceed (proceedShippingCheckout), so we
+          // stop here rather than charging the flat listing fee.
+          setActionLoading(false);
+          setShipRateModal({ listing: { ...l, seller, priceCentsUSD: toCents(l), tokenId: Number(l.tokenId) } });
+          return;
+        }
+        // Local pickup → held until the in-person handshake (Stripe Checkout).
+        result = await purchasePickupSpecimen(base);
       } else {
         const items = pendingTokenIds.map((tid) => {
           const l = allActiveListings.find((x) => Number(x.tokenId) === tid);
@@ -325,6 +339,69 @@ export function CheckoutSummary({
     } finally {
       setActionLoading(false);
       setActionTx(null);
+    }
+  };
+
+  // Called by ShippingRateModal once the buyer picks a live rate. Starts Stripe
+  // Checkout with the selected service + address; funds (item + real shipping)
+  // are held in escrow until the buyer confirms live arrival.
+  const proceedShippingCheckout = async ({ rate, shipTo }) => {
+    const listing = shipRateModal?.listing;
+    if (!listing || !rate) return;
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      const result = await purchaseShippingSpecimen({
+        tokenId: Number(listing.tokenId),
+        commonName: listing.commonName,
+        scientificName: listing.scientificName,
+        priceCentsUSD: Number(listing.priceCentsUSD),
+        shippingFeeCents: rate.amountCents,
+        imageUrl: listing.photoUrl || listing.imageUrl || undefined,
+        buyerWallet: walletAccount,
+        sellerWallet: listing.seller,
+        shipServiceCode: rate.serviceCode,
+        shipCarrierId: rate.carrierId,
+        shipTo,
+      });
+      // On success this redirects to Stripe; we only reach here on failure.
+      if (!result.success) throw new Error(result.error || "Checkout failed");
+    } catch (err) {
+      console.error("Shipping checkout failed:", err);
+      setActionError(mapContractError(err, casualModeActive));
+      setActionLoading(false);
+    }
+  };
+
+  // Seller buys a real shipping label in-app. The returned tracking number
+  // auto-populates the dispatch (on-chain + order row) — no manual entry.
+  const handleBuyLabel = async () => {
+    if (!selectedOrder?.data) return;
+    const o = selectedOrder.data;
+    setLabelBuying(true);
+    setActionError(null);
+    setActionTx(null);
+    try {
+      const result = await buyShippingLabel({
+        sellerWallet: walletAccount,
+        tokenId: Number(o.tokenId),
+        // Backend resolves service + buyer address from the order row when
+        // available; pass any we already hold as a fallback.
+        serviceCode: o.shipServiceCode || undefined,
+        carrierId: o.shipCarrierId || undefined,
+        shipTo: o.shipTo || undefined,
+        paymentIntentId: o.paymentIntentId || undefined,
+      });
+      if (!result.success) throw new Error(result.error || "Label purchase failed");
+      setActionTx(result.trackingNumber ? `Label bought — tracking ${result.trackingNumber}` : "Label purchased");
+      setSelectedOrder(null);
+      await fetchOrders();
+      pushOrderAfterAction("shipping", o.tokenId);
+    } catch (err) {
+      console.error("Buy label failed:", err);
+      setActionError(err.message || "Could not buy the shipping label.");
+    } finally {
+      setLabelBuying(false);
     }
   };
 
@@ -2019,17 +2096,38 @@ export function CheckoutSummary({
                   <div>
                     {selectedOrder.data.role === "Seller" ? (
                       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                        <label style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Enter Shipping Carrier / Tracking ID:</label>
-                        <input 
-                          type="text" 
-                          value={trackingInput}
-                          onChange={(e) => setTrackingInput(e.target.value)}
-                          placeholder="e.g. USPS 94001000..."
-                          style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
-                        />
-                        <button className="btn-primary" style={{ justifyContent: "center" }} disabled={!trackingInput || actionLoading} onClick={handleDispatchShipping}>
-                          {actionLoading ? "Updating Status..." : "Mark Dispatched"}
+                        {/* Primary path: buy the label in-app. The tracking number
+                            is bought from the carrier and auto-populates dispatch —
+                            no manual entry, no separate carrier account tab. */}
+                        <div style={{ padding: "0.75rem", background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.25)", borderRadius: "6px", fontSize: "0.8rem" }}>
+                          <strong style={{ color: "#34d399" }}>🏷️ Buy label &amp; auto-dispatch</strong>
+                          <p style={{ margin: "0.4rem 0 0", color: "var(--text-muted)", fontSize: "0.75rem" }}>
+                            Purchases the shipping label the buyer already paid for and fills in tracking automatically.
+                          </p>
+                        </div>
+                        <button className="btn-primary" style={{ justifyContent: "center" }} disabled={labelBuying} onClick={handleBuyLabel}>
+                          {labelBuying ? "Buying label…" : "Buy label & dispatch"}
                         </button>
+
+                        {/* Fallback: manual tracking entry (e.g. seller bought a
+                            label elsewhere, or a legacy order with no live rate). */}
+                        <details style={{ marginTop: "0.25rem" }}>
+                          <summary style={{ fontSize: "0.75rem", color: "var(--text-secondary)", cursor: "pointer" }}>
+                            Already have a tracking number? Enter it manually
+                          </summary>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "0.5rem" }}>
+                            <input
+                              type="text"
+                              value={trackingInput}
+                              onChange={(e) => setTrackingInput(e.target.value)}
+                              placeholder="e.g. USPS 94001000..."
+                              style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
+                            />
+                            <button className="btn-secondary" style={{ justifyContent: "center" }} disabled={!trackingInput || actionLoading} onClick={handleDispatchShipping}>
+                              {actionLoading ? "Updating Status..." : "Mark Dispatched"}
+                            </button>
+                          </div>
+                        </details>
                       </div>
                     ) : (
                       <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: "0.85rem" }}>Awaiting breeder carrier dispatch & tracking submission.</p>
@@ -2117,6 +2215,14 @@ export function CheckoutSummary({
         contractAddress={contractAddress}
         casualModeActive={casualModeActive}
         onComplete={handleArrivalComplete}
+      />
+
+      {/* Buyer-paid live shipping: address + rate selection before Stripe checkout */}
+      <ShippingRateModal
+        isOpen={!!shipRateModal}
+        onClose={() => setShipRateModal(null)}
+        listing={shipRateModal?.listing || {}}
+        onProceed={proceedShippingCheckout}
       />
     </div>
   );

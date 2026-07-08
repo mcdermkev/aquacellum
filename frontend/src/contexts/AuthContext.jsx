@@ -24,6 +24,7 @@ import {
 import { authenticateWithWallet, clearReefSession, refreshSession, sessionNeedsRefresh } from "../services/supabaseClient";
 import { setUserSigner, clearUserSigner } from "../services/smartAccountClient";
 import { setSessionTokenGetter } from "../services/stripePayments";
+import { setSessionTokenGetter as setShippingSessionTokenGetter } from "../services/shipping";
 
 const AuthContext = createContext(null);
 
@@ -286,10 +287,15 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (privyAuthenticated && typeof getAccessToken === "function") {
       setSessionTokenGetter(getAccessToken);
+      setShippingSessionTokenGetter(getAccessToken);
     } else {
       setSessionTokenGetter(null);
+      setShippingSessionTokenGetter(null);
     }
-    return () => setSessionTokenGetter(null);
+    return () => {
+      setSessionTokenGetter(null);
+      setShippingSessionTokenGetter(null);
+    };
   }, [privyAuthenticated, getAccessToken]);
 
   // ─────────────────────────────────────────────────────────────────────────

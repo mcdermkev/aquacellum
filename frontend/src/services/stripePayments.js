@@ -126,11 +126,17 @@ export async function purchaseShippingSpecimen({
   imageUrl,
   buyerWallet,
   sellerWallet,
+  // Buyer-paid live-rate selection (from the ShipEngine quote at checkout).
+  shipServiceCode,
+  shipCarrierId,
+  shipTo,
 }) {
   return _createCheckout({
     purchaseType: "shipping",
     buyerWallet,
     sellerWallet,
+    // Buyer destination — stamped into order metadata for the seller's label buy.
+    ...(shipTo ? { shipTo } : {}),
     items: [{
       tokenId,
       commonName,
@@ -138,6 +144,9 @@ export async function purchaseShippingSpecimen({
       priceCentsUSD,
       shippingFeeCents,
       imageUrl,
+      // The service the buyer picked, so the seller re-rates the same one.
+      ...(shipServiceCode ? { shipServiceCode } : {}),
+      ...(shipCarrierId ? { shipCarrierId } : {}),
     }],
   });
 }

@@ -27,6 +27,10 @@ __pycache__/
 dist/
 frontend/dist/
 
+# Generated lint/report artifacts
+frontend/eslint-report.json
+eslint-report.json
+
 # Logs
 *.log
 migration_errors.log

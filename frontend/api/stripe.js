@@ -26,6 +26,7 @@ import { ethers } from "ethers";
 import { createClient } from "@supabase/supabase-js";
 import { handleCorsPreFlight } from "./_lib/cors.js";
 import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
+import * as shipengine from "./_lib/shipengine.js";
 
 let stripe;
 try {
@@ -61,7 +62,23 @@ const MARKETPLACE_ABI = [
   // Public getter for the on-chain shipping escrow (authoritative dispatch time
   // + status), used to enforce the seller's post-dispatch safety window.
   "function shippingEscrows(uint256) view returns (uint256 tokenId, address buyer, address seller, uint256 price, uint256 shippingFee, uint256 amountLocked, string trackingNumber, uint256 dispatchTimestamp, uint8 status)",
+  // Seller (relayer as custodian in the sponsored beta) records dispatch +
+  // tracking on-chain, which starts the buyer-protection safety window. Called
+  // by the ShipEngine label-purchase flow once a real label + tracking number
+  // is bought in-app (see handleShipLabel).
+  "function dispatchShipping(uint256 tokenId, string trackingNumber)",
 ];
+
+/**
+ * Flat platform handling fee (USD cents) added on top of the carrier rate on
+ * every shipping quote. The buyer pays (carrier rate + handling); the platform
+ * keeps the handling as margin, on top of the postage it fronts. Configurable
+ * via SHIPPING_HANDLING_FEE_CENTS (defaults to $2.00).
+ */
+function shippingHandlingFeeCents() {
+  const v = Number(process.env.SHIPPING_HANDLING_FEE_CENTS);
+  return Number.isFinite(v) && v >= 0 ? Math.round(v) : 200;
+}
 
 // Mirror of the contract's SHIPPING_SAFETY_WINDOW (3 days). The seller can only
 // force a release once this window has elapsed since dispatch; the buyer can
@@ -1224,6 +1241,525 @@ async function handleAutoRelease(req, res) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// SHIPENGINE — buyer-paid live rates + in-app label purchase (auto-dispatch)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Marketplace shipping has no single origin: every order ships seller→buyer.
+// So shipping is rated at CHECKOUT from the seller's private origin to the
+// buyer's destination (distance-fair, buyer-paid). The seller later buys the
+// label in-app; the returned tracking number auto-populates the on-chain
+// dispatch (starting the safety window) and the off-chain order row.
+//
+// Actions:
+//   ?action=ship-from     GET/POST  seller's private origin address (CRUD)
+//   ?action=ship-validate POST      validate an address via ShipEngine
+//   ?action=ship-rates    POST      live expedited rates seller→buyer (public)
+//   ?action=ship-label    POST      seller buys the label → tracking auto-fills
+//   ?action=ship-webhook  POST      ShipEngine tracking callback → order status
+
+/** Load a seller's stored ship-from origin (or null). Service-role read. */
+async function loadShipFrom(sellerWallet) {
+  const { data } = await supabase
+    .from("seller_ship_from")
+    .select("*")
+    .eq("wallet_address", sellerWallet.toLowerCase())
+    .single();
+  return data || null;
+}
+
+/** Load a seller's default parcel preset (or a sensible fallback). */
+async function loadDefaultParcel(sellerWallet, presetId) {
+  let query = supabase
+    .from("seller_parcel_presets")
+    .select("*")
+    .eq("wallet_address", sellerWallet.toLowerCase());
+  query = presetId ? query.eq("id", presetId) : query.eq("is_default", true);
+  const { data } = await query.limit(1).maybeSingle();
+  // Fallback: ~3lb medium insulated box.
+  return data || { label: "Default insulated", weight_oz: 48, length_in: 12, width_in: 10, height_in: 8 };
+}
+
+/**
+ * ?action=ship-from — seller manages their PRIVATE origin address.
+ *   GET  ?wallet=0x..   → returns the stored address for the authenticated seller
+ *   POST { walletAddress, ...address } → validates + upserts the origin
+ *
+ * Auth: a verified Privy session is required. The address is sensitive (real
+ * pickup location) and never exposed to buyers — only used server-side to rate
+ * shipments and buy labels.
+ */
+async function handleShipFrom(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "GET, POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+
+  const auth = await verifyPrivyToken(req);
+  if (!auth.verified) {
+    return res.status(401).json({ error: "Unauthorized", message: auth.error });
+  }
+
+  if (req.method === "GET") {
+    const wallet = req.query.wallet;
+    if (!wallet) return res.status(400).json({ error: "Missing wallet query parameter" });
+    const row = await loadShipFrom(wallet);
+    if (!row) return res.status(200).json({ configured: false });
+    return res.status(200).json({
+      configured: true,
+      shipFrom: {
+        name: row.name,
+        phone: row.phone,
+        companyName: row.company_name,
+        addressLine1: row.address_line1,
+        addressLine2: row.address_line2,
+        city: row.city_locality,
+        state: row.state_province,
+        postalCode: row.postal_code,
+        countryCode: row.country_code,
+        residential: row.address_residential_indicator,
+        isValidated: row.is_validated,
+      },
+    });
+  }
+
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const { walletAddress, name, phone, companyName, addressLine1, addressLine2, city, state, postalCode, countryCode, residential } = req.body || {};
+  if (!walletAddress || !name || !addressLine1 || !city || !state || !postalCode) {
+    return res.status(400).json({ error: "Missing required fields: walletAddress, name, addressLine1, city, state, postalCode" });
+  }
+
+  // Validate deliverability with ShipEngine before saving so bad origins never
+  // silently break every future rate quote.
+  let validation = { status: "unverified", messages: [] };
+  try {
+    validation = await shipengine.validateAddress({
+      name, phone, company_name: companyName,
+      address_line1: addressLine1, address_line2: addressLine2,
+      city_locality: city, state_province: state, postal_code: postalCode,
+      country_code: countryCode || "US",
+    });
+  } catch (err) {
+    console.warn("[ShipEngine ship-from] Validation call failed:", err.message);
+  }
+
+  const isValidated = validation.status === "verified";
+  const row = {
+    wallet_address: walletAddress.toLowerCase(),
+    name,
+    phone: phone || null,
+    company_name: companyName || null,
+    address_line1: addressLine1,
+    address_line2: addressLine2 || null,
+    city_locality: city,
+    state_province: state,
+    postal_code: postalCode,
+    country_code: countryCode || "US",
+    address_residential_indicator: residential || "unknown",
+    is_validated: isValidated,
+    validated_at: isValidated ? new Date().toISOString() : null,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await supabase
+    .from("seller_ship_from")
+    .upsert(row, { onConflict: "wallet_address" });
+  if (error) {
+    return res.status(500).json({ error: "Could not save ship-from address", details: error.message });
+  }
+
+  return res.status(200).json({
+    success: true,
+    validation: { status: validation.status, messages: validation.messages, normalized: validation.normalized || null },
+  });
+}
+
+/** ?action=ship-validate — validate an arbitrary address (buyer or seller). Public. */
+async function handleShipValidate(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const { address } = req.body || {};
+  if (!address) return res.status(400).json({ error: "Missing address" });
+
+  try {
+    const result = await shipengine.validateAddress(address);
+    return res.status(200).json({ success: true, ...result });
+  } catch (err) {
+    console.error("[ShipEngine validate] failed:", err.message);
+    return res.status(502).json({ error: "Address validation failed", details: err.message });
+  }
+}
+
+/**
+ * ?action=ship-rates — live expedited rates from a seller's origin to a buyer's
+ * destination. Buyer-facing (used at checkout), so no auth (guest checkout is
+ * allowed); the seller's precise origin is NEVER returned — only the rates and
+ * coarse heat-pack / ship-window advice derived from it.
+ *
+ * POST { sellerWallet, shipTo:{name?,addressLine1,city,state,postalCode,countryCode?,residential?}, parcelPresetId? }
+ */
+async function handleShipRates(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const { sellerWallet, shipTo, parcelPresetId } = req.body || {};
+  if (!sellerWallet || !shipTo || !shipTo.postalCode) {
+    return res.status(400).json({ error: "Missing sellerWallet or shipTo.postalCode" });
+  }
+
+  const shipFromRow = await loadShipFrom(sellerWallet);
+  if (!shipFromRow) {
+    return res.status(400).json({
+      error: "Seller has not set a ship-from address",
+      code: "SELLER_NO_SHIP_FROM",
+    });
+  }
+
+  const parcel = await loadDefaultParcel(sellerWallet, parcelPresetId);
+
+  try {
+    const { rates, errors } = await shipengine.getRates({
+      shipFrom: shipFromRow,
+      shipTo,
+      parcel,
+    });
+
+    if (!rates.length) {
+      return res.status(200).json({
+        success: true,
+        rates: [],
+        message: "No expedited services available for this route.",
+        errors,
+      });
+    }
+
+    // Add the flat platform handling fee on top of each carrier rate. The buyer
+    // pays (carrier rate + handling); amountCents is what they're charged, while
+    // carrierAmountCents preserves the raw postage for margin transparency.
+    const handling = shippingHandlingFeeCents();
+    const markedRates = rates.map((r) => ({
+      ...r,
+      carrierAmountCents: r.amountCents,
+      handlingFeeCents: handling,
+      amountCents: r.amountCents + handling,
+    }));
+
+    // Coarse, privacy-safe advice from the origin/destination states + season.
+    const cheapest = markedRates[0];
+    const windowAdvice = shipengine.shippingWindowAdvice(cheapest.deliveryDays);
+    const thermalAdvice = shipengine.thermalPackAdvice(shipFromRow.state_province, shipTo.state);
+
+    return res.status(200).json({
+      success: true,
+      rates: markedRates, // amountCents = carrier + handling (what the buyer pays)
+      handlingFeeCents: handling,
+      advice: {
+        window: windowAdvice,
+        thermal: thermalAdvice,
+        originState: shipFromRow.state_province, // state only — not the address
+      },
+    });
+  } catch (err) {
+    console.error("[ShipEngine rates] failed:", err.message);
+    return res.status(502).json({ error: "Could not fetch shipping rates", details: err.message });
+  }
+}
+
+/**
+ * ?action=ship-label — the seller buys a real label in-app. The returned
+ * tracking number auto-populates the dispatch: it's written to the order row
+ * AND recorded on-chain via dispatchShipping (which starts the safety window).
+ *
+ * POST {
+ *   sellerWallet,                         // required, must be the order's seller
+ *   orderId?  | paymentIntentId?,         // locate the order row (optional but recommended)
+ *   tokenId,                              // specimen token (on-chain dispatch anchor)
+ *   serviceCode, carrierId?,              // the service the buyer paid for at checkout
+ *   shipTo,                               // buyer destination address
+ *   parcelPresetId?,                      // which box; defaults to seller default
+ *   shipDate?                             // ISO date; defaults to today
+ * }
+ *
+ * Auth: verified Privy session. (In the sponsored beta the relayer is the
+ * on-chain custodian/seller, so it can call dispatchShipping.)
+ */
+async function handleShipLabel(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const auth = await verifyPrivyToken(req);
+  if (!auth.verified) {
+    return res.status(401).json({ error: "Unauthorized", message: auth.error });
+  }
+
+  const {
+    sellerWallet, orderId, paymentIntentId, tokenId,
+    serviceCode: bodyService, carrierId: bodyCarrier, shipTo: bodyShipTo,
+    parcelPresetId, shipDate,
+  } = req.body || {};
+
+  if (!sellerWallet) return res.status(400).json({ error: "Missing sellerWallet" });
+  if (tokenId == null) return res.status(400).json({ error: "Missing tokenId" });
+
+  // Load the order row (source of truth for buyer address + paid service) if we
+  // can find it. Falls back to values supplied in the request body.
+  let orderRow = null;
+  try {
+    let q = supabase.from("orders").select("*");
+    if (orderId) q = q.eq("id", orderId);
+    else if (paymentIntentId) q = q.eq("stripe_payment_intent", paymentIntentId);
+    else q = q.eq("on_chain_token_id", Number(tokenId));
+    const { data } = await q.eq("seller_wallet", sellerWallet.toLowerCase()).limit(1).maybeSingle();
+    orderRow = data || null;
+  } catch (e) {
+    orderRow = null;
+  }
+
+  const orderMeta = (() => {
+    try { return typeof orderRow?.metadata === "string" ? JSON.parse(orderRow.metadata) : (orderRow?.metadata || {}); }
+    catch { return {}; }
+  })();
+
+  const shipTo = bodyShipTo || orderMeta.ship_to || orderMeta.shipTo;
+  const serviceCode = bodyService || orderRow?.ship_service_code || orderMeta.ship_service_code;
+  const carrierId = bodyCarrier || orderRow?.ship_carrier_id || orderMeta.ship_carrier_id;
+
+  if (!shipTo || !shipTo.postalCode) {
+    return res.status(400).json({ error: "Missing buyer shipTo address (not on order and not provided)" });
+  }
+  if (!serviceCode) {
+    return res.status(400).json({ error: "Missing serviceCode (the service the buyer paid for)" });
+  }
+
+  const shipFromRow = await loadShipFrom(sellerWallet);
+  if (!shipFromRow) {
+    return res.status(400).json({ error: "Seller has not set a ship-from address", code: "SELLER_NO_SHIP_FROM" });
+  }
+  const parcel = await loadDefaultParcel(sellerWallet, parcelPresetId);
+
+  // 1. Buy the label from ShipEngine (re-rates the shipment for the paid
+  //    service, since checkout rate_ids expire).
+  let label;
+  try {
+    label = await shipengine.buyLabelFromShipment({
+      shipFrom: shipFromRow,
+      shipTo,
+      parcel,
+      serviceCode,
+      carrierId,
+      shipDate,
+    });
+  } catch (err) {
+    console.error("[ShipEngine label] purchase failed:", err.message);
+    return res.status(502).json({ error: "Label purchase failed", details: err.message });
+  }
+
+  if (!label.trackingNumber) {
+    return res.status(502).json({ error: "Label purchased but no tracking number returned", label });
+  }
+
+  // 2. Record dispatch on-chain (starts the buyer-protection safety window).
+  //    Best-effort: the off-chain order row is the display source of truth, but
+  //    a failure here means the safety-window/auto-release won't fire, so we
+  //    surface it. dispatchShipping requires the escrow to be LOCKED and the
+  //    caller to be the escrow seller (the relayer custodian in beta).
+  let onChain = { attempted: true };
+  try {
+    const marketplace = getMarketplaceContract();
+    const tx = await marketplace.dispatchShipping(Number(tokenId), label.trackingNumber);
+    const receipt = await tx.wait();
+    onChain.txHash = receipt.transactionHash;
+  } catch (err) {
+    onChain.error = err.reason || err.message;
+    console.warn("[ShipEngine label] on-chain dispatch failed (tracking still recorded off-chain):", onChain.error);
+  }
+
+  // 3. Compute the shipping margin. The buyer paid (carrier rate + handling) as
+  //    their shipping fee at checkout; the platform just paid the real postage
+  //    (label.costCents). Realized margin = what the buyer paid − postage. We
+  //    resolve the buyer-paid shipping authoritatively from the Stripe
+  //    PaymentIntent metadata (stamped at checkout), falling back to the order
+  //    row. The intended handling fee is recorded alongside so intended-vs-
+  //    realized drift (rate changes between quote and label buy) is visible.
+  const handlingFee = shippingHandlingFeeCents();
+  let buyerShippingCents = null;
+  try {
+    const piId = orderRow?.stripe_payment_intent || paymentIntentId;
+    if (piId && stripe) {
+      const intent = await stripe.paymentIntents.retrieve(piId);
+      const v = Number(intent.metadata?.shippingFeeCents);
+      if (Number.isFinite(v) && v > 0) buyerShippingCents = v;
+    }
+  } catch (e) {
+    // non-fatal — fall back to the order row below
+  }
+  if (buyerShippingCents == null && orderRow?.shipping_fee_cents != null) {
+    buyerShippingCents = Number(orderRow.shipping_fee_cents);
+  }
+  const marginCents =
+    buyerShippingCents != null && label.costCents != null
+      ? buyerShippingCents - label.costCents
+      : null;
+
+  // 4. Update the order row: tracking, carrier, dispatch time, ShipEngine refs.
+  const nowIso = new Date().toISOString();
+  const carrierCode = (label.carrierCode || "").toLowerCase();
+  const normalizedCarrier =
+    carrierCode.includes("usps") || carrierCode.includes("stamps") ? "usps"
+    : carrierCode.includes("ups") ? "ups"
+    : carrierCode.includes("fedex") ? "fedex"
+    : "other";
+
+  if (orderRow) {
+    try {
+      await supabase
+        .from("orders")
+        .update({
+          status: "dispatched",
+          tracking_number: label.trackingNumber,
+          carrier: normalizedCarrier,
+          dispatch_timestamp: nowIso,
+          arrival_status: "transit",
+          estimated_delivery: label.estimatedDeliveryDate || null,
+          shipengine_shipment_id: label.shipmentId || null,
+          shipengine_label_id: label.labelId || null,
+          ship_service_code: label.serviceCode || serviceCode,
+          ship_carrier_id: label.carrierId || carrierId || null,
+          label_url: label.labelPdfUrl || null,
+          label_cost_cents: label.costCents ?? null,
+          shipping_quote_cents: buyerShippingCents ?? null,
+          updated_at: nowIso,
+        })
+        .eq("id", orderRow.id);
+    } catch (err) {
+      console.warn("[ShipEngine label] order row update failed:", err.message);
+    }
+  }
+
+  // 5. Append to the authoritative shipping-margin ledger (independent of the
+  //    order-sync layer) so platform shipping P&L is always reconcilable.
+  try {
+    await supabase.from("shipping_label_purchases").insert({
+      order_id: orderRow?.id || null,
+      seller_wallet: sellerWallet.toLowerCase(),
+      token_id: Number(tokenId),
+      stripe_payment_intent: orderRow?.stripe_payment_intent || paymentIntentId || null,
+      carrier: normalizedCarrier,
+      service_code: label.serviceCode || serviceCode,
+      shipengine_label_id: label.labelId || null,
+      tracking_number: label.trackingNumber,
+      buyer_shipping_cents: buyerShippingCents,
+      label_cost_cents: label.costCents ?? null,
+      handling_fee_cents: handlingFee,
+      margin_cents: marginCents,
+      created_at: nowIso,
+    });
+  } catch (err) {
+    console.warn("[ShipEngine label] margin ledger insert failed:", err.message);
+  }
+
+  return res.status(200).json({
+    success: true,
+    action: "label_purchased",
+    trackingNumber: label.trackingNumber,
+    carrier: normalizedCarrier,
+    labelUrl: label.labelPdfUrl,
+    labelCostCents: label.costCents,
+    buyerShippingCents,
+    handlingFeeCents: handlingFee,
+    marginCents,
+    estimatedDeliveryDate: label.estimatedDeliveryDate,
+    shipmentId: label.shipmentId,
+    labelId: label.labelId,
+    onChain,
+  });
+}
+
+/**
+ * ?action=ship-webhook — ShipEngine tracking callback. Configure a ShipEngine
+ * environment webhook (event "track") pointing at:
+ *   {SITE}/api/stripe?action=ship-webhook&secret={SHIPENGINE_WEBHOOK_SECRET}
+ *
+ * We verify the shared secret, then advance the matching order's arrival_status
+ * from the tracking status_code (DE=delivered → 'arrived'; IT/AT → 'transit').
+ * Delivery is the signal that starts the buyer's live-arrival confirmation
+ * clock — the escrow release itself still runs through ?action=release.
+ */
+async function handleShipWebhook(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const expected = process.env.SHIPENGINE_WEBHOOK_SECRET;
+  const provided = req.query.secret;
+  if (expected && provided !== expected) {
+    return res.status(401).json({ error: "Invalid webhook secret" });
+  }
+
+  const body = req.body || {};
+  // ShipEngine track webhook payload: { resource_type: 'API_TRACK', data: { tracking_number, status_code, status_description, carrier_code, ... } }
+  const data = body.data || body;
+  const trackingNumber = data.tracking_number || data.trackingNumber;
+  const statusCode = (data.status_code || data.statusCode || "").toUpperCase();
+
+  if (!trackingNumber) {
+    return res.status(200).json({ received: true, action: "ignored_no_tracking" });
+  }
+
+  // Map ShipEngine status codes to our arrival_status.
+  //   DE = Delivered, IT = In Transit, AT = Attempted, EX = Exception, UN = Unknown
+  let arrivalStatus = null;
+  let orderStatus = null;
+  if (statusCode === "DE") {
+    arrivalStatus = "arrived";
+  } else if (statusCode === "IT" || statusCode === "AT" || statusCode === "AC") {
+    arrivalStatus = "transit";
+  }
+
+  try {
+    const patch = { updated_at: new Date().toISOString() };
+    if (arrivalStatus) patch.arrival_status = arrivalStatus;
+    if (arrivalStatus === "arrived") patch.arrived_at = new Date().toISOString();
+    if (orderStatus) patch.status = orderStatus;
+    await supabase.from("orders").update(patch).eq("tracking_number", trackingNumber);
+  } catch (err) {
+    console.warn("[ShipEngine webhook] order update failed:", err.message);
+  }
+
+  return res.status(200).json({ received: true, action: "tracking_updated", statusCode, arrivalStatus });
+}
+
+/**
+ * ?action=ship-margin — platform shipping P&L (admin/curator only).
+ * Returns all-time totals + recent monthly rollups from the margin ledger.
+ * GET (no body). Auth: CRON_SECRET bearer or curator Privy session.
+ */
+async function handleShipMargin(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "GET, OPTIONS", headers: "Content-Type, Authorization" })) return;
+
+  const auth = await authorizeAdminOrCurator(req);
+  if (!auth.ok) {
+    return res.status(auth.status || 403).json({ error: auth.error || "Not authorized" });
+  }
+
+  try {
+    const [{ data: totals }, { data: monthly }] = await Promise.all([
+      supabase.from("shipping_margin_totals").select("*").maybeSingle(),
+      supabase.from("shipping_margin_analytics").select("*").limit(12),
+    ]);
+    return res.status(200).json({
+      success: true,
+      totals: totals || {
+        labels_bought: 0, shipping_collected_cents: 0, postage_paid_cents: 0,
+        intended_margin_cents: 0, realized_margin_cents: 0, avg_margin_per_shipment_cents: 0,
+      },
+      monthly: monthly || [],
+    });
+  } catch (err) {
+    console.error("[ShipEngine margin] query failed:", err.message);
+    return res.status(500).json({ error: "Could not load shipping margin", details: err.message });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // MAIN ROUTER
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1243,6 +1779,19 @@ export default async function handler(req, res) {
       return handleDispute(req, res);
     case "auto-release":
       return handleAutoRelease(req, res);
+    // ── ShipEngine (buyer-paid live shipping) ──
+    case "ship-from":
+      return handleShipFrom(req, res);
+    case "ship-validate":
+      return handleShipValidate(req, res);
+    case "ship-rates":
+      return handleShipRates(req, res);
+    case "ship-label":
+      return handleShipLabel(req, res);
+    case "ship-webhook":
+      return handleShipWebhook(req, res);
+    case "ship-margin":
+      return handleShipMargin(req, res);
     default:
       return res.status(400).json({ error: `Unknown action: ${action}` });
   }

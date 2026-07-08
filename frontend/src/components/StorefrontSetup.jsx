@@ -31,6 +31,7 @@ import { uploadImage, createPreviewUrl, revokePreviewUrl } from "../services/med
 import { getProfile } from "../services/reefApi";
 import { startSellerOnboarding, checkSellerStatus } from "../services/stripePayments";
 import { SellerAnalytics } from "./storefront/SellerAnalytics";
+import { ShipFromSetup } from "./ShipFromSetup";
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/;
 const MAX_BIO = 280;
@@ -636,6 +637,9 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
             </div>
           )}
         </div>
+
+        {/* Ship-from origin — private address used for live rates + in-app labels */}
+        <ShipFromSetup walletAccount={walletAccount} />
 
         {/* Actions */}
         <div className="sf-setup__actions">
