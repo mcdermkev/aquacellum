@@ -38,8 +38,21 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY || ""
 );
 
-// Platform fee: 4% (matches on-chain TOTAL_FEE_BPS = 400)
+// Platform fee: 4% of the goods price (matches on-chain TOTAL_FEE_BPS = 400).
+// Shipping is passed through to the seller in full (no platform fee on shipping),
+// matching the contract's releaseShippingEscrow math (fee on price only).
 const PLATFORM_FEE_PERCENT = 4;
+
+// Buyer-paid Stripe processing fee. The buyer covers card processing so the
+// platform never nets less than (goods + shipping). We "gross up" the charge:
+//   buyerTotal = (goodsTotal + fixed) / (1 - rate)
+// so that after Stripe deducts its cut, exactly goodsTotal remains in the
+// platform balance to split between the seller (96% + shipping) and platform (4%).
+// US card default is 2.9% + $0.30. International/AmEx can run slightly higher;
+// the 4% platform margin absorbs any small delta. Bump these (e.g., 0.032) if you
+// see cross-border volume eating the margin.
+const STRIPE_FEE_RATE = 0.029;
+const STRIPE_FEE_FIXED_CENTS = 30;
 
 export default async function handler(req, res) {
   // CORS
@@ -109,8 +122,11 @@ export default async function handler(req, res) {
     };
 
     switch (purchaseType) {
-      case "specimen": {
-        // Single specimen: items[0] = { tokenId, commonName, priceCentsUSD, imageUrl? }
+      case "specimen":
+      case "pickup": {
+        // Single specimen — "specimen" is a no-handoff sale (paid through), while
+        // "pickup" is local/in-person and HELD until the handshake at handoff.
+        // items[0] = { tokenId, commonName, priceCentsUSD, imageUrl? }
         const item = items[0];
         lineItems.push({
           price_data: {
@@ -232,19 +248,62 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: `Unknown purchaseType: ${purchaseType}` });
     }
 
-    // ─── Calculate platform fee (4%) ───────────────────────────────────────
-    const platformFeeCents = Math.round(totalAmountCents * (PLATFORM_FEE_PERCENT / 100));
+    // ─── Escrow money model: separate charges + transfers ─────────────────
+    // We do NOT use a destination charge here. Funds are captured into the
+    // PLATFORM balance and HELD. The seller is paid later via a Stripe Transfer:
+    //   • shipping orders → transferred on live-arrival release (see stripe.js ?action=release)
+    //   • instant/batch/multi → transferred immediately on settlement (webhook)
+    // This is what makes "funds held until arrival" real instead of paying the
+    // seller at checkout.
+    //
+    // Fee split (on the platform-balance amount, i.e. goods + shipping):
+    //   platform keeps 4% of the goods price; seller gets 96% of price + full shipping.
+    const shippingCents = Number(metadata.shippingFeeCents || 0);
+    const goodsPriceCents = totalAmountCents - shippingCents; // specimen/batch price portion
+    const platformFeeCents = Math.round(goodsPriceCents * (PLATFORM_FEE_PERCENT / 100));
+    const sellerPayoutCents = totalAmountCents - platformFeeCents; // 96% of price + shipping
 
-    // ─── Create Stripe Checkout Session with Connect destination charge ────
+    // Buyer covers Stripe's processing fee (grossed up). Round the buyer total UP
+    // so we never under-collect and dip into the platform's 4%.
+    const buyerTotalCents = Math.ceil(
+      (totalAmountCents + STRIPE_FEE_FIXED_CENTS) / (1 - STRIPE_FEE_RATE)
+    );
+    const processingFeeCents = buyerTotalCents - totalAmountCents;
+
+    // Surface the processing fee as its own line item so the buyer sees exactly
+    // what they're paying (a marketplace "service fee", not a hidden markup).
+    if (processingFeeCents > 0) {
+      lineItems.push({
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: "Service & processing fee",
+            description: "Secure checkout, buyer protection, and card processing",
+          },
+          unit_amount: processingFeeCents,
+        },
+        quantity: 1,
+      });
+    }
+
+    // transfer_group links the charge to the later Transfer(s) to the seller.
+    const transferGroup = `aqx_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    // Carry everything the release/settlement steps need to pay the seller.
+    metadata.goodsTotalCents = String(totalAmountCents); // amount that nets into platform balance
+    metadata.platformFeeCents = String(platformFeeCents);
+    metadata.sellerPayoutCents = String(sellerPayoutCents);
+    metadata.processingFeeCents = String(processingFeeCents);
+    metadata.transferGroup = transferGroup;
+
+    // ─── Create Stripe Checkout Session (capture-and-hold) ─────────────────
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: lineItems,
       payment_intent_data: {
-        // Route payment to the seller's connected account minus platform fee
-        application_fee_amount: platformFeeCents,
-        transfer_data: {
-          destination: sellerAccount.stripe_account_id,
-        },
+        // No transfer_data / application_fee: funds land in the platform balance
+        // and are held. The seller is paid via a later Transfer within transfer_group.
+        transfer_group: transferGroup,
         metadata,
       },
       metadata,
@@ -264,9 +323,11 @@ export default async function handler(req, res) {
       success: true,
       checkoutUrl: session.url,
       sessionId: session.id,
-      totalAmountCents,
+      goodsTotalCents: totalAmountCents,
+      processingFeeCents,
+      buyerTotalCents,
       platformFeeCents,
-      sellerReceivesCents: totalAmountCents - platformFeeCents,
+      sellerReceivesCents: sellerPayoutCents,
     });
   } catch (err) {
     console.error("[Stripe Checkout] Session creation failed:", err);

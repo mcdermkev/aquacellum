@@ -6,13 +6,20 @@ import { addXp, XP_ACTIONS } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
 import { fetchListingsByBreed } from "../utils/listingManager";
 import {
-  relayPurchaseMultiple,
-  relayUpdateShippingOrder,
   relayUpdateBatchOrder,
   relaySettleHandshake,
   relayGetOrders,
   getLocalListings,
+  relayDispatchShipping,
+  relayDisputeShipping,
+  relayResolveShippingDispute,
 } from "../services/relayer";
+import {
+  purchaseShippingSpecimen,
+  purchasePickupSpecimen,
+  purchaseMultiple as stripePurchaseMultiple,
+  releaseFiatOrder,
+} from "../services/stripePayments";
 import { useHandshake } from "../hooks/useHandshake";
 import { db } from "../db";
 import { generateAlias } from "../utils/generateAlias";
@@ -273,24 +280,45 @@ export function CheckoutSummary({
         }
       }
 
-      // Beta: purchase locally (no MetaMask, no gas)
-      const result = await relayPurchaseMultiple({
-        tokenIds: pendingTokenIds,
-        buyer: walletAccount,
-        listings: allActiveListings,
-      });
-      if (!result.success) throw new Error(result.error || "Checkout failed");
+      // USD cents for Stripe (canonical). Fall back to the dollar price for any
+      // legacy listing that lacks priceCentsUSD.
+      const toCents = (l) => Number(l.priceCentsUSD) || Math.round(parseFloat(l.priceUsd ?? l.price ?? "0") * 100);
+      const toShipCents = (l) => Number(l.shippingFeeCents) || Math.round(parseFloat(l.shippingFee ?? "0") * 100);
 
-      addXp(XP_ACTIONS.CLAIM_EXCHANGE.points * pendingTokenIds.length, `Consolidated checkout: ${pendingTokenIds.length} specimens`);
-
-      // Push newly created orders to cloud
-      for (const tid of pendingTokenIds) {
-        pushOrderAfterAction("shipping", tid);
+      let result;
+      if (pendingTokenIds.length === 1) {
+        const l = firstListing;
+        const base = {
+          tokenId: Number(l.tokenId),
+          commonName: l.commonName,
+          scientificName: l.scientificName,
+          priceCentsUSD: toCents(l),
+          imageUrl: l.photoUrl || l.imageUrl || undefined,
+          buyerWallet: walletAccount,
+          sellerWallet: seller,
+        };
+        // Shipping → held until live arrival; local pickup → held until the
+        // in-person handshake. Both start a Stripe Checkout (funds held in escrow).
+        result = l.isShipping
+          ? await purchaseShippingSpecimen({ ...base, shippingFeeCents: toShipCents(l) })
+          : await purchasePickupSpecimen(base);
+      } else {
+        const items = pendingTokenIds.map((tid) => {
+          const l = allActiveListings.find((x) => Number(x.tokenId) === tid);
+          return {
+            tokenId: Number(l.tokenId),
+            commonName: l.commonName,
+            priceCentsUSD: toCents(l),
+            imageUrl: l.photoUrl || l.imageUrl || undefined,
+            shippingFeeCents: toShipCents(l),
+          };
+        });
+        result = await stripePurchaseMultiple({ items, buyerWallet: walletAccount, sellerWallet: seller });
       }
 
-      setPendingTokenIds([]);
-      await fetchOrders();
-      await loadAllListings();
+      // On success, stripePayments redirects the browser to Stripe's hosted
+      // checkout, so nothing after this runs. We only reach past here on failure.
+      if (!result.success) throw new Error(result.error || "Checkout failed");
     } catch (err) {
       console.error("Consolidated checkout failed:", err);
       setActionError(mapContractError(err, casualModeActive));
@@ -630,11 +658,7 @@ export function CheckoutSummary({
     setActionTx(null);
 
     try {
-      const result = await relayUpdateShippingOrder(selectedOrder.data.tokenId, {
-        status: 1, // DISPATCHED
-        trackingNumber: trackingInput,
-        dispatchTimestamp: Math.floor(Date.now() / 1000),
-      });
+      const result = await relayDispatchShipping(selectedOrder.data.tokenId, trackingInput);
       if (!result.success) throw new Error(result.error || "Dispatch failed");
 
       setTrackingInput("");
@@ -685,7 +709,12 @@ export function CheckoutSummary({
     setActionTx(null);
 
     try {
-      const result = await relayUpdateShippingOrder(selectedOrder.data.tokenId, { status: 2 }); // RELEASED
+      const o = selectedOrder.data;
+      const result = await releaseFiatOrder({
+        tokenId: o.tokenId,
+        sessionId: o.stripeSessionId,
+        paymentIntentId: o.paymentIntentId,
+      });
       if (!result.success) throw new Error(result.error || "Release failed");
 
       setSelectedOrder(null);
@@ -715,7 +744,7 @@ export function CheckoutSummary({
     setActionTx(null);
 
     try {
-      const result = await relayUpdateShippingOrder(selectedOrder.data.tokenId, { status: 3 }); // DISPUTED
+      const result = await relayDisputeShipping(selectedOrder.data.tokenId);
       if (!result.success) throw new Error(result.error || "Dispute failed");
 
       setSelectedOrder(null);
@@ -736,9 +765,7 @@ export function CheckoutSummary({
     setActionTx(null);
 
     try {
-      const result = await relayUpdateShippingOrder(selectedOrder.data.tokenId, {
-        status: refundBuyer ? 4 : 2, // REFUNDED or RELEASED
-      });
+      const result = await relayResolveShippingDispute(selectedOrder.data.tokenId, refundBuyer);
       if (!result.success) throw new Error(result.error || "Resolution failed");
 
       setSelectedOrder(null);
@@ -994,7 +1021,7 @@ export function CheckoutSummary({
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
                       <span style={{ fontFamily: "monospace", color: "var(--accent-green)", fontSize: "0.9rem", fontWeight: "600" }}>
-                        ${(parseFloat(item.price) * 1000).toFixed(2)}
+                        ${parseFloat(item.priceUsd ?? item.price ?? 0).toFixed(2)}
                       </span>
                       <button 
                         onClick={() => setPendingTokenIds(prev => prev.filter(id => id !== item.tokenId))}
@@ -1028,11 +1055,11 @@ export function CheckoutSummary({
                 <h4 style={{ color: "#fff", fontSize: "0.9rem", margin: 0, textTransform: "uppercase", letterSpacing: "0.05em" }}>Checkout Summary</h4>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
                   <span>Subtotal:</span>
-                  <span style={{ fontFamily: "monospace", color: "#fff" }}>${(subtotal * 1000).toFixed(2)}</span>
+                  <span style={{ fontFamily: "monospace", color: "#fff" }}>${subtotal.toFixed(2)}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
                   <span>📦 Consolidated Shipping Boxes ({boxesCount}):</span>
-                  <span style={{ fontFamily: "monospace", color: "#fff" }}>${(totalShippingFee * 1000).toFixed(2)}</span>
+                  <span style={{ fontFamily: "monospace", color: "#fff" }}>${totalShippingFee.toFixed(2)}</span>
                 </div>
                 {((firstShippingFee * N) - totalShippingFee) > 0 && casualModeActive && (
                   <div style={{ 
@@ -1045,7 +1072,7 @@ export function CheckoutSummary({
                     borderRadius: "4px"
                   }}>
                     <span>✨ Bundling Savings:</span>
-                    <span style={{ fontFamily: "monospace" }}>-${(((firstShippingFee * N) - totalShippingFee) * 1000).toFixed(2)}</span>
+                    <span style={{ fontFamily: "monospace" }}>-${((firstShippingFee * N) - totalShippingFee).toFixed(2)}</span>
                   </div>
                 )}
                 {boxesCount > 1 && !casualModeActive && (
@@ -1059,14 +1086,14 @@ export function CheckoutSummary({
                     borderRadius: "4px"
                   }}>
                     <span>Automated Box Logistics Refund:</span>
-                    <span style={{ fontFamily: "monospace" }}>-${(excessRefund * 1000).toFixed(2)}</span>
+                    <span style={{ fontFamily: "monospace" }}>-${excessRefund.toFixed(2)}</span>
                   </div>
                 )}
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.95rem", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "0.75rem", marginTop: "0.25rem" }}>
                   <strong style={{ color: "#fff" }}>Net Secure Payment:</strong>
                   <strong style={{ fontFamily: "monospace", color: "var(--accent-green)" }}>${((() => {
                     const discount = calculateCheckoutDiscount(
-                      totalCost * 1000,
+                      totalCost,
                       creditData?.tier || "Shallow",
                       creditData?.credits || 0,
                       useCreditsAtCheckout
@@ -1078,7 +1105,7 @@ export function CheckoutSummary({
                 {/* Tier Discount + Reward Credits */}
                 {(() => {
                   const discount = calculateCheckoutDiscount(
-                    totalCost * 1000,
+                    totalCost,
                     creditData?.tier || "Shallow",
                     creditData?.credits || 0,
                     useCreditsAtCheckout

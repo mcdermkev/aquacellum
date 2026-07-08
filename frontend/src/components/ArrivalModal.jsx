@@ -3,7 +3,8 @@ import { Modal } from "./Modal";
 import { TankSelector } from "./TankSelector";
 import { AcclimationNotes } from "./AcclimationNotes";
 import { useUserTanks } from "../hooks/useUserTanks";
-import { relayMoveSpecimen, relayUpdateShippingOrder } from "../services/relayer";
+import { relayMoveSpecimen } from "../services/relayer";
+import { releaseFiatOrder } from "../services/stripePayments";
 import { addXp, XP_ACTIONS } from "../utils/xp";
 import { db } from "../db";
 
@@ -100,10 +101,17 @@ function ArrivalModal({
         }
       }
 
-      // Step 1: If shipping merge, release escrow first
+      // Step 1: If shipping merge, release escrow on-chain first. This confirms
+      // safe arrival: it finalizes the fiat shipping escrow and transfers the
+      // specimen NFT to the buyer (the USD was captured by Stripe at checkout).
+      // The tank assignment below only runs once the release is confirmed.
       if (isShippingMerge && shippingOrder) {
         const tokenId = shippingOrder.tokenId || item?.id;
-        const releaseResult = await relayUpdateShippingOrder(tokenId, { status: 2 });
+        const releaseResult = await releaseFiatOrder({
+          tokenId,
+          sessionId: shippingOrder.stripeSessionId,
+          paymentIntentId: shippingOrder.paymentIntentId,
+        });
         if (!releaseResult.success) {
           throw new Error(releaseResult.error || "Failed to release shipping escrow");
         }

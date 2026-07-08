@@ -28,8 +28,12 @@ export function ListingCard({ listing, onBuyNow, casualMode = true }) {
 
   const pedigreeStyle = PEDIGREE_STYLES[listing.pedigree] || null;
   const isBatch = listing.isBatch || listing.type === "batch";
-  const priceEth = listing.priceEth || listing.price || "0";
-  const priceUsd = listing.priceUsd || listing.approximateUsd || null;
+  // USD is canonical. Fall back through priceUsd → priceCentsUSD → price.
+  const priceUsdDisplay = listing.priceUsd != null
+    ? parseFloat(listing.priceUsd).toFixed(2)
+    : listing.priceCentsUSD != null
+      ? (Number(listing.priceCentsUSD) / 100).toFixed(2)
+      : parseFloat(listing.price || 0).toFixed(2);
   const quantityRemaining = listing.quantityRemaining || listing.quantity || 1;
 
   const handleBuyClick = (e) => {
@@ -47,7 +51,7 @@ export function ListingCard({ listing, onBuyNow, casualMode = true }) {
       onPointerUp={() => setIsPressed(false)}
       onPointerLeave={() => setIsPressed(false)}
       role="article"
-      aria-label={`${listing.commonName || "Specimen"} listing, ${priceEth} ETH`}
+      aria-label={`${listing.commonName || "Specimen"} listing, $${priceUsdDisplay}`}
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter") handleBuyClick(e); }}
     >
@@ -70,7 +74,7 @@ export function ListingCard({ listing, onBuyNow, casualMode = true }) {
         )}
         {/* Price badge */}
         <span className="sf-listing-card__price-badge">
-          {parseFloat(priceEth).toFixed(4)} ETH
+          ${priceUsdDisplay}
         </span>
       </div>
 
@@ -104,18 +108,11 @@ export function ListingCard({ listing, onBuyNow, casualMode = true }) {
           )}
         </div>
 
-        {/* USD approximate */}
-        {priceUsd && (
-          <p className="sf-listing-card__usd">
-            ≈ ${parseFloat(priceUsd).toFixed(2)} USD
-          </p>
-        )}
-
         {/* Buy Now button */}
         <button
           className="sf-listing-card__buy-btn"
           onClick={handleBuyClick}
-          aria-label={`Buy ${listing.commonName || "specimen"} for ${priceEth} ETH`}
+          aria-label={`Buy ${listing.commonName || "specimen"} for $${priceUsdDisplay}`}
         >
           <ShoppingCart weight="bold" size={16} />
           {isBatch ? "Buy Fish" : "Buy Now"}

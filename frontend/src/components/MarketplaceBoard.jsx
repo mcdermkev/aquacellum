@@ -1709,7 +1709,7 @@ export function MarketplaceBoard({
                                   {item.isBatch ? "Price Per Fish" : "Exchange Price"}
                                 </span>
                                 <strong style={{ fontSize: "1.2rem", color: "var(--accent-green)", fontFamily: "monospace" }}>
-                                  ${(parseFloat(item.price) * 1000).toFixed(2)}
+                                  ${parseFloat(item.priceUsd ?? item.price ?? 0).toFixed(2)}
                                 </strong>
                               </div>
 

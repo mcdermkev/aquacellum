@@ -135,6 +135,27 @@ contract AquadexMarketplace is IERC721Receiver, AccessControl {
     // Fiat settlement tracking: Stripe payment ID → on-chain record
     mapping(bytes32 => bool) public fiatSettlements;
 
+    // ── Fiat HELD escrows (batch & multi arrival protection) ─────────────────
+    // Batch: the fiat EscrowPurchase is kept LOCKED at purchase and released by
+    // the relayer when the buyer confirms arrival; the Stripe payout is deferred
+    // to that release. Maps the Stripe payment hash → purchaseId so the relayer
+    // can release/refund by payment reference (no per-unit NFT exists for
+    // juveniles, so the hold is a payout-timing marker + quantity bookkeeping).
+    mapping(bytes32 => uint256) public fiatBatchPurchaseId;
+
+    // Multi: several specimens from one seller held together until the buyer
+    // confirms arrival. The NFTs stay in marketplace custody (their listings are
+    // deactivated at lock) and transfer to the buyer on release. Keyed by the
+    // Stripe payment hash. Uses ShippingStatus (LOCKED/RELEASED/REFUNDED).
+    struct FiatMultiEscrow {
+        address buyer;
+        address seller;
+        uint256 priceCentsUSD;
+        ShippingStatus status;
+        uint256[] tokenIds;
+    }
+    mapping(bytes32 => FiatMultiEscrow) private _fiatMultiEscrows;
+
     // --- Events ---
 
     event FiatPurchaseSettled(
@@ -144,6 +165,15 @@ contract AquadexMarketplace is IERC721Receiver, AccessControl {
         uint256 priceCentsUSD,
         bytes32 stripePaymentHash
     );
+    event FiatMultiLocked(
+        bytes32 indexed stripePaymentHash,
+        address indexed seller,
+        address indexed buyer,
+        uint256 tokenCount,
+        uint256 priceCentsUSD
+    );
+    event FiatMultiReleased(bytes32 indexed stripePaymentHash, address indexed seller, address indexed buyer);
+    event FiatMultiRefunded(bytes32 indexed stripePaymentHash, address indexed seller, address indexed buyer);
     event FiatBatchSettled(
         uint256 indexed listingId,
         address indexed seller,
@@ -543,8 +573,8 @@ contract AquadexMarketplace is IERC721Receiver, AccessControl {
      *      ┌──────────────────┬────────┬────────────────────────────────────────────┐
      *      │ Context          │ Fee    │ Distribution                               │
      *      ├──────────────────┼────────┼────────────────────────────────────────────┤
-     *      │ Standard (remote)│ 4% BPS │ 25% Marine Conservation, 40% Ecosystem,    │
-     *      │                  │ (400)  │ 35% Founders (split 3-way, dust → coFounder)│
+     *      │ Standard (remote)│ 4% BPS │ 65% Operations (Marine Conservation +      │
+     *      │                  │ (400)  │ Ecosystem), 35% Founders (3-way, dust → CF)│
      *      ├──────────────────┼────────┼────────────────────────────────────────────┤
      *      │ Event Zone       │ 2% BPS │ 100% → operationalDevelopmentWallet        │
      *      │                  │ (200)  │ (supports on-site event logistics)         │
@@ -1135,33 +1165,99 @@ contract AquadexMarketplace is IERC721Receiver, AccessControl {
 
         _nextPurchaseId++;
         uint256 purchaseId = _nextPurchaseId;
+        fiatBatchPurchaseId[stripePaymentHash] = purchaseId;
 
         escrowPurchases[purchaseId] = EscrowPurchase({
             purchaseId: purchaseId,
             listingId: listingId,
             buyer: buyer,
             quantity: quantity,
-            amountLocked: 0, // Fiat-settled: no on-chain ETH
+            amountLocked: 0, // Fiat-settled: no on-chain ETH (Stripe holds the USD)
             commitmentHash: stripePaymentHash, // Reuse field for Stripe audit link
-            state: EscrowState.RELEASED, // Already paid via Stripe — no escrow needed
+            state: EscrowState.LOCKED, // HELD until buyer confirms; Stripe payout deferred to release
             fulfillmentType: 0
         });
 
         emit FiatBatchSettled(listingId, listing.seller, buyer, quantity, priceCentsUSD, stripePaymentHash);
+        // BatchPurchased surfaces the purchaseId so the release/refund path can
+        // be reconciled off-chain (in addition to the hash → purchaseId map).
+        emit BatchPurchased(purchaseId, listingId, buyer, quantity, 0);
         emit XPEarned(buyer, 100, "Fiat Purchase Batch");
+        // Seller "sale settled" XP is emitted at release (releaseFiatBatchEscrow),
+        // not here, since the order is now HELD rather than paid through.
+    }
+
+    /**
+     * @dev Releases a HELD fiat batch escrow when the buyer confirms arrival.
+     *      Juveniles have no per-unit NFT, so this only flips the on-chain escrow
+     *      marker to RELEASED — the actual USD payout to the seller is issued by
+     *      the backend via Stripe on this trigger. Keyed by the Stripe payment
+     *      hash for relayer convenience. Callable by the FIAT_RELAYER_ROLE relayer
+     *      or the curator.
+     */
+    function releaseFiatBatchEscrow(bytes32 stripePaymentHash) external {
+        if (!hasRole(FIAT_RELAYER_ROLE, msg.sender) && msg.sender != aquadexManager.curator()) {
+            revert Unauthorized();
+        }
+        uint256 purchaseId = fiatBatchPurchaseId[stripePaymentHash];
+        if (purchaseId == 0) revert EscrowAlreadyResolved(); // unknown / not a fiat batch
+
+        EscrowPurchase storage purchase = escrowPurchases[purchaseId];
+        if (purchase.state != EscrowState.LOCKED) revert EscrowAlreadyResolved();
+        if (purchase.amountLocked != 0) revert Unauthorized(); // fiat-settled escrows only
+
+        purchase.state = EscrowState.RELEASED;
+
+        BatchListing storage listing = batchListings[purchase.listingId];
+        emit EscrowReleased(purchaseId, listing.seller, purchase.buyer, 0);
         emit XPEarned(listing.seller, 150, "Fiat Batch Sale Settled");
     }
 
     /**
-     * @dev Settles multiple specimen purchases from the same seller, paid via Stripe.
-     *      Transfers all NFTs from marketplace escrow to the buyer in a single tx.
+     * @dev Refunds a HELD fiat batch escrow (buyer refunded via Stripe). Restores
+     *      the juveniles to the batch listing so they can be sold again. No ETH
+     *      moves. Callable by the FIAT_RELAYER_ROLE relayer, the curator, or the
+     *      seller.
+     */
+    function refundFiatBatchEscrow(bytes32 stripePaymentHash) external {
+        uint256 purchaseId = fiatBatchPurchaseId[stripePaymentHash];
+        if (purchaseId == 0) revert EscrowAlreadyResolved();
+
+        EscrowPurchase storage purchase = escrowPurchases[purchaseId];
+        if (purchase.state != EscrowState.LOCKED) revert EscrowAlreadyResolved();
+        if (purchase.amountLocked != 0) revert Unauthorized(); // fiat-settled escrows only
+
+        BatchListing storage listing = batchListings[purchase.listingId];
+        if (
+            msg.sender != listing.seller &&
+            msg.sender != aquadexManager.curator() &&
+            !hasRole(FIAT_RELAYER_ROLE, msg.sender)
+        ) {
+            revert Unauthorized();
+        }
+
+        purchase.state = EscrowState.REFUNDED;
+
+        // Return the juveniles to the batch listing (available for sale again).
+        listing.quantity += purchase.quantity;
+        listing.isActive = true;
+
+        emit EscrowRefunded(purchaseId, purchase.buyer, 0);
+    }
+
+    /**
+     * @dev Locks a HELD multi-specimen purchase (same seller) paid via Stripe.
+     *      The specimens stay in marketplace custody (each listing is deactivated
+     *      so it can't be double-sold) until the buyer confirms arrival, at which
+     *      point releaseFiatMultiEscrow transfers them all to the buyer and the
+     *      Stripe payout is issued. Keyed by the Stripe payment hash.
      *
-     * @param tokenIds Array of specimen token IDs to purchase (max 6).
+     * @param tokenIds Array of specimen token IDs to purchase (max 6, one seller).
      * @param buyer The buyer's on-chain wallet.
      * @param priceCentsUSD The total fiat price in USD cents.
      * @param stripePaymentHash keccak256 of the Stripe PaymentIntent ID.
      */
-    function purchaseMultipleFiat(
+    function lockMultipleFiat(
         uint256[] calldata tokenIds,
         address buyer,
         uint256 priceCentsUSD,
@@ -1176,6 +1272,12 @@ contract AquadexMarketplace is IERC721Receiver, AccessControl {
 
         address seller = listings[tokenIds[0]].seller;
 
+        FiatMultiEscrow storage esc = _fiatMultiEscrows[stripePaymentHash];
+        esc.buyer = buyer;
+        esc.seller = seller;
+        esc.priceCentsUSD = priceCentsUSD;
+        esc.status = ShippingStatus.LOCKED;
+
         for (uint256 i = 0; i < tokenIds.length; i++) {
             uint256 tokenId = tokenIds[i];
             Listing storage listing = listings[tokenId];
@@ -1183,15 +1285,86 @@ contract AquadexMarketplace is IERC721Receiver, AccessControl {
             if (!listing.active) revert ListingNotActive();
             if (listing.seller != seller) revert SellerMismatch();
 
+            // Deactivate the listing but keep the NFT in custody (HELD).
             listing.active = false;
-            delete listings[tokenId];
-
-            aquadexManager.safeTransferFrom(address(this), buyer, tokenId);
-
-            emit FiatPurchaseSettled(tokenId, seller, buyer, priceCentsUSD / tokenIds.length, stripePaymentHash);
-            emit XPEarned(buyer, 100, "Fiat Purchase Specimen");
-            emit XPEarned(seller, 150, "Fiat Sale Settled");
+            esc.tokenIds.push(tokenId);
         }
+
+        emit FiatMultiLocked(stripePaymentHash, seller, buyer, tokenIds.length, priceCentsUSD);
+        emit XPEarned(buyer, 100, "Fiat Multi Purchase Locked");
+    }
+
+    /**
+     * @dev Releases a HELD multi-specimen escrow when the buyer confirms arrival:
+     *      transfers all held specimen NFTs to the buyer. The Stripe payout to the
+     *      seller is issued by the backend on this trigger. Callable by the
+     *      FIAT_RELAYER_ROLE relayer or the curator.
+     */
+    function releaseFiatMultiEscrow(bytes32 stripePaymentHash) external {
+        if (!hasRole(FIAT_RELAYER_ROLE, msg.sender) && msg.sender != aquadexManager.curator()) {
+            revert Unauthorized();
+        }
+        FiatMultiEscrow storage esc = _fiatMultiEscrows[stripePaymentHash];
+        if (esc.buyer == address(0)) revert EscrowAlreadyResolved(); // unknown escrow
+        if (esc.status != ShippingStatus.LOCKED) revert EscrowAlreadyResolved();
+
+        esc.status = ShippingStatus.RELEASED;
+
+        uint256 len = esc.tokenIds.length;
+        for (uint256 i = 0; i < len; i++) {
+            aquadexManager.safeTransferFrom(address(this), esc.buyer, esc.tokenIds[i]);
+        }
+
+        emit FiatMultiReleased(stripePaymentHash, esc.seller, esc.buyer);
+        emit XPEarned(esc.buyer, 100, "Fiat Multi Purchase Confirmed");
+        emit XPEarned(esc.seller, 150, "Fiat Multi Sale Settled");
+    }
+
+    /**
+     * @dev Refunds a HELD multi-specimen escrow (buyer refunded via Stripe):
+     *      returns all held specimen NFTs to the seller. No ETH moves. Callable by
+     *      the FIAT_RELAYER_ROLE relayer or the curator.
+     */
+    function refundFiatMultiEscrow(bytes32 stripePaymentHash) external {
+        if (!hasRole(FIAT_RELAYER_ROLE, msg.sender) && msg.sender != aquadexManager.curator()) {
+            revert Unauthorized();
+        }
+        FiatMultiEscrow storage esc = _fiatMultiEscrows[stripePaymentHash];
+        if (esc.buyer == address(0)) revert EscrowAlreadyResolved();
+        if (esc.status != ShippingStatus.LOCKED) revert EscrowAlreadyResolved();
+
+        esc.status = ShippingStatus.REFUNDED;
+
+        uint256 len = esc.tokenIds.length;
+        for (uint256 i = 0; i < len; i++) {
+            aquadexManager.safeTransferFrom(address(this), esc.seller, esc.tokenIds[i]);
+        }
+
+        emit FiatMultiRefunded(stripePaymentHash, esc.seller, esc.buyer);
+    }
+
+    /**
+     * @dev Read a fiat multi-escrow summary (the auto-generated mapping getter
+     *      omits the dynamic tokenIds array, so this exposes the scalar fields).
+     */
+    function fiatMultiEscrow(bytes32 stripePaymentHash)
+        external
+        view
+        returns (address buyer, address seller, uint256 priceCentsUSD, uint8 status, uint256 tokenCount)
+    {
+        FiatMultiEscrow storage esc = _fiatMultiEscrows[stripePaymentHash];
+        return (esc.buyer, esc.seller, esc.priceCentsUSD, uint8(esc.status), esc.tokenIds.length);
+    }
+
+    /**
+     * @dev Read the specimen token IDs held in a fiat multi-escrow.
+     */
+    function fiatMultiEscrowTokenIds(bytes32 stripePaymentHash)
+        external
+        view
+        returns (uint256[] memory)
+    {
+        return _fiatMultiEscrows[stripePaymentHash].tokenIds;
     }
 
     /**
@@ -1223,5 +1396,90 @@ contract AquadexMarketplace is IERC721Receiver, AccessControl {
         emit ShippingEscrowReleased(tokenId, escrow.seller, escrow.buyer, 0);
         emit XPEarned(escrow.buyer, 100, "Fiat Shipping Confirmed");
         emit XPEarned(escrow.seller, 150, "Fiat Shipping Sale Settled");
+    }
+
+    /**
+     * @dev Resolves a DISPUTED fiat-settled shipping escrow.
+     *
+     *      Fiat escrows hold no ETH (the USD is held by Stripe), so unlike the
+     *      crypto-path resolveShippingDispute — which pays out ETH the contract
+     *      never received for a fiat order and therefore reverts — this only
+     *      moves the specimen NFT. The corresponding money movement (buyer
+     *      refund or seller payout) is settled off-chain via Stripe by the
+     *      backend relayer.
+     *
+     *      Callable by the protocol curator OR the FIAT_RELAYER_ROLE relayer, so
+     *      an in-app dispute decision can be executed automatically by the
+     *      backend after the Stripe refund/transfer is issued.
+     *
+     * @param tokenId The disputed shipping escrow's token ID.
+     * @param refundBuyer true  → return the NFT to the seller (buyer is refunded
+     *                            via Stripe);
+     *                    false → release the NFT to the buyer (seller is paid via
+     *                            Stripe).
+     */
+    function resolveFiatShippingDispute(uint256 tokenId, bool refundBuyer) external {
+        if (msg.sender != aquadexManager.curator() && !hasRole(FIAT_RELAYER_ROLE, msg.sender)) {
+            revert Unauthorized();
+        }
+
+        ShippingEscrow storage escrow = shippingEscrows[tokenId];
+        if (escrow.status != ShippingStatus.DISPUTED) revert NotInDispute();
+        if (escrow.amountLocked != 0) revert Unauthorized(); // fiat-settled escrows only
+
+        if (refundBuyer) {
+            escrow.status = ShippingStatus.REFUNDED;
+
+            // Return the specimen from escrow to the seller.
+            aquadexManager.safeTransferFrom(address(this), escrow.seller, tokenId);
+
+            emit ShippingEscrowRefunded(tokenId, escrow.buyer, 0);
+        } else {
+            escrow.status = ShippingStatus.RELEASED;
+
+            // Release the specimen to the buyer.
+            aquadexManager.safeTransferFrom(address(this), escrow.buyer, tokenId);
+
+            emit ShippingEscrowReleased(tokenId, escrow.seller, escrow.buyer, 0);
+            emit XPEarned(escrow.seller, 150, "Fiat Dispute Resolved");
+        }
+    }
+
+    /**
+     * @dev Returns the escrowed specimen NFT to the seller for a fiat-settled
+     *      shipping order that is being refunded (e.g. seller cancels, or the
+     *      buyer is refunded via Stripe before the goods ship / a dispute is
+     *      formally opened).
+     *
+     *      Fiat escrows hold no ETH, so this moves only the NFT — the USD refund
+     *      is issued through Stripe by the backend. Callable by the
+     *      FIAT_RELAYER_ROLE relayer (so the Stripe refund webhook can automate
+     *      the NFT return), the curator, or the seller.
+     *
+     *      Valid while the order is still in escrow (LOCKED or DISPATCHED). Once
+     *      a dispute has been opened (DISPUTED), use resolveFiatShippingDispute.
+     *
+     * @param tokenId The fiat shipping escrow's token ID.
+     */
+    function refundFiatShippingEscrow(uint256 tokenId) external {
+        ShippingEscrow storage escrow = shippingEscrows[tokenId];
+        if (escrow.status != ShippingStatus.LOCKED && escrow.status != ShippingStatus.DISPATCHED) {
+            revert InvalidRefundStatus();
+        }
+        if (escrow.amountLocked != 0) revert Unauthorized(); // fiat-settled escrows only
+        if (
+            msg.sender != escrow.seller &&
+            msg.sender != aquadexManager.curator() &&
+            !hasRole(FIAT_RELAYER_ROLE, msg.sender)
+        ) {
+            revert Unauthorized();
+        }
+
+        escrow.status = ShippingStatus.REFUNDED;
+
+        // Return the specimen from escrow to the seller.
+        aquadexManager.safeTransferFrom(address(this), escrow.seller, tokenId);
+
+        emit ShippingEscrowRefunded(tokenId, escrow.buyer, 0);
     }
 }

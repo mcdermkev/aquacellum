@@ -231,14 +231,17 @@ export function ListSpecimenModal({
     setTxHash(null);
 
     try {
-      const priceEth = (parseFloat(price) / 1000).toString();
-      const shippingFeeEth = isShipping ? (parseFloat(shippingFee) / 1000).toString() : "0";
+      // USD is the canonical price (this is a Web2-masked marketplace: buyers pay
+      // dollars via Stripe). The seller enters dollars; store cents for Stripe.
+      const priceCentsUSD = Math.round(parseFloat(price) * 100);
+      const shippingFeeCents = isShipping ? Math.round(parseFloat(shippingFee) * 100) : 0;
 
       // Beta: store listing locally (no MetaMask, no gas)
       const result = await relayCreateListing({
         tokenId: Number(tokenId),
-        priceEth,
-        shippingFeeEth,
+        priceCentsUSD,
+        shippingFeeCents,
+        priceUsd: parseFloat(price).toFixed(2),
         isShipping,
         seller: walletAccount,
         speciesId: specimenInfo?.speciesId || 0,

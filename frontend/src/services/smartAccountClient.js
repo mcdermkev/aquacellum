@@ -20,7 +20,7 @@ import { toAccount } from "viem/accounts";
 
 // Contract addresses
 const MANAGER_ADDRESS = "0x351ca8f34D94F29F6f865Afa419A636324473DeF";
-const MARKETPLACE_ADDRESS = "0x16168B514144e0380610b78d904a4de51ba03Ca3";
+const MARKETPLACE_ADDRESS = "0xEC4d21Aa32c6c378Ba43E6d9038e93A9702177BF";
 
 // ABI fragments
 const MANAGER_ABI = [
@@ -167,6 +167,58 @@ const MARKETPLACE_ABI = [
       { name: "shippingFee", type: "uint256" },
     ],
     name: "createShippingListing",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  // ─── Shipping escrow lifecycle ───────────────────────────────────────────
+  {
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    name: "purchaseShippingListing",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "tokenId", type: "uint256" },
+      { name: "trackingNumber", type: "string" },
+    ],
+    name: "dispatchShipping",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    name: "releaseShippingEscrow",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    name: "disputeShipping",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { name: "tokenId", type: "uint256" },
+      { name: "refundBuyer", type: "bool" },
+    ],
+    name: "resolveShippingDispute",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  // Fiat-settled release: transfers only the NFT (funds are held/settled by
+  // Stripe, not on-chain). Used instead of releaseShippingEscrow for orders
+  // purchased with USD via the *Fiat settlement path.
+  {
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    name: "releaseFiatShippingEscrow",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
@@ -392,6 +444,25 @@ export function hasUserSigner() {
   return !!_userEip1193Provider && !!_userAddress;
 }
 
+/**
+ * Sign an arbitrary UTF-8 message with the user's Privy embedded EOA
+ * (personal_sign / EIP-191). Used to authorize sensitive backend actions such
+ * as releasing held escrow funds: the server recovers the signer with
+ * ethers.utils.verifyMessage and matches it against the order's buyer/seller
+ * wallet (the canonical lowercase EOA). Returns the 65-byte hex signature.
+ *
+ * Throws if no user signer is registered (user not logged in).
+ */
+export async function signPersonalMessage(message) {
+  if (!_userEip1193Provider || !_userAddress) {
+    throw new Error("User not logged in — cannot sign this action");
+  }
+  return await _userEip1193Provider.request({
+    method: "personal_sign",
+    params: [message, _userAddress],
+  });
+}
+
 // ─── Manager Call Builders ─────────────────────────────────────────────────
 
 export function buildRegisterTankCall(params) {
@@ -540,6 +611,77 @@ export function buildCreateShippingListingCall(params) {
       BigInt(params.tokenId || 0),
       BigInt(params.priceWei || 0),
       BigInt(params.shippingFeeWei || 0),
+    ],
+  };
+}
+
+// ─── Shipping escrow lifecycle builders ────────────────────────────────────
+
+/**
+ * Buyer locks funds (price + shipping fee) into the shipping escrow on-chain.
+ * `totalWei` MUST equal listing.price + listing.shippingFee (in wei).
+ */
+export function buildPurchaseShippingListingCall(params) {
+  return {
+    contract: "marketplace",
+    functionName: "purchaseShippingListing",
+    args: [BigInt(params.tokenId || 0)],
+    value: BigInt(params.totalWei || 0),
+  };
+}
+
+/** Seller marks the order dispatched with a tracking number, starting the safety window. */
+export function buildDispatchShippingCall(params) {
+  return {
+    contract: "marketplace",
+    functionName: "dispatchShipping",
+    args: [
+      BigInt(params.tokenId || 0),
+      String(params.trackingNumber || ""),
+    ],
+  };
+}
+
+/** Buyer (any time) or seller (after safety window) releases escrow to the seller. CRYPTO escrows only. */
+export function buildReleaseShippingEscrowCall(params) {
+  return {
+    contract: "marketplace",
+    functionName: "releaseShippingEscrow",
+    args: [BigInt(params.tokenId || 0)],
+  };
+}
+
+/**
+ * Fiat release-on-arrival: transfers only the NFT to the buyer. Use this for
+ * orders paid in USD via Stripe (ShippingEscrow.amountLocked == 0). The crypto
+ * releaseShippingEscrow would revert on these because it tries to pay out ETH
+ * the contract does not hold.
+ */
+export function buildReleaseFiatShippingEscrowCall(params) {
+  return {
+    contract: "marketplace",
+    functionName: "releaseFiatShippingEscrow",
+    args: [BigInt(params.tokenId || 0)],
+  };
+}
+
+/** Buyer opens a dispute before the safety window elapses. */
+export function buildDisputeShippingCall(params) {
+  return {
+    contract: "marketplace",
+    functionName: "disputeShipping",
+    args: [BigInt(params.tokenId || 0)],
+  };
+}
+
+/** Curator resolves a dispute: refundBuyer=true refunds the buyer, false releases to the seller. */
+export function buildResolveShippingDisputeCall(params) {
+  return {
+    contract: "marketplace",
+    functionName: "resolveShippingDispute",
+    args: [
+      BigInt(params.tokenId || 0),
+      Boolean(params.refundBuyer),
     ],
   };
 }

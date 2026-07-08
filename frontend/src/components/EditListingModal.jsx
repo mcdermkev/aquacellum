@@ -24,14 +24,21 @@ export function EditListingModal({ isOpen, onClose, item, onSuccess }) {
     if (isOpen && item) {
       setError(null);
       
-      // Convert price and shipping fee from ETH/1000 scale back to USD display
-      const displayPrice = (parseFloat(item.price || 0) * 1000).toFixed(2);
+      // Prices are stored in USD dollars (canonical). Show them directly, falling
+      // back to cents if a legacy record only has priceCentsUSD.
+      const displayPrice = item.priceUsd != null
+        ? parseFloat(item.priceUsd).toFixed(2)
+        : (item.priceCentsUSD != null
+            ? (Number(item.priceCentsUSD) / 100).toFixed(2)
+            : parseFloat(item.price || 0).toFixed(2));
       setPrice(displayPrice);
       
       const shippingActive = !!item.isShipping;
       setIsShipping(shippingActive);
       
-      const displayShippingFee = (parseFloat(item.shippingFee || 0) * 1000).toFixed(2);
+      const displayShippingFee = item.shippingFeeCents != null
+        ? (Number(item.shippingFeeCents) / 100).toFixed(2)
+        : parseFloat(item.shippingFee || 0).toFixed(2);
       setShippingFee(displayShippingFee);
 
       // Load photos from localStorage into local temp state (so changes don't persist unless saved)
@@ -94,16 +101,17 @@ export function EditListingModal({ isOpen, onClose, item, onSuccess }) {
     setSubmitting(true);
 
     try {
-      const priceEth = (parseFloat(price) / 1000).toString();
-      const shippingFeeEth = isShipping ? (parseFloat(shippingFee) / 1000).toString() : "0";
+      const priceCentsUSD = Math.round(parseFloat(price) * 100);
+      const shippingFeeCents = isShipping ? Math.round(parseFloat(shippingFee) * 100) : 0;
 
       // Call relayer update function
       const result = await relayUpdateListing({
         tokenId: item.tokenId,
         listingId: item.listingId,
         isBatch: item.isBatch,
-        priceEth,
-        shippingFeeEth,
+        priceCentsUSD,
+        shippingFeeCents,
+        priceUsd: parseFloat(price).toFixed(2),
         isShipping,
       });
 

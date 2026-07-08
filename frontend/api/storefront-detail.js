@@ -26,7 +26,7 @@ const supabase = createClient(
 
 // Protocol constants
 const CHAIN_ID = 84532; // Base Sepolia
-const MARKETPLACE_ADDRESS = "0x16168B514144e0380610b78d904a4de51ba03Ca3";
+const MARKETPLACE_ADDRESS = "0xEC4d21Aa32c6c378Ba43E6d9038e93A9702177BF";
 const MANAGER_ADDRESS = "0x351ca8f34D94F29F6f865Afa419A636324473DeF";
 const PROTOCOL_FEE_BPS = 400; // 4%
 const BASE_URL = "https://aquadex.fish";

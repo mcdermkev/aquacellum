@@ -16,9 +16,24 @@
  */
 
 import { db } from "../db";
+import { signPersonalMessage } from "./smartAccountClient";
 
 // ─── Configuration ─────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+
+/**
+ * Canonical release-authorization message. MUST match the server builder in
+ * frontend/api/stripe.js byte-for-byte, or the recovered signer won't match and
+ * the release will be rejected.
+ */
+function buildReleaseAuthMessage({ tokenId, paymentRef, issuedAt }) {
+  return [
+    "Aquacellum: authorize order release",
+    `token:${tokenId ?? ""}`,
+    `ref:${paymentRef}`,
+    `issued:${issuedAt}`,
+  ].join("\n");
+}
 
 // ─── Buyer: Purchase Flow ──────────────────────────────────────────────────
 
@@ -150,6 +165,85 @@ export async function purchaseMultiple({ items, buyerWallet, sellerWallet }) {
     sellerWallet,
     items,
   });
+}
+
+/**
+ * Initiate a LOCAL PICKUP (in-person) specimen purchase via Stripe Checkout.
+ * Funds are held in escrow until the in-person handshake at handoff.
+ */
+export async function purchasePickupSpecimen({
+  tokenId,
+  commonName,
+  scientificName,
+  priceCentsUSD,
+  imageUrl,
+  buyerWallet,
+  sellerWallet,
+}) {
+  return _createCheckout({
+    purchaseType: "pickup",
+    buyerWallet,
+    sellerWallet,
+    items: [{ tokenId, commonName, scientificName, priceCentsUSD, imageUrl }],
+  });
+}
+
+/**
+ * Finalize a HELD order at handoff (shipping arrival OR pickup handshake).
+ * Calls the backend release action, which transfers the held funds to the
+ * seller and settles the NFT on-chain. Pass the order's Stripe session id (or
+ * paymentIntentId); tokenId is optional context.
+ *
+ * The caller (buyer confirming arrival, or seller after the safety window)
+ * signs a canonical authorization message with their wallet so the server can
+ * verify who's requesting the release. Whoever is logged in signs; the server
+ * derives their role by matching the recovered address to the order's
+ * buyer/seller wallet.
+ *
+ * @returns {Promise<{success: boolean, txHash?: string, transferId?: string, error?: string}>}
+ */
+export async function releaseFiatOrder({ tokenId, sessionId, paymentIntentId } = {}) {
+  try {
+    const paymentRef = sessionId || paymentIntentId;
+    if (!paymentRef) {
+      return { success: false, error: "Missing order reference (sessionId or paymentIntentId)" };
+    }
+
+    // Sign the release authorization with the logged-in user's wallet.
+    const issuedAt = Date.now();
+    let signature;
+    try {
+      signature = await signPersonalMessage(
+        buildReleaseAuthMessage({ tokenId, paymentRef, issuedAt })
+      );
+    } catch (err) {
+      return {
+        success: false,
+        error: err.message || "Could not sign the release authorization",
+      };
+    }
+
+    const response = await fetch(`${API_BASE}/stripe?action=release`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tokenId,
+        sessionId,
+        paymentIntentId,
+        signature,
+        issuedAt,
+        paymentRef,
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, error: data.error || "Release failed" };
+    }
+    return { success: data.success !== false, ...data };
+  } catch (err) {
+    console.error("[StripePayments] Release failed:", err);
+    return { success: false, error: err.message || "Network error releasing order" };
+  }
 }
 
 /**

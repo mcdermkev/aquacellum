@@ -25,9 +25,11 @@ import {
   FirstAid,
   Handshake,
   UserCircle,
+  Bank,
 } from "@phosphor-icons/react";
 import { uploadImage, createPreviewUrl, revokePreviewUrl } from "../services/mediaUpload";
 import { getProfile } from "../services/reefApi";
+import { startSellerOnboarding, checkSellerStatus } from "../services/stripePayments";
 import { SellerAnalytics } from "./storefront/SellerAnalytics";
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/;
@@ -72,6 +74,11 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
   const [saveResult, setSaveResult] = useState(null); // null | { success, message }
   const [showPreview, setShowPreview] = useState(false);
 
+  // Stripe payouts (Connect) state
+  const [payoutStatus, setPayoutStatus] = useState(null); // { connected, onboardingComplete }
+  const [payoutLoading, setPayoutLoading] = useState(true);
+  const [connectingPayouts, setConnectingPayouts] = useState(false);
+
   const isEditing = !!existingProfile;
 
   // Pull the breeder's avatar from their existing in-app profile so the
@@ -99,6 +106,45 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
       if (bannerPreview && bannerPreview.startsWith("blob:")) revokePreviewUrl(bannerPreview);
     };
   }, [bannerPreview]);
+
+  // Load Stripe Connect payout status so the seller knows if they can be paid.
+  useEffect(() => {
+    if (!walletAccount) return;
+    let cancelled = false;
+    (async () => {
+      setPayoutLoading(true);
+      try {
+        const status = await checkSellerStatus(walletAccount);
+        if (!cancelled) setPayoutStatus(status);
+      } catch {
+        if (!cancelled) setPayoutStatus({ connected: false, onboardingComplete: false });
+      } finally {
+        if (!cancelled) setPayoutLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [walletAccount]);
+
+  // Start (or resume) Stripe Connect onboarding — redirects to Stripe's hosted flow.
+  const handleConnectPayouts = async () => {
+    if (!walletAccount) return;
+    setConnectingPayouts(true);
+    try {
+      const res = await startSellerOnboarding({
+        walletAddress: walletAccount,
+        displayName: displayName || undefined,
+      });
+      if (res.success && res.onboardingUrl) {
+        window.location.href = res.onboardingUrl;
+      } else {
+        setSaveResult({ success: false, message: res.error || "Could not start Stripe onboarding." });
+      }
+    } catch (e) {
+      setSaveResult({ success: false, message: e.message || "Stripe onboarding failed." });
+    } finally {
+      setConnectingPayouts(false);
+    }
+  };
 
   // Slug validation with debounce
   useEffect(() => {
@@ -540,6 +586,55 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
               className="sf-setup__textarea"
             />
           </div>
+        </div>
+
+        {/* Payouts — Stripe Connect */}
+        <div className="sf-setup__field" style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "1rem", marginTop: "0.5rem" }}>
+          <label className="sf-setup__label">
+            <Bank size={15} weight="duotone" style={{ color: "var(--accent-green)" }} />
+            Payouts
+          </label>
+          <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: "0 0 0.75rem 0", lineHeight: 1.5 }}>
+            Buyers pay in USD at checkout. Connect a Stripe account to receive your payouts — you keep 96% of each sale (the platform fee is 4%), and the buyer covers card processing. Funds for shipped and local-pickup orders are held in escrow until the buyer confirms handoff.
+          </p>
+          {payoutLoading ? (
+            <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", display: "flex", gap: "0.4rem", alignItems: "center" }}>
+              <SpinnerGap size={14} className="sf-setup__spinner" /> Checking payout status…
+            </div>
+          ) : payoutStatus?.onboardingComplete ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", color: "var(--accent-green)" }}>
+              <Check size={16} weight="bold" /> Payouts active — you're ready to sell.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "flex-start" }}>
+              {payoutStatus?.connected && (
+                <span style={{ fontSize: "0.78rem", color: "var(--accent-amber, #fbbf24)", display: "flex", gap: "0.4rem", alignItems: "center" }}>
+                  <Warning size={14} weight="bold" /> Stripe setup started but not finished.
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={handleConnectPayouts}
+                disabled={connectingPayouts || !walletAccount}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: "0.5rem",
+                  padding: "0.6rem 1rem", fontSize: "0.85rem", fontWeight: 600,
+                  background: "var(--accent-green, #34d399)", color: "#04231a",
+                  border: "none", borderRadius: "8px", cursor: connectingPayouts ? "wait" : "pointer",
+                  opacity: (!walletAccount || connectingPayouts) ? 0.6 : 1,
+                }}
+              >
+                {connectingPayouts ? (
+                  <><SpinnerGap size={16} className="sf-setup__spinner" /> Redirecting to Stripe…</>
+                ) : (
+                  <><Bank size={16} weight="bold" /> {payoutStatus?.connected ? "Finish Stripe setup" : "Connect payouts with Stripe"}</>
+                )}
+              </button>
+              <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>
+                You'll be redirected to Stripe to securely add your bank details. No card or crypto needed.
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Actions */}

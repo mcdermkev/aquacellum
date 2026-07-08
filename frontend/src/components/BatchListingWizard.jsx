@@ -125,17 +125,24 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
 
     try {
       const listingId = Date.now();
-      const priceEth = (parseFloat(pricePerFish) / 1000).toString();
-      const shippingFeeEth = isShipping ? (parseFloat(shippingFee) / 1000).toString() : "0";
+      // USD is canonical (Web2-masked marketplace). Store dollars for display and
+      // cents for Stripe checkout.
+      const priceUsd = parseFloat(pricePerFish).toFixed(2);
+      const shippingUsd = isShipping ? parseFloat(shippingFee).toFixed(2) : "0.00";
+      const priceCentsUSD = Math.round(parseFloat(pricePerFish) * 100);
+      const shippingFeeCents = isShipping ? Math.round(parseFloat(shippingFee) * 100) : 0;
 
       const listing = {
         id: listingId,
         listingId,
         spawnId: selectedSpawn.spawnId,
         quantity: Number(quantity),
-        price: priceEth,
-        rawPrice: priceEth,
-        shippingFee: shippingFeeEth,
+        price: priceUsd,
+        priceUsd,
+        priceCentsUSD,
+        rawPrice: priceUsd,
+        shippingFee: shippingUsd,
+        shippingFeeCents,
         isShipping: !!isShipping,
         seller: walletAccount.toLowerCase(),
         speciesId: Number(selectedSpawn.speciesId),

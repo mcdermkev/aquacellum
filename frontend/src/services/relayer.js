@@ -33,6 +33,10 @@ import {
   buildCancelListingCall,
   buildApproveCall,
   buildCreateShippingListingCall,
+  buildDispatchShippingCall,
+  buildReleaseFiatShippingEscrowCall,
+  buildDisputeShippingCall,
+  buildResolveShippingDisputeCall,
 } from "./smartAccountClient";
 
 /**
@@ -41,6 +45,21 @@ import {
  */
 function normalizeAddress(addr) {
   return addr ? addr.toLowerCase() : "";
+}
+
+/**
+ * Submit a single marketplace call on-chain and AWAIT its receipt.
+ *
+ * Unlike enqueueOnChain (fire-and-forget, batched, best-effort), escrow money
+ * movements must be authoritative: the local mirror is only updated after the
+ * chain confirms. Returns { success, txHash } or { success:false, error }.
+ */
+async function submitEscrowCall(call, label = "") {
+  const res = await submitUserOperation([call]);
+  if (!res.success) {
+    console.warn(`[Relayer] on-chain ${label} failed:`, res.error);
+  }
+  return res;
 }
 
 /**
@@ -483,8 +502,9 @@ export async function getLocalListings(speciesId = null) {
  */
 export async function relayCreateListing({
   tokenId,
-  priceEth,
-  shippingFeeEth = "0",
+  priceCentsUSD = 0,
+  shippingFeeCents = 0,
+  priceUsd = null,
   isShipping = false,
   seller = "",
   speciesId = 0,
@@ -519,13 +539,24 @@ export async function relayCreateListing({
       }
     }
 
+    // USD is canonical (Web2-masked marketplace). *Cents fields drive Stripe;
+    // the dollar strings are for display.
+    const centsUSD = Number(priceCentsUSD) || 0;
+    const shipCents = Number(shippingFeeCents) || 0;
+    const priceDisplayUsd = priceUsd != null ? String(priceUsd) : (centsUSD / 100).toFixed(2);
+    const shipDisplayUsd = (shipCents / 100).toFixed(2);
+
     const listing = {
       id: Number(tokenId),
       tokenId: Number(tokenId),
       seller: normalizeAddress(seller),
-      price: String(priceEth),
-      rawPrice: String(priceEth),
-      shippingFee: String(shippingFeeEth),
+      // USD canonical: price/priceUsd are display dollars, *Cents are for Stripe checkout.
+      price: priceDisplayUsd,
+      priceUsd: priceDisplayUsd,
+      priceCentsUSD: centsUSD,
+      rawPrice: priceDisplayUsd,
+      shippingFee: shipDisplayUsd,
+      shippingFeeCents: shipCents,
       isShipping: !!isShipping,
       speciesId: Number(speciesId),
       commonName,
@@ -562,15 +593,17 @@ export async function relayCreateListing({
     // Sync to Supabase so other users can see this listing (fire-and-forget)
     syncListingToCloud(listing).catch(() => {});
 
-    // On-chain: approve marketplace + list specimen (batched in one UserOp)
-    const priceWei = BigInt(Math.round(parseFloat(priceEth) * 1e18));
+    // On-chain: approve marketplace + list specimen (batched in one UserOp).
+    // The on-chain "price" is USD cents, recorded for provenance only — money
+    // settles via Stripe through the *Fiat functions. It just needs to be > 0 so
+    // the listing is valid and the NFT is escrowed in the marketplace contract.
+    const priceOnChain = BigInt(centsUSD);
     if (isShipping) {
-      const shippingWei = BigInt(Math.round(parseFloat(shippingFeeEth) * 1e18));
       enqueueOnChain(buildApproveCall({ tokenId: Number(tokenId) }), `approve(${tokenId})`);
-      enqueueOnChain(buildCreateShippingListingCall({ tokenId: Number(tokenId), priceWei, shippingFeeWei: shippingWei }), `createShippingListing(${tokenId})`);
+      enqueueOnChain(buildCreateShippingListingCall({ tokenId: Number(tokenId), priceWei: priceOnChain, shippingFeeWei: BigInt(shipCents) }), `createShippingListing(${tokenId})`);
     } else {
       enqueueOnChain(buildApproveCall({ tokenId: Number(tokenId) }), `approve(${tokenId})`);
-      enqueueOnChain(buildListSpecimenCall({ tokenId: Number(tokenId), priceWei }), `listSpecimen(${tokenId})`);
+      enqueueOnChain(buildListSpecimenCall({ tokenId: Number(tokenId), priceWei: priceOnChain }), `listSpecimen(${tokenId})`);
     }
 
     return { success: true, tokenId: Number(tokenId), txHash: null };
@@ -625,24 +658,35 @@ export async function relayUpdateListing({
   tokenId,
   listingId,
   isBatch,
-  priceEth,
-  shippingFeeEth = "0",
+  priceCentsUSD = 0,
+  shippingFeeCents = 0,
+  priceUsd = null,
   isShipping = false,
   quantity,
 } = {}) {
   try {
+    // USD canonical. Build the price fields once and reuse for batch/single.
+    const centsUSD = Number(priceCentsUSD) || 0;
+    const shipCents = Number(shippingFeeCents) || 0;
+    const priceDisplayUsd = priceUsd != null ? String(priceUsd) : (centsUSD / 100).toFixed(2);
+    const shipDisplayUsd = (shipCents / 100).toFixed(2);
+    const priceUpdates = {
+      price: priceDisplayUsd,
+      priceUsd: priceDisplayUsd,
+      priceCentsUSD: centsUSD,
+      rawPrice: priceDisplayUsd,
+      shippingFee: shipDisplayUsd,
+      shippingFeeCents: shipCents,
+      isShipping: !!isShipping,
+    };
+
     if (isBatch) {
       const idToFind = Number(listingId);
       const rows = await db.localListings.where("listingId").equals(idToFind).toArray();
       if (rows.length === 0) {
         return { success: false, error: "Batch listing not found" };
       }
-      const updates = {
-        price: String(priceEth),
-        rawPrice: String(priceEth),
-        shippingFee: String(shippingFeeEth),
-        isShipping: !!isShipping,
-      };
+      const updates = { ...priceUpdates };
       if (quantity !== undefined) {
         updates.quantity = Number(quantity);
       }
@@ -657,14 +701,8 @@ export async function relayUpdateListing({
       if (!existing) {
         return { success: false, error: "Listing not found" };
       }
-      const updates = {
-        price: String(priceEth),
-        rawPrice: String(priceEth),
-        shippingFee: String(shippingFeeEth),
-        isShipping: !!isShipping,
-      };
-      await db.localListings.update(idToFind, updates);
-      try { await db.listings.update(idToFind, updates); } catch (e) {}
+      await db.localListings.update(idToFind, priceUpdates);
+      try { await db.listings.update(idToFind, priceUpdates); } catch (e) {}
       return { success: true, tokenId: idToFind, txHash: null };
     }
   } catch (err) {
@@ -675,8 +713,16 @@ export async function relayUpdateListing({
 
 
 /**
- * Purchase a single specimen locally. Removes the listing and records a
- * shipping order (if shipping) or completes a direct sale.
+ * Optimistic LOCAL mirror of a specimen purchase.
+ *
+ * IMPORTANT: this does NOT move money and does NOT settle ownership on-chain.
+ * In this Web2-masked model buyers pay USD through Stripe Checkout
+ * (see services/stripePayments.js -> api/create-checkout.js). The authoritative
+ * on-chain settlement (NFT transfer + ShippingEscrow creation) is performed by
+ * the backend relayer holding FIAT_RELAYER_ROLE, triggered by the Stripe webhook
+ * (api/stripe.js -> purchaseSpecimenFiat / purchaseShippingFiat). This function
+ * only updates local Dexie so the UI can show the order immediately; it must be
+ * reconciled against the on-chain state / fiat_settlements record.
  */
 export async function relayPurchaseSpecimen({
   tokenId,
@@ -689,6 +735,7 @@ export async function relayPurchaseSpecimen({
 } = {}) {
   try {
     tokenId = Number(tokenId);
+    const txHash = null; // settlement happens via the Stripe webhook relayer, not here
 
     // Remove the listing locally
     await db.localListings.delete(tokenId);
@@ -710,26 +757,48 @@ export async function relayPurchaseSpecimen({
       });
     }
 
-    // Record a shipping escrow order so the Orders view can track it
-    const order = {
-      orderType: "shipping",
-      tokenId,
-      buyer: normalizeAddress(buyer),
-      seller: normalizeAddress(seller),
-      price: String(priceEth),
-      shippingFee: String(shippingFeeEth),
-      amountLocked: String(Number(priceEth) + Number(shippingFeeEth)),
-      trackingNumber: "",
-      dispatchTimestamp: 0,
-      status: 0, // 0 = locked / awaiting dispatch
-      commonName,
-      createdAt: Math.floor(Date.now() / 1000),
-    };
-    await db.marketOrders.put(order);
+    if (isShipping) {
+      // Record a shipping escrow order so the Orders view can track it
+      const order = {
+        orderType: "shipping",
+        tokenId,
+        buyer: normalizeAddress(buyer),
+        seller: normalizeAddress(seller),
+        price: String(priceEth),
+        shippingFee: String(shippingFeeEth),
+        amountLocked: String(Number(priceEth) + Number(shippingFeeEth)),
+        trackingNumber: "",
+        dispatchTimestamp: 0,
+        status: 0, // 0 = locked / awaiting dispatch
+        txHash,
+        commonName,
+        createdAt: Math.floor(Date.now() / 1000),
+      };
+      await db.marketOrders.put(order);
+    } else {
+      // Instant (non-shipping) sale: ownership transfers immediately, no escrow.
+      // Record it as a completed instant order for history rather than mislabeling
+      // it as a shipping escrow (which previously exposed bogus dispatch/release
+      // actions on a sale that had no escrow).
+      const order = {
+        orderType: "instant",
+        tokenId,
+        buyer: normalizeAddress(buyer),
+        seller: normalizeAddress(seller),
+        price: String(priceEth),
+        shippingFee: "0",
+        amountLocked: String(priceEth),
+        status: 2, // 2 = released / completed
+        txHash,
+        commonName,
+        createdAt: Math.floor(Date.now() / 1000),
+      };
+      await db.marketOrders.put(order);
+    }
 
-    return { success: true, tokenId, txHash: null };
+    return { success: true, tokenId, txHash };
   } catch (err) {
-    console.error("[Relayer] Local specimen purchase failed:", err);
+    console.error("[Relayer] Specimen purchase failed:", err);
     return { success: false, error: err.message || "Failed to purchase specimen" };
   }
 }
@@ -739,6 +808,9 @@ export async function relayPurchaseSpecimen({
  */
 export async function relayPurchaseMultiple({ tokenIds = [], buyer = "", listings = [] } = {}) {
   try {
+    // Local mirror only. Real consolidated checkout goes through Stripe
+    // (purchaseType "multi") and settles on-chain via purchaseMultipleFiat in
+    // the webhook relayer.
     for (const tid of tokenIds) {
       const item = listings.find((l) => Number(l.tokenId) === Number(tid)) || {};
       await relayPurchaseSpecimen({
@@ -829,6 +901,27 @@ export async function relayGetOrders(walletAccount = "") {
         shippingEscrows.push({ ...o, role });
       } else if (o.orderType === "batch") {
         purchases.push({ ...o, role });
+      } else if (o.orderType === "fiat_pending" || o.orderType === "fiat") {
+        // Stripe (fiat) orders: surface them as held escrows so the buyer can
+        // confirm arrival / complete the handshake, which drives the backend
+        // release. We carry the Stripe session id for that release call.
+        let items = [];
+        try { items = typeof o.items === "string" ? JSON.parse(o.items) : (o.items || []); } catch (e) {}
+        const first = items[0] || {};
+        // status: paid-but-awaiting-handoff → 0; released → 2; disputed → 3; refunded → 4.
+        const statusMap = { pending: 0, settled: 0, released: 2, disputed: 3, refunded: 4, failed: 0 };
+        shippingEscrows.push({
+          ...o,
+          role,
+          isFiat: true,
+          purchaseType: o.purchaseType || "shipping",
+          tokenId: Number(first.tokenId ?? o.tokenId ?? 0),
+          commonName: first.commonName || o.commonName || "Specimen",
+          price: first.priceCentsUSD != null ? (Number(first.priceCentsUSD) / 100).toFixed(2) : (o.price || "0"),
+          shippingFee: first.shippingFeeCents != null ? (Number(first.shippingFeeCents) / 100).toFixed(2) : (o.shippingFee || "0"),
+          status: statusMap[o.status] ?? 0,
+          stripeSessionId: o.stripeSessionId || null,
+        });
       }
     }
   } catch (err) {
@@ -864,6 +957,117 @@ export async function relayUpdateBatchOrder(purchaseId, changes = {}) {
   } catch (err) {
     console.error("[Relayer] Batch order update failed:", err);
     return { success: false, error: err.message || "Failed to update order" };
+  }
+}
+
+// ─── Shipping escrow lifecycle (real, awaited on-chain transitions) ─────────
+// These call the marketplace contract and only mirror the new status locally
+// after the chain confirms. This is what makes the buyer-protection guarantees
+// (escrow hold, dispatch window, dispute/refund) actually enforceable rather
+// than a local-only status flip.
+
+/**
+ * Seller dispatches a shipping order on-chain (records tracking + starts the
+ * 3-day safety window), then mirrors the DISPATCHED status locally.
+ */
+export async function relayDispatchShipping(tokenId, trackingNumber = "") {
+  try {
+    tokenId = Number(tokenId);
+    if (!trackingNumber) return { success: false, error: "Tracking number required" };
+
+    const res = await submitEscrowCall(
+      buildDispatchShippingCall({ tokenId, trackingNumber }),
+      `dispatchShipping(${tokenId})`
+    );
+    if (!res.success) return { success: false, error: res.error || "Dispatch failed" };
+
+    const order = await db.marketOrders.where({ orderType: "shipping", tokenId }).first();
+    if (order) {
+      await db.marketOrders.update(order.key, {
+        status: 1, // DISPATCHED
+        trackingNumber,
+        dispatchTimestamp: Math.floor(Date.now() / 1000),
+        txHash: res.txHash || order.txHash || null,
+      });
+    }
+    return { success: true, tokenId, txHash: res.txHash || null };
+  } catch (err) {
+    console.error("[Relayer] Dispatch shipping failed:", err);
+    return { success: false, error: err.message || "Failed to dispatch shipping" };
+  }
+}
+
+/**
+ * Release the shipping escrow on-chain, confirming safe arrival. This is the
+ * FIAT path: it transfers only the NFT to the buyer (the USD was captured by
+ * Stripe at checkout; seller payout is a Stripe concern). Callable by the buyer
+ * at any time, or the seller after the safety window (contract-enforced).
+ * Mirrors the RELEASED status locally on success.
+ */
+export async function relayReleaseShipping(tokenId) {
+  try {
+    tokenId = Number(tokenId);
+    const res = await submitEscrowCall(
+      buildReleaseFiatShippingEscrowCall({ tokenId }),
+      `releaseFiatShippingEscrow(${tokenId})`
+    );
+    if (!res.success) return { success: false, error: res.error || "Release failed" };
+
+    const order = await db.marketOrders.where({ orderType: "shipping", tokenId }).first();
+    if (order) await db.marketOrders.update(order.key, { status: 2 }); // RELEASED
+    return { success: true, tokenId, txHash: res.txHash || null };
+  } catch (err) {
+    console.error("[Relayer] Release shipping failed:", err);
+    return { success: false, error: err.message || "Failed to release shipping escrow" };
+  }
+}
+
+/**
+ * Buyer disputes a dispatched shipment on-chain (must be before the safety
+ * window elapses; the contract enforces this). Mirrors DISPUTED locally.
+ */
+export async function relayDisputeShipping(tokenId) {
+  try {
+    tokenId = Number(tokenId);
+    const res = await submitEscrowCall(
+      buildDisputeShippingCall({ tokenId }),
+      `disputeShipping(${tokenId})`
+    );
+    if (!res.success) return { success: false, error: res.error || "Dispute failed" };
+
+    const order = await db.marketOrders.where({ orderType: "shipping", tokenId }).first();
+    if (order) await db.marketOrders.update(order.key, { status: 3 }); // DISPUTED
+    return { success: true, tokenId, txHash: res.txHash || null };
+  } catch (err) {
+    console.error("[Relayer] Dispute shipping failed:", err);
+    return { success: false, error: err.message || "Failed to dispute shipping" };
+  }
+}
+
+/**
+ * Curator resolves a disputed shipping order on-chain. refundBuyer=true refunds
+ * the buyer (returns token to seller); false releases funds to the seller.
+ * The contract restricts this to the curator; mirrors the outcome locally.
+ */
+export async function relayResolveShippingDispute(tokenId, refundBuyer) {
+  try {
+    tokenId = Number(tokenId);
+    const res = await submitEscrowCall(
+      buildResolveShippingDisputeCall({ tokenId, refundBuyer: !!refundBuyer }),
+      `resolveShippingDispute(${tokenId}, ${!!refundBuyer})`
+    );
+    if (!res.success) return { success: false, error: res.error || "Resolution failed" };
+
+    const order = await db.marketOrders.where({ orderType: "shipping", tokenId }).first();
+    if (order) {
+      await db.marketOrders.update(order.key, {
+        status: refundBuyer ? 4 : 2, // REFUNDED or RELEASED
+      });
+    }
+    return { success: true, tokenId, txHash: res.txHash || null };
+  } catch (err) {
+    console.error("[Relayer] Resolve dispute failed:", err);
+    return { success: false, error: err.message || "Failed to resolve shipping dispute" };
   }
 }
 
