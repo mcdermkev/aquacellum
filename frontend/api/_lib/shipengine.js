@@ -39,25 +39,54 @@ const EXPEDITED_SERVICE_MATCHERS = [
 // Services we explicitly refuse for livestock even if they match above.
 const GROUND_SERVICE_MATCHERS = ["ground", "parcel_select", "media_mail", "surepost", "smartpost"];
 
+// Hard cap on any single ShipEngine call so a slow/unresponsive endpoint can't
+// stall a serverless function until Vercel kills it (observed: the address
+// validation endpoint hangs/resets for accounts where it isn't enabled).
+const SHIPENGINE_TIMEOUT_MS = 12_000;
+
 /**
- * Low-level ShipEngine fetch. Throws on non-2xx with the parsed error body.
+ * Low-level ShipEngine fetch. Throws on non-2xx with the parsed error body, and
+ * aborts (throwing a tagged timeout error) if the call exceeds
+ * SHIPENGINE_TIMEOUT_MS so callers never hang indefinitely.
  * @param {string} path e.g. "/v1/rates"
- * @param {object} [options] { method, body }
+ * @param {object} [options] { method, body, timeoutMs }
  */
-async function shipengineFetch(path, { method = "GET", body } = {}) {
+async function shipengineFetch(path, { method = "GET", body, timeoutMs = SHIPENGINE_TIMEOUT_MS } = {}) {
   const apiKey = process.env.SHIPENGINE_API_KEY;
   if (!apiKey) {
     throw new Error("SHIPENGINE_API_KEY not configured");
   }
 
-  const res = await fetch(`${SHIPENGINE_BASE}${path}`, {
-    method,
-    headers: {
-      "API-Key": apiKey,
-      "Content-Type": "application/json",
-    },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  let res;
+  try {
+    res = await fetch(`${SHIPENGINE_BASE}${path}`, {
+      method,
+      headers: {
+        "API-Key": apiKey,
+        "Content-Type": "application/json",
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    // AbortError (timeout) or a network-level failure (connection reset, which
+    // is how ShipEngine surfaces some plan-gated endpoints). Normalize both into
+    // a tagged, catchable error rather than a hang.
+    const timedOut = err.name === "AbortError";
+    const e = new Error(
+      timedOut
+        ? `ShipEngine ${method} ${path} timed out after ${timeoutMs}ms`
+        : `ShipEngine ${method} ${path} request failed: ${err.message}`
+    );
+    e.status = timedOut ? 504 : 502;
+    e.timedOut = timedOut;
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
 
   const text = await res.text();
   let data = null;
@@ -136,20 +165,44 @@ export function toPackages(parcel = {}) {
 }
 
 /**
- * Validate an address. Returns { status, normalized, messages }.
- * status ∈ 'verified' | 'unverified' | 'warning' | 'error'.
+ * Validate an address. Returns { status, normalized, messages, available }.
+ * status ∈ 'verified' | 'unverified' | 'warning' | 'error' | 'unavailable'.
+ *
+ * Best-effort by design: address validation is a plan-gated ShipEngine feature
+ * that can hang or reset the connection when it isn't enabled. Rather than throw
+ * (which would break a ship-from save or force callers into try/catch), we
+ * swallow timeouts and network-level failures into a soft { status:'unavailable',
+ * available:false } result. Genuine API errors (4xx with a body) still surface
+ * their message but never as an exception. Rates/labels don't depend on this —
+ * they pass validate_address:"no_validation".
  */
 export async function validateAddress(address) {
-  const data = await shipengineFetch("/v1/addresses/validate", {
-    method: "POST",
-    body: [toShipEngineAddress(address)],
-  });
-  const result = Array.isArray(data) ? data[0] : data;
-  return {
-    status: result?.status || "unverified",
-    normalized: result?.matched_address || null,
-    messages: result?.messages || [],
-  };
+  try {
+    const data = await shipengineFetch("/v1/addresses/validate", {
+      method: "POST",
+      body: [toShipEngineAddress(address)],
+    });
+    const result = Array.isArray(data) ? data[0] : data;
+    return {
+      status: result?.status || "unverified",
+      normalized: result?.matched_address || null,
+      messages: result?.messages || [],
+      available: true,
+    };
+  } catch (err) {
+    // Timeout / connection reset (feature not enabled) → soft-unavailable so the
+    // caller (e.g. ship-from save) proceeds without blocking.
+    if (err.timedOut || err.status === 502 || err.status === 504) {
+      return { status: "unavailable", normalized: null, messages: [], available: false };
+    }
+    // A real API error (bad address payload, auth, etc.): report it, don't throw.
+    return {
+      status: "error",
+      normalized: null,
+      messages: [{ message: err.message }],
+      available: true,
+    };
+  }
 }
 
 /**
