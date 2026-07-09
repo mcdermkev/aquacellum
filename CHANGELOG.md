@@ -4,6 +4,63 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [0.9.6] — 2026-07-09
+
+### 🔔 Retention System: Real Push Notifications, Email, and Analytics
+
+Fixed several silently-broken pieces of the notification stack (some had been failing on every run since deployment) and built out a full retention system on top: transactional/retention email via Resend, product analytics via PostHog, and a daily job that reaches out to at-risk and inactive users.
+
+#### 🐛 Critical Fixes (Production Bugs Found and Fixed)
+- **`app.settings.supabase_url` / `service_role_key` were never configured** — Every `pg_net`-backed Postgres trigger and `pg_cron` job that reads these settings (`orders` table → `order-notifications`, plus the `tide-lifecycle`, `reef-digest`, `breeder-summary`, `anti-gaming`, and `distribute-rewards` cron jobs) had been failing on **every single run** since they were created, confirmed via `cron.job_run_details` showing a 100% failure rate with `unrecognized configuration parameter`. Hosted Supabase doesn't allow `ALTER DATABASE ... SET` on custom GUCs, so the values were moved into **Supabase Vault** (`vault.create_secret`) and every trigger/cron job now reads from `vault.decrypted_secrets` instead. Verified live: all jobs now succeed, marketplace order notifications fire, and `breeder-summary` completed a real batch update on first successful run.
+- **`send-push` Edge Function never actually delivered push notifications** — Two separate bugs: VAPID JWT signing used an invalid `"raw"` key-import format (Web Crypto only supports `"raw"` for EC *public* keys, not private), and the encrypted payload was never attached to the outgoing request (it POSTed with `Content-Length: 0`). Rewrote the function with correct JWK-based VAPID signing and full RFC 8291 (`aes128gcm`) payload encryption (ECDH P-256 + HKDF-SHA256 + AES-128-GCM) using only Web Crypto — no `web-push` npm dependency (which doesn't work reliably under Deno). Verified end-to-end against Google's real FCM endpoint using a synthetic subscription.
+- **`echo-nudge` and `echo-personality-drift` Edge Functions were fully written but never deployed** — deployed both and scheduled via `pg_cron` (echo-nudge every 4 hours, personality-drift weekly).
+- **No UI ever called `subscribeToPush()`** — a complete push/email notification preferences panel (`SonarPreferences.jsx`) already existed but was only reachable from The Reef's inbox panel. Surfaced it directly in the main Settings tab (`DataPortabilityWidget.jsx`).
+
+#### New Features
+- **Resend email integration** — `_lib/resend.js` helper (raw REST, no SDK) with branded HTML templates: streak-risk nudge, inactivity win-back, and weekly digest fallback.
+- **Daily retention job** (`/api/retention`, Vercel Cron once/day) — finds streak-at-risk users (streak active, no action since yesterday) and inactive users at fixed 3/7/14-day touchpoints, and reaches out via both push and email. Respects a new `notification_preferences.retentionEmail` opt-out.
+- **PostHog product analytics** — client wrapper (`services/analytics.js`) tracking `signup`, `login`, `tank_created`, `xp_earned` (via the existing app-wide `aquadex_xp_added` event), `notification_opt_in`, and `marketplace_purchase` (both crypto and fiat paths — fiat captured server-side from the Stripe webhook since that flow redirects through a static page outside the React bundle).
+- **Email capture from Privy** — `AuthContext.jsx` now mirrors the user's Privy-linked email (`user.email.address` or `user.google.email`) onto `profiles.email` on login, so retention email actually has an address to send to.
+- **Auto-recovery from stale PWA shells** — `chunkErrorRecovery.js` detects "stale shell" failures (an already-installed PWA/desktop window serving a cached `app.html` that references a hashed JS chunk from a previous deployment, which 404s after a new deploy ships) and automatically unregisters the stale service worker and force-reloads. Wired into global error handlers plus both `ErrorBoundary` and `TabErrorBoundary`. `PwaManager` now also actively checks for service worker updates on window focus, tab visibility change, and every 30 minutes, instead of only relying on the browser's own update schedule.
+
+#### Schema
+- `profiles.email` column added (indexed), plus `notification_preferences` backfilled to a full default shape (per-category push toggles, quiet hours, email digest frequency, `retentionEmail`) for all existing rows and set as the column default for new ones.
+
+#### New Files
+| File | Purpose |
+|------|---------|
+| `frontend/api/_lib/resend.js` | Resend email helper + templates (streak-risk, win-back, weekly digest) |
+| `frontend/api/_lib/posthogServer.js` | Server-side PostHog capture (raw HTTP, no SDK) for the Stripe webhook path |
+| `frontend/api/retention.js` | Daily retention cron endpoint (push + email to streak-risk/inactive users) |
+| `frontend/src/services/analytics.js` | Client-side PostHog wrapper (init/identify/capture, no-ops if unconfigured) |
+| `frontend/src/utils/chunkErrorRecovery.js` | Detects and auto-recovers from stale-shell chunk load failures |
+| `supabase/migrations/20260709_fix_pg_net_vault_settings.sql` | Repoints the orders trigger + 5 cron jobs at Supabase Vault instead of the nonfunctional `app.settings.*` GUCs |
+| `supabase/migrations/20260709_schedule_echo_functions.sql` | Deploys/schedules `echo-nudge` (4hr) and `echo-personality-drift` (weekly) |
+| `supabase/migrations/20260709_profile_email_and_notification_defaults.sql` | Adds `profiles.email`; backfills `notification_preferences` defaults |
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `supabase/functions/send-push/index.ts` | Correct VAPID JWK import + full RFC 8291 payload encryption |
+| `frontend/api/stripe.js` | Fires `marketplace_purchase` PostHog event on fiat settlement |
+| `frontend/src/App.jsx` | Global `aquadex_xp_added` listener → `xp_earned` analytics event |
+| `frontend/src/main.jsx` | Initializes PostHog and installs chunk-error recovery at boot |
+| `frontend/src/contexts/AuthContext.jsx` | Email capture from Privy; PostHog identify/reset on login/logout |
+| `frontend/src/components/DataPortabilityWidget.jsx` | Surfaces `SonarPreferences` (push/email settings) in the main Settings tab |
+| `frontend/src/components/reef/SonarPreferences.jsx` | Fires `notification_opt_in` analytics event on push/email opt-in |
+| `frontend/src/services/relayer.js` | Fires `tank_created` and `marketplace_purchase` (crypto) analytics events |
+| `frontend/src/components/ErrorBoundary.jsx` / `TabErrorBoundary.jsx` | Auto-recover from stale-chunk errors instead of showing the fallback UI |
+| `frontend/src/components/PwaManager.jsx` | Actively polls for service worker updates (focus/visibility/30min interval) |
+| `frontend/vercel.json` | Added daily cron entry for `/api/retention` |
+| `frontend/package.json` | Added `posthog-js@1.399.1` (pinned) |
+| `.env.example`, `frontend/.env` | Added `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `APP_URL`, `VITE_POSTHOG_KEY`, `VITE_POSTHOG_HOST`, `CRON_SECRET` |
+
+#### Known Gaps (Deferred)
+- Static marketing pages (`index.html`, `marketplace.html`, etc. — separate Vite entries outside the React app bundle) are not instrumented with PostHog; only the `app.html` React app is.
+- Real end-to-end push delivery is unverified against a live user subscription (none existed before this session, since no UI ever called `subscribeToPush()`); the encryption/delivery pipeline itself was verified against Google's live FCM endpoint using a synthetic subscription.
+
+---
+
 ## [0.9.5] — 2026-07-07
 
 ### 🧬 Functional Lineage + On-Chain Reconciliation Readiness

@@ -145,7 +145,10 @@ export function SonarPreferences({ onClose }) {
   return (
     <section className="sonar-prefs" aria-label="Notification Preferences">
       <header className="sonar-prefs__header">
-        <h2>🔔 Notification Preferences</h2>
+        <div>
+          <h2>🔔 Notification Preferences</h2>
+          <p className="sonar-prefs__subtitle">Choose what The Reef sends your way, and how.</p>
+        </div>
         {onClose && (
           <button className="btn btn--ghost" onClick={onClose} aria-label="Close">✕</button>
         )}
@@ -164,17 +167,18 @@ export function SonarPreferences({ onClose }) {
               </div>
             </div>
             <div className="sonar-prefs__category-controls">
-              <label className="toggle-label">
+              <label className="toggle-switch">
                 <input
                   type="checkbox"
                   checked={prefs.categories[cat.key]?.enabled ?? true}
                   onChange={(e) => updateCategory(cat.key, "enabled", e.target.checked)}
                   aria-label={`Enable ${cat.label} notifications`}
                 />
-                <span>In-app</span>
+                <span className="toggle-switch__track"><span className="toggle-switch__thumb" /></span>
+                <span className="toggle-switch__label">In-app</span>
               </label>
               {pushSupported && (
-                <label className="toggle-label">
+                <label className="toggle-switch">
                   <input
                     type="checkbox"
                     checked={prefs.categories[cat.key]?.push ?? false}
@@ -187,7 +191,8 @@ export function SonarPreferences({ onClose }) {
                     disabled={!prefs.categories[cat.key]?.enabled}
                     aria-label={`Enable ${cat.label} push notifications`}
                   />
-                  <span>Push</span>
+                  <span className="toggle-switch__track"><span className="toggle-switch__thumb" /></span>
+                  <span className="toggle-switch__label">Push</span>
                 </label>
               )}
             </div>
@@ -198,13 +203,14 @@ export function SonarPreferences({ onClose }) {
       {/* Quiet Hours */}
       <div className="sonar-prefs__quiet-hours">
         <h3>Quiet Hours</h3>
-        <label className="toggle-label">
+        <label className="toggle-switch toggle-switch--wide">
           <input
             type="checkbox"
             checked={prefs.quietHours.enabled}
             onChange={(e) => updateQuietHours("enabled", e.target.checked)}
           />
-          <span>Enable quiet hours (no push notifications during this time)</span>
+          <span className="toggle-switch__track"><span className="toggle-switch__thumb" /></span>
+          <span className="toggle-switch__label">Enable quiet hours (no push notifications during this time)</span>
         </label>
         {prefs.quietHours.enabled && (
           <div className="sonar-prefs__quiet-times">
@@ -232,9 +238,12 @@ export function SonarPreferences({ onClose }) {
       <div className="sonar-prefs__email">
         <h3>Email Digest</h3>
         <p className="text-muted text-sm">Poseidon curates a summary of what you missed.</p>
-        <div className="sonar-prefs__email-options">
+        <div className="sonar-prefs__email-options" role="radiogroup" aria-label="Email digest frequency">
           {["off", "daily", "weekly"].map((freq) => (
-            <label key={freq} className="radio-label">
+            <label
+              key={freq}
+              className={`sonar-pill${prefs.emailDigest === freq ? " sonar-pill--active" : ""}`}
+            >
               <input
                 type="radio"
                 name="emailDigest"
@@ -254,7 +263,7 @@ export function SonarPreferences({ onClose }) {
       {/* Save button */}
       <div className="sonar-prefs__actions">
         <button
-          className="btn btn--primary"
+          className={`sonar-prefs__save${saved ? " sonar-prefs__save--saved" : ""}`}
           onClick={handleSave}
           disabled={saving}
         >
