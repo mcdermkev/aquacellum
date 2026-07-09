@@ -46,16 +46,20 @@
           <div class="footer-col">
             <h4 class="footer-col-title">Platform</h4>
             <a href="/database.html">Species Database</a>
-            <a href="/breeds.html">Breed Gallery</a>
             <a href="/marketplace.html">Marketplace</a>
+            <a href="/breeds.html">Breed Gallery</a>
+            <a href="/compare.html">Compare Species</a>
             <a href="/breeders.html">Find Breeders</a>
             <a href="/poseidon.html">Poseidon AI</a>
+            <a href="/app.html">Open the App</a>
           </div>
 
           <div class="footer-col">
             <h4 class="footer-col-title">Community</h4>
             <a href="/reef.html">The Reef</a>
+            <a href="/leaderboard.html">Leaderboard</a>
             <a href="/hobbyist.html">For Hobbyists</a>
+            <a href="/breeder.html">For Breeders</a>
             <a href="/how-it-works.html">How It Works</a>
             <a href="/about.html">About Us</a>
           </div>
@@ -67,6 +71,7 @@
             <a href="/about.html#roadmap">Roadmap</a>
             <a href="/about.html#conservation">Conservation</a>
             <a href="/developers.html">Developer API</a>
+            <a href="/legal.html">Legal</a>
           </div>
         </div>
 
