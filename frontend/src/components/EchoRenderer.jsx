@@ -108,6 +108,175 @@ function getPatternOverlay(patternId, hue, size) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Deterministic seeded PRNG (0..1) — used so a given Echo's swim rhythm and
+// accent placement stay stable across renders instead of re-randomizing.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function seededRandom(seed, index) {
+  const x = Math.sin((seed || 1) * 12.9898 + index * 78.233) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Body shape → silhouette transform (bodyShape trait, 0–7)
+//
+// We don't have per-shape art, so body shape is expressed as a subtle
+// stretch/skew of the existing silhouette. Keeps every Echo's proportions
+// personally distinct without requiring new art assets.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function getBodyShapeTransform(bodyShape) {
+  switch (bodyShape) {
+    case 0: return "scale(0.95, 1.06)"; // sleek
+    case 1: return "scale(1.07, 0.94)"; // round
+    case 2: return "skewY(-2.5deg) scale(1.02, 0.98)"; // angular
+    case 3: return "scale(1.08, 1)"; // flowing
+    case 4: return "scale(0.9, 1.14)"; // eel-like
+    case 5: return "scale(1.1, 1.08)"; // puffer
+    case 6: return "skewX(2deg) scale(1.03, 1)"; // ray-finned
+    case 7: return "rotate(-3deg) scale(1, 1.08)"; // seahorse
+    default: return "none";
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fin style accent overlay (finStyle trait, 0–9)
+//
+// Placed near the lower-trailing region of the frame as a generic
+// approximation of a tail/fin area — the source art has no documented
+// per-stage anatomy coordinates, so this is an accent, not a precise
+// anatomical replacement.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function getFinAccent(finStyle, hue, size) {
+  const color = `hsla(${hue}, 75%, 75%, 0.4)`;
+  const soft = `hsla(${hue}, 80%, 85%, 0.22)`;
+  const cx = size * 0.52;
+  const cy = size * 0.76;
+
+  switch (finStyle) {
+    case 0: // flowing veil
+      return `<path d="M${cx-12},${cy} Q${cx},${cy+26} ${cx+16},${cy+8} Q${cx+6},${cy+18} ${cx-4},${cy+12} Q${cx-10},${cy+6} ${cx-12},${cy}Z" fill="${color}"/>`;
+    case 1: // spiky
+      return Array.from({ length: 4 }, (_, i) => {
+        const x = cx - 12 + i * 8;
+        return `<path d="M${x},${cy} L${x+4},${cy+16} L${x+8},${cy}Z" fill="${color}"/>`;
+      }).join("");
+    case 2: // fan
+      return `<path d="M${cx},${cy} L${cx-16},${cy+14} L${cx-6},${cy+20} L${cx+2},${cy+16} L${cx+10},${cy+20} L${cx+16},${cy+12}Z" fill="${soft}"/>`;
+    case 3: // ribbon
+      return `<path d="M${cx-8},${cy} C${cx-14},${cy+10} ${cx-4},${cy+16} ${cx-10},${cy+26}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>`;
+    case 4: // split
+      return `<path d="M${cx},${cy} L${cx-10},${cy+22}" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+        <path d="M${cx},${cy} L${cx+10},${cy+22}" stroke="${color}" stroke-width="2" stroke-linecap="round"/>`;
+    case 5: // crown
+      return `<path d="M${cx-10},${cy+6} L${cx-6},${cy-6} L${cx-2},${cy+2} L${cx+2},${cy-8} L${cx+6},${cy+2} L${cx+10},${cy-6} L${cx+14},${cy+6}Z" fill="${color}"/>`;
+    case 6: // whisker
+      return `<path d="M${cx-14},${cy+4} Q${cx-22},${cy+2} ${cx-26},${cy-4}" fill="none" stroke="${soft}" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M${cx-14},${cy+10} Q${cx-22},${cy+12} ${cx-26},${cy+18}" fill="none" stroke="${soft}" stroke-width="1.5" stroke-linecap="round"/>`;
+    case 7: // sail
+      return `<path d="M${cx},${cy-10} Q${cx+16},${cy} ${cx},${cy+18} Q${cx-4},${cy+2} ${cx},${cy-10}Z" fill="${soft}"/>`;
+    case 8: // feather
+      return Array.from({ length: 3 }, (_, i) => {
+        const y = cy + i * 7;
+        return `<path d="M${cx},${y} Q${cx+14},${y+3} ${cx+4},${y+10}" fill="none" stroke="${color}" stroke-width="1.5"/>`;
+      }).join("");
+    case 9: // trident
+      return `<path d="M${cx-10},${cy} L${cx-10},${cy+16} M${cx},${cy} L${cx},${cy+20} M${cx+10},${cy} L${cx+10},${cy+16} M${cx-10},${cy} Q${cx},${cy+6} ${cx+10},${cy}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round"/>`;
+    default:
+      return "";
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Signature mark accent (signatureMark trait, 0–19)
+//
+// Small unique accent placed near the head/forehead region. 2 of the 20
+// values are treated as "rare" per spec (10% rare chance) and get an
+// extra glow ring.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function getSignatureMarkAccent(signatureMark, hue, size) {
+  const isRare = signatureMark === 0 || signatureMark === 10;
+  const color = isRare ? `hsla(${hue}, 90%, 88%, 0.7)` : `hsla(${hue}, 75%, 80%, 0.45)`;
+  const x = size * 0.4;
+  const y = size * 0.3;
+  const shapeIndex = signatureMark % 5;
+
+  const shape = (() => {
+    switch (shapeIndex) {
+      case 0: // star forehead
+        return `<path d="M${x},${y-6} L${x+2},${y-1} L${x+7},${y-1} L${x+3},${y+2} L${x+4},${y+7} L${x},${y+4} L${x-4},${y+7} L${x-3},${y+2} L${x-7},${y-1} L${x-2},${y-1}Z" fill="${color}"/>`;
+      case 1: // tail ring
+        return `<circle cx="${x}" cy="${y}" r="5" fill="none" stroke="${color}" stroke-width="1.8"/>`;
+      case 2: // cheek dots
+        return `<circle cx="${x-4}" cy="${y}" r="1.6" fill="${color}"/><circle cx="${x+2}" cy="${y+3}" r="1.6" fill="${color}"/><circle cx="${x+6}" cy="${y-2}" r="1.6" fill="${color}"/>`;
+      case 3: // glowing barbel
+        return `<path d="M${x},${y} Q${x-6},${y+8} ${x-10},${y+16}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>`;
+      default: // crescent mark
+        return `<path d="M${x-5},${y-5} A7,7 0 1 0 ${x-5},${y+5}" fill="none" stroke="${color}" stroke-width="1.8"/>`;
+    }
+  })();
+
+  const rareGlow = isRare
+    ? `<circle cx="${x}" cy="${y}" r="10" fill="none" stroke="${color}" stroke-width="0.8" opacity="0.5"/>`
+    : "";
+
+  return `${rareGlow}${shape}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Eye type shimmer (eyeType trait, 0–5)
+//
+// Exact eye pixel coordinates aren't mapped per stage in the source art,
+// so instead of guessing a literal eye overlay (risking visible misalignment),
+// eyeType drives a subtle head-area glint style — color + rhythm — layered
+// generically in the upper-head region.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function getEyeShimmerStyle(eyeType, hue) {
+  const variants = [
+    { color: `hsla(${hue}, 60%, 90%, 0.55)`, duration: 2.6 }, // round
+    { color: `hsla(${hue + 20}, 70%, 88%, 0.5)`, duration: 3.2 }, // almond
+    { color: `hsla(${(hue + 180) % 360}, 80%, 85%, 0.6)`, duration: 2.2 }, // galaxy
+    { color: `hsla(${hue}, 90%, 92%, 0.65)`, duration: 1.8 }, // gem
+    { color: `hsla(${hue - 30}, 50%, 75%, 0.4)`, duration: 3.6 }, // ancient
+    { color: `hsla(20, 90%, 70%, 0.6)`, duration: 2.0 }, // ember
+  ];
+  return variants[eyeType % variants.length] || variants[0];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Wander motion — deterministic per-Echo swim path (drift + tilt), replaces
+// the plain vertical bob so each Echo has its own personal swim rhythm.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function getWanderStyle(seed, size, stage) {
+  const amp = Math.max(4, size * 0.05);
+  const ampY = Math.max(3, size * 0.03);
+  const rotAmp = 4 + seededRandom(seed, 1) * 4;
+  const speedFactor = stage < 3 ? 1.3 : stage >= 5 ? 0.85 : 1; // younger stages drift faster/twitchier
+  const duration = (5 + seededRandom(seed, 2) * 3) * speedFactor;
+
+  const pick = (i, range) => (seededRandom(seed, i) - 0.5) * 2 * range;
+
+  return {
+    vars: {
+      "--wx1": `${pick(3, amp)}px`,
+      "--wy1": `${pick(4, ampY)}px`,
+      "--wr1": `${pick(5, rotAmp)}deg`,
+      "--wx2": `${pick(6, amp)}px`,
+      "--wy2": `${pick(7, ampY)}px`,
+      "--wr2": `${pick(8, rotAmp)}deg`,
+      "--wx3": `${pick(9, amp)}px`,
+      "--wy3": `${pick(10, ampY)}px`,
+      "--wr3": `${pick(11, rotAmp)}deg`,
+    },
+    duration,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Personality visual modifiers
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -171,7 +340,7 @@ export function EchoRenderer({
   const visuals = useMemo(() => {
     if (!dna) return null;
 
-    const { baseHue, secondaryHue, pattern, signatureMark } = dna;
+    const { seed, baseHue, secondaryHue, pattern, bodyShape, finStyle, eyeType, signatureMark } = dna;
     const personalityFx = getPersonalityEffects(personality);
     const needsFx = getNeedsBrightness(needs);
 
@@ -196,9 +365,13 @@ export function EchoRenderer({
       particleColor1,
       particleColor2,
       pattern,
+      bodyShape,
+      finStyle,
+      eyeType,
       signatureMark,
       baseHue,
       secondaryHue,
+      seed,
     };
   }, [dna, personality, needs]);
 
@@ -213,7 +386,7 @@ export function EchoRenderer({
   const {
     hueRotateDeg, saturation, brightness, needsSaturation,
     glowColor, glowBoost, particleColor1, particleColor2,
-    pattern, baseHue, secondaryHue,
+    pattern, bodyShape, finStyle, eyeType, signatureMark, baseHue, secondaryHue, seed,
   } = visuals;
 
   // Stage-specific effects
@@ -243,10 +416,18 @@ export function EchoRenderer({
     glowIntensity > 0 ? `drop-shadow(0 0 ${Math.round(6 + glowIntensity * 10)}px ${glowColor})` : "",
   ].filter(Boolean).join(" ");
 
-  // Animation
+  // Wander motion — deterministic per-Echo drift/tilt path (replaces plain bob)
+  const wander = getWanderStyle(seed, size, stage);
   const animationStyle = animated ? {
-    animation: `echo-float ${stage < 3 ? "4s" : "3.5s"} ease-in-out infinite`,
+    animation: `echo-wander ${wander.duration.toFixed(2)}s ease-in-out infinite`,
+    ...wander.vars,
   } : {};
+
+  // Body shape silhouette transform — applied to the image itself so it
+  // composes with (rather than fights) the wander animation on the wrapper
+  const bodyShapeTransform = getBodyShapeTransform(bodyShape);
+
+  const eyeShimmer = getEyeShimmerStyle(eyeType, baseHue);
 
   // Aura animation (elder/legendary)
   const auraStyle = auraSize > 0 ? {
@@ -288,13 +469,33 @@ export function EchoRenderer({
           opacity: stageOpacity,
           position: "relative",
           zIndex: 1,
+          transform: bodyShapeTransform,
           transition: "filter 0.5s ease, opacity 0.5s ease",
         }}
         draggable={false}
       />
 
-      {/* Pattern overlay (SVG on top of image) */}
-      {pattern !== 11 && stage > 0 && (
+      {/* Head-area eye shimmer (eyeType trait) */}
+      {stage > 0 && animated && (
+        <div
+          style={{
+            position: "absolute",
+            left: "42%",
+            top: "28%",
+            width: `${Math.max(4, size * 0.05)}px`,
+            height: `${Math.max(4, size * 0.05)}px`,
+            borderRadius: "50%",
+            background: eyeShimmer.color,
+            zIndex: 2,
+            pointerEvents: "none",
+            animation: `echo-eye-shimmer ${eyeShimmer.duration}s ease-in-out infinite`,
+            mixBlendMode: "screen",
+          }}
+        />
+      )}
+
+      {/* Pattern + fin-style + signature-mark overlay (SVG on top of image) */}
+      {stage > 0 && (
         <svg
           style={{
             position: "absolute",
@@ -308,7 +509,11 @@ export function EchoRenderer({
           }}
           viewBox={`0 0 ${size} ${size}`}
           dangerouslySetInnerHTML={{
-            __html: getPatternOverlay(pattern, baseHue, size),
+            __html: [
+              pattern !== 11 ? getPatternOverlay(pattern, baseHue, size) : "",
+              getFinAccent(finStyle, secondaryHue, size),
+              getSignatureMarkAccent(signatureMark, baseHue, size),
+            ].join(""),
           }}
         />
       )}
@@ -338,9 +543,16 @@ export function EchoRenderer({
 
       {/* Inline keyframes */}
       <style>{`
-        @keyframes echo-float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-${Math.max(3, size * 0.02)}px); }
+        @keyframes echo-wander {
+          0%   { transform: translate(0, 0) rotate(0deg); }
+          25%  { transform: translate(var(--wx1), var(--wy1)) rotate(var(--wr1)); }
+          50%  { transform: translate(var(--wx2), var(--wy2)) rotate(var(--wr2)); }
+          75%  { transform: translate(var(--wx3), var(--wy3)) rotate(var(--wr3)); }
+          100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        @keyframes echo-eye-shimmer {
+          0%, 100% { opacity: 0.3; transform: scale(0.9); }
+          50% { opacity: 0.9; transform: scale(1.15); }
         }
         @keyframes echo-aura-pulse {
           0%, 100% { opacity: 0.5; transform: scale(1); }
