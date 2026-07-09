@@ -160,7 +160,8 @@ export default defineConfig({
         breeders: resolve(__dirname, 'breeders.html'),     // Local breeder map
         breeds: resolve(__dirname, 'breeds.html'),          // Breed gallery / lineage registry
         poseidon: resolve(__dirname, 'poseidon.html'),       // Poseidon AI assistant
-        leaderboard: resolve(__dirname, 'leaderboard.html')  // Zone leaderboard
+        leaderboard: resolve(__dirname, 'leaderboard.html'),  // Zone leaderboard
+        developers: resolve(__dirname, 'developers.html')    // Public Species API docs
       }
     }
   },

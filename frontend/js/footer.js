@@ -66,6 +66,7 @@
             <a href="/how-it-works.html#escrow">Escrow Guide</a>
             <a href="/about.html#roadmap">Roadmap</a>
             <a href="/about.html#conservation">Conservation</a>
+            <a href="/developers.html">Developer API</a>
           </div>
         </div>
 

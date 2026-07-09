@@ -21,6 +21,7 @@
   const SECONDARY_LINKS = [
     { href: '/how-it-works.html', label: 'How It Works' },
     { href: '/hobbyist.html', label: 'For Hobbyists' },
+    { href: '/developers.html', label: 'Developers / API' },
     { href: '/about.html', label: 'About' },
   ];
 

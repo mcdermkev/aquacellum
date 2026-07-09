@@ -69,6 +69,25 @@
       letter-spacing: 0.08em;
       font-weight: 600;
     }
+    .db-api-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 24px;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--cyan-300);
+      background: rgba(34,211,238,0.06);
+      border: 1px solid rgba(34,211,238,0.2);
+      transition: var(--transition);
+    }
+    .db-api-badge:hover {
+      background: rgba(34,211,238,0.12);
+      border-color: rgba(34,211,238,0.35);
+      transform: translateY(-1px);
+    }
 
     /* =========================================
        FILTERS & SEARCH
@@ -935,6 +954,11 @@
           <div class="db-stat-label">FishBase Validated</div>
         </div>
       </div>
+
+      <a href="/developers.html" class="db-api-badge">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 16.98h-5.99c-1.1 0-1.95.94-2.48 1.9A2.5 2.5 0 0 1 7 20.5"/><path d="M7 3.5a2.5 2.5 0 0 1 2.5 2.5v.5"/><path d="M17 7l3 3-3 3M7 7 4 10l3 3"/></svg>
+        This data also powers a free public API — build with it →
+      </a>
     </div>
   </section>
 
