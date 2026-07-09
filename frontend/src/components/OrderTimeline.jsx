@@ -90,7 +90,27 @@ function buildSteps(order, casual) {
     // Set the "current" marker to the first non-done step.
     const steps = [placed, shipped, arrivedStep, confirmed];
     markCurrent(steps);
-    return { steps, note: null };
+
+    // While in transit (dispatched, not yet confirmed), surface the 3-day
+    // buyer-protection safety window so both parties know what happens next:
+    // the buyer can confirm anytime to release now, otherwise funds auto-release
+    // when the window elapses. Mirrors the contract's SHIPPING_SAFETY_WINDOW.
+    let liveNote = null;
+    if (s === 1 && dispatched) {
+      const SAFETY_WINDOW_SECS = 3 * 24 * 60 * 60;
+      const remainDays = Math.ceil((dispatched + SAFETY_WINDOW_SECS - Date.now() / 1000) / 86400);
+      if (remainDays > 0) {
+        const d = `${remainDays} day${remainDays === 1 ? "" : "s"}`;
+        liveNote = casual
+          ? `🛡️ Confirm arrival anytime to release payment to the breeder. If all stays quiet, it auto-releases in about ${d}.`
+          : `🛡️ 3-day safety window active. Buyer can confirm to release now; otherwise funds auto-release in ~${d}. Report a problem to hold them.`;
+      } else {
+        liveNote = casual
+          ? "🛡️ The safe-arrival window has passed — payment can now release to the breeder."
+          : "🛡️ Safety window elapsed — funds are eligible for release to the seller.";
+      }
+    }
+    return { steps, note: liveNote };
   }
 
   if (isBatch) {

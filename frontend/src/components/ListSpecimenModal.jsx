@@ -5,6 +5,7 @@ import marketplaceAbi from "../abi/AquadexMarketplace.json";
 import { addXp, XP_ACTIONS } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
 import { relayCreateListing } from "../services/relayer";
+import { checkSellerStatus, startSellerOnboarding } from "../services/stripePayments";
 import { db } from "../db";
 import { Modal } from "./Modal";
 import { loadSpeciesCareLookup, deriveCareFields } from "../utils/speciesCarePrefill";
@@ -41,6 +42,12 @@ export function ListSpecimenModal({
   const [txHash, setTxHash] = useState(null);
   const [error, setError] = useState(null);
   const [specimenInfo, setSpecimenInfo] = useState(null);
+
+  // Seller payout (Stripe Connect) readiness. Buyers can't complete checkout for
+  // a seller who hasn't finished onboarding, so we surface it before listing.
+  // null = unknown/not yet checked, true/false once resolved.
+  const [sellerPayoutReady, setSellerPayoutReady] = useState(null);
+  const [onboardingPayout, setOnboardingPayout] = useState(false);
 
   // Enhanced listing fields
   const [description, setDescription] = useState("");
@@ -90,8 +97,42 @@ export function ListSpecimenModal({
       setDoaGuarantee(true);
       setPhotoFile(null);
       setPhotoPreview(null);
+      setSellerPayoutReady(null);
+      setOnboardingPayout(false);
     }
   }, [isOpen]);
+
+  // Check the seller's Stripe payout readiness when the modal opens so we can
+  // nudge them to connect before a buyer hits a dead end at checkout.
+  useEffect(() => {
+    if (!isOpen || !walletAccount) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const status = await checkSellerStatus(walletAccount);
+        if (!cancelled) setSellerPayoutReady(!!(status.connected && status.onboardingComplete));
+      } catch {
+        if (!cancelled) setSellerPayoutReady(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen, walletAccount]);
+
+  const handleStartPayoutOnboarding = async () => {
+    setOnboardingPayout(true);
+    setError(null);
+    try {
+      const result = await startSellerOnboarding({ walletAddress: walletAccount });
+      if (result.success && result.onboardingUrl) {
+        window.location.href = result.onboardingUrl;
+      } else {
+        throw new Error(result.error || "Could not start payout setup");
+      }
+    } catch (err) {
+      setError(err.message || "Could not start payout setup");
+      setOnboardingPayout(false);
+    }
+  };
 
   const handlePhotoSelect = (e) => {
     const file = e.target.files?.[0];
@@ -976,6 +1017,33 @@ export function ListSpecimenModal({
                       </div>
                     );
                   })()}
+
+                  {/* Payout readiness nudge — sellers must connect Stripe to be paid */}
+                  {sellerPayoutReady === false && (
+                    <div style={{ padding: "0.85rem 1rem", borderRadius: "8px", background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.3)", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <span style={{ fontSize: "1.1rem" }}>💳</span>
+                        <strong style={{ color: "#fbbf24", fontSize: "0.82rem" }}>Connect payouts to get paid</strong>
+                      </div>
+                      <p style={{ margin: 0, fontSize: "0.72rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                        You can list now, but buyers can't complete checkout until your payout account is set up. It only takes a couple of minutes.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleStartPayoutOnboarding}
+                        disabled={onboardingPayout}
+                        className="btn-secondary"
+                        style={{ alignSelf: "flex-start", fontSize: "0.72rem", padding: "0.4rem 0.9rem", borderColor: "rgba(251,191,36,0.4)", color: "#fbbf24" }}
+                      >
+                        {onboardingPayout ? "Opening setup…" : "Set up payouts →"}
+                      </button>
+                    </div>
+                  )}
+                  {sellerPayoutReady === true && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.7rem", color: "#34d399" }}>
+                      <span>✅</span> Payouts connected — you're all set to get paid.
+                    </div>
+                  )}
 
                   <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.25rem" }}>
                     <button 

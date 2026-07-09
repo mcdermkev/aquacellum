@@ -17,6 +17,7 @@ import {
 import {
   purchaseShippingSpecimen,
   purchasePickupSpecimen,
+  purchaseBatch as stripePurchaseBatch,
   purchaseMultiple as stripePurchaseMultiple,
   releaseFiatOrder,
 } from "../services/stripePayments";
@@ -133,6 +134,9 @@ export function CheckoutSummary({
 
   // Consolidated Checkout Cart States
   const [pendingTokenIds, setPendingTokenIds] = useState([]);
+  // Payment-first batch checkout (fry batches). Holds { listingId, quantity }
+  // until the buyer confirms; nothing is consumed locally until Stripe settles.
+  const [pendingBatchCheckout, setPendingBatchCheckout] = useState(null);
   const [allActiveListings, setAllActiveListings] = useState([]);
   const [fishbaseLookup, setFishbaseLookup] = useState({});
   const [fishbaseData, setFishbaseData] = useState([]);
@@ -181,6 +185,10 @@ export function CheckoutSummary({
         if (match) {
           setSelectedOrder({ type: "batch", data: match });
         }
+      } else if (type === "pending_batch") {
+        // Payment-first fry-batch checkout — stage it, don't consume yet.
+        const qty = Number(preselectedOrderForCheckout?.meta?.quantity) || 1;
+        setPendingBatchCheckout({ listingId: Number(id), quantity: qty });
       }
       if (clearPreselectedOrder) {
         clearPreselectedOrder();
@@ -266,6 +274,45 @@ export function CheckoutSummary({
 
     const rawScore = (sVol / 100) * (sPh / 100) * (sTemp / 100) * 100;
     return Math.round(rawScore);
+  };
+
+  // Payment-first fry-batch checkout. Redirects to Stripe; the batch listing
+  // quantity is only decremented on-chain (purchaseBatchFiat) after payment, so
+  // abandoning here leaves the listing untouched. Price is re-verified
+  // server-side against the seller's listing before the charge.
+  const handleBatchCheckout = async () => {
+    if (!pendingBatchCheckout) return;
+    const listing = allActiveListings.find(
+      (l) => l.isBatch && Number(l.listingId ?? l.id) === Number(pendingBatchCheckout.listingId)
+    );
+    if (!listing) {
+      setActionError("This fry batch is no longer available. Please refresh and try again.");
+      return;
+    }
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      const perFishCents =
+        Number(listing.priceCentsUSD) ||
+        Number(listing.pricePerFishCents) ||
+        Math.round(parseFloat(listing.priceUsd ?? listing.price ?? "0") * 100);
+      const quantity = Math.max(1, Math.min(Number(listing.quantity) || 1, Number(pendingBatchCheckout.quantity) || 1));
+      const result = await stripePurchaseBatch({
+        listingId: Number(pendingBatchCheckout.listingId),
+        commonName: listing.commonName,
+        pricePerFishCents: perFishCents,
+        quantity,
+        imageUrl: listing.photoUrl || listing.imageUrl || undefined,
+        buyerWallet: walletAccount,
+        sellerWallet: listing.seller,
+      });
+      // On success this redirects to Stripe; we only reach here on failure.
+      if (!result.success) throw new Error(result.error || "Checkout failed");
+    } catch (err) {
+      console.error("Batch checkout failed:", err);
+      setActionError(mapContractError(err, casualModeActive));
+      setActionLoading(false);
+    }
   };
 
   const handleConsolidatedCheckout = async () => {
@@ -1034,6 +1081,97 @@ export function CheckoutSummary({
         </div>
       )}
 
+      {pendingBatchCheckout && (() => {
+        const listing = allActiveListings.find(
+          (l) => l.isBatch && Number(l.listingId ?? l.id) === Number(pendingBatchCheckout.listingId)
+        );
+        const available = Number(listing?.quantity) || 1;
+        const qty = Math.max(1, Math.min(available, Number(pendingBatchCheckout.quantity) || 1));
+        const perFish = listing ? parseFloat(listing.priceUsd ?? listing.price ?? 0) : 0;
+        const total = perFish * qty;
+        return (
+          <div
+            className="glass-card"
+            style={{
+              padding: "2rem",
+              marginBottom: "2rem",
+              border: "1px solid var(--accent-blue)",
+              background: "rgba(14, 20, 36, 0.45)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem", gap: "1rem" }}>
+              <div>
+                <h3 style={{ fontSize: "1.35rem", color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span>🐟</span> Confirm Fry Batch Purchase
+                </h3>
+                <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: "0.25rem 0 0 0" }}>
+                  {listing ? listing.commonName : "Fry batch"} from{" "}
+                  <span style={{ fontFamily: "monospace", color: "var(--accent-blue)" }}>
+                    <DisplayName address={listing?.seller} />
+                  </span>
+                </p>
+              </div>
+              <button
+                className="btn-secondary"
+                onClick={() => { setPendingBatchCheckout(null); setActionError(null); }}
+                style={{ border: "1px solid rgba(248,113,113,0.3)", color: "var(--accent-red)", padding: "0.4rem 1rem", fontSize: "0.75rem", flexShrink: 0 }}
+              >
+                Cancel
+              </button>
+            </div>
+
+            {actionError && (
+              <div style={{ padding: "0.75rem", background: "rgba(248, 113, 113, 0.1)", border: "1px solid rgba(248,113,113,0.3)", color: "var(--accent-red)", fontSize: "0.8rem", borderRadius: "4px", marginBottom: "1rem" }}>
+                {actionError}
+              </div>
+            )}
+
+            {!listing ? (
+              <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                This fry batch is no longer available. Please head back to the directory and refresh.
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "1.5rem", alignItems: "flex-end" }}>
+                <div style={{ flex: "1 1 260px", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <label style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>Quantity</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={available}
+                      value={qty}
+                      onChange={(e) => {
+                        const val = Math.max(1, Math.min(available, Number(e.target.value) || 1));
+                        setPendingBatchCheckout((prev) => (prev ? { ...prev, quantity: val } : prev));
+                      }}
+                      style={{ width: "70px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff", borderRadius: "4px", padding: "0.35rem 0.5rem", textAlign: "center", outline: "none", fontSize: "0.85rem" }}
+                    />
+                    <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{available} available</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+                    <span>${perFish.toFixed(2)} / fish × {qty}</span>
+                    <strong style={{ fontFamily: "monospace", color: "var(--accent-green)", fontSize: "1.05rem" }}>${total.toFixed(2)}</strong>
+                  </div>
+                  <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: 0, lineHeight: 1.5 }}>
+                    🛡️ Your payment is held securely and only released to the breeder after you confirm the fry arrive safely. Nothing is reserved until you complete checkout.
+                  </p>
+                </div>
+                <div style={{ flex: "0 0 auto", width: "220px" }}>
+                  <button
+                    className="btn-primary"
+                    disabled={actionLoading || !walletAccount}
+                    onClick={handleBatchCheckout}
+                    style={{ width: "100%", justifyContent: "center" }}
+                  >
+                    {actionLoading ? "Processing checkout..." : `Complete Purchase · $${total.toFixed(2)}`}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {pendingTokenIds.length > 0 && (
         <div 
           className="glass-card" 
@@ -1314,22 +1452,20 @@ export function CheckoutSummary({
                 >
                   {actionLoading ? "Processing checkout..." : isCashHandshake && (insideEventZone === true || !!currentEventId) ? "Generate Cash Handshake QR" : "Complete Checkout (Consolidated)"}
                 </button>
-                {casualModeActive && (
-                  <div style={{
-                    marginTop: "1rem",
-                    padding: "1rem",
-                    background: "rgba(255, 255, 255, 0.03)",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    borderRadius: "8px"
-                  }}>
-                    <h5 style={{ color: "#fff", margin: "0 0 0.5rem 0", fontSize: "0.85rem" }}>What happens next?</h5>
-                    <ul style={{ margin: 0, paddingLeft: "1.2rem", color: "var(--text-muted)", fontSize: "0.75rem", lineHeight: "1.5" }}>
-                      <li>The breeder is notified and begins preparing your fish.</li>
-                      <li>Your payment is held securely until delivery is confirmed.</li>
-                      <li>Payment is only released when your fish arrives safely or you pick it up!</li>
-                    </ul>
-                  </div>
-                )}
+                <div style={{
+                  marginTop: "1rem",
+                  padding: "1rem",
+                  background: "rgba(255, 255, 255, 0.03)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  borderRadius: "8px"
+                }}>
+                  <h5 style={{ color: "#fff", margin: "0 0 0.5rem 0", fontSize: "0.85rem" }}>🛡️ What happens next?</h5>
+                  <ul style={{ margin: 0, paddingLeft: "1.2rem", color: "var(--text-muted)", fontSize: "0.75rem", lineHeight: "1.5" }}>
+                    <li>{casualModeActive ? "The breeder is notified and begins preparing your fish." : "The seller is notified and prepares your specimen(s) for dispatch."}</li>
+                    <li>Your payment is held securely in escrow until delivery is confirmed.</li>
+                    <li>{casualModeActive ? "Payment is only released when your fish arrives safely or you pick it up!" : "Funds release only when you confirm safe arrival or complete the pickup handshake — with a 3-day safety window on shipments."}</li>
+                  </ul>
+                </div>
               </div>
 
               {/* Cash Handshake QR Code Modal */}
@@ -1375,7 +1511,7 @@ export function CheckoutSummary({
                         <div>Buyer: <span style={{ fontFamily: "monospace", fontSize: "0.7rem" }}><DisplayName address={cashHandshakePayload.buyer} /></span></div>
                         <div>Seller: <span style={{ fontFamily: "monospace", fontSize: "0.7rem" }}><DisplayName address={cashHandshakePayload.seller} /></span></div>
                         <div>Specimens: <strong>{cashHandshakePayload.tokenIds.length}</strong></div>
-                        <div>Total Price: <strong>${(cashHandshakePayload.totalCost * 1000).toFixed(2)}</strong></div>
+                        <div>Total Price: <strong>${Number(cashHandshakePayload.totalCost || 0).toFixed(2)}</strong></div>
                         <div>Event ID: <strong>{cashHandshakePayload.eventId}</strong></div>
                       </div>
                     </div>
@@ -1427,7 +1563,7 @@ export function CheckoutSummary({
                           </span>
                         </div>
                         <span style={{ fontFamily: "monospace", fontSize: "0.75rem", color: "var(--accent-green)", flexShrink: 0 }}>
-                          +${(parseFloat(addon.price) * 1000).toFixed(2)}
+                          +${parseFloat(addon.priceUsd ?? addon.price ?? 0).toFixed(2)}
                         </span>
                       </div>
                     ))}
@@ -1653,15 +1789,15 @@ export function CheckoutSummary({
 
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem" }}>
               <span>Subtotal:</span>
-              <strong style={{ fontFamily: "monospace" }}>${(parseFloat(order.price) * 1000).toFixed(2)}</strong>
+              <strong style={{ fontFamily: "monospace" }}>${parseFloat(order.price || 0).toFixed(2)}</strong>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem" }}>
               <span>Shipping Fee:</span>
-              <strong style={{ fontFamily: "monospace" }}>${(parseFloat(order.shippingFee) * 1000).toFixed(2)}</strong>
+              <strong style={{ fontFamily: "monospace" }}>${parseFloat(order.shippingFee || 0).toFixed(2)}</strong>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "0.25rem" }}>
               <span>Total Protected:</span>
-              <strong style={{ fontFamily: "monospace", color: "var(--accent-green)" }}>${(parseFloat(order.amountLocked) * 1000).toFixed(2)}</strong>
+              <strong style={{ fontFamily: "monospace", color: "var(--accent-green)" }}>${parseFloat(order.amountLocked || 0).toFixed(2)}</strong>
             </div>
 
             {/* Visual Shipping Progress Stepper */}

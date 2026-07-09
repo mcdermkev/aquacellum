@@ -67,6 +67,11 @@ const MARKETPLACE_ABI = [
   // by the ShipEngine label-purchase flow once a real label + tracking number
   // is bought in-app (see handleShipLabel).
   "function dispatchShipping(uint256 tokenId, string trackingNumber)",
+  // Public listing getters — authoritative price source for server-side
+  // checkout validation (price is stored as USD cents in v2). Used as a
+  // fallback when the cloud aquadex_listings row is unavailable.
+  "function listings(uint256) view returns (uint256 tokenId, address seller, uint256 price, uint256 shippingFee, bool active, bool isShipping)",
+  "function batchListings(uint256) view returns (uint256 listingId, uint256 spawnId, uint256 quantity, uint256 pricePerFish, address seller, bool isActive)",
 ];
 
 /**
@@ -1809,6 +1814,72 @@ export default async function handler(req, res) {
 // centrally on ShipEngine); the seller receives 96% of the goods price.
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Resolve the AUTHORITATIVE goods price (USD cents) for a listing, server-side.
+ *
+ * SECURITY: never trust the client-supplied priceCentsUSD in the checkout
+ * request — a tampered request could otherwise buy a specimen for a penny. The
+ * seller's own listing price is the source of truth. We read it from the synced
+ * aquadex_listings row (data blob), falling back to the on-chain listing getter
+ * (v2 stores price as USD cents). Returns null if the price can't be verified,
+ * in which case checkout is rejected (fail-closed).
+ *
+ * @param {{ id: string|number, isBatch?: boolean }} ref
+ * @returns {Promise<{ goodsCents:number, sellerAddress:(string|null), active:boolean }|null>}
+ */
+async function resolveAuthoritativeListing({ id, isBatch = false }) {
+  const lookupId = String(id);
+
+  // 1. Cloud source of truth — aquadex_listings.data holds the full listing.
+  try {
+    const { data: row } = await supabase
+      .from("aquadex_listings")
+      .select("data, seller_address, is_active")
+      .eq("id", lookupId)
+      .maybeSingle();
+    if (row) {
+      let parsed = {};
+      try {
+        parsed = typeof row.data === "string" ? JSON.parse(row.data) : (row.data || {});
+      } catch { /* fall through to on-chain */ }
+      const goodsCents =
+        Number(parsed.priceCentsUSD) ||
+        Math.round(parseFloat(parsed.priceUsd ?? parsed.price ?? "0") * 100);
+      if (goodsCents > 0) {
+        return {
+          goodsCents,
+          sellerAddress: (row.seller_address || parsed.seller || "").toLowerCase() || null,
+          active: row.is_active !== false,
+        };
+      }
+    }
+  } catch (e) {
+    console.warn("[Checkout] Supabase price lookup failed:", e.message);
+  }
+
+  // 2. On-chain fallback (price stored as USD cents in v2).
+  try {
+    const marketplace = getMarketplaceContract();
+    if (isBatch) {
+      const b = await marketplace.batchListings(Number(id));
+      const cents = Number(b.pricePerFish.toString());
+      if (cents > 0) {
+        return { goodsCents: cents, sellerAddress: (b.seller || "").toLowerCase() || null, active: !!b.isActive };
+      }
+    } else {
+      const l = await marketplace.listings(Number(id));
+      const cents = Number(l.price.toString());
+      if (cents > 0) {
+        return { goodsCents: cents, sellerAddress: (l.seller || "").toLowerCase() || null, active: !!l.active };
+      }
+    }
+  } catch (e) {
+    console.warn("[Checkout] On-chain price lookup failed:", e.message);
+  }
+
+  return null;
+}
+
 // Platform fee: 4% of the goods price (matches on-chain TOTAL_FEE_BPS = 400).
 const PLATFORM_FEE_PERCENT = 4;
 // Buyer-paid Stripe processing fee (grossed up so the platform nets goods+shipping).
@@ -1887,6 +1958,42 @@ async function handleCreateCheckout(req, res) {
         error: "Seller has not completed Stripe onboarding",
         code: "SELLER_ONBOARDING_INCOMPLETE",
       });
+    }
+
+    // ─── SECURITY: resolve authoritative goods prices server-side ──────────
+    // Never trust the client-supplied price. Overwrite each item's price with
+    // the seller's stored listing price (cloud → on-chain fallback) so a
+    // tampered request can't buy a specimen for a penny. Fail closed: if a
+    // price can't be verified, reject rather than charge an unverified amount.
+    for (const item of items) {
+      const isBatchItem = purchaseType === "batch";
+      const refId = isBatchItem ? item.listingId : item.tokenId;
+      if (refId == null) {
+        return res.status(400).json({
+          error: "Missing listing reference. Please refresh and try again.",
+          code: "PRICE_VERIFICATION_FAILED",
+        });
+      }
+      const authoritative = await resolveAuthoritativeListing({ id: refId, isBatch: isBatchItem });
+      if (!authoritative || !(authoritative.goodsCents > 0)) {
+        return res.status(400).json({
+          error: "Could not verify the listing price. Please refresh and try again.",
+          code: "PRICE_VERIFICATION_FAILED",
+        });
+      }
+      // Seller must match the listing's seller so the payout routes correctly.
+      if (authoritative.sellerAddress && authoritative.sellerAddress !== sellerWallet.toLowerCase()) {
+        return res.status(400).json({
+          error: "This listing's seller has changed. Please refresh and try again.",
+          code: "SELLER_MISMATCH",
+        });
+      }
+      // Overwrite the client-supplied price with the verified authoritative one.
+      if (isBatchItem) {
+        item.pricePerFishCents = authoritative.goodsCents;
+      } else {
+        item.priceCentsUSD = authoritative.goodsCents;
+      }
     }
 
     // ─── Build line items based on purchase type ───────────────────────────

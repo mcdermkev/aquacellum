@@ -10,7 +10,7 @@ import { BatchListingWizard } from "./BatchListingWizard";
 import { OfferModal } from "./OfferModal";
 import { addXp, XP_ACTIONS } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
-import { relayPurchaseSpecimen, relayPurchaseBatch, relayCancelListing, relayCancelBatchListing } from "../services/relayer";
+import { relayCancelListing, relayCancelBatchListing } from "../services/relayer";
 import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";
 import { fetchListingsByBreed } from "../utils/listingManager";
 import { useSpeciesSearch } from "../hooks/useSpeciesSearch";
@@ -258,78 +258,14 @@ export function MarketplaceBoard({
     await refetchListings();
   };
 
-  const handleClaimExchange = async (tokenId, priceEther, isShipping, shippingFeeEther) => {
-    setActionError(null);
-    setActionLoading((prev) => ({ ...prev, [tokenId]: true }));
-    setActionTxHash((prev) => ({ ...prev, [tokenId]: null }));
-
-    try {
-      const listing = listings.find(l => Number(l.tokenId) === Number(tokenId)) || {};
-
-      // Beta: purchase locally (no MetaMask, no gas)
-      const result = await relayPurchaseSpecimen({
-        tokenId,
-        buyer: walletAccount,
-        seller: listing.seller || "",
-        priceEth: priceEther,
-        shippingFeeEth: shippingFeeEther || "0",
-        isShipping,
-        commonName: listing.commonName || "Specimen",
-      });
-      if (!result.success) throw new Error(result.error || "Purchase failed");
-
-      // Trigger XP Telemetry & Toast
-      addXp(XP_ACTIONS.CLAIM_EXCHANGE?.points, XP_ACTIONS.CLAIM_EXCHANGE?.label);
-
-      // Route to CheckoutSummary
-      if (onSelectCheckoutOrder) {
-        onSelectCheckoutOrder("shipping", tokenId);
-      } else {
-        await fetchListings();
-      }
-    } catch (err) {
-      console.error("Exchange failed:", err);
-      setActionError(mapContractError(err, casualModeActive));
-    } finally {
-      setActionLoading((prev) => ({ ...prev, [tokenId]: false }));
-      setActionTxHash((prev) => ({ ...prev, [tokenId]: null }));
-    }
-  };
-
-  const handlePurchaseBatch = async (listingId, quantity, pricePerFishEther) => {
-    setActionError(null);
-    setActionLoading(prev => ({ ...prev, [`batch-${listingId}`]: true }));
-    setActionTxHash(prev => ({ ...prev, [`batch-${listingId}`]: null }));
-    
-    try {
-      const listing = listings.find(l => Number(l.listingId || l.id) === Number(listingId)) || {};
-
-      // Beta: purchase batch locally (no MetaMask, no gas)
-      const result = await relayPurchaseBatch({
-        listingId,
-        quantity,
-        buyer: walletAccount,
-        seller: listing.seller || "",
-        pricePerFishEth: pricePerFishEther,
-        commonName: listing.commonName || "Juvenile Fry Batch",
-      });
-      if (!result.success) throw new Error(result.error || "Batch purchase failed");
-
-      addXp(XP_ACTIONS.CLAIM_EXCHANGE?.points, XP_ACTIONS.CLAIM_EXCHANGE?.label);
-
-      const purchaseId = result.purchaseId;
-      if (onSelectCheckoutOrder && purchaseId) {
-        onSelectCheckoutOrder("batch", purchaseId);
-      } else {
-        await fetchListings();
-      }
-    } catch (err) {
-      console.error("Batch purchase failed:", err);
-      setActionError(mapContractError(err, casualModeActive));
-    } finally {
-      setActionLoading(prev => ({ ...prev, [`batch-${listingId}`]: false }));
-      setActionTxHash(prev => ({ ...prev, [`batch-${listingId}`]: null }));
-    }
+  // Route a batch purchase into the checkout confirmation flow. Nothing is
+  // consumed here: the batch listing quantity is only decremented after the
+  // buyer completes payment (settled on-chain via purchaseBatchFiat in the
+  // Stripe webhook). This keeps the listing intact if checkout is abandoned,
+  // and mirrors the single-specimen "pending_purchase" path.
+  const handlePurchaseBatch = (listingId, quantity) => {
+    if (!onSelectCheckoutOrder) return;
+    onSelectCheckoutOrder("pending_batch", listingId, { quantity: Number(quantity) || 1 });
   };
 
   const handleCancelListing = async (tokenId) => {
@@ -1533,7 +1469,7 @@ export function MarketplaceBoard({
                                     <span className="badge badge-blue" style={{ fontSize: "0.6rem", padding: "0.15rem 0.5rem" }}>
                                       {item.commonName.toLowerCase().includes("discus") 
                                         ? "🚚 Secured Flat Rate Shipping" 
-                                        : `🚚 Shipping (+$${(parseFloat(item.shippingFee) * 1000).toFixed(2)})`}
+                                        : `🚚 Shipping (+$${parseFloat(item.shippingFee || 0).toFixed(2)})`}
                                     </span>
                                   ) : (
                                     <span className="badge badge-amber" style={{ fontSize: "0.6rem", padding: "0.15rem 0.5rem" }}>

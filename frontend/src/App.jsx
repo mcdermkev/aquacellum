@@ -595,8 +595,8 @@ export default function App() {
     goToTab("directory");
   };
 
-  const handleSelectCheckoutOrder = (type, id) => {
-    setPreselectedOrderForCheckout({ type, id });
+  const handleSelectCheckoutOrder = (type, id, meta = null) => {
+    setPreselectedOrderForCheckout({ type, id, meta });
     goToTab("orders");
   };
 

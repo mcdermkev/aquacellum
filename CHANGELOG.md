@@ -211,6 +211,7 @@ Redeployed the marketplace contract with `purchaseSpecimenFiat`, `purchaseShippi
 
 #### New Contract
 - **Address**: `0x9E9ca82766ce0B36c88aF1eDc093d4e01826BBBf` (Base Sepolia)
+  - **⚠️ Superseded (2026-07-08):** a later redeploy moved the marketplace to `0xEC4d21Aa32c6c378Ba43E6d9038e93A9702177BF`. The canonical, live address is always whatever `deployed-addresses-sepolia.json` reports — treat this historical entry as a record of the first fiat-enabled v2, not the current address.
 - **Old (deprecated)**: `0x16168B514144e0380610b78d904a4de51ba03Ca3`
 - **Verified**: `purchaseSpecimenFiat()` successfully transferred Token #5 from marketplace escrow to buyer, deactivated listing, and recorded the Stripe payment hash.
 - **TX**: [0x2317bb58...](https://sepolia.basescan.org/tx/0x2317bb5892c3485335b24c4aa9fe3bf2789de8cce9e7fcab8aad8a9d697b349c)

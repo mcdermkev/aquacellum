@@ -172,11 +172,11 @@ export function OrderReceipt({ order, isExpanded, onToggle, casualModeActive = f
               <>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span style={{ color: "var(--text-secondary)" }}>Specimen Price:</span>
-                  <span style={{ fontFamily: "monospace", color: "#fff" }}>${(price * 1000).toFixed(2)}</span>
+                  <span style={{ fontFamily: "monospace", color: "#fff" }}>${price.toFixed(2)}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span style={{ color: "var(--text-secondary)" }}>Shipping Fee:</span>
-                  <span style={{ fontFamily: "monospace", color: "#fff" }}>${(shippingFee * 1000).toFixed(2)}</span>
+                  <span style={{ fontFamily: "monospace", color: "#fff" }}>${shippingFee.toFixed(2)}</span>
                 </div>
               </>
             )}
@@ -186,13 +186,13 @@ export function OrderReceipt({ order, isExpanded, onToggle, casualModeActive = f
                 <span style={{ color: "var(--text-secondary)" }}>
                   {order.quantity > 1 ? `${order.quantity} fish` : "Batch Total"}:
                 </span>
-                <span style={{ fontFamily: "monospace", color: "#fff" }}>${(amountLocked * 1000).toFixed(2)}</span>
+                <span style={{ fontFamily: "monospace", color: "#fff" }}>${amountLocked.toFixed(2)}</span>
               </div>
             )}
 
             <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "0.7rem" }}>
               <span>Platform Fee (4%):</span>
-              <span style={{ fontFamily: "monospace" }}>-${(platformFee * 1000).toFixed(2)}</span>
+              <span style={{ fontFamily: "monospace" }}>-${platformFee.toFixed(2)}</span>
             </div>
 
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "0.4rem", marginTop: "0.2rem", display: "flex", justifyContent: "space-between" }}>
@@ -200,7 +200,7 @@ export function OrderReceipt({ order, isExpanded, onToggle, casualModeActive = f
                 {order.role === "Buyer" ? "You Paid:" : "You Received:"}
               </strong>
               <strong style={{ fontFamily: "monospace", color: "var(--accent-green)" }}>
-                ${order.role === "Buyer" ? (amountLocked * 1000).toFixed(2) : (sellerReceives * 1000).toFixed(2)}
+                ${order.role === "Buyer" ? amountLocked.toFixed(2) : sellerReceives.toFixed(2)}
               </strong>
             </div>
           </div>

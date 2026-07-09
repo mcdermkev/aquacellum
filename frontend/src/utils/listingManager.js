@@ -1,4 +1,4 @@
-import { Contract, formatEther } from "ethers";
+import { Contract } from "ethers";
 import managerAbi from "../abi/AquadexManager.json";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
 
@@ -41,13 +41,24 @@ export async function fetchListingsByBreed(speciesId, contractAddress, marketpla
             };
             const zoneHash = "0x" + Math.abs(hash).toString(16).padStart(8, "0");
 
+            // v2 stores on-chain price as USD *cents* (Web2-masked marketplace),
+            // NOT wei. Interpret it as cents so display + Stripe checkout match
+            // the local/cloud listing shape (priceCentsUSD is what checkout uses).
+            const priceCents = Number(listing.price.toString());
+            const shipCents = Number(listing.shippingFee.toString());
+            const priceDisplayUsd = (priceCents / 100).toFixed(2);
+            const shipDisplayUsd = (shipCents / 100).toFixed(2);
+
             results.push({
               id: i, // tokenId for single listings
               tokenId: i,
               seller: listing.seller,
-              price: formatEther(listing.price),
-              rawPrice: listing.price.toString(),
-              shippingFee: formatEther(listing.shippingFee),
+              price: priceDisplayUsd,
+              priceUsd: priceDisplayUsd,
+              priceCentsUSD: priceCents,
+              rawPrice: priceDisplayUsd,
+              shippingFee: shipDisplayUsd,
+              shippingFeeCents: shipCents,
               isShipping: listing.isShipping,
               speciesId: Number(spec.speciesId),
               commonName: species.commonName,
@@ -107,13 +118,20 @@ export async function fetchListingsByBreed(speciesId, contractAddress, marketpla
             };
             const zoneHash = "0x" + Math.abs(hash).toString(16).padStart(8, "0");
 
+            // v2 stores pricePerFish as USD *cents*, not wei (see note above).
+            const perFishCents = Number(batch.pricePerFish.toString());
+            const perFishDisplayUsd = (perFishCents / 100).toFixed(2);
+
             results.push({
               id: listingId, // listingId for batch listings
               listingId: listingId,
               spawnId: Number(batch.spawnId),
               quantity: Number(batch.quantity),
-              price: formatEther(batch.pricePerFish), // display price per fish
-              rawPrice: batch.pricePerFish.toString(),
+              price: perFishDisplayUsd, // display price per fish (USD)
+              priceUsd: perFishDisplayUsd,
+              priceCentsUSD: perFishCents,
+              pricePerFishCents: perFishCents,
+              rawPrice: perFishDisplayUsd,
               seller: batch.seller,
               isActive: batch.isActive,
               speciesId: batchSpeciesId,

@@ -19,7 +19,12 @@ export function OfferModal({ isOpen, onClose, listing, walletAccount, casualMode
 
   if (!listing) return null;
 
-  const askingPrice = parseFloat(listing.price) * 1000;
+  // USD-canonical: listing.price/priceUsd are already dollars. (Legacy code
+  // multiplied by 1000 to fake USD from ETH — that's wrong now and showed a
+  // $50 fish as $50,000.)
+  const askingPrice =
+    parseFloat(listing.priceUsd ?? listing.price ?? 0) ||
+    (Number(listing.priceCentsUSD) || 0) / 100;
   const offerVal = parseFloat(offerAmount) || 0;
   const discount = askingPrice > 0 ? Math.round((1 - offerVal / askingPrice) * 100) : 0;
 
