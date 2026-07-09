@@ -37,6 +37,7 @@ import { WhatsNewModal } from "./components/WhatsNewModal";
 import { IncomingBadge } from "./components/IncomingBadge";
 import { useArrivalNudge } from "./hooks/useArrivalNudge";
 import { initGrowoutReminders } from "./utils/growoutReminders";
+import { trackEvent } from "./services/analytics";
 import {
   CONTRACT_ADDRESS,
   MARKETPLACE_ADDRESS,
@@ -118,6 +119,25 @@ export default function App() {
 
   // Initialize Poseidon grow-out checkpoint reminders (PWA notifications)
   useEffect(() => { initGrowoutReminders(); }, []);
+
+  // Track XP-earning actions in analytics. aquadex_xp_added already fires for
+  // every care log, mint, sale, spawn, social action, etc. (see useXPSync.js),
+  // so listening here gives a single low-maintenance funnel signal across all
+  // of them without instrumenting each action site individually.
+  useEffect(() => {
+    const handleXpEarned = (e) => {
+      const detail = e.detail || {};
+      const amount = Number(detail.points || detail.amount || 0);
+      if (amount <= 0) return;
+      trackEvent("xp_earned", {
+        amount,
+        reason: detail.actionLabel || detail.label || detail.reason || "unknown",
+        tier_changed: !!(detail.tierChanged || detail.levelChanged),
+      });
+    };
+    window.addEventListener("aquadex_xp_added", handleXpEarned);
+    return () => window.removeEventListener("aquadex_xp_added", handleXpEarned);
+  }, []);
 
   // Cloud sync: on login, pull cloud data to this device then push any local-only data up.
   // This is what makes tanks appear on any device the user signs in to.

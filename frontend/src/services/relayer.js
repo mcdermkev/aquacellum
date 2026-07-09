@@ -22,6 +22,7 @@ import { ethers } from "ethers";
 import { db } from "../db";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { syncTankToCloud, syncSpecimenToCloud, syncListingToCloud, deactivateListingInCloud } from "./cloudSync";
+import { trackEvent } from "./analytics";
 import {
   submitUserOperation,
   buildRegisterTankCall,
@@ -231,6 +232,8 @@ export async function relayRegisterTank({
       buildRegisterTankCall({ name, tankType, volumeLiters, containment, parentUnitId, facility, room, rack }),
       `registerTank(${name})`
     );
+
+    trackEvent("tank_created", { tank_type: tankType, volume_liters: volumeLiters });
 
     return { success: true, tankId, txHash: null };
   } catch (err) {
@@ -795,6 +798,14 @@ export async function relayPurchaseSpecimen({
       };
       await db.marketOrders.put(order);
     }
+
+    trackEvent("marketplace_purchase", {
+      token_id: tokenId,
+      price_eth: priceEth,
+      is_shipping: isShipping,
+      common_name: commonName,
+      payment_method: "crypto",
+    });
 
     return { success: true, tokenId, txHash };
   } catch (err) {

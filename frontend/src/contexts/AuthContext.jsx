@@ -21,10 +21,12 @@ import {
   registerSignerResolver,
   unregisterSignerResolver,
 } from "../utils/smartAccount";
-import { authenticateWithWallet, clearReefSession, refreshSession, sessionNeedsRefresh } from "../services/supabaseClient";
+import { authenticateWithWallet, clearReefSession, refreshSession, sessionNeedsRefresh, isSupabaseConfigured } from "../services/supabaseClient";
 import { setUserSigner, clearUserSigner } from "../services/smartAccountClient";
 import { setSessionTokenGetter } from "../services/stripePayments";
 import { setSessionTokenGetter as setShippingSessionTokenGetter } from "../services/shipping";
+import { ensureProfile, updateProfile } from "../services/reefApi";
+import { identifyUser, resetAnalyticsIdentity, trackEvent } from "../services/analytics";
 
 const AuthContext = createContext(null);
 
@@ -180,6 +182,76 @@ export function AuthProvider({ children }) {
       clearReefSession();
     }
   }, [account, privyAuthenticated]);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ANALYTICS: identify the wallet with PostHog once connected, reset on
+  // disconnect. `signup` is inferred by checking whether ensureProfile()
+  // just inserted a brand-new row (created_at within the last few seconds of
+  // the call) — there's no separate "new user" flag returned by ensureProfile,
+  // and adding one would touch every other ensureProfile call site.
+  // ─────────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!account) {
+      resetAnalyticsIdentity();
+      return;
+    }
+    identifyUser(account, { login_method: loginMethod });
+    trackEvent("login", { login_method: loginMethod });
+
+    (async () => {
+      try {
+        const { data: profile } = await ensureProfile(account);
+        if (profile?.created_at) {
+          const ageMs = Date.now() - new Date(profile.created_at).getTime();
+          if (ageMs < 15000) {
+            trackEvent("signup", { login_method: loginMethod });
+          }
+        }
+      } catch {
+        // Best-effort — never block auth on an analytics lookup.
+      }
+    })();
+  }, [account, loginMethod]);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // EMAIL CAPTURE: mirror the Privy-linked email onto profiles.email so the
+  // retention system (server-side push+email nudges) can reach the user.
+  // Privy exposes the email either as a directly-linked email account
+  // (user.email.address, present when the user logged in via email/OTP) or
+  // via an OAuth-linked account like Google (user.google.email) — the app's
+  // login methods are ['email', 'google'], so both are checked. Runs once per
+  // session when both the wallet and an email become available, and only
+  // writes when the value actually differs from what's stored (avoids a
+  // redundant UPDATE on every login).
+  // ─────────────────────────────────────────────────────────────────────────
+  const emailCaptureAttemptedRef = useRef(null);
+
+  useEffect(() => {
+    if (!account || !privyAuthenticated || !privyUser) return;
+    if (!isSupabaseConfigured()) return;
+
+    const email = privyUser.email?.address || privyUser.google?.email || null;
+    if (!email) return;
+
+    // Only attempt once per (account, email) pair per session — profile reads/
+    // writes are cheap but there's no reason to repeat them on every re-render.
+    const attemptKey = `${account}:${email}`;
+    if (emailCaptureAttemptedRef.current === attemptKey) return;
+    emailCaptureAttemptedRef.current = attemptKey;
+
+    (async () => {
+      try {
+        // Ensure the profile row exists (no-ops if it's already there), then
+        // sync the email only if it's missing or stale.
+        const { data: profile } = await ensureProfile(account);
+        if (profile && profile.email !== email) {
+          await updateProfile(account, { email });
+        }
+      } catch (err) {
+        console.warn("[AuthContext] Email capture failed:", err.message);
+      }
+    })();
+  }, [account, privyAuthenticated, privyUser]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // SESSION REFRESH: Re-mint Supabase JWT before expiry

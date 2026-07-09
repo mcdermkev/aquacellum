@@ -6,7 +6,11 @@ import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { PwaManager } from './components/PwaManager'
+import { initAnalytics } from './services/analytics'
 import App from './App.jsx'
+
+// Initialize product analytics once at boot. No-ops if VITE_POSTHOG_KEY isn't set.
+initAnalytics()
 
 const queryClient = new QueryClient({
   defaultOptions: {

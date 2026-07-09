@@ -27,6 +27,7 @@ import { createClient } from "@supabase/supabase-js";
 import { handleCorsPreFlight } from "./_lib/cors.js";
 import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
 import * as shipengine from "./_lib/shipengine.js";
+import { captureServerEvent } from "./_lib/posthogServer.js";
 
 let stripe;
 try {
@@ -485,6 +486,14 @@ async function handleWebhook(req, res) {
         });
 
         console.log(`[Stripe Webhook] Settlement complete: ${settlement.txHash}`);
+
+        captureServerEvent(metadata.buyerWallet, "marketplace_purchase", {
+          purchase_type: purchaseType,
+          amount_cents: amountCents,
+          payment_method: "fiat",
+          held: HELD_TYPES.includes(purchaseType),
+        }).catch(() => {});
+
         return res.status(200).json({
           received: true,
           action: "settled",

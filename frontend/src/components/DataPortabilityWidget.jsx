@@ -7,6 +7,7 @@ import { ONBOARDING_CACHE_KEY } from "../hooks/useOnboardingGate";
 import { setOnboardingComplete } from "../services/reefApi";
 import { getSmartWalletAddress, hasUserSigner } from "../services/smartAccountClient";
 import { ZoneAssignmentFlow } from "./ZoneAssignmentFlow";
+import { SonarPreferences } from "./reef/SonarPreferences";
 
 export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
   const queryClient = useQueryClient();
@@ -754,6 +755,23 @@ export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
           ? "Both are enabled by default. Changes take effect immediately — no reload needed."
           : "Preferences stored locally. Disabling Poseidon halts all Edge Function calls. Disabling Echo suppresses companion rendering and XP reaction events."}
       </div>
+    </div>
+
+    {/* ─── Notifications (Push + Email) ─── */}
+    <div
+      className="glass-card"
+      style={{
+        padding: "2rem",
+        borderRadius: "var(--radius-md)",
+        border: "1px solid rgba(255, 255, 255, 0.08)",
+        background: "rgba(10, 15, 30, 0.7)",
+        backdropFilter: "blur(12px)",
+        boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
+        maxWidth: "600px",
+        margin: "0 auto 3rem auto",
+      }}
+    >
+      <SonarPreferences />
     </div>
 
     {/* ─── Install App ─── */}

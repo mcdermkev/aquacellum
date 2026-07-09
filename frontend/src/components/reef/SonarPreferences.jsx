@@ -11,6 +11,7 @@
 import { useState, useEffect } from "react";
 import { supabase, getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
 import { isPushSupported, getPushPermission, subscribeToPush, unsubscribeFromPush, getActiveSubscription } from "../../services/pushService";
+import { trackEvent } from "../../services/analytics";
 
 const CATEGORIES = [
   {
@@ -121,6 +122,10 @@ export function SonarPreferences({ onClose }) {
         .eq("wallet_address", wallet);
     }
 
+    if (prefs.emailDigest !== "off") {
+      trackEvent("notification_opt_in", { channel: "email", frequency: prefs.emailDigest });
+    }
+
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
@@ -130,7 +135,9 @@ export function SonarPreferences({ onClose }) {
   const requestPushPermission = async () => {
     if (!pushSupported) return;
     const { success, error } = await subscribeToPush();
-    if (!success) {
+    if (success) {
+      trackEvent("notification_opt_in", { channel: "push" });
+    } else {
       console.warn("Push subscription failed:", error);
     }
   };
