@@ -34,6 +34,9 @@ const IDLE_SLEEP_MS = 120000; // 2 minutes idle → sleep
 const REACTION_DURATION_MS = 2000;
 const POPOVER_DISMISS_MS = 6000;
 const AMBIENT_SIZE = 32;
+const ROAM_MIN_X = 12;
+const ROAM_MAX_X_PCT = 0.28; // max 28% of viewport width
+const DART_DISTANCE = 60; // px burst on XP/navigation event
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Ambient state types
@@ -76,6 +79,8 @@ export function EchoAmbient({
   const [reactionEmoji, setReactionEmoji] = useState(null);
   const [showPopover, setShowPopover] = useState(false);
   const [position, setPosition] = useState({ x: 16, y: 0 }); // bottom-left offset
+  const [facingLeft, setFacingLeft] = useState(false);
+  const [lastInteraction, setLastInteraction] = useState(null);
 
   const idleTimer = useRef(null);
   const reactionTimer = useRef(null);
@@ -102,6 +107,26 @@ export function EchoAmbient({
       if (idleTimer.current) clearTimeout(idleTimer.current);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Slow horizontal roam on idle — gives Echo presence instead of sitting still
+  useEffect(() => {
+    if (!visible || !dna) return;
+    const maxX = Math.max(60, window.innerWidth * ROAM_MAX_X_PCT);
+    const roamInterval = setInterval(() => {
+      if (ambientState === AMBIENT_STATES.sleeping || showPopover) return;
+      setPosition(prev => {
+        const dir = Math.random() > 0.5 ? 1 : -1;
+        const step = 8 + Math.random() * 16;
+        let newX = prev.x + dir * step;
+        newX = Math.max(ROAM_MIN_X, Math.min(maxX, newX));
+        // Flip facing when direction changes
+        setFacingLeft(dir < 0);
+        return { x: newX, y: prev.y + (Math.random() - 0.5) * 4 };
+      });
+    }, 4000 + Math.random() * 3000);
+
+    return () => clearInterval(roamInterval);
+  }, [visible, dna, ambientState, showPopover]);
 
   // Listen for user activity (XP events, page navigation)
   useEffect(() => {
@@ -143,6 +168,7 @@ export function EchoAmbient({
 
     setReactionEmoji(emoji);
     setAmbientState(AMBIENT_STATES.reacting);
+    setLastInteraction({ type: "react", timestamp: Date.now() });
 
     reactionTimer.current = setTimeout(() => {
       setReactionEmoji(null);
@@ -153,10 +179,14 @@ export function EchoAmbient({
   // Trigger a dart animation (page transition)
   const triggerDart = useCallback(() => {
     setAmbientState(AMBIENT_STATES.darting);
-    // Small random position jitter
+    // Real burst — jump 40-80px in a random direction, then ease back via CSS transition
+    const maxX = Math.max(60, window.innerWidth * ROAM_MAX_X_PCT);
+    const dartDir = Math.random() > 0.5 ? 1 : -1;
+    const dartDist = DART_DISTANCE * (0.6 + Math.random() * 0.4);
+    setFacingLeft(dartDir < 0);
     setPosition((prev) => ({
-      x: 16 + Math.random() * 8 - 4,
-      y: Math.random() * 6 - 3,
+      x: Math.max(ROAM_MIN_X, Math.min(maxX, prev.x + dartDir * dartDist)),
+      y: prev.y + (Math.random() - 0.5) * 10,
     }));
 
     setTimeout(() => {
@@ -233,11 +263,12 @@ export function EchoAmbient({
           height: `${AMBIENT_SIZE * 0.6}px`,
           zIndex: 8000,
           cursor: "pointer",
-          transition: "left 0.4s ease, bottom 0.4s ease",
+          transition: "left 0.5s cubic-bezier(0.22, 1, 0.36, 1), bottom 0.5s ease",
           pointerEvents: "auto",
+          transform: `scaleX(${facingLeft ? -1 : 1})`,
         }}
       >
-        {/* Mini Echo renderer */}
+        {/* Mini Echo renderer — disableWander since ambient controls position */}
         <EchoRenderer
           dna={dna}
           stage={stage}
@@ -245,6 +276,8 @@ export function EchoAmbient({
           personality={personality}
           size={AMBIENT_SIZE}
           animated={ambientState !== AMBIENT_STATES.sleeping}
+          disableWander={true}
+          lastInteraction={lastInteraction}
         />
 
         {/* Sleep indicator */}

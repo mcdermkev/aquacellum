@@ -22,7 +22,8 @@
  *   - onClick {function} tap handler
  */
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
+import { prefersReducedMotion } from "../utils/a11y";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Stage image mapping
@@ -247,32 +248,124 @@ function getEyeShimmerStyle(eyeType, hue) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Wander motion — deterministic per-Echo swim path (drift + tilt), replaces
-// the plain vertical bob so each Echo has its own personal swim rhythm.
+// Motion system — layered transforms for fish-like liveliness
+//
+// Three nested layers:
+//   Outer: position wander (roam path) + facing flip (scaleX)
+//   Mid:   continuous swim cycle (vertical bob + yaw rotation)
+//   Inner: body undulation (skewX + scaleY sine — "fin energy")
+//
+// Parameters derived from stage, mood/needs, personality, and DNA seed so
+// each Echo has its own personal rhythm that responds to emotional state.
 // ─────────────────────────────────────────────────────────────────────────────
 
-function getWanderStyle(seed, size, stage) {
-  const amp = Math.max(4, size * 0.05);
-  const ampY = Math.max(3, size * 0.03);
-  const rotAmp = 4 + seededRandom(seed, 1) * 4;
-  const speedFactor = stage < 3 ? 1.3 : stage >= 5 ? 0.85 : 1; // younger stages drift faster/twitchier
-  const duration = (5 + seededRandom(seed, 2) * 3) * speedFactor;
+function getMoodFactor(needs) {
+  if (!needs) return 0.7; // default: content
+  const avg = (
+    (needs.hunger ?? 80) + (needs.clarity ?? 80) + (needs.comfort ?? 80) +
+    (needs.curiosity ?? 80) + (needs.social ?? 80)
+  ) / 5;
+  // 0-100 → 0.0-1.0 "energy" factor
+  // Joyful (80-100) → 1.0, Content (60-79) → 0.75, Neutral (40-59) → 0.55,
+  // Sad (20-39) → 0.35, Dormant (0-19) → 0.15
+  if (avg >= 80) return 1.0;
+  if (avg >= 60) return 0.75;
+  if (avg >= 40) return 0.55;
+  if (avg >= 20) return 0.35;
+  return 0.15;
+}
 
+function getPersonalitySpeedBias(personality) {
+  if (!personality) return 1.0;
+  const { adventurous = 10, calm = 10 } = personality;
+  // adventurous pushes faster, calm pulls slower, net effect ±15%
+  return 1.0 + (adventurous - calm) * 0.003;
+}
+
+function getMotionParams(seed, size, stage, needs, personality) {
+  const moodFactor = getMoodFactor(needs);
+  const personalityBias = getPersonalitySpeedBias(personality);
+
+  // Base amplitudes scaled to size
+  const wanderAmpX = Math.max(6, size * 0.1);
+  const wanderAmpY = Math.max(4, size * 0.06);
+
+  // Stage modifies character of motion
+  const isEgg = stage === 0;
+  const isYoung = stage >= 1 && stage <= 2;
+  const isMature = stage >= 3 && stage <= 4;
+  const isElder = stage >= 5;
+
+  // Wander (outer layer) — the roam path
+  const wanderDuration = isEgg ? 0 : (
+    (isYoung ? 4.5 : isMature ? 6 : 7.5) / (moodFactor * personalityBias)
+  );
+  const wanderAmplitude = isEgg ? 0 : wanderAmpX * moodFactor * (isYoung ? 1.3 : isElder ? 0.7 : 1);
+  const wanderAmplitudeY = isEgg ? 0 : wanderAmpY * moodFactor * (isYoung ? 1.2 : isElder ? 0.8 : 1);
+
+  // Swim cycle (mid layer) — continuous bob + yaw
+  const swimDuration = isEgg ? 3 : (
+    (isYoung ? 1.8 : isMature ? 2.2 : 2.8) / (moodFactor * personalityBias)
+  );
+  const swimBobAmp = isEgg ? (size * 0.01) : (
+    Math.max(2, size * 0.025) * moodFactor * (isYoung ? 1.2 : isElder ? 0.7 : 1)
+  );
+  const swimYaw = isEgg ? 0 : (
+    (isYoung ? 4 : isMature ? 3 : 2) * moodFactor
+  );
+
+  // Body undulation (inner layer) — fin energy
+  const undulationDuration = isEgg ? 2.5 : (
+    (isYoung ? 1.4 : isMature ? 1.8 : 2.2) / (moodFactor * personalityBias)
+  );
+  const undulationSkew = isEgg ? 0 : (
+    (isYoung ? 3 : isMature ? 2 : 1.5) * moodFactor
+  );
+  const undulationSquash = isEgg ? 0.01 : (
+    (isYoung ? 0.03 : isMature ? 0.02 : 0.015) * moodFactor
+  );
+
+  // Egg-specific: wobble/rock
+  const eggRockAmp = isEgg ? 5 * moodFactor : 0;
+  const eggRockDuration = isEgg ? 2.5 : 0;
+
+  // Micro-dart interval: occasional hop (seed-timed)
+  const dartInterval = isEgg ? 0 : (
+    (8 + seededRandom(seed, 50) * 6) / moodFactor
+  );
+
+  // Facing flip timing: how often direction changes
+  const flipInterval = isEgg ? 0 : (
+    (wanderDuration * 0.5 + seededRandom(seed, 51) * wanderDuration * 0.5)
+  );
+
+  // Seeded asymmetric wander waypoints (more interesting path than symmetric)
   const pick = (i, range) => (seededRandom(seed, i) - 0.5) * 2 * range;
+  const wx1 = pick(3, wanderAmplitude);
+  const wy1 = pick(4, wanderAmplitudeY);
+  const wx2 = pick(6, wanderAmplitude);
+  const wy2 = pick(7, wanderAmplitudeY);
+  const wx3 = pick(9, wanderAmplitude);
+  const wy3 = pick(10, wanderAmplitudeY);
+  // 5th asymmetric waypoint (not just 4 symmetric) to break metronome feel
+  const wx4 = pick(12, wanderAmplitude * 0.6);
+  const wy4 = pick(13, wanderAmplitudeY * 0.8);
 
   return {
-    vars: {
-      "--wx1": `${pick(3, amp)}px`,
-      "--wy1": `${pick(4, ampY)}px`,
-      "--wr1": `${pick(5, rotAmp)}deg`,
-      "--wx2": `${pick(6, amp)}px`,
-      "--wy2": `${pick(7, ampY)}px`,
-      "--wr2": `${pick(8, rotAmp)}deg`,
-      "--wx3": `${pick(9, amp)}px`,
-      "--wy3": `${pick(10, ampY)}px`,
-      "--wr3": `${pick(11, rotAmp)}deg`,
-    },
-    duration,
+    isEgg,
+    wanderDuration: Math.max(2, wanderDuration),
+    swimDuration: Math.max(0.8, swimDuration),
+    undulationDuration: Math.max(0.6, undulationDuration),
+    swimBobAmp,
+    swimYaw,
+    undulationSkew,
+    undulationSquash,
+    eggRockAmp,
+    eggRockDuration,
+    dartInterval,
+    flipInterval,
+    moodFactor,
+    wx1, wy1, wx2, wy2, wx3, wy3, wx4, wy4,
   };
 }
 
@@ -335,8 +428,51 @@ export function EchoRenderer({
   personality,
   size = 200,
   animated = true,
+  disableWander = false,
+  lastInteraction = null,
   onClick,
 }) {
+  // ─── Reduced motion check ───────────────────────────────────────────
+  const reducedMotion = useMemo(() => prefersReducedMotion(), []);
+  const shouldAnimate = animated && !reducedMotion;
+
+  // ─── Interaction burst state ────────────────────────────────────────
+  const [burst, setBurst] = useState(null); // "react" | "pet" | "trick" | null
+  const burstTimeout = useRef(null);
+  const lastInteractionRef = useRef(null);
+
+  useEffect(() => {
+    if (!lastInteraction || !shouldAnimate) return;
+    if (lastInteraction === lastInteractionRef.current) return;
+    lastInteractionRef.current = lastInteraction;
+
+    const { type } = lastInteraction;
+    const durations = { react: 600, pet: 800, trick: 1200 };
+    const dur = durations[type] || 600;
+
+    setBurst(type);
+    if (burstTimeout.current) clearTimeout(burstTimeout.current);
+    burstTimeout.current = setTimeout(() => setBurst(null), dur);
+
+    return () => { if (burstTimeout.current) clearTimeout(burstTimeout.current); };
+  }, [lastInteraction, shouldAnimate]);
+
+  // ─── Facing direction state (periodic flip) ─────────────────────────
+  const [facingLeft, setFacingLeft] = useState(false);
+  const flipTimerRef = useRef(null);
+
+  useEffect(() => {
+    if (!shouldAnimate || !dna) return;
+    const motion = getMotionParams(dna.seed, size, stage, needs, personality);
+    if (motion.flipInterval <= 0) return;
+
+    const flip = () => {
+      setFacingLeft(prev => !prev);
+      flipTimerRef.current = setTimeout(flip, motion.flipInterval * 1000 * (0.7 + Math.random() * 0.6));
+    };
+    flipTimerRef.current = setTimeout(flip, motion.flipInterval * 1000);
+    return () => { if (flipTimerRef.current) clearTimeout(flipTimerRef.current); };
+  }, [shouldAnimate, dna, size, stage, needs, personality]);
   const visuals = useMemo(() => {
     if (!dna) return null;
 
@@ -416,17 +552,14 @@ export function EchoRenderer({
     glowIntensity > 0 ? `drop-shadow(0 0 ${Math.round(6 + glowIntensity * 10)}px ${glowColor})` : "",
   ].filter(Boolean).join(" ");
 
-  // Wander motion — deterministic per-Echo drift/tilt path (replaces plain bob)
-  const wander = getWanderStyle(seed, size, stage);
-  const animationStyle = animated ? {
-    animation: `echo-wander ${wander.duration.toFixed(2)}s ease-in-out infinite`,
-    ...wander.vars,
-  } : {};
+  // ─── Motion parameters ──────────────────────────────────────────────
+  const motion = useMemo(() => {
+    if (!seed) return null;
+    return getMotionParams(seed, size, stage, needs, personality);
+  }, [seed, size, stage, needs, personality]);
 
-  // Body shape silhouette transform — applied to the image itself so it
-  // composes with (rather than fights) the wander animation on the wrapper
+  // Body shape silhouette transform — applied to the image itself
   const bodyShapeTransform = getBodyShapeTransform(bodyShape);
-
   const eyeShimmer = getEyeShimmerStyle(eyeType, baseHue);
 
   // Aura animation (elder/legendary)
@@ -435,9 +568,38 @@ export function EchoRenderer({
     inset: `-${auraSize}px`,
     borderRadius: "50%",
     background: `radial-gradient(circle, ${glowColor}20 0%, transparent 70%)`,
-    animation: animated ? "echo-aura-pulse 3s ease-in-out infinite" : "none",
+    animation: shouldAnimate ? "echo-aura-pulse 3s ease-in-out infinite" : "none",
     pointerEvents: "none",
   } : null;
+
+  // ─── Burst transform (interaction feedback) ────────────────────────
+  const getBurstTransform = () => {
+    if (!burst) return "";
+    switch (burst) {
+      case "react": return "scale(1.12) rotate(8deg)";
+      case "pet": return "translateY(-4px) rotate(-3deg) scale(1.05)";
+      case "trick": return "rotate(360deg) scale(1.08)";
+      default: return "";
+    }
+  };
+
+  // ─── CSS custom properties for keyframes ───────────────────────────
+  const cssVars = motion ? {
+    "--echo-wx1": `${motion.wx1.toFixed(1)}px`,
+    "--echo-wy1": `${motion.wy1.toFixed(1)}px`,
+    "--echo-wx2": `${motion.wx2.toFixed(1)}px`,
+    "--echo-wy2": `${motion.wy2.toFixed(1)}px`,
+    "--echo-wx3": `${motion.wx3.toFixed(1)}px`,
+    "--echo-wy3": `${motion.wy3.toFixed(1)}px`,
+    "--echo-wx4": `${motion.wx4.toFixed(1)}px`,
+    "--echo-wy4": `${motion.wy4.toFixed(1)}px`,
+    "--echo-swim-bob": `${motion.swimBobAmp.toFixed(1)}px`,
+    "--echo-swim-yaw": `${motion.swimYaw.toFixed(1)}deg`,
+    "--echo-undu-skew": `${motion.undulationSkew.toFixed(1)}deg`,
+    "--echo-undu-squash": `${(1 - motion.undulationSquash).toFixed(3)}`,
+    "--echo-undu-stretch": `${(1 + motion.undulationSquash).toFixed(3)}`,
+    "--echo-egg-rock": `${motion.eggRockAmp.toFixed(1)}deg`,
+  } : {};
 
   return (
     <div
@@ -446,7 +608,7 @@ export function EchoRenderer({
         height: size,
         position: "relative",
         cursor: onClick ? "pointer" : "default",
-        ...animationStyle,
+        ...cssVars,
       }}
       onClick={onClick}
       onKeyDown={onClick ? (e) => e.key === "Enter" && onClick(e) : undefined}
@@ -454,101 +616,163 @@ export function EchoRenderer({
       tabIndex={onClick ? 0 : undefined}
       aria-label={`Echo companion — ${STAGE_NAMES[stage]} stage`}
     >
-      {/* Aura layer (elder/legendary) */}
-      {auraStyle && <div style={auraStyle} />}
-
-      {/* Main image with DNA color shifting */}
-      <img
-        src={STAGE_IMAGES[stage] || STAGE_IMAGES[2]}
-        alt={`Echo — ${STAGE_NAMES[stage]}`}
+      {/* ─── OUTER LAYER: Wander roam path + facing flip ─── */}
+      <div
         style={{
           width: "100%",
           height: "100%",
-          objectFit: "contain",
-          filter,
-          opacity: stageOpacity,
           position: "relative",
-          zIndex: 1,
-          transform: bodyShapeTransform,
-          transition: "filter 0.5s ease, opacity 0.5s ease",
+          willChange: shouldAnimate ? "transform" : "auto",
+          animation: shouldAnimate && !disableWander && motion && !motion.isEgg
+            ? `echo-wander ${motion.wanderDuration.toFixed(2)}s ease-in-out infinite`
+            : "none",
+          transform: `scaleX(${facingLeft ? -1 : 1})`,
+          transition: "transform 0.18s ease",
         }}
-        draggable={false}
-      />
-
-      {/* Head-area eye shimmer (eyeType trait) */}
-      {stage > 0 && animated && (
+      >
+        {/* ─── MID LAYER: Swim cycle (bob + yaw) ─── */}
         <div
           style={{
-            position: "absolute",
-            left: "42%",
-            top: "28%",
-            width: `${Math.max(4, size * 0.05)}px`,
-            height: `${Math.max(4, size * 0.05)}px`,
-            borderRadius: "50%",
-            background: eyeShimmer.color,
-            zIndex: 2,
-            pointerEvents: "none",
-            animation: `echo-eye-shimmer ${eyeShimmer.duration}s ease-in-out infinite`,
-            mixBlendMode: "screen",
-          }}
-        />
-      )}
-
-      {/* Pattern + fin-style + signature-mark overlay (SVG on top of image) */}
-      {stage > 0 && (
-        <svg
-          style={{
-            position: "absolute",
-            inset: 0,
             width: "100%",
             height: "100%",
-            pointerEvents: "none",
-            zIndex: 2,
-            mixBlendMode: "screen",
-            opacity: stage >= 4 ? 0.6 : 0.4,
+            position: "relative",
+            animation: shouldAnimate && motion
+              ? motion.isEgg
+                ? `echo-egg-rock ${motion.eggRockDuration.toFixed(2)}s ease-in-out infinite`
+                : `echo-swim-cycle ${motion.swimDuration.toFixed(2)}s ease-in-out infinite`
+              : "none",
           }}
-          viewBox={`0 0 ${size} ${size}`}
-          dangerouslySetInnerHTML={{
-            __html: [
-              pattern !== 11 ? getPatternOverlay(pattern, baseHue, size) : "",
-              getFinAccent(finStyle, secondaryHue, size),
-              getSignatureMarkAccent(signatureMark, baseHue, size),
-            ].join(""),
-          }}
-        />
-      )}
+        >
+          {/* ─── INNER LAYER: Body undulation (fin energy) ─── */}
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              position: "relative",
+              animation: shouldAnimate && motion && !motion.isEgg
+                ? `echo-undulation ${motion.undulationDuration.toFixed(2)}s ease-in-out infinite`
+                : "none",
+              // Burst override
+              transform: burst ? getBurstTransform() : undefined,
+              transition: burst ? "transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)" : "transform 0.3s ease",
+            }}
+          >
+            {/* Aura layer (elder/legendary) */}
+            {auraStyle && <div style={auraStyle} />}
 
-      {/* Particle effects (legendary) */}
-      {showParticles && animated && (
-        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 3 }}>
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
+            {/* Main image with DNA color shifting */}
+            <img
+              src={STAGE_IMAGES[stage] || STAGE_IMAGES[2]}
+              alt={`Echo — ${STAGE_NAMES[stage]}`}
               style={{
-                position: "absolute",
-                left: `${20 + i * 14}%`,
-                bottom: `${10 + i * 5}%`,
-                width: `${3 + i % 2}px`,
-                height: `${3 + i % 2}px`,
-                borderRadius: "50%",
-                background: i % 2 === 0 ? particleColor1 : particleColor2,
-                animation: `echo-particle-rise ${3 + i * 0.5}s ease-in-out infinite`,
-                animationDelay: `${i * 0.6}s`,
-                opacity: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                filter,
+                opacity: stageOpacity,
+                position: "relative",
+                zIndex: 1,
+                transform: bodyShapeTransform,
+                transition: "filter 0.5s ease, opacity 0.5s ease",
               }}
+              draggable={false}
             />
-          ))}
+
+            {/* Head-area eye shimmer (eyeType trait) */}
+            {stage > 0 && shouldAnimate && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: "42%",
+                  top: "28%",
+                  width: `${Math.max(4, size * 0.05)}px`,
+                  height: `${Math.max(4, size * 0.05)}px`,
+                  borderRadius: "50%",
+                  background: eyeShimmer.color,
+                  zIndex: 2,
+                  pointerEvents: "none",
+                  animation: `echo-eye-shimmer ${eyeShimmer.duration}s ease-in-out infinite`,
+                  mixBlendMode: "screen",
+                }}
+              />
+            )}
+
+            {/* Pattern + fin-style + signature-mark overlay */}
+            {stage > 0 && (
+              <svg
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  pointerEvents: "none",
+                  zIndex: 2,
+                  mixBlendMode: "screen",
+                  opacity: stage >= 4 ? 0.6 : 0.4,
+                }}
+                viewBox={`0 0 ${size} ${size}`}
+                dangerouslySetInnerHTML={{
+                  __html: [
+                    pattern !== 11 ? getPatternOverlay(pattern, baseHue, size) : "",
+                    getFinAccent(finStyle, secondaryHue, size),
+                    getSignatureMarkAccent(signatureMark, baseHue, size),
+                  ].join(""),
+                }}
+              />
+            )}
+
+            {/* Particle effects (legendary) */}
+            {showParticles && shouldAnimate && (
+              <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 3 }}>
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      position: "absolute",
+                      left: `${20 + i * 14}%`,
+                      bottom: `${10 + i * 5}%`,
+                      width: `${3 + i % 2}px`,
+                      height: `${3 + i % 2}px`,
+                      borderRadius: "50%",
+                      background: i % 2 === 0 ? particleColor1 : particleColor2,
+                      animation: `echo-particle-rise ${3 + i * 0.5}s ease-in-out infinite`,
+                      animationDelay: `${i * 0.6}s`,
+                      opacity: 0,
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
 
       {/* Inline keyframes */}
       <style>{`
         @keyframes echo-wander {
-          0%   { transform: translate(0, 0) rotate(0deg); }
-          25%  { transform: translate(var(--wx1), var(--wy1)) rotate(var(--wr1)); }
-          50%  { transform: translate(var(--wx2), var(--wy2)) rotate(var(--wr2)); }
-          75%  { transform: translate(var(--wx3), var(--wy3)) rotate(var(--wr3)); }
-          100% { transform: translate(0, 0) rotate(0deg); }
+          0%   { transform: translate(0, 0); }
+          20%  { transform: translate(var(--echo-wx1), var(--echo-wy1)); }
+          45%  { transform: translate(var(--echo-wx2), var(--echo-wy2)); }
+          70%  { transform: translate(var(--echo-wx3), var(--echo-wy3)); }
+          90%  { transform: translate(var(--echo-wx4), var(--echo-wy4)); }
+          100% { transform: translate(0, 0); }
+        }
+        @keyframes echo-swim-cycle {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          30%  { transform: translateY(calc(-1 * var(--echo-swim-bob))) rotate(var(--echo-swim-yaw)); }
+          70%  { transform: translateY(var(--echo-swim-bob)) rotate(calc(-0.5 * var(--echo-swim-yaw))); }
+        }
+        @keyframes echo-undulation {
+          0%, 100% { transform: skewX(0deg) scaleY(1); }
+          25%  { transform: skewX(var(--echo-undu-skew)) scaleY(var(--echo-undu-squash)); }
+          75%  { transform: skewX(calc(-1 * var(--echo-undu-skew))) scaleY(var(--echo-undu-stretch)); }
+        }
+        @keyframes echo-egg-rock {
+          0%, 100% { transform: rotate(0deg) translateY(0); }
+          20%  { transform: rotate(var(--echo-egg-rock)) translateY(-1px); }
+          40%  { transform: rotate(calc(-0.7 * var(--echo-egg-rock))) translateY(0); }
+          60%  { transform: rotate(calc(0.4 * var(--echo-egg-rock))) translateY(-2px); }
+          80%  { transform: rotate(calc(-0.3 * var(--echo-egg-rock))) translateY(0); }
         }
         @keyframes echo-eye-shimmer {
           0%, 100% { opacity: 0.3; transform: scale(0.9); }

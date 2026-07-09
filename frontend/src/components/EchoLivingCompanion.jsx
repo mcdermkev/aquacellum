@@ -101,6 +101,7 @@ export function EchoLivingCompanion({
 }) {
   const [reaction, setReaction] = useState(null);
   const [activeTrick, setActiveTrick] = useState(null);
+  const [lastInteraction, setLastInteraction] = useState(null);
   const [todayTaps, setTodayTaps] = useState(() => {
     const stored = localStorage.getItem("echo_taps_today");
     if (stored) {
@@ -169,6 +170,7 @@ export function EchoLivingCompanion({
       const line = TAP_LINES[Math.floor(Math.random() * TAP_LINES.length)];
       showReaction(line, "tap");
       vibrate(50);
+      setLastInteraction({ type: "react", timestamp: Date.now() });
 
       setTodayTaps((prev) => prev + 1);
       if (onInteraction) onInteraction("tap", TAP_XP);
@@ -192,6 +194,7 @@ export function EchoLivingCompanion({
     setActiveTrick(trick);
     vibrate([50, 50, 100]);
     showReaction(`${trick.name}! 🎉`, "trick");
+    setLastInteraction({ type: "trick", timestamp: Date.now() });
 
     setTimeout(() => setActiveTrick(null), trick.duration);
   }, [tricksUnlocked, activeTrick, showReaction, vibrate]);
@@ -209,6 +212,7 @@ export function EchoLivingCompanion({
       const line = PET_LINES[Math.floor(Math.random() * PET_LINES.length)];
       showReaction(line, "pet");
       vibrate([30, 30, 30, 30, 80]); // Gentle purr pattern
+      setLastInteraction({ type: "pet", timestamp: Date.now() });
 
       setTodayPets((prev) => prev + 1);
       if (onInteraction) onInteraction("pet", PET_XP);
@@ -329,17 +333,15 @@ export function EchoLivingCompanion({
         </div>
 
         {/* Echo SVG */}
-        <div
-          className={activeTrick ? activeTrick.animation : ""}
-          style={{ transition: "transform 0.3s ease" }}
-        >
+        <div style={{ transition: "transform 0.3s ease" }}>
           <EchoRenderer
             dna={dna}
             stage={stage}
             needs={needs}
             personality={personality}
             size={220}
-            animated={!activeTrick}
+            animated={true}
+            lastInteraction={lastInteraction}
           />
         </div>
 
