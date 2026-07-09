@@ -23,6 +23,29 @@
        INDEX PAGE — SPECIFIC STYLES
     ========================================= */
 
+    /* ─── FIBONACCI SPACING SCALE ────────────
+       Consecutive Fibonacci numbers approximate the golden ratio
+       (1.618), so steps in this scale feel proportionally related
+       to their neighbors instead of arbitrary. Used for section
+       rhythm, grid gaps, and card padding on this page only.
+       --golden is used directly for asymmetric column splits where
+       one side of a layout is the genuine visual focal point.
+       Symmetric "peer comparison" grids (Hobbyist/Breeder,
+       Poseidon/Echo) intentionally stay 1:1 — those present two
+       equal options, so forcing golden-ratio asymmetry there would
+       visually favor one over the other. */
+    :root {
+      --fib-1: 8px;
+      --fib-2: 13px;
+      --fib-3: 21px;
+      --fib-4: 34px;
+      --fib-5: 55px;
+      --fib-6: 89px;
+      --fib-7: 144px;
+      --golden: 1.618;
+    }
+    .fib-section { padding: var(--fib-6) 0; }
+
     /* Hero */
     .hero {
       position: relative;
@@ -51,19 +74,53 @@
       border: 1px solid rgba(20,184,166,0.2);
       font-size: 0.75rem; font-weight: 600;
       color: var(--teal-300); letter-spacing: 0.05em;
-      margin-bottom: 32px;
+      margin-bottom: var(--fib-4);
     }
     .hero-headline {
       font-family: 'Outfit', sans-serif; font-weight: 900;
       font-size: clamp(2.8rem, 6vw, 5rem);
       line-height: 1.05; letter-spacing: -0.02em;
-      color: #fff; margin-bottom: 24px;
+      color: #fff; margin-bottom: var(--fib-3);
     }
     .hero-headline em { font-style: normal; }
     .hero-subtext {
       font-size: clamp(1rem, 2vw, 1.2rem); font-weight: 400;
       color: var(--text-secondary); line-height: 1.7;
-      max-width: 640px; margin: 0 auto 48px;
+      max-width: 640px; margin: 0 auto var(--fib-4);
+    }
+    .hero-funnel-row {
+      display: flex; justify-content: center; gap: var(--fib-2); flex-wrap: wrap;
+      margin-bottom: var(--fib-4);
+    }
+    .hero-funnel-link {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: 100px;
+      font-size: 0.85rem; font-weight: 600;
+      color: var(--text-secondary);
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: var(--transition);
+    }
+    .hero-funnel-link:hover {
+      color: var(--text-primary);
+      border-color: rgba(20,184,166,0.3);
+      background: rgba(20,184,166,0.06);
+      transform: translateY(-1px);
+    }
+    .hero-funnel-primary {
+      color: #fff;
+      background: linear-gradient(135deg, var(--teal-500) 0%, var(--cyan-500) 100%);
+      border-color: transparent;
+      box-shadow: 0 4px 16px rgba(20,184,166,0.2);
+    }
+    .hero-funnel-primary:hover {
+      color: #fff;
+      filter: brightness(1.08);
+      box-shadow: 0 6px 20px rgba(20,184,166,0.3);
+    }
+    @media (max-width: 600px) {
+      .hero-funnel-row { gap: 8px; }
+      .hero-funnel-link { font-size: 0.78rem; padding: 9px 16px; }
     }
 
     /* Waitlist Form */
@@ -123,13 +180,15 @@
     .section-heading {
       font-family: 'Outfit', sans-serif; font-weight: 800;
       font-size: clamp(2rem, 4vw, 3rem); line-height: 1.15;
-      color: #fff; margin-bottom: 16px;
+      color: #fff; margin-bottom: var(--fib-3);
     }
     .section-sub { font-size: 1rem; color: var(--text-secondary); line-height: 1.7; max-width: 540px; }
 
-    /* Dual Mode Grid */
-    .dual-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 56px; }
-    .mode-card { padding: 40px; border-radius: var(--radius-lg); position: relative; overflow: hidden; transition: var(--transition); }
+    /* Dual Mode Grid — intentionally 1:1. This presents two equal,
+       parallel options (Hobbyist vs Breeder); golden-ratio asymmetry
+       would wrongly imply one path is more important than the other. */
+    .dual-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--fib-3); margin-top: var(--fib-5); }
+    .mode-card { padding: var(--fib-4); border-radius: var(--radius-lg); position: relative; overflow: hidden; transition: var(--transition); }
     .mode-card:hover { transform: translateY(-5px); }
     .mode-hobbyist { background: linear-gradient(135deg, rgba(6,182,212,0.08) 0%, rgba(13,18,41,0.6) 100%); border: 1px solid rgba(6,182,212,0.2); }
     .mode-breeder { background: linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(13,18,41,0.6) 100%); border: 1px solid rgba(139,92,246,0.2); }
@@ -155,8 +214,10 @@
     .link-cyan:hover   { color: var(--cyan-300); gap: 10px; }
     .link-violet:hover { color: #c4b5fd; gap: 10px; }
 
-    /* Spec-Dex Section */
-    .specdex-layout { display: grid; grid-template-columns: 1fr 1.2fr; gap: 56px; align-items: center; margin-top: 56px; }
+    /* Spec-Dex Section — golden-ratio split (1 : 1.618). The live
+       demo card is the visual proof point and focal element, so it
+       gets the larger column; the copy/stats side supports it. */
+    .specdex-layout { display: grid; grid-template-columns: 1fr var(--golden)fr; gap: var(--fib-5); align-items: center; margin-top: var(--fib-5); }
     .spec-card { background: rgba(8,12,26,0.8); border: 1px solid rgba(20,184,166,0.15); border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
     .spec-card-header { padding: 14px 20px; background: rgba(20,184,166,0.05); border-bottom: 1px solid rgba(20,184,166,0.1); display: flex; align-items: center; justify-content: space-between; }
     .spec-card-dots { display: flex; gap: 6px; }
@@ -164,7 +225,7 @@
     .dot-red { background: #ff5f57; }
     .dot-yellow { background: #febc2e; }
     .dot-green { background: #28c840; }
-    .spec-card-body { padding: 24px; }
+    .spec-card-body { padding: var(--fib-3); }
     .species-name { font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
     .species-scientific { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: var(--teal-400); margin-bottom: 2px; }
     .species-common { font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 16px; }
@@ -176,13 +237,15 @@
     .compat-bar-wrap { margin-top: 4px; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
     .compat-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--teal-500), var(--cyan-400)); }
     .compat-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.25); font-size: 0.78rem; font-weight: 600; color: var(--emerald-400); }
-    .specdex-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
-    .stat-box { text-align: center; padding: 24px 16px; border-radius: var(--radius-md); background: rgba(13,18,41,0.6); border: 1px solid rgba(255,255,255,0.06); }
+    .specdex-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--fib-2); margin-bottom: var(--fib-3); }
+    .stat-box { text-align: center; padding: var(--fib-3) var(--fib-2); border-radius: var(--radius-md); background: rgba(13,18,41,0.6); border: 1px solid rgba(255,255,255,0.06); }
     .stat-number { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 900; margin-bottom: 4px; }
     .stat-label { font-size: 0.72rem; color: var(--text-secondary); line-height: 1.4; }
 
-    /* Market / Fee Section */
-    .market-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 48px; align-items: center; margin-top: 56px; }
+    /* Market / Fee Section — golden-ratio split (1.618 : 1). The
+       feature list is the primary sales copy; the fee donut is
+       supporting/secondary detail, so it gets the smaller column. */
+    .market-grid { display: grid; grid-template-columns: var(--golden)fr 1fr; gap: var(--fib-5); align-items: center; margin-top: var(--fib-5); }
     .fee-donut-wrap { position: relative; width: 220px; height: 220px; margin: 0 auto 32px; }
     .fee-donut-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
     .fee-donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -201,8 +264,11 @@
     .market-feature p { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; }
 
     /* Companion Section */
-    .companion-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 56px; }
-    .companion-card { padding: 36px; border-radius: var(--radius-lg); position: relative; overflow: hidden; }
+    /* Companion Grid — intentionally 1:1. Poseidon and Echo are
+       presented as two equal, parallel companions; asymmetry would
+       misleadingly suggest a hierarchy between them. */
+    .companion-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--fib-4); margin-top: var(--fib-5); }
+    .companion-card { padding: var(--fib-4); border-radius: var(--radius-lg); position: relative; overflow: hidden; }
     .poseidon-card { background: linear-gradient(135deg, rgba(6,182,212,0.08) 0%, rgba(13,18,41,0.7) 100%); border: 1px solid rgba(6,182,212,0.2); }
     .echo-card { background: linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(13,18,41,0.7) 100%); border: 1px solid rgba(139,92,246,0.2); }
     .companion-avatar { width: 72px; height: 72px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 20px; }
@@ -236,6 +302,7 @@
     /* Responsive */
     @media (max-width: 900px) {
       .dual-mode-grid, .specdex-layout, .market-grid, .companion-grid { grid-template-columns: 1fr; }
+      .fib-section { padding: var(--fib-5) 0; }
     }
     @media (max-width: 600px) {
       .hero-headline { font-size: 2.3rem; }
@@ -288,6 +355,19 @@
           Aquacellum brings together a 280+ species database, smart care logs, a trusted peer-to-peer marketplace, and an AI companion that actually understands your setup — so you spend less time guessing and more time enjoying your aquarium.
         </p>
 
+        <!-- Primary Funnel: Database → Marketplace → App -->
+        <div class="hero-funnel-row">
+          <a href="/database.html" class="hero-funnel-link hero-funnel-primary">
+            <span>📚</span> Browse the Database
+          </a>
+          <a href="/marketplace.html" class="hero-funnel-link">
+            <span>🛒</span> Shop the Marketplace
+          </a>
+          <a href="/app.html" class="hero-funnel-link">
+            <span>🐠</span> Open the App
+          </a>
+        </div>
+
         <!-- Waitlist Form -->
         <div class="waitlist-form-hero" id="waitlist">
           <h3>Join the Waitlist</h3>
@@ -322,7 +402,7 @@
   <div class="divider"></div>
 
   <!-- Dual Mode Routing -->
-  <section class="section" id="modes">
+  <section class="section fib-section" id="modes">
     <div class="container">
       <div style="max-width:600px;">
         <div class="section-label label-teal">
@@ -372,7 +452,7 @@
   <div class="divider"></div>
 
   <!-- Poseidon & Echo Section -->
-  <section class="section" id="companion">
+  <section class="section fib-section" id="companion">
     <div class="container">
       <div style="text-align:center; max-width:600px; margin:0 auto 56px;">
         <div class="section-label label-violet" style="justify-content:center;">
@@ -421,7 +501,7 @@
   <div class="divider"></div>
 
   <!-- Spec-Dex Section -->
-  <section class="section" id="specdex">
+  <section class="section fib-section" id="specdex">
     <div class="container">
       <div class="specdex-layout">
         <div>
@@ -475,7 +555,7 @@
   <div class="divider"></div>
 
   <!-- Marketplace / Fee Split -->
-  <section class="section" id="market">
+  <section class="section fib-section" id="market">
     <div class="container">
       <div style="max-width:600px; margin-bottom:56px;">
         <div class="section-label label-teal">
@@ -535,7 +615,7 @@
   <div class="divider"></div>
 
   <!-- Final CTA -->
-  <section class="section cta-section">
+  <section class="section fib-section cta-section">
     <div class="cta-bg-glow"></div>
     <div class="container">
       <div class="cta-card">

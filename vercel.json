@@ -22,6 +22,9 @@
     { "source": "/breeders", "destination": "/breeders.html" },
     { "source": "/breeds", "destination": "/breeds.html" },
     { "source": "/about", "destination": "/about.html" },
-    { "source": "/legal", "destination": "/legal.html" }
+    { "source": "/legal", "destination": "/legal.html" },
+    { "source": "/poseidon", "destination": "/poseidon.html" },
+    { "source": "/leaderboard", "destination": "/leaderboard.html" },
+    { "source": "/developers", "destination": "/developers.html" }
   ]
 }
