@@ -1,4 +1,5 @@
 import React from "react";
+import { tryRecoverFromChunkError } from "../utils/chunkErrorRecovery";
 
 /**
  * TabErrorBoundary — Lightweight per-section error boundary.
@@ -17,6 +18,11 @@ export class TabErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error(`[TabErrorBoundary:${this.props.name || "unknown"}]`, error, errorInfo);
+    // Each tab is React.lazy()-loaded, so this is the most common place a
+    // stale-shell chunk 404 actually surfaces (e.g. switching to the Tanks
+    // or Marketplace tab after a fresh deploy while an old SW is still
+    // active). Auto-recover instead of showing the inline error card.
+    tryRecoverFromChunkError(error);
   }
 
   // Reset error state when user navigates to a different tab

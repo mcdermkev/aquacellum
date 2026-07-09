@@ -7,7 +7,14 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { PwaManager } from './components/PwaManager'
 import { initAnalytics } from './services/analytics'
+import { installChunkErrorRecovery } from './utils/chunkErrorRecovery'
 import App from './App.jsx'
+
+// Auto-recover from stale-shell chunk 404s (old cached app.html referencing
+// JS/CSS filenames from a previous deploy). Installed as early as possible
+// so it also catches failures during the very first module load. See
+// chunkErrorRecovery.js for the full explanation.
+installChunkErrorRecovery()
 
 // Initialize product analytics once at boot. No-ops if VITE_POSTHOG_KEY isn't set.
 initAnalytics()

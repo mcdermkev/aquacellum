@@ -1,4 +1,5 @@
 import React from "react";
+import { tryRecoverFromChunkError } from "../utils/chunkErrorRecovery";
 
 /**
  * Global ErrorBoundary — catches unhandled React render errors
@@ -17,6 +18,12 @@ export class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     this.setState({ errorInfo });
     console.error("[ErrorBoundary] Uncaught error:", error, errorInfo);
+    // A stale service worker can serve an app shell that imports a chunk
+    // filename from a previous deploy — React surfaces that dynamic-import
+    // failure here (lazy() component boundaries), not always as a global
+    // window error. Auto-recover instead of showing the fallback UI for
+    // what's really just a one-time cache staleness hiccup.
+    tryRecoverFromChunkError(error);
   }
 
   handleReload = () => {

@@ -84,6 +84,26 @@ export function PwaManager() {
     onRegisterError(error) {
       console.warn("[PWA] Service worker registration failed:", error);
     },
+    onRegisteredSW(swScriptUrl, registration) {
+      if (!registration) return;
+      // Actively poll for a new deployment instead of only relying on the
+      // browser's own (often infrequent) update schedule. This is what
+      // makes the "new version — reload" prompt actually show up promptly
+      // after a deploy, rather than a stale worker silently sticking around
+      // for hours/days until the next chunk 404 forces an auto-recovery.
+      const checkForUpdate = () => registration.update().catch(() => {});
+
+      // Check immediately on load, then whenever the tab/window regains
+      // focus (covers the desktop-app case: minimized overnight, reopened
+      // the next day after a new deploy shipped).
+      window.addEventListener("focus", checkForUpdate);
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") checkForUpdate();
+      });
+
+      // Also poll periodically for long-lived sessions that never lose focus.
+      setInterval(checkForUpdate, 30 * 60 * 1000); // every 30 minutes
+    },
   });
 
   const [installEvent, setInstallEvent] = useState(null);
