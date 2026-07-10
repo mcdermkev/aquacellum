@@ -20,6 +20,7 @@ import { OnboardingWizard } from "./components/OnboardingWizard";
 import { useOnboardingGate } from "./hooks/useOnboardingGate";
 import { useAuth } from "./contexts/AuthContext";
 import { pullCloudDataForWallet, pushAllLocalDataToCloud } from "./services/cloudSync";
+import { cleanupGarbledActionLogs } from "./utils/cleanupGarbledLogs";
 import { ZoneLeaderboardWidget } from "./components/ZoneLeaderboardWidget";
 import { RewardCreditsCard } from "./components/RewardCreditsCard";
 import { EchoCompanionWidget } from "./components/EchoCompanionWidget";
@@ -145,6 +146,10 @@ export default function App() {
     setSyncStatus("syncing");
     try {
       await pullCloudDataForWallet(walletAddr);
+      if (signal?.cancelled) return;
+      // Remove garbled action logs (timestamps stored in ms instead of seconds)
+      // that may have just been pulled back from the cloud.
+      await cleanupGarbledActionLogs(walletAddr);
       if (signal?.cancelled) return;
       await pushAllLocalDataToCloud(walletAddr);
       if (!signal?.cancelled) {
