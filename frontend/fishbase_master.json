@@ -293,7 +293,7 @@
       "layoutRequirement": "A breeding tank should include smooth surfaces for egg deposition, such as broad-leaved plants (e.g., Anubias, Amazon Swords) or flat rocks. Fine-leaved plants or spawning mops can also be used. A soft, sandy substrate is preferred.",
       "comments": "Spawning is often triggered by large, cool water changes mimicking seasonal rains. The male and female engage in a 'T-position' embrace during spawning. Eggs are typically guarded by the female for a short period before being left to hatch. Fry are small and require infusoria or specialized fry food."
     },
-    "masterPhotoUrl": "/species-images/corydoras-paleatus.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/corydoras-paleatus.png",
     "personality": {
       "vibeLine": {
         "casual": "The hardy, peppery classic that's happy in cooler water.",
@@ -1989,7 +1989,7 @@
       "layoutRequirement": "Captive breeding is rarely achieved in home aquariums. Most commercially available specimens are wild-caught or produced using hormonal induction. Replicating natural seasonal triggers (temperature drops, water chemistry changes) may encourage spawning but success is uncommon.",
       "comments": "Not known to have been bred in the hobby as with the majority of botiid loaches though some, including B. striata , are being produced on a commercial basis via the use of hormones. Unfortunately this practice has been taken to a different level in recent years with a number of hybrids appearing on the market, even including an apparent cross between a form of B. histrionica and Chromobotia macracanthus ."
     },
-    "masterPhotoUrl": "/species-images/botia-striata.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/botia-striata.png",
     "personality": {
       "vibeLine": {
         "casual": "The patterned loach whose markings spell out Y-O-Y-O.",
@@ -2577,7 +2577,7 @@
       "layoutRequirement": "Use fine-leaved plants (Java moss, spawning mops) or a mesh/grid to protect scattered eggs from being eaten. Condition pairs with high-quality live or frozen foods before spawning. Remove adults after spawning or use a separate breeding tank.",
       "comments": "Eggs typically hatch within 24–48 hours. Fry are very small and require infusoria or liquid fry food initially, graduating to baby brine shrimp after a few days."
     },
-    "masterPhotoUrl": "/species-images/epalzeorhynchos-bicolor.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/epalzeorhynchos-bicolor.png",
     "personality": {
       "vibeLine": {
         "casual": "The jet-black \"shark\" with one brilliant red tail.",
@@ -3088,7 +3088,7 @@
     "commonName": "Serpae Tetra",
     "family": "Characidae",
     "maxLengthCm": 5,
-    "masterPhotoUrl": "/species-images/hyphessobrycon-eques.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/hyphessobrycon-eques.png",
     "tankMetrics": {
       "tempRangeCelsius": [
         22,
@@ -5472,7 +5472,7 @@
       "layoutRequirement": "Use fine-leaved plants (Java moss, spawning mops) or a mesh/grid to protect scattered eggs from being eaten. Condition pairs with high-quality live or frozen foods before spawning. Remove adults after spawning or use a separate breeding tank. Dim lighting encourages spawning behavior.",
       "comments": "Eggs typically hatch within 24–48 hours. Fry are very small and require infusoria or liquid fry food initially, graduating to baby brine shrimp after a few days. Generally straightforward to breed in home aquariums with proper conditions."
     },
-    "masterPhotoUrl": "/species-images/tanichthys-albonubes.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/tanichthys-albonubes.png",
     "personality": {
       "vibeLine": {
         "casual": "The tough little gem that's happy in cooler water.",
@@ -13657,7 +13657,7 @@
       "layoutRequirement": "Provide flat rocks, broad leaves, or slate tiles as potential spawning surfaces. The pair will clean their chosen site before spawning. Open swimming space near the spawning area is appreciated.",
       "comments": "Quite often bred in the hobby. It will sometimes spawn in the community tank if conditions are to its liking. If you want to raise a full brood of these, and exercise a degree of control over the situation, it’s best to set up a separate spawning tank . The best way to obtain a pair is to buy a group of at least 6 fish and grow them on together, so something around 36″ x 12″ x 12″ will be needed (along with a lot of cash!). If the fish are sexable, try to achieve a ratio of 2-3 females per male."
     },
-    "masterPhotoUrl": "/species-images/hypancistrus-zebra.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/hypancistrus-zebra.png",
     "personality": {
       "vibeLine": {
         "casual": "The striking black-and-white jewel of the pleco world.",
@@ -15191,7 +15191,7 @@
     "commonName": "Threadfin Rainbowfish",
     "family": "Melanotaeniidae",
     "maxLengthCm": 4.9,
-    "masterPhotoUrl": "/species-images/iriatherina-werneri.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/iriatherina-werneri.png",
     "type": "fish",
     "tankMetrics": {
       "minVolumeGallons": 10,
