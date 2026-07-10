@@ -29,3 +29,6 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Raw wikimedia originals (too large for git, resized versions are committed)
+public/species-images/wikimedia/

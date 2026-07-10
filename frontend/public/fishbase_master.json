@@ -58,7 +58,7 @@
     "commonName": "Bristlenose Pleco",
     "family": "Loricariidae",
     "maxLengthCm": 10.9,
-    "masterPhotoUrl": "/species-images/ancistrus-cirrhosus.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/ancistrus-cirrhosus.png",
     "tankMetrics": {
       "minVolumeGallons": 30,
       "tempRangeCelsius": [
@@ -147,7 +147,7 @@
         "pro": "Best kept alone or with carefully chosen tank mates. Requires warm water (24–28°C) and access to the surface for breathing. Avoid strong currents."
       }
     },
-    "masterPhotoUrl": "/species-images/betta-splendens.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/betta-splendens.png",
     "genus": "Betta",
     "species": "splendens",
     "maxLengthCm": 6.5
@@ -201,7 +201,7 @@
         "pro": "Common goldfish can live for decades and grow over 12 inches. Requires large tanks or ponds with excellent filtration. Not suitable for small aquariums long-term."
       }
     },
-    "masterPhotoUrl": "/species-images/carassius-auratus.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/carassius-auratus.png",
     "genus": "Carassius",
     "species": "auratus",
     "maxLengthCm": 48
@@ -242,7 +242,7 @@
       "layoutRequirement": "A well-planted tank with fine sand or smooth gravel substrate is beneficial. Broad-leaved plants or smooth rocks provide ideal surfaces for egg deposition.",
       "comments": "Spawning is often triggered by large, cool water changes mimicking seasonal rains. Parents typically do not guard the eggs, which hatch in approximately 3-5 days depending on temperature."
     },
-    "masterPhotoUrl": "/species-images/corydoras-aeneus.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/corydoras-aeneus.png",
     "personality": {
       "vibeLine": {
         "casual": "The cheerful armored catfish that scoots in groups.",
@@ -344,7 +344,7 @@
       "layoutRequirement": "For potential breeding, a very large aquarium with strong water flow, numerous hiding spots among rocks and driftwood, and fine-leaved plants is recommended. Dim lighting may also encourage spawning behavior.",
       "comments": "Breeding Siamese Algae Eaters in a home aquarium is extremely challenging and rare. Most commercially available specimens are wild-caught or bred in large-scale aquaculture facilities using hormone induction. If spawning occurs, eggs are typically scattered and parental care is absent."
     },
-    "masterPhotoUrl": "/species-images/crossocheilus-oblongus.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/crossocheilus-oblongus.png",
     "personality": {
       "vibeLine": {
         "casual": "The hardworking cleaner that actually eats the tough algae.",
@@ -367,7 +367,7 @@
     "commonName": "Zebra Danio",
     "family": "Cyprinidae",
     "maxLengthCm": 4.6,
-    "masterPhotoUrl": "/species-images/danio-rerio.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/danio-rerio.png",
     "tankMetrics": {
       "tempRangeCelsius": [
         18,
@@ -446,7 +446,7 @@
       "layoutRequirement": "For breeding, a separate breeding tank with dim lighting is recommended. Provide fine-leaved plants like Java moss, spawning mops, or a spawning grid on the bottom to protect the eggs from predation by the parents. Water should be soft and slightly acidic.",
       "comments": "Black Skirt Tetras are relatively easy to breed in a home aquarium. Condition breeding pairs with a diet rich in live and frozen foods. Spawning typically occurs in the morning. After eggs are laid and fertilized, remove the parents immediately as they will consume the eggs. Fry are very small and require infusoria or liquid fry food for the first few days, transitioning to newly hatched brine shrimp as they grow."
     },
-    "masterPhotoUrl": "/species-images/gymnocorymbus-ternetzi.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/gymnocorymbus-ternetzi.png",
     "personality": {
       "vibeLine": {
         "casual": "The flowy-finned classic that fades from black to silver.",
@@ -571,7 +571,7 @@
     "commonName": "Neon Tetra",
     "family": "Characidae",
     "maxLengthCm": 2.7,
-    "masterPhotoUrl": "/species-images/paracheirodon-innesi.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/paracheirodon-innesi.png",
     "tankMetrics": {
       "tempRangeCelsius": [
         22,
@@ -675,7 +675,7 @@
     "commonName": "Guppy",
     "family": "Poeciliidae",
     "maxLengthCm": 7.3,
-    "masterPhotoUrl": "/species-images/poecilia-reticulata.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/poecilia-reticulata.png",
     "tankMetrics": {
       "tempRangeCelsius": [
         22,
@@ -754,7 +754,7 @@
       "layoutRequirement": "Dense planting (e.g., Java moss, hornwort) and floating plants provide crucial hiding spots for fry. A separate breeding tank may be necessary to protect fry from adults.",
       "comments": "Mollies are prolific livebearers, meaning they give birth to live, free-swimming fry. Breeding is relatively easy in a well-maintained aquarium. Gestation period is typically 30-40 days, producing 20-100 fry per brood."
     },
-    "masterPhotoUrl": "/species-images/poecilia-sphenops.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/poecilia-sphenops.png",
     "personality": {
       "vibeLine": {
         "casual": "The easygoing livebearer that loves hard, mineral-rich water.",
@@ -854,7 +854,7 @@
       "layoutRequirement": "For breeding, provide large, broad-leafed plants (like Amazon swords), pieces of slate, or ceramic spawning cones. A separate breeding tank is often recommended to protect eggs and fry from other tank inhabitants and to allow parents to focus on care without stress.",
       "comments": "Breeding Angelfish can be a rewarding experience. A healthy, well-conditioned pair will often initiate spawning. Water quality is paramount for successful egg hatching and fry development. Fry are free-swimming after a few days and can be fed newly hatched brine shrimp or microworms."
     },
-    "masterPhotoUrl": "/species-images/pterophyllum-scalare.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/pterophyllum-scalare.png",
     "personality": {
       "vibeLine": {
         "casual": "The tall, graceful icon of the planted tank.",
@@ -905,7 +905,7 @@
       "layoutRequirement": "A separate breeding tank of 10-15 gallons is recommended. The tank should have soft, slightly acidic water (pH 6.0-6.5, dGH 5-8) and a temperature of 26-27°C. Provide fine-leaved plants like Java moss, spawning mops, or a mesh bottom/marbles to protect the eggs from parental predation. Dim lighting is preferred.",
       "comments": "Tiger Barbs are relatively easy to breed. Condition a pair or a group of two males to one female with plenty of live and frozen foods. Spawning typically occurs in the early morning, with the female scattering hundreds of adhesive eggs among the plants. Parents should be removed immediately after spawning, as they will readily consume their own eggs. Eggs usually hatch within 24-36 hours, and fry become free-swimming in 3-5 days. Feed fry infusoria or liquid fry food initially, transitioning to newly hatched brine shrimp as they grow."
     },
-    "masterPhotoUrl": "/species-images/puntigrus-tetrazona.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/puntigrus-tetrazona.png",
     "personality": {
       "vibeLine": {
         "casual": "The cheeky stripe gang that nips first and asks questions never.",
@@ -956,7 +956,7 @@
       "layoutRequirement": "Use fine-leaved plants (Java moss, spawning mops) or a mesh/grid to protect scattered eggs from being eaten. Condition pairs with high-quality live or frozen foods before spawning. Remove adults after spawning or use a separate breeding tank. Dim lighting encourages spawning behavior.",
       "comments": "Eggs typically hatch within 24–48 hours. Fry are very small and require infusoria or liquid fry food initially, graduating to baby brine shrimp after a few days. Generally straightforward to breed in home aquariums with proper conditions."
     },
-    "masterPhotoUrl": "/species-images/puntius-titteya.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/puntius-titteya.png",
     "personality": {
       "vibeLine": {
         "casual": "The mellow barb that blushes deep cherry red.",
@@ -1054,7 +1054,7 @@
       "layoutRequirement": "Provide appropriate spawning sites based on natural behavior. Condition breeding pairs with varied, high-quality foods. Stable water parameters and a stress-free environment encourage reproductive behavior.",
       "comments": "This species is a bubblenester which forms temporary pair bonds. Some hobbyists prefer to isolate individual pairs for spawning purposes whereas others may maintain a small group. Either way the tank to be used for spawning should be furnish it with plenty of floating and/or stem plants with leaves reaching the surface. Gentle filtration via an air-powered sponge filter is the best option, as it will not break up the bubblenest of the male or suck up fry. The tank should have the tightest-fittin"
     },
-    "masterPhotoUrl": "/species-images/trichogaster-chuna.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/trichogaster-chuna.png",
     "personality": {
       "vibeLine": {
         "casual": "The shy golden sweetheart that warms up to you.",
@@ -1103,7 +1103,7 @@
       "layoutRequirement": "Provide appropriate spawning sites based on natural behavior. Condition breeding pairs with varied, high-quality foods. Stable water parameters and a stress-free environment encourage reproductive behavior.",
       "comments": "Like many anabantoids, it’s a bubble-nesting species . Breeding is not too difficult, although the males can be somewhat unpredictable in terms of behaviour. You’ll need to set up a separate tank for spawning purposes. Something around 18″-24″ in length is fine. There’s no need to use a substrate , but a handful or two of peat fibre may be beneficial. Also add some good sized clumps of hornwort or other fine-leaved plant and some floating plants such as Riccia . A small air-driven sponge filter "
     },
-    "masterPhotoUrl": "/species-images/trichogaster-lalius.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/trichogaster-lalius.png",
     "personality": {
       "vibeLine": {
         "casual": "The shimmering centerpiece that breathes air from the surface.",
@@ -1152,7 +1152,7 @@
       "layoutRequirement": "Use fine-leaved plants (Java moss, spawning mops) or a mesh/grid to protect scattered eggs from being eaten. Condition pairs with high-quality live or frozen foods before spawning. Remove adults after spawning or use a separate breeding tank. Dim lighting encourages spawning behavior.",
       "comments": "Eggs typically hatch within 24–48 hours. Fry are very small and require infusoria or liquid fry food initially, graduating to baby brine shrimp after a few days. Generally straightforward to breed in home aquariums with proper conditions."
     },
-    "masterPhotoUrl": "/species-images/trigonostigma-heteromorpha.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/trigonostigma-heteromorpha.png",
     "personality": {
       "vibeLine": {
         "casual": "The peaceful one wearing a little black triangle.",
@@ -1173,7 +1173,7 @@
     "commonName": "Green Swordtail",
     "family": "Poeciliidae",
     "maxLengthCm": 16,
-    "masterPhotoUrl": "/species-images/xiphophorus-hellerii.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/xiphophorus-hellerii.png",
     "tankMetrics": {
       "tempRangeCelsius": [
         22,
@@ -1252,7 +1252,7 @@
       "layoutRequirement": "Livebearers require no special spawning setup. Provide dense plant cover (floating plants, hornwort) for fry to hide from adults. A separate breeding trap or tank increases fry survival rates.",
       "comments": "Gestation is typically 4–6 weeks. Fry are born fully formed and can eat crushed flake or powdered fry food immediately. Females can store sperm and produce multiple broods from a single mating. Generally straightforward to breed in home aquariums with proper conditions."
     },
-    "masterPhotoUrl": "/species-images/xiphophorus-maculatus.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/xiphophorus-maculatus.png",
     "personality": {
       "vibeLine": {
         "casual": "The cheerful, no-fuss splash of color for beginners.",
@@ -1646,7 +1646,7 @@
       "layoutRequirement": "Provide a large flat rock or smooth slate; pairs clean a flat horizontal surface for egg deposition.",
       "comments": "Devoted parents; both guard the eggs and fry vigorously and may move them to pits."
     },
-    "masterPhotoUrl": "/species-images/astronotus-ocellatus.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/astronotus-ocellatus.png",
     "personality": {
       "vibeLine": {
         "casual": "The big wet puppy that rearranges its tank.",
@@ -2087,7 +2087,7 @@
       "layoutRequirement": "Provide appropriate spawning sites based on natural behavior. Condition breeding pairs with varied, high-quality foods. Stable water parameters and a stress-free environment encourage reproductive behavior.",
       "comments": ""
     },
-    "masterPhotoUrl": "/species-images/chromobotia-macracanthus.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/chromobotia-macracanthus.png",
     "personality": {
       "vibeLine": {
         "casual": "The playful orange clown that needs lots of friends.",
@@ -2293,7 +2293,7 @@
         "pro": "Best kept in groups of 5+. They appreciate cooler temperatures and sandy substrate. Sensitive to poor water quality and strong medications."
       }
     },
-    "masterPhotoUrl": "/species-images/corydoras-panda.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/corydoras-panda.png",
     "maxLengthCm": 4.6
   },
   {
@@ -4108,7 +4108,7 @@
         "pro": "Sensitive to cool temperatures and poor water quality. Best kept in pairs in well-established tanks with soft, acidic parameters around pH 6.5 and 26–28°C."
       }
     },
-    "masterPhotoUrl": "/species-images/mikrogeophagus-ramirezi.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/mikrogeophagus-ramirezi.png",
     "maxLengthCm": 7
   },
   {
@@ -4539,7 +4539,7 @@
       "layoutRequirement": "Provide appropriate spawning sites based on natural behavior. Condition breeding pairs with varied, high-quality foods. Stable water parameters and a stress-free environment encourage reproductive behavior.",
       "comments": ""
     },
-    "masterPhotoUrl": "/species-images/otocinclus-vittatus.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/otocinclus-vittatus.png",
     "personality": {
       "vibeLine": {
         "casual": "The tiny tireless algae-grazer that needs an established tank.",
@@ -4637,7 +4637,7 @@
       "layoutRequirement": "Use fine-leaved plants (Java moss, spawning mops) or a mesh/grid to protect scattered eggs from being eaten. Condition pairs with high-quality live or frozen foods before spawning. Remove adults after spawning or use a separate breeding tank.",
       "comments": "Eggs typically hatch within 24–48 hours. Fry are very small and require infusoria or liquid fry food initially, graduating to baby brine shrimp after a few days. Generally straightforward to breed in home aquariums with proper conditions."
     },
-    "masterPhotoUrl": "/species-images/pangio-kuhlii.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/pangio-kuhlii.png",
     "personality": {
       "vibeLine": {
         "casual": "The little eel-like noodle that loves to burrow.",
@@ -4686,7 +4686,7 @@
       "layoutRequirement": "Use fine-leaved plants (Java moss, spawning mops) or a mesh/grid to protect scattered eggs from being eaten. Condition pairs with high-quality live or frozen foods before spawning. Remove adults after spawning or use a separate breeding tank. Dim lighting encourages spawning behavior.",
       "comments": "Eggs typically hatch within 24–48 hours. Fry are very small and require infusoria or liquid fry food initially, graduating to baby brine shrimp after a few days. Generally straightforward to breed in home aquariums with proper conditions."
     },
-    "masterPhotoUrl": "/species-images/paracheirodon-axelrodi.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/paracheirodon-axelrodi.png",
     "personality": {
       "vibeLine": {
         "casual": "Like a neon tetra that went all-in on red.",
@@ -5295,7 +5295,7 @@
     "commonName": "Discus",
     "family": "Cichlidae",
     "maxLengthCm": 16.7,
-    "masterPhotoUrl": "/species-images/symphysodon-aequifasciatus.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/symphysodon-aequifasciatus.png",
     "tankMetrics": {
       "minVolumeGallons": 75,
       "tempRangeCelsius": [
@@ -5619,7 +5619,7 @@
       "layoutRequirement": "Provide appropriate spawning sites based on natural behavior. Condition breeding pairs with varied, high-quality foods. Stable water parameters and a stress-free environment encourage reproductive behavior.",
       "comments": "Easy. Bubblenester. The breeding tank should contain water of no more than 6-8″ in depth with lots of floating plants. Filtration should be gentle and air-powered filters are ideal. Condition the fish with live food. When the female becomes plump with eggs the male will construct a large bubblenest of up to 10″ diameter amongst the floating plants. He will then begin to display to the female. As the female approaches the nest the fish can be seen touching each other with their modified ventral f"
     },
-    "masterPhotoUrl": "/species-images/trichopodus-leerii.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/trichopodus-leerii.png",
     "personality": {
       "vibeLine": {
         "casual": "The lace-patterned beauty that glows when it's happy.",
@@ -10678,7 +10678,7 @@
         "pro": "Best kept in schools of 6+. They prefer slightly cooler temperatures (22–24°C) and appreciate gentle flow with plenty of swimming space."
       }
     },
-    "masterPhotoUrl": "/species-images/danio-margaritatus.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/danio-margaritatus.png",
     "maxLengthCm": 2.6
   },
   {
@@ -10913,7 +10913,7 @@
       "layoutRequirement": "Use fine-leaved plants (Java moss, spawning mops) or a mesh/grid to protect scattered eggs from being eaten. Condition pairs with high-quality live or frozen foods before spawning. Remove adults after spawning or use a separate breeding tank. Dim lighting encourages spawning behavior.",
       "comments": "An egg -scattering free spawner exhibiting no parental care . When in good condition adults will spawn often and in a mature aquarium it’s possible that small numbers of fry may start to appear without intervention. However if you want to maximise yield a more controlled approach is required. The adult group can still be conditioned together but a smaller aquarium should also be set up and filled with mature water. This should be very dimly lit and the base covered with some kind of mesh of a la"
     },
-    "masterPhotoUrl": "/species-images/hyphessobrycon-amandae.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/hyphessobrycon-amandae.png",
     "personality": {
       "vibeLine": {
         "casual": "A tiny glowing ember drifting through your plants.",
@@ -11403,7 +11403,7 @@
       "layoutRequirement": "Livebearers require no special spawning setup. Provide dense plant cover (floating plants, hornwort) for fry to hide from adults. A separate breeding trap or tank increases fry survival rates.",
       "comments": "Very easy. Endler’s will breed in the community tank and are incredibly prolific. To be honest breeding this species is more of a case of ‘when’ rather then ‘how’. If you’re not interested inbreeding them, buy only male fish. Otherwise breeding is much the same as for many other livebearers. We recommend that several females should be kept to every male in order to dissipate vigorous harassment by males. Areas of dense planting will also help. Males constantly display to females, spreading their"
     },
-    "masterPhotoUrl": "/species-images/poecilia-wingei.png",
+    "masterPhotoUrl": "/species-images/wikimedia-resized/poecilia-wingei.png",
     "personality": {
       "vibeLine": {
         "casual": "A pocket-sized firework crossed with a guppy.",
