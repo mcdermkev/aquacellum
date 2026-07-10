@@ -44,6 +44,12 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const [toastMessage, setToastMessage] = useState(null);
   const [localActionLogs, setLocalActionLogs] = useState([]);
   const [residingSpecies, setResidingSpecies] = useState([]);
+  // Themed confirm dialog — replaces window.confirm() for a consistent, on-brand UX
+  const [confirmDialog, setConfirmDialog] = useState(null); // { title, message, confirmLabel, danger, onConfirm }
+
+  const requestConfirm = ({ title, message, confirmLabel = "Confirm", danger = false, onConfirm }) => {
+    setConfirmDialog({ title, message, confirmLabel, danger, onConfirm });
+  };
 
   // Detailed Tank View State (must be declared before fetchLocalActionLogs which references it)
   const [activeTank, setActiveTank] = useState(null);
@@ -1614,26 +1620,31 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       >
                         <button
                           type="button"
-                          onClick={async (e) => {
+                          onClick={(e) => {
                             e.stopPropagation();
-                            if (!window.confirm(
-                              casualModeActive
+                            requestConfirm({
+                              title: casualModeActive ? "🔄 Reset Tank" : "🔄 Reset Unit",
+                              message: casualModeActive
                                 ? `Reset "${tank.name}"? This clears all water logs and action history but keeps your fish.`
-                                : `Reset unit "${tank.name}"? Purges telemetry & action logs. Specimens preserved.`
-                            )) return;
-                            try {
-                              await db.actionLogs.where("tankId").equals(tank.id).delete();
-                              await db.tanks.update(tank.id, {
-                                latestTestTimestamp: null,
-                                latestChangeTimestamp: null,
-                                waterParams: null,
-                              });
-                              queryClient.invalidateQueries({ queryKey: ["tanks", walletAccount] });
-                              showToast(casualModeActive ? "🔄 Tank reset! Starting fresh." : "Unit telemetry purged.");
-                            } catch (err) {
-                              console.error("Reset tank failed:", err);
-                              showToast("Failed to reset tank.");
-                            }
+                                : `Reset unit "${tank.name}"? Purges telemetry & action logs. Specimens preserved.`,
+                              confirmLabel: casualModeActive ? "Reset Tank" : "Reset Unit",
+                              danger: false,
+                              onConfirm: async () => {
+                                try {
+                                  await db.actionLogs.where("tankId").equals(tank.id).delete();
+                                  await db.tanks.update(tank.id, {
+                                    latestTestTimestamp: null,
+                                    latestChangeTimestamp: null,
+                                    waterParams: null,
+                                  });
+                                  queryClient.invalidateQueries({ queryKey: ["tanks", walletAccount] });
+                                  showToast(casualModeActive ? "🔄 Tank reset! Starting fresh." : "Unit telemetry purged.");
+                                } catch (err) {
+                                  console.error("Reset tank failed:", err);
+                                  showToast("Failed to reset tank.");
+                                }
+                              },
+                            });
                           }}
                           style={{
                             flex: 1,
@@ -1652,21 +1663,26 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                         </button>
                         <button
                           type="button"
-                          onClick={async (e) => {
+                          onClick={(e) => {
                             e.stopPropagation();
-                            if (!window.confirm(
-                              casualModeActive
+                            requestConfirm({
+                              title: casualModeActive ? "🗑️ Remove Tank" : "🗑️ Decommission Unit",
+                              message: casualModeActive
                                 ? `Remove "${tank.name}"? This hides it from your dashboard. Your fish records are preserved.`
-                                : `Decommission unit "${tank.name}"? Sets active=false. Specimen records retained.`
-                            )) return;
-                            try {
-                              await db.tanks.update(tank.id, { active: false });
-                              queryClient.invalidateQueries({ queryKey: ["tanks", walletAccount] });
-                              showToast(casualModeActive ? "🗑️ Tank removed from dashboard." : "Unit decommissioned.");
-                            } catch (err) {
-                              console.error("Remove tank failed:", err);
-                              showToast("Failed to remove tank.");
-                            }
+                                : `Decommission unit "${tank.name}"? Sets active=false. Specimen records retained.`,
+                              confirmLabel: casualModeActive ? "Remove Tank" : "Decommission",
+                              danger: true,
+                              onConfirm: async () => {
+                                try {
+                                  await db.tanks.update(tank.id, { active: false });
+                                  queryClient.invalidateQueries({ queryKey: ["tanks", walletAccount] });
+                                  showToast(casualModeActive ? "🗑️ Tank removed from dashboard." : "Unit decommissioned.");
+                                } catch (err) {
+                                  console.error("Remove tank failed:", err);
+                                  showToast("Failed to remove tank.");
+                                }
+                              },
+                            });
                           }}
                           style={{
                             flex: 1,
@@ -4363,6 +4379,100 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
           pointerEvents: "none"
         }}>
           {toastMessage}
+        </div>
+      )}
+
+      {/* Themed Confirm Dialog — replaces window.confirm() for a consistent, on-brand UX */}
+      {confirmDialog && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.6)",
+            backdropFilter: "blur(6px)",
+            zIndex: 10001,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "1rem",
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setConfirmDialog(null);
+          }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-label={confirmDialog.title}
+            style={{
+              width: "100%",
+              maxWidth: "380px",
+              background: "var(--bg-secondary, #0f172a)",
+              border: `1px solid ${confirmDialog.danger ? "rgba(248, 113, 113, 0.3)" : "rgba(56, 189, 248, 0.3)"}`,
+              borderRadius: "14px",
+              padding: "1.25rem",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.85rem",
+              boxShadow: confirmDialog.danger
+                ? "0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(248, 113, 113, 0.15)"
+                : "0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.15)",
+              animation: "modalPopIn 0.2s cubic-bezier(0.32, 0.72, 0, 1) forwards",
+            }}
+          >
+            <span style={{ fontSize: "0.95rem", fontWeight: "700", color: "#fff" }}>
+              {confirmDialog.title}
+            </span>
+            <p style={{ margin: 0, fontSize: "0.82rem", lineHeight: 1.5, color: "var(--text-muted, #94a3b8)" }}>
+              {confirmDialog.message}
+            </p>
+            <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.25rem" }}>
+              <button
+                type="button"
+                onClick={() => setConfirmDialog(null)}
+                style={{
+                  flex: 1,
+                  padding: "0.55rem 0.8rem",
+                  fontSize: "0.78rem",
+                  fontWeight: 600,
+                  borderRadius: "8px",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  background: "rgba(255, 255, 255, 0.04)",
+                  color: "#e2e8f0",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const action = confirmDialog.onConfirm;
+                  setConfirmDialog(null);
+                  if (action) action();
+                }}
+                style={{
+                  flex: 1,
+                  padding: "0.55rem 0.8rem",
+                  fontSize: "0.78rem",
+                  fontWeight: 600,
+                  borderRadius: "8px",
+                  border: confirmDialog.danger ? "1px solid rgba(248, 113, 113, 0.4)" : "1px solid rgba(56, 189, 248, 0.4)",
+                  background: confirmDialog.danger ? "rgba(248, 113, 113, 0.15)" : "rgba(56, 189, 248, 0.15)",
+                  color: confirmDialog.danger ? "#f87171" : "#38bdf8",
+                  cursor: "pointer",
+                }}
+              >
+                {confirmDialog.confirmLabel}
+              </button>
+            </div>
+          </div>
+          <style>{`
+            @keyframes modalPopIn {
+              from { opacity: 0; transform: scale(0.95); }
+              to { opacity: 1; transform: scale(1); }
+            }
+          `}</style>
         </div>
       )}
 
