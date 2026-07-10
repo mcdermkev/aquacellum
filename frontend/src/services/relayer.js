@@ -912,6 +912,10 @@ export async function relayGetOrders(walletAccount = "") {
         shippingEscrows.push({ ...o, role });
       } else if (o.orderType === "batch") {
         purchases.push({ ...o, role });
+      } else if (o.orderType === "instant") {
+        // Instant (non-shipping) purchases: surface them alongside shipping
+        // escrows so they appear in the orders list with a "completed" status.
+        shippingEscrows.push({ ...o, role, isInstant: true, status: 2 });
       } else if (o.orderType === "fiat_pending" || o.orderType === "fiat") {
         // Stripe (fiat) orders: surface them as held escrows so the buyer can
         // confirm arrival / complete the handshake, which drives the backend

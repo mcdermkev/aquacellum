@@ -30,7 +30,7 @@ import { calculateCheckoutDiscount } from "../services/rewardsPoolApi";
 import { ArrivalModal } from "./ArrivalModal";
 import { ShippingRateModal } from "./ShippingRateModal";
 import { buyShippingLabel } from "../services/shipping";
-import { pushOrderToCloud, pullOrdersFromCloud, subscribeToOrderUpdates } from "../services/ordersSync";
+import { pushOrderToCloud, pullOrdersFromCloud, pushAllLocalOrders, subscribeToOrderUpdates } from "../services/ordersSync";
 import { OrderReceipt } from "./OrderReceipt";
 import { OrderAnalytics } from "./OrderAnalytics";
 import { OrderWatchlistReorder } from "./OrderWatchlistReorder";
@@ -685,6 +685,10 @@ export function CheckoutSummary({
         }
       } catch (e) {}
     })();
+
+    // Push local orders to cloud first (ensures fiat_pending orders from this
+    // device are visible server-side for the other party and for cross-device sync)
+    pushAllLocalOrders(walletAccount).catch(() => {});
 
     // Pull cloud orders on mount (merges into local Dexie)
     pullOrdersFromCloud(walletAccount).then(({ pulled, updated }) => {

@@ -113,11 +113,30 @@ export async function pullOrdersFromCloud(walletAddress) {
  */
 async function mergeCloudToLocal(cloudOrder, walletAddress) {
   const localKey = cloudOrder.local_key;
-  if (!localKey) return false;
 
   try {
-    // Find existing local order by key
-    const existing = await db.marketOrders.get(Number(localKey));
+    // If we have a local_key, try to find the existing local record by key
+    let existing = null;
+    if (localKey) {
+      existing = await db.marketOrders.get(Number(localKey));
+    } else {
+      // Cloud-originated order (no local_key): try to match by unique identifiers
+      // to avoid duplicates, then insert if not found.
+      if (cloudOrder.order_type === "shipping" && cloudOrder.on_chain_token_id) {
+        existing = await db.marketOrders
+          .where({ orderType: "shipping", tokenId: Number(cloudOrder.on_chain_token_id) })
+          .first();
+      } else if (cloudOrder.order_type === "batch" && cloudOrder.on_chain_purchase_id) {
+        existing = await db.marketOrders
+          .where({ orderType: "batch", purchaseId: Number(cloudOrder.on_chain_purchase_id) })
+          .first();
+      } else if ((cloudOrder.order_type === "fiat" || cloudOrder.order_type === "instant") && cloudOrder.stripe_session_id) {
+        // stripeSessionId is not indexed, so use filter instead of where()
+        existing = await db.marketOrders
+          .filter((o) => o.stripeSessionId === cloudOrder.stripe_session_id)
+          .first();
+      }
+    }
 
     if (!existing) {
       // Create local record from cloud data
@@ -510,6 +529,16 @@ function mapCloudToLocal(cloudOrder, walletAddress) {
       stripeSessionId: cloudOrder.stripe_session_id,
       items: JSON.stringify(items),
       status: cloudOrder.status,
+    };
+  } else if (cloudOrder.order_type === "instant") {
+    return {
+      ...base,
+      orderType: "instant",
+      tokenId: cloudOrder.on_chain_token_id || firstItem.tokenId,
+      price: String((cloudOrder.subtotal_cents || 0) / 100000),
+      shippingFee: "0",
+      amountLocked: String((cloudOrder.total_paid_cents || 0) / 100000),
+      status: 2, // completed
     };
   }
 

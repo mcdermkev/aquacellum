@@ -485,6 +485,37 @@ async function handleWebhook(req, res) {
           created_at: new Date().toISOString(),
         });
 
+        // Also upsert into the orders table so the frontend's pullOrdersFromCloud
+        // can discover this order. Without this, fiat orders only exist in
+        // fiat_settlements and never surface in the buyer/seller order history.
+        const orderTypeMap = { specimen: "instant", shipping: "shipping", batch: "batch", multi: "shipping", pickup: "shipping" };
+        const orderStatusMap = { specimen: "completed", shipping: "locked", batch: "pending", multi: "locked", pickup: "pending" };
+        const orderItems = metadata.items ? (typeof metadata.items === "string" ? JSON.parse(metadata.items) : metadata.items) : [{ tokenId: metadata.tokenId, commonName: metadata.commonName || "Specimen", priceCents: amountCents }];
+        try {
+          await supabase.from("orders").insert({
+            order_type: orderTypeMap[purchaseType] || "fiat",
+            buyer_wallet: (metadata.buyerWallet || "").toLowerCase(),
+            seller_wallet: (metadata.sellerWallet || "").toLowerCase(),
+            status: orderStatusMap[purchaseType] || "pending",
+            subtotal_cents: amountCents,
+            shipping_fee_cents: Number(metadata.shippingFeeCents || 0),
+            platform_fee_cents: Number(metadata.platformFeeCents || 0),
+            total_paid_cents: amountCents,
+            items: orderItems,
+            quantity: Number(metadata.quantity || 1),
+            fulfillment_type: purchaseType === "pickup" ? "in_person" : "shipping",
+            stripe_session_id: metadata.stripeSessionId || null,
+            stripe_payment_intent: paymentIntentId,
+            on_chain_token_id: metadata.tokenId ? Number(metadata.tokenId) : null,
+            tx_hash: settlement.txHash,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "stripe_payment_intent", ignoreDuplicates: true });
+        } catch (orderInsertErr) {
+          // Non-critical: the order will still be discoverable via local sync
+          console.warn("[Stripe Webhook] orders table insert failed:", orderInsertErr.message);
+        }
+
         console.log(`[Stripe Webhook] Settlement complete: ${settlement.txHash}`);
 
         captureServerEvent(metadata.buyerWallet, "marketplace_purchase", {
