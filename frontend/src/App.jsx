@@ -154,10 +154,19 @@ export default function App() {
       await pushAllLocalDataToCloud(walletAddr);
       if (!signal?.cancelled) {
         queryClient.invalidateQueries({ queryKey: ["tanks", walletAddr] });
+        queryClient.invalidateQueries({ queryKey: ["reef", "profile", walletAddr] });
         setSyncStatus("success");
         const now = new Date();
         setLastSyncedAt(now);
         localStorage.setItem("aquadex_last_synced", now.toISOString());
+
+        // Re-read XP from localStorage (which cloud sync may have updated)
+        // to ensure the progress bar reflects the correct value after login.
+        const restoredXp = getXp();
+        if (restoredXp > 0) {
+          setXp(restoredXp);
+        }
+
         // Auto-dismiss success after 3s
         setTimeout(() => setSyncStatus((s) => s === "success" ? null : s), 3000);
       }

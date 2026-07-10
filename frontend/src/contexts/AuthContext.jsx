@@ -473,6 +473,11 @@ export function AuthProvider({ children }) {
   const disconnect = useCallback(async () => {
     localStorage.removeItem("aquadex_session_key");
 
+    // Clear XP/profile localStorage to prevent stale rank data on next login
+    localStorage.removeItem("aquadex_xp_profile");
+    localStorage.removeItem("aquadex_xp");
+    localStorage.removeItem("aquadex_xp_points");
+
     if (loginMethod === "privy") {
       try {
         await privyLogout();

@@ -235,7 +235,7 @@ export async function pullCloudDataForWallet(walletAddress) {
   if (xpRestored) {
     // Dispatch event so UI components re-render with updated XP
     window.dispatchEvent(new CustomEvent("aquadex_xp_added", {
-      detail: { reason: "cloud_sync", actionLabel: "XP Restored from Cloud" },
+      detail: { reason: "cloud_sync", actionLabel: "XP Restored from Cloud", totalXp: xpRestored },
     }));
   }
 
@@ -404,8 +404,20 @@ export async function pullXpProfileFromCloud(walletAddress) {
         localStorage.setItem("aquadex_xp_points", String(cloudXp));
       } catch (e) { /* localStorage may be unavailable */ }
 
+      // Sync restored tier to reef profile so the header badge is correct
+      try {
+        await supabase
+          .from("profiles")
+          .update({
+            companion_tier: mergedProfile.currentTier,
+            xp_total: cloudXp,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("wallet_address", addr);
+      } catch (e) { /* non-critical — UI will still show correct value after refetch */ }
+
       console.info(`[CloudSync] XP restored from cloud: ${cloudXp} XP (local was ${localXp})`);
-      return true;
+      return cloudXp;
     } else if (localXp > cloudXp) {
       // Local is ahead — push to cloud so other devices catch up
       syncXpProfileToCloud(walletAddress, {
@@ -415,6 +427,52 @@ export async function pullXpProfileFromCloud(walletAddress) {
         lastActiveDate: localProfile.lastActiveDate,
         monthlyXp: localProfile.monthlyXp,
       }).catch(() => {});
+
+      // Also sync to reef profile so the header badge is correct
+      try {
+        await supabase
+          .from("profiles")
+          .update({
+            companion_tier: localProfile.currentTier,
+            xp_total: localXp,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("wallet_address", addr);
+      } catch (e) { /* non-critical */ }
+
+      // Ensure localStorage reflects the correct local state
+      try {
+        const lsProfile = {
+          points: localXp,
+          tier: localProfile.currentTier,
+          level: localXp >= 10000 ? 5 : localXp >= 5000 ? 4 : localXp >= 2500 ? 3 : localXp >= 1500 ? 2 : 1,
+          history: [],
+        };
+        localStorage.setItem("aquadex_xp_profile", JSON.stringify(lsProfile));
+        localStorage.setItem("aquadex_xp", String(localXp));
+        localStorage.setItem("aquadex_xp_points", String(localXp));
+      } catch (e) { /* localStorage may be unavailable */ }
+
+      return localXp;
+    }
+
+    // cloudXp === localXp — no merge needed, but ensure localStorage is populated
+    // (it may have been cleared on logout)
+    if (localXp > 0) {
+      const { deriveTierFromXp } = await import("../db");
+      const tier = localProfile?.currentTier || deriveTierFromXp(localXp);
+      try {
+        const lsProfile = {
+          points: localXp,
+          tier,
+          level: localXp >= 10000 ? 5 : localXp >= 5000 ? 4 : localXp >= 2500 ? 3 : localXp >= 1500 ? 2 : 1,
+          history: [],
+        };
+        localStorage.setItem("aquadex_xp_profile", JSON.stringify(lsProfile));
+        localStorage.setItem("aquadex_xp", String(localXp));
+        localStorage.setItem("aquadex_xp_points", String(localXp));
+      } catch (e) { /* localStorage may be unavailable */ }
+      return localXp;
     }
 
     return false;
