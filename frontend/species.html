@@ -28,6 +28,15 @@
     .hero-image-wrap img {
       width: 100%; height: 100%; object-fit: cover;
     }
+    .hero-image-wrap .hero-video {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%; object-fit: cover;
+      z-index: 1; opacity: 0; transition: opacity 0.4s ease;
+      pointer-events: none;
+    }
+    .hero-image-wrap .hero-video.playing {
+      opacity: 1;
+    }
     .hero-image-wrap .placeholder-icon {
       position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
       font-size: 5rem; opacity: 0.3;
@@ -291,10 +300,12 @@
       const hasImage = sp.masterPhotoUrl && sp.masterPhotoUrl !== '';
       const temp = sp.tankMetrics?.tempRangeCelsius;
       const ph = sp.tankMetrics?.phRange;
+      const videoSlug = sp.scientificName.toLowerCase().replace(/\s+/g, '-');
+      const videoPath = `/videos/species/${videoSlug}.mp4`;
 
       // Build the hero image
       const imageHtml = hasImage
-        ? `<img src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="eager">`
+        ? `<img src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="eager"><video class="hero-video" src="${videoPath}" muted loop playsinline preload="metadata"></video>`
         : `<div class="placeholder-icon">🐟</div>`;
 
       // Vibe line
@@ -507,6 +518,19 @@
       html += `</div>`; // close content-sections
 
       document.getElementById('mainContent').innerHTML = html;
+
+      // Auto-play hero video if it exists
+      requestAnimationFrame(() => {
+        const heroVideo = document.querySelector('.hero-video');
+        if (heroVideo) {
+          heroVideo.play().then(() => {
+            heroVideo.classList.add('playing');
+          }).catch(() => {
+            // Video doesn't exist or can't play — hide it
+            heroVideo.style.display = 'none';
+          });
+        }
+      });
 
       // Animate gauges in after render
       requestAnimationFrame(() => {

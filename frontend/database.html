@@ -442,6 +442,19 @@
       font-size: 3rem;
       opacity: 0.4;
     }
+    .card-image .card-video {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+    .species-card:hover .card-image .card-video.playing {
+      opacity: 1;
+    }
     .card-difficulty-badge {
       position: absolute;
       top: 10px;
@@ -1263,9 +1276,11 @@
         const badgeClass = getDifficultyClass(difficulty);
         const tierClass = getTierClass(difficulty);
         const hasImage = sp.masterPhotoUrl && sp.masterPhotoUrl !== '';
+        const videoSlug = sp.scientificName.toLowerCase().replace(/\s+/g, '-');
+        const videoPath = `/videos/species/${videoSlug}.mp4`;
 
         const imageHtml = hasImage
-          ? `<img class="blur-bg" src="${sp.masterPhotoUrl}" alt="" aria-hidden="true"><img class="main-img" src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="lazy">`
+          ? `<img class="blur-bg" src="${sp.masterPhotoUrl}" alt="" aria-hidden="true"><img class="main-img" src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="lazy"><video class="card-video" src="${videoPath}" muted loop playsinline preload="none"></video>`
           : `<span class="placeholder-icon">🐟</span>`;
 
         // Contextual metadata based on view mode
@@ -1352,6 +1367,28 @@
         }, { threshold: 0.05, rootMargin: '50px' });
         cards.forEach(card => observer.observe(card));
       });
+
+      // Video hover playback for cards with .card-video
+      grid.addEventListener('mouseenter', (e) => {
+        const card = e.target.closest('.species-card');
+        if (!card) return;
+        const video = card.querySelector('.card-video');
+        if (!video || video.dataset.noVideo) return;
+        video.currentTime = 0;
+        video.play().then(() => {
+          video.classList.add('playing');
+        }).catch(() => {
+          video.dataset.noVideo = '1';
+        });
+      }, true);
+      grid.addEventListener('mouseleave', (e) => {
+        const card = e.target.closest('.species-card');
+        if (!card) return;
+        const video = card.querySelector('.card-video');
+        if (!video) return;
+        video.classList.remove('playing');
+        video.pause();
+      }, true);
     }
 
     // ---- Popup / Flip Logic ----
