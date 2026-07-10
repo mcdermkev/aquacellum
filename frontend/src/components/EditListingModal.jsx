@@ -13,8 +13,9 @@ const getSpecimenPhotoUrl = (commonName) => {
 
 export function EditListingModal({ isOpen, onClose, item, onSuccess }) {
   const [price, setPrice] = useState("");
+  // Shipping itself is buyer-paid and quoted live at checkout (ShipEngine) —
+  // sellers only toggle whether shipping is offered, never a flat fee.
   const [isShipping, setIsShipping] = useState(false);
-  const [shippingFee, setShippingFee] = useState("5.00");
   const [tempPhotos, setTempPhotos] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -35,11 +36,6 @@ export function EditListingModal({ isOpen, onClose, item, onSuccess }) {
       
       const shippingActive = !!item.isShipping;
       setIsShipping(shippingActive);
-      
-      const displayShippingFee = item.shippingFeeCents != null
-        ? (Number(item.shippingFeeCents) / 100).toFixed(2)
-        : parseFloat(item.shippingFee || 0).toFixed(2);
-      setShippingFee(displayShippingFee);
 
       // Load photos from localStorage into local temp state (so changes don't persist unless saved)
       if (!item.isBatch) {
@@ -61,7 +57,6 @@ export function EditListingModal({ isOpen, onClose, item, onSuccess }) {
       // Clear state on close
       setPrice("");
       setIsShipping(false);
-      setShippingFee("5.00");
       setTempPhotos([]);
       setError(null);
     }
@@ -92,17 +87,14 @@ export function EditListingModal({ isOpen, onClose, item, onSuccess }) {
       setError("Please specify a valid price greater than zero.");
       return;
     }
-    if (isShipping && (!shippingFee || isNaN(shippingFee) || Number(shippingFee) < 0)) {
-      setError("Please specify a valid shipping fee.");
-      return;
-    }
 
     setError(null);
     setSubmitting(true);
 
     try {
       const priceCentsUSD = Math.round(parseFloat(price) * 100);
-      const shippingFeeCents = isShipping ? Math.round(parseFloat(shippingFee) * 100) : 0;
+      // Shipping is buyer-paid and quoted live at checkout — always 0 here.
+      const shippingFeeCents = 0;
 
       // Call relayer update function
       const result = await relayUpdateListing({
@@ -358,21 +350,14 @@ export function EditListingModal({ isOpen, onClose, item, onSuccess }) {
           />
         </div>
 
-        {/* Shipping Fee field if shipping is enabled */}
+        {/* Shipping is buyer-paid at checkout via live ShipEngine rates —
+            sellers don't set a flat fee. Just a heads-up here. */}
         {isShipping && (
-          <div>
-            <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-              Shipping Fee ($)
-            </label>
-            <input 
-              type="number"
-              step="0.01"
-              value={shippingFee}
-              onChange={(e) => setShippingFee(e.target.value)}
-              placeholder="e.g. 5.00"
-              required
-              style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none" }}
-            />
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", padding: "0.65rem 0.75rem", background: "rgba(56,189,248,0.05)", border: "1px solid rgba(56,189,248,0.15)", borderRadius: "6px" }}>
+            <span style={{ fontSize: "0.9rem" }}>🚚</span>
+            <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+              Shipping is quoted live at checkout based on the buyer's address — you don't set a fee.
+            </span>
           </div>
         )}
 

@@ -786,12 +786,14 @@
       } catch (e) { console.warn('Failed to fetch wanted listings:', e); }
     }
     // ── Price Helpers ─────────────────────────────────────────────────────
+    // Listings store price as a plain USD dollar string (see relayer.js /
+    // listingManager.js) — no unit conversion needed here.
     function ethToUSD(priceEth) {
-      const usd = parseFloat(priceEth || 0) * 1000;
+      const usd = parseFloat(priceEth || 0);
       if (usd <= 0) return 'Free';
       return '$' + usd.toFixed(2);
     }
-    function ethToUSDRaw(priceEth) { return parseFloat(priceEth || 0) * 1000; }
+    function ethToUSDRaw(priceEth) { return parseFloat(priceEth || 0); }
 
     // ── Cloud Listings ─────────────────────────────────────────────────────
     async function fetchCloudListings() {

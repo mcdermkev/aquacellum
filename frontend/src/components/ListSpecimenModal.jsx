@@ -29,9 +29,9 @@ export function ListSpecimenModal({
   const [tokenId, setTokenId] = useState("");
   const [price, setPrice] = useState("");
   // Default to shipping — it reaches the most buyers. Sellers can switch to
-  // local pickup (which is fee-free at live events).
+  // local pickup (which is fee-free at live events). Shipping itself is
+  // buyer-paid and quoted live at checkout — no flat fee to set here.
   const [isShipping, setIsShipping] = useState(true);
-  const [shippingFee, setShippingFee] = useState("5.00");
   // Set when we auto-fill care fields from species reference data, so we can
   // show a small "prefilled, editable" hint.
   const [carePrefilled, setCarePrefilled] = useState(false);
@@ -67,13 +67,47 @@ export function ListSpecimenModal({
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
 
+  // Owned-specimen picker — lets sellers tap the fish they mean instead of
+  // memorizing/typing its Certificate Serial No. Falls back to manual entry
+  // for edge cases (e.g. specimen not synced locally).
+  const [ownedSpecimens, setOwnedSpecimens] = useState([]);
+  const [loadingOwned, setLoadingOwned] = useState(false);
+  const [manualEntry, setManualEntry] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || preselectedListSpecimen) return;
+    let cancelled = false;
+    (async () => {
+      setLoadingOwned(true);
+      try {
+        const all = await db.specimens.toArray();
+        const mine = all.filter(
+          (s) => (s.ownerAddress || "").toLowerCase() === (walletAccount || "").toLowerCase() && s.status === 0
+        );
+        // Newest first so recently added/hatched fish are easiest to find.
+        mine.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        if (!cancelled) setOwnedSpecimens(mine);
+      } catch (err) {
+        console.warn("Failed to load owned specimens:", err);
+        if (!cancelled) setOwnedSpecimens([]);
+      } finally {
+        if (!cancelled) setLoadingOwned(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen, preselectedListSpecimen, walletAccount]);
+
+  const handleSelectOwnedSpecimen = (spec) => {
+    setTokenId(String(spec.id));
+    verifyToken(Number(spec.id));
+  };
+
   useEffect(() => {
     if (!isOpen) {
       // Reset state on close
       setTokenId("");
       setPrice("");
       setIsShipping(true);
-      setShippingFee("5.00");
       setStep(1);
       setIsApproved(false);
       setError(null);
@@ -99,6 +133,8 @@ export function ListSpecimenModal({
       setPhotoPreview(null);
       setSellerPayoutReady(null);
       setOnboardingPayout(false);
+      setManualEntry(false);
+      setOwnedSpecimens([]);
     }
   }, [isOpen]);
 
@@ -298,10 +334,6 @@ export function ListSpecimenModal({
       setError("Please specify a valid price greater than zero.");
       return;
     }
-    if (isShipping && (!shippingFee || isNaN(shippingFee) || Number(shippingFee) < 0)) {
-      setError("Please specify a valid shipping fee.");
-      return;
-    }
 
     setError(null);
     setSubmitting(true);
@@ -310,8 +342,10 @@ export function ListSpecimenModal({
     try {
       // USD is the canonical price (this is a Web2-masked marketplace: buyers pay
       // dollars via Stripe). The seller enters dollars; store cents for Stripe.
+      // Shipping itself is buyer-paid and quoted live at checkout (ShipEngine) —
+      // sellers never set a flat shipping fee, so it's always 0 here.
       const priceCentsUSD = Math.round(parseFloat(price) * 100);
-      const shippingFeeCents = isShipping ? Math.round(parseFloat(shippingFee) * 100) : 0;
+      const shippingFeeCents = 0;
 
       // Beta: store listing locally (no MetaMask, no gas)
       const result = await relayCreateListing({
@@ -428,6 +462,75 @@ export function ListSpecimenModal({
                 Retrieving registry certificate details...
               </span>
             </div>
+          ) : !manualEntry ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                Pick the fish you want to list
+              </label>
+
+              {loadingOwned && (
+                <div style={{ textAlign: "center", padding: "1.5rem 0", color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+                  Loading your fish...
+                </div>
+              )}
+
+              {!loadingOwned && ownedSpecimens.length === 0 && (
+                <div style={{ padding: "1rem", textAlign: "center", color: "var(--text-muted)", fontSize: "0.8rem" }}>
+                  No available fish found. If you know the certificate serial number, you can enter it manually below.
+                </div>
+              )}
+
+              {!loadingOwned && ownedSpecimens.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "320px", overflowY: "auto", paddingRight: "0.25rem" }}>
+                  {ownedSpecimens.map((spec) => {
+                    const photoUrl = getSpecimenPhotoUrl(spec.commonName);
+                    return (
+                      <button
+                        key={spec.id}
+                        type="button"
+                        onClick={() => handleSelectOwnedSpecimen(spec)}
+                        disabled={checking}
+                        style={{
+                          display: "flex", alignItems: "center", gap: "0.75rem",
+                          padding: "0.6rem 0.75rem", borderRadius: "8px", textAlign: "left",
+                          background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)",
+                          color: "#fff", cursor: checking ? "default" : "pointer"
+                        }}
+                      >
+                        <img
+                          src={photoUrl}
+                          alt={spec.commonName}
+                          style={{ width: "40px", height: "40px", borderRadius: "6px", objectFit: "cover", flexShrink: 0, background: "rgba(255,255,255,0.05)" }}
+                          onError={(e) => {
+                            e.target.src = "https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?auto=format&fit=crop&w=80&h=80&q=80";
+                          }}
+                        />
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0.1rem", flex: 1, minWidth: 0 }}>
+                          <strong style={{ fontSize: "0.85rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {spec.commonName || "Unnamed Specimen"}
+                            {spec.breederStockTag ? ` "${spec.breederStockTag}"` : ""}
+                          </strong>
+                          <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", fontFamily: "monospace" }}>
+                            CERT #{String(spec.id).padStart(3, "0")}
+                          </span>
+                        </div>
+                        {checking && tokenId === String(spec.id) && (
+                          <div style={{ width: "16px", height: "16px", border: "2px solid rgba(255,255,255,0.15)", borderTopColor: "var(--accent-blue)", borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setManualEntry(true)}
+                style={{ background: "none", border: "none", color: "var(--accent-blue)", fontSize: "0.75rem", cursor: "pointer", padding: "0.35rem 0", alignSelf: "flex-start" }}
+              >
+                Enter certificate serial number manually →
+              </button>
+            </div>
           ) : (
             <form onSubmit={verifyAndCheckApproval} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               <div>
@@ -451,6 +554,15 @@ export function ListSpecimenModal({
               >
                 {checking ? "Verifying Access..." : "Verify Ownership"}
               </button>
+              {ownedSpecimens.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setManualEntry(false)}
+                  style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: "0.75rem", cursor: "pointer", padding: "0.1rem 0", alignSelf: "flex-start" }}
+                >
+                  ← Back to fish picker
+                </button>
+              )}
             </form>
           )
         )}
@@ -635,21 +747,14 @@ export function ListSpecimenModal({
                     />
                   </div>
 
-                  {/* Shipping Fee field if shipping is enabled */}
+                  {/* Shipping is buyer-paid at checkout via live ShipEngine rates —
+                      sellers don't set a flat fee. Just a heads-up here. */}
                   {isShipping && (
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-                        Shipping Fee ($)
-                      </label>
-                      <input 
-                        type="number"
-                        step="0.01"
-                        value={shippingFee}
-                        onChange={(e) => setShippingFee(e.target.value)}
-                        placeholder="e.g. 5.00"
-                        required
-                        style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none" }}
-                      />
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", padding: "0.65rem 0.75rem", background: "rgba(56,189,248,0.05)", border: "1px solid rgba(56,189,248,0.15)", borderRadius: "6px" }}>
+                      <span style={{ fontSize: "0.9rem" }}>🚚</span>
+                      <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                        Shipping is quoted live at checkout based on the buyer's address — you don't set a fee. Add your ship-from address in Settings so buyers can get accurate rates.
+                      </span>
                     </div>
                   )}
 

@@ -19,6 +19,9 @@ import { useMarketplaceListings } from "../hooks/useMarketplaceListings";
 import { WantedBoard } from "./WantedBoard";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import { getOrCreateConversation } from "../services/messagesApi";
+import { getProfile } from "../services/reefApi";
+import { generateAlias } from "../utils/generateAlias";
+import { db } from "../db";
 
 // Helper: detect if a fishbase record or specCode is a plant entry
 const isPlantEntry = (specCodeOrItem) => {
@@ -27,6 +30,45 @@ const isPlantEntry = (specCodeOrItem) => {
   }
   return false;
 };
+
+/**
+ * SellerName — Resolves a seller's wallet address to a human-readable name
+ * instead of showing the raw hex address. Checks the Supabase Reef profile
+ * first, then the local Dexie mirror, then falls back to a deterministic
+ * fish-themed alias (never shows a blank or the raw address).
+ */
+function SellerName({ address }) {
+  const [name, setName] = useState(() => (address ? generateAlias(address) : "Unknown Breeder"));
+
+  useEffect(() => {
+    if (!address) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { data } = await getProfile(address);
+        if (!cancelled && data?.display_name) {
+          setName(data.display_name);
+          return;
+        }
+      } catch (e) { /* fall through to next source */ }
+
+      try {
+        const local = await db.userProfile.get(address.toLowerCase());
+        if (!cancelled && local?.alias) {
+          setName(local.alias);
+          return;
+        }
+      } catch (e) { /* fall through to alias */ }
+
+      if (!cancelled) setName(generateAlias(address));
+    })();
+
+    return () => { cancelled = true; };
+  }, [address]);
+
+  return <>{name}</>;
+}
 
 import { mapContractError } from "../utils/errorHandler";
 
@@ -796,7 +838,7 @@ export function MarketplaceBoard({
                 Consolidated Local Pickup Funnel Active
               </h4>
               <p style={{ color: "var(--text-secondary)", margin: "0.25rem 0 0 0", fontSize: "0.8rem" }}>
-                Now displaying only active listings from breeder: <code style={{ color: "var(--accent-amber)", background: "rgba(255,255,255,0.05)", padding: "0.1rem 0.3rem", borderRadius: "4px", fontFamily: "monospace" }}>{activeSellerFilter}</code>. Add additional specimens to consolidate your pickup trip.
+                Now displaying only active listings from breeder: <code style={{ color: "var(--accent-amber)", background: "rgba(255,255,255,0.05)", padding: "0.1rem 0.3rem", borderRadius: "4px" }}><SellerName address={activeSellerFilter} /></code>. Add additional specimens to consolidate your pickup trip.
               </p>
             </div>
           </div>
@@ -1467,9 +1509,7 @@ export function MarketplaceBoard({
                                   </span>
                                   {item.isShipping ? (
                                     <span className="badge badge-blue" style={{ fontSize: "0.6rem", padding: "0.15rem 0.5rem" }}>
-                                      {item.commonName.toLowerCase().includes("discus") 
-                                        ? "🚚 Secured Flat Rate Shipping" 
-                                        : `🚚 Shipping (+$${parseFloat(item.shippingFee || 0).toFixed(2)})`}
+                                      🚚 Ships Nationwide — rate quoted at checkout
                                     </span>
                                   ) : (
                                     <span className="badge badge-amber" style={{ fontSize: "0.6rem", padding: "0.15rem 0.5rem" }}>
@@ -1838,7 +1878,7 @@ export function MarketplaceBoard({
                               {casualModeActive ? (
                                 <span style={{ color: "#34d399", fontWeight: "600" }}>✅ Verified Local Breeder</span>
                               ) : (
-                                <span style={{ fontFamily: "monospace", color: "var(--text-secondary)" }}>{item.seller?.slice(0,6)}…{item.seller?.slice(-4)}</span>
+                                <span style={{ color: "var(--text-secondary)", fontWeight: "600" }}><SellerName address={item.seller} /></span>
                               )}
                               {(() => {
                                 const rep = breederReputation[item.seller?.toLowerCase()];

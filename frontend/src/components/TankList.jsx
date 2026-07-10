@@ -3,6 +3,7 @@ import { ethers, Contract } from "ethers";
 import { FishSimple, Flask, Drop, Asterisk } from "@phosphor-icons/react";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { addXp, XP_ACTIONS, getPointsSuffix } from "../utils/xp";
+import { checkCooldown } from "../utils/xpCooldowns";
 import { FacilityTreeView } from "./FacilityTreeView";
 import { getProvider } from "../utils/smartAccount";
 import { LoadingSkeleton } from "./LoadingSkeleton";
@@ -258,6 +259,14 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     observation:  { emoji: "📋", label: "Observation",    defaultDetail: "Routine visual inspection" },
   };
 
+  // Maps a bulk-log action to the actionType string the Dexie hook (useXPSync)
+  // actually checks, and the XP_ACTIONS cooldown key for that type. "Treatment"
+  // and "Observation" have no defined XP action — they're logged but earn no XP.
+  const BULK_ACTION_TO_HOOK = {
+    feed:         { actionType: "Feed",         actionKey: "LOG_FEEDING" },
+    water_change: { actionType: "Water Change", actionKey: "LOG_WATER" },
+  };
+
   const handleBulkLogSubmit = async () => {
     const targets = getBulkTargetTanks();
     if (targets.length === 0) return;
@@ -265,16 +274,21 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     setBulkLogResult(null);
     const detail = bulkLogDetail.trim() || BULK_ACTION_LABELS[bulkLogAction].defaultDetail;
     const ts = Math.round(Date.now() / 1000);
+    const hookInfo = BULK_ACTION_TO_HOOK[bulkLogAction];
     try {
+      // Each entry's actionType must match what the Dexie "creating" hook in
+      // useXPSync checks for, or the tank earns no XP for it at all — and each
+      // award still goes through that hook's per-tank cooldown (no separate
+      // addXp() call here, which previously let a "Log All" spam-click farm
+      // unlimited XP across every tank in the rack with no cooldown).
       for (const tank of targets) {
         await db.actionLogs.add({
           tankId: tank.id,
-          actionType: BULK_ACTION_LABELS[bulkLogAction].label,
+          actionType: hookInfo ? hookInfo.actionType : BULK_ACTION_LABELS[bulkLogAction].label,
           timestamp: ts,
           details: detail
         });
       }
-      addXp(targets.length * 3, `Bulk ${BULK_ACTION_LABELS[bulkLogAction].label}`);
       setBulkLogResult({ count: targets.length, action: BULK_ACTION_LABELS[bulkLogAction].label });
       setBulkLogDetail("");
       fetchLocalActionLogs();
@@ -494,17 +508,23 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   };
 
   const logFeedClick = async () => {
+    // XP is awarded (and cooldown-checked) exclusively by the Dexie
+    // actionLogs "creating" hook in useXPSync — don't call addXp() here.
+    // Doing so previously double-awarded XP with no cooldown, which is how
+    // spam-feeding was able to farm unlimited tier progress.
+    const cooldown = await checkCooldown(walletAccount, "LOG_FEEDING", String(activeTank.id));
     await db.actionLogs.add({
       tankId: activeTank.id,
       actionType: "Feed",
       timestamp: Math.round(Date.now() / 1000),
       details: "Routine Feeding (Standard Diet)"
     });
-    addXp(XP_ACTIONS.LOG_FEEDING.points, "Logged Tank Feeding");
     const suffix = getPointsSuffix(casualModeActive);
-    showToast(casualModeActive
-      ? `🥣 Yum! Your fish are loving it! +${XP_ACTIONS.LOG_FEEDING.points} ${suffix}!`
-      : `🥣 Feeding logged (+${XP_ACTIONS.LOG_FEEDING.points} ${suffix})`
+    showToast(cooldown.allowed
+      ? (casualModeActive
+          ? `🥣 Yum! Your fish are loving it! +${XP_ACTIONS.LOG_FEEDING.points} ${suffix}!`
+          : `🥣 Feeding logged (+${XP_ACTIONS.LOG_FEEDING.points} ${suffix})`)
+      : `🥣 Feeding logged (already earned ${suffix} for this tank today)`
     );
     fetchLocalActionLogs();
     await fetchDashboardData();
@@ -518,34 +538,42 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   };
 
   const logAlgaeClick = async () => {
+    // XP is awarded (and cooldown-checked) exclusively by the Dexie
+    // actionLogs "creating" hook in useXPSync — don't call addXp() here.
+    const cooldown = await checkCooldown(walletAccount, "LOG_FEEDING", String(activeTank.id));
     await db.actionLogs.add({
       tankId: activeTank.id,
       actionType: "Scraped Algae",
       timestamp: Math.round(Date.now() / 1000),
       details: "Routine Algae Scraped"
     });
-    addXp(XP_ACTIONS.LOG_FEEDING.points, "Logged Algae Scraping");
     const suffix = getPointsSuffix(casualModeActive);
-    showToast(casualModeActive
-      ? `🧹 Sparkly clean! Your tank is gleaming! +${XP_ACTIONS.LOG_FEEDING.points} ${suffix}!`
-      : `🧹 Maintenance logged (+${XP_ACTIONS.LOG_FEEDING.points} ${suffix})`
+    showToast(cooldown.allowed
+      ? (casualModeActive
+          ? `🧹 Sparkly clean! Your tank is gleaming! +${XP_ACTIONS.LOG_FEEDING.points} ${suffix}!`
+          : `🧹 Maintenance logged (+${XP_ACTIONS.LOG_FEEDING.points} ${suffix})`)
+      : `🧹 Maintenance logged (already earned ${suffix} for this tank today)`
     );
     fetchLocalActionLogs();
     await fetchDashboardData();
   };
 
   const logWaterChange = async () => {
+    // XP is awarded (and cooldown-checked) exclusively by the Dexie
+    // actionLogs "creating" hook in useXPSync — don't call addXp() here.
+    const cooldown = await checkCooldown(walletAccount, "LOG_WATER", String(activeTank.id));
     await db.actionLogs.add({
       tankId: activeTank.id,
       actionType: "Water Change",
       timestamp: Math.round(Date.now() / 1000),
       details: "Partial water change performed"
     });
-    addXp(XP_ACTIONS.LOG_WATER.points, "Logged Water Change");
     const suffix = getPointsSuffix(casualModeActive);
-    showToast(casualModeActive
-      ? `💧 Fresh water! Your fish are loving it! +${XP_ACTIONS.LOG_WATER.points} ${suffix}!`
-      : `💧 Water change logged (+${XP_ACTIONS.LOG_WATER.points} ${suffix})`
+    showToast(cooldown.allowed
+      ? (casualModeActive
+          ? `💧 Fresh water! Your fish are loving it! +${XP_ACTIONS.LOG_WATER.points} ${suffix}!`
+          : `💧 Water change logged (+${XP_ACTIONS.LOG_WATER.points} ${suffix})`)
+      : `💧 Water change logged (already earned ${suffix} for this tank recently)`
     );
     fetchLocalActionLogs();
     await fetchDashboardData();
@@ -565,30 +593,36 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     }
     const details = inlineDetailText.trim();
     if (inlineDetailType === "feed") {
+      // XP is awarded (and cooldown-checked) exclusively by the Dexie
+      // actionLogs "creating" hook in useXPSync — don't call addXp() here.
+      const cooldown = await checkCooldown(walletAccount, "LOG_FEEDING", String(activeTank.id));
       await db.actionLogs.add({
         tankId: activeTank.id,
         actionType: "Feed",
         timestamp: Math.round(Date.now() / 1000),
         details: details
       });
-      addXp(XP_ACTIONS.LOG_FEEDING.points, "Logged Custom Feeding");
       const suffix = getPointsSuffix(casualModeActive);
-      showToast(casualModeActive
-        ? `🥣 Custom meal logged — great care! +${XP_ACTIONS.LOG_FEEDING.points} ${suffix}!`
-        : `🥣 Custom feeding logged (+${XP_ACTIONS.LOG_FEEDING.points} ${suffix})`
+      showToast(cooldown.allowed
+        ? (casualModeActive
+            ? `🥣 Custom meal logged — great care! +${XP_ACTIONS.LOG_FEEDING.points} ${suffix}!`
+            : `🥣 Custom feeding logged (+${XP_ACTIONS.LOG_FEEDING.points} ${suffix})`)
+        : `🥣 Custom feeding logged (already earned ${suffix} for this tank today)`
       );
     } else if (inlineDetailType === "algae") {
+      const cooldown = await checkCooldown(walletAccount, "LOG_FEEDING", String(activeTank.id));
       await db.actionLogs.add({
         tankId: activeTank.id,
         actionType: "Scraped Algae",
         timestamp: Math.round(Date.now() / 1000),
         details: details
       });
-      addXp(XP_ACTIONS.LOG_FEEDING.points, "Logged Custom Algae Scraping");
       const suffix = getPointsSuffix(casualModeActive);
-      showToast(casualModeActive
-        ? `🧹 Custom clean logged — looking great! +${XP_ACTIONS.LOG_FEEDING.points} ${suffix}!`
-        : `🧹 Custom maintenance logged (+${XP_ACTIONS.LOG_FEEDING.points} ${suffix})`
+      showToast(cooldown.allowed
+        ? (casualModeActive
+            ? `🧹 Custom clean logged — looking great! +${XP_ACTIONS.LOG_FEEDING.points} ${suffix}!`
+            : `🧹 Custom maintenance logged (+${XP_ACTIONS.LOG_FEEDING.points} ${suffix})`)
+        : `🧹 Custom maintenance logged (already earned ${suffix} for this tank today)`
       );
     } else if (inlineDetailType === "population") {
       const newCount = parseInt(details, 10);
@@ -669,16 +703,21 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
 
   const logTestClick = async () => {
+    // XP is awarded (and cooldown-checked) exclusively by the Dexie
+    // actionLogs "creating" hook in useXPSync — don't call addXp() here.
+    const cooldown = await checkCooldown(walletAccount, "LOG_PARAMETERS", String(activeTank.id));
     await db.actionLogs.add({
       tankId: activeTank.id,
       actionType: "Quick Water Test",
       timestamp: Math.round(Date.now() / 1000),
       details: "Baseline Water Test (Temp: 24.5°C, pH: 7.2)"
     });
-    addXp(2, "Logged Baseline Water Test");
-    showToast(casualModeActive
-      ? "🧪 Water looks perfect — great job! +15 Loyalty Points!"
-      : "🧪 Water test recorded"
+    const suffix = getPointsSuffix(casualModeActive);
+    showToast(cooldown.allowed
+      ? (casualModeActive
+          ? `🧪 Water looks perfect — great job! +${XP_ACTIONS.LOG_PARAMETERS.points} ${suffix}!`
+          : `🧪 Water test recorded (+${XP_ACTIONS.LOG_PARAMETERS.points} ${suffix})`)
+      : `🧪 Water test recorded (already earned ${suffix} for this tank recently)`
     );
     fetchLocalActionLogs();
     await fetchDashboardData();

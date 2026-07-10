@@ -48,13 +48,21 @@ export function QuickLogPanel({ tanks = [], casualModeActive = false, onComplete
     setSubmitting(true);
     setResult(null);
 
-    const timestamp = Date.now();
+    // Stored in seconds (not ms) — matches every other actionLogs writer and
+    // what ActivityLog.jsx expects when it renders `new Date(ts * 1000)`.
+    // Storing raw Date.now() here previously produced a 1000x-inflated,
+    // garbled date (e.g. year 58471) in the Parameter History view.
+    const timestamp = Math.round(Date.now() / 1000);
     const logs = [];
+
+    // "Fed" didn't match the XP hook's exact "Feed" check, so batch feeding
+    // silently earned 0 real XP despite the success toast claiming otherwise.
+    const actionType = action === "Fed" ? "Feed" : action;
 
     for (const tankId of selectedTanks) {
       logs.push({
         tankId,
-        actionType: action,
+        actionType,
         timestamp,
         details: `Quick-logged via batch panel`,
       });
@@ -63,8 +71,10 @@ export function QuickLogPanel({ tanks = [], casualModeActive = false, onComplete
     try {
       await db.actionLogs.bulkAdd(logs);
 
-      // XP is awarded per-tank by the Dexie hook in useXPSync,
-      // but for bulk we also fire a summary event
+      // XP is awarded per-tank by the Dexie "creating" hook in useXPSync,
+      // which also enforces the per-tank cooldown — so a tank logged twice
+      // today won't double-earn. This total is an optimistic estimate (assumes
+      // no tank is on cooldown); the actual awarded amount may be less.
       const selectedAction = ACTIONS.find(a => a.key === action);
       const totalXp = (selectedAction?.xp || 5) * selectedTanks.size;
 

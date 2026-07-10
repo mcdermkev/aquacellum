@@ -4,6 +4,36 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [0.9.7] — 2026-07-10
+
+### 🛠️ Marketplace & XP Bug Fixes
+
+Batch of fixes from a beta bug-bash session: a marketplace price display bug, three usability issues in the listing flow, and an XP exploit that let repeated feeding farm unlimited tier progress.
+
+#### 🐛 Fixes
+- **Marketplace price shown as 1000x actual value** — `marketplace.html`'s `ethToUSD()`/`ethToUSDRaw()` helpers were leftover from when listings were priced in ETH and multiplied the price by 1000 to fake a USD conversion. Listings have stored plain USD dollar strings for a while now, so a $50 fish was displaying as $50,000. Removed the multiplier.
+- **Listing drawer couldn't be scrolled** — `.modal-inner-card` (the shared base style for every modal, including the "List Specimen for Sale" / "List Fry Batch" drawers reachable from both the Marketplace tab and each tank's "Sell" action) used `overflow: hidden`, clipping tall form content above the ~640px mobile breakpoint (which had its own `!important` override). Changed to `overflow-y: auto`.
+- **Serial number entry required memorizing a certificate number** — Replaced the raw "Certificate Serial No." text input in the listing flow with a picker listing the seller's own active specimens (photo, name, cert #), so sellers tap the fish instead of typing its serial from memory. Manual entry kept as a fallback.
+- **Flat "Shipping Fee" field was dead weight (and misleading)** — Shipping is buyer-paid and quoted live at checkout via ShipEngine (`ShippingRateModal` / `services/shipping.js`); the flat dollar amount sellers set when listing was never actually charged to buyers. Removed the input from the list/edit/batch listing forms and the misleading `🚚 Shipping (+$X.XX)` card badge that displayed it.
+- **"Listed by" showed a raw wallet address in Pro mode** — Added a `SellerName` resolver (Supabase Reef profile → local Dexie mirror → deterministic fish-themed alias) so the marketplace listing card and the "consolidated pickup" banner show a human-readable name instead of `0x4a85…a6d3`.
+- **XP could be farmed to unlimited tier progress by spam-clicking "Feed"** — Every quick-action handler (Feed, Water Change, Scrape Algae, Water Test, and the batch/bulk logging panels) called `addXp()` directly *in addition to* writing an `actionLogs` entry, which independently triggers a Dexie hook that also awards XP for the same action — a silent double-award with **no cooldown** on the direct path. A full cooldown system already existed (`utils/xpCooldowns.js`, a dedicated `xpCooldowns` Dexie table, per-tank cooldown windows matching the spec) but was never wired into anything. Removed the redundant `addXp()` calls (XP now comes exclusively from the Dexie hook) and wired `enforceXpCooldown()` into that hook so repeat actions on the same tank within the cooldown window are logged but earn no XP. Also fixed a couple of `actionType` string mismatches (batch panel logged `"Fed"` instead of `"Feed"`; bulk rack logging used labels the hook didn't recognize) that were silently awarding zero real XP despite the success toast claiming otherwise.
+- **Corrupted activity-log dates (e.g. "9/2/58471")** — The batch Quick Log panel stored `Date.now()` (milliseconds) as the log timestamp, while every other writer stores seconds and the Parameter History view always renders `timestamp * 1000`. Fixed the panel to store seconds like everywhere else.
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `frontend/marketplace.html` | Fixed the 1000x price multiplier in `ethToUSD()`/`ethToUSDRaw()` |
+| `frontend/src/styles/index.css` | `.modal-inner-card` overflow fix for scrollable listing drawers |
+| `frontend/src/components/ListSpecimenModal.jsx` | Owned-specimen picker instead of manual serial entry; removed flat shipping fee input |
+| `frontend/src/components/BatchListingWizard.jsx` | Removed flat shipping fee input (fry batch listings) |
+| `frontend/src/components/EditListingModal.jsx` | Removed flat shipping fee input (edit listing) |
+| `frontend/src/components/MarketplaceBoard.jsx` | Added `SellerName` resolver; fixed misleading shipping fee badge |
+| `frontend/src/hooks/useXPSync.js` | Wired `enforceXpCooldown()` into the `actionLogs` XP-award hook |
+| `frontend/src/components/TankList.jsx` | Removed redundant `addXp()` calls from quick-action handlers; cooldown-aware toasts |
+| `frontend/src/components/QuickLogPanel.jsx` | Fixed timestamp unit bug (ms → s); fixed `"Fed"` → `"Feed"` actionType mismatch |
+
+---
+
 ## [0.9.6] — 2026-07-09
 
 ### 🔔 Retention System: Real Push Notifications, Email, and Analytics

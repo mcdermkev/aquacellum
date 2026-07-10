@@ -4,6 +4,7 @@ import { deriveTierFromXp } from "../db";
 import { TIER_LADDER } from "../utils/xp";
 import { isSupabaseConfigured } from "../services/supabaseClient";
 import { syncXpProfileToCloud } from "../services/cloudSync";
+import { enforceXpCooldown } from "../utils/xpCooldowns";
 
 /**
  * useXPSync — Unified XP Sync Hook (Server-Authoritative)
@@ -381,6 +382,12 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
     window.addEventListener("aquadex_xp_added", handleExternalXpEvent);
 
     // ─── Dexie actionLogs hook — auto-award XP on husbandry logs ───────────
+    // IMPORTANT: this is the ONLY place that awards XP for husbandry logs
+    // (feeding, water changes, tests, algae scrapes). Individual action
+    // handlers (TankList.jsx, QuickLogPanel.jsx, poseidonBridge.js) must NOT
+    // also call addXp() for these — that double-counts XP on top of this hook
+    // and, worse, bypasses the per-tank cooldown below entirely (which is how
+    // spam-clicking "Feed" was able to farm unlimited XP/tier progress).
     const handleActionLogCreating = (primKey, obj, transaction) => {
       const actionType = obj.actionType;
       let xpAmount = 0;
@@ -392,7 +399,14 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
       else if (actionType === "Water Change") { xpAmount = 10; actionKey = "LOG_WATER"; }
 
       if (xpAmount > 0) {
-        transaction.on("complete", () => {
+        const tankId = obj.tankId != null ? String(obj.tankId) : null;
+        transaction.on("complete", async () => {
+          // Enforce the per-tank cooldown (e.g. one feeding credit per 24h per
+          // tank) before awarding anything. If the cooldown is active, the log
+          // entry itself still gets saved (husbandry record stays accurate) —
+          // it just doesn't earn XP.
+          const cooldown = await enforceXpCooldown(walletAddress, actionKey, tankId);
+          if (!cooldown.allowed) return;
           handleXpUpdate(xpAmount, `Logged ${actionType}`, { tankId: obj.tankId });
         });
       }

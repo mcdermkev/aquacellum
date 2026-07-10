@@ -28,9 +28,9 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
   const [quantity, setQuantity] = useState("");
   const [pricePerFish, setPricePerFish] = useState("");
   // Default to shipping — reaches the most buyers; sellers can switch to local
-  // pickup (fee-free at live events).
+  // pickup (fee-free at live events). Shipping itself is buyer-paid and quoted
+  // live at checkout — no flat fee to set here.
   const [isShipping, setIsShipping] = useState(true);
-  const [shippingFee, setShippingFee] = useState("5.00");
   const [description, setDescription] = useState("");
   const [carePrefilled, setCarePrefilled] = useState(false);
 
@@ -56,7 +56,6 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
       setQuantity("");
       setPricePerFish("");
       setIsShipping(true);
-      setShippingFee("5.00");
       setDescription("");
       setError(null);
       setCarePrefilled(false);
@@ -142,7 +141,6 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
     if (!selectedSpawn) { setError("No spawn selected."); return; }
     if (!quantity || Number(quantity) <= 0) { setError("Please enter a valid quantity."); return; }
     if (!pricePerFish || Number(pricePerFish) <= 0) { setError("Please enter a valid price per fish."); return; }
-    if (isShipping && (!shippingFee || Number(shippingFee) < 0)) { setError("Please enter a valid shipping fee."); return; }
 
     setError(null);
     setSubmitting(true);
@@ -150,11 +148,12 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
     try {
       const listingId = Date.now();
       // USD is canonical (Web2-masked marketplace). Store dollars for display and
-      // cents for Stripe checkout.
+      // cents for Stripe checkout. Shipping itself is buyer-paid and quoted live
+      // at checkout (ShipEngine) — sellers never set a flat shipping fee.
       const priceUsd = parseFloat(pricePerFish).toFixed(2);
-      const shippingUsd = isShipping ? parseFloat(shippingFee).toFixed(2) : "0.00";
+      const shippingUsd = "0.00";
       const priceCentsUSD = Math.round(parseFloat(pricePerFish) * 100);
-      const shippingFeeCents = isShipping ? Math.round(parseFloat(shippingFee) * 100) : 0;
+      const shippingFeeCents = 0;
 
       const listing = {
         id: listingId,
@@ -412,21 +411,14 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
             </p>
           </div>
 
-          {/* Shipping fee */}
+          {/* Shipping is buyer-paid at checkout via live ShipEngine rates —
+              sellers don't set a flat fee. Just a heads-up here. */}
           {isShipping && (
-            <div>
-              <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-                Shipping Fee ($)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={shippingFee}
-                onChange={(e) => setShippingFee(e.target.value)}
-                placeholder="e.g. 5.00"
-                style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
-              />
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", padding: "0.65rem 0.75rem", background: "rgba(56,189,248,0.05)", border: "1px solid rgba(56,189,248,0.15)", borderRadius: "6px" }}>
+              <span style={{ fontSize: "0.9rem" }}>🚚</span>
+              <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                Shipping is quoted live at checkout based on the buyer's address — you don't set a fee. Add your ship-from address in Settings so buyers can get accurate rates.
+              </span>
             </div>
           )}
 
