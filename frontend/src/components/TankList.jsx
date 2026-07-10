@@ -24,6 +24,7 @@ import { TankCamSetup } from "./tank-cam/TankCamSetup";
 import { ActivityLog } from "./ActivityLog";
 import { NotesTab } from "./NotesTab";
 import { QuickLogPanel } from "./QuickLogPanel";
+import { FryNursery } from "./FryNursery";
 import { getSupabaseImageUrl, isInsideEnvelope, getTrackBackground, TANK_TYPES, CONTAINMENT_TYPES } from "../utils/tankUtils";
 export function TankList({ contractAddress, walletAccount, onViewLineage, onListOnMarketplace, onSelectSpecimen, casualModeActive = false }) {
   const queryClient = useQueryClient();
@@ -1707,15 +1708,27 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             requestConfirm({
                               title: casualModeActive ? "🗑️ Remove Tank" : "🗑️ Decommission Unit",
                               message: casualModeActive
-                                ? `Remove "${tank.name}"? This hides it from your dashboard. Your fish records are preserved.`
-                                : `Decommission unit "${tank.name}"? Sets active=false. Specimen records retained.`,
+                                ? `Remove "${tank.name}"? Your fish will be moved to the Nursery where you can reassign them later.`
+                                : `Decommission unit "${tank.name}"? Specimens will be moved to the Nursery (unassigned pool).`,
                               confirmLabel: casualModeActive ? "Remove Tank" : "Decommission",
                               danger: true,
                               onConfirm: async () => {
                                 try {
-                                  await db.tanks.update(tank.id, { active: false });
+                                  // Move all specimens from this tank to unassigned (nursery)
+                                  const tankSpecimens = await db.specimens
+                                    .where("currentTankId").equals(Number(tank.id))
+                                    .filter(s => Number(s.status) === 0)
+                                    .toArray();
+                                  for (const spec of tankSpecimens) {
+                                    await db.specimens.update(spec.id, { currentTankId: 0 });
+                                  }
+                                  // Clear the tank's embedded specimens array
+                                  await db.tanks.update(tank.id, { active: false, specimens: [] });
                                   queryClient.invalidateQueries({ queryKey: ["tanks", walletAccount] });
-                                  showToast(casualModeActive ? "🗑️ Tank removed from dashboard." : "Unit decommissioned.");
+                                  const fishCount = tankSpecimens.length;
+                                  showToast(casualModeActive
+                                    ? `🗑️ Tank removed. ${fishCount} fish moved to Nursery.`
+                                    : `Unit decommissioned. ${fishCount} specimen${fishCount !== 1 ? "s" : ""} moved to Nursery.`);
                                 } catch (err) {
                                   console.error("Remove tank failed:", err);
                                   showToast("Failed to remove tank.");
@@ -1748,6 +1761,18 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               )}
             </div>
           )}
+
+          {/* Fry Nursery — unassigned specimens */}
+          <FryNursery
+            walletAccount={walletAccount}
+            tanks={tanks}
+            onRefresh={() => {
+              refetchTanks();
+              fetchDashboardData();
+            }}
+            onListOnMarketplace={onListOnMarketplace}
+            casualModeActive={casualModeActive}
+          />
         </div>
 
         {/* RIGHT: DETAILED ACTIVE TANK PANEL — Full-screen bottom sheet on mobile */}

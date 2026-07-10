@@ -16,7 +16,8 @@ export function useUserTanks(contractAddress, walletAccount) {
 
       // Beta: Read from Dexie first (local-first approach)
       // Tanks are stored locally via relayer.js during beta
-      const localTanks = await db.tanks.where("ownerAddress").equals(owner).toArray();
+      const localTanks = (await db.tanks.where("ownerAddress").equals(owner).toArray())
+        .filter(t => t.active !== false);
 
       // Also try on-chain for any historically registered tanks
       let onChainTanks = [];
