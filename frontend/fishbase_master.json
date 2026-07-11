@@ -148,6 +148,174 @@
       }
     },
     "masterPhotoUrl": "/species-images/wikimedia-resized/betta-splendens.png",
+    "enhanced": true,
+    "lifespan": {
+      "averageYears": 3,
+      "rangeYears": [2, 5],
+      "notes": "Pet store bettas are typically 6-12 months old at purchase. With optimal care (warm stable water, varied diet, low stress), some individuals reach 5+ years. Long-finned varieties may have slightly shorter lifespans than plakat types due to fin strain."
+    },
+    "origin": {
+      "native": "Southeast Asia",
+      "countries": ["Thailand", "Cambodia", "Laos", "Vietnam", "Myanmar", "Malaysia", "Indonesia"],
+      "waterways": "Central and eastern Thailand (Chao Phraya and Mae Klong basins). Records from the Mekong basin likely refer to introduced populations or other Betta species.",
+      "habitat": "Rice paddies, shallow ponds, slow-moving streams, roadside ditches, swamps, and floodplains. These habitats are often shaded by vegetation with low dissolved oxygen. Water depth is typically 10-50cm.",
+      "iucnStatus": "Vulnerable"
+    },
+    "behavior": {
+      "swimmingLevel": "Top / Mid",
+      "activityPattern": "Diurnal",
+      "activityLevel": "Low to moderate",
+      "temperament": "Aggressive towards conspecific males; generally peaceful towards dissimilar species",
+      "notes": "Bettas are intelligent fish that recognize their owners and can be trained to follow a finger or jump for food. They frequently rest on leaves or decorations near the surface. Males flare their gill covers and fins as a threat display. They require surface access to breathe atmospheric air via their labyrinth organ."
+    },
+    "sexualDimorphism": {
+      "identifiable": true,
+      "male": "Longer, more elaborate fins (especially caudal, dorsal, and anal). More vibrant coloration. Larger body. Prominent opercular membrane (beard) visible when flaring. Slimmer body profile when viewed from above.",
+      "female": "Shorter, rounder fins. Less intense coloration (though selective breeding has produced colorful females). Visible ovipositor (small white egg spot between ventral and anal fins). Rounder, fuller body when viewed from above. Horizontal stress stripes may appear.",
+      "maturityAge": "3-4 months"
+    },
+    "diseases": {
+      "susceptibility": "Moderate",
+      "common": [
+        {
+          "name": "Fin Rot",
+          "cause": "Bacterial (Pseudomonas, Aeromonas spp.)",
+          "notes": "Most common betta ailment. Long-finned varieties are especially vulnerable. Caused by poor water quality or fin damage from sharp decor. Fins appear ragged with black/red edges."
+        },
+        {
+          "name": "Velvet (Oodinium)",
+          "cause": "Parasitic (Oodinium pilularis)",
+          "notes": "Appears as fine gold/rust dust on body and fins. Highly contagious. Bettas are particularly susceptible due to warm, still water preferences that favor the parasite lifecycle."
+        },
+        {
+          "name": "Ich (White Spot)",
+          "cause": "Parasitic (Ichthyophthirius multifiliis)",
+          "notes": "White salt-like spots on body and fins. Often triggered by temperature fluctuations. Treatable by raising temperature to 30°C and/or medication."
+        },
+        {
+          "name": "Swim Bladder Disorder",
+          "cause": "Overfeeding, constipation, or bacterial infection",
+          "notes": "Fish floats at surface or sinks to bottom. Common in bettas due to their compact body shape. Often resolved by fasting 2-3 days then feeding daphnia."
+        },
+        {
+          "name": "Columnaris",
+          "cause": "Bacterial (Flavobacterium columnare)",
+          "notes": "White/grey cotton-like patches, often on mouth or body. Fast-acting and potentially fatal. Requires antibiotic treatment."
+        }
+      ]
+    },
+    "tankmates": {
+      "compatible": [
+        {"species": "Corydoras aeneus", "notes": "Peaceful bottom dwellers that stay out of the betta's territory"},
+        {"species": "Otocinclus vittatus", "notes": "Tiny algae eaters, completely non-threatening"},
+        {"species": "Hyphessobrycon amandae", "notes": "Ember tetras — small, peaceful, won't nip fins"},
+        {"species": "Trigonostigma heteromorpha", "notes": "Harlequin rasboras — calm mid-level schoolers"},
+        {"species": "Pangio kuhlii", "notes": "Kuhli loaches — nocturnal bottom dwellers"},
+        {"species": "Neritina spp.", "notes": "Nerite snails — excellent algae cleaners, ignored by bettas"},
+        {"species": "Neocaridina davidi", "notes": "Cherry shrimp — may work in heavily planted tanks (some bettas will hunt them)"}
+      ],
+      "incompatible": [
+        {"species": "Other male Betta splendens", "reason": "Will fight to the death"},
+        {"species": "Poecilia reticulata", "reason": "Guppies — colorful flowing tails trigger aggression"},
+        {"species": "Puntigrus tetrazona", "reason": "Tiger barbs — notorious fin nippers"},
+        {"species": "Betta splendens (female, unless sorority)", "reason": "Males will harass females outside breeding context"},
+        {"species": "Trichogaster lalius", "reason": "Dwarf gouramis — too similar, territorial conflict as fellow labyrinth fish"}
+      ],
+      "notes": "Compatibility is highly individual. Always have a backup plan to separate fish. Minimum 20L (5 gal) for betta alone; 40L+ (10 gal+) for community. Heavily planted tanks with broken sightlines dramatically improve compatibility."
+    },
+    "variants": {
+      "tailTypes": [
+        {"name": "Veiltail", "description": "Long, flowing tail that droops downward. Most common pet store variety."},
+        {"name": "Halfmoon", "description": "Tail spreads to a full 180° when flared, forming a 'D' shape. Prized by enthusiasts."},
+        {"name": "Crowntail", "description": "Extended fin rays create a spiky, crown-like appearance. Rays extend beyond webbing."},
+        {"name": "Plakat", "description": "Short-finned, resembling wild bettas. Most active and robust variety. Less prone to fin damage."},
+        {"name": "Double Tail", "description": "Two distinct tail lobes. Often has a wider dorsal fin. Can have swim bladder issues."},
+        {"name": "Dumbo/Elephant Ear", "description": "Oversized pectoral fins resembling elephant ears. Slower swimmers."},
+        {"name": "Rosetail", "description": "Extreme ruffling beyond halfmoon, creating a rose petal effect. Prone to fin issues."}
+      ],
+      "colorPatterns": ["Solid", "Bicolor", "Marble", "Butterfly", "Dragon Scale", "Koi", "Galaxy/Nemo", "Mustard Gas", "Samurai"],
+      "colors": ["Red", "Blue", "Royal Blue", "Steel Blue", "Turquoise", "Black", "White/Opaque", "Yellow", "Orange", "Purple", "Green", "Copper", "Multicolor"],
+      "notes": "Wild-type bettas are typically dull brown/green with short fins. All ornamental varieties are the result of selective breeding over centuries, originally in Thailand for fighting (plakat) and later worldwide for aesthetics."
+    },
+    "acclimation": {
+      "method": "Float and gradual release",
+      "sensitivity": "Moderate — sensitive to temperature swings, less sensitive to pH shifts",
+      "notes": "Float sealed bag for 15-20 minutes to equalize temperature. Then add small amounts of tank water to the bag over 20-30 minutes. Bettas are relatively hardy but sudden temperature drops (>2°C) can trigger ich or lethargy. Do not drip acclimate for more than 1 hour as ammonia builds in the bag.",
+      "quarantineDays": 14
+    },
+    "tankRequirements": {
+      "minDimensions": "30cm L × 20cm W (minimum footprint for a 5 gallon)",
+      "idealDimensions": "45cm L × 30cm W × 30cm H (10 gallon)",
+      "flowRate": "Gentle — bettas are poor swimmers with large fins. Sponge filters or baffled HOB filters are ideal.",
+      "lighting": "Low to moderate. Bettas prefer shaded areas and can become stressed under intense lighting.",
+      "substrate": "Fine gravel or sand. Avoid sharp substrates that can damage fins if fish rests on bottom.",
+      "decorEssentials": "Floating plants (for bubble nesting and shade), broad leaves or betta hammocks near surface for resting, hiding spots (caves, driftwood). Avoid sharp plastic plants — silk or live plants only.",
+      "lidRequired": true,
+      "lidNotes": "Bettas are jumpers, especially when stressed or during initial acclimation. A tight-fitting lid with no gaps is essential. Leave 2-5cm airspace between water and lid for labyrinth breathing."
+    },
+    "colorVariants": [
+      {"src": "/species-images/color-variants/betta-splendens/blue-green-cc2.jpg", "label": "Blue-Green Iridescent"},
+      {"src": "/species-images/color-variants/betta-splendens/halfmoon-cc-bysa3.jpg", "label": "Halfmoon Variety"},
+      {"src": "/species-images/color-variants/betta-splendens/red-blue-cup-cc-bysa4.jpg", "label": "Red-Blue Classic"}
+    ],
+    "growthTimeline": [
+      {"age": "0–2 weeks", "milestone": "Fry absorb yolk sac, begin free-swimming. Fed infusoria or liquid fry food."},
+      {"age": "2–4 weeks", "milestone": "Develop basic body shape. Begin eating baby brine shrimp and micro worms."},
+      {"age": "1–2 months", "milestone": "Start showing faint color. Males and females not yet distinguishable. Around 1.5cm."},
+      {"age": "2–3 months", "milestone": "Colors intensify. Males begin developing longer fins. Aggression starts — time to separate males."},
+      {"age": "3–4 months", "milestone": "Sexual maturity reached. Males display full flaring behavior. Fin growth accelerates in long-fin varieties."},
+      {"age": "4–6 months", "milestone": "Approaching adult coloration. Most pet store bettas are sold at this stage (often labeled as adults)."},
+      {"age": "6–12 months", "milestone": "Full adult size (5–7cm). Peak coloration and fin development. Prime breeding age."},
+      {"age": "1–2 years", "milestone": "Mature adult. Colors may continue to shift (especially marble gene carriers). Activity level stable."},
+      {"age": "2+ years", "milestone": "Senior fish. May show slight color fading, reduced activity, thinner body. Fins may not regenerate as quickly if damaged."}
+    ],
+    "maintenance": {
+      "waterChangePercent": 25,
+      "waterChangeFrequency": "Weekly",
+      "notes": "Bettas are sensitive to ammonia and nitrite buildup due to typically small tank volumes. In a 5-gallon tank, 25-30% weekly water changes are essential. In smaller containers (not recommended), more frequent changes are needed. Always match temperature of new water within 1°C. Use a dechlorinator. Vacuum gravel lightly during changes to remove waste.",
+      "filterMaintenance": "Rinse sponge filter media in old tank water (never tap water) every 2-4 weeks. Replace activated carbon monthly if using HOB filter.",
+      "testSchedule": "Test ammonia, nitrite, and nitrate weekly for the first month, then bi-weekly once cycled. Target: 0 ammonia, 0 nitrite, <20ppm nitrate."
+    },
+    "mythsVsReality": [
+      {"myth": "Bettas are happy in tiny bowls or vases", "reality": "Bettas need a minimum of 5 gallons (19L) with a heater and filter. In the wild they inhabit large rice paddies, not puddles. Small unheated containers lead to stress, temperature shock, and shortened lifespan."},
+      {"myth": "Bettas don't need a heater", "reality": "Bettas are tropical fish requiring 24-30°C (75-86°F). Room temperature in most homes (20-22°C) is too cold and suppresses their immune system, making them vulnerable to ich and fin rot."},
+      {"myth": "Bettas don't need a filter", "reality": "While bettas can survive in still water due to their labyrinth organ, a gentle filter dramatically improves water quality and reduces disease. Use a sponge filter or baffled HOB to avoid strong currents."},
+      {"myth": "Bettas only live 1-2 years", "reality": "With proper care (heated, filtered, adequately sized tank, varied diet), bettas routinely live 3-5 years. Most premature deaths are due to poor husbandry conditions."},
+      {"myth": "Bettas can live with any peaceful fish", "reality": "While bettas can have tankmates, they are highly individual in temperament. Some bettas attack anything that moves; others coexist peacefully. Always have a backup plan and monitor closely for the first 48 hours."},
+      {"myth": "Bettas eat plant roots and don't need feeding", "reality": "Bettas are carnivores/insectivores. They cannot survive on plant roots. They need daily feeding of high-protein pellets supplemented with frozen/live foods."}
+    ],
+    "enrichment": {
+      "tips": [
+        "Mirror exercise: Hold a mirror to the glass for 1-2 minutes daily. This triggers flaring, which exercises their muscles and provides mental stimulation. Do not exceed 5 minutes as prolonged stress is harmful.",
+        "Betta hammock or broad leaf near the surface: Bettas love resting near the surface between breaths. Anubias leaves, betta logs, or suction-cup leaf hammocks provide resting spots.",
+        "Rearrange decor monthly: Moving plants and decorations provides novelty and encourages exploration.",
+        "Training: Bettas can learn to swim through hoops, follow a finger, and jump for food. Use a consistent hand signal before feeding to build association.",
+        "Floating log or betta tunnel: Provides a surface-level hiding spot that doubles as a bubble nest anchor point.",
+        "Ping pong ball: A floating ping pong ball provides mild stimulation as the betta investigates and nudges it.",
+        "Live food hunting: Occasionally offering live daphnia or brine shrimp triggers natural hunting behavior."
+      ],
+      "notes": "Bettas are among the most intelligent aquarium fish. They recognize faces, respond to their name (feeding cues), and display clear mood/personality. Environmental enrichment significantly reduces stress behaviors like glass surfing and fin biting."
+    },
+    "availability": {
+      "commonness": "Extremely common",
+      "priceRange": "$3–$30+",
+      "notes": "Veiltail and basic crowntail varieties are widely available at chain pet stores for $3-8. Halfmoon, plakat, and specialty varieties (koi, galaxy, dumbo ear) range from $15-30+ at local fish stores or online breeders. Rare colors and show-quality specimens from Thai breeders can exceed $50-100. Wild-type Betta splendens are rarely available in the trade.",
+      "whereToBuy": ["Local fish stores (LFS)", "Chain pet stores (PetSmart, Petco)", "Online breeders (eBay, AquaBid, BettaSquad)", "Thai import breeders", "Local aquarium clubs/swaps"]
+    },
+    "sources": [
+      {"name": "FishBase", "url": "https://www.fishbase.se/summary/4768", "type": "Scientific data"},
+      {"name": "Seriously Fish", "url": "https://www.seriouslyfish.com/species/betta-splendens/", "type": "Care profile"},
+      {"name": "USGS NAS", "url": "https://nas.er.usgs.gov/queries/FactSheet.aspx?SpeciesID=326", "type": "Distribution data"},
+      {"name": "National Geographic", "url": "https://nationalgeographic.com/animals/fish/facts/betta-fish", "type": "General facts"},
+      {"name": "NIH/ILAR Journal", "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9334006/", "type": "Scientific research"},
+      {"name": "Wikimedia Commons", "url": "https://commons.wikimedia.org/wiki/Category:Betta_splendens", "type": "Images (CC licensed)"}
+    ],
+    "educationalVideos": [
+      {"youtubeId": "vo99l-U3bGE", "title": "The World of Bettas — History & Wild Bettas in Thailand", "channel": "", "section": "origin"},
+      {"youtubeId": "KYnK5OuFdCE", "title": "Betta Rehab, Disease Treatment, Tankmates & Breeding", "channel": "", "section": "diseases"},
+      {"youtubeId": "RDnJXFLuoPA", "title": "Betta Care — Tank Size, Setup & Feeding", "channel": "", "section": "tankRequirements"},
+      {"youtubeId": "-msJUJrmGiU", "title": "Betta Fish Breeding Guide", "channel": "", "section": "reproduction"}
+    ],
     "genus": "Betta",
     "species": "splendens",
     "maxLengthCm": 6.5

@@ -10,6 +10,7 @@ import {
   getSchoolBySlug,
   getSchoolById,
   listSchools,
+  listOfficialSchools,
   getMySchools,
   updateSchool,
   joinSchool,
@@ -36,6 +37,17 @@ export function useSchoolDirectory({ type, search } = {}) {
     },
     initialPageParam: undefined,
     staleTime: 60 * 1000,
+  });
+}
+
+/**
+ * Fetch official (platform-curated) master schools.
+ */
+export function useOfficialSchools() {
+  return useQuery({
+    queryKey: ["schools", "official"],
+    queryFn: () => listOfficialSchools(),
+    staleTime: 5 * 60 * 1000, // Cache for 5 min — these rarely change
   });
 }
 

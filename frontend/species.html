@@ -192,6 +192,147 @@
     .related-card-info { padding: 10px 12px; }
     .related-card-name { font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .related-card-sci { font-size: 0.62rem; font-style: italic; color: var(--emerald-400); }
+
+    /* Enhanced species sections */
+    .enhanced-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 16px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.25); color: var(--emerald-300); margin-bottom: 16px; }
+
+    /* Table of Contents */
+    .toc-nav { margin-bottom: 24px; padding: 14px 20px; border-radius: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); backdrop-filter: blur(8px); position: sticky; top: 72px; z-index: 5; }
+    .toc-title { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 8px; }
+    .toc-links { display: flex; flex-wrap: wrap; gap: 6px; }
+    .toc-links a { padding: 5px 12px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); text-decoration: none; transition: all 0.2s; }
+    .toc-links a:hover { color: var(--emerald-300); border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.06); }
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 12px; }
+    .info-item { padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); }
+    .info-item-label { font-size: 0.62rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+    .info-item-value { font-size: 0.82rem; color: var(--text-primary); font-weight: 500; }
+    .disease-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+    .disease-card { border-radius: 10px; background: rgba(251,113,133,0.04); border: 1px solid rgba(251,113,133,0.12); overflow: hidden; }
+    .disease-card:last-child { margin-bottom: 0; }
+    .disease-card-inner { display: flex; gap: 14px; padding: 14px; }
+    .disease-img { width: 80px; height: 80px; border-radius: 8px; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.06); }
+    .disease-text { flex: 1; min-width: 0; }
+    .disease-name { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+    .disease-cause { font-size: 0.72rem; color: var(--rose-400); margin-bottom: 6px; }
+    .disease-notes { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.6; }
+    .tankmate-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; font-size: 0.82rem; transition: border-color 0.2s, transform 0.15s; }
+    .tankmate-row:last-child { margin-bottom: 0; }
+    .tankmate-row:hover { transform: translateX(3px); }
+    .tankmate-row.good { background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.12); }
+    .tankmate-row.good:hover { border-color: rgba(52,211,153,0.3); }
+    .tankmate-row.bad { background: rgba(251,113,133,0.06); border: 1px solid rgba(251,113,133,0.12); }
+    .tankmate-row.bad:hover { border-color: rgba(251,113,133,0.3); }
+    .tankmate-icon { font-size: 1rem; flex-shrink: 0; }
+    .tankmate-species { font-weight: 600; color: var(--text-primary); }
+    .tankmate-note { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+    .variant-chip { display: inline-flex; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.15); color: var(--violet-400); margin: 4px; }
+    .color-chip { display: inline-flex; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 500; background: rgba(34,211,238,0.06); border: 1px solid rgba(34,211,238,0.12); color: var(--cyan-300); margin: 3px; }
+    .country-chip { display: inline-flex; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 500; background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.12); color: var(--emerald-400); margin: 3px; }
+    .iucn-badge { display: inline-flex; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
+    .iucn-vu { background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3); color: #fbbf24; }
+    .iucn-lc { background: rgba(52,211,153,0.15); border: 1px solid rgba(52,211,153,0.3); color: #34d399; }
+    .iucn-en { background: rgba(251,113,133,0.15); border: 1px solid rgba(251,113,133,0.3); color: #fb7185; }
+    .sex-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
+    .sex-col { padding: 16px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); }
+    .sex-col-title { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+    .sex-col-text { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.65; }
+
+    /* Color gallery */
+    .color-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 12px; }
+    .color-gallery-item { position: relative; border-radius: 12px; overflow: hidden; aspect-ratio: 4/3; border: 1px solid rgba(255,255,255,0.06); }
+    .color-gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+    .color-gallery-item:hover img { transform: scale(1.05); }
+    .color-gallery-label { position: absolute; bottom: 0; left: 0; right: 0; padding: 8px 12px; font-size: 0.72rem; font-weight: 600; color: #fff; background: linear-gradient(transparent, rgba(0,0,0,0.8)); }
+
+    /* Timeline */
+    .timeline { position: relative; padding-left: 24px; margin-top: 12px; }
+    .timeline::before { content: ''; position: absolute; left: 7px; top: 4px; bottom: 4px; width: 2px; background: rgba(52,211,153,0.2); border-radius: 1px; }
+    .timeline-item { position: relative; margin-bottom: 16px; display: flex; gap: 12px; align-items: flex-start; }
+    .timeline-item:last-child { margin-bottom: 0; }
+    .timeline-dot { position: absolute; left: -20px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--emerald-400); border: 2px solid var(--bg-deep); flex-shrink: 0; }
+    .timeline-content { flex: 1; }
+    .timeline-age { font-size: 0.75rem; font-weight: 700; color: var(--emerald-300); margin-bottom: 3px; }
+    .timeline-milestone { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; }
+
+    /* Myths */
+    .myth-card { margin-bottom: 14px; padding: 14px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); }
+    .myth-card:last-child { margin-bottom: 0; }
+    .myth-row { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+    .myth-icon { color: var(--rose-400); font-size: 0.9rem; flex-shrink: 0; margin-top: 1px; }
+    .myth-text { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
+    .reality-row { display: flex; gap: 10px; align-items: flex-start; padding-left: 4px; }
+    .reality-icon { color: var(--emerald-400); font-size: 0.9rem; flex-shrink: 0; margin-top: 1px; }
+    .reality-text { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; }
+
+    /* Enrichment */
+    .enrichment-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-top: 12px; }
+    .enrichment-item { padding: 12px; border-radius: 8px; background: rgba(52,211,153,0.04); border: 1px solid rgba(52,211,153,0.1); }
+    .enrichment-title { font-size: 0.78rem; font-weight: 700; color: var(--emerald-300); margin-bottom: 4px; }
+    .enrichment-desc { font-size: 0.76rem; color: var(--text-secondary); line-height: 1.55; }
+
+    /* Sources */
+    .sources-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    .source-item { padding: 10px 16px; border-radius: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); text-decoration: none; transition: border-color 0.2s, transform 0.15s; }
+    .source-item:hover { border-color: rgba(52,211,153,0.3); transform: translateY(-2px); }
+    .source-name { font-size: 0.78rem; font-weight: 700; color: var(--text-primary); }
+    .source-type { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* Educational Videos (inline) */
+    .inline-video { border-radius: 10px; overflow: hidden; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); }
+    .video-embed { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; }
+    .video-embed iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    .video-info { padding: 10px 14px; }
+    .video-title { font-size: 0.75rem; font-weight: 600; color: var(--text-primary); line-height: 1.4; }
+    .video-meta { font-size: 0.65rem; color: var(--text-muted); margin-top: 3px; }
+
+    /* ── Community Voice (distinct from verified encyclopedia data) ────────── */
+    .community-block { margin-top: 18px; padding-top: 16px; border-top: 1px dashed rgba(139,180,255,0.18); }
+    .community-block-label { display: flex; align-items: center; gap: 7px; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #8bb4ff; margin-bottom: 12px; }
+    .community-block-label::before { content: '👥'; font-size: 0.8rem; }
+    .community-voice { display: flex; gap: 12px; padding: 13px 15px; border-radius: 12px; background: rgba(96,140,255,0.05); border: 1px solid rgba(96,140,255,0.14); border-left: 3px solid #6c8cff; margin-bottom: 10px; }
+    .community-voice:last-child { margin-bottom: 0; }
+    .cv-avatar { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; object-fit: cover; background: linear-gradient(135deg, #6c8cff, #a78bfa); display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 700; color: #fff; }
+    .cv-body { flex: 1; min-width: 0; }
+    .cv-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+    .cv-name { font-size: 0.8rem; font-weight: 700; color: #cdd9ff; }
+    .cv-tier { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 7px; border-radius: 10px; background: rgba(167,139,250,0.15); border: 1px solid rgba(167,139,250,0.3); color: #c4b5fd; }
+    .cv-tag { font-size: 0.58rem; font-weight: 600; padding: 2px 7px; border-radius: 10px; background: rgba(96,140,255,0.12); color: #8bb4ff; }
+    .cv-text { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6; font-style: italic; }
+    .cv-footer { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
+    .cv-vote { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; color: var(--text-muted); background: none; border: none; cursor: pointer; padding: 0; transition: color 0.2s; }
+    .cv-vote:hover { color: #8bb4ff; }
+    .cv-add { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; padding: 8px 14px; border-radius: 8px; font-size: 0.72rem; font-weight: 600; color: #8bb4ff; background: rgba(96,140,255,0.06); border: 1px dashed rgba(96,140,255,0.25); text-decoration: none; cursor: pointer; transition: all 0.2s; }
+    .cv-add:hover { background: rgba(96,140,255,0.12); border-color: rgba(96,140,255,0.4); }
+    .cv-time { font-size: 0.66rem; color: var(--text-muted); }
+    .cv-vote.voted { color: #6c8cff; font-weight: 700; }
+    .cv-vote-pop { animation: votePop 0.4s ease; }
+    @keyframes votePop { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+    /* Card entrance */
+    .community-voice { opacity: 0; transform: translateY(8px); animation: cvIn 0.5s ease forwards; }
+    @keyframes cvIn { to { opacity: 1; transform: translateY(0); } }
+    .community-voice.rotating-out { animation: cvOut 0.4s ease forwards; }
+    @keyframes cvOut { to { opacity: 0; transform: translateY(-8px); } }
+
+    /* Live community pulse */
+    .community-pulse { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px 14px; border-radius: 10px; background: rgba(96,140,255,0.05); border: 1px solid rgba(96,140,255,0.12); }
+    .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 rgba(52,211,153,0.6); animation: pulseGlow 2s infinite; flex-shrink: 0; }
+    @keyframes pulseGlow { 0% { box-shadow: 0 0 0 0 rgba(52,211,153,0.5); } 70% { box-shadow: 0 0 0 8px rgba(52,211,153,0); } 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); } }
+    .pulse-stat { display: flex; align-items: baseline; gap: 5px; font-size: 0.74rem; color: var(--text-secondary); }
+    .pulse-num { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #cdd9ff; font-size: 0.85rem; }
+    .pulse-sep { color: rgba(255,255,255,0.12); }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .species-hero { grid-template-columns: 1fr; gap: 24px; padding: 24px 0 40px; }
+      .section-grid { grid-template-columns: 1fr; }
+      .sex-compare { grid-template-columns: 1fr; }
+      .toc-nav { position: relative; top: 0; }
+      .toc-links { gap: 4px; }
+      .toc-links a { padding: 4px 8px; font-size: 0.65rem; }
+      .disease-grid { grid-template-columns: 1fr; }
+      .color-gallery { grid-template-columns: 1fr 1fr; }
+      .enrichment-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -295,6 +436,23 @@
     }
 
     function renderSpecies(sp) {
+      // Helper: render inline video for a section if one exists
+      function inlineVideo(sectionKey) {
+        if (!sp.educationalVideos?.length) return '';
+        const vid = sp.educationalVideos.find(v => v.section === sectionKey);
+        if (!vid) return '';
+        return `<div class="inline-video" style="margin-top:16px;">
+          <div class="video-embed"><iframe src="https://www.youtube.com/embed/${vid.youtubeId}" title="${vid.title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>
+          <div class="video-info"><div class="video-title">${vid.title}</div><div class="video-meta">${vid.channel}</div></div>
+        </div>`;
+      }
+
+      // Helper: render a community-slot placeholder that gets hydrated async
+      // from species_insights. Distinct visual voice from verified data.
+      function communitySlot(category, prompt) {
+        return `<div class="community-slot" data-category="${category}" data-prompt="${prompt}"></div>`;
+      }
+
       const difficulty = sp.tankMetrics?.difficulty || 'Unknown';
       const badgeClass = getBadgeClass(difficulty);
       const hasImage = sp.masterPhotoUrl && sp.masterPhotoUrl !== '';
@@ -462,6 +620,7 @@
               ${layoutReq ? `<p style="margin-top:12px;"><strong>Tank Setup for Breeding:</strong> ${layoutReq}</p>` : ''}
               ${reproComments ? `<p style="margin-top:12px;"><strong>Breeding Notes:</strong> ${reproComments}</p>` : ''}
             </div>
+            ${inlineVideo('reproduction')}
           </div>`;
       }
 
@@ -497,6 +656,320 @@
       }
 
       html += `</div>`; // close section-grid
+
+      // ── Enhanced Sections (only for species with enhanced: true) ──────────
+      if (sp.enhanced) {
+        html += `<div class="enhanced-badge">✦ Enhanced Profile — Verified Multi-Source Data</div>`;
+        html += `<nav class="toc-nav" id="tocNav">
+          <div class="toc-title">Jump to Section</div>
+          <div class="toc-links">
+            ${sp.tankRequirements ? '<a href="#sec-setup">Tank Setup</a>' : ''}
+            ${sp.maintenance ? '<a href="#sec-maintenance">Maintenance</a>' : ''}
+            ${sp.mythsVsReality?.length ? '<a href="#sec-myths">Myths</a>' : ''}
+            ${sp.tankmates ? '<a href="#sec-tankmates">Tankmates</a>' : ''}
+            ${sp.diseases?.common?.length ? '<a href="#sec-diseases">Health</a>' : ''}
+            ${(sp.lifespan || sp.behavior) ? '<a href="#sec-lifespan">Lifespan</a>' : ''}
+            ${sp.origin ? '<a href="#sec-origin">Origin</a>' : ''}
+            ${sp.growthTimeline?.length ? '<a href="#sec-growth">Growth</a>' : ''}
+            ${sp.variants ? '<a href="#sec-variants">Varieties</a>' : ''}
+            ${sp.enrichment ? '<a href="#sec-enrichment">Enrichment</a>' : ''}
+          </div>
+        </nav>`;
+        html += `<div class="section-grid">`;
+
+        // Lifespan & Behavior
+        if (sp.lifespan || sp.behavior) {
+          html += `<div class="section-card" id="sec-lifespan">
+            <h2 class="section-title"><span class="icon">⏱️</span> Lifespan & Behavior</h2>
+            <div class="info-grid">`;
+          if (sp.lifespan) {
+            html += `<div class="info-item"><div class="info-item-label">Lifespan</div><div class="info-item-value">${sp.lifespan.rangeYears[0]}–${sp.lifespan.rangeYears[1]} years (avg ${sp.lifespan.averageYears})</div></div>`;
+          }
+          if (sp.behavior?.swimmingLevel) {
+            html += `<div class="info-item"><div class="info-item-label">Swimming Level</div><div class="info-item-value">${sp.behavior.swimmingLevel}</div></div>`;
+          }
+          if (sp.behavior?.activityPattern) {
+            html += `<div class="info-item"><div class="info-item-label">Activity</div><div class="info-item-value">${sp.behavior.activityPattern} · ${sp.behavior.activityLevel || ''}</div></div>`;
+          }
+          if (sp.behavior?.temperament) {
+            html += `<div class="info-item"><div class="info-item-label">Temperament</div><div class="info-item-value">${sp.behavior.temperament}</div></div>`;
+          }
+          html += `</div>`;
+          if (sp.lifespan?.notes) {
+            html += `<p class="section-text" style="margin-top:14px;">${sp.lifespan.notes}</p>`;
+          }
+          if (sp.behavior?.notes) {
+            html += `<p class="section-text" style="margin-top:10px;">${sp.behavior.notes}</p>`;
+          }
+          html += `</div>`;
+        }
+
+        // Origin & Distribution
+        if (sp.origin) {
+          html += `<div class="section-card" id="sec-origin">
+            <h2 class="section-title"><span class="icon">🌍</span> Origin & Distribution</h2>
+            <div class="section-text">
+              <p><strong>Native Region:</strong> ${sp.origin.native}</p>`;
+          if (sp.origin.countries) {
+            html += `<div style="margin-top:10px;">${sp.origin.countries.map(c => `<span class="country-chip">${c}</span>`).join('')}</div>`;
+          }
+          if (sp.origin.waterways) {
+            html += `<p style="margin-top:12px;"><strong>Waterways:</strong> ${sp.origin.waterways}</p>`;
+          }
+          if (sp.origin.habitat) {
+            html += `<p style="margin-top:10px;"><strong>Wild Habitat:</strong> ${sp.origin.habitat}</p>`;
+          }
+          if (sp.origin.iucnStatus) {
+            const iucnClass = sp.origin.iucnStatus === 'Vulnerable' ? 'iucn-vu' : sp.origin.iucnStatus === 'Endangered' ? 'iucn-en' : 'iucn-lc';
+            html += `<div style="margin-top:12px;"><span class="iucn-badge ${iucnClass}">IUCN: ${sp.origin.iucnStatus}</span></div>`;
+          }
+          html += inlineVideo('origin');
+          html += `</div></div>`;
+        }
+
+        // Tank Requirements (enhanced)
+        if (sp.tankRequirements) {
+          const tr = sp.tankRequirements;
+          html += `<div class="section-card" id="sec-setup"><h2 class="section-title"><span class="icon">🏠</span> Tank Setup Guide</h2>
+            <div class="info-grid">`;
+          if (tr.minDimensions) html += `<div class="info-item"><div class="info-item-label">Min Footprint</div><div class="info-item-value">${tr.minDimensions}</div></div>`;
+          if (tr.idealDimensions) html += `<div class="info-item"><div class="info-item-label">Ideal Size</div><div class="info-item-value">${tr.idealDimensions}</div></div>`;
+          if (tr.flowRate) html += `<div class="info-item"><div class="info-item-label">Flow</div><div class="info-item-value">${tr.flowRate}</div></div>`;
+          if (tr.lighting) html += `<div class="info-item"><div class="info-item-label">Lighting</div><div class="info-item-value">${tr.lighting}</div></div>`;
+          if (tr.substrate) html += `<div class="info-item"><div class="info-item-label">Substrate</div><div class="info-item-value">${tr.substrate}</div></div>`;
+          html += `</div>`;
+          if (tr.decorEssentials) html += `<p class="section-text" style="margin-top:14px;"><strong>Essential Decor:</strong> ${tr.decorEssentials}</p>`;
+          if (tr.lidRequired) html += `<p class="section-text" style="margin-top:10px;"><strong>⚠️ Lid Required:</strong> ${tr.lidNotes || 'This species is a known jumper.'}</p>`;
+          html += inlineVideo('tankRequirements');
+          html += communitySlot('care_tip', 'Share your setup tip');
+          html += `</div>`;
+        }
+
+        // Sexual Dimorphism
+        if (sp.sexualDimorphism) {
+          const sd = sp.sexualDimorphism;
+          html += `<div class="section-card" id="sec-dimorphism">
+            <h2 class="section-title"><span class="icon">⚥</span> Sexual Dimorphism</h2>`;
+          if (sd.maturityAge) html += `<p class="section-text" style="margin-bottom:12px;"><strong>Sexual maturity:</strong> ${sd.maturityAge}</p>`;
+          html += `<div class="sex-compare">
+              <div class="sex-col"><div class="sex-col-title">♂ Male</div><div class="sex-col-text">${sd.male}</div></div>
+              <div class="sex-col"><div class="sex-col-title">♀ Female</div><div class="sex-col-text">${sd.female}</div></div>
+            </div>
+          </div>`;
+        }
+
+        // Tankmates
+        if (sp.tankmates) {
+          html += `<div class="section-card full-width" id="sec-tankmates">
+            <h2 class="section-title"><span class="icon">🐟</span> Verified Tankmates</h2>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+            <div>`;
+          if (sp.tankmates.compatible?.length) {
+            html += `<p class="section-text" style="margin-bottom:10px;font-weight:600;color:var(--emerald-300);">✓ Compatible Species</p>`;
+            sp.tankmates.compatible.forEach(t => {
+              const tmData = allSpecies.find(s => s.scientificName.toLowerCase() === t.species.toLowerCase());
+              const tmSlug = t.species.toLowerCase().replace(/\s+/g, '-');
+              const tmImg = tmData?.masterPhotoUrl ? `<img src="${tmData.masterPhotoUrl}" alt="${t.species}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;">` : `<div style="width:44px;height:44px;border-radius:8px;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">🐟</div>`;
+              const tmLink = tmData ? `/species/${toSlug(tmData.scientificName)}` : '#';
+              html += `<a href="${tmLink}" class="tankmate-row good" style="text-decoration:none;cursor:pointer;">
+                ${tmImg}
+                <div style="flex:1;min-width:0;"><div class="tankmate-species">${t.species}</div><div class="tankmate-note">${t.notes}</div></div>
+              </a>`;
+            });
+          }
+          html += `</div><div>`;
+          if (sp.tankmates.incompatible?.length) {
+            html += `<p class="section-text" style="margin-bottom:10px;font-weight:600;color:var(--rose-400);">✗ Avoid These</p>`;
+            sp.tankmates.incompatible.forEach(t => {
+              const tmData = allSpecies.find(s => s.scientificName.toLowerCase() === t.species.toLowerCase());
+              const tmImg = tmData?.masterPhotoUrl ? `<img src="${tmData.masterPhotoUrl}" alt="${t.species}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;">` : `<div style="width:44px;height:44px;border-radius:8px;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">🐟</div>`;
+              const tmLink = tmData ? `/species/${toSlug(tmData.scientificName)}` : '#';
+              html += `<a href="${tmLink}" class="tankmate-row bad" style="text-decoration:none;cursor:pointer;">
+                ${tmImg}
+                <div style="flex:1;min-width:0;"><div class="tankmate-species">${t.species}</div><div class="tankmate-note">${t.reason}</div></div>
+              </a>`;
+            });
+          }
+          html += `</div></div>`;
+          html += inlineVideo('tankmates');
+          if (sp.tankmates.notes) html += `<p class="section-text" style="margin-top:14px;font-style:italic;">${sp.tankmates.notes}</p>`;
+          html += `</div>`;
+        }
+
+        // Diseases
+        if (sp.diseases?.common?.length) {
+          html += `<div class="section-card full-width" id="sec-diseases">
+            <h2 class="section-title"><span class="icon">🩺</span> Common Health Issues</h2>
+            <p class="section-text" style="margin-bottom:12px;">Susceptibility: <strong>${sp.diseases.susceptibility || 'Moderate'}</strong></p>
+            <div class="disease-grid">`;
+          sp.diseases.common.forEach(d => {
+            const diseaseSlug = d.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            const diseaseImg = `/species-images/diseases/${diseaseSlug}.jpg`;
+            html += `<div class="disease-card">
+              <div class="disease-card-inner">
+                <img class="disease-img" src="${diseaseImg}" alt="${d.name}" onerror="this.style.display='none'">
+                <div class="disease-text">
+                  <div class="disease-name">${d.name}</div>
+                  <div class="disease-cause">${d.cause}</div>
+                  <div class="disease-notes">${d.notes}</div>
+                </div>
+              </div>
+            </div>`;
+          });
+          html += `</div>`;
+          html += inlineVideo('diseases');
+          html += `</div>`;
+        }
+
+        // Variants (combined with color gallery)
+        if (sp.variants) {
+          html += `<div class="section-card full-width" id="sec-variants">
+            <h2 class="section-title"><span class="icon">🎨</span> Varieties & Color Morphs</h2>`;
+          
+          // Color gallery at top if available
+          if (sp.colorVariants?.length) {
+            html += `<div class="color-gallery" style="margin-bottom:20px;">`;
+            sp.colorVariants.forEach(v => {
+              html += `<div class="color-gallery-item">
+                <img src="${v.src}" alt="${v.label}" loading="lazy">
+                <span class="color-gallery-label">${v.label}</span>
+              </div>`;
+            });
+            html += `</div>`;
+          }
+
+          if (sp.variants.tailTypes?.length) {
+            html += `<p class="section-text" style="margin-bottom:8px;"><strong>Tail Types:</strong></p>`;
+            sp.variants.tailTypes.forEach(v => {
+              html += `<div style="margin-bottom:8px;"><span class="variant-chip">${v.name}</span> <span class="section-text">${v.description}</span></div>`;
+            });
+          }
+          if (sp.variants.colors?.length) {
+            html += `<p class="section-text" style="margin-top:14px;margin-bottom:8px;"><strong>Available Colors:</strong></p>
+              <div>${sp.variants.colors.map(c => `<span class="color-chip">${c}</span>`).join('')}</div>`;
+          }
+          if (sp.variants.colorPatterns?.length) {
+            html += `<p class="section-text" style="margin-top:12px;margin-bottom:8px;"><strong>Color Patterns:</strong></p>
+              <div>${sp.variants.colorPatterns.map(p => `<span class="color-chip">${p}</span>`).join('')}</div>`;
+          }
+          if (sp.variants.notes) html += `<p class="section-text" style="margin-top:14px;font-style:italic;">${sp.variants.notes}</p>`;
+          html += `</div>`;
+        }
+
+        // Acclimation
+        if (sp.acclimation) {
+          html += `<div class="section-card">
+            <h2 class="section-title"><span class="icon">🔄</span> Acclimation Guide</h2>
+            <div class="info-grid">
+              <div class="info-item"><div class="info-item-label">Method</div><div class="info-item-value">${sp.acclimation.method}</div></div>
+              <div class="info-item"><div class="info-item-label">Sensitivity</div><div class="info-item-value">${sp.acclimation.sensitivity}</div></div>
+              <div class="info-item"><div class="info-item-label">Quarantine</div><div class="info-item-value">${sp.acclimation.quarantineDays} days recommended</div></div>
+            </div>`;
+          if (sp.acclimation.notes) html += `<p class="section-text" style="margin-top:14px;">${sp.acclimation.notes}</p>`;
+          html += `</div>`;
+        }
+
+        // Growth Timeline
+        if (sp.growthTimeline?.length) {
+          html += `<div class="section-card full-width" id="sec-growth">
+            <h2 class="section-title"><span class="icon">📈</span> Growth Timeline</h2>
+            <div class="timeline">`;
+          sp.growthTimeline.forEach((stage, i) => {
+            html += `<div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-content">
+                <div class="timeline-age">${stage.age}</div>
+                <div class="timeline-milestone">${stage.milestone}</div>
+              </div>
+            </div>`;
+          });
+          html += `</div></div>`;
+        }
+
+        // Maintenance / Water Change Schedule
+        if (sp.maintenance) {
+          html += `<div class="section-card" id="sec-maintenance">
+            <h2 class="section-title"><span class="icon">🔧</span> Maintenance Schedule</h2>
+            <div class="info-grid">
+              <div class="info-item"><div class="info-item-label">Water Changes</div><div class="info-item-value">${sp.maintenance.waterChangePercent}% ${sp.maintenance.waterChangeFrequency}</div></div>
+            </div>`;
+          if (sp.maintenance.notes) html += `<p class="section-text" style="margin-top:12px;">${sp.maintenance.notes}</p>`;
+          if (sp.maintenance.filterMaintenance) html += `<p class="section-text" style="margin-top:10px;"><strong>Filter:</strong> ${sp.maintenance.filterMaintenance}</p>`;
+          if (sp.maintenance.testSchedule) html += `<p class="section-text" style="margin-top:10px;"><strong>Testing:</strong> ${sp.maintenance.testSchedule}</p>`;
+          html += `</div>`;
+        }
+
+        // Availability / Price
+        if (sp.availability) {
+          html += `<div class="section-card" id="sec-availability">
+            <h2 class="section-title"><span class="icon">🛒</span> Availability & Price</h2>
+            <div class="info-grid">
+              <div class="info-item"><div class="info-item-label">Commonness</div><div class="info-item-value">${sp.availability.commonness}</div></div>
+              <div class="info-item"><div class="info-item-label">Price Range</div><div class="info-item-value">${sp.availability.priceRange}</div></div>
+            </div>`;
+          if (sp.availability.notes) html += `<p class="section-text" style="margin-top:12px;">${sp.availability.notes}</p>`;
+          if (sp.availability.whereToBuy?.length) {
+            html += `<p class="section-text" style="margin-top:10px;"><strong>Where to buy:</strong></p><ul style="margin-top:6px;padding-left:20px;">`;
+            sp.availability.whereToBuy.forEach(w => { html += `<li class="section-text">${w}</li>`; });
+            html += `</ul>`;
+          }
+          html += `</div>`;
+        }
+
+        // Myths vs Reality
+        if (sp.mythsVsReality?.length) {
+          html += `<div class="section-card full-width" id="sec-myths">
+            <h2 class="section-title"><span class="icon">❌</span> Common Myths vs Reality</h2>`;
+          sp.mythsVsReality.forEach(m => {
+            html += `<div class="myth-card">
+              <div class="myth-row">
+                <span class="myth-icon">❌</span>
+                <div class="myth-text"><strong>Myth:</strong> "${m.myth}"</div>
+              </div>
+              <div class="reality-row">
+                <span class="reality-icon">✓</span>
+                <div class="reality-text"><strong>Reality:</strong> ${m.reality}</div>
+              </div>
+            </div>`;
+          });
+          html += `</div>`;
+        }
+
+        // Enrichment
+        if (sp.enrichment) {
+          html += `<div class="section-card full-width" id="sec-enrichment">
+            <h2 class="section-title"><span class="icon">🧠</span> Enrichment & Behavior Tips</h2>`;
+          if (sp.enrichment.tips?.length) {
+            html += `<div class="enrichment-grid">`;
+            sp.enrichment.tips.forEach(tip => {
+              const [title, ...desc] = tip.split(': ');
+              html += `<div class="enrichment-item">
+                <div class="enrichment-title">${title}</div>
+                <div class="enrichment-desc">${desc.join(': ')}</div>
+              </div>`;
+            });
+            html += `</div>`;
+          }
+          if (sp.enrichment.notes) html += `<p class="section-text" style="margin-top:14px;font-style:italic;">${sp.enrichment.notes}</p>`;
+          html += `</div>`;
+        }
+
+        // Sources
+        if (sp.sources?.length) {
+          html += `<div class="section-card full-width">
+            <h2 class="section-title"><span class="icon">📚</span> Data Sources</h2>
+            <div class="sources-grid">`;
+          sp.sources.forEach(s => {
+            html += `<a href="${s.url}" target="_blank" rel="noopener noreferrer" class="source-item">
+              <div class="source-name">${s.name}</div>
+              <div class="source-type">${s.type}</div>
+            </a>`;
+          });
+          html += `</div></div>`;
+        }
+
+        html += `</div>`; // close enhanced section-grid
+      }
 
       // FishBase source link
       if (sp.specCode) {
@@ -548,9 +1021,30 @@
         });
       });
 
-      // Render marketplace cross-link and related species
+      // Render marketplace cross-link (inside availability context)
       renderMarketplaceSection(sp);
-      renderRelatedSpecies(sp);
+
+      // Hydrate community insight slots (blended community voice)
+      hydrateCommunitySlots(sp);
+
+      // Live community pulse (real aggregate activity)
+      renderCommunityPulse(sp);
+
+      // TOC click handler (smooth scroll to section)
+      requestAnimationFrame(() => {
+        document.querySelectorAll('.toc-links a').forEach(link => {
+          link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const id = link.getAttribute('href').slice(1);
+            const target = document.getElementById(id);
+            if (target) {
+              const offset = 80; // account for nav bar
+              const y = target.getBoundingClientRect().top + window.pageYOffset - offset;
+              window.scrollTo({ top: y, behavior: 'smooth' });
+            }
+          });
+        });
+      });
     }
 
     // Infer compatibility traits from available data
@@ -595,6 +1089,184 @@
       }
 
       return chips;
+    }
+
+    // ── Community Insights (blended community voice) ──────────────────────
+    const SB_URL = 'https://yahsdztnvsykzecjatsl.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaHNkenRudnN5a3plY2phdHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQwMDgsImV4cCI6MjA5NjA3MDAwOH0.3anqDFU9hUjZg2AFWJlXSBbwSM-knNrmb-uQ_Baq98I';
+
+    function tierInitial(name) { return (name || '?').trim().charAt(0).toUpperCase(); }
+
+    // Relative time: "3 days ago", "2h ago", "just now"
+    function relativeTime(iso) {
+      if (!iso) return '';
+      const diff = Date.now() - new Date(iso).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return 'just now';
+      if (mins < 60) return `${mins}m ago`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `${hrs}h ago`;
+      const days = Math.floor(hrs / 24);
+      if (days < 7) return `${days}d ago`;
+      const wks = Math.floor(days / 7);
+      if (wks < 5) return `${wks}w ago`;
+      const mos = Math.floor(days / 30);
+      return `${mos}mo ago`;
+    }
+
+    function renderVoiceCard(ins, delay = 0) {
+      const prof = ins.profiles || {};
+      const name = prof.display_name || 'Aquacellum Keeper';
+      const tier = prof.companion_tier ? `<span class="cv-tier">${prof.companion_tier}</span>` : '';
+      const avatar = prof.avatar_url
+        ? `<img class="cv-avatar" src="${prof.avatar_url}" alt="${name}">`
+        : `<div class="cv-avatar">${tierInitial(name)}</div>`;
+      const catLabel = { care_tip: 'Care Tip', warning: 'Warning', breeding_note: 'Breeding', compatibility: 'Compatibility', behavior: 'Behavior' }[ins.category] || 'Tip';
+      const time = relativeTime(ins.created_at);
+      return `<div class="community-voice" style="animation-delay:${delay}ms" data-insight-id="${ins.id}">
+        ${avatar}
+        <div class="cv-body">
+          <div class="cv-header">
+            <span class="cv-name">${name}</span>${tier}
+            <span class="cv-tag">${catLabel}</span>
+            ${time ? `<span class="cv-time">· ${time}</span>` : ''}
+          </div>
+          <div class="cv-text">"${ins.body}"</div>
+          <div class="cv-footer">
+            <button class="cv-vote" onclick="voteInsight(this, '${ins.id}')" data-count="${ins.upvotes || 0}">▲ <span>${ins.upvotes || 0}</span></button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    // Working upvote — persists to Supabase, animates
+    window.voteInsight = async function(btn, id) {
+      if (btn.classList.contains('voted')) return;
+      const span = btn.querySelector('span');
+      const next = (parseInt(btn.dataset.count, 10) || 0) + 1;
+      btn.dataset.count = next;
+      span.textContent = next;
+      btn.classList.add('voted', 'cv-vote-pop');
+      setTimeout(() => btn.classList.remove('cv-vote-pop'), 400);
+      try {
+        await fetch(`${SB_URL}/rest/v1/species_insights?id=eq.${id}`, {
+          method: 'PATCH',
+          headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ upvotes: next })
+        });
+      } catch (e) { /* silent */ }
+    };
+
+    // Expand a slot to reveal the rest of the tips (reader-controlled, no auto-motion)
+    window.expandInsights = function(btn) {
+      const stream = btn.closest('.community-block').querySelector('.cv-stream');
+      const hidden = JSON.parse(btn.dataset.rest || '[]');
+      const startDelay = 0;
+      hidden.forEach((ins, i) => {
+        stream.insertAdjacentHTML('beforeend', renderVoiceCard(ins, i * 70));
+      });
+      btn.remove();
+    };
+
+    async function hydrateCommunitySlots(sp) {
+      const slots = document.querySelectorAll('.community-slot');
+      if (!slots.length) return;
+
+      let insights = [];
+      if (sp.specCode) {
+        try {
+          const res = await fetch(
+            `${SB_URL}/rest/v1/species_insights?spec_code=eq.${sp.specCode}&order=upvotes.desc&select=*,profiles:author_wallet(display_name,avatar_url,companion_tier)`,
+            { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
+          );
+          if (res.ok) insights = await res.json();
+        } catch (e) { /* silent */ }
+      }
+
+      slots.forEach(slot => {
+        const category = slot.dataset.category;
+        const prompt = slot.dataset.prompt || 'Share your experience';
+        const matching = insights.filter(i => i.category === category);
+        const VISIBLE = 2;
+
+        let block = `<div class="community-block"><div class="community-block-label">From the Community</div>`;
+        block += `<div class="cv-stream">`;
+        if (matching.length) {
+          block += matching.slice(0, VISIBLE).map((ins, i) => renderVoiceCard(ins, i * 80)).join('');
+        } else {
+          block += `<div class="cv-text" style="font-style:normal;color:var(--text-muted);font-size:0.78rem;margin-bottom:8px;">No keeper tips here yet — be the first to share what worked for you.</div>`;
+        }
+        block += `</div>`;
+        const rest = matching.slice(VISIBLE);
+        if (rest.length) {
+          block += `<button class="cv-add" data-rest='${JSON.stringify(rest).replace(/'/g, "&#39;")}' onclick="expandInsights(this)">▼ Show ${rest.length} more keeper ${rest.length === 1 ? 'tip' : 'tips'}</button>`;
+        }
+        block += `<a href="/app/reef" class="cv-add">＋ ${prompt}</a>`;
+        block += `</div>`;
+        slot.innerHTML = block;
+      });
+    }
+
+    // Community pulse — real aggregate activity counts for this species
+    async function renderCommunityPulse(sp) {
+      const anchor = document.querySelector('.enhanced-badge');
+      if (!anchor) return;
+
+      let tips = 0, tankPosts = 0, breeders = 0;
+      const sci = (sp.scientificName || '').toLowerCase();
+
+      try {
+        // Keeper tips count (exact, cheap via count header)
+        if (sp.specCode) {
+          const r = await fetch(`${SB_URL}/rest/v1/species_insights?spec_code=eq.${sp.specCode}&select=id`, {
+            headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, Prefer: 'count=exact' }
+          });
+          const cr = r.headers.get('content-range');
+          if (cr && cr.includes('/')) tips = parseInt(cr.split('/')[1], 10) || 0;
+        }
+        // Shared tanks (currents tagged with this species) + breeders (active listings)
+        const [curRes, lisRes] = await Promise.all([
+          fetch(`${SB_URL}/rest/v1/currents?visibility=eq.public&select=species_tags&limit=500`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }),
+          fetch(`${SB_URL}/rest/v1/aquadex_listings?is_active=eq.true&select=data,seller_address&limit=500`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } })
+        ]);
+        if (curRes.ok) {
+          const rows = await curRes.json();
+          tankPosts = rows.filter(r => JSON.stringify(r.species_tags || []).toLowerCase().includes(sci)).length;
+        }
+        if (lisRes.ok) {
+          const rows = await lisRes.json();
+          const sellers = new Set();
+          rows.forEach(r => {
+            let d = {}; try { d = typeof r.data === 'string' ? JSON.parse(r.data) : (r.data || {}); } catch {}
+            if ((d.scientificName || '').toLowerCase() === sci) sellers.add(r.seller_address);
+          });
+          breeders = sellers.size;
+        }
+      } catch (e) { /* silent */ }
+
+      // Only render if there's any real activity signal
+      const stats = [];
+      stats.push(`<span class="pulse-stat"><span class="pulse-num" data-target="${tips}">0</span> keeper tips</span>`);
+      stats.push(`<span class="pulse-stat"><span class="pulse-num" data-target="${tankPosts}">0</span> shared tanks</span>`);
+      stats.push(`<span class="pulse-stat"><span class="pulse-num" data-target="${breeders}">0</span> breeders with stock</span>`);
+
+      const pulse = document.createElement('div');
+      pulse.className = 'community-pulse';
+      pulse.innerHTML = `<span class="pulse-dot"></span>` + stats.join('<span class="pulse-sep">·</span>');
+      anchor.insertAdjacentElement('afterend', pulse);
+
+      // Count-up animation
+      pulse.querySelectorAll('.pulse-num').forEach(el => {
+        const target = parseInt(el.dataset.target, 10) || 0;
+        if (target === 0) { el.textContent = '0'; return; }
+        let cur = 0;
+        const step = Math.max(1, Math.ceil(target / 20));
+        const t = setInterval(() => {
+          cur = Math.min(target, cur + step);
+          el.textContent = cur;
+          if (cur >= target) clearInterval(t);
+        }, 40);
+      });
     }
 
     // ── Marketplace Cross-Link ────────────────────────────────────────────
@@ -643,53 +1315,12 @@
       }
 
       mpHtml += `</div>`;
-      container.insertAdjacentHTML('beforeend', mpHtml);
-    }
-
-    // ── Related Species ───────────────────────────────────────────────────
-    function renderRelatedSpecies(sp) {
-      if (!allSpecies || allSpecies.length === 0) return;
-
-      // Find related: same family, excluding self
-      let related = allSpecies.filter(s =>
-        s.family && s.family === sp.family &&
-        s.scientificName !== sp.scientificName
-      );
-
-      // If fewer than 4, supplement with same difficulty
-      if (related.length < 4) {
-        const sameDiff = allSpecies.filter(s =>
-          s.tankMetrics?.difficulty === sp.tankMetrics?.difficulty &&
-          s.scientificName !== sp.scientificName &&
-          !related.includes(s)
-        ).slice(0, 8 - related.length);
-        related = [...related, ...sameDiff];
+      const availSection = document.getElementById('sec-availability');
+      if (availSection) {
+        availSection.insertAdjacentHTML('afterend', mpHtml);
+      } else {
+        container.insertAdjacentHTML('beforeend', mpHtml);
       }
-
-      related = related.slice(0, 8);
-      if (related.length === 0) return;
-
-      let html = `<div class="related-section">
-        <div class="related-section-title">🐠 Related Species</div>
-        <div class="related-scroll">`;
-
-      related.forEach(r => {
-        const slug = toSlug(r.scientificName);
-        const imgHtml = r.masterPhotoUrl
-          ? `<img class="related-card-img" src="${r.masterPhotoUrl}" alt="${r.commonName}" loading="lazy">`
-          : `<div class="related-card-img" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem;opacity:0.3;">🐟</div>`;
-        html += `
-          <a href="/species/${slug}" class="related-card">
-            ${imgHtml}
-            <div class="related-card-info">
-              <div class="related-card-name">${r.commonName || 'Unknown'}</div>
-              <div class="related-card-sci">${r.scientificName}</div>
-            </div>
-          </a>`;
-      });
-
-      html += `</div></div>`;
-      document.getElementById('mainContent').insertAdjacentHTML('beforeend', html);
     }
 
     // Boot

@@ -199,6 +199,21 @@ export async function updateSchool(schoolId, updates) {
 }
 
 /**
+ * List official (platform-curated) master schools.
+ */
+export async function listOfficialSchools() {
+  if (!isSupabaseConfigured()) return { data: [], error: "Not configured" };
+
+  const { data, error } = await supabase
+    .from("schools")
+    .select("*")
+    .eq("is_official", true)
+    .order("name", { ascending: true });
+
+  return { data: data || [], error };
+}
+
+/**
  * Check if slug is available.
  */
 export async function isSlugAvailable(slug) {

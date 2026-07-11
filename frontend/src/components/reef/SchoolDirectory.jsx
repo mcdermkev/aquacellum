@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from "react";
-import { useSchoolDirectory, useMySchools, useJoinSchool } from "../../hooks/useSchools";
+import { useSchoolDirectory, useMySchools, useJoinSchool, useOfficialSchools } from "../../hooks/useSchools";
 import { ProfileCard } from "./ProfileCard";
 
 const TYPE_FILTERS = [
@@ -34,6 +34,9 @@ export function SchoolDirectory({ onSelectSchool, onCreateSchool, casualModeActi
 
   const { data: mySchoolsResult } = useMySchools();
   const mySchools = mySchoolsResult?.data || [];
+
+  const { data: officialResult } = useOfficialSchools();
+  const officialSchools = officialResult?.data || [];
 
   const {
     data: directoryData,
@@ -117,6 +120,30 @@ export function SchoolDirectory({ onSelectSchool, onCreateSchool, casualModeActi
                 </button>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Official Master Schools */}
+      {officialSchools.length > 0 && (
+        <div style={{ marginBottom: "2rem" }}>
+          <h3 style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "0.25rem", fontWeight: "600" }}>
+            ⭐ Official Schools
+          </h3>
+          <p style={{ margin: "0 0 0.75rem", fontSize: "0.65rem", color: "var(--text-muted)" }}>
+            Curated species communities maintained by the platform
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "0.6rem" }}>
+            {officialSchools.map((school) => (
+              <OfficialSchoolCard
+                key={school.id}
+                school={school}
+                isMember={mySchoolIds.has(school.id)}
+                onSelect={() => onSelectSchool?.(school)}
+                onJoin={() => handleJoin(school.id)}
+                isJoining={joinSchoolMutation.isPending}
+              />
+            ))}
           </div>
         </div>
       )}
@@ -305,5 +332,53 @@ function SchoolCard({ school, isMember, onSelect, onJoin, isJoining }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function OfficialSchoolCard({ school, isMember, onSelect, onJoin, isJoining }) {
+  // Extract the species name from tracked_species for display
+  const species = school.tracked_species?.[0];
+  const speciesLabel = species?.commonName || "";
+
+  return (
+    <button
+      onClick={onSelect}
+      className="glass-card"
+      style={{
+        padding: "0.6rem 0.75rem",
+        border: "1px solid rgba(250, 204, 21, 0.2)",
+        borderRadius: "var(--radius-sm)",
+        cursor: "pointer",
+        textAlign: "left",
+        background: "rgba(250, 204, 21, 0.04)",
+        transition: "all 0.2s ease",
+        display: "flex",
+        alignItems: "center",
+        gap: "0.5rem",
+        width: "100%",
+      }}
+    >
+      <span style={{ fontSize: "1rem", flexShrink: 0 }}>⭐</span>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ fontSize: "0.75rem", fontWeight: "600", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {school.name}
+        </div>
+        <div style={{ fontSize: "0.6rem", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {speciesLabel} · {school.member_count} member{school.member_count !== 1 ? "s" : ""}
+        </div>
+      </div>
+      {!isMember ? (
+        <button
+          onClick={(e) => { e.stopPropagation(); onJoin(); }}
+          disabled={isJoining}
+          className="btn-primary"
+          style={{ padding: "0.2rem 0.5rem", fontSize: "0.6rem", flexShrink: 0 }}
+        >
+          Join
+        </button>
+      ) : (
+        <span style={{ fontSize: "0.6rem", color: "var(--accent-green)", flexShrink: 0 }}>✓</span>
+      )}
+    </button>
   );
 }
