@@ -10,7 +10,7 @@ export function useSpeciesData() {
     queryKey: ["species"],
     queryFn: async () => {
       try {
-        const res = await fetch("/fishbase_master.json");
+        const res = await fetch("/fishbase_master.json?v=2");
         if (!res.ok) throw new Error("Failed to load reference library");
         const rawData = await res.json();
 

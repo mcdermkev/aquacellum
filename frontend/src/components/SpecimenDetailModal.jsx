@@ -120,7 +120,7 @@ export function SpecimenDetailModal({
   };
 
   useEffect(() => {
-    fetch("/fishbase_master.json")
+    fetch("/fishbase_master.json?v=2")
       .then((res) => {
         if (!res.ok) throw new Error("Could not load reference library");
         return res.json();

@@ -650,7 +650,7 @@
     // ── Initialize ─────────────────────────────────────────────────────────
     async function init() {
       try {
-        const fbRes = await fetch('/fishbase_master.json');
+        const fbRes = await fetch('/fishbase_master.json?v=2');
         if (fbRes.ok) fishbaseData = await fbRes.json();
       } catch (e) { console.warn('Failed to load fishbase data:', e); }
 

@@ -36,7 +36,7 @@ export function useTankData(tankId) {
 
   async function loadMasterCatalog() {
     try {
-      const res = await fetch("/fishbase_master.json");
+      const res = await fetch("/fishbase_master.json?v=2");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setSpeciesData(data);
@@ -88,7 +88,7 @@ export function useTankData(tankId) {
       if (specError) throw new Error(specError.message);
 
       // Map specimens to species data format compatible with the reef renderer
-      const masterCatalog = await fetch("/fishbase_master.json").then(r => r.json());
+      const masterCatalog = await fetch("/fishbase_master.json?v=2").then(r => r.json());
       const speciesInTank = mapSpecimensToSpecies(specimens || [], masterCatalog);
 
       setTankMeta({

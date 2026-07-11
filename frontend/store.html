@@ -493,7 +493,7 @@
 
       // Try to get species images from fishbase
       let fishbaseData = [];
-      fetch('/fishbase_master.json').then(r => r.ok ? r.json() : []).then(data => {
+      fetch('/fishbase_master.json?v=2').then(r => r.ok ? r.json() : []).then(data => {
         fishbaseData = data;
         // Re-render with images
         grid.innerHTML = listings.map((item, idx) => buildListingCard(item, idx, fishbaseData)).join('');

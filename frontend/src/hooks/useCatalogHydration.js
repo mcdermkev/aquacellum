@@ -32,7 +32,7 @@ export function useCatalogHydration() {
 
       setProgress(10); // Fetch started
 
-      const res = await fetch("/fishbase_master.json");
+      const res = await fetch("/fishbase_master.json?v=2");
       if (!res.ok) throw new Error(`Catalog fetch failed: ${res.status}`);
 
       setProgress(40); // Download complete

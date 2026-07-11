@@ -419,7 +419,7 @@
 
     async function init() {
       try {
-        const res = await fetch('/fishbase_master.json');
+        const res = await fetch('/fishbase_master.json?v=2');
         if (!res.ok) throw new Error('Failed to load');
         allSpecies = await res.json();
 

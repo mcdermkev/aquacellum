@@ -197,7 +197,7 @@ export function CheckoutSummary({
   }, [preselectedOrderForCheckout, loading, shippingEscrows, purchases, clearPreselectedOrder, pendingTokenIds]);
 
   useEffect(() => {
-    fetch("/fishbase_master.json")
+    fetch("/fishbase_master.json?v=2")
       .then((res) => {
         if (!res.ok) throw new Error("Reference data load failed");
         return res.json();

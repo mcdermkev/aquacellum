@@ -40,7 +40,7 @@ export async function loadSpeciesCareLookup() {
 
   _loadingPromise = (async () => {
     try {
-      const res = await fetch("/fishbase_master.json");
+      const res = await fetch("/fishbase_master.json?v=2");
       if (!res.ok) throw new Error(`fishbase_master.json ${res.status}`);
       const data = await res.json();
       const map = new Map();

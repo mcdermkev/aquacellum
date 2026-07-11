@@ -37,10 +37,12 @@ registerRoute(
   })
 );
 
-// ── Static read-only data: the FishBase master catalog (large, immutable-ish) ─
+// ── Static read-only data: the FishBase master catalog ─────────────────────
+// StaleWhileRevalidate: serve from cache instantly (fast UX) but always
+// revalidate in the background so photo-URL updates propagate on next load.
 registerRoute(
   ({ url }) => url.pathname === "/fishbase_master.json",
-  new CacheFirst({
+  new StaleWhileRevalidate({
     cacheName: "fishbase-data",
     plugins: [
       new CacheableResponsePlugin({ statuses: [0, 200] }),
@@ -50,9 +52,11 @@ registerRoute(
 );
 
 // ── Images (local /public assets + external species/CDN images) ─────────────
+// StaleWhileRevalidate: cached images load instantly, but updated photos
+// (e.g. wikimedia replacements) propagate on next visit without manual purge.
 registerRoute(
   ({ request }) => request.destination === "image",
-  new CacheFirst({
+  new StaleWhileRevalidate({
     cacheName: "images",
     plugins: [
       new CacheableResponsePlugin({ statuses: [0, 200] }),
