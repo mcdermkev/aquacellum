@@ -143,45 +143,23 @@ export function SpecimenDetailModal({
       const provider = getProvider();
       const contract = new Contract(contractAddress, aquadexAbi, provider);
 
-      // 1. Fetch specimen registry
+      // 1. Fetch specimen registry.
+      // IMPORTANT: `activeId` is always a local serial number (e.g. "001" → 1),
+      // not a raw ERC-721 token id. The contract assigns token ids from a
+      // global `++totalSpecimensMinted` counter that has no relationship to
+      // the local serial, so calling `contract.specimens(activeId)` first can
+      // silently resolve to a completely different specimen whose on-chain
+      // token id happens to match the serial. Local Dexie is the source of
+      // truth for serial → specimen resolution in this local-first app, so
+      // it MUST be checked first; the contract is only a fallback for ids
+      // that have no local record at all.
       let resolvedSpec = null;
       let owner = ZeroAddress;
-      let rawSpec = null;
 
-      try {
-        rawSpec = await contract.specimens(activeId);
-      } catch (e) {
-        console.warn("Contract query failed for specimenId:", activeId, e);
-      }
+      const numericId = Number(activeId);
+      const localSpec = !isNaN(numericId) ? await db.specimens.get(numericId) : null;
 
-      if (rawSpec && Number(rawSpec.specimenId) !== 0) {
-        try {
-          owner = await contract.ownerOf(activeId);
-        } catch (e) {
-          console.warn("Could not fetch owner, token might be burned/deprecated:", e);
-        }
-        resolvedSpec = {
-          specimenId: Number(rawSpec.specimenId),
-          speciesId: Number(rawSpec.speciesId),
-          birthTimestamp: Number(rawSpec.birthTimestamp),
-          breeder: rawSpec.breeder,
-          currentTankId: Number(rawSpec.currentTankId),
-          sireId: Number(rawSpec.sireId),
-          damId: Number(rawSpec.damId),
-          ipfsMetadataUri: rawSpec.ipfsMetadataUri,
-          status: Number(rawSpec.status),
-          owner
-        };
-      } else {
-        // Fallback to local Dexie database
-        const numericId = Number(activeId);
-        if (!numericId || isNaN(numericId)) {
-          throw new Error("Invalid specimen ID — cannot look up this record.");
-        }
-        const localSpec = await db.specimens.get(numericId);
-        if (!localSpec) {
-          throw new Error("Specimen certificate does not exist in registry.");
-        }
+      if (localSpec) {
         resolvedSpec = {
           specimenId: localSpec.id,
           speciesId: localSpec.speciesId,
@@ -196,19 +174,51 @@ export function SpecimenDetailModal({
           commonName: localSpec.commonName,
           scientificName: localSpec.scientificName
         };
+      } else {
+        // No local record for this serial — fall back to treating it as a
+        // raw on-chain token id (e.g. a cross-account/legacy lookup).
+        let rawSpec = null;
+        try {
+          rawSpec = await contract.specimens(activeId);
+        } catch (e) {
+          console.warn("Contract query failed for specimenId:", activeId, e);
+        }
+
+        if (rawSpec && Number(rawSpec.specimenId) !== 0) {
+          try {
+            owner = await contract.ownerOf(activeId);
+          } catch (e) {
+            console.warn("Could not fetch owner, token might be burned/deprecated:", e);
+          }
+          resolvedSpec = {
+            specimenId: Number(rawSpec.specimenId),
+            speciesId: Number(rawSpec.speciesId),
+            birthTimestamp: Number(rawSpec.birthTimestamp),
+            breeder: rawSpec.breeder,
+            currentTankId: Number(rawSpec.currentTankId),
+            sireId: Number(rawSpec.sireId),
+            damId: Number(rawSpec.damId),
+            ipfsMetadataUri: rawSpec.ipfsMetadataUri,
+            status: Number(rawSpec.status),
+            owner
+          };
+        } else {
+          throw new Error("Specimen certificate does not exist in registry.");
+        }
       }
 
       setSpec(resolvedSpec);
 
-      // Helper function to fetch a single lineage node
+      // Helper function to fetch a single lineage node.
+      // As with the primary specimen lookup above, `id` is a local serial
+      // number, so local Dexie must be checked before treating it as a raw
+      // on-chain token id.
       const fetchNode = async (id) => {
         if (!id || Number(id) === 0) return null;
+
         try {
-          const nodeSpec = await contract.specimens(id);
-          if (Number(nodeSpec.specimenId) === 0) {
-            // Check local db
-            const localNode = await db.specimens.get(Number(id));
-            if (!localNode) return null;
+          const localNode = await db.specimens.get(Number(id));
+          if (localNode) {
             return {
               id: localNode.id,
               speciesId: localNode.speciesId,
@@ -218,6 +228,15 @@ export function SpecimenDetailModal({
               status: localNode.status ?? 0,
             };
           }
+        } catch (localErr) {
+          console.warn("Local DB fetch failed for lineage node:", id, localErr);
+        }
+
+        // No local record — fall back to a raw on-chain token id lookup.
+        try {
+          const nodeSpec = await contract.specimens(id);
+          if (Number(nodeSpec.specimenId) === 0) return null;
+
           let commonName = "Unknown Breed";
           try {
             const nodeSpecies = await contract.speciesCatalog(Number(nodeSpec.speciesId));
@@ -239,23 +258,7 @@ export function SpecimenDetailModal({
             status: Number(nodeSpec.status),
           };
         } catch (e) {
-          console.warn("Failed to fetch lineage node from contract, trying local...", id, e);
-          // Check local db
-          try {
-            const localNode = await db.specimens.get(Number(id));
-            if (localNode) {
-              return {
-                id: localNode.id,
-                speciesId: localNode.speciesId,
-                sireId: localNode.sireId || 0,
-                damId: localNode.damId || 0,
-                commonName: localNode.commonName || "Unknown Breed",
-                status: localNode.status ?? 0,
-              };
-            }
-          } catch (localErr) {
-            console.warn("Local DB fetch failed for lineage node:", id, localErr);
-          }
+          console.warn("Failed to fetch lineage node from contract:", id, e);
           return null;
         }
       };

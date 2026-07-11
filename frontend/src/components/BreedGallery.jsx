@@ -519,45 +519,85 @@ export function BreedGallery({
     if (!contractAddress || !breed) return;
     try {
       setSpecsLoading(true);
-      
-      const provider = getProvider();
-      const contract = new Contract(contractAddress, aquadexAbi, provider);
 
-      const targetIds = breed.allSpeciesIds || [breed.speciesId];
-      let allTokenIds = [];
-      for (const spId of targetIds) {
-        const tokenIds = await contract.getSpecimensByBreed(spId);
-        allTokenIds = [...allTokenIds, ...tokenIds];
+      const targetIds = (breed.allSpeciesIds || [breed.speciesId]).map(Number);
+      const loadedById = new Map();
+
+      // 1. On-chain specimens for this breed/species.
+      try {
+        const provider = getProvider();
+        const contract = new Contract(contractAddress, aquadexAbi, provider);
+
+        let allTokenIds = [];
+        for (const spId of targetIds) {
+          const tokenIds = await contract.getSpecimensByBreed(spId);
+          allTokenIds = [...allTokenIds, ...tokenIds];
+        }
+        const uniqueTokenIds = Array.from(new Set(allTokenIds));
+
+        await Promise.all(
+          uniqueTokenIds.map(async (tokenId) => {
+            const spec = await contract.specimens(tokenId);
+            const owner = await contract.ownerOf(tokenId);
+            // Enrich with local breederStockTag if available
+            let breederStockTag = "";
+            try {
+              const localSpec = await db.specimens.get(Number(tokenId));
+              if (localSpec?.breederStockTag) breederStockTag = localSpec.breederStockTag;
+            } catch (_) {}
+            loadedById.set(Number(tokenId), {
+              specimenId: Number(tokenId),
+              speciesId: Number(spec.speciesId),
+              birthTimestamp: Number(spec.birthTimestamp),
+              breeder: spec.breeder,
+              currentTankId: Number(spec.currentTankId),
+              sireId: Number(spec.sireId),
+              damId: Number(spec.damId),
+              ipfsMetadataUri: spec.ipfsMetadataUri,
+              status: Number(spec.status),
+              owner: owner,
+              breederStockTag
+            });
+          })
+        );
+      } catch (err) {
+        console.warn("Failed to load on-chain specimens for breed, falling back to local-only:", err);
       }
 
-      const uniqueTokenIds = Array.from(new Set(allTokenIds));
+      // 2. Local-first specimens for this species that haven't (yet) confirmed
+      // on-chain. Mints are enqueued as a fire-and-forget batched background
+      // job, so a freshly-registered fish can sit in "pending"/"failed"
+      // chainStatus for a while (or indefinitely offline) and would otherwise
+      // be invisible here since getSpecimensByBreed only returns confirmed
+      // on-chain token ids. Merge them in so newly added specimens always
+      // show up in their species feed immediately.
+      try {
+        const localSpecies = await db.specimens
+          .filter((s) => targetIds.includes(Number(s.speciesId)))
+          .toArray();
+        for (const s of localSpecies) {
+          const id = Number(s.onChainId ?? s.id);
+          if (loadedById.has(id)) continue; // already have the on-chain version
+          loadedById.set(id, {
+            specimenId: Number(s.id),
+            speciesId: Number(s.speciesId),
+            birthTimestamp: s.birthTimestamp || s.createdAt || 0,
+            breeder: s.breeder || s.ownerAddress || "",
+            currentTankId: Number(s.currentTankId || 0),
+            sireId: Number(s.sireId || 0),
+            damId: Number(s.damId || 0),
+            ipfsMetadataUri: s.ipfsMetadataUri || "",
+            status: s.status ?? 0,
+            owner: s.ownerAddress || "",
+            breederStockTag: s.breederStockTag || "",
+            chainStatus: s.chainStatus || "local"
+          });
+        }
+      } catch (err) {
+        console.warn("Failed to load local specimens for breed:", err);
+      }
 
-      const loadedSpecs = await Promise.all(
-        uniqueTokenIds.map(async (tokenId) => {
-          const spec = await contract.specimens(tokenId);
-          const owner = await contract.ownerOf(tokenId);
-          // Enrich with local breederStockTag if available
-          let breederStockTag = "";
-          try {
-            const localSpec = await db.specimens.get(Number(tokenId));
-            if (localSpec?.breederStockTag) breederStockTag = localSpec.breederStockTag;
-          } catch (_) {}
-          return {
-            specimenId: Number(tokenId),
-            speciesId: Number(spec.speciesId),
-            birthTimestamp: Number(spec.birthTimestamp),
-            breeder: spec.breeder,
-            currentTankId: Number(spec.currentTankId),
-            sireId: Number(spec.sireId),
-            damId: Number(spec.damId),
-            ipfsMetadataUri: spec.ipfsMetadataUri,
-            status: Number(spec.status),
-            owner: owner,
-            breederStockTag
-          };
-        })
-      );
-      setSelectedBreedSpecs(loadedSpecs);
+      setSelectedBreedSpecs(Array.from(loadedById.values()));
     } catch (err) {
       console.error(err);
     } finally {

@@ -17,48 +17,17 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
 
   const fetchSpecimenNode = useCallback(async (contract, id) => {
     if (!id || Number(id) === 0) return null;
-    
-    // 1. Try contract query first
-    try {
-      const data = await contract.specimens(id);
-      if (Number(data.specimenId) !== 0) {
-        // Fetch species name
-        const speciesId = Number(data.speciesId);
-        let speciesInfo = null;
-        try {
-          speciesInfo = await contract.speciesCatalog(speciesId);
-        } catch (err) {
-          console.warn("Failed fetching species catalog entry:", err);
-        }
 
-        return {
-          id: Number(data.specimenId),
-          speciesId,
-          speciesName: speciesInfo ? `${speciesInfo.commonName}` : `Species ID ${speciesId}`,
-          scientificName: speciesInfo ? speciesInfo.scientificName : "",
-          birthTimestamp: Number(data.birthTimestamp),
-          breeder: data.breeder,
-          sireId: Number(data.sireId),
-          damId: Number(data.damId),
-          ipfsMetadataUri: data.ipfsMetadataUri,
-          status: Number(data.status),
-          breederStockTag: await (async () => {
-            try {
-              const local = await db.specimens.get(Number(id));
-              return local?.breederStockTag || "";
-            } catch (_) { return ""; }
-          })(),
-          // A contract-read specimen is on-chain by definition, so its id IS the
-          // authoritative token id.
-          onChainId: Number(data.specimenId),
-          chainStatus: "synced"
-        };
-      }
-    } catch (e) {
-      console.warn(`Contract read failed for specimen node ID ${id}, trying local database...`, e);
-    }
-
-    // 2. Fallback to local Dexie database
+    // 1. Try local Dexie FIRST, keyed by local serial number.
+    // IMPORTANT: `id` here is always a local serial (typed by the breeder,
+    // selected from the picker, or read from a sire/dam reference on another
+    // local record) — never a raw ERC-721 token id. The contract assigns
+    // token ids from a global `++totalSpecimensMinted` counter that has no
+    // relationship to the local serial, so calling `contract.specimens(id)`
+    // directly with the serial can silently return a completely different
+    // specimen whose token id happens to match. Local Dexie is the
+    // source of truth for serial → specimen resolution in this local-first
+    // app; the contract is only consulted as a last resort below.
     try {
       let local = await db.specimens.get(Number(id));
       if (!local) {
@@ -90,6 +59,44 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
       }
     } catch (localErr) {
       console.warn(`Local Dexie lookup failed for specimen ID ${id}:`, localErr);
+    }
+
+    // 2. No local record for this serial — it may be a raw on-chain token id
+    // for a specimen that isn't mirrored in this browser's local database
+    // (e.g. a cross-account lookup). Fall back to querying the contract
+    // directly using it as a token id.
+    try {
+      const data = await contract.specimens(id);
+      if (Number(data.specimenId) !== 0) {
+        // Fetch species name
+        const speciesId = Number(data.speciesId);
+        let speciesInfo = null;
+        try {
+          speciesInfo = await contract.speciesCatalog(speciesId);
+        } catch (err) {
+          console.warn("Failed fetching species catalog entry:", err);
+        }
+
+        return {
+          id: Number(data.specimenId),
+          speciesId,
+          speciesName: speciesInfo ? `${speciesInfo.commonName}` : `Species ID ${speciesId}`,
+          scientificName: speciesInfo ? speciesInfo.scientificName : "",
+          birthTimestamp: Number(data.birthTimestamp),
+          breeder: data.breeder,
+          sireId: Number(data.sireId),
+          damId: Number(data.damId),
+          ipfsMetadataUri: data.ipfsMetadataUri,
+          status: Number(data.status),
+          breederStockTag: "",
+          // A contract-read specimen is on-chain by definition, so its id IS the
+          // authoritative token id.
+          onChainId: Number(data.specimenId),
+          chainStatus: "synced"
+        };
+      }
+    } catch (e) {
+      console.warn(`Contract read failed for specimen node ID ${id}:`, e);
     }
 
     return null;
