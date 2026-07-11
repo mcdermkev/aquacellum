@@ -1324,7 +1324,7 @@
         const videoPath = `/videos/species/${videoSlug}.mp4`;
 
         const imageHtml = hasImage
-          ? `<img class="blur-bg" src="${sp.masterPhotoUrl}" alt="" aria-hidden="true"><img class="main-img" src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="lazy"><video class="card-video" src="${videoPath}" muted loop playsinline preload="none"></video>`
+          ? `<img class="blur-bg" src="${sp.masterPhotoUrl}" alt="" aria-hidden="true"><img class="main-img" src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="lazy"><video class="card-video" src="${videoPath}" muted loop playsinline preload="metadata"></video>`
           : `<span class="placeholder-icon">🐟</span>`;
 
         // Contextual metadata based on view mode
@@ -1422,7 +1422,17 @@
         video.play().then(() => {
           video.classList.add('playing');
         }).catch(() => {
-          video.dataset.noVideo = '1';
+          // Retry once after a short buffer delay instead of giving up permanently
+          setTimeout(() => {
+            if (card.matches(':hover')) {
+              video.play().then(() => {
+                video.classList.add('playing');
+              }).catch(() => {
+                // Only mark as no-video after second failure
+                video.dataset.noVideo = '1';
+              });
+            }
+          }, 300);
         });
       }, true);
       grid.addEventListener('mouseleave', (e) => {
