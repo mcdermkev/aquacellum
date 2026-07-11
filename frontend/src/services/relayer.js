@@ -21,7 +21,7 @@
 import { ethers } from "ethers";
 import { db } from "../db";
 import aquadexAbi from "../abi/AquadexManager.json";
-import { syncTankToCloud, syncSpecimenToCloud, syncListingToCloud, deactivateListingInCloud } from "./cloudSync";
+import { syncTankToCloud, syncSpecimenToCloud, syncListingToCloud, deactivateListingInCloud, syncSpawnToCloud } from "./cloudSync";
 import { trackEvent } from "./analytics";
 import {
   submitUserOperation,
@@ -1152,6 +1152,10 @@ export async function relaySpawn({
     };
     await db.spawns.put(spawn);
 
+    // Fire-and-forget cloud sync so spawn activity is aggregable across users
+    // (species pages surface "N spawns logged this month" from this table).
+    syncSpawnToCloud({ ...spawn, commonName, scientificName }).catch(() => {});
+
     // Fire-and-forget on-chain spawn initiation via 4337 (non-blocking, batched)
     enqueueOnChain(
       buildInitiateSpawnCall({
@@ -1181,6 +1185,13 @@ export async function relaySpawn({
     }
 
     await db.spawns.update(spawnId, { offspringIds });
+
+    // Re-sync with the final offspring count now that fry have been minted
+    // (the first sync above fires before offspringIds is known).
+    const finalSpawn = await db.spawns.get(spawnId);
+    if (finalSpawn) {
+      syncSpawnToCloud({ ...finalSpawn, commonName, scientificName }).catch(() => {});
+    }
 
     return { success: true, spawnId, offspringIds, txHash: null };
   } catch (err) {

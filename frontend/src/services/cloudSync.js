@@ -59,6 +59,21 @@ function actionLogToRow(log, ownerAddress) {
   };
 }
 
+function spawnToRow(spawn) {
+  return {
+    spawn_id: String(spawn.spawnId),
+    owner_address: (spawn.ownerAddress || "").toLowerCase(),
+    species_id: Number(spawn.speciesId || 0),
+    scientific_name: spawn.scientificName || "",
+    common_name: spawn.commonName || "",
+    tank_id: String(spawn.tankId || 0),
+    offspring_count: Array.isArray(spawn.offspringIds) ? spawn.offspringIds.length : Number(spawn.offspringCount || 0),
+    event_timestamp: Number(spawn.timestamp || 0),
+    updated_at: new Date().toISOString(),
+    data: JSON.stringify(spawn),
+  };
+}
+
 // ─── WRITE operations (fire-and-forget) ─────────────────────────────────────
 
 /**
@@ -111,6 +126,25 @@ export async function syncActionLogToCloud(log, ownerAddress) {
 }
 
 /**
+ * Upsert a single spawn event to Supabase. Non-blocking.
+ * This is what makes spawn activity ("N spawns logged this month for
+ * Betta splendens") aggregable across users — without it, spawns only
+ * ever exist in the breeder's own local Dexie table.
+ * @param {object} spawn - Dexie spawn object (spawns table)
+ */
+export async function syncSpawnToCloud(spawn) {
+  if (!isSupabaseConfigured()) return;
+  try {
+    const { error } = await supabase
+      .from("aquadex_spawns")
+      .upsert(spawnToRow(spawn), { onConflict: "spawn_id" });
+    if (error) console.warn("[CloudSync] Spawn upsert failed:", error.message);
+  } catch (e) {
+    console.warn("[CloudSync] Spawn upsert error:", e.message);
+  }
+}
+
+/**
  * Mark a tank as deleted in Supabase (soft delete).
  * @param {string|number} tankId
  */
@@ -140,11 +174,11 @@ import { db } from "../db";
  */
 export async function pullCloudDataForWallet(walletAddress) {
   if (!isSupabaseConfigured() || !walletAddress) {
-    return { tanks: 0, specimens: 0, logs: 0 };
+    return { tanks: 0, specimens: 0, logs: 0, spawns: 0 };
   }
 
   const addr = walletAddress.toLowerCase();
-  let tanks = 0, specimens = 0, logs = 0;
+  let tanks = 0, specimens = 0, logs = 0, spawns = 0;
 
   try {
     // ── Tanks ──────────────────────────────────────────────
@@ -222,12 +256,35 @@ export async function pullCloudDataForWallet(walletAddress) {
       }
     }
 
+    // ── Spawns ─────────────────────────────────────────────
+    const { data: cloudSpawns, error: spErr } = await supabase
+      .from("aquadex_spawns")
+      .select("data")
+      .eq("owner_address", addr);
+
+    if (spErr) {
+      console.warn("[CloudSync] Pull spawns failed:", spErr.message);
+    } else if (cloudSpawns && cloudSpawns.length > 0) {
+      for (const row of cloudSpawns) {
+        try {
+          const spawn = typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+          const existing = await db.spawns.get(spawn.spawnId);
+          if (!existing) {
+            await db.spawns.put(spawn);
+            spawns++;
+          }
+        } catch (parseErr) {
+          console.warn("[CloudSync] Bad spawn data row:", parseErr);
+        }
+      }
+    }
+
   } catch (e) {
     console.warn("[CloudSync] Pull failed:", e.message);
   }
 
-  if (tanks || specimens || logs) {
-    console.info(`[CloudSync] Pulled from cloud — tanks: ${tanks}, specimens: ${specimens}, logs: ${logs}`);
+  if (tanks || specimens || logs || spawns) {
+    console.info(`[CloudSync] Pulled from cloud — tanks: ${tanks}, specimens: ${specimens}, logs: ${logs}, spawns: ${spawns}`);
   }
 
   // ── XP Profile (cross-device sync) ──────────────────────
@@ -239,7 +296,7 @@ export async function pullCloudDataForWallet(walletAddress) {
     }));
   }
 
-  return { tanks, specimens, logs };
+  return { tanks, specimens, logs, spawns };
 }
 
 /**
@@ -253,9 +310,12 @@ export async function pushAllLocalDataToCloud(walletAddress) {
   const addr = walletAddress.toLowerCase();
 
   try {
-    const [localTanks, localSpecimens] = await Promise.all([
+    const [localTanks, localSpecimens, localSpawns] = await Promise.all([
       db.tanks.where("ownerAddress").equals(walletAddress).toArray(),
       db.specimens.where("ownerAddress").equals(walletAddress).toArray(),
+      // `spawns` has no ownerAddress index (see db.js), so .where() would throw —
+      // use .filter() which works on any field without requiring one.
+      db.spawns.filter(s => (s.ownerAddress || "").toLowerCase() === addr).toArray(),
     ]);
 
     // Batch upsert tanks
@@ -272,6 +332,14 @@ export async function pushAllLocalDataToCloud(walletAddress) {
       const { error } = await supabase.from("aquadex_specimens").upsert(rows, { onConflict: "id" });
       if (error) console.warn("[CloudSync] Batch specimen push failed:", error.message);
       else console.info(`[CloudSync] Pushed ${localSpecimens.length} specimens to cloud.`);
+    }
+
+    // Batch upsert spawns (backfills pre-existing local spawns predating cloud sync)
+    if (localSpawns.length > 0) {
+      const rows = localSpawns.map(spawnToRow);
+      const { error } = await supabase.from("aquadex_spawns").upsert(rows, { onConflict: "spawn_id" });
+      if (error) console.warn("[CloudSync] Batch spawn push failed:", error.message);
+      else console.info(`[CloudSync] Pushed ${localSpawns.length} spawns to cloud.`);
     }
 
     // Push action logs (up to 500 most recent per user)
