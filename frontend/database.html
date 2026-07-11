@@ -1076,6 +1076,25 @@
     let currentView = 'hobbyist';
     let currentSort = 'popular';
 
+    // Species that have videos — these are the most popular aquarium fish
+    const videoSlugs = new Set([
+      'ancistrus-cirrhosus','biotodoma-cupido','botia-striata','carassius-auratus',
+      'chromobotia-macracanthus','corydoras-aeneus','corydoras-paleatus','corydoras-panda',
+      'crossocheilus-oblongus','danio-margaritatus','danio-rerio','epalzeorhynchos-bicolor',
+      'fundulopanchax-gardneri','gymnocorymbus-ternetzi','hypancistrus-zebra',
+      'hyphessobrycon-amandae','hyphessobrycon-eques','hyphessobrycon-erythrostigma',
+      'hyphessobrycon-megalopterus','inpaichthys-kerri','iriatherina-werneri',
+      'limia-melanogaster','melanotaenia-boesemani','mikrogeophagus-altispinosus',
+      'mikrogeophagus-ramirezi','osteoglossum-bicirrhosum','otocinclus-vittatus',
+      'pangio-kuhlii','paracheirodon-axelrodi','paracheirodon-innesi','pethia-conchonius',
+      'phenacogrammus-interruptus','poecilia-reticulata','poecilia-sphenops',
+      'poecilia-velifera','poecilia-wingei','pterophyllum-scalare','puntigrus-tetrazona',
+      'puntius-titteya','rasbora-trilineata','symphysodon-aequifasciatus',
+      'synodontis-nigriventris','tanichthys-albonubes','thorichthys-meeki',
+      'trichogaster-chuna','trichogaster-lalius','trichopodus-leerii',
+      'trigonostigma-heteromorpha','xiphophorus-hellerii','xiphophorus-maculatus'
+    ]);
+
     // ---- Helpers ----
     function toSlug(name) {
       return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -1212,14 +1231,39 @@
       filteredSpecies.sort((a, b) => {
         switch (currentSort) {
           case 'popular': {
-            // Beginner-friendly species first, then by whether they have an image, then alpha
+            // Priority: fish with videos > fish with good photos > other fish > invertebrates/plants
+            const isPlantOrInvert = (sp) => {
+              const fam = (sp.family || '').toLowerCase();
+              const type = (sp.type || '').toLowerCase();
+              return type === 'plant' || fam === 'atyidae' || fam === 'palaemonidae' || fam === 'ampullariidae' || fam === 'planorbidae' || fam === 'neritidae' || fam === 'thiaridae' || fam === 'physidae' || fam === 'ambystomatidae' || sp.scientificName?.match(/^(Neocaridina|Caridina|Palaemonetes|Pomacea|Melanoides|Planorbella|Neritina|Physella|Lemna|Taxiphyllum|Ludwigia|Cryptocoryne|Leptochilus|Echinodorus|Anubias|Limnobium|Vallisneria|Hygrophila|Vesicularia|Bucephalandra|Bacopa|Ambystoma)/);
+            };
+            const piA = isPlantOrInvert(a) ? 1 : 0;
+            const piB = isPlantOrInvert(b) ? 1 : 0;
+            if (piA !== piB) return piA - piB;
+
+            // Species with videos first (video = popular fish)
+            const slugA = a.scientificName?.toLowerCase().replace(/\s+/g, '-') || '';
+            const slugB = b.scientificName?.toLowerCase().replace(/\s+/g, '-') || '';
+            const vidA = videoSlugs.has(slugA) ? 0 : 1;
+            const vidB = videoSlugs.has(slugB) ? 0 : 1;
+            if (vidA !== vidB) return vidA - vidB;
+
+            // Then species with wikimedia (good) photos before specimen/AI photos
+            const goodImgA = (a.masterPhotoUrl && a.masterPhotoUrl.includes('wikimedia-resized')) ? 0 : 1;
+            const goodImgB = (b.masterPhotoUrl && b.masterPhotoUrl.includes('wikimedia-resized')) ? 0 : 1;
+            if (goodImgA !== goodImgB) return goodImgA - goodImgB;
+
+            // Then beginner-friendly first
             const diffOrder = { 'Beginner': 0, 'Intermediate': 1, 'Advanced': 2, 'Difficult': 3 };
             const da = diffOrder[a.tankMetrics?.difficulty] ?? 4;
             const db = diffOrder[b.tankMetrics?.difficulty] ?? 4;
             if (da !== db) return da - db;
+
+            // Then has any image vs no image
             const imgA = (a.masterPhotoUrl && a.masterPhotoUrl !== '') ? 0 : 1;
             const imgB = (b.masterPhotoUrl && b.masterPhotoUrl !== '') ? 0 : 1;
             if (imgA !== imgB) return imgA - imgB;
+
             const nameA = (a.commonName || a.scientificName || '').toLowerCase();
             const nameB = (b.commonName || b.scientificName || '').toLowerCase();
             return nameA.localeCompare(nameB);
