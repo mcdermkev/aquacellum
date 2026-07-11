@@ -233,6 +233,7 @@ export async function createCurrent({
   linkedTankId,
   linkedTankName,
   speciesTags = [],
+  section = null,
   parametersSnapshot,
   visibility = "public",
   videoUploadId,
@@ -255,6 +256,7 @@ export async function createCurrent({
     linked_tank_id: linkedTankId || null,
     linked_tank_name: linkedTankName || null,
     species_tags: speciesTags,
+    section: section || null,
     parameters_snapshot: parametersSnapshot || null,
     visibility,
   };

@@ -14,6 +14,7 @@ import { uploadVideo, createVideoPreviewUrl, revokeVideoPreviewUrl, isVideoFile,
 import { createCurrent } from "../../services/reefApi";
 import { getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
 import { VideoRecorder } from "../video/VideoRecorder";
+import { SPECIES_SECTIONS } from "../../constants/speciesSections";
 
 const MAX_PHOTOS = 4;
 const MAX_BODY_LENGTH = 2000;
@@ -28,6 +29,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
   const [visibility, setVisibility] = useState("public");
   const [params, setParams] = useState(null); // auto-fetched from tank
   const [speciesTags, setSpeciesTags] = useState([]);
+  const [section, setSection] = useState(null); // species-page section routing
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(null);
   const [error, setError] = useState(null);
@@ -250,6 +252,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
         linkedTankId: selectedTank?.id || null,
         linkedTankName: selectedTank?.name || null,
         speciesTags,
+        section,
         parametersSnapshot: params,
         visibility,
         // Video fields (new)
@@ -270,6 +273,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
       setSelectedTank(null);
       setParams(null);
       setSpeciesTags([]);
+      setSection(null);
       setVisibility("public");
       setUploadProgress(null);
 
@@ -668,6 +672,55 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
             ))}
           </div>
         </div>
+
+        {/* Section picker — "What's this about?" */}
+        {speciesTags.length > 0 && (
+          <div>
+            <label style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginBottom: "0.3rem", display: "block" }}>
+              {casualModeActive ? "What's this about?" : "Section (routes to species page)"}
+            </label>
+            <div style={{ display: "flex", gap: "0.3rem", flexWrap: "wrap" }}>
+              <button
+                onClick={() => setSection(null)}
+                style={{
+                  padding: "0.25rem 0.55rem",
+                  borderRadius: "50px",
+                  border: section === null
+                    ? "1px solid rgba(255, 255, 255, 0.3)"
+                    : "1px solid rgba(255, 255, 255, 0.08)",
+                  background: section === null ? "rgba(255, 255, 255, 0.08)" : "transparent",
+                  color: section === null ? "#fff" : "var(--text-muted)",
+                  fontSize: "0.62rem",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                General
+              </button>
+              {SPECIES_SECTIONS.map((sec) => (
+                <button
+                  key={sec.id}
+                  onClick={() => setSection(sec.id)}
+                  style={{
+                    padding: "0.25rem 0.55rem",
+                    borderRadius: "50px",
+                    border: section === sec.id
+                      ? `1px solid ${sec.color}`
+                      : "1px solid rgba(255, 255, 255, 0.08)",
+                    background: section === sec.id ? `${sec.color}18` : "transparent",
+                    color: section === sec.id ? sec.color : "var(--text-muted)",
+                    fontSize: "0.62rem",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                  title={sec.description}
+                >
+                  {sec.icon} {sec.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Error message */}
         {error && (
