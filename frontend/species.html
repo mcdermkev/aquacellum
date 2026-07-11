@@ -529,6 +529,13 @@
             // Video doesn't exist or can't play — hide it
             heroVideo.style.display = 'none';
           });
+
+          // Keep video visible when tab loses focus (prevent flash to static image)
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && heroVideo.paused) {
+              heroVideo.play().catch(() => {});
+            }
+          });
         }
       });
 
