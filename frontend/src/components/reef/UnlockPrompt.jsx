@@ -10,6 +10,20 @@ import React from "react";
 import { DEPTH_TIERS } from "../../services/depthScoreApi";
 import { useDepthScore } from "../../hooks/useDepthScore";
 import { getCurrentWallet } from "../../services/supabaseClient";
+import { getXp } from "../../utils/xp";
+
+/**
+ * Resolve a tier key from a numeric XP/score value using the canonical
+ * DEPTH_TIERS thresholds. DEPTH_TIERS is ordered ascending by `min`.
+ */
+function tierKeyForScore(score) {
+  const s = Number(score || 0);
+  let key = "Shallow";
+  for (const t of DEPTH_TIERS) {
+    if (s >= t.min) key = t.key;
+  }
+  return key;
+}
 
 const XP_TIPS = [
   { icon: "📸", text: "Post tank updates to earn +15 XP each" },
@@ -61,8 +75,8 @@ export function UnlockPrompt({ privilege, casualModeActive = false, onClose }) {
 
   const requiredTierKey = getRequiredTier(privilege);
   const requiredTier = DEPTH_TIERS.find((t) => t.key === requiredTierKey) || DEPTH_TIERS[1];
-  const currentScore = scoreData?.depth_score || 0;
-  const currentTierKey = scoreData?.depth_tier || "Shallow";
+  const currentScore = Math.max(getXp(), scoreData?.depth_score || 0);
+  const currentTierKey = tierKeyForScore(currentScore);
   const currentTier = DEPTH_TIERS.find((t) => t.key === currentTierKey) || DEPTH_TIERS[0];
 
   const xpNeeded = Math.max(0, requiredTier.min - currentScore);
@@ -229,7 +243,12 @@ export function useUnlockGate(privilege) {
   const walletAddress = getCurrentWallet();
   const { data: scoreData } = useDepthScore(walletAddress);
 
-  const currentTier = scoreData?.depth_tier || "Shallow";
+  // The local XP profile (localStorage) drives the header meter, while the
+  // Supabase depth_score/depth_tier can lag or be null. Use the higher of the
+  // two so a user whose XP has already reached a tier isn't locked out by a
+  // stale DB value.
+  const effectiveScore = Math.max(getXp(), scoreData?.depth_score || 0);
+  const currentTier = tierKeyForScore(effectiveScore);
 
   const tierOrder = ["Shallow", "Coastal", "Pelagic", "Abyssal", "Hadal"];
   const requiredTierKey = getRequiredTier(privilege);
