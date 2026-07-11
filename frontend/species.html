@@ -126,6 +126,32 @@
       font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-secondary);
     }
 
+    /* Real-keeper marker — overlays a tick + label on a gauge-track showing
+       the actual median reading logged by keepers of this species, distinct
+       from the FishBase-sourced reference range rendered by gauge-fill. */
+    .gauge-track.has-real-marker { overflow: visible; }
+    .gauge-real-marker {
+      position: absolute; top: -3px; bottom: -3px; width: 2px;
+      background: #fff; border-radius: 1px; z-index: 2;
+      box-shadow: 0 0 6px rgba(255,255,255,0.5);
+      opacity: 0; transition: opacity 0.4s ease, left 0.8s cubic-bezier(0.4,0,0.2,1);
+    }
+    .gauge-real-marker.visible { opacity: 1; }
+    .gauge-real-marker::after {
+      content: attr(data-tip);
+      position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+      margin-bottom: 5px; padding: 3px 7px; border-radius: 6px;
+      background: rgba(15,20,30,0.95); border: 1px solid rgba(255,255,255,0.15);
+      font-size: 0.62rem; font-weight: 600; color: #fff; white-space: nowrap;
+      font-family: 'JetBrains Mono', monospace; pointer-events: none;
+    }
+    .gauge-real-note {
+      display: flex; align-items: center; gap: 5px; margin-top: 2px;
+      font-size: 0.66rem; color: var(--text-muted);
+    }
+    .gauge-real-note .dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; flex-shrink: 0; }
+    .gauge-real-note .dot.spawn { background: var(--emerald-400, #34d399); }
+
     /* Compatibility mini-cards */
     .compat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-top: 12px; }
     .compat-chip {
@@ -333,6 +359,84 @@
       .color-gallery { grid-template-columns: 1fr 1fr; }
       .enrichment-grid { grid-template-columns: 1fr; }
     }
+
+    /* =========================================
+       COMMUNITY SECTIONS (Tank Posts, Breeders, Schools, Tides)
+    ========================================= */
+    .species-community-sections { margin-top: 40px; display: flex; flex-direction: column; gap: 28px; }
+    .community-section-card { padding: 24px 28px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); backdrop-filter: blur(12px); }
+    .community-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .community-section-title { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; margin: 0; }
+    .community-section-count { font-size: 0.68rem; font-weight: 600; color: var(--text-muted); padding: 3px 10px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); }
+    .community-section-empty { font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 16px; margin: 0; }
+    .community-section-empty a { color: var(--emerald-400); text-decoration: none; }
+    .community-section-empty a:hover { text-decoration: underline; }
+    .community-section-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 12px; font-size: 0.75rem; font-weight: 600; color: var(--emerald-400); text-decoration: none; transition: color 0.2s; }
+    .community-section-link:hover { color: var(--emerald-300); }
+
+    /* Tank Posts Grid */
+    .tank-posts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+    .tank-post-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; overflow: hidden; transition: border-color 0.2s, transform 0.15s; }
+    .tank-post-card:hover { border-color: rgba(56,189,248,0.25); transform: translateY(-2px); }
+    .tp-media { width: 100%; height: 140px; overflow: hidden; }
+    .tp-media img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+    .tank-post-card:hover .tp-media img { transform: scale(1.04); }
+    .tp-body { padding: 12px 14px; }
+    .tp-author { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+    .tp-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .tp-avatar-fallback { background: linear-gradient(135deg, #38bdf8, #0ea5e9); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: #fff; }
+    .tp-name { font-size: 0.75rem; font-weight: 600; color: var(--text-primary); }
+    .tp-section-badge { font-size: 0.58rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.25); color: #38bdf8; text-transform: capitalize; }
+    .tp-time { font-size: 0.62rem; color: var(--text-muted); margin-left: auto; }
+    .tp-text { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.55; margin: 0; }
+
+    /* Breeders Grid */
+    .breeders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .breeder-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); text-decoration: none; transition: border-color 0.2s, transform 0.15s; }
+    .breeder-card:hover { border-color: rgba(251,191,36,0.3); transform: translateY(-1px); }
+    .breeder-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .breeder-avatar-fallback { background: linear-gradient(135deg, #fbbf24, #f59e0b); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-weight: 700; color: #fff; }
+    .breeder-info { flex: 1; min-width: 0; }
+    .breeder-name { font-size: 0.8rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .master-badge { font-size: 0.58rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3); color: #fbbf24; }
+    .tier-badge { font-size: 0.55rem; font-weight: 600; padding: 2px 6px; border-radius: 8px; background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.2); color: #c4b5fd; }
+    .breeder-specs { font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Schools Grid */
+    .schools-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+    .school-chip { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 12px; background: rgba(139,92,246,0.05); border: 1px solid rgba(139,92,246,0.15); text-decoration: none; transition: border-color 0.2s, transform 0.15s; }
+    .school-chip:hover { border-color: rgba(139,92,246,0.35); transform: translateY(-1px); }
+    .school-avatar { width: 32px; height: 32px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+    .school-avatar-fallback { background: linear-gradient(135deg, #8b5cf6, #6d28d9); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; color: #fff; border-radius: 8px; }
+    .school-chip-info { display: flex; flex-direction: column; gap: 2px; }
+    .school-chip-name { font-size: 0.78rem; font-weight: 700; color: var(--text-primary); }
+    .school-chip-members { font-size: 0.62rem; color: var(--text-muted); }
+
+    /* Tides Grid */
+    .tides-grid { display: flex; flex-direction: column; gap: 10px; }
+    .tide-event-card { display: flex; gap: 14px; padding: 14px 16px; border-radius: 12px; background: rgba(6,182,212,0.04); border: 1px solid rgba(6,182,212,0.12); transition: border-color 0.2s, transform 0.15s; }
+    .tide-event-card:hover { border-color: rgba(6,182,212,0.3); transform: translateX(3px); }
+    .tide-date-col { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 48px; padding: 8px; border-radius: 10px; background: rgba(6,182,212,0.1); }
+    .tide-month { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--cyan-300); }
+    .tide-day { font-size: 1.2rem; font-weight: 800; color: #fff; line-height: 1; }
+    .tide-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+    .tide-title { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); }
+    .tide-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .tide-type-badge { font-size: 0.6rem; font-weight: 700; padding: 2px 8px; border-radius: 8px; background: rgba(6,182,212,0.12); border: 1px solid rgba(6,182,212,0.25); color: var(--cyan-300); text-transform: capitalize; }
+    .tide-location { font-size: 0.68rem; color: var(--text-secondary); }
+    .tide-time { font-size: 0.68rem; color: var(--text-muted); }
+    .tide-rsvp { font-size: 0.68rem; color: var(--emerald-400); font-weight: 600; }
+
+    /* Community sections responsive */
+    @media (max-width: 768px) {
+      .species-community-sections { margin-top: 28px; gap: 20px; }
+      .community-section-card { padding: 16px 18px; }
+      .tank-posts-grid { grid-template-columns: 1fr; }
+      .breeders-grid { grid-template-columns: 1fr; }
+      .schools-grid { gap: 8px; }
+      .school-chip { padding: 8px 12px; }
+      .tide-event-card { padding: 10px 12px; gap: 10px; }
+    }
   </style>
 </head>
 <body>
@@ -526,7 +630,7 @@
           html += `
               <div class="gauge-item">
                 <span class="gauge-label">Temperature</span>
-                <div class="gauge-track">
+                <div class="gauge-track" id="gauge-track-temp" data-abs-min="15" data-abs-max="35">
                   <div class="gauge-fill warm" style="left:${tPct.left}%; width:${tPct.width}%"></div>
                 </div>
                 <div class="gauge-values"><span>${temp[0]}°C</span><span>${temp[1]}°C</span></div>
@@ -538,7 +642,7 @@
           html += `
               <div class="gauge-item">
                 <span class="gauge-label">pH Range</span>
-                <div class="gauge-track">
+                <div class="gauge-track" id="gauge-track-ph" data-abs-min="5" data-abs-max="9.5">
                   <div class="gauge-fill neutral" style="left:${pPct.left}%; width:${pPct.width}%"></div>
                 </div>
                 <div class="gauge-values"><span>${ph[0]}</span><span>${ph[1]}</span></div>
@@ -1030,6 +1134,12 @@
       // Live community pulse (real aggregate activity)
       renderCommunityPulse(sp);
 
+      // Real keeper field stats — median temp/pH from logged tanks + spawn activity
+      renderRealKeeperStats(sp);
+
+      // Render the 4 community sections (Tank Posts, Master Breeders, Schools, Tides)
+      renderSpeciesCommunitySections(sp);
+
       // TOC click handler (smooth scroll to section)
       requestAnimationFrame(() => {
         document.querySelectorAll('.toc-links a').forEach(link => {
@@ -1269,6 +1379,80 @@
       });
     }
 
+    // ── Real Keeper Field Stats ────────────────────────────────────────────
+    // Overlays real median temp/pH (from logged tank parameters) on top of
+    // the FishBase reference-range gauges, and surfaces real spawn activity.
+    // Distinct from the reference range: this is what keepers are *actually*
+    // running, not the textbook range. Calls get_species_field_stats(), a
+    // SECURITY DEFINER RPC that only ever returns aggregate numbers (never a
+    // raw per-user row) and nulls out any stat built from fewer than 3 tanks.
+    async function renderRealKeeperStats(sp) {
+      const gaugeRow = document.querySelector('.gauge-row');
+      if (!gaugeRow || !sp.scientificName) return;
+
+      let stats = null;
+      try {
+        const res = await fetch(`${SB_URL}/rest/v1/rpc/get_species_field_stats`, {
+          method: 'POST',
+          headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_scientific_name: sp.scientificName })
+        });
+        if (res.ok) {
+          const rows = await res.json();
+          stats = Array.isArray(rows) ? rows[0] : rows;
+        }
+      } catch (e) { /* silent */ }
+
+      if (!stats) return;
+
+      function placeMarker(trackId, rawValue, tipFn) {
+        const value = rawValue == null ? null : Number(rawValue);
+        if (value == null || Number.isNaN(value)) return;
+        const track = document.getElementById(trackId);
+        if (!track) return;
+        const absMin = parseFloat(track.dataset.absMin);
+        const absMax = parseFloat(track.dataset.absMax);
+        const pct = Math.max(0, Math.min(100, ((value - absMin) / (absMax - absMin)) * 100));
+        const marker = document.createElement('div');
+        marker.className = 'gauge-real-marker';
+        marker.style.left = `${pct}%`;
+        marker.dataset.tip = tipFn(value);
+        track.classList.add('has-real-marker');
+        track.appendChild(marker);
+        // Double rAF so the opacity transition actually plays on insert
+        requestAnimationFrame(() => requestAnimationFrame(() => marker.classList.add('visible')));
+      }
+
+      placeMarker('gauge-track-temp', stats.median_temp_c, (v) => `Keepers: ${v}°C`);
+      placeMarker('gauge-track-ph', stats.median_ph, (v) => `Keepers: ${v} pH`);
+
+      let lastEl = gaugeRow;
+      const sampleSize = Number(stats.tank_sample_size) || 0;
+
+      if ((stats.median_temp_c != null || stats.median_ph != null) && sampleSize > 0) {
+        const note = document.createElement('div');
+        note.className = 'gauge-real-note';
+        note.innerHTML = `<span class="dot"></span> White marker = real median logged by ${sampleSize} keeper tank${sampleSize === 1 ? '' : 's'} housing this species`;
+        lastEl.insertAdjacentElement('afterend', note);
+        lastEl = note;
+      }
+
+      const spawnsTotal = Number(stats.spawns_total) || 0;
+      if (spawnsTotal > 0) {
+        const spawns30d = Number(stats.spawns_30d) || 0;
+        const avgOffspring = stats.avg_offspring_count == null ? null : Number(stats.avg_offspring_count);
+        const parts = [`${spawnsTotal} spawn${spawnsTotal === 1 ? '' : 's'} logged by breeders`];
+        if (spawns30d > 0) parts.push(`${spawns30d} in the last 30 days`);
+        if (avgOffspring != null) parts.push(`avg ${Math.round(avgOffspring)} fry per spawn`);
+        const spawnNote = document.createElement('div');
+        spawnNote.className = 'gauge-real-note';
+        spawnNote.style.marginTop = '6px';
+        spawnNote.innerHTML = `<span class="dot spawn"></span> ${parts.join(' · ')}`;
+        lastEl.insertAdjacentElement('afterend', spawnNote);
+        lastEl = spawnNote;
+      }
+    }
+
     // ── Marketplace Cross-Link ────────────────────────────────────────────
     async function renderMarketplaceSection(sp) {
       const SUPABASE_URL = 'https://yahsdztnvsykzecjatsl.supabase.co';
@@ -1299,7 +1483,7 @@
       if (listings.length > 0) {
         mpHtml += `<div class="marketplace-listings">`;
         listings.forEach(l => {
-          const price = parseFloat(l.price || 0) * 1000;
+          const price = parseFloat(l.price || 0);
           const priceStr = price > 0 ? '$' + price.toFixed(2) : 'Free';
           const pedigree = l.isBatch ? 'Batch Fry' : (Number(l.sireId||0)===0 && Number(l.damId||0)===0) ? 'Wild Caught' : 'Bred';
           mpHtml += `
@@ -1321,6 +1505,235 @@
       } else {
         container.insertAdjacentHTML('beforeend', mpHtml);
       }
+    }
+
+    // ── Species Community Sections ──────────────────────────────────────────
+    // Tank Posts feed, Master Breeders, Schools tracking, Upcoming Tides
+    async function renderSpeciesCommunitySections(sp) {
+      const container = document.getElementById('mainContent');
+      const sci = (sp.scientificName || '').toLowerCase();
+      const common = (sp.commonName || '').toLowerCase();
+
+      // Wrapper for all 4 sections
+      const wrapper = document.createElement('div');
+      wrapper.className = 'species-community-sections';
+      container.appendChild(wrapper);
+
+      // ─── 1. Tank Posts Feed (currents tagged with this species) ─────────
+      try {
+        const res = await fetch(
+          `${SB_URL}/rest/v1/currents?visibility=eq.public&order=created_at.desc&limit=50&select=*,profiles:author_wallet(display_name,avatar_url,companion_tier)`,
+          { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
+        );
+        if (res.ok) {
+          const rows = await res.json();
+          const matching = rows.filter(r => {
+            const tags = (r.species_tags || []).map(t => t.toLowerCase());
+            return tags.some(t => t.includes(sci) || t.includes(common) || sci.includes(t) || common.includes(t));
+          });
+
+          let tankPostsHtml = `<div class="community-section-card" id="sec-tank-posts">
+            <div class="community-section-header">
+              <h2 class="community-section-title">📸 Keeper Tank Posts</h2>
+              <span class="community-section-count">${matching.length} post${matching.length !== 1 ? 's' : ''}</span>
+            </div>`;
+
+          if (matching.length > 0) {
+            tankPostsHtml += `<div class="tank-posts-grid">`;
+            matching.slice(0, 6).forEach(post => {
+              const prof = post.profiles || {};
+              const name = prof.display_name || 'Keeper';
+              const avatar = prof.avatar_url
+                ? `<img class="tp-avatar" src="${prof.avatar_url}" alt="${name}">`
+                : `<div class="tp-avatar tp-avatar-fallback">${name.charAt(0).toUpperCase()}</div>`;
+              const hasMedia = post.media_urls && post.media_urls.length > 0;
+              const thumbUrl = hasMedia ? post.media_urls[0] : '';
+              const timeStr = relativeTime(post.created_at);
+              const sectionBadge = post.section ? `<span class="tp-section-badge">${post.section}</span>` : '';
+
+              tankPostsHtml += `<div class="tank-post-card">
+                ${hasMedia ? `<div class="tp-media"><img src="${thumbUrl}" alt="Tank photo" loading="lazy"></div>` : ''}
+                <div class="tp-body">
+                  <div class="tp-author">${avatar}<span class="tp-name">${name}</span>${sectionBadge}<span class="tp-time">${timeStr}</span></div>
+                  <p class="tp-text">${(post.body || '').slice(0, 140)}${(post.body || '').length > 140 ? '…' : ''}</p>
+                </div>
+              </div>`;
+            });
+            tankPostsHtml += `</div>`;
+            if (matching.length > 6) {
+              tankPostsHtml += `<a href="/app/reef" class="community-section-link">View all ${matching.length} posts →</a>`;
+            }
+          } else {
+            tankPostsHtml += `<p class="community-section-empty">No keeper posts for this species yet. <a href="/app/reef">Be the first to share!</a></p>`;
+          }
+          tankPostsHtml += `</div>`;
+          wrapper.insertAdjacentHTML('beforeend', tankPostsHtml);
+        }
+      } catch (e) { console.warn('[Species] Tank posts fetch failed:', e); }
+
+      // ─── 2. Master Breeders with this species ──────────────────────────
+      try {
+        // Get active listings for this species to find breeders
+        const lisRes = await fetch(
+          `${SB_URL}/rest/v1/aquadex_listings?is_active=eq.true&order=updated_at.desc&limit=200&select=seller_address,data,common_name`,
+          { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
+        );
+        if (lisRes.ok) {
+          const listings = await lisRes.json();
+          const breederWallets = new Set();
+          listings.forEach(r => {
+            let d = {}; try { d = typeof r.data === 'string' ? JSON.parse(r.data) : (r.data || {}); } catch {}
+            const listSci = (d.scientificName || '').toLowerCase();
+            const listCommon = (d.commonName || r.common_name || '').toLowerCase();
+            if (listSci === sci || listCommon === common) {
+              breederWallets.add(r.seller_address);
+            }
+          });
+
+          if (breederWallets.size > 0) {
+            // Fetch breeder profiles for those wallets
+            const walletsArr = Array.from(breederWallets).slice(0, 10);
+            const walletsFilter = walletsArr.map(w => `"${w}"`).join(',');
+            const profRes = await fetch(
+              `${SB_URL}/rest/v1/breeder_profiles?wallet_address=in.(${walletsFilter})&select=wallet_address,display_name,avatar_url,slug,is_master_breeder,specialties,current_tier`,
+              { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
+            );
+            let breederProfiles = [];
+            if (profRes.ok) breederProfiles = await profRes.json();
+
+            // Sort master breeders first
+            breederProfiles.sort((a, b) => (b.is_master_breeder ? 1 : 0) - (a.is_master_breeder ? 1 : 0));
+
+            let breedersHtml = `<div class="community-section-card" id="sec-master-breeders">
+              <div class="community-section-header">
+                <h2 class="community-section-title">🏆 Breeders with Stock</h2>
+                <span class="community-section-count">${breederProfiles.length} breeder${breederProfiles.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div class="breeders-grid">`;
+
+            breederProfiles.forEach(bp => {
+              const name = bp.display_name || bp.wallet_address.slice(0, 8);
+              const avatar = bp.avatar_url
+                ? `<img class="breeder-avatar" src="${bp.avatar_url}" alt="${name}">`
+                : `<div class="breeder-avatar breeder-avatar-fallback">${name.charAt(0).toUpperCase()}</div>`;
+              const masterBadge = bp.is_master_breeder ? '<span class="master-badge">★ Master</span>' : '';
+              const tierBadge = bp.current_tier ? `<span class="tier-badge">${bp.current_tier}</span>` : '';
+              const link = bp.slug ? `/store/${bp.slug}` : '#';
+              const specs = (bp.specialties || []).slice(0, 3).join(', ');
+
+              breedersHtml += `<a href="${link}" class="breeder-card">
+                ${avatar}
+                <div class="breeder-info">
+                  <div class="breeder-name">${name}${masterBadge}${tierBadge}</div>
+                  ${specs ? `<div class="breeder-specs">${specs}</div>` : ''}
+                </div>
+              </a>`;
+            });
+
+            breedersHtml += `</div></div>`;
+            wrapper.insertAdjacentHTML('beforeend', breedersHtml);
+          }
+        }
+      } catch (e) { console.warn('[Species] Breeders fetch failed:', e); }
+
+      // ─── 3. Schools (Clubs) tracking this species ──────────────────────
+      try {
+        const schoolRes = await fetch(
+          `${SB_URL}/rest/v1/schools?select=id,name,slug,avatar_url,member_count,tracked_species&limit=50`,
+          { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
+        );
+        if (schoolRes.ok) {
+          const schools = await schoolRes.json();
+          const matching = schools.filter(s => {
+            const tracked = (s.tracked_species || []).map(t => t.toLowerCase());
+            return tracked.some(t => t.includes(sci) || t.includes(common) || sci.includes(t) || common.includes(t));
+          });
+
+          if (matching.length > 0) {
+            let schoolsHtml = `<div class="community-section-card" id="sec-schools">
+              <div class="community-section-header">
+                <h2 class="community-section-title">🏫 Schools Tracking This Species</h2>
+                <span class="community-section-count">${matching.length} school${matching.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div class="schools-grid">`;
+
+            matching.slice(0, 6).forEach(school => {
+              const avatar = school.avatar_url
+                ? `<img class="school-avatar" src="${school.avatar_url}" alt="${school.name}">`
+                : `<div class="school-avatar school-avatar-fallback">${(school.name || '?').charAt(0)}</div>`;
+              const link = school.slug ? `/app/schools/${school.slug}` : '#';
+              const members = school.member_count || 0;
+
+              schoolsHtml += `<a href="${link}" class="school-chip">
+                ${avatar}
+                <div class="school-chip-info">
+                  <span class="school-chip-name">${school.name}</span>
+                  <span class="school-chip-members">${members} member${members !== 1 ? 's' : ''}</span>
+                </div>
+              </a>`;
+            });
+
+            schoolsHtml += `</div></div>`;
+            wrapper.insertAdjacentHTML('beforeend', schoolsHtml);
+          }
+        }
+      } catch (e) { console.warn('[Species] Schools fetch failed:', e); }
+
+      // ─── 4. Upcoming Tides (events) related to this species ────────────
+      try {
+        const now = new Date().toISOString();
+        const tidesRes = await fetch(
+          `${SB_URL}/rest/v1/tides?starts_at=gte.${now}&order=starts_at.asc&limit=50&select=id,title,tide_type,starts_at,location_name,species_tags,rsvp_count`,
+          { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
+        );
+        if (tidesRes.ok) {
+          const tides = await tidesRes.json();
+          const matching = tides.filter(t => {
+            const tags = (t.species_tags || []).map(tag => tag.toLowerCase());
+            return tags.some(tag => tag.includes(sci) || tag.includes(common) || sci.includes(tag) || common.includes(tag));
+          });
+
+          if (matching.length > 0) {
+            let tidesHtml = `<div class="community-section-card" id="sec-upcoming-tides">
+              <div class="community-section-header">
+                <h2 class="community-section-title">🌊 Upcoming Tides</h2>
+                <span class="community-section-count">${matching.length} event${matching.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div class="tides-grid">`;
+
+            matching.slice(0, 4).forEach(tide => {
+              const date = new Date(tide.starts_at);
+              const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+              const timeStr = date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+              const typeLabel = tide.tide_type ? tide.tide_type.replace(/_/g, ' ') : 'Event';
+              const rsvp = tide.rsvp_count || 0;
+
+              tidesHtml += `<div class="tide-event-card">
+                <div class="tide-date-col">
+                  <span class="tide-month">${date.toLocaleDateString(undefined, { month: 'short' })}</span>
+                  <span class="tide-day">${date.getDate()}</span>
+                </div>
+                <div class="tide-info">
+                  <div class="tide-title">${tide.title || 'Untitled Event'}</div>
+                  <div class="tide-meta">
+                    <span class="tide-type-badge">${typeLabel}</span>
+                    ${tide.location_name ? `<span class="tide-location">📍 ${tide.location_name}</span>` : ''}
+                    <span class="tide-time">🕐 ${timeStr}</span>
+                  </div>
+                  <div class="tide-rsvp">${rsvp} going</div>
+                </div>
+              </div>`;
+            });
+
+            tidesHtml += `</div>`;
+            if (matching.length > 4) {
+              tidesHtml += `<a href="/app/tides" class="community-section-link">View all ${matching.length} events →</a>`;
+            }
+            tidesHtml += `</div>`;
+            wrapper.insertAdjacentHTML('beforeend', tidesHtml);
+          }
+        }
+      } catch (e) { console.warn('[Species] Tides fetch failed:', e); }
     }
 
     // Boot
