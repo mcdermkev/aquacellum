@@ -14,6 +14,12 @@
 
 import { supabase, isSupabaseConfigured } from "./supabaseClient";
 import { db } from "../db";
+import {
+  isStatusAdvanced,
+  getLocalStatusString,
+  mapCloudStatusToShippingInt,
+  mapCloudStatusToBatchInt,
+} from "./orderStatus";
 
 // ─── Push: Local → Cloud ───────────────────────────────────────────────────
 
@@ -546,42 +552,5 @@ function mapCloudToLocal(cloudOrder, walletAddress) {
 }
 
 // ─── Status Comparison Helpers ─────────────────────────────────────────────
-
-const STATUS_ORDER = [
-  "pending", "locked", "dispatched", "released", "completed",
-  "settled", "disputed", "resolved_released", "refunded", "failed",
-];
-
-function isStatusAdvanced(cloudStatus, localStatus) {
-  // Terminal states always win from cloud
-  const terminals = ["released", "completed", "settled", "refunded", "failed", "resolved_released"];
-  if (terminals.includes(cloudStatus) && !terminals.includes(localStatus)) return true;
-  if (cloudStatus === localStatus) return false;
-
-  // Disputed is a branch, always accept from cloud
-  if (cloudStatus === "disputed") return true;
-
-  const cloudIdx = STATUS_ORDER.indexOf(cloudStatus);
-  const localIdx = STATUS_ORDER.indexOf(localStatus);
-  return cloudIdx > localIdx;
-}
-
-function getLocalStatusString(localOrder) {
-  if (localOrder.orderType === "shipping") {
-    return ["locked", "dispatched", "released", "disputed", "refunded"][localOrder.status] || "locked";
-  }
-  if (localOrder.orderType === "batch") {
-    return ["pending", "released", "refunded"][localOrder.state] || "pending";
-  }
-  return localOrder.status || "pending";
-}
-
-function mapCloudStatusToShippingInt(status) {
-  const map = { locked: 0, dispatched: 1, released: 2, disputed: 3, refunded: 4, resolved_released: 2 };
-  return map[status] ?? 0;
-}
-
-function mapCloudStatusToBatchInt(status) {
-  const map = { pending: 0, released: 1, refunded: 2 };
-  return map[status] ?? 0;
-}
+// Moved to ./orderStatus.js (pure, characterization-tested) and imported above.
+// See docs/MARKETPLACE_STATE_MODEL.md §6 for the legacy→canonical mapping.

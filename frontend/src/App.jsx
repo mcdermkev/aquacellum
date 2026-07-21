@@ -92,6 +92,11 @@ const StorefrontSetup = lazy(() =>
   import("./components/StorefrontSetup").then((m) => ({ default: m.StorefrontSetup }))
 );
 
+// Lazy-load the Breeder Terminal (unified seller workspace, Task 9)
+const BreederTerminal = lazy(() =>
+  import("./components/breeder/BreederTerminal").then((m) => ({ default: m.BreederTerminal }))
+);
+
 // Lazy-load Echo Living Companion (full-screen interactive experience)
 const EchoLivingCompanion = lazy(() =>
   import("./components/EchoLivingCompanion").then((m) => ({ default: m.EchoLivingCompanion }))
@@ -797,6 +802,19 @@ export default function App() {
             )}
           </Suspense>
         );
+      case "breeder-terminal":
+        return (
+          <Suspense fallback={
+            <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "2rem 0" }}>
+              <div className="shimmer-placeholder" style={{ width: "100%", height: "300px", borderRadius: "16px" }} />
+            </div>
+          }>
+            <BreederTerminal
+              walletAccount={smartWalletForFounderCheck || account}
+              casualModeActive={casualModeActive}
+            />
+          </Suspense>
+        );
       case "tanks":
       default:
         return (
@@ -1123,6 +1141,7 @@ export default function App() {
             { id: "settings",  icon: "⚙️", label: "Settings",                                           alwaysShow: true  },
             ...(isFounder ? [{ id: "founders", icon: "📊", label: "Founders", alwaysShow: true }] : []),
             ...(isStorefrontBeta ? [{ id: "storefront", icon: "🏪", label: "My Store", alwaysShow: true }] : []),
+            ...(isStorefrontBeta ? [{ id: "breeder-terminal", icon: "🧑‍🌾", label: casualModeActive ? "Seller Hub" : "Breeder Terminal", alwaysShow: true }] : []),
           ]
             .filter((t) => t.alwaysShow)
             .map((tab) => {

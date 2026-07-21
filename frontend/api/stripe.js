@@ -28,6 +28,8 @@ import { handleCorsPreFlight } from "./_lib/cors.js";
 import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
 import * as shipengine from "./_lib/shipengine.js";
 import { captureServerEvent } from "./_lib/posthogServer.js";
+import { createSupabaseOrderStore } from "./_lib/supabaseOrderStore.js";
+import { isCanonicalSettlementEnabled, settleViaCanonical, recordCanonicalOrderProtected } from "./_lib/canonicalSettlement.js";
 
 let stripe;
 try {
@@ -516,6 +518,26 @@ async function handleWebhook(req, res) {
           console.warn("[Stripe Webhook] orders table insert failed:", orderInsertErr.message);
         }
 
+        // Canonical order creation (feature-flagged, additive). For held orders,
+        // record the canonical order at payment_protected + a charge_captured
+        // ledger entry so the canonical lifecycle has a real order to advance
+        // (replacing the release-time seeding shortcut). Never blocks the webhook.
+        if (isCanonicalSettlementEnabled() && HELD_TYPES.includes(purchaseType)) {
+          try {
+            const store = createSupabaseOrderStore(supabase);
+            const rec = await recordCanonicalOrderProtected({
+              store,
+              paymentIntentId,
+              metadata,
+              paymentHash: settlement.stripePaymentHash,
+              capturedCents: amountCents,
+            });
+            console.log(`[Canonical] order ${rec.created ? "created" : "exists"}: ${rec.orderId}`);
+          } catch (canonErr) {
+            console.warn("[Canonical] order creation skipped:", canonErr.message);
+          }
+        }
+
         console.log(`[Stripe Webhook] Settlement complete: ${settlement.txHash}`);
 
         captureServerEvent(metadata.buyerWallet, "marketplace_purchase", {
@@ -976,6 +998,125 @@ async function handleRelease(req, res) {
  * shipping/multi return the NFT(s); batch restores the juvenile quantity. Pickup
  * orders defer settlement, so their NFT never left the listing escrow.
  */
+/**
+ * handleReleaseV2 — FEATURE-FLAGGED canonical settlement path.
+ *
+ * Runs the same release-on-arrival outcome as handleRelease, but through the
+ * canonical settlement engine (state machine + authorization + ledger +
+ * settlement coordinator) via the Supabase order store. It transfers the
+ * certificate BEFORE paying the seller and never reverses a completed
+ * certificate on payout failure (it parks the order at certificate_transferred
+ * for retry).
+ *
+ * Gated by CANONICAL_SETTLEMENT_ENABLED so it can be exercised on testnet +
+ * Stripe test mode alongside the untouched legacy handleRelease before cutover.
+ * NOTE: this flagged bridge accepts the Privy session token as buyer/seller
+ * proof (the wallet-signature fallback used by handleRelease is intentionally
+ * out of scope for the flag). Do not enable the flag in production until the
+ * end-to-end path has been verified in a live session.
+ */
+async function handleReleaseV2(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS" })) return;
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+  if (!isCanonicalSettlementEnabled()) {
+    return res.status(404).json({ error: "Canonical settlement path is not enabled" });
+  }
+  if (!stripe) {
+    return res.status(500).json({ error: "Stripe not configured" });
+  }
+
+  const { paymentIntentId: bodyPI, sessionId } = req.body || {};
+  if (!bodyPI && !sessionId) {
+    return res.status(400).json({ error: "Missing paymentIntentId or sessionId" });
+  }
+
+  // Resolve the PaymentIntent + metadata (accept either the session or PI id).
+  let paymentIntentId = bodyPI || null;
+  let metadata = {};
+  let capturedCents = 0;
+  try {
+    if (!paymentIntentId && sessionId) {
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      paymentIntentId = typeof session.payment_intent === "string"
+        ? session.payment_intent
+        : session.payment_intent?.id || null;
+      metadata = session.metadata || {};
+    }
+    if (paymentIntentId) {
+      const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+      metadata = pi.metadata || metadata;
+      capturedCents = Number(pi.amount || 0);
+    }
+  } catch (err) {
+    return res.status(400).json({ error: "Could not resolve payment", details: err.message });
+  }
+  if (!paymentIntentId) {
+    return res.status(400).json({ error: "No payment intent found for session" });
+  }
+
+  const purchaseType = metadata.purchaseType;
+  const HELD_TYPES = ["shipping", "pickup", "batch", "multi"];
+  if (!HELD_TYPES.includes(purchaseType)) {
+    return res.status(400).json({ error: "Not a held (shipping/pickup/batch/multi) order" });
+  }
+
+  // ── Authorization: verified Privy buyer/seller for THIS order ──────────────
+  const buyerWallet = (metadata.buyerWallet || "").toLowerCase();
+  const sellerWallet = (metadata.sellerWallet || "").toLowerCase();
+  const buyerUserId = metadata.buyerUserId || null;
+  const authHeader = req.headers["authorization"] || req.headers["Authorization"];
+  let authorized = false;
+  if (authHeader) {
+    const { verified, userId, walletAddress } = await verifyPrivyToken(req);
+    if (verified) {
+      const tokenWallet = (walletAddress || "").toLowerCase();
+      authorized =
+        (buyerUserId && userId === buyerUserId) ||
+        (tokenWallet && (tokenWallet === buyerWallet || tokenWallet === sellerWallet));
+    }
+  }
+  if (!authorized) {
+    return res.status(401).json({ error: "Missing or invalid release authorization" });
+  }
+
+  const tokenId = metadata.tokenId != null ? metadata.tokenId : null;
+  if ((purchaseType === "shipping" || purchaseType === "pickup") && tokenId == null) {
+    return res.status(400).json({ error: "Missing tokenId" });
+  }
+
+  // ── Run canonical settlement (certificate → payout, atomic + idempotent) ───
+  try {
+    const store = createSupabaseOrderStore(supabase);
+    const result = await settleViaCanonical({
+      store,
+      marketplace: getMarketplaceContract(),
+      transferToSeller,
+      paymentIntentId,
+      metadata,
+      tokenId,
+      paymentHash: computeStripePaymentHash(paymentIntentId),
+      capturedCents,
+    });
+    // ok:true → completed; ok:false with payout_pending_retry is a recoverable
+    // partial (certificate transferred, payout to retry) surfaced as 200 so the
+    // caller sees the state without treating it as a hard failure.
+    const status = result.ok || result.action === "payout_pending_retry" ? 200 : 400;
+    return res.status(status).json({
+      success: !!result.ok,
+      action: result.action,
+      state: result.finalState,
+      certificateRef: result.certificateRef,
+      transferId: result.transferId,
+      error: result.error,
+    });
+  } catch (err) {
+    console.error("[Stripe release-v2] Canonical settlement failed:", err);
+    return res.status(500).json({ error: "Settlement failed", details: err.message });
+  }
+}
+
 async function handleRefund(req, res) {
   if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS" })) return;
   if (req.method !== "POST") {
@@ -1820,6 +1961,8 @@ export default async function handler(req, res) {
       return handleConnectOnboard(req, res);
     case "release":
       return handleRelease(req, res);
+    case "release-v2":
+      return handleReleaseV2(req, res);
     case "refund":
       return handleRefund(req, res);
     case "dispute":

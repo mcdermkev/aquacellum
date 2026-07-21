@@ -135,6 +135,12 @@ contract AquadexMarketplace is IERC721Receiver, AccessControl {
     // Fiat settlement tracking: Stripe payment ID → on-chain record
     mapping(bytes32 => bool) public fiatSettlements;
 
+    // General (non-event) cash pickup settlement tracking: keccak of the
+    // verified one-time handoff challenge nonce → on-chain record. Gives the
+    // relayer-executed cash pickup on-chain replay protection matching the
+    // off-chain one-time challenge (Task 15).
+    mapping(bytes32 => bool) public cashPickupSettled;
+
     // ── Fiat HELD escrows (batch & multi arrival protection) ─────────────────
     // Batch: the fiat EscrowPurchase is kept LOCKED at purchase and released by
     // the relayer when the buyer confirms arrival; the Stripe payout is deferred
@@ -1032,6 +1038,51 @@ contract AquadexMarketplace is IERC721Receiver, AccessControl {
         emit SpecimenPurchased(tokenId, msg.sender, buyer, 0, 0);
         emit XPEarned(buyer, 200, "Cash Purchase Specimen (Event Double XP)");
         emit XPEarned(msg.sender, 300, "Cash Sale Settled (Event Double XP)");
+    }
+
+    /**
+     * @notice Relayer-executed, NON-EVENT cash pickup transfer (Task 15).
+     *
+     * @dev Unlike `fulfillCashHandshake` — which is gated to an active live event
+     *      and called by the seller — this settles a GENERAL in-person cash
+     *      pickup. The backend relayer calls it AFTER verifying the two-party
+     *      signed handoff challenge off-chain (see api/_lib/handoffChallenge.js:
+     *      buyer possession of a valid, unexpired, one-time challenge + the
+     *      authenticated seller's submission). Cash sales carry no platform
+     *      payment, so there is 0% fee and no payout — ownership simply transfers.
+     *
+     *      Idempotent via `handoffRef` (keccak256 of the verified challenge
+     *      nonce), giving on-chain replay protection that matches the off-chain
+     *      one-time use. Transfers the escrowed specimen from marketplace custody
+     *      to the buyer. CEI: state effects precede the token transfer.
+     *
+     * @param tokenId The listed specimen token ID (must be an active escrowed listing).
+     * @param buyer The recipient address.
+     * @param handoffRef keccak256 of the verified one-time handoff challenge nonce.
+     */
+    function fulfillCashPickup(uint256 tokenId, address buyer, bytes32 handoffRef)
+        external
+        onlyRole(FIAT_RELAYER_ROLE)
+    {
+        if (buyer == address(0)) revert InvalidAddress();
+        if (cashPickupSettled[handoffRef]) revert EscrowAlreadyResolved();
+
+        Listing storage listing = listings[tokenId];
+        if (!listing.active) revert ListingNotActive();
+
+        address seller = listing.seller;
+
+        // Effects (CEI): mark settled + deactivate the listing before transfer.
+        cashPickupSettled[handoffRef] = true;
+        listing.active = false;
+        delete listings[tokenId];
+
+        // Interaction: move the escrowed specimen to the buyer.
+        aquadexManager.safeTransferFrom(address(this), buyer, tokenId);
+
+        emit SpecimenPurchased(tokenId, seller, buyer, 0, 0);
+        emit XPEarned(buyer, 100, "Cash Pickup Specimen");
+        emit XPEarned(seller, 150, "Cash Sale Settled");
     }
 
     // ─────────────────────────────────────────────────────────────────────────

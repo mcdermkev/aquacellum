@@ -11,6 +11,7 @@ import { DEPTH_TIERS } from "../../services/depthScoreApi";
 import { useDepthScore } from "../../hooks/useDepthScore";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { getXp } from "../../utils/xp";
+import { hasEntitlement, getRequiredTierFor } from "../../services/entitlements";
 
 /**
  * Resolve a tier key from a numeric XP/score value using the canonical
@@ -37,19 +38,13 @@ const XP_TIPS = [
 
 /**
  * Get the tier required for a specific privilege.
+ *
+ * Sourced from the centralized entitlement map (Task 6) so the Reef
+ * privilege keys (canCreateSchools, canGiveAudits, etc.) resolve to the same
+ * required tiers as before, without forking a second tier list here.
  */
 function getRequiredTier(privilege) {
-  const tierMap = {
-    canCreateSchools: "Coastal",
-    canPostInsights: "Coastal",
-    canRequestAudits: "Coastal",
-    canGiveAudits: "Abyssal",
-    canMentor: "Abyssal",
-    canHostVirtualTides: "Abyssal",
-    canHostExpoTides: "Hadal",
-    canModerate: "Hadal",
-  };
-  return tierMap[privilege] || "Coastal";
+  return getRequiredTierFor(privilege) || "Coastal";
 }
 
 /**
@@ -244,18 +239,13 @@ export function useUnlockGate(privilege) {
   const { data: scoreData } = useDepthScore(walletAddress);
 
   // The local XP profile (localStorage) drives the header meter, while the
-  // Supabase depth_score/depth_tier can lag or be null. Use the higher of the
-  // two so a user whose XP has already reached a tier isn't locked out by a
-  // stale DB value.
-  const effectiveScore = Math.max(getXp(), scoreData?.depth_score || 0);
-  const currentTier = tierKeyForScore(effectiveScore);
-
-  const tierOrder = ["Shallow", "Coastal", "Pelagic", "Abyssal", "Hadal"];
-  const requiredTierKey = getRequiredTier(privilege);
-  const currentIndex = tierOrder.indexOf(currentTier);
-  const requiredIndex = tierOrder.indexOf(requiredTierKey);
-
-  const hasAccess = currentIndex >= requiredIndex;
+  // Supabase depth_score/depth_tier can lag or be null. hasEntitlement's
+  // resolveTier takes the higher of ctx.xp and ctx.tier so a user whose XP
+  // has already reached a tier isn't locked out by a stale DB value.
+  const hasAccess = hasEntitlement(privilege, {
+    xp: getXp(),
+    tier: scoreData?.depth_tier,
+  });
 
   const checkAccess = () => {
     if (hasAccess) return true;

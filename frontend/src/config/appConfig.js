@@ -41,6 +41,7 @@ export const STOREFRONT_BETA_WALLETS = [
 export const VALID_TABS = [
   "tanks", "breeder", "directory", "gallery", "map",
   "orders", "incoming", "reef", "settings", "founders", "storefront",
+  "breeder-terminal",
 ];
 
 /**

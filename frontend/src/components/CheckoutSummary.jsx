@@ -29,6 +29,7 @@ import { useRewardCredits, useApplyCredits } from "../hooks/useRewardsPool";
 import { calculateCheckoutDiscount } from "../services/rewardsPoolApi";
 import { ArrivalModal } from "./ArrivalModal";
 import { ShippingRateModal } from "./ShippingRateModal";
+import { evaluateTankFit } from "../services/addOnRecommender";
 import { buyShippingLabel } from "../services/shipping";
 import { pushOrderToCloud, pullOrdersFromCloud, pushAllLocalOrders, subscribeToOrderUpdates } from "../services/ordersSync";
 import { OrderReceipt } from "./OrderReceipt";
@@ -237,43 +238,22 @@ export function CheckoutSummary({
     loadAllListings();
   }, [contractAddress, marketplaceAddress, walletAccount]);
 
-  const calculateCompatibility = (item) => {
-    if (!displayTank) return 0;
+  // Adapts a marketplace listing item into the species-profile shape
+  // evaluateTankFit expects, sourcing the minimum tank volume from the
+  // fishbase lookup (by scientific name) the way the legacy formula did.
+  const itemToSpeciesProfile = (item) => {
     const nameKey = item.scientificName ? item.scientificName.toLowerCase() : "";
     const metrics = fishbaseLookup[nameKey];
-    const minVol = metrics?.minVolumeGallons ?? 30;
+    return {
+      minVolumeGallons: metrics?.minVolumeGallons ?? undefined,
+      tempRange: item.minTemp != null && item.maxTemp != null ? [item.minTemp, item.maxTemp] : null,
+      phRange: item.minPh != null && item.maxPh != null ? [item.minPh, item.maxPh] : null,
+    };
+  };
 
-    const simVolume = Number(displayTank.volume);
-    const simPh = Number(displayTank.ph);
-    const simTemp = Number(displayTank.temp);
-
-    let pVol = 0;
-    if (simVolume < minVol) {
-      pVol = ((minVol - simVolume) / minVol) * 100;
-    }
-
-    let pPh = 0;
-    if (simPh < item.minPh) {
-      pPh = ((item.minPh - simPh) / 1.5) * 100;
-    } else if (simPh > item.maxPh) {
-      pPh = ((simPh - item.maxPh) / 1.5) * 100;
-    }
-    pPh = Math.min(100, pPh);
-
-    let pTemp = 0;
-    if (simTemp < item.minTemp) {
-      pTemp = ((item.minTemp - simTemp) / 5.0) * 100;
-    } else if (simTemp > item.maxTemp) {
-      pTemp = ((simTemp - item.maxTemp) / 5.0) * 100;
-    }
-    pTemp = Math.min(100, pTemp);
-
-    const sVol = Math.max(0, 100 - pVol);
-    const sPh = Math.max(0, 100 - pPh);
-    const sTemp = Math.max(0, 100 - pTemp);
-
-    const rawScore = (sVol / 100) * (sPh / 100) * (sTemp / 100) * 100;
-    return Math.round(rawScore);
+  const calculateCompatibility = (item) => {
+    if (!displayTank) return 0;
+    return evaluateTankFit(itemToSpeciesProfile(item), displayTank).score;
   };
 
   // Payment-first fry-batch checkout. Redirects to Stripe; the batch listing

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ethers, Contract } from "ethers";
 import { Plus, MinusCircle } from "@phosphor-icons/react";
@@ -8,12 +9,12 @@ import { ListSpecimenModal } from "./ListSpecimenModal";
 import { EditListingModal } from "./EditListingModal";
 import { BatchListingWizard } from "./BatchListingWizard";
 import { OfferModal } from "./OfferModal";
-import { addXp, XP_ACTIONS } from "../utils/xp";
+import { addXp, XP_ACTIONS, getXp } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
 import { relayCancelListing, relayCancelBatchListing } from "../services/relayer";
 import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";
 import { fetchListingsByBreed } from "../utils/listingManager";
-import { useSpeciesSearch } from "../hooks/useSpeciesSearch";
+import { useSpeciesData } from "../hooks/useSpeciesData";
 import { LazyImage } from "./LazyImage";
 import { useMarketplaceListings } from "../hooks/useMarketplaceListings";
 import { WantedBoard } from "./WantedBoard";
@@ -22,6 +23,10 @@ import { getOrCreateConversation } from "../services/messagesApi";
 import { getProfile } from "../services/reefApi";
 import { generateAlias } from "../utils/generateAlias";
 import { db } from "../db";
+import { evaluateTankFit } from "../services/addOnRecommender";
+import { applyCatalogQuery, SORT_OPTIONS, FULFILLMENT_TYPES, getListingKey } from "../services/catalogQuery";
+import { hasEntitlement } from "../services/entitlements";
+import { ProductDetailModal } from "./ProductDetailModal";
 
 // Helper: detect if a fishbase record or specCode is a plant entry
 const isPlantEntry = (specCodeOrItem) => {
@@ -116,6 +121,70 @@ export function MarketplaceBoard({
   const [userLocation, setUserLocation] = useState({ lat: 37.7749, lng: -122.4194 }); // Default SF
   const [locationRequested, setLocationRequested] = useState(false);
 
+  // ── Task 8: unified catalog query state (search/filter/facets) ───────────
+  const [searchQuery, setSearchQuery] = useState("");
+  const [familyFilter, setFamilyFilter] = useState("all");
+  const [careLevelFilter, setCareLevelFilter] = useState("all");
+  const [fulfillmentFilter, setFulfillmentFilter] = useState("all");
+  const [priceMinInput, setPriceMinInput] = useState("");
+  const [priceMaxInput, setPriceMaxInput] = useState("");
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+
+  // Offline banner: shows cached listings with a clear "offline" indicator
+  // instead of silently rendering stale data as if it were live.
+  const [isOnline, setIsOnline] = useState(() => (typeof navigator !== "undefined" ? navigator.onLine : true));
+  useEffect(() => {
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
+
+  // Deep-linkable product detail overlay: ?listing=<listingKey>
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedProductListing, setSelectedProductListing] = useState(null);
+  const [productNotFound, setProductNotFound] = useState(false);
+
+  const openProductDetail = (item) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("listing", getListingKey(item));
+    setSearchParams(next);
+  };
+
+  const closeProductDetail = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("listing");
+    setSearchParams(next);
+    setSelectedProductListing(null);
+    setProductNotFound(false);
+  };
+
+  // Local XP for the saved_search entitlement check (browsing itself is
+  // REQUIRED and never gated — only the ability to persist a search).
+  const xpForEntitlements = useMemo(() => getXp(), []);
+
+  const saveCurrentSearch = () => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("aquadex_saved_searches") || "[]");
+      saved.push({
+        search: searchQuery,
+        family: familyFilter,
+        careLevel: careLevelFilter,
+        fulfillment: fulfillmentFilter,
+        priceMinInput,
+        priceMaxInput,
+        savedAt: Date.now(),
+      });
+      localStorage.setItem("aquadex_saved_searches", JSON.stringify(saved));
+    } catch (e) {
+      console.warn("Failed to save search:", e);
+    }
+  };
+
   // Geolocation: only request when user interacts with proximity/map features.
   const requestUserLocation = () => {
     if (locationRequested) return;
@@ -135,18 +204,7 @@ export function MarketplaceBoard({
     }
   };
 
-  const { 
-    results: searchedListings, 
-    searchTerm: searchQuery, 
-    setSearchTerm: setSearchQuery,
-    globalData: cachedGlobalData 
-  } = useSpeciesSearch(listings, {
-    keys: [
-      { name: "commonName", weight: 0.8 },
-      { name: "scientificName", weight: 0.7 }
-    ],
-    threshold: 0.35
-  });
+  const { data: cachedGlobalData } = useSpeciesData();
 
   const [visibleCount, setVisibleCount] = useState(24);
   const [containerWidth, setContainerWidth] = useState(1200);
@@ -204,43 +262,34 @@ export function MarketplaceBoard({
     }
   }, [cachedGlobalData]);
 
-  const calculateCompatibility = (item) => {
-    if (!displayTank) return 0;
+  // Family lookup for the catalog family filter/facets, keyed by speciesId
+  // and lowercased scientific name (matches catalogQuery.js's resolveFamily).
+  const familyLookup = useMemo(() => {
+    const lookup = {};
+    (cachedGlobalData || []).forEach((item) => {
+      if (!item.family) return;
+      if (item.speciesId != null) lookup[item.speciesId] = item.family;
+      if (item.scientificName) lookup[item.scientificName.toLowerCase()] = item.family;
+    });
+    return lookup;
+  }, [cachedGlobalData]);
+
+  // Adapts a marketplace listing item into the species-profile shape
+  // evaluateTankFit expects, sourcing the minimum tank volume from the
+  // fishbase lookup (by scientific name) the way the legacy formula did.
+  const itemToSpeciesProfile = (item) => {
     const nameKey = item.scientificName ? item.scientificName.toLowerCase() : "";
     const metrics = fishbaseLookup[nameKey];
-    const minVol = metrics?.minVolumeGallons ?? 30;
+    return {
+      minVolumeGallons: metrics?.minVolumeGallons ?? undefined,
+      tempRange: item.minTemp != null && item.maxTemp != null ? [item.minTemp, item.maxTemp] : null,
+      phRange: item.minPh != null && item.maxPh != null ? [item.minPh, item.maxPh] : null,
+    };
+  };
 
-    const simVolume = Number(displayTank.volume);
-    const simPh = Number(displayTank.ph);
-    const simTemp = Number(displayTank.temp);
-
-    let pVol = 0;
-    if (simVolume < minVol) {
-      pVol = ((minVol - simVolume) / minVol) * 100;
-    }
-
-    let pPh = 0;
-    if (simPh < item.minPh) {
-      pPh = ((item.minPh - simPh) / 1.5) * 100;
-    } else if (simPh > item.maxPh) {
-      pPh = ((simPh - item.maxPh) / 1.5) * 100;
-    }
-    pPh = Math.min(100, pPh);
-
-    let pTemp = 0;
-    if (simTemp < item.minTemp) {
-      pTemp = ((item.minTemp - simTemp) / 5.0) * 100;
-    } else if (simTemp > item.maxTemp) {
-      pTemp = ((simTemp - item.maxTemp) / 5.0) * 100;
-    }
-    pTemp = Math.min(100, pTemp);
-
-    const sVol = Math.max(0, 100 - pVol);
-    const sPh = Math.max(0, 100 - pPh);
-    const sTemp = Math.max(0, 100 - pTemp);
-
-    const rawScore = (sVol / 100) * (sPh / 100) * (sTemp / 100) * 100;
-    return Math.round(rawScore);
+  const calculateCompatibility = (item) => {
+    if (!displayTank) return 0;
+    return evaluateTankFit(itemToSpeciesProfile(item), displayTank).score;
   };
 
   const getZoneHash = (item) => {
@@ -295,6 +344,28 @@ export function MarketplaceBoard({
       setIsModalOpen(true);
     }
   }, [preselectedListSpecimen]);
+
+  // Deep-link route recovery: resolve ?listing=<listingKey> against the
+  // loaded listings once they're available. An id with no match (sold,
+  // removed, or just wrong) shows the not-found state rather than crashing
+  // or silently doing nothing.
+  useEffect(() => {
+    const listingKeyParam = searchParams.get("listing");
+    if (!listingKeyParam) {
+      setSelectedProductListing(null);
+      setProductNotFound(false);
+      return;
+    }
+    if (loading && listings.length === 0) return; // still loading — wait
+    const match = listings.find((item) => getListingKey(item) === listingKeyParam);
+    if (match) {
+      setSelectedProductListing(match);
+      setProductNotFound(false);
+    } else {
+      setSelectedProductListing(null);
+      setProductNotFound(true);
+    }
+  }, [searchParams, listings, loading]);
 
   const fetchListings = async () => {
     await refetchListings();
@@ -394,7 +465,44 @@ export function MarketplaceBoard({
     return rep;
   }, [listings]);
 
-  const filteredAndSortedListings = [...searchedListings]
+  // Map the UI's sort select to catalogQuery's canonical SORT_OPTIONS where a
+  // direct equivalent exists. "tier-purebred"/"tier-wild" are marketplace-
+  // specific pedigree sorts (not part of the generic catalog contract), so
+  // those stay as a local post-sort pass below rather than forking
+  // catalogQuery.js's sort logic.
+  const catalogSort =
+    sortBy === "price-asc" ? SORT_OPTIONS.PRICE_ASC
+    : sortBy === "price-desc" ? SORT_OPTIONS.PRICE_DESC
+    : sortBy === "closest" ? SORT_OPTIONS.DISTANCE
+    : undefined;
+
+  // Attach a fuzzed distanceMiles field for the DISTANCE sort (catalogQuery
+  // reads item.distanceMiles directly; the fuzzing itself is existing,
+  // unrelated logic this module already had).
+  const listingsWithDistance = useMemo(() => {
+    if (catalogSort !== SORT_OPTIONS.DISTANCE) return listings;
+    return listings.map((item) => ({ ...item, distanceMiles: getDistanceForListing(item) }));
+  }, [listings, catalogSort]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const priceMinCents = priceMinInput.trim() !== "" ? Math.round(parseFloat(priceMinInput) * 100) : undefined;
+  const priceMaxCents = priceMaxInput.trim() !== "" ? Math.round(parseFloat(priceMaxInput) * 100) : undefined;
+
+  const { results: queriedListings, facets } = useMemo(() => {
+    return applyCatalogQuery(listingsWithDistance, {
+      search: searchQuery,
+      family: familyFilter !== "all" ? familyFilter : undefined,
+      familyLookup,
+      careLevel: careLevelFilter !== "all" ? Number(careLevelFilter) : undefined,
+      fulfillment: fulfillmentFilter !== "all" ? fulfillmentFilter : undefined,
+      priceMinCents: Number.isFinite(priceMinCents) ? priceMinCents : undefined,
+      priceMaxCents: Number.isFinite(priceMaxCents) ? priceMaxCents : undefined,
+      sort: catalogSort,
+      displayTank,
+      speciesLookup: fishbaseLookup,
+    });
+  }, [listingsWithDistance, searchQuery, familyFilter, familyLookup, careLevelFilter, fulfillmentFilter, priceMinCents, priceMaxCents, catalogSort, displayTank, fishbaseLookup]);
+
+  const filteredAndSortedListings = queriedListings
     .filter((item) => {
       if (activeSellerFilter && item.seller) {
         if (item.seller.toLowerCase() !== activeSellerFilter.toLowerCase()) {
@@ -403,18 +511,13 @@ export function MarketplaceBoard({
       }
       return true;
     })
+    .slice() // stable-sort on top of applyCatalogQuery's already-deterministic order
     .sort((a, b) => {
       // Boosted listings always appear first
       const aBoosted = a.isBoosted ? 1 : 0;
       const bBoosted = b.isBoosted ? 1 : 0;
       if (aBoosted !== bBoosted) return bBoosted - aBoosted;
 
-      if (sortBy === "price-asc") {
-        return parseFloat(a.price) - parseFloat(b.price);
-      }
-      if (sortBy === "price-desc") {
-        return parseFloat(b.price) - parseFloat(a.price);
-      }
       if (sortBy === "tier-purebred") {
         const aPure = (!a.isBatch && a.sireId !== 0 && a.damId !== 0) ? 1 : 0;
         const bPure = (!b.isBatch && b.sireId !== 0 && b.damId !== 0) ? 1 : 0;
@@ -424,11 +527,6 @@ export function MarketplaceBoard({
         const aWild = (!a.isBatch && a.sireId === 0 && a.damId === 0) ? 1 : 0;
         const bWild = (!b.isBatch && b.sireId === 0 && b.damId === 0) ? 1 : 0;
         return bWild - aWild;
-      }
-      if (sortBy === "closest") {
-        const distA = getDistanceForListing(a);
-        const distB = getDistanceForListing(b);
-        return distA - distB;
       }
       return 0;
     });
@@ -972,9 +1070,14 @@ export function MarketplaceBoard({
         })
       }}>
         {/* Search Input */}
+        <label htmlFor="marketplace-search-input" style={{ position: "absolute", width: "1px", height: "1px", overflow: "hidden", clip: "rect(0,0,0,0)" }}>
+          Search by species common or scientific name
+        </label>
         <input
+          id="marketplace-search-input"
           type="text"
           placeholder="Search by species common or scientific name..."
+          aria-label="Search by species common or scientific name"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           style={{
@@ -1004,7 +1107,12 @@ export function MarketplaceBoard({
         />
 
         {/* Sort Select */}
+        <label htmlFor="marketplace-sort-select" style={{ position: "absolute", width: "1px", height: "1px", overflow: "hidden", clip: "rect(0,0,0,0)" }}>
+          Sort listings
+        </label>
         <select
+          id="marketplace-sort-select"
+          aria-label="Sort listings"
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
           style={{
@@ -1043,6 +1151,24 @@ export function MarketplaceBoard({
           <option value="closest">Closest to Me</option>
         </select>
 
+        {/* Filters toggle — reveals the facet-driven filter panel below */}
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={() => setShowFilterPanel((v) => !v)}
+          aria-expanded={showFilterPanel}
+          aria-controls="marketplace-filter-panel"
+          style={{
+            padding: "0.5rem 1rem",
+            fontSize: "0.875rem",
+            borderRadius: "4px",
+            background: showFilterPanel ? "rgba(56, 189, 248, 0.12)" : "rgba(255,255,255,0.03)",
+            borderColor: showFilterPanel ? "var(--accent-blue)" : "var(--glass-border)",
+          }}
+        >
+          🔎 Filters{(familyFilter !== "all" || careLevelFilter !== "all" || fulfillmentFilter !== "all" || priceMinInput || priceMaxInput) ? " •" : ""}
+        </button>
+
         {casualModeActive && (
           <button 
             className="btn-secondary" 
@@ -1061,6 +1187,161 @@ export function MarketplaceBoard({
           </button>
         )}
       </div>
+
+      {/* Filter Panel — driven by facets from applyCatalogQuery */}
+      {showFilterPanel && (
+        <div
+          id="marketplace-filter-panel"
+          className="glass-card"
+          style={{
+            padding: "1.25rem 1.5rem",
+            marginBottom: "1.5rem",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "1.25rem",
+            borderRadius: "var(--radius-sm)",
+          }}
+        >
+          <div>
+            <label htmlFor="marketplace-family-filter" style={{ display: "block", fontSize: "0.7rem", color: "var(--text-secondary)", marginBottom: "0.3rem" }}>
+              Family
+            </label>
+            <select
+              id="marketplace-family-filter"
+              value={familyFilter}
+              onChange={(e) => setFamilyFilter(e.target.value)}
+              style={{ padding: "0.4rem 0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "#fff", fontSize: "0.8rem" }}
+            >
+              <option value="all">All Families ({Object.values(facets.family).reduce((a, b) => a + b, 0)})</option>
+              {Object.entries(facets.family).sort().map(([fam, count]) => (
+                <option key={fam} value={fam}>{fam} ({count})</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="marketplace-care-filter" style={{ display: "block", fontSize: "0.7rem", color: "var(--text-secondary)", marginBottom: "0.3rem" }}>
+              Care Level
+            </label>
+            <select
+              id="marketplace-care-filter"
+              value={careLevelFilter}
+              onChange={(e) => setCareLevelFilter(e.target.value)}
+              style={{ padding: "0.4rem 0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "#fff", fontSize: "0.8rem" }}
+            >
+              <option value="all">Any Care Level</option>
+              {["0", "1", "2", "3"].map((lvl) => (
+                <option key={lvl} value={lvl}>
+                  {["Easy", "Medium", "Difficult", "Expert"][Number(lvl)]} ({facets.careLevel[lvl] || 0})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="marketplace-fulfillment-filter" style={{ display: "block", fontSize: "0.7rem", color: "var(--text-secondary)", marginBottom: "0.3rem" }}>
+              Fulfillment
+            </label>
+            <select
+              id="marketplace-fulfillment-filter"
+              value={fulfillmentFilter}
+              onChange={(e) => setFulfillmentFilter(e.target.value)}
+              style={{ padding: "0.4rem 0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "#fff", fontSize: "0.8rem" }}
+            >
+              <option value="all">Any Fulfillment</option>
+              <option value={FULFILLMENT_TYPES.SHIPPING}>🚚 Ships Nationwide ({facets.fulfillmentType[FULFILLMENT_TYPES.SHIPPING] || 0})</option>
+              <option value={FULFILLMENT_TYPES.PICKUP}>📍 Local Pickup ({facets.fulfillmentType[FULFILLMENT_TYPES.PICKUP] || 0})</option>
+              <option value={FULFILLMENT_TYPES.LOCAL_DELIVERY}>🚴 Local Delivery ({facets.fulfillmentType[FULFILLMENT_TYPES.LOCAL_DELIVERY] || 0})</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="marketplace-price-min" style={{ display: "block", fontSize: "0.7rem", color: "var(--text-secondary)", marginBottom: "0.3rem" }}>
+              Price Range (USD)
+            </label>
+            <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
+              <input
+                id="marketplace-price-min"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Min"
+                aria-label="Minimum price in dollars"
+                value={priceMinInput}
+                onChange={(e) => setPriceMinInput(e.target.value)}
+                style={{ width: "70px", padding: "0.4rem 0.5rem", background: "rgba(0,0,0,0.3)", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "#fff", fontSize: "0.8rem" }}
+              />
+              <span style={{ color: "var(--text-muted)" }}>–</span>
+              <label htmlFor="marketplace-price-max" style={{ position: "absolute", width: "1px", height: "1px", overflow: "hidden", clip: "rect(0,0,0,0)" }}>Maximum price in dollars</label>
+              <input
+                id="marketplace-price-max"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Max"
+                aria-label="Maximum price in dollars"
+                value={priceMaxInput}
+                onChange={(e) => setPriceMaxInput(e.target.value)}
+                style={{ width: "70px", padding: "0.4rem 0.5rem", background: "rgba(0,0,0,0.3)", border: "1px solid var(--glass-border)", borderRadius: "4px", color: "#fff", fontSize: "0.8rem" }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "flex-end" }}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                setFamilyFilter("all");
+                setCareLevelFilter("all");
+                setFulfillmentFilter("all");
+                setPriceMinInput("");
+                setPriceMaxInput("");
+              }}
+              style={{ padding: "0.4rem 0.75rem", fontSize: "0.75rem" }}
+            >
+              Clear Filters
+            </button>
+          </div>
+
+          {/* Saved-search affordance — gated by the saved_search entitlement
+              (an earned convenience; browsing/searching itself is never gated). */}
+          {walletAccount && hasEntitlement("saved_search", { xp: xpForEntitlements }) && (
+            <div style={{ display: "flex", alignItems: "flex-end" }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={saveCurrentSearch}
+                style={{ padding: "0.4rem 0.75rem", fontSize: "0.75rem" }}
+                title="Save this search for quick access later"
+              >
+                💾 Save This Search
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {!isOnline && (
+        <div
+          role="status"
+          style={{
+            padding: "0.85rem 1.25rem",
+            backgroundColor: "rgba(56, 189, 248, 0.08)",
+            border: "1px solid rgba(56, 189, 248, 0.25)",
+            color: "#7dd3fc",
+            borderRadius: "var(--radius-sm)",
+            marginBottom: "1.5rem",
+            fontSize: "0.82rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+          }}
+        >
+          <span aria-hidden="true">📡</span>
+          <span>You're offline — showing cached listings from your last sync. Prices and availability may be out of date.</span>
+        </div>
+      )}
 
       {actionError && (
         <div style={{
@@ -1099,6 +1380,28 @@ export function MarketplaceBoard({
           <p style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>
             The exchange directory is currently empty. Be the first to publish a specimen card!
           </p>
+        </div>
+      ) : filteredAndSortedListings.length === 0 ? (
+        <div className="glass-card" style={{ padding: "4rem 2rem", textAlign: "center", border: "1px dashed var(--glass-border)", background: "none" }}>
+          <MinusCircle size={48} weight="duotone" color="var(--text-muted)" style={{ marginBottom: "1rem" }} />
+          <h3 style={{ color: "var(--text-secondary)", marginBottom: "0.5rem" }}>No matching listings</h3>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginBottom: "1.25rem" }}>
+            No listings match your current search and filters. Try widening your price range or clearing a filter.
+          </p>
+          <button
+            className="btn-secondary"
+            onClick={() => {
+              setSearchQuery("");
+              setFamilyFilter("all");
+              setCareLevelFilter("all");
+              setFulfillmentFilter("all");
+              setPriceMinInput("");
+              setPriceMaxInput("");
+            }}
+            style={{ margin: "0 auto" }}
+          >
+            Clear search & filters
+          </button>
         </div>
       ) : (
         <>
@@ -1709,6 +2012,14 @@ export function MarketplaceBoard({
                               )}
                             </div>
 
+                            <button
+                              className="btn-secondary"
+                              onClick={(e) => { e.stopPropagation(); openProductDetail(item); }}
+                              style={{ width: "100%", padding: "0.35rem 1rem", fontSize: "0.7rem", justifyContent: "center" }}
+                            >
+                              🔍 View Details
+                            </button>
+
                             {isOwner ? (
                               <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
                                 <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -2040,6 +2351,30 @@ export function MarketplaceBoard({
         walletAccount={walletAccount}
         casualModeActive={casualModeActive}
         onSuccess={() => setOfferListing(null)}
+      />
+
+      {/* Product Detail Modal — deep-linkable by listing id (?listing=<key>) */}
+      <ProductDetailModal
+        listing={selectedProductListing}
+        notFound={productNotFound}
+        speciesRecord={
+          selectedProductListing
+            ? fishbaseData.find((f) => f.scientificName?.toLowerCase() === (selectedProductListing.scientificName || "").toLowerCase())
+            : undefined
+        }
+        displayTank={displayTank}
+        walletAccount={walletAccount}
+        casualModeActive={casualModeActive}
+        onClose={closeProductDetail}
+        onAddToCart={(item) => {
+          closeProductDetail();
+          if (!onSelectCheckoutOrder) return;
+          if (item.isBatch) {
+            handlePurchaseBatch(item.listingId, checkoutQuantityMap[item.listingId] || 1);
+          } else {
+            onSelectCheckoutOrder("pending_purchase", item.tokenId);
+          }
+        }}
       />
     </div>
   );
