@@ -137,6 +137,34 @@ export async function buyShippingLabel(params) {
   return postJson("ship-label", params, { auth: true });
 }
 
+// ─── Public: seller's parcel preset (box capacity, Task 11 UI) ─────────────
+
+/**
+ * Fetch a seller's default (or specified) parcel preset row. Public — box
+ * dimensions/capacity aren't sensitive, unlike the ship-from address. Feeds
+ * `packingEngine.normalizeParcelPreset` for the cart's box-capacity meter and
+ * add-on recommendations. Never blocks the UI: callers should treat a
+ * failure the same as "use PACKING_DEFAULTS" (normalizeParcelPreset already
+ * does this for a null/missing row).
+ *
+ * @param {string} sellerWallet
+ * @param {number} [presetId]
+ * @returns {Promise<{success:boolean, preset?:Object, error?:string}>}
+ */
+export async function getSellerParcelPreset(sellerWallet, presetId) {
+  try {
+    const params = new URLSearchParams({ sellerWallet });
+    if (presetId != null) params.set("presetId", String(presetId));
+    const res = await fetch(`${API_BASE}/stripe?action=parcel-preset&${params.toString()}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { success: false, error: data.error || `Request failed (${res.status})` };
+    return { success: true, preset: data.preset };
+  } catch (err) {
+    console.warn("[Shipping] getSellerParcelPreset failed:", err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 // ─── Utilities ──────────────────────────────────────────────────────────────
 
 export function formatUSD(cents) {

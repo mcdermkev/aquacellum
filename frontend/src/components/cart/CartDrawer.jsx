@@ -18,6 +18,9 @@ import { FishSilhouetteSVG } from "../SilhouetteSVG.jsx";
 import { useCart } from "../../contexts/CartContext.jsx";
 import { generateAlias } from "../../utils/generateAlias.js";
 import { CART_CHANGE_TYPE } from "../../services/cartRevalidation.js";
+import { useAddOnRecommendations } from "../../hooks/useAddOnRecommendations.js";
+import { BoxCapacityMeter } from "./BoxCapacityMeter.jsx";
+import { AddOnRecommendationStrip } from "./AddOnRecommendationStrip.jsx";
 
 /** Casual/pro-agnostic, plain-language note for one revalidation change. */
 function changeNote(change, casualModeActive) {
@@ -34,8 +37,9 @@ function changeNote(change, casualModeActive) {
   }
 }
 
-export function CartDrawer({ isOpen, onClose, onProceedToCheckout, casualModeActive = false }) {
-  const { cart, totals, changes, conflict, setItemQuantity, removeItem, resolveConflict, revalidate } = useCart();
+export function CartDrawer({ isOpen, onClose, onProceedToCheckout, casualModeActive = false, buyerTank = null }) {
+  const { cart, totals, changes, conflict, setItemQuantity, removeItem, resolveConflict, revalidate, addItem } = useCart();
+  const { boxStatus, recommendations } = useAddOnRecommendations({ cart, buyerTank });
 
   // Revalidate every time the drawer opens (spec §4: "on cart open").
   useEffect(() => {
@@ -116,6 +120,17 @@ export function CartDrawer({ isOpen, onClose, onProceedToCheckout, casualModeAct
                   casualModeActive={casualModeActive}
                 />
               ))}
+
+              {/* Task 11: box-capacity meter + safe add-on recommendations —
+                  both sourced entirely from useAddOnRecommendations (which
+                  composes the reviewed packing/ranking engines). */}
+              <BoxCapacityMeter boxStatus={boxStatus} casualModeActive={casualModeActive} />
+              <AddOnRecommendationStrip
+                recommendations={recommendations}
+                sellerName={cart.seller ? generateAlias(cart.seller) : null}
+                onAdd={(row) => addItem(row.raw, 1)}
+                casualModeActive={casualModeActive}
+              />
             </div>
 
             {/* Seller + totals + checkout */}

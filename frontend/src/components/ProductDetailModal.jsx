@@ -15,10 +15,12 @@
  *   - loaded (renders the full assembled view model)
  */
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Modal } from "./Modal";
 import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";
 import { assembleProductDetailView } from "../services/productDetailView";
+import { normalizeSpeciesProfile } from "../services/shippingSafety";
+import { deriveDefaultPackingProfile, normalizeParcelPreset, canAddToParcel } from "../services/packingEngine";
 
 const isPlantEntry = (specCodeOrItem) => {
   if (typeof specCodeOrItem === "object" && specCodeOrItem !== null) {
@@ -60,6 +62,26 @@ export function ProductDetailModal({
   const view = assembleProductDetailView(listing, speciesRecord, { displayTank });
   const isOwner = walletAccount && listing.seller && listing.seller.toLowerCase() === walletAccount.toLowerCase();
   const isPlant = isPlantEntry(speciesRecord || { specCode: listing.speciesId || 0 });
+
+  // Task 11 §3.C — a minimal, no-cart-required packing hint: does a single
+  // unit of this listing fit a standard box on its own? Composes the same
+  // engines the cart-drawer surface uses (never re-derived here). Skipped
+  // for plants (packing profiles are a livestock concept).
+  const packingHint = useMemo(() => {
+    if (isPlant) return null;
+    const speciesProfile = normalizeSpeciesProfile(speciesRecord || {
+      scientificName: listing.scientificName,
+      commonName: listing.commonName,
+      minTemp: listing.minTemp,
+      maxTemp: listing.maxTemp,
+      minPh: listing.minPh,
+      maxPh: listing.maxPh,
+    });
+    const profile = deriveDefaultPackingProfile(speciesProfile, 1);
+    const preset = normalizeParcelPreset({});
+    const fit = canAddToParcel(preset, [], profile);
+    return { fitsStandardBox: !fit.addedBox };
+  }, [isPlant, speciesRecord, listing.scientificName, listing.commonName, listing.minTemp, listing.maxTemp, listing.minPh, listing.maxPh]);
 
   const compatColor =
     view.compatibility.verdict === "ok" ? "var(--accent-green)"
@@ -187,6 +209,11 @@ export function ProductDetailModal({
             {view.fulfillment.localDelivery && (
               <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0 }}>
                 {view.fulfillment.localDelivery.summary}
+              </p>
+            )}
+            {view.fulfillment.shipping && packingHint?.fitsStandardBox && (
+              <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "0.5rem 0 0 0" }}>
+                📦 Ships in a standard box
               </p>
             )}
           </div>

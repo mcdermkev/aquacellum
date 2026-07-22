@@ -53,9 +53,7 @@ describe("CartDrawer / CartButton — composition (§7.7, no forked cart logic)"
 
   it("CartDrawer sources cart/totals/changes/conflict exclusively from useCart()", () => {
     expect(DRAWER_SOURCE).toContain('import { useCart } from "../../contexts/CartContext.jsx"');
-    expect(DRAWER_SOURCE).toContain(
-      "const { cart, totals, changes, conflict, setItemQuantity, removeItem, resolveConflict, revalidate } = useCart();"
-    );
+    expect(DRAWER_SOURCE).toMatch(/const \{ cart, totals, changes, conflict,[\s\S]{0,80}\} = useCart\(\);/);
   });
 
   it("CartDrawer calls revalidateCart (via useCart().revalidate) before routing to checkout", () => {

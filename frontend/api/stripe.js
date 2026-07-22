@@ -1710,6 +1710,34 @@ async function loadDefaultParcel(sellerWallet, presetId) {
 }
 
 /**
+ * ?action=parcel-preset — public read of a seller's default (or specified)
+ * parcel preset row. GET ?sellerWallet=0x..&presetId=123 (presetId optional).
+ *
+ * Box dimensions/capacity are not sensitive (unlike the ship-from address,
+ * which stays auth-gated) — the buyer-facing cart's box-capacity meter and
+ * add-on recommender (Task 11 UI) need this to compute `canAddToParcel` /
+ * `planParcels` client-side. No auth required; returns the same shape
+ * `loadDefaultParcel` uses server-side (including its fallback), so the
+ * client's `normalizeParcelPreset` sees a consistent row shape either way.
+ */
+async function handleParcelPreset(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "GET, OPTIONS" })) return;
+  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
+
+  const sellerWallet = req.query.sellerWallet;
+  if (!sellerWallet) return res.status(400).json({ error: "Missing sellerWallet query parameter" });
+
+  const presetId = req.query.presetId ? Number(req.query.presetId) : undefined;
+  try {
+    const preset = await loadDefaultParcel(sellerWallet, presetId);
+    return res.status(200).json({ success: true, preset });
+  } catch (err) {
+    console.warn("[parcel-preset] lookup failed:", err.message);
+    return res.status(200).json({ success: true, preset: { label: "Default insulated", weight_oz: 48, length_in: 12, width_in: 10, height_in: 8 } });
+  }
+}
+
+/**
  * ?action=ship-from — seller manages their PRIVATE origin address.
  *   GET  ?wallet=0x..   → returns the stored address for the authenticated seller
  *   POST { walletAddress, ...address } → validates + upserts the origin
@@ -2266,6 +2294,8 @@ export default async function handler(req, res) {
       return handleShipWebhook(req, res);
     case "ship-margin":
       return handleShipMargin(req, res);
+    case "parcel-preset":
+      return handleParcelPreset(req, res);
     default:
       return res.status(400).json({ error: `Unknown action: ${action}` });
   }

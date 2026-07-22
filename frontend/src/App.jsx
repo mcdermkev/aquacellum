@@ -1464,12 +1464,15 @@ export default function App() {
       {/* What's New changelog modal — shows once per version bump */}
       <WhatsNewModal />
 
-      {/* Persistent cart drawer (Task 10) */}
+      {/* Persistent cart drawer (Task 10) — displayTank feeds the Task 11
+          add-on tank-fit signal; the drawer degrades gracefully to a
+          "select a tank" affordance when it's null. */}
       <CartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
         onProceedToCheckout={handleProceedToCheckoutFromCart}
         casualModeActive={casualModeActive}
+        buyerTank={displayTank}
       />
     </div>
 
