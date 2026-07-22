@@ -6,6 +6,8 @@ import { GlobeHemisphereWest } from "@phosphor-icons/react";
 import { ConnectWallet } from "./components/ConnectWallet";
 import { CartButton } from "./components/cart/CartButton";
 import { CartDrawer } from "./components/cart/CartDrawer";
+import { FontSizeSettings } from "./components/FontSizeSettings";
+import { useFontSettings } from "./hooks/useFontSettings";
 import { SpecimenDetailModal } from "./components/SpecimenDetailModal";
 import { getLevelInfo, getXp } from "./utils/xp";
 import { haptic } from "./utils/haptics";
@@ -112,6 +114,10 @@ const EchoRareMomentOverlay = lazy(() =>
 export default function App() {
   const { account, ready, authenticated, getAccessToken } = useAuth();
   const queryClient = useQueryClient();
+  // Apply the user's saved font-size preference app-wide on every load. The
+  // Settings tab's FontSizeSettings panel lets them change it; this call keeps
+  // the choice applied globally, not just while that panel is mounted.
+  useFontSettings();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
@@ -780,13 +786,16 @@ export default function App() {
         );
       case "settings":
         return (
-          <DataPortabilityWidget 
-            casualModeActive={casualModeActive} 
-            onToggleMode={(newCasualVal) => {
-              setCasualModeActive(newCasualVal);
-              localStorage.setItem("aquadex_casual_mode", newCasualVal.toString());
-            }}
-          />
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <FontSizeSettings />
+            <DataPortabilityWidget 
+              casualModeActive={casualModeActive} 
+              onToggleMode={(newCasualVal) => {
+                setCasualModeActive(newCasualVal);
+                localStorage.setItem("aquadex_casual_mode", newCasualVal.toString());
+              }}
+            />
+          </div>
         );
       case "founders":
         return (
