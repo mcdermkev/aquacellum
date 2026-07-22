@@ -4,7 +4,8 @@
  * and Master Breeder trust badge. Full glassmorphism + responsive.
  */
 import React, { useState } from "react";
-import { ShieldCheck, Star, MapPin, Trophy, Crown } from "@phosphor-icons/react";
+import { ShieldCheck, MapPin, Trophy, Crown } from "@phosphor-icons/react";
+import { ReviewStars } from "../reviews/ReviewStars";
 
 const IPFS_GATEWAY = "https://gateway.pinata.cloud/ipfs";
 
@@ -115,12 +116,12 @@ export function BreederHeader({ profile, stats }) {
             )}
           </div>
 
-          {/* Rating */}
+          {/* Rating — the same ReviewStars badge used everywhere else reviews
+              are shown (SellerReputation, OrderReceipt), so this compact
+              header rating and the full review section always agree. */}
           {stats.avgRating > 0 && (
             <div className="sf-header__rating">
-              <Star weight="fill" size={14} color="#fbbf24" />
-              <span className="sf-header__rating-value">{stats.avgRating.toFixed(1)}</span>
-              <span className="sf-header__rating-count">({stats.reviewCount} reviews)</span>
+              <ReviewStars average={stats.avgRating} count={stats.reviewCount} size={14} />
             </div>
           )}
         </div>

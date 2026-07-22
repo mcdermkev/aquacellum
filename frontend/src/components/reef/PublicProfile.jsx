@@ -18,6 +18,7 @@ import { DepthScoreMeter } from "./DepthScoreMeter";
 import { MentorshipPanel } from "./MentorshipPanel";
 import { ExpertAuditCard } from "./ExpertAuditCard";
 import { ModerationPanel } from "./ModerationPanel";
+import { ReviewModerationPanel } from "../reviews/ReviewModerationPanel";
 import { useProfile, useTankmates, useRelationshipStatus, useSendTankmateRequest, useUpdateProfile, useEnsureProfile } from "../../hooks/useReefProfile";
 import { useUserCurrents } from "../../hooks/useReefFeed";
 import { useAuditsReceived } from "../../hooks/useAudits";
@@ -226,6 +227,8 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
 
   // Moderation panel state (Hadal-tier only)
   const [showModeration, setShowModeration] = useState(false);
+  // Review-reports moderation (Task 20) — same Hadal-tier gate, separate toggle
+  const [showReviewModeration, setShowReviewModeration] = useState(false);
   const profilePrivileges = getTierPrivileges(profile?.companion_tier || "Shallow");
 
   // Auto-ensure profile exists for the user's own profile when it's not found
@@ -723,6 +726,40 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
           {showModeration && (
             <div style={{ marginTop: "0.75rem" }}>
               <ModerationPanel onBack={() => setShowModeration(false)} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Review Reports moderation (Task 20) — same Hadal-tier curator gate,
+          composing the exact ModerationPanel pattern for the review_reports
+          queue instead of a bespoke moderation surface. */}
+      {isOwnProfile && profilePrivileges.canModerate && (
+        <div style={{ marginBottom: "1.5rem" }}>
+          <button
+            onClick={() => setShowReviewModeration(!showReviewModeration)}
+            style={{
+              width: "100%",
+              padding: "0.6rem 1rem",
+              borderRadius: "8px",
+              border: "1px solid rgba(251, 191, 36, 0.2)",
+              background: "rgba(251, 191, 36, 0.04)",
+              color: "var(--text-secondary)",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.4rem",
+              transition: "all 0.15s ease",
+            }}
+          >
+            ⭐ {showReviewModeration ? "Hide Review Reports" : "Review Reports"}
+          </button>
+          {showReviewModeration && (
+            <div style={{ marginTop: "0.75rem" }}>
+              <ReviewModerationPanel onBack={() => setShowReviewModeration(false)} />
             </div>
           )}
         </div>

@@ -1,7 +1,13 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { generateAlias } from "../utils/generateAlias";
 import { OrderTimeline } from "./OrderTimeline";
 import { getRelativeTime } from "../utils/arrivalNudge";
+import { useAuth } from "../contexts/AuthContext";
+import { resolveCanonicalState, resolveMethod } from "../services/buyerOrderView";
+import { isOrderReviewable } from "../services/reviewEligibility";
+import { fetchReviewForOrder } from "../services/reviewsApi";
+import { ReviewComposer } from "./reviews/ReviewComposer";
+import { ReviewStars } from "./reviews/ReviewStars";
 
 /**
  * OrderReceipt — Expandable inline receipt/breakdown for completed orders.
@@ -272,8 +278,126 @@ export function OrderReceipt({ order, isExpanded, onToggle, casualModeActive = f
 
           {/* Shared, buyer- and seller-facing status timeline (derived locally) */}
           <OrderTimeline order={order} casualModeActive={casualModeActive} compact />
+
+          {/* Leave-a-review entry point (Task 20 §4) — buyer-only, and only
+              once the order has reached a verified completed state. Uses the
+              same canonical-state resolution as OrderTimeline/buyerOrderView
+              rather than re-deriving "is this order done" locally. */}
+          {order.role === "Buyer" && <OrderReviewSection order={order} casualModeActive={casualModeActive} />}
         </div>
       )}
     </div>
   );
+}
+
+/**
+ * OrderReviewSection — the buyer-facing "leave a review" entry point wired
+ * into the receipt. Composes isOrderReviewable (never re-derives eligibility)
+ * and only ever shows the composer when eligible; otherwise shows the
+ * existing review (if the buyer already left one) or a plain, non-alarming
+ * reason why not yet ("available after your fish arrives").
+ */
+function OrderReviewSection({ order, casualModeActive }) {
+  const { account } = useAuth() || {};
+  const [existingReview, setExistingReview] = useState(undefined); // undefined = loading
+  const [justSubmitted, setJustSubmitted] = useState(null);
+  const [showComposer, setShowComposer] = useState(false);
+
+  const canonicalState = resolveCanonicalState(order);
+  const method = resolveMethod(order);
+  const orderRef = orderReviewRef(order);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!orderRef) {
+      setExistingReview(null);
+      return;
+    }
+    (async () => {
+      const res = await fetchReviewForOrder(orderRef);
+      if (!cancelled) setExistingReview(res.success ? res.review : null);
+    })();
+    return () => { cancelled = true; };
+  }, [orderRef]);
+
+  if (existingReview === undefined) return null; // loading — avoid a layout flash
+
+  const review = justSubmitted || existingReview;
+
+  if (review) {
+    return (
+      <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.4rem" }}>
+          {casualModeActive ? "Your review" : "Your review"}
+        </div>
+        <ReviewStars average={review.overall} count={0} size={13} showCount={false} />
+        {review.body && (
+          <p style={{ margin: "0.4rem 0 0", fontSize: "0.76rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>{review.body}</p>
+        )}
+      </div>
+    );
+  }
+
+  const decision = isOrderReviewable(
+    { buyerWallet: order.buyer, canonicalState },
+    { viewerWallet: account, existingReview: null }
+  );
+
+  if (!decision.eligible) {
+    // Only surface the "not yet" state for the case a buyer would actually
+    // expect a review affordance (post-purchase, not-yet-completed) — never
+    // for refunded/cancelled orders where a review CTA would be confusing.
+    const showPending = ["created", "payment_pending", "payment_protected", "preparing", "in_transit", "pickup_ready", "delivered", "review_window", "non_delivery"].includes(canonicalState);
+    if (!showPending) return null;
+    return (
+      <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: "0.72rem", color: "var(--text-muted)" }}>
+        {casualModeActive ? "You can leave a review once your fish arrives." : "Review available after arrival is confirmed."}
+      </div>
+    );
+  }
+
+  if (!showComposer) {
+    return (
+      <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <button
+          type="button"
+          onClick={() => setShowComposer(true)}
+          className="btn-secondary"
+          style={{ minHeight: "36px", padding: "0.4rem 0.9rem", fontSize: "0.75rem" }}
+        >
+          {casualModeActive ? "Leave a review" : "Submit review"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: "0.75rem" }}>
+      <ReviewComposer
+        orderRef={orderRef}
+        fulfillmentMethod={method}
+        casualModeActive={casualModeActive}
+        onCancel={() => setShowComposer(false)}
+        onSubmitted={(newReview) => {
+          setJustSubmitted(newReview);
+          setShowComposer(false);
+        }}
+      />
+    </div>
+  );
+}
+
+/**
+ * Stable order reference for review lookups. MUST match what the server's
+ * loadOrderForReview() resolves against — the cloud `orders.local_key`
+ * (ordersSync.js's mapLocalToCloud sets `p_local_key: String(localOrder.key)`)
+ * or `stripe_session_id` for fiat orders — NOT the UI-only composite key
+ * buyerOrderView.js's orderKey() uses (that one is a display/routing id,
+ * never synced to the cloud orders row).
+ */
+function orderReviewRef(order) {
+  if (!order) return null;
+  if (order.stripeSessionId) return order.stripeSessionId;
+  if (order.key != null) return String(order.key);
+  return null;
 }

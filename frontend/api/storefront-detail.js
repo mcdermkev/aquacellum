@@ -8,16 +8,37 @@
  *   GET  /api/storefront-detail?action=discover&limit=&offset=&search= → Browse storefronts
  *   POST /api/storefront-detail?action=setup                → Create/update storefront profile
  *
+ * Task 20 (Verified Structured Reviews) additions — kept on this consolidated
+ * router rather than a new `frontend/api/reviews.js` file because
+ * `frontend/api/` is already at Vercel Hobby's 12-function limit, and this
+ * router already owns the `breeder_stats` reads reviews aggregate into:
+ *
+ *   GET  /api/storefront-detail?action=reviews&seller=<wallet>&limit=&offset=
+ *                                                            → published reviews + aggregate for a seller (public)
+ *   GET  /api/storefront-detail?action=review-for-order&order=<orderId|ref>
+ *                                                            → the review for one order, or null (public)
+ *   POST /api/storefront-detail?action=submit-review        → authenticated buyer submits a review
+ *   POST /api/storefront-detail?action=respond-review       → authenticated seller responds to a review on their order
+ *   POST /api/storefront-detail?action=report-review        → any authenticated user reports a review
+ *   POST /api/storefront-detail?action=moderate-review      → curator-only: hide/dismiss a reported review
+ *
  * Consolidated from separate functions to stay within Vercel Hobby plan limits.
  *
  * Environment variables:
  *   SUPABASE_URL — Supabase project URL
  *   SUPABASE_SERVICE_KEY — Supabase service role key
  *   STOREFRONT_BETA_WALLETS — comma-separated wallet addresses (optional override)
+ *   CURATOR_WALLET / CRON_SECRET — review moderation authorization (mirrors api/stripe.js authorizeAdminOrCurator)
  */
 
 import { createClient } from "@supabase/supabase-js";
 import { setCorsHeaders, handleCorsPreFlight } from "./_lib/cors.js";
+import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
+import {
+  isOrderReviewable,
+  applicableRatingDimensions,
+  canRespondToReview,
+} from "../src/services/reviewEligibility.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL || "",
@@ -43,6 +64,19 @@ export default async function handler(req, res) {
       return handleDiscover(req, res);
     case "setup":
       return handleSetup(req, res);
+    // ── Task 20: Verified Structured Reviews ──
+    case "reviews":
+      return handleGetReviews(req, res);
+    case "review-for-order":
+      return handleGetReviewForOrder(req, res);
+    case "submit-review":
+      return handleSubmitReview(req, res);
+    case "respond-review":
+      return handleRespondReview(req, res);
+    case "report-review":
+      return handleReportReview(req, res);
+    case "moderate-review":
+      return handleModerateReview(req, res);
     default:
       // No action = default storefront detail endpoint
       return handleStorefrontDetail(req, res);
@@ -566,6 +600,427 @@ async function handleSetup(req, res) {
   } catch (err) {
     console.error("[storefront/setup] Error:", err);
     return res.status(500).json({ error: "Internal server error." });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TASK 20: VERIFIED STRUCTURED REVIEWS
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Eligibility (who may review, and when) is decided ONLY by the pure,
+// Opus-reviewed reviewEligibility.js — this file never re-implements or
+// loosens that logic; it just resolves the order/review rows and calls it.
+// The client (ReviewComposer.jsx) also checks eligibility before rendering
+// the form, but that check is UX only — this server-side check is the real
+// authorization boundary, since the client can never be trusted.
+
+/** Map a marketplace_reviews row (snake_case) to the client shape. */
+function reviewRowToClient(row) {
+  return {
+    id: row.id,
+    orderId: row.order_id,
+    orderRef: row.order_ref,
+    buyerWallet: row.buyer_wallet,
+    sellerWallet: row.seller_wallet,
+    fulfillmentMethod: row.fulfillment_method,
+    overall: row.overall,
+    health: row.health,
+    accuracy: row.accuracy,
+    packaging: row.packaging,
+    communication: row.communication,
+    fulfillment: row.fulfillment,
+    body: row.body,
+    photoUrls: row.photo_urls || [],
+    sellerResponse: row.seller_response,
+    sellerRespondedAt: row.seller_responded_at,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/**
+ * Resolve the caller's lowercased wallet from a verified Privy session
+ * token ONLY — never from the request body. Mirrors api/stripe.js's
+ * requireWalletFromSession / api/cart.js's requireWallet.
+ */
+async function requireReviewerWallet(req, res) {
+  const { verified, walletAddress, error } = await verifyPrivyToken(req);
+  if (!verified) {
+    res.status(401).json({ error: error || "Missing or invalid authentication" });
+    return null;
+  }
+  if (!walletAddress) {
+    res.status(401).json({ error: "Session has no linked account address" });
+    return null;
+  }
+  return walletAddress.toLowerCase();
+}
+
+/**
+ * Load the canonical `orders` row a review targets, by orderId (uuid) or a
+ * legacy orderRef (local_key / stripe_session_id). Returns null if neither
+ * is found.
+ */
+async function loadOrderForReview({ orderId, orderRef }) {
+  if (orderId) {
+    const { data } = await supabase.from("orders").select("*").eq("id", orderId).maybeSingle();
+    if (data) return data;
+  }
+  if (orderRef) {
+    const { data } = await supabase
+      .from("orders")
+      .select("*")
+      .or(`local_key.eq.${orderRef},stripe_session_id.eq.${orderRef}`)
+      .maybeSingle();
+    if (data) return data;
+  }
+  return null;
+}
+
+/** Map an `orders` row's fulfillment_type/order_type to a FULFILLMENT_METHODS value for applicableRatingDimensions. */
+function resolveOrderMethod(orderRow) {
+  if (orderRow.order_type === "cash_handshake") return "cash_pickup";
+  if (orderRow.fulfillment_type === "in_person") return "prepaid_pickup";
+  return "shipping";
+}
+
+/**
+ * GET ?action=reviews&seller=<wallet>&limit=&offset= — published reviews for
+ * a seller + the aggregate summary. Public (view_reputation is REQUIRED).
+ */
+async function handleGetReviews(req, res) {
+  setCorsHeaders(req, res, { methods: "GET, OPTIONS" });
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed. Use GET." });
+
+  const seller = (req.query.seller || "").toLowerCase();
+  if (!seller) return res.status(400).json({ error: "Missing seller query parameter" });
+
+  const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+  const offset = parseInt(req.query.offset) || 0;
+
+  try {
+    const { data, error, count } = await supabase
+      .from("marketplace_reviews")
+      .select("*", { count: "exact" })
+      .eq("seller_wallet", seller)
+      .eq("status", "published")
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      console.error("[reviews] GET failed:", error);
+      return res.status(500).json({ error: "Could not load reviews" });
+    }
+
+    res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=180");
+    return res.status(200).json({
+      reviews: (data || []).map(reviewRowToClient),
+      total: count || 0,
+      limit,
+      offset,
+    });
+  } catch (err) {
+    console.error("[reviews] GET error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+/**
+ * GET ?action=review-for-order&order=<orderId|orderRef> — the review for one
+ * order, or null. Public.
+ */
+async function handleGetReviewForOrder(req, res) {
+  setCorsHeaders(req, res, { methods: "GET, OPTIONS" });
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed. Use GET." });
+
+  const order = req.query.order;
+  if (!order) return res.status(400).json({ error: "Missing order query parameter" });
+
+  try {
+    const { data } = await supabase
+      .from("marketplace_reviews")
+      .select("*")
+      .or(`order_id.eq.${order},order_ref.eq.${order}`)
+      .maybeSingle();
+
+    return res.status(200).json({ review: data ? reviewRowToClient(data) : null });
+  } catch (err) {
+    console.error("[reviews] review-for-order error:", err);
+    return res.status(200).json({ review: null });
+  }
+}
+
+/**
+ * POST ?action=submit-review — authenticated buyer submits a review.
+ * Server re-verifies eligibility (never trusts the client): 403 if the
+ * caller isn't the order's buyer, 409 if a review already exists, 422 if
+ * the order hasn't reached a verified completed state.
+ */
+async function handleSubmitReview(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed. Use POST." });
+
+  const wallet = await requireReviewerWallet(req, res);
+  if (!wallet) return;
+
+  const { orderId, orderRef, ...ratingFields } = req.body || {};
+  if (!orderId && !orderRef) {
+    return res.status(400).json({ error: "Missing orderId or orderRef" });
+  }
+
+  const overall = Number(ratingFields.overall);
+  if (!Number.isFinite(overall) || overall < 1 || overall > 5) {
+    return res.status(400).json({ error: "overall must be a number from 1 to 5" });
+  }
+
+  try {
+    const orderRow = await loadOrderForReview({ orderId, orderRef });
+    if (!orderRow) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    const { data: existingReview } = await supabase
+      .from("marketplace_reviews")
+      .select("id")
+      .eq("order_id", orderRow.id)
+      .maybeSingle();
+
+    const decision = isOrderReviewable(
+      { buyerWallet: orderRow.buyer_wallet, legacyStatus: orderRow.status },
+      { viewerWallet: wallet, existingReview }
+    );
+
+    if (!decision.eligible) {
+      if (existingReview) return res.status(409).json({ error: decision.reason });
+      if (wallet !== (orderRow.buyer_wallet || "").toLowerCase()) {
+        return res.status(403).json({ error: decision.reason });
+      }
+      return res.status(422).json({ error: decision.reason });
+    }
+
+    // Sanitize sub-ratings to the ones actually applicable to this order's
+    // fulfillment method — never trust the client to have already done this.
+    const method = resolveOrderMethod(orderRow);
+    const allowedDims = new Set(applicableRatingDimensions(method));
+    const row = {
+      order_id: orderRow.id,
+      order_ref: orderRef || orderRow.local_key || orderRow.stripe_session_id || null,
+      buyer_wallet: wallet,
+      seller_wallet: (orderRow.seller_wallet || "").toLowerCase(),
+      fulfillment_method: method,
+      overall,
+      health: allowedDims.has("health") ? clampRating(ratingFields.health) : null,
+      accuracy: allowedDims.has("accuracy") ? clampRating(ratingFields.accuracy) : null,
+      packaging: allowedDims.has("packaging") ? clampRating(ratingFields.packaging) : null,
+      communication: allowedDims.has("communication") ? clampRating(ratingFields.communication) : null,
+      fulfillment: allowedDims.has("fulfillment") ? clampRating(ratingFields.fulfillment) : null,
+      body: typeof ratingFields.body === "string" ? ratingFields.body.slice(0, 2000) : null,
+      photo_urls: Array.isArray(ratingFields.photoUrls) ? ratingFields.photoUrls.slice(0, 6) : [],
+      status: "published",
+    };
+
+    const { data: inserted, error } = await supabase
+      .from("marketplace_reviews")
+      .insert(row)
+      .select("*")
+      .single();
+
+    if (error) {
+      if (String(error.message || "").includes("duplicate") || error.code === "23505") {
+        return res.status(409).json({ error: "a review already exists for this order" });
+      }
+      console.error("[reviews] submit-review insert failed:", error);
+      return res.status(500).json({ error: "Could not submit review" });
+    }
+
+    return res.status(201).json({ success: true, review: reviewRowToClient(inserted) });
+  } catch (err) {
+    console.error("[reviews] submit-review error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+function clampRating(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  return Math.min(5, Math.max(1, Math.round(n)));
+}
+
+/**
+ * POST ?action=respond-review — authenticated seller adds their one
+ * response to a review on their own order.
+ */
+async function handleRespondReview(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed. Use POST." });
+
+  const wallet = await requireReviewerWallet(req, res);
+  if (!wallet) return;
+
+  const { reviewId, response } = req.body || {};
+  if (!reviewId || !String(response || "").trim()) {
+    return res.status(400).json({ error: "Missing reviewId or response" });
+  }
+
+  try {
+    const { data: review } = await supabase
+      .from("marketplace_reviews")
+      .select("*")
+      .eq("id", reviewId)
+      .maybeSingle();
+
+    if (!review) return res.status(404).json({ error: "Review not found" });
+
+    if (!canRespondToReview(
+      { sellerWallet: review.seller_wallet, sellerResponse: review.seller_response },
+      { viewerWallet: wallet }
+    )) {
+      return res.status(403).json({ error: "You may not respond to this review" });
+    }
+
+    const { data: updated, error } = await supabase
+      .from("marketplace_reviews")
+      .update({ seller_response: String(response).trim().slice(0, 1000), seller_responded_at: new Date().toISOString() })
+      .eq("id", reviewId)
+      .select("*")
+      .single();
+
+    if (error) {
+      console.error("[reviews] respond-review failed:", error);
+      return res.status(500).json({ error: "Could not save response" });
+    }
+
+    return res.status(200).json({ success: true, review: reviewRowToClient(updated) });
+  } catch (err) {
+    console.error("[reviews] respond-review error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+/**
+ * POST ?action=report-review — any authenticated user reports a review.
+ */
+async function handleReportReview(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed. Use POST." });
+
+  const wallet = await requireReviewerWallet(req, res);
+  if (!wallet) return;
+
+  const { reviewId, reason, details } = req.body || {};
+  const ALLOWED_REASONS = ["spam", "inappropriate", "misinformation", "harassment", "other"];
+  if (!reviewId || !ALLOWED_REASONS.includes(reason)) {
+    return res.status(400).json({ error: `Missing reviewId or invalid reason (must be one of: ${ALLOWED_REASONS.join(", ")})` });
+  }
+
+  try {
+    const { error } = await supabase.from("review_reports").insert({
+      review_id: reviewId,
+      reporter_wallet: wallet,
+      reason,
+      details: details ? String(details).slice(0, 1000) : null,
+    });
+
+    if (error) {
+      console.error("[reviews] report-review failed:", error);
+      return res.status(500).json({ error: "Could not submit report" });
+    }
+
+    return res.status(201).json({ success: true });
+  } catch (err) {
+    console.error("[reviews] report-review error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+/**
+ * Authorize a curator (or the CRON_SECRET backend) exactly like
+ * api/stripe.js's authorizeAdminOrCurator — duplicated here in miniature
+ * rather than importing across the two Vercel functions (each function is
+ * bundled independently; importing api/stripe.js into api/storefront-
+ * detail.js would pull in the entire Stripe SDK for no reason).
+ */
+async function authorizeCuratorForReviews(req) {
+  const authHeader = req.headers["authorization"] || req.headers["Authorization"] || "";
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
+    return { ok: true, via: "cron" };
+  }
+  const curatorWallet = (process.env.CURATOR_WALLET || "").toLowerCase();
+  if (authHeader.startsWith("Bearer ") && curatorWallet) {
+    try {
+      const { verified, walletAddress } = await verifyPrivyToken(req);
+      if (verified && walletAddress && walletAddress.toLowerCase() === curatorWallet) {
+        return { ok: true, via: "curator" };
+      }
+    } catch (e) {
+      // fall through to unauthorized
+    }
+  }
+  return { ok: false, status: 403, error: "Not authorized" };
+}
+
+/**
+ * POST ?action=moderate-review — curator-only: hide a review (and mark its
+ * report actioned) or dismiss a report. Composes the same
+ * ModerationPanel.jsx action shape (status/reviewer_wallet/reviewed_at) so
+ * the curator UI is a thin extra tab on that existing pattern, not a new
+ * moderation system.
+ */
+async function handleModerateReview(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed. Use POST." });
+
+  const auth = await authorizeCuratorForReviews(req);
+  if (!auth.ok) return res.status(auth.status || 403).json({ error: auth.error });
+
+  const { reportId, action: modAction } = req.body || {};
+  if (!reportId || !["hide", "dismiss"].includes(modAction)) {
+    return res.status(400).json({ error: "Missing reportId or invalid action (hide | dismiss)" });
+  }
+
+  try {
+    const { data: report } = await supabase
+      .from("review_reports")
+      .select("*")
+      .eq("id", reportId)
+      .maybeSingle();
+    if (!report) return res.status(404).json({ error: "Report not found" });
+
+    const reviewerWallet = auth.via === "curator" ? (process.env.CURATOR_WALLET || "").toLowerCase() : "cron";
+
+    const { error: reportError } = await supabase
+      .from("review_reports")
+      .update({
+        status: modAction === "hide" ? "actioned" : "dismissed",
+        reviewer_wallet: reviewerWallet,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", reportId);
+
+    if (reportError) {
+      console.error("[reviews] moderate-review report update failed:", reportError);
+      return res.status(500).json({ error: "Could not update report" });
+    }
+
+    if (modAction === "hide") {
+      const { error: reviewError } = await supabase
+        .from("marketplace_reviews")
+        .update({ status: "hidden" })
+        .eq("id", report.review_id);
+      if (reviewError) {
+        console.error("[reviews] moderate-review hide failed:", reviewError);
+        return res.status(500).json({ error: "Could not hide review" });
+      }
+    }
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error("[reviews] moderate-review error:", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
 }
 

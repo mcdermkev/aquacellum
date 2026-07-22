@@ -15,6 +15,7 @@ import { ListingCard } from "./ListingCard";
 import { BreedingTimeline } from "./BreedingTimeline";
 import { StorePolicies } from "./StorePolicies";
 import { StorefrontSkeleton } from "./StorefrontSkeleton";
+import { SellerReputation } from "../reviews/SellerReputation";
 import { useStorefront, useStorefrontCache } from "../../hooks/useStorefront";
 import { WifiSlash, ArrowClockwise, Storefront as StorefrontIcon } from "@phosphor-icons/react";
 
@@ -397,6 +398,14 @@ function StorefrontContent() {
 
         {/* Breeding history */}
         <BreedingTimeline history={breedingHistory || []} />
+
+        {/* Verified reviews + reputation (Task 20) — shown to every visitor,
+            signed in or not (view_reputation is a REQUIRED entitlement).
+            Skipped in demo mode: demo storefronts have no real seller wallet
+            to fetch reviews for. */}
+        {!isDemo && profile.walletAddress && (
+          <SellerReputation sellerWallet={profile.walletAddress} />
+        )}
       </main>
 
       {/* Footer */}
