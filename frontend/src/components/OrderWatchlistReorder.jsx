@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { isFeatureUnlocked, ORDER_FEATURES } from "../utils/orderFeatureGates";
+import { ORDER_FEATURES } from "../utils/orderFeatureGates";
+import { hasEntitlement } from "../services/entitlements";
 import { addToWatchlist, getWatchlist, removeFromWatchlist } from "../services/ordersSync";
 import { db } from "../db";
 import { generateAlias } from "../utils/generateAlias";
@@ -17,8 +18,12 @@ import { generateAlias } from "../utils/generateAlias";
  *   - onReorder: callback when reorder is initiated (tokenIds or species)
  */
 export function OrderWatchlistReorder({ walletAccount, userTier, totalXp, casualModeActive = false, onReorder }) {
-  const watchlistUnlocked = isFeatureUnlocked(userTier, "SPECIES_WATCHLIST");
-  const reorderUnlocked = isFeatureUnlocked(userTier, "SMART_REORDER");
+  // Gating sourced from the centralized entitlement map (Task 6/18) rather
+  // than the legacy per-component isFeatureUnlocked check; ORDER_FEATURES is
+  // kept for its copy/icon/progress-bar metadata below. Same tiers
+  // (Pelagic for watchlist, Abyssal for smart reorder).
+  const watchlistUnlocked = hasEntitlement("species_watchlist", { tier: userTier, xp: totalXp });
+  const reorderUnlocked = hasEntitlement("smart_reorder", { tier: userTier, xp: totalXp });
 
   const [activeSection, setActiveSection] = useState(watchlistUnlocked ? "watchlist" : "reorder");
   const [watchlist, setWatchlist] = useState([]);

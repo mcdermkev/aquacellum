@@ -17,10 +17,16 @@ export function HandshakeVerification({
   quantity, 
   marketplaceAddress,
   walletAccount,
-  onSuccess 
+  onSuccess,
+  // Task 19: the seller fulfillment queue opens this modal directly on the
+  // "Breeder (Scan / Verify)" tab (a seller scanning a buyer's pickup/cash
+  // code has no reason to land on the buyer tab first). Optional and
+  // additive — every existing caller (HatcheryLogs, LocalBreederMap) omits
+  // it and keeps the buyer-first default.
+  defaultRole = "buyer",
 }) {
   const { generateCommitment, updatePurchaseId, getPendingHandshake } = useHandshake();
-  const [activeRole, setActiveRole] = useState("buyer"); // "buyer" | "breeder"
+  const [activeRole, setActiveRole] = useState(defaultRole === "breeder" ? "breeder" : "buyer"); // "buyer" | "breeder"
   const [step, setStep] = useState("pin-entry"); // "pin-entry" | "locking" | "qr-display"
   const [insideEventZone, setInsideEventZone] = useState(true);
   const [currentEventId, setCurrentEventId] = useState(1);
@@ -69,8 +75,13 @@ export function HandshakeVerification({
       setIsCashHandshake(false);
       setCashHandshakePayload(null);
       setScannedPayload(null);
+    } else {
+      // Re-apply the requested default role each time the modal opens, so a
+      // caller that always wants the breeder scan tab (Task 19's seller
+      // queue) doesn't get stuck on whatever tab was active last time.
+      setActiveRole(defaultRole === "breeder" ? "breeder" : "buyer");
     }
-  }, [isOpen]);
+  }, [isOpen, defaultRole]);
 
   // Handle active role tab changes
   useEffect(() => {

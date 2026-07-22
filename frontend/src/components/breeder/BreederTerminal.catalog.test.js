@@ -132,3 +132,115 @@ describe("BreederTerminal — mobile-first section nav", () => {
     expect(SOURCE).toContain('aria-current={isActive ? "page" : undefined}');
   });
 });
+
+// ─── Task 19: seller fulfillment queue (OrdersSection) ─────────────────────
+// Covers docs/TASK_19_SELLER_OPS_SPEC.md §4 criteria 7 (composition),
+// 8 (entitlement guard), 9 (handoff reuse), 10 (accessibility, partial).
+
+describe("BreederTerminal — Orders queue composes sellerOrderView (no forked filter/decision logic)", () => {
+  it("imports normalizeSellerOrders / filterSellerOrders from sellerOrderView.js", () => {
+    expect(SOURCE).toContain(
+      'import { normalizeSellerOrders, filterSellerOrders } from "../../services/sellerOrderView"'
+    );
+    expect(SOURCE).toContain("normalizeSellerOrders(localSellerOrders");
+    expect(SOURCE).toContain("filterSellerOrders(sellerViews,");
+  });
+
+  it("sources the queue from relayGetOrders (local-first), not fetchSellerOrders (cloud dashboard-only)", () => {
+    expect(SOURCE).toContain(
+      'import { relayGetOrders, relayDispatchShipping } from "../../services/relayer"'
+    );
+    expect(SOURCE).toContain("relayGetOrders(account)");
+    // fetchSellerOrders remains for the dashboard aggregation only — assert
+    // both call sites still exist rather than one replacing the other.
+    expect(SOURCE).toContain('import { fetchSellerOrders } from "../../services/ordersSync"');
+    expect(SOURCE).toContain("fetchSellerOrders(walletAccount, { limit: 500 })");
+  });
+});
+
+describe("BreederTerminal — Orders queue actions call existing verified services (§4.7)", () => {
+  it("buy-label action calls buyShippingLabel (shipping.js), not a re-implemented label purchase", () => {
+    expect(SOURCE).toContain('import { buyShippingLabel } from "../../services/shipping"');
+    expect(SOURCE).toContain("await buyShippingLabel({");
+  });
+
+  it("manual-tracking fallback calls relayDispatchShipping, matching CheckoutSummary's seller path", () => {
+    expect(SOURCE).toContain("await relayDispatchShipping(view.raw.tokenId, manualTrackingInput)");
+  });
+
+  it("does NOT expose a seller-initiated refund (refunds are curator/backend-only per api/stripe.js handleRefund)", () => {
+    // A seller-side relayUpdateBatchOrder(state:2) would mark an order
+    // "refunded" locally without returning any money or held asset and
+    // without authorization. Guard that the queue never does this and never
+    // wires a refund/cancel action to the seller.
+    expect(SOURCE).not.toContain("relayUpdateBatchOrder");
+    expect(SOURCE).not.toContain("handleSellerRefundBatch");
+    expect(SOURCE).not.toContain("Cancel &amp; refund");
+  });
+
+  it("customer communication reuses getOrCreateConversation + the aquadex_open_conversation event, not a new messaging system", () => {
+    expect(SOURCE).toContain('import { getOrCreateConversation } from "../../services/messagesApi"');
+    expect(SOURCE).toContain('new CustomEvent("aquadex_open_conversation"');
+  });
+});
+
+describe("BreederTerminal — pickup/cash handoff composes HandshakeVerification, not a new scanner (§4.9)", () => {
+  it("imports and mounts HandshakeVerification", () => {
+    expect(SOURCE).toContain('import { HandshakeVerification } from "../HandshakeVerification"');
+    expect(SOURCE).toContain("<HandshakeVerification");
+  });
+
+  it("opens it on the breeder/scan role by default, not the buyer role", () => {
+    expect(SOURCE).toContain('defaultRole="breeder"');
+  });
+});
+
+describe("BreederTerminal — Orders queue entitlement guard (§4.8): only bulk actions are gated", () => {
+  it("gates the bulk action bar behind hasEntitlement(\"bulk_management\", ...)", () => {
+    expect(SOURCE).toMatch(/hasEntitlement\("bulk_management"/);
+    expect(SOURCE).toContain("canBulkManage &&");
+  });
+
+  it("single-order fulfillment action handlers are never wrapped in a hasEntitlement check", () => {
+    // Each single-order handler must exist and must not have a hasEntitlement
+    // guard directly wrapping its body definition.
+    const singleOrderHandlers = [
+      "const handleBuyLabel = async (view) => {",
+      "const handleMarkDispatchedManually = async (view) => {",
+      "const handleRespondToClaim = async (view) => {",
+      "const handleMessageCustomer = async (view) => {",
+    ];
+    for (const handler of singleOrderHandlers) {
+      const idx = SOURCE.indexOf(handler);
+      expect(idx, `expected to find handler: ${handler}`).toBeGreaterThan(-1);
+      const precedingWindow = SOURCE.slice(Math.max(0, idx - 200), idx);
+      expect(precedingWindow).not.toMatch(/hasEntitlement/);
+    }
+  });
+
+  it("the bulk buy-labels action itself still calls the single-order handleBuyLabel per item (composition, not a forked bulk path)", () => {
+    expect(SOURCE).toContain("await handleBuyLabel(view);");
+  });
+});
+
+describe("BreederTerminal — Orders queue status is not color-only (§4.10, partial a11y)", () => {
+  it("status chip renders both an icon and text label", () => {
+    expect(SOURCE).toMatch(/aria-hidden="true">\{status\.icon\}/);
+    expect(SOURCE).toContain("{status.label}");
+  });
+
+  it("local-courier request renders a disabled 'coming soon' affordance rather than a broken action (spec §3)", () => {
+    expect(SOURCE).toContain("coming soon");
+    expect(SOURCE).toMatch(/REQUEST_COURIER[\s\S]{0,300}disabled/);
+  });
+});
+
+describe("BreederTerminal — dashboard cards deep-link into the Orders queue with a filter preset", () => {
+  it("Pending Actions / New Orders cards navigate to needs_action", () => {
+    expect(SOURCE).toMatch(/onNavigateToOrders\("needs_action"\)/);
+  });
+
+  it("Open Claims card navigates to the claims filter", () => {
+    expect(SOURCE).toMatch(/onNavigateToOrders\("claims"\)/);
+  });
+});

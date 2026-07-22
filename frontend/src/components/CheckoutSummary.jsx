@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ethers, Contract, formatEther, parseEther } from "ethers";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
 import managerAbi from "../abi/AquadexManager.json";
@@ -35,7 +36,9 @@ import { pushOrderToCloud, pullOrdersFromCloud, pushAllLocalOrders, subscribeToO
 import { OrderReceipt } from "./OrderReceipt";
 import { OrderAnalytics } from "./OrderAnalytics";
 import { OrderWatchlistReorder } from "./OrderWatchlistReorder";
-import { isFeatureUnlocked, getFeatureStatus, getNextTierUnlocks } from "../utils/orderFeatureGates";
+import { getFeatureStatus, getNextTierUnlocks } from "../utils/orderFeatureGates";
+import { hasEntitlement } from "../services/entitlements";
+import { normalizeBuyerOrders, filterBuyerOrders } from "../services/buyerOrderView";
 
 /**
  * DisplayName — Resolves a wallet address to a human-readable display name.
@@ -126,9 +129,47 @@ export function CheckoutSummary({
   const [selectedOrder, setSelectedOrder] = useState(null); // { type: "batch" | "shipping", data: ... }
   const [pinInput, setPinInput] = useState("");
   const [trackingInput, setTrackingInput] = useState("");
+
+  // Deep-linkable order detail: ?order=<orderKey> (ship-<tokenId> | batch-<purchaseId>),
+  // the same identity scheme buyerOrderView.assembleBuyerOrderView derives (Task 18).
+  // Mirrors the MarketplaceBoard ?listing= precedent: resolve against the loaded
+  // orders once available, and show a not-found state for an id with no match
+  // instead of crashing or silently doing nothing.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [orderNotFound, setOrderNotFound] = useState(false);
+
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [actionTx, setActionTx] = useState(null);
+
+  const openOrderDetail = (type, order) => {
+    const key = type === "shipping" ? `ship-${order.tokenId}` : `batch-${order.purchaseId}`;
+    const next = new URLSearchParams(searchParams);
+    next.set("order", key);
+    setSearchParams(next);
+    setSelectedOrder({ type, data: order });
+    setOrderNotFound(false);
+  };
+
+  /** Remove the ?order= param without touching other drawer state (used by
+   * action handlers that manage pin/tracking/actionError themselves and just
+   * need the URL to stop pointing at the now-closed drawer — otherwise the
+   * deep-link resolution effect below would re-open it on the next
+   * fetchOrders() refresh). */
+  const clearOrderParam = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("order");
+    setSearchParams(next);
+  };
+
+  const closeOrderDetail = () => {
+    clearOrderParam();
+    setSelectedOrder(null);
+    setOrderNotFound(false);
+    setPinInput("");
+    setTrackingInput("");
+    setActionError(null);
+  };
   
   // Curator state
   const [isCurator, setIsCurator] = useState(false);
@@ -190,6 +231,23 @@ export function CheckoutSummary({
         // Payment-first fry-batch checkout — stage it, don't consume yet.
         const qty = Number(preselectedOrderForCheckout?.meta?.quantity) || 1;
         setPendingBatchCheckout({ listingId: Number(id), quantity: qty });
+      } else if (type === "pending_cart") {
+        // Task 10: the cart hands off its full item list here rather than
+        // checkout gaining any new logic. Splits across the two checkout
+        // lanes that already exist — single-item consolidated checkout
+        // (pendingTokenIds) and the fry-batch checkout panel
+        // (pendingBatchCheckout) — both of which render independently, so a
+        // mixed single+batch cart shows both panels rather than one combined
+        // checkout. No new money/settlement logic; this is pure hand-off.
+        const items = Array.isArray(preselectedOrderForCheckout?.meta?.items) ? preselectedOrderForCheckout.meta.items : [];
+        const singleTokenIds = items.filter((i) => !i.isBatch && i.tokenId != null).map((i) => Number(i.tokenId));
+        const firstBatch = items.find((i) => i.isBatch && i.listingId != null);
+        if (singleTokenIds.length > 0) {
+          setPendingTokenIds((prev) => [...new Set([...prev, ...singleTokenIds])]);
+        }
+        if (firstBatch) {
+          setPendingBatchCheckout({ listingId: Number(firstBatch.listingId), quantity: Number(firstBatch.quantity) || 1 });
+        }
       }
       if (clearPreselectedOrder) {
         clearPreselectedOrder();
@@ -422,6 +480,7 @@ export function CheckoutSummary({
       if (!result.success) throw new Error(result.error || "Label purchase failed");
       setActionTx(result.trackingNumber ? `Label bought — tracking ${result.trackingNumber}` : "Label purchased");
       setSelectedOrder(null);
+      clearOrderParam();
       await fetchOrders();
       pushOrderAfterAction("shipping", o.tokenId);
     } catch (err) {
@@ -651,6 +710,33 @@ export function CheckoutSummary({
     fetchOrders();
   }, [contractAddress, marketplaceAddress, walletAccount]);
 
+  // Deep-link route recovery: resolve ?order=<orderKey> against the loaded
+  // shipping/batch orders once they're available. An id with no match (not
+  // this account's order, wrong id, or not loaded yet) shows the not-found
+  // state rather than crashing or silently doing nothing.
+  useEffect(() => {
+    const orderKeyParam = searchParams.get("order");
+    if (!orderKeyParam) {
+      setOrderNotFound(false);
+      return;
+    }
+    if (loading) return; // still loading — wait for orders to resolve
+    const shipMatch = shippingEscrows.find((o) => `ship-${o.tokenId}` === orderKeyParam);
+    if (shipMatch) {
+      setSelectedOrder({ type: "shipping", data: shipMatch });
+      setOrderNotFound(false);
+      return;
+    }
+    const batchMatch = purchases.find((o) => `batch-${o.purchaseId}` === orderKeyParam);
+    if (batchMatch) {
+      setSelectedOrder({ type: "batch", data: batchMatch });
+      setOrderNotFound(false);
+      return;
+    }
+    setSelectedOrder(null);
+    setOrderNotFound(true);
+  }, [searchParams, shippingEscrows, purchases, loading]);
+
   // Cloud sync: pull orders from Supabase and subscribe to realtime updates
   useEffect(() => {
     if (!walletAccount) return;
@@ -748,6 +834,7 @@ export function CheckoutSummary({
       
       setPinInput("");
       setSelectedOrder(null);
+      clearOrderParam();
       await fetchOrders();
     } catch (err) {
       console.error("PIN release failed:", err);
@@ -771,6 +858,7 @@ export function CheckoutSummary({
 
       setTrackingInput("");
       setSelectedOrder(null);
+      clearOrderParam();
       await fetchOrders();
       pushOrderAfterAction("shipping", selectedOrder.data.tokenId);
     } catch (err) {
@@ -826,6 +914,7 @@ export function CheckoutSummary({
       if (!result.success) throw new Error(result.error || "Release failed");
 
       setSelectedOrder(null);
+      clearOrderParam();
       await fetchOrders();
     } catch (err) {
       console.error("Release shipping failed:", err);
@@ -842,6 +931,7 @@ export function CheckoutSummary({
     setArrivalSpecimen(null);
     setArrivalShippingOrder(null);
     setSelectedOrder(null);
+    clearOrderParam();
     await fetchOrders();
   };
 
@@ -856,6 +946,7 @@ export function CheckoutSummary({
       if (!result.success) throw new Error(result.error || "Dispute failed");
 
       setSelectedOrder(null);
+      clearOrderParam();
       await fetchOrders();
     } catch (err) {
       console.error("Dispute failed:", err);
@@ -877,6 +968,7 @@ export function CheckoutSummary({
       if (!result.success) throw new Error(result.error || "Resolution failed");
 
       setSelectedOrder(null);
+      clearOrderParam();
       await fetchOrders();
     } catch (err) {
       console.error("Resolve dispute failed:", err);
@@ -898,6 +990,7 @@ export function CheckoutSummary({
       if (!result.success) throw new Error(result.error || "Release failed");
 
       setSelectedOrder(null);
+      clearOrderParam();
       await fetchOrders();
     } catch (err) {
       console.error("Release batch failed:", err);
@@ -919,6 +1012,7 @@ export function CheckoutSummary({
       if (!result.success) throw new Error(result.error || "Refund failed");
 
       setSelectedOrder(null);
+      clearOrderParam();
       await fetchOrders();
     } catch (err) {
       console.error("Refund batch failed:", err);
@@ -1642,49 +1736,22 @@ export function CheckoutSummary({
 
       {/* Apply filters to orders */}
       {(() => {
-        // Filter shipping orders
-        let filteredShipping = [...shippingEscrows];
-        let filteredBatches = [...purchases];
-
-        // Status filter
-        if (orderFilter === "active") {
-          filteredShipping = filteredShipping.filter(o => o.status === 0 || o.status === 1);
-          filteredBatches = filteredBatches.filter(o => o.state === 0);
-        } else if (orderFilter === "completed") {
-          filteredShipping = filteredShipping.filter(o => o.status === 2 || o.status === 4);
-          filteredBatches = filteredBatches.filter(o => o.state === 1 || o.state === 2);
-        } else if (orderFilter === "disputed") {
-          filteredShipping = filteredShipping.filter(o => o.status === 3);
-          filteredBatches = []; // Batches don't have disputed state
-        }
-
-        // Search filter
-        if (orderSearch.trim()) {
-          const q = orderSearch.trim().toLowerCase();
-          filteredShipping = filteredShipping.filter(o =>
-            (o.commonName || "").toLowerCase().includes(q) ||
-            (o.trackingNumber || "").toLowerCase().includes(q) ||
-            String(o.tokenId).includes(q)
-          );
-          filteredBatches = filteredBatches.filter(o =>
-            (o.commonName || "").toLowerCase().includes(q) ||
-            String(o.purchaseId).includes(q)
-          );
-        }
-
-        // Sort
-        const getPrice = (o) => parseFloat(o.amountLocked || o.price || "0");
-        const getTime = (o) => o.createdAt || 0;
-        const sortFn = (a, b) => {
-          switch (orderSort) {
-            case "oldest": return getTime(a) - getTime(b);
-            case "price_high": return getPrice(b) - getPrice(a);
-            case "price_low": return getPrice(a) - getPrice(b);
-            default: return getTime(b) - getTime(a); // newest
-          }
-        };
-        filteredShipping.sort(sortFn);
-        filteredBatches.sort(sortFn);
+        // Status/search/sort predicates are delegated to the pure
+        // filterBuyerOrders module (Task 18) so the buyer order list, the
+        // order detail drawer, and OrderTimeline all classify "active" /
+        // "completed" / "disputed" the same way, off the same canonical
+        // states, instead of each re-deriving its own status-int predicates.
+        // Shipping and batch orders are still filtered/sorted as two
+        // independent groups (matching the existing two-section render below);
+        // only the predicate/sort logic itself moves into the shared module.
+        const shippingViews = filterBuyerOrders(normalizeBuyerOrders(shippingEscrows), {
+          status: orderFilter, query: orderSearch, sort: orderSort,
+        });
+        const batchViews = filterBuyerOrders(normalizeBuyerOrders(purchases), {
+          status: orderFilter, query: orderSearch, sort: orderSort,
+        });
+        const filteredShipping = shippingViews.map((v) => v.raw);
+        const filteredBatches = batchViews.map((v) => v.raw);
 
         const totalFiltered = filteredShipping.length + filteredBatches.length;
         const totalAll = shippingEscrows.length + purchases.length;
@@ -1867,7 +1934,7 @@ export function CheckoutSummary({
             <button 
               className="btn-secondary" 
               style={{ width: "100%", marginTop: "0.5rem", padding: "0.4rem" }}
-              onClick={() => setSelectedOrder({ type: "shipping", data: order })}
+              onClick={() => openOrderDetail("shipping", order)}
             >
               Fulfillment Detail
             </button>
@@ -1933,7 +2000,7 @@ export function CheckoutSummary({
             <button 
               className="btn-secondary" 
               style={{ width: "100%", marginTop: "0.5rem", padding: "0.4rem" }}
-              onClick={() => setSelectedOrder({ type: "batch", data: order })}
+              onClick={() => openOrderDetail("batch", order)}
             >
               Fulfillment Detail
             </button>
@@ -1959,7 +2026,7 @@ export function CheckoutSummary({
           <div>
             <h3 style={{ fontSize: "1.1rem", color: "#fff", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span>📊</span> {casualModeActive ? "Your Stats" : "Order Analytics"}
-              {!isFeatureUnlocked(userTier, "ORDER_ANALYTICS") && (
+              {!hasEntitlement("order_analytics", { tier: userTier, xp: totalXp }) && (
                 <span style={{ fontSize: "0.6rem", padding: "0.15rem 0.4rem", borderRadius: "8px", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24" }}>
                   🔒 Pelagic
                 </span>
@@ -1977,7 +2044,7 @@ export function CheckoutSummary({
           <div>
             <h3 style={{ fontSize: "1.1rem", color: "#fff", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span>👁️</span> {casualModeActive ? "Watchlist & Reorder" : "Species Watchlist & Smart Reorder"}
-              {!isFeatureUnlocked(userTier, "SPECIES_WATCHLIST") && (
+              {!hasEntitlement("species_watchlist", { tier: userTier, xp: totalXp }) && (
                 <span style={{ fontSize: "0.6rem", padding: "0.15rem 0.4rem", borderRadius: "8px", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24" }}>
                   🔒 Pelagic
                 </span>
@@ -2036,6 +2103,37 @@ export function CheckoutSummary({
         </div>
       )}
 
+      {/* ?order= deep link pointed at an id with no match — not-found overlay */}
+      {orderNotFound && !selectedOrder && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0, 0, 0, 0.75)", backdropFilter: "blur(8px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 1000, padding: "1rem",
+        }}>
+          <div className="glass-card" style={{
+            width: "100%", maxWidth: "420px", padding: "2rem",
+            background: "var(--bg-secondary)", border: "1px solid var(--glass-border-hover)",
+            textAlign: "center", position: "relative",
+          }}>
+            <button
+              onClick={closeOrderDetail}
+              aria-label="Close"
+              style={{ position: "absolute", top: "1rem", right: "1.25rem", background: "none", border: "none", color: "var(--text-muted)", fontSize: "1.25rem", cursor: "pointer" }}
+            >
+              &times;
+            </button>
+            <div style={{ fontSize: "2rem", marginBottom: "0.75rem", opacity: 0.6 }}>🔍</div>
+            <h3 style={{ color: "#fff", fontSize: "1.1rem", marginBottom: "0.4rem" }}>Order not found</h3>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: 0 }}>
+              {casualModeActive
+                ? "We couldn't find that order. It may belong to a different account, or the link may be out of date."
+                : "No matching order for this account. The link may reference a different account or an outdated identifier."}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Selected Order Detail Drawer / Overlay */}
       {selectedOrder && (
         <div style={{
@@ -2061,12 +2159,8 @@ export function CheckoutSummary({
             position: "relative"
           }}>
             <button 
-              onClick={() => {
-                setSelectedOrder(null);
-                setPinInput("");
-                setTrackingInput("");
-                setActionError(null);
-              }}
+              onClick={closeOrderDetail}
+              aria-label="Close order detail"
               style={{ position: "absolute", top: "1rem", right: "1.25rem", background: "none", border: "none", color: "var(--text-muted)", fontSize: "1.25rem", cursor: "pointer" }}
             >
               &times;

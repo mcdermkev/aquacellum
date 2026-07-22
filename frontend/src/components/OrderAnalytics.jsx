@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { fetchSellerAnalytics, fetchBuyerAnalytics, fetchOrderHistory } from "../services/ordersSync";
-import { isFeatureUnlocked, getNextTierUnlocks, ORDER_FEATURES } from "../utils/orderFeatureGates";
+import { getNextTierUnlocks, ORDER_FEATURES } from "../utils/orderFeatureGates";
+import { hasEntitlement } from "../services/entitlements";
 import { db } from "../db";
 
 /**
@@ -25,8 +26,11 @@ export function OrderAnalytics({ walletAccount, userTier, totalXp, casualModeAct
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview"); // "overview" | "selling" | "buying"
 
-  const analyticsUnlocked = isFeatureUnlocked(userTier, "ORDER_ANALYTICS");
-  const csvUnlocked = isFeatureUnlocked(userTier, "CSV_EXPORT");
+  // Gating sourced from the centralized entitlement map (Task 6/18) rather
+  // than the legacy per-component isFeatureUnlocked check; ORDER_FEATURES is
+  // kept for its copy/icon/progress-bar metadata below. Same tiers (Pelagic).
+  const analyticsUnlocked = hasEntitlement("order_analytics", { tier: userTier, xp: totalXp });
+  const csvUnlocked = hasEntitlement("csv_export", { tier: userTier, xp: totalXp });
 
   useEffect(() => {
     if (!walletAccount || !analyticsUnlocked) {

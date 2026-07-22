@@ -25,21 +25,28 @@
 // "released" and "resolved_released" both count as PROTECTED→AVAILABLE-ish
 // buckets here, not by canonical state).
 
-const PROTECTED_STATUSES = Object.freeze(["locked", "dispatched"]);
-const AVAILABLE_STATUSES = Object.freeze(["released", "resolved_released", "completed", "settled"]);
-const FROZEN_STATUSES = Object.freeze(["disputed"]);
-const EXCLUDED_STATUSES = Object.freeze(["pending", "failed", "refunded"]);
+// Exported (not just module-local) so other seller surfaces — notably
+// sellerOrderView.js's per-order payout chip (Task 19) — can derive the exact
+// same protected/available/frozen bucket for a single order without forking
+// this mapping. This is the reviewed money surface; import it, don't re-list
+// the status strings elsewhere.
+export const PROTECTED_STATUSES = Object.freeze(["locked", "dispatched"]);
+export const AVAILABLE_STATUSES = Object.freeze(["released", "resolved_released", "completed", "settled"]);
+export const FROZEN_STATUSES = Object.freeze(["disputed"]);
+export const EXCLUDED_STATUSES = Object.freeze(["pending", "failed", "refunded"]);
 
 const DEFAULT_LOW_STOCK_THRESHOLD = 2;
 
 /**
  * Per-order seller proceeds in cents: subtotal minus platform fee when both
  * are present, else the full total paid (legacy rows that predate itemized
- * fee columns).
+ * fee columns). Exported so per-order surfaces (sellerOrderView.js) compute
+ * proceeds identically to this dashboard aggregation rather than forking the
+ * formula.
  * @param {Object} order
  * @returns {number}
  */
-function sellerProceedsCents(order = {}) {
+export function sellerProceedsCents(order = {}) {
   const subtotal = order.subtotal_cents;
   const platformFee = order.platform_fee_cents;
   if (Number.isFinite(subtotal) && Number.isFinite(platformFee)) {
@@ -179,6 +186,22 @@ function buildEarnings(orders) {
   }
 
   return { protectedCents, availableCents, frozenCents };
+}
+
+/**
+ * Resolve the protected/available/frozen/none bucket for a single legacy
+ * order status string — the same classification buildEarnings applies when
+ * summing across many orders. Exported for per-order payout chips
+ * (sellerOrderView.js) so a single order's bucket always agrees with what
+ * the dashboard would put it in.
+ * @param {string} status - a legacy `orders.status` value
+ * @returns {'protected'|'available'|'frozen'|'none'}
+ */
+export function sellerPayoutBucket(status) {
+  if (PROTECTED_STATUSES.includes(status)) return "protected";
+  if (AVAILABLE_STATUSES.includes(status)) return "available";
+  if (FROZEN_STATUSES.includes(status)) return "frozen";
+  return "none";
 }
 
 // ─── lowStock (§3) ───────────────────────────────────────────────────────────

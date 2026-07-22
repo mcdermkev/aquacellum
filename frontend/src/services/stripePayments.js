@@ -337,6 +337,65 @@ export async function disputeFiatOrder({ tokenId, sessionId, paymentIntentId, re
 }
 
 /**
+ * Open a dead-on-arrival (DOA) claim on a delivered order via the canonical
+ * claim workflow (Task 17/18). This is the flagged, additive counterpart to
+ * `disputeFiatOrder` — it calls `POST /api/stripe?action=doa-open`, which only
+ * succeeds once a canonical order exists for this payment AND has reached a
+ * claim-eligible state (delivered / review_window / non_delivery). That
+ * precondition depends on the Task 16 delivery-event plumbing (advancing
+ * canonical orders to `delivered`), which is not wired yet as of this task —
+ * so today this will typically fail with "order not found" or a state error,
+ * and callers MUST fall back to `disputeFiatOrder` (see ArrivalModal). Once
+ * Task 16 lands, this becomes the primary buyer-facing claim path with no
+ * caller changes needed here.
+ *
+ * Authorization mirrors `releaseFiatOrder`/`disputeFiatOrder`: sends the
+ * logged-in Privy session token as a Bearer. The server confirms the caller
+ * is the order's buyer.
+ *
+ * @param {Object} params
+ * @param {string} [params.orderId] - canonical order id, if already known
+ * @param {string} [params.paymentIntentId] - Stripe PaymentIntent id
+ * @param {string} [params.sessionId] - Stripe Checkout Session id
+ * @param {string[]} params.affectedLineItemIds - canonical line item ids being claimed
+ * @param {{ photos?: string[], description?: string }} params.evidence
+ * @param {string} [params.claimId]
+ * @returns {Promise<{success: boolean, claim?: Object, error?: string}>}
+ */
+export async function openDoaClaim({ orderId, paymentIntentId, sessionId, affectedLineItemIds, evidence, claimId } = {}) {
+  try {
+    if (!orderId && !paymentIntentId && !sessionId) {
+      return { success: false, error: "Missing order reference (orderId, sessionId, or paymentIntentId)" };
+    }
+    if (!Array.isArray(affectedLineItemIds) || affectedLineItemIds.length === 0) {
+      return { success: false, error: "No affected items specified" };
+    }
+
+    const token = await getSessionToken();
+    if (!token) {
+      return { success: false, error: "Please sign in again to report a problem with this order." };
+    }
+
+    const response = await fetch(`${API_BASE}/stripe?action=doa-open`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ orderId, paymentIntentId, sessionId, affectedLineItemIds, evidence, claimId }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, error: data.error || `Could not open claim (${response.status})` };
+    }
+    return { success: data.success !== false, claim: data.claim };
+  } catch (err) {
+    console.error("[StripePayments] openDoaClaim failed:", err);
+    return { success: false, error: err.message || "Network error opening claim" };
+  }
+}
+
+/**
  * Core checkout creator. Calls the backend, gets a Stripe Checkout URL,
  * and optionally redirects the user or returns the URL.
  *

@@ -1,24 +1,34 @@
 /**
  * BreederTerminal.jsx
  *
- * Breeder Terminal shell — Task 9, Increment 1 (Tier B). One seller
- * workspace: a dashboard home (the six cards from breederDashboard.js §3)
- * above the fold, plus section navigation that mounts the seller surfaces
- * that already exist. This component is intentionally thin — all
- * aggregation logic lives in the pure, tested `buildBreederDashboard`; this
- * file only fetches data, composes existing components, and renders.
+ * Breeder Terminal shell — Task 9, Increment 1 (Tier B), with the Task 19
+ * seller fulfillment queue in the Orders section. One seller workspace: a
+ * dashboard home (the six cards from breederDashboard.js §3) above the fold,
+ * plus section navigation that mounts the seller surfaces that already
+ * exist. This component is intentionally thin — all aggregation/decision
+ * logic lives in the pure, tested `buildBreederDashboard` and
+ * `sellerOrderView` modules; this file only fetches data, composes existing
+ * components/services, and renders.
  *
- * Reused, not rebuilt (per docs/TASK_09_BREEDER_TERMINAL_SPEC.md §2/§6):
- *   - fetchSellerOrders / fetchSellerAnalytics (ordersSync.js)
+ * Reused, not rebuilt (per docs/TASK_09_BREEDER_TERMINAL_SPEC.md §2/§6 and
+ * docs/TASK_19_SELLER_OPS_SPEC.md §1/§3):
+ *   - fetchSellerOrders / fetchSellerAnalytics (ordersSync.js) — dashboard aggregation
+ *   - relayGetOrders (relayer.js) — the seller's local-first order queue (Orders section)
  *   - checkSellerStatus / getSellerDashboardLink / startSellerOnboarding (stripePayments.js)
+ *   - buyShippingLabel (shipping.js), relayDispatchShipping / relaySettleHandshake /
+ *     relayResolveShippingDispute / relayUpdateBatchOrder (relayer.js) — fulfillment actions
+ *   - assembleSellerOrderView / normalizeSellerOrders / filterSellerOrders (sellerOrderView.js)
+ *   - HandshakeVerification (breeder/scan role) for pickup + cash handoffs
  *   - SellerAnalytics, StorefrontSetup, ShipFromSetup, ListSpecimenModal, Modal
  *   - useMarketplaceListings, filtered to this seller
- *   - hasEntitlement for gating convenience-only surfaces
+ *   - hasEntitlement for gating convenience-only surfaces (bulk_management only)
  *
- * Out of scope for this increment (see spec §1): Spec-Dex/Poseidon listing
- * helpers, the parcel-preset editor, lineage/pedigree tools, bulk operations,
- * and deep analytics beyond what SellerAnalytics already renders. No
- * listing/order writes happen here beyond launching ListSpecimenModal.
+ * Out of scope for this increment (see spec §1 / §5): Spec-Dex/Poseidon listing
+ * helpers, the parcel-preset editor, lineage/pedigree tools, deep analytics
+ * beyond what SellerAnalytics already renders, a new seller claim-resolution
+ * write path (curator-only `doa-resolve` stays the resolution surface), and
+ * the local-courier request UI beyond a "coming soon" affordance (the Task 12
+ * adapter isn't wired to a request action yet).
  */
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -33,6 +43,9 @@ import {
   Warning,
   CheckCircle,
   ArrowSquareOut,
+  MagnifyingGlass,
+  ChatCircleDots,
+  ClockCounterClockwise,
 } from "@phosphor-icons/react";
 import { fetchSellerOrders } from "../../services/ordersSync";
 import { checkSellerStatus, startSellerOnboarding, getSellerDashboardLink } from "../../services/stripePayments";
@@ -46,6 +59,12 @@ import { SellerAnalytics } from "../storefront/SellerAnalytics";
 import { StorefrontSetup } from "../StorefrontSetup";
 import { ShipFromSetup } from "../ShipFromSetup";
 import { ListSpecimenModal } from "../ListSpecimenModal";
+import { HandshakeVerification } from "../HandshakeVerification";
+import { relayGetOrders, relayDispatchShipping } from "../../services/relayer";
+import { buyShippingLabel } from "../../services/shipping";
+import { normalizeSellerOrders, filterSellerOrders } from "../../services/sellerOrderView";
+import { SELLER_ACTION_KIND } from "../../services/orderCopy";
+import { getOrCreateConversation } from "../../services/messagesApi";
 
 const LAST_VISIT_STORAGE_KEY = "aquadex_breeder_last_visit";
 
@@ -95,6 +114,45 @@ export function BreederTerminal({ walletAccount, casualModeActive = false }) {
   const [dashboardLinkBusy, setDashboardLinkBusy] = useState(false);
   const [isListModalOpen, setIsListModalOpen] = useState(false);
   const [existingStorefrontProfile, setExistingStorefrontProfile] = useState(null);
+
+  // ─── Task 19: the seller fulfillment queue's own order source ────────────
+  // The dashboard's six cards aggregate from the CLOUD `orders` table
+  // (fetchSellerOrders, above) — left untouched. The fulfillment queue below
+  // needs to call the existing per-order relayer actions (relayDispatchShipping,
+  // relaySettleHandshake, relayUpdateBatchOrder), which operate on the
+  // LOCAL-FIRST Dexie `marketOrders` shape, so the queue is sourced from
+  // relayGetOrders (the same source CheckoutSummary's seller drawer reads),
+  // filtered to this account's seller-role orders.
+  const [localSellerOrders, setLocalSellerOrders] = useState([]);
+  const [localOrdersLoading, setLocalOrdersLoading] = useState(true);
+  const [ordersFulfillmentFilter, setOrdersFulfillmentFilter] = useState("all");
+  const [ordersStatusFilter, setOrdersStatusFilter] = useState("needs_action");
+  const [ordersQuery, setOrdersQuery] = useState("");
+  const [ordersActionError, setOrdersActionError] = useState(null);
+  const [labelBuyingId, setLabelBuyingId] = useState(null);
+  const [manualTrackingOrderId, setManualTrackingOrderId] = useState(null);
+  const [manualTrackingInput, setManualTrackingInput] = useState("");
+  const [handshakeModalView, setHandshakeModalView] = useState(null); // the view whose scan/cash modal is open
+  const [conversationBusyId, setConversationBusyId] = useState(null);
+  const [selectedOrderIds, setSelectedOrderIds] = useState(() => new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [expandedCustomerId, setExpandedCustomerId] = useState(null);
+
+  const fetchLocalSellerOrders = async (account) => {
+    if (!account) { setLocalOrdersLoading(false); return; }
+    setLocalOrdersLoading(true);
+    try {
+      const { shippingEscrows, purchases } = await relayGetOrders(account);
+      const sellerOnly = [...shippingEscrows, ...purchases].filter((o) => o.role === "Seller");
+      setLocalSellerOrders(sellerOnly);
+    } finally {
+      setLocalOrdersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLocalSellerOrders(walletAccount);
+  }, [walletAccount]);
 
   // `lastVisitAt` is read once on mount (the value the dashboard should
   // compare against for "new since last time"), then immediately bumped to
@@ -162,10 +220,143 @@ export function BreederTerminal({ walletAccount, casualModeActive = false }) {
   );
 
   const xp = useMemo(() => getXp(), []);
-  // Convenience-only surfaces are the ones gated; the six dashboard cards and
-  // every core seller operation (orders, listings, store, shipping, payouts)
-  // are never gated, per spec §4.
+  // Convenience-only surfaces are the ones gated; the six dashboard cards,
+  // every core seller operation (orders, listings, store, shipping, payouts),
+  // and every single-order fulfillment action are never gated, per spec §4 /
+  // Task 19 spec §3. Only multi-select bulk actions are XP-gated (Abyssal+).
   const canExportAdvancedAnalytics = hasEntitlement("csv_export", { xp });
+  const canBulkManage = hasEntitlement("bulk_management", { xp });
+
+  // Task 19: pure normalize+filter pass over the local-first seller orders.
+  const sellerViews = useMemo(() => normalizeSellerOrders(localSellerOrders, { casual: casualModeActive }), [localSellerOrders, casualModeActive]);
+  const filteredSellerViews = useMemo(
+    () => filterSellerOrders(sellerViews, { fulfillment: ordersFulfillmentFilter, status: ordersStatusFilter, query: ordersQuery }),
+    [sellerViews, ordersFulfillmentFilter, ordersStatusFilter, ordersQuery]
+  );
+
+  // Home dashboard cards deep-link into the Orders section with a matching
+  // filter preset (spec §3's "Pending Actions -> Needs action" example).
+  const navigateToOrders = (statusPreset = "needs_action") => {
+    setOrdersStatusFilter(statusPreset);
+    setOrdersFulfillmentFilter("all");
+    setActiveSection(SECTIONS.ORDERS);
+  };
+
+  const refreshLocalOrders = () => fetchLocalSellerOrders(walletAccount);
+
+  // ─── Task 19 fulfillment actions — call the existing verified services; ──
+  // never re-implement money/ownership/settlement logic here.
+
+  const handleBuyLabel = async (view) => {
+    const o = view.raw;
+    setLabelBuyingId(view.id);
+    setOrdersActionError(null);
+    try {
+      const result = await buyShippingLabel({
+        sellerWallet: walletAccount,
+        tokenId: Number(o.tokenId),
+        serviceCode: o.shipServiceCode || undefined,
+        carrierId: o.shipCarrierId || undefined,
+        shipTo: o.shipTo || undefined,
+        paymentIntentId: o.paymentIntentId || undefined,
+      });
+      if (!result.success) throw new Error(result.error || "Label purchase failed");
+      await refreshLocalOrders();
+    } catch (err) {
+      setOrdersActionError(err.message || "Could not buy the shipping label.");
+    } finally {
+      setLabelBuyingId(null);
+    }
+  };
+
+  const handleMarkDispatchedManually = async (view) => {
+    if (!manualTrackingInput) return;
+    setOrdersActionError(null);
+    try {
+      const result = await relayDispatchShipping(view.raw.tokenId, manualTrackingInput);
+      if (!result.success) throw new Error(result.error || "Dispatch failed");
+      setManualTrackingOrderId(null);
+      setManualTrackingInput("");
+      await refreshLocalOrders();
+    } catch (err) {
+      setOrdersActionError(err.message || "Could not mark this order dispatched.");
+    }
+  };
+
+  // scan_handoff / confirm_cash both settle through the same verified
+  // handshake path (composed via HandshakeVerification's breeder/scan role,
+  // which owns its own PIN/salt/scan state) — the difference is only which
+  // confirmation copy is shown before the scan (spec §3's cash
+  // no-DOA-protection reminder).
+  const handleHandoffSettled = async () => {
+    setHandshakeModalView(null);
+    await refreshLocalOrders();
+  };
+
+  const handleRespondToClaim = async (view) => {
+    // Surface + route, not resolve (spec §2.3): open the existing customer
+    // communication channel so the seller can respond to the buyer directly.
+    // Curator-only `?action=doa-resolve` remains the resolution path.
+    await handleMessageCustomer(view);
+  };
+
+  const handleMessageCustomer = async (view) => {
+    const buyerWallet = view.raw?.buyer;
+    if (!buyerWallet) return;
+    setConversationBusyId(view.id);
+    try {
+      const { data } = await getOrCreateConversation(buyerWallet);
+      if (data?.id) {
+        window.dispatchEvent(new CustomEvent("aquadex_open_conversation", {
+          detail: { conversationId: data.id, targetWallet: buyerWallet },
+        }));
+      }
+    } finally {
+      setConversationBusyId(null);
+    }
+  };
+
+  // NOTE (Opus review gate, Task 19): there is deliberately no seller-initiated
+  // refund/cancel action here. Issuing money back to a buyer is an
+  // administrative action restricted to the curator / trusted backend
+  // (api/stripe.js handleRefund -> authorizeAdminOrCurator; it also returns the
+  // held on-chain asset via refundFiatBatchEscrow). A seller who cannot fulfill
+  // uses "Message" to reach the buyer, and the buyer's dispute (?action=dispute)
+  // is resolved by a curator through the authorized refund path. A local
+  // relayUpdateBatchOrder(state:2) flip would mark an order "refunded" without
+  // returning any money or asset and without authorization, so it is not
+  // surfaced. A proper seller-requested cancellation that triggers an
+  // authorized refund is a separate Tier A feature if the product wants it.
+
+  const toggleOrderSelected = (id) => {
+    setSelectedOrderIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  // Bulk buy-labels / bulk mark-dispatched — XP-gated (Abyssal+ bulk_management).
+  // Every call still goes through the same single-order services above; bulk
+  // only fans the same action out over the current selection.
+  const handleBulkBuyLabels = async () => {
+    if (!canBulkManage || bulkBusy) return;
+    setBulkBusy(true);
+    setOrdersActionError(null);
+    try {
+      const targets = filteredSellerViews.filter(
+        (v) => selectedOrderIds.has(v.id) && v.sellerNextAction.kind === SELLER_ACTION_KIND.BUY_LABEL
+      );
+      // Sequential (not Promise.all) to avoid racing carrier label purchases
+      // for the same seller/account.
+      for (const view of targets) {
+        await handleBuyLabel(view);
+      }
+      setSelectedOrderIds(new Set());
+    } finally {
+      setBulkBusy(false);
+    }
+  };
 
   const handleStartOnboarding = async () => {
     if (!walletAccount || onboardingBusy) return;
@@ -267,13 +458,47 @@ export function BreederTerminal({ walletAccount, casualModeActive = false }) {
           sellerStatus={sellerStatus}
           casualModeActive={casualModeActive}
           onNavigate={setActiveSection}
+          onNavigateToOrders={navigateToOrders}
           onStartOnboarding={handleStartOnboarding}
           onboardingBusy={onboardingBusy}
         />
       )}
 
       {activeSection === SECTIONS.ORDERS && (
-        <OrdersSection orders={orders} loading={ordersLoading} />
+        <OrdersSection
+          views={filteredSellerViews}
+          totalCount={sellerViews.length}
+          loading={localOrdersLoading}
+          casualModeActive={casualModeActive}
+          fulfillmentFilter={ordersFulfillmentFilter}
+          onFulfillmentFilterChange={setOrdersFulfillmentFilter}
+          statusFilter={ordersStatusFilter}
+          onStatusFilterChange={setOrdersStatusFilter}
+          query={ordersQuery}
+          onQueryChange={setOrdersQuery}
+          actionError={ordersActionError}
+          onDismissError={() => setOrdersActionError(null)}
+          labelBuyingId={labelBuyingId}
+          onBuyLabel={handleBuyLabel}
+          manualTrackingOrderId={manualTrackingOrderId}
+          onOpenManualTracking={(id) => { setManualTrackingOrderId(id); setManualTrackingInput(""); }}
+          onCancelManualTracking={() => { setManualTrackingOrderId(null); setManualTrackingInput(""); }}
+          manualTrackingInput={manualTrackingInput}
+          onManualTrackingInputChange={setManualTrackingInput}
+          onMarkDispatchedManually={handleMarkDispatchedManually}
+          onOpenHandoffScan={setHandshakeModalView}
+          onRespondToClaim={handleRespondToClaim}
+          onMessageCustomer={handleMessageCustomer}
+          conversationBusyId={conversationBusyId}
+          canBulkManage={canBulkManage}
+          selectedOrderIds={selectedOrderIds}
+          onToggleSelected={toggleOrderSelected}
+          onBulkBuyLabels={handleBulkBuyLabels}
+          bulkBusy={bulkBusy}
+          expandedCustomerId={expandedCustomerId}
+          onToggleCustomerHistory={setExpandedCustomerId}
+          allSellerOrders={localSellerOrders}
+        />
       )}
 
       {activeSection === SECTIONS.LISTINGS && (
@@ -328,13 +553,28 @@ export function BreederTerminal({ walletAccount, casualModeActive = false }) {
         walletAccount={walletAccount}
         onSuccess={() => setIsListModalOpen(false)}
       />
+
+      {/* Task 19: pickup + cash handoff scanning composes the existing
+          breeder-scan role of HandshakeVerification — not a new scanner. */}
+      {handshakeModalView && (
+        <HandshakeVerification
+          isOpen={!!handshakeModalView}
+          onClose={() => setHandshakeModalView(null)}
+          listing={{}}
+          quantity={handshakeModalView.raw?.quantity || 1}
+          marketplaceAddress={MARKETPLACE_ADDRESS}
+          walletAccount={walletAccount}
+          defaultRole="breeder"
+          onSuccess={handleHandoffSettled}
+        />
+      )}
     </div>
   );
 }
 
 // ─── Dashboard home — the six cards (§3/§4) ─────────────────────────────────
 
-function DashboardHome({ dashboard, ordersLoading, sellerStatus, casualModeActive, onNavigate, onStartOnboarding, onboardingBusy }) {
+function DashboardHome({ dashboard, ordersLoading, sellerStatus, casualModeActive, onNavigate, onNavigateToOrders, onStartOnboarding, onboardingBusy }) {
   const { newOrders, pendingActions, earnings, lowStock, openClaims } = dashboard;
   const totalPending = pendingActions.toDispatch.count + pendingActions.toHandoff.count + pendingActions.cashMeets.count;
   const onboardingComplete = !!sellerStatus?.onboardingComplete;
@@ -374,7 +614,7 @@ function DashboardHome({ dashboard, ordersLoading, sellerStatus, casualModeActiv
             ? Object.entries(newOrders.byType).map(([type, count]) => `${count} ${type}`).join(", ")
             : "Since your last visit"
         }
-        onClick={() => onNavigate(SECTIONS.ORDERS)}
+        onClick={() => onNavigateToOrders("needs_action")}
       />
 
       <DashboardCard
@@ -382,7 +622,7 @@ function DashboardHome({ dashboard, ordersLoading, sellerStatus, casualModeActiv
         title="Pending Actions"
         value={ordersLoading ? "…" : String(totalPending)}
         subtitle={`${pendingActions.toDispatch.count} to dispatch · ${pendingActions.toHandoff.count} to hand off · ${pendingActions.cashMeets.count} cash meets`}
-        onClick={() => onNavigate(SECTIONS.ORDERS)}
+        onClick={() => onNavigateToOrders("needs_action")}
       />
 
       <DashboardCard
@@ -406,7 +646,7 @@ function DashboardHome({ dashboard, ordersLoading, sellerStatus, casualModeActiv
         title="Open Claims"
         value={ordersLoading ? "…" : String(openClaims.count)}
         subtitle={openClaims.count > 0 ? "Needs your attention" : "No disputes open"}
-        onClick={() => onNavigate(SECTIONS.ORDERS)}
+        onClick={() => onNavigateToOrders("claims")}
         alert={openClaims.count > 0}
       />
 
@@ -452,42 +692,484 @@ function DashboardCard({ icon, title, value, subtitle, onClick, alert = false })
   );
 }
 
-// ─── Orders section (seller-scoped list from fetchSellerOrders) ────────────
+// ─── Orders section — the Task 19 fulfillment queue ─────────────────────────
+//
+// Sourced from relayGetOrders (local-first, seller-role), normalized through
+// sellerOrderView.js. Filters + per-order actions compose the existing
+// verified services (buyShippingLabel, relayDispatchShipping,
+// relaySettleHandshake via HandshakeVerification, relayUpdateBatchOrder) —
+// nothing here re-implements money/ownership/settlement.
 
-function OrdersSection({ orders, loading }) {
+const FULFILLMENT_TABS = [
+  { key: "all", label: "All" },
+  { key: "shipping", label: "Shipping" },
+  { key: "courier", label: "Courier" },
+  { key: "prepaid_pickup", label: "Prepaid pickup" },
+  { key: "cash_pickup", label: "Cash pickup" },
+];
+
+const STATUS_TABS = [
+  { key: "needs_action", label: "Needs action" },
+  { key: "in_progress", label: "In progress" },
+  { key: "completed", label: "Completed" },
+  { key: "claims", label: "Claims" },
+  { key: "all", label: "All" },
+];
+
+const PAYOUT_CHIP_STYLE = {
+  protected: { bg: "rgba(56, 189, 248, 0.1)", border: "rgba(56, 189, 248, 0.3)", color: "#7dd3fc", label: "Protected" },
+  available: { bg: "rgba(52, 211, 153, 0.1)", border: "rgba(52, 211, 153, 0.3)", color: "#34d399", label: "Available" },
+  frozen: { bg: "rgba(248, 113, 113, 0.1)", border: "rgba(248, 113, 113, 0.3)", color: "#f87171", label: "Frozen" },
+  none: { bg: "rgba(255,255,255,0.03)", border: "rgba(255,255,255,0.08)", color: "var(--text-muted)", label: "—" },
+};
+
+function OrdersSection({
+  views,
+  totalCount,
+  loading,
+  casualModeActive,
+  fulfillmentFilter,
+  onFulfillmentFilterChange,
+  statusFilter,
+  onStatusFilterChange,
+  query,
+  onQueryChange,
+  actionError,
+  onDismissError,
+  labelBuyingId,
+  onBuyLabel,
+  manualTrackingOrderId,
+  onOpenManualTracking,
+  onCancelManualTracking,
+  manualTrackingInput,
+  onManualTrackingInputChange,
+  onMarkDispatchedManually,
+  onOpenHandoffScan,
+  onRespondToClaim,
+  onMessageCustomer,
+  conversationBusyId,
+  canBulkManage,
+  selectedOrderIds,
+  onToggleSelected,
+  onBulkBuyLabels,
+  bulkBusy,
+  expandedCustomerId,
+  onToggleCustomerHistory,
+  allSellerOrders,
+}) {
   if (loading) {
-    return <div className="shimmer-placeholder" style={{ height: "200px", borderRadius: "12px" }} />;
+    return <div className="shimmer-placeholder" style={{ height: "240px", borderRadius: "12px" }} />;
   }
-  if (orders.length === 0) {
-    return (
-      <div className="glass-card" style={{ padding: "2.5rem", textAlign: "center" }}>
-        <p style={{ color: "var(--text-muted)" }}>No orders yet.</p>
-      </div>
-    );
-  }
+
+  const selectedBuyLabelCount = views.filter(
+    (v) => selectedOrderIds.has(v.id) && v.sellerNextAction.kind === SELLER_ACTION_KIND.BUY_LABEL
+  ).length;
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-      {orders.map((order, idx) => (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      {actionError && (
         <div
-          key={order.id ?? order.stripe_session_id ?? idx}
           className="glass-card"
-          style={{ padding: "0.9rem 1.1rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}
+          style={{
+            padding: "0.75rem 1rem",
+            border: "1px solid rgba(248, 113, 113, 0.3)",
+            background: "rgba(248, 113, 113, 0.05)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "1rem",
+          }}
         >
-          <div>
-            <strong style={{ color: "#fff", fontSize: "0.85rem" }}>
-              {(Array.isArray(order.items) ? order.items[0]?.commonName : null) || order.order_type || "Order"}
-            </strong>
-            <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
-              {order.created_at ? new Date(order.created_at).toLocaleDateString() : "—"} · {order.status}
-            </div>
-          </div>
-          <strong style={{ color: "var(--accent-green)", fontFamily: "monospace" }}>
-            {formatPriceCents(order.total_paid_cents || 0)}
-          </strong>
+          <span style={{ color: "var(--accent-red, #f87171)", fontSize: "0.8rem" }}>{actionError}</span>
+          <button type="button" className="btn-secondary" style={{ padding: "0.25rem 0.6rem", fontSize: "0.7rem", flexShrink: 0 }} onClick={onDismissError}>
+            Dismiss
+          </button>
         </div>
-      ))}
+      )}
+
+      {/* Fulfillment-type tabs */}
+      <div style={{ display: "flex", gap: "0.4rem", overflowX: "auto", WebkitOverflowScrolling: "touch" }} role="tablist" aria-label="Fulfillment type">
+        {FULFILLMENT_TABS.map((tab) => {
+          const isActive = fulfillmentFilter === tab.key;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => onFulfillmentFilterChange(tab.key)}
+              style={{
+                padding: "0.4rem 0.85rem",
+                minHeight: "36px",
+                fontSize: "0.72rem",
+                fontWeight: isActive ? 700 : 500,
+                background: isActive ? "rgba(167, 139, 250, 0.12)" : "rgba(255,255,255,0.02)",
+                border: isActive ? "1px solid rgba(167, 139, 250, 0.4)" : "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "20px",
+                color: isActive ? "#a78bfa" : "var(--text-secondary)",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Status filter tabs */}
+      <div style={{ display: "flex", gap: "0.4rem", overflowX: "auto", WebkitOverflowScrolling: "touch" }} role="tablist" aria-label="Order status">
+        {STATUS_TABS.map((tab) => {
+          const isActive = statusFilter === tab.key;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => onStatusFilterChange(tab.key)}
+              style={{
+                padding: "0.4rem 0.85rem",
+                minHeight: "36px",
+                fontSize: "0.72rem",
+                fontWeight: isActive ? 700 : 500,
+                background: isActive ? "rgba(56, 189, 248, 0.1)" : "rgba(255,255,255,0.02)",
+                border: isActive ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "20px",
+                color: isActive ? "var(--accent-blue)" : "var(--text-secondary)",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Search */}
+      <div style={{ position: "relative" }}>
+        <MagnifyingGlass size={14} style={{ position: "absolute", left: "0.65rem", top: "50%", transform: "translateY(-50%)", opacity: 0.5, color: "var(--text-muted)" }} />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          placeholder="Search by species, customer, or tracking #..."
+          style={{
+            width: "100%",
+            padding: "0.55rem 0.75rem 0.55rem 2rem",
+            background: "rgba(255, 255, 255, 0.03)",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            borderRadius: "8px",
+            color: "#fff",
+            fontSize: "0.8rem",
+            minHeight: "40px",
+          }}
+        />
+      </div>
+
+      {/* Bulk actions bar — XP-gated (Abyssal+ bulk_management). Single-order
+          actions below are never gated (spec §3/§4 criterion 8). */}
+      {canBulkManage && selectedOrderIds.size > 0 && (
+        <div
+          className="glass-card"
+          style={{ padding: "0.65rem 0.9rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", border: "1px solid rgba(167, 139, 250, 0.3)" }}
+        >
+          <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+            {selectedOrderIds.size} selected
+          </span>
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={selectedBuyLabelCount === 0 || bulkBusy}
+            onClick={onBulkBuyLabels}
+            style={{ minHeight: "36px", padding: "0.4rem 0.9rem", fontSize: "0.75rem" }}
+          >
+            {bulkBusy ? "Buying labels…" : `Bulk buy labels (${selectedBuyLabelCount})`}
+          </button>
+        </div>
+      )}
+
+      {views.length === 0 ? (
+        <div className="glass-card" style={{ padding: "2.5rem", textAlign: "center" }}>
+          <p style={{ color: "var(--text-muted)" }}>
+            {totalCount === 0
+              ? (casualModeActive ? "No orders yet." : "No orders yet.")
+              : "No orders match these filters."}
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+          {views.map((view) => (
+            <SellerOrderRow
+              key={view.id}
+              view={view}
+              casualModeActive={casualModeActive}
+              labelBuying={labelBuyingId === view.id}
+              onBuyLabel={() => onBuyLabel(view)}
+              manualTrackingOpen={manualTrackingOrderId === view.id}
+              onOpenManualTracking={() => onOpenManualTracking(view.id)}
+              onCancelManualTracking={onCancelManualTracking}
+              manualTrackingInput={manualTrackingInput}
+              onManualTrackingInputChange={onManualTrackingInputChange}
+              onMarkDispatchedManually={() => onMarkDispatchedManually(view)}
+              onOpenHandoffScan={() => onOpenHandoffScan(view)}
+              onRespondToClaim={() => onRespondToClaim(view)}
+              onMessageCustomer={() => onMessageCustomer(view)}
+              conversationBusy={conversationBusyId === view.id}
+              canBulkManage={canBulkManage}
+              selected={selectedOrderIds.has(view.id)}
+              onToggleSelected={() => onToggleSelected(view.id)}
+              customerHistoryOpen={expandedCustomerId === view.id}
+              onToggleCustomerHistory={() => onToggleCustomerHistory(expandedCustomerId === view.id ? null : view.id)}
+              allSellerOrders={allSellerOrders}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
+}
+
+function SellerOrderRow({
+  view,
+  casualModeActive,
+  labelBuying,
+  onBuyLabel,
+  manualTrackingOpen,
+  onOpenManualTracking,
+  onCancelManualTracking,
+  manualTrackingInput,
+  onManualTrackingInputChange,
+  onMarkDispatchedManually,
+  onOpenHandoffScan,
+  onRespondToClaim,
+  onMessageCustomer,
+  conversationBusy,
+  canBulkManage,
+  selected,
+  onToggleSelected,
+  customerHistoryOpen,
+  onToggleCustomerHistory,
+  allSellerOrders,
+}) {
+  const { status, sellerNextAction, payout, customer, quantity, commonName, trackingNumber } = view;
+  const chip = PAYOUT_CHIP_STYLE[payout.bucket] || PAYOUT_CHIP_STYLE.none;
+  const kind = sellerNextAction.kind;
+
+  // Basic customer history — past orders from this same buyer alias
+  // (privacy-conscious: matched by wallet internally, shown by alias only).
+  // Always available; customer_segmentation (Hadal) would gate only
+  // advanced grouping/analytics on top of this, which this increment
+  // doesn't build (spec §3).
+  const buyerWallet = view.raw?.buyer;
+  const customerHistory = customerHistoryOpen
+    ? (allSellerOrders || []).filter((o) => o.buyer && buyerWallet && o.buyer.toLowerCase() === buyerWallet.toLowerCase())
+    : [];
+
+  return (
+    <div className="glass-card" style={{ padding: "0.9rem 1.1rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "0.6rem", minWidth: 0 }}>
+          {canBulkManage && kind === SELLER_ACTION_KIND.BUY_LABEL && (
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={onToggleSelected}
+              aria-label={`Select order ${view.id}`}
+              style={{ marginTop: "0.3rem", width: "16px", height: "16px", cursor: "pointer", flexShrink: 0 }}
+            />
+          )}
+          <div style={{ minWidth: 0 }}>
+            <strong style={{ color: "#fff", fontSize: "0.85rem" }}>
+              {commonName || "Order"}{quantity ? ` (Qty: ${quantity})` : ""}
+            </strong>
+            <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", marginTop: "0.15rem" }}>
+              {casualModeActive ? "Customer" : "Buyer"}:{" "}
+              <button
+                type="button"
+                onClick={onToggleCustomerHistory}
+                style={{ background: "none", border: "none", color: "var(--accent-blue)", fontFamily: "monospace", fontSize: "0.72rem", cursor: "pointer", padding: 0, textDecoration: "underline" }}
+              >
+                {customer.alias}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Status — icon + text, never color-only (a11y) */}
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.3rem",
+            fontSize: "0.7rem",
+            fontWeight: 600,
+            padding: "0.25rem 0.55rem",
+            borderRadius: "12px",
+            background: "rgba(255,255,255,0.03)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            color: status.tone === "alert" ? "#f87171" : status.tone === "good" ? "#34d399" : "var(--text-secondary)",
+            flexShrink: 0,
+          }}
+        >
+          <span aria-hidden="true">{status.icon}</span> {status.label}
+        </span>
+      </div>
+
+      {customerHistoryOpen && (
+        <div style={{ padding: "0.6rem 0.75rem", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "6px", fontSize: "0.72rem", color: "var(--text-secondary)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", marginBottom: "0.35rem", color: "var(--text-muted)" }}>
+            <ClockCounterClockwise size={13} /> Order history with {customer.alias}
+          </div>
+          {customerHistory.length <= 1 ? (
+            <span>No other orders from this customer yet.</span>
+          ) : (
+            <ul style={{ margin: 0, paddingLeft: "1.1rem" }}>
+              {customerHistory.map((o, idx) => (
+                <li key={o.tokenId ?? o.purchaseId ?? idx}>
+                  {o.commonName || "Order"} {o.createdAt ? `· ${new Date(o.createdAt * 1000).toLocaleDateString()}` : ""}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+        {/* Payout chip */}
+        <span
+          style={{
+            fontSize: "0.68rem",
+            fontWeight: 600,
+            padding: "0.2rem 0.5rem",
+            borderRadius: "10px",
+            background: chip.bg,
+            border: `1px solid ${chip.border}`,
+            color: chip.color,
+          }}
+        >
+          {chip.label}{payout.proceedsCents ? ` · ${formatPriceCents(payout.proceedsCents)}` : ""}
+        </span>
+
+        {trackingNumber && (
+          <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>
+            📦 {trackingNumber}
+          </span>
+        )}
+
+        <div style={{ display: "flex", gap: "0.4rem", marginLeft: "auto" }}>
+          {/* Customer communication — always available (never gated). */}
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={onMessageCustomer}
+            disabled={conversationBusy}
+            aria-label={`Message ${customer.alias}`}
+            style={{ minHeight: "36px", padding: "0.4rem 0.65rem", fontSize: "0.72rem", display: "flex", alignItems: "center", gap: "0.3rem" }}
+          >
+            <ChatCircleDots size={14} /> {conversationBusy ? "Opening…" : "Message"}
+          </button>
+
+          {/* No seller-initiated refund/cancel: refunds are curator/backend-only
+              (see the note by the removed handler). A seller who can't fulfill
+              uses "Message"; the authorized refund happens via the buyer's
+              dispute → curator resolution path. */}
+
+          <SellerActionButton
+            kind={kind}
+            copy={sellerNextAction.copy}
+            labelBuying={labelBuying}
+            onBuyLabel={onBuyLabel}
+            onOpenHandoffScan={onOpenHandoffScan}
+            onRespondToClaim={onRespondToClaim}
+          />
+        </div>
+      </div>
+
+      {/* Manual tracking fallback (mirrors CheckoutSummary's <details>) */}
+      {kind === SELLER_ACTION_KIND.BUY_LABEL && (
+        <details open={manualTrackingOpen}>
+          <summary
+            onClick={(e) => { e.preventDefault(); manualTrackingOpen ? onCancelManualTracking() : onOpenManualTracking(); }}
+            style={{ fontSize: "0.7rem", color: "var(--text-muted)", cursor: "pointer" }}
+          >
+            Already have a tracking number? Enter it manually
+          </summary>
+          {manualTrackingOpen && (
+            <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.5rem" }}>
+              <input
+                type="text"
+                value={manualTrackingInput}
+                onChange={(e) => onManualTrackingInputChange(e.target.value)}
+                placeholder="e.g. USPS 94001000..."
+                style={{ flex: 1, padding: "0.4rem 0.6rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.75rem" }}
+              />
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={!manualTrackingInput}
+                onClick={onMarkDispatchedManually}
+                style={{ fontSize: "0.72rem", padding: "0.4rem 0.65rem" }}
+              >
+                Mark dispatched
+              </button>
+            </div>
+          )}
+        </details>
+      )}
+    </div>
+  );
+}
+
+// Primary action button — dispatches to the composed service per next-action
+// kind. request_courier renders a disabled "coming soon" affordance since the
+// Task 12 local-delivery adapter isn't wired to a request action yet (spec §3).
+function SellerActionButton({ kind, copy, labelBuying, onBuyLabel, onOpenHandoffScan, onRespondToClaim }) {
+  const baseStyle = { minHeight: "36px", padding: "0.4rem 0.75rem", fontSize: "0.72rem" };
+
+  switch (kind) {
+    case SELLER_ACTION_KIND.BUY_LABEL:
+      return (
+        <button type="button" className="btn-primary" style={baseStyle} disabled={labelBuying} onClick={onBuyLabel}>
+          {labelBuying ? "Buying label…" : copy}
+        </button>
+      );
+    case SELLER_ACTION_KIND.SCAN_HANDOFF:
+    case SELLER_ACTION_KIND.CONFIRM_CASH:
+      return (
+        <button type="button" className="btn-primary" style={baseStyle} onClick={onOpenHandoffScan}>
+          {copy}
+        </button>
+      );
+    case SELLER_ACTION_KIND.SCHEDULE_PICKUP:
+      // No dedicated scheduling UI yet in this increment — the handoff scan
+      // modal doubles as the pickup-prep affordance until it's ready.
+      return (
+        <button type="button" className="btn-secondary" style={baseStyle} onClick={onOpenHandoffScan}>
+          {copy}
+        </button>
+      );
+    case SELLER_ACTION_KIND.REQUEST_COURIER:
+      return (
+        <button type="button" className="btn-secondary" style={{ ...baseStyle, opacity: 0.5, cursor: "not-allowed" }} disabled title="Local courier requests are coming soon">
+          {copy} (coming soon)
+        </button>
+      );
+    case SELLER_ACTION_KIND.RESPOND_TO_CLAIM:
+      return (
+        <button type="button" className="btn-secondary" style={{ ...baseStyle, border: "1px solid rgba(248,113,113,0.3)", color: "var(--accent-red)" }} onClick={onRespondToClaim}>
+          {copy}
+        </button>
+      );
+    case SELLER_ACTION_KIND.AWAITING_BUYER:
+    case SELLER_ACTION_KIND.VIEW_RECEIPT:
+      return <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{copy}</span>;
+    default:
+      return null;
+  }
 }
 
 // ─── Listings section (seller's listings + "New listing" launcher) ─────────

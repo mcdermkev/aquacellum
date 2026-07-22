@@ -23,6 +23,7 @@ const TRANSITIONS = "canonical_order_transitions";
 /** Map a canonical_orders row to the order shape the cores expect. */
 function rowToOrder(row) {
   if (!row) return null;
+  const metadata = row.metadata || {};
   return {
     id: row.id,
     state: row.state,
@@ -32,10 +33,18 @@ function rowToOrder(row) {
     sellerWallet: row.seller_wallet,
     sellerProceedsCents: row.seller_proceeds_cents,
     grossChargedCents: row.gross_charged_cents,
+    stripePaymentIntent: row.stripe_payment_intent,
     stripePaymentHash: row.stripe_payment_hash,
     handoffChallengeId: row.handoff_challenge_id,
     certificateRef: row.certificate_ref,
     hasOpenClaim: row.has_open_claim,
+    // Raw metadata + the delivery-lifecycle timestamps derived from it (Task 16).
+    // The pure cores ignore extra fields; deliveryLifecycle/canonicalDelivery read these.
+    metadata,
+    dispatchedAt: metadata.dispatchedAtMs != null ? Number(metadata.dispatchedAtMs) : null,
+    deliveredAt: metadata.deliveredAtMs != null ? Number(metadata.deliveredAtMs) : null,
+    sellerPolicyWindowMs: metadata.sellerPolicyWindowMs != null ? Number(metadata.sellerPolicyWindowMs) : undefined,
+    trackingNumber: metadata.trackingNumber ?? null,
   };
 }
 
@@ -84,6 +93,59 @@ export function createSupabaseOrderStore(supabase) {
         .maybeSingle();
       if (error) throw new Error(`getOrderByPaymentIntent failed: ${error.message}`);
       return rowToOrder(data);
+    },
+
+    /**
+     * Resolve a canonical order by the tracking number stamped into its
+     * metadata at dispatch (Task 16). The ShipEngine delivery webhook only
+     * carries a tracking number, so this is how a delivery event maps back to
+     * the canonical order.
+     */
+    async getOrderByTracking(trackingNumber) {
+      if (!trackingNumber) return null;
+      const { data, error } = await supabase
+        .from(ORDERS)
+        .select("*")
+        .eq("metadata->>trackingNumber", String(trackingNumber))
+        .maybeSingle();
+      if (error) throw new Error(`getOrderByTracking failed: ${error.message}`);
+      return rowToOrder(data);
+    },
+
+    /**
+     * Merge a patch into an order's metadata jsonb (read-modify-write). Used to
+     * stamp delivery-lifecycle timestamps (dispatchedAtMs / deliveredAtMs) and
+     * the tracking number without clobbering the rest of the metadata. Not
+     * atomic against a concurrent metadata write, which is acceptable here: the
+     * fields written are set-once and idempotent (callers only set a timestamp
+     * when it is absent).
+     */
+    async patchOrderMetadata(orderId, metaPatch) {
+      const { data, error: readErr } = await supabase
+        .from(ORDERS)
+        .select("metadata")
+        .eq("id", orderId)
+        .maybeSingle();
+      if (readErr) throw new Error(`patchOrderMetadata read failed: ${readErr.message}`);
+      const merged = { ...(data?.metadata || {}), ...metaPatch };
+      const { error } = await supabase.from(ORDERS).update({ metadata: merged }).eq("id", orderId);
+      if (error) throw new Error(`patchOrderMetadata write failed: ${error.message}`);
+    },
+
+    /**
+     * List orders currently in the delivery phase (in_transit / delivered /
+     * review_window) for the auto-advance cron. Bounded; the cron caps how many
+     * it processes per run.
+     */
+    async listDeliveryCandidates(limit = 200) {
+      const { data, error } = await supabase
+        .from(ORDERS)
+        .select("*")
+        .in("state", ["in_transit", "delivered", "review_window"])
+        .eq("has_open_claim", false)
+        .limit(limit);
+      if (error) throw new Error(`listDeliveryCandidates failed: ${error.message}`);
+      return (data || []).map(rowToOrder);
     },
 
     async createOrder(row) {

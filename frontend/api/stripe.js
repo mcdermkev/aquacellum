@@ -30,6 +30,11 @@ import * as shipengine from "./_lib/shipengine.js";
 import { captureServerEvent } from "./_lib/posthogServer.js";
 import { createSupabaseOrderStore } from "./_lib/supabaseOrderStore.js";
 import { isCanonicalSettlementEnabled, settleViaCanonical, recordCanonicalOrderProtected } from "./_lib/canonicalSettlement.js";
+import { reserveCheckoutStock, commitCheckoutReservations, releaseCheckoutReservations } from "./_lib/canonicalReservations.js";
+import { recordDispatch, recordDelivery, autoAdvanceDeliveryOrders } from "./_lib/canonicalDelivery.js";
+import { buildSettlementEffects } from "./_lib/canonicalSettlement.js";
+import { openClaim as openDoaClaim, resolveClaim as resolveDoaClaim } from "../src/services/doaClaimService.js";
+import { createSupabaseDoaClaimStore } from "./_lib/supabaseDoaClaimStore.js";
 
 let stripe;
 try {
@@ -400,6 +405,20 @@ async function handleWebhook(req, res) {
         return res.status(200).json({ received: true, action: "ignored" });
       }
 
+      // Commit the inventory holds now that payment is protected (flagged,
+      // best-effort). Done before the guest early-return below so guest and
+      // account purchases both convert their bounded hold into a firm one; the
+      // hold becomes 'committed' (no TTL) and is consumed at completion. Never
+      // blocks the webhook — Stripe would otherwise keep retrying.
+      if (isCanonicalSettlementEnabled() && metadata.reservationGroupId) {
+        try {
+          const committed = await commitCheckoutReservations({ supabase, metadata, now: Date.now() });
+          console.log("[Canonical] reservations committed:", JSON.stringify(committed.results || committed));
+        } catch (commitErr) {
+          console.warn("[Canonical] reservation commit skipped:", commitErr.message);
+        }
+      }
+
       // Guest purchases: defer on-chain settlement until buyer links an account
       if (metadata.isGuestPurchase === "true" || metadata.buyerWallet === "guest") {
         console.log(`[Stripe Webhook] Guest purchase — deferring settlement: ${paymentIntentId}`);
@@ -627,6 +646,39 @@ async function handleWebhook(req, res) {
         console.log(`[Stripe Webhook] Seller onboarding complete: ${account.id}`);
       }
       return res.status(200).json({ received: true, action: "account_updated" });
+    }
+
+    case "payment_intent.payment_failed": {
+      // Buyer's payment failed → release the inventory hold so the stock returns
+      // to available immediately rather than waiting out the TTL (flagged path).
+      const paymentIntent = event.data.object;
+      const metadata = paymentIntent.metadata || {};
+      if (isCanonicalSettlementEnabled() && metadata.reservationGroupId) {
+        try {
+          const released = await releaseCheckoutReservations({ supabase, metadata, now: Date.now() });
+          console.log("[Canonical] reservations released (payment_failed):", JSON.stringify(released.results || released));
+        } catch (relErr) {
+          console.warn("[Canonical] reservation release skipped:", relErr.message);
+        }
+      }
+      return res.status(200).json({ received: true, action: "payment_failed_released" });
+    }
+
+    case "checkout.session.expired": {
+      // Abandoned checkout → release the hold early (flagged path). Requires the
+      // checkout.session.expired event to be enabled on the Stripe endpoint;
+      // harmless if it never fires (the TTL is the backstop either way).
+      const session = event.data.object;
+      const metadata = session.metadata || {};
+      if (isCanonicalSettlementEnabled() && metadata.reservationGroupId) {
+        try {
+          const released = await releaseCheckoutReservations({ supabase, metadata, now: Date.now() });
+          console.log("[Canonical] reservations released (session_expired):", JSON.stringify(released.results || released));
+        } catch (relErr) {
+          console.warn("[Canonical] reservation release skipped:", relErr.message);
+        }
+      }
+      return res.status(200).json({ received: true, action: "session_expired_released" });
     }
 
     default:
@@ -1327,6 +1379,158 @@ async function handleDispute(req, res) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// DOA CLAIM HANDLERS — buyer opens / curator resolves a dead-on-arrival claim
+// (Task 17). Canonical-only workflow, gated by CANONICAL_SETTLEMENT_ENABLED.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * POST /api/stripe?action=doa-open
+ * Headers: Authorization: Bearer <privy access token>
+ * Body: { orderId? | paymentIntentId? | sessionId?, affectedLineItemIds:[...],
+ *         evidence:{ photos:[...], description }, claimId? }
+ *
+ * The buyer opens a dead-on-arrival claim on a delivered order for one or more
+ * affected line items. Opening freezes automatic release (order → claim_open,
+ * has_open_claim) and marks the affected items doa_claimed; healthy siblings are
+ * untouched. The doaClaimService enforces that the caller is THIS order's buyer,
+ * the order is in a claim-eligible state, the claim window is still open, and the
+ * evidence meets the platform minimum — this handler is thin transport.
+ *
+ * Money/state effects are on the canonical tables; this does NOT move Stripe
+ * funds (a claim only freezes payout — resolution decides the money outcome).
+ */
+async function handleDoaOpen(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (!isCanonicalSettlementEnabled()) {
+    return res.status(404).json({ error: "Canonical DOA workflow is not enabled" });
+  }
+
+  // Auth: verified Privy session. The service authorizes that this user is the
+  // order's buyer (Privy DID or wallet match) before opening.
+  const { verified, userId, walletAddress } = await verifyPrivyToken(req);
+  if (!verified) {
+    return res.status(401).json({ error: "Missing or invalid authentication" });
+  }
+
+  const { orderId, paymentIntentId, sessionId, affectedLineItemIds, evidence, claimId } = req.body || {};
+  if (!Array.isArray(affectedLineItemIds) || affectedLineItemIds.length === 0) {
+    return res.status(400).json({ error: "affectedLineItemIds must be a non-empty array" });
+  }
+
+  // Resolve the canonical order id: accept it directly, or map a Stripe
+  // PaymentIntent / Checkout Session to the canonical order created at checkout.
+  let canonicalOrderId = orderId || null;
+  try {
+    if (!canonicalOrderId) {
+      let pi = paymentIntentId || null;
+      if (!pi && sessionId && stripe) {
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        pi = typeof session.payment_intent === "string"
+          ? session.payment_intent
+          : session.payment_intent?.id || null;
+      }
+      if (!pi) {
+        return res.status(400).json({ error: "Provide orderId, paymentIntentId, or sessionId" });
+      }
+      const { data } = await supabase
+        .from("canonical_orders")
+        .select("id")
+        .eq("stripe_payment_intent", pi)
+        .maybeSingle();
+      if (!data) {
+        return res.status(404).json({ error: "No order found for this payment" });
+      }
+      canonicalOrderId = data.id;
+    }
+  } catch (err) {
+    return res.status(400).json({ error: "Could not resolve order", details: err.message });
+  }
+
+  try {
+    const store = createSupabaseDoaClaimStore(supabase);
+    const result = await openDoaClaim({
+      store,
+      orderId: canonicalOrderId,
+      affectedLineItemIds,
+      evidence: evidence || {},
+      actor: { userId, walletAddress },
+      now: Date.now(),
+      claimId,
+    });
+    if (!result.ok) {
+      // Business-rule rejections (not the buyer, window closed, bad evidence,
+      // unknown line items) are the caller's fault → 400.
+      return res.status(400).json({ error: result.error });
+    }
+    return res.status(200).json({ success: true, claim: result.claim });
+  } catch (err) {
+    console.error("[DOA open] failed:", err);
+    return res.status(500).json({ error: "Could not open claim", details: err.message });
+  }
+}
+
+/**
+ * POST /api/stripe?action=doa-resolve
+ * Headers: Authorization: Bearer <curator privy token | CRON_SECRET>
+ * Body: { claimId, resolutions: { "<lineItemId>": { outcome:"refund"|"replace"|"deny",
+ *         refundCents?, sellerPortionCents? }, ... } }
+ *
+ * A curator (or the trusted backend for auto full-refunds) resolves an open DOA
+ * claim with a per-line-item outcome. The service applies each outcome
+ * atomically across the canonical tables: a refund appends a REFUND ledger
+ * entry, a replacement spawns a linked replacement sub-order, a denial passes
+ * the item through; healthy siblings are promoted; the release freeze clears and
+ * the order rolls up (refunded / partially_resolved / handoff_confirmed).
+ *
+ * IMPORTANT — accounting vs. money movement: a "refund" outcome records the
+ * refund on the canonical ledger and updates state; it does NOT issue the
+ * Stripe money-back. Returning funds to the buyer is the separate, separately-
+ * authorized ?action=refund step (which also returns the on-chain escrow
+ * asset). This mirrors the existing split between ledger accounting and Stripe
+ * execution and keeps this endpoint free of card-refund side effects.
+ */
+async function handleDoaResolve(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (!isCanonicalSettlementEnabled()) {
+    return res.status(404).json({ error: "Canonical DOA workflow is not enabled" });
+  }
+
+  // Auth: curator Privy session or trusted backend (CRON_SECRET). Buyers/sellers
+  // cannot resolve their own claims.
+  const auth = await authorizeAdminOrCurator(req);
+  if (!auth.ok) {
+    return res.status(auth.status || 403).json({ error: auth.error || "Not authorized to resolve claims" });
+  }
+
+  const { claimId, resolutions } = req.body || {};
+  if (!claimId || !resolutions || typeof resolutions !== "object") {
+    return res.status(400).json({ error: "claimId and resolutions are required" });
+  }
+
+  try {
+    const store = createSupabaseDoaClaimStore(supabase);
+    // A curator adjudicates; the cron/backend actor is 'system' (permitted only
+    // for the auto full-refund / partial edges, never for denials).
+    const actor = auth.via === "cron" ? { isSystem: true } : { isCurator: true };
+    const result = await resolveDoaClaim({ store, claimId, resolutions, actor, now: Date.now() });
+    if (!result.ok) {
+      return res.status(400).json({ error: result.error });
+    }
+    return res.status(200).json({
+      success: true,
+      claimStatus: result.claimStatus,
+      orderState: result.orderState,
+      replacementSubOrderIds: result.replacementSubOrderIds,
+    });
+  } catch (err) {
+    console.error("[DOA resolve] failed:", err);
+    return res.status(500).json({ error: "Could not resolve claim", details: err.message });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // AUTO-RELEASE HANDLER — scheduled release of shipping orders past the window
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1423,7 +1627,47 @@ async function handleAutoRelease(req, res) {
     }
   }
 
-  return res.status(200).json({ success: true, action: "auto-release", ...results });
+  // ── Canonical delivery-gated pass (Task 16, flagged) ──────────────────────
+  // Replaces the legacy "DISPATCHED + 3 days" heuristic above with the
+  // delivery-anchored model: mark transit-window-elapsed orders `non_delivery`
+  // (never auto-complete them), and auto-complete delivered orders whose claim
+  // window elapsed with no open claim (certificate → payout). Runs alongside
+  // the legacy pass during the flagged rollout; both are idempotent.
+  let canonical = null;
+  if (isCanonicalSettlementEnabled()) {
+    try {
+      const store = createSupabaseOrderStore(supabase);
+      const marketplace = getMarketplaceContract();
+      // Per-order effects: resolve the PaymentIntent for the seller-payout
+      // metadata, then build the certificate-transfer + payout side effects the
+      // settlement coordinator drives (certificate BEFORE payout).
+      const buildEffectsForOrder = async (order) => {
+        let md = {};
+        if (order.stripePaymentIntent && stripe) {
+          try {
+            const pi = await stripe.paymentIntents.retrieve(order.stripePaymentIntent);
+            md = pi.metadata || {};
+          } catch (e) {
+            console.warn("[Canonical auto-advance] PI retrieve failed:", e.message);
+          }
+        }
+        return buildSettlementEffects({
+          marketplace,
+          transferToSeller,
+          metadata: md,
+          tokenId: md.tokenId ?? null,
+          paymentIntentId: order.stripePaymentIntent,
+          paymentHash: order.stripePaymentHash,
+        });
+      };
+      canonical = await autoAdvanceDeliveryOrders({ store, now: Date.now(), buildEffectsForOrder });
+      console.log("[Canonical] auto-advance:", JSON.stringify({ scanned: canonical.scanned, nonDelivery: canonical.nonDelivery, completed: canonical.completed, failed: canonical.failed }));
+    } catch (canonErr) {
+      console.warn("[Canonical] auto-advance pass skipped:", canonErr.message);
+    }
+  }
+
+  return res.status(200).json({ success: true, action: "auto-release", ...results, canonical });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1844,6 +2088,25 @@ async function handleShipLabel(req, res) {
     console.warn("[ShipEngine label] margin ledger insert failed:", err.message);
   }
 
+  // Advance the canonical order into transit and stamp the tracking number +
+  // dispatch time (Task 16). The tracking number is how the later delivery
+  // webhook maps back to this order; dispatchedAtMs anchors the max-transit /
+  // non-delivery window. Flagged + best-effort — never blocks the label buy.
+  if (isCanonicalSettlementEnabled()) {
+    try {
+      const store = createSupabaseOrderStore(supabase);
+      const rec = await recordDispatch({
+        store,
+        paymentIntentId: orderRow?.stripe_payment_intent || paymentIntentId || null,
+        trackingNumber: label.trackingNumber,
+        dispatchedAtMs: Date.now(),
+      });
+      console.log(`[Canonical] dispatch recorded: ${rec.skipped ? "skipped (no order)" : rec.state}`);
+    } catch (dispatchErr) {
+      console.warn("[Canonical] dispatch record skipped:", dispatchErr.message);
+    }
+  }
+
   return res.status(200).json({
     success: true,
     action: "label_purchased",
@@ -1910,6 +2173,23 @@ async function handleShipWebhook(req, res) {
     console.warn("[ShipEngine webhook] order update failed:", err.message);
   }
 
+  // A verified DELIVERED event advances the canonical order in_transit →
+  // delivered and stamps deliveredAtMs — the anchor the DOA claim window and
+  // the auto-complete deadline read (Task 16). This is what makes the buyer's
+  // "report a problem" (DOA) path claim-eligible. Flagged + best-effort;
+  // duplicate delivery webhooks are idempotent no-ops. Driver/carrier proof
+  // alone never advances past `delivered` — buyer confirmation or claim-window
+  // expiry is still required for release.
+  if (statusCode === "DE" && isCanonicalSettlementEnabled()) {
+    try {
+      const store = createSupabaseOrderStore(supabase);
+      const rec = await recordDelivery({ store, trackingNumber, deliveredAtMs: Date.now() });
+      console.log(`[Canonical] delivery recorded: ${rec.skipped ? "skipped (no order)" : rec.state}`);
+    } catch (deliveryErr) {
+      console.warn("[Canonical] delivery record skipped:", deliveryErr.message);
+    }
+  }
+
   return res.status(200).json({ received: true, action: "tracking_updated", statusCode, arrivalStatus });
 }
 
@@ -1967,6 +2247,10 @@ export default async function handler(req, res) {
       return handleRefund(req, res);
     case "dispute":
       return handleDispute(req, res);
+    case "doa-open":
+      return handleDoaOpen(req, res);
+    case "doa-resolve":
+      return handleDoaResolve(req, res);
     case "auto-release":
       return handleAutoRelease(req, res);
     // ── ShipEngine (buyer-paid live shipping) ──
@@ -2063,6 +2347,38 @@ async function resolveAuthoritativeListing({ id, isBatch = false }) {
   return null;
 }
 
+/**
+ * Resolve the reservation targets (sku + quantity + authoritative on-hand stock)
+ * for a starting checkout, so the reserve_stock oversell guard has a real
+ * denominator. Specimen/shipping/pickup/multi are unique NFTs (stock 1 each);
+ * a batch's on-hand count is the authoritative on-chain batchListings.quantity.
+ *
+ * @param {string} purchaseType
+ * @param {Array<Object>} items
+ * @returns {Promise<Array<{ sku:string, quantity:number, totalStock:number }>>}
+ */
+async function resolveReservationTargets(purchaseType, items) {
+  if (purchaseType === "batch") {
+    const it = items[0];
+    let stock = 0;
+    try {
+      const marketplace = getMarketplaceContract();
+      const b = await marketplace.batchListings(Number(it.listingId));
+      stock = Number(b.quantity.toString());
+    } catch (e) {
+      console.warn("[Checkout] Could not resolve batch stock on-chain:", e.message);
+      stock = 0;
+    }
+    return [{ sku: String(it.listingId), quantity: Number(it.quantity) || 1, totalStock: stock }];
+  }
+  if (purchaseType === "multi") {
+    return items.map((it) => ({ sku: String(it.tokenId), quantity: 1, totalStock: 1 }));
+  }
+  // specimen | shipping | pickup — a single unique specimen token.
+  const it = items[0];
+  return [{ sku: String(it.tokenId), quantity: 1, totalStock: 1 }];
+}
+
 // Platform fee: 4% of the goods price (matches on-chain TOTAL_FEE_BPS = 400).
 const PLATFORM_FEE_PERCENT = 4;
 // Buyer-paid Stripe processing fee (grossed up so the platform nets goods+shipping).
@@ -2120,6 +2436,10 @@ async function handleCreateCheckout(req, res) {
   const CANCEL_URL = cancelUrl
     || process.env.CHECKOUT_CANCEL_URL
     || "https://aquadex.fish/marketplace";
+
+  // Hoisted so the catch block can release any inventory hold taken below if
+  // session creation fails after we reserved (flagged reservation wiring).
+  let metadata = {};
 
   try {
     // ─── Look up seller's Stripe Connected Account ─────────────────────────
@@ -2182,7 +2502,7 @@ async function handleCreateCheckout(req, res) {
     // ─── Build line items based on purchase type ───────────────────────────
     let lineItems = [];
     let totalAmountCents = 0;
-    let metadata = {
+    metadata = {
       purchaseType,
       buyerWallet: buyerWallet.toLowerCase(),
       sellerWallet: sellerWallet.toLowerCase(),
@@ -2360,6 +2680,36 @@ async function handleCreateCheckout(req, res) {
     metadata.processingFeeCents = String(processingFeeCents);
     metadata.transferGroup = transferGroup;
 
+    // ─── Reserve inventory (flagged): a bounded, oversell-guarded hold ─────
+    // Checkout beginning is when the hold is taken (MARKETPLACE_STATE_MODEL §7).
+    // The reserve_stock advisory-lock RPC serializes concurrent checkouts of the
+    // same unit, so two buyers cannot both hold the last specimen. The hold is
+    // committed at payment_protected (webhook) and released on abandonment/expiry.
+    // Gated by CANONICAL_SETTLEMENT_ENABLED so the legacy path is unchanged.
+    //   • oversell → reject the checkout (409); the item is gone.
+    //   • infra error → log and proceed; the on-chain settlement (purchase*Fiat
+    //     reverts on an already-sold token) remains the ultimate double-sale guard.
+    if (isCanonicalSettlementEnabled()) {
+      const reservationGroupId = `rsv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      metadata.reservationGroupId = reservationGroupId;
+      try {
+        const targets = await resolveReservationTargets(purchaseType, items);
+        const held = await reserveCheckoutStock({ supabase, reservationGroupId, targets, now: Date.now() });
+        if (!held.ok && held.error === "oversell") {
+          return res.status(409).json({
+            error: "One or more items are no longer available. Please refresh your cart.",
+            code: "OUT_OF_STOCK",
+            unavailable: held.unavailableSku,
+          });
+        }
+        if (!held.ok) {
+          console.warn("[Checkout] Reservation failed, proceeding (on-chain guard remains):", held.error);
+        }
+      } catch (e) {
+        console.warn("[Checkout] Reservation error, proceeding:", e.message);
+      }
+    }
+
     // ─── Create Stripe Checkout Session (capture-and-hold) ─────────────────
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -2393,6 +2743,15 @@ async function handleCreateCheckout(req, res) {
     });
   } catch (err) {
     console.error("[Stripe Checkout] Session creation failed:", err);
+    // If we reserved stock before the session blew up, release it now so the
+    // failed attempt doesn't strand inventory until TTL expiry (flagged path).
+    if (isCanonicalSettlementEnabled() && metadata?.reservationGroupId) {
+      try {
+        await releaseCheckoutReservations({ supabase, metadata, now: Date.now() });
+      } catch (relErr) {
+        console.warn("[Checkout] Reservation release after failure skipped:", relErr.message);
+      }
+    }
     return res.status(500).json({
       error: "Failed to create checkout session",
       details: err.message,

@@ -4,7 +4,7 @@ import { TankSelector } from "./TankSelector";
 import { AcclimationNotes } from "./AcclimationNotes";
 import { useUserTanks } from "../hooks/useUserTanks";
 import { relayMoveSpecimen, relayUpdateShippingOrder } from "../services/relayer";
-import { releaseFiatOrder, disputeFiatOrder } from "../services/stripePayments";
+import { releaseFiatOrder, disputeFiatOrder, openDoaClaim } from "../services/stripePayments";
 import { addXp, XP_ACTIONS } from "../utils/xp";
 import { db } from "../db";
 
@@ -197,22 +197,58 @@ function ArrivalModal({
     onClose();
   };
 
-  // Report a problem (DOA): opens a dispute instead of confirming arrival. This
-  // does NOT release payment to the seller — it flags the order for review so
-  // the buyer is protected if the fish arrived dead or sick.
+  // Report a problem (DOA): flags the order for review instead of confirming
+  // arrival. This does NOT release payment to the seller — it holds the order
+  // so the buyer is protected if the fish arrived dead or sick.
+  //
+  // Two paths, in order (Task 18 §2.3 / §5 — the canonical path is reviewed
+  // separately from the rest of this UI consolidation, since it touches the
+  // claim/refund seam):
+  //   1. Canonical DOA claim (openDoaClaim) — the Task 17 workflow with
+  //      structured per-line-item evidence and resolution. Only attempted
+  //      when the order carries canonical line item ids (shippingOrder.
+  //      canonicalLineItemIds), which nothing populates client-side yet — the
+  //      Task 16 delivery-event plumbing that advances canonical orders to
+  //      `delivered` (a precondition for opening a claim) is not wired. This
+  //      keeps the attempt inert today and self-activating once that lands,
+  //      with no further changes needed here.
+  //   2. disputeFiatOrder — the ACTIVE legacy dispute path (unchanged). Always
+  //      runs when the canonical attempt is unavailable or fails, so buyers
+  //      remain protected regardless of canonical readiness.
   const handleReportProblem = async () => {
     if (submitting || !shippingOrder) return;
     setError(null);
     setSubmitting(true);
     try {
       const tokenId = shippingOrder.tokenId || item?.id;
-      const result = await disputeFiatOrder({
-        tokenId,
-        sessionId: shippingOrder.stripeSessionId,
-        paymentIntentId: shippingOrder.paymentIntentId,
-        reason: reportReason,
-        note: reportNote || null,
-      });
+      const canonicalLineItemIds = shippingOrder.canonicalLineItemIds;
+
+      let result = null;
+      if (Array.isArray(canonicalLineItemIds) && canonicalLineItemIds.length > 0) {
+        const canonicalResult = await openDoaClaim({
+          orderId: shippingOrder.canonicalOrderId,
+          paymentIntentId: shippingOrder.paymentIntentId,
+          sessionId: shippingOrder.stripeSessionId,
+          affectedLineItemIds: canonicalLineItemIds,
+          evidence: { photos: [], description: reportNote || reportReason },
+        });
+        if (canonicalResult.success) {
+          result = canonicalResult;
+        } else {
+          console.warn("[ArrivalModal] Canonical DOA claim unavailable, falling back to legacy dispute:", canonicalResult.error);
+        }
+      }
+
+      if (!result) {
+        result = await disputeFiatOrder({
+          tokenId,
+          sessionId: shippingOrder.stripeSessionId,
+          paymentIntentId: shippingOrder.paymentIntentId,
+          reason: reportReason,
+          note: reportNote || null,
+        });
+      }
+
       if (!result.success) {
         throw new Error(result.error || "Could not report the problem");
       }

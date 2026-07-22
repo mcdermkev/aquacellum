@@ -176,6 +176,43 @@ describe("6. Reef parity — migrated privileges resolve to their existing requi
   });
 });
 
+describe("Task 18 — buyer order capabilities are REQUIRED, only analytics/watchlist/reorder/export are EARNED", () => {
+  // docs/TASK_18_BUYER_ORDERS_SPEC.md §4.11: order history, receipts, tracking,
+  // arrival/handoff confirmation, reporting a problem (DOA), and refunds must
+  // never be gated. Only order_analytics / csv_export / species_watchlist /
+  // smart_reorder — the features CheckoutSummary/OrderAnalytics/
+  // OrderWatchlistReorder now gate via hasEntitlement (migrated off the legacy
+  // orderFeatureGates.isFeatureUnlocked) — may be tier-gated.
+  const requiredOrderCapabilities = [
+    "order_history",
+    "receipts",
+    "tracking",
+    "local_delivery_tracking",
+    "arrival_confirmation",
+    "handoff",
+    "doa_claim",
+    "doa_evidence",
+    "refund",
+    "dispute",
+    "paid_pickup_handshake",
+    "cash_pickup_handshake",
+    "ownership_transfer",
+  ];
+
+  it.each(requiredOrderCapabilities)("%s is REQUIRED (never gated) at 0 XP / no role", (key) => {
+    expect(ENTITLEMENTS[key], `unknown entitlement key: ${key}`).toBeDefined();
+    expect(ENTITLEMENTS[key].class).toBe(REQUIRED);
+    expect(hasEntitlement(key, { xp: 0, tier: "Shallow", roles: [] })).toBe(true);
+  });
+
+  const gatedOrderConveniences = ["order_analytics", "csv_export", "species_watchlist", "smart_reorder"];
+
+  it.each(gatedOrderConveniences)("%s is EARNED (tier-gated), not REQUIRED", (key) => {
+    expect(ENTITLEMENTS[key].class).toBe(EARNED);
+    expect(hasEntitlement(key, { xp: 0, tier: "Shallow" })).toBe(false);
+  });
+});
+
 describe("hasEntitlement — unknown keys fail closed", () => {
   it("returns false for an unknown entitlement key regardless of context", () => {
     expect(hasEntitlement("not_a_real_entitlement", { xp: 999999, roles: ["curator", "operator"] })).toBe(false);
