@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { ethers, Contract, parseEther } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
@@ -8,7 +8,55 @@ import { relayCreateListing } from "../services/relayer";
 import { checkSellerStatus, startSellerOnboarding } from "../services/stripePayments";
 import { db } from "../db";
 import { Modal } from "./Modal";
-import { loadSpeciesCareLookup, deriveCareFields } from "../utils/speciesCarePrefill";
+import { loadSpeciesRecordLookup, getSpeciesRecord } from "../utils/speciesRecordLookup";
+import { buildListingDraftFromSpecies } from "../services/listingDraft";
+import { draftListingDescription } from "../services/poseidonListingDraft";
+import { listParcelPresets } from "../services/parcelPresets";
+import { normalizeParcelPreset, computeUsage, boxesRequired } from "../services/packingEngine";
+import { useMarketplaceListings } from "../hooks/useMarketplaceListings";
+
+// normalizeSpeciesProfile's temperament classification -> this form's free-text
+// Temperament <select> options. "predatory" has no dedicated option here (this
+// field is a general listing descriptor, not the shipping co-bagging engine),
+// so it maps to the closest existing option rather than being left unfilled.
+const TEMPERAMENT_TO_SELECT_OPTION = Object.freeze({
+  peaceful: "Peaceful",
+  semi_aggressive: "Semi-Aggressive",
+  aggressive: "Aggressive",
+  territorial: "Territorial",
+  predatory: "Aggressive",
+});
+
+function celsiusToFahrenheit(c) {
+  if (c == null || Number.isNaN(Number(c))) return null;
+  return Math.round((Number(c) * 9) / 5 + 32);
+}
+
+/**
+ * Small "verified" (emerald) vs "estimated" (amber) confidence pill — icon
+ * AND text, per docs/TASK_09_INC2_LISTING_FLOW_SPEC.md §3/§4.10 (never
+ * color-only). Shown next to auto-populated fields so the seller always
+ * knows what's known vs guessed.
+ */
+function ConfidencePill({ known }) {
+  return (
+    <span
+      style={{
+        fontSize: "0.58rem",
+        fontWeight: 600,
+        padding: "0.05rem 0.4rem",
+        borderRadius: "6px",
+        marginLeft: "0.4rem",
+        background: known ? "rgba(52,211,153,0.12)" : "rgba(251,191,36,0.12)",
+        border: `1px solid ${known ? "rgba(52,211,153,0.35)" : "rgba(251,191,36,0.35)"}`,
+        color: known ? "#34d399" : "#fbbf24",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {known ? "✓ verified" : "≈ estimated"}
+    </span>
+  );
+}
 
 const getSpecimenPhotoUrl = (commonName) => {
   if (!commonName) return "";
@@ -35,6 +83,34 @@ export function ListSpecimenModal({
   // Set when we auto-fill care fields from species reference data, so we can
   // show a small "prefilled, editable" hint.
   const [carePrefilled, setCarePrefilled] = useState(false);
+  // Per-field confidence map from buildListingDraftFromSpecies — drives the
+  // "verified" vs "estimated" pills (spec §3: never present a guess as fact).
+  const [careConfidence, setCareConfidence] = useState(null);
+  // The buyer-parity compatibility verdict/headline (compatibilityExplanation.js,
+  // via listingDraft.js) — "here's what buyers will see." No seller tank
+  // context exists in this flow, so this deterministically shows the
+  // engine's own "select a tank" placeholder rather than a fabricated verdict.
+  const [compatibilityPreview, setCompatibilityPreview] = useState(null);
+  // The anti-fabrication whitelist passed to Poseidon for the AI draft —
+  // never free-form seller text, never health/guarantee/lineage/price fields.
+  const [groundingFacts, setGroundingFacts] = useState(null);
+  // Packing profile — derived default from packingEngine.deriveDefaultPackingProfile,
+  // editable by the seller via the preset preview below. Sent through to
+  // relayCreateListing so the listing carries its own packing starting point.
+  const [packingProfile, setPackingProfile] = useState(null);
+  // Seller's parcel presets (Task 9 Inc2 §2.4 editor) + the one selected here
+  // to preview capacity against. Purely a preview — presets are edited in the
+  // Breeder Terminal's Shipping section, not here.
+  const [parcelPresets, setParcelPresets] = useState([]);
+  const [selectedPresetId, setSelectedPresetId] = useState(null);
+  // Price suggestion (median/range of comparable active listings for this
+  // species) — a hint, never a promise; null below the sample floor.
+  const [priceSuggestion, setPriceSuggestion] = useState(null);
+  // Poseidon-drafted description state — the AI draft is clearly distinct
+  // from the seller's own text until they choose to use it.
+  const [aiDraftText, setAiDraftText] = useState(null);
+  const [aiDraftLoading, setAiDraftLoading] = useState(false);
+  const [aiDraftError, setAiDraftError] = useState(null);
   const [step, setStep] = useState(1); // 1: Input/Check, 2: Approve, 3: List
   const [isApproved, setIsApproved] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -135,6 +211,15 @@ export function ListSpecimenModal({
       setOnboardingPayout(false);
       setManualEntry(false);
       setOwnedSpecimens([]);
+      setCareConfidence(null);
+      setCompatibilityPreview(null);
+      setGroundingFacts(null);
+      setPackingProfile(null);
+      setSelectedPresetId(null);
+      setPriceSuggestion(null);
+      setAiDraftText(null);
+      setAiDraftLoading(false);
+      setAiDraftError(null);
     }
   }, [isOpen]);
 
@@ -153,6 +238,32 @@ export function ListSpecimenModal({
     })();
     return () => { cancelled = true; };
   }, [isOpen, walletAccount]);
+
+  // Load the seller's parcel presets (Task 9 Inc2 §2.4) — a preview only;
+  // presets themselves are managed in the Breeder Terminal's Shipping
+  // section. Default preset (if any) is preselected.
+  useEffect(() => {
+    if (!isOpen || !walletAccount) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await listParcelPresets();
+        if (cancelled) return;
+        const presets = res.success ? res.presets || [] : [];
+        setParcelPresets(presets);
+        const def = presets.find((p) => p.isDefault) || presets[0];
+        if (def) setSelectedPresetId(def.id);
+      } catch {
+        if (!cancelled) setParcelPresets([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen, walletAccount]);
+
+  // Same-species active listings, for the price suggestion (median/range of
+  // comparables). Filtered client-side to this specimen's speciesId once
+  // known; the hook itself is the shared source buyers' catalog also uses.
+  const { data: allListingsForPricing = [] } = useMarketplaceListings(contractAddress, marketplaceAddress);
 
   const handleStartPayoutOnboarding = async () => {
     setOnboardingPayout(true);
@@ -196,24 +307,55 @@ export function ListSpecimenModal({
   }, [isOpen, preselectedListSpecimen]);
 
   // Reuse what the fish already is: once the specimen resolves, pre-fill the
-  // species-level care fields (temp/pH/tank/care level) from reference data and
-  // the specimen's own saved photo. Only fills EMPTY fields, so seller edits win.
+  // species-level care fields (temp/pH/tank/care level) from Spec-Dex via the
+  // shared listingDraft.js core (Task 9 Increment 2 §2.1/§2.2) — the same
+  // normalizeSpeciesProfile/deriveDefaultPackingProfile/compatibility engines
+  // buyers' pages use. Only fills EMPTY fields, so seller edits always win.
+  // Also derives the packing profile + the sanitized groundingFacts whitelist
+  // for the "Draft with Poseidon" assist below.
   useEffect(() => {
     if (!isOpen || !specimenInfo?.scientificName) return;
     let cancelled = false;
     (async () => {
-      const lookup = await loadSpeciesCareLookup();
+      const lookup = await loadSpeciesRecordLookup();
       if (cancelled) return;
-      const care = deriveCareFields(specimenInfo.scientificName, lookup);
+      const record = getSpeciesRecord(specimenInfo.scientificName, lookup) || {
+        scientificName: specimenInfo.scientificName,
+        commonName: specimenInfo.commonName,
+      };
+      const draft = buildListingDraftFromSpecies(record, { quantity: 1 });
+      if (cancelled) return;
+
       let filledAny = false;
-      if (care) {
-        if (care.minTemp) { setMinTemp((v) => v || care.minTemp); filledAny = true; }
-        if (care.maxTemp) { setMaxTemp((v) => v || care.maxTemp); filledAny = true; }
-        if (care.minPh) { setMinPh((v) => v || care.minPh); filledAny = true; }
-        if (care.maxPh) { setMaxPh((v) => v || care.maxPh); filledAny = true; }
-        if (care.tankSizeMin) { setTankSizeMin((v) => v || care.tankSizeMin); filledAny = true; }
-        if (care.careLevel != null) setCareLevel(care.careLevel);
+      const { care } = draft;
+      if (care.tempRangeCelsius) {
+        const [minC, maxC] = care.tempRangeCelsius;
+        const minF = celsiusToFahrenheit(minC);
+        const maxF = celsiusToFahrenheit(maxC);
+        if (minF != null) { setMinTemp((v) => v || String(minF)); filledAny = true; }
+        if (maxF != null) { setMaxTemp((v) => v || String(maxF)); filledAny = true; }
       }
+      if (care.phRange) {
+        setMinPh((v) => v || String(care.phRange[0]));
+        setMaxPh((v) => v || String(care.phRange[1]));
+        filledAny = true;
+      }
+      if (care.minVolumeGallons != null) {
+        setTankSizeMin((v) => v || String(care.minVolumeGallons));
+        filledAny = true;
+      }
+      if (care.careLevel != null) setCareLevel(care.careLevel);
+      if (care.temperament && care.temperament !== "unknown") {
+        const option = TEMPERAMENT_TO_SELECT_OPTION[care.temperament];
+        if (option) { setTemperament((v) => v || option); filledAny = true; }
+      }
+      if (care.diet) { setDiet((v) => v || care.diet); filledAny = true; }
+
+      setCareConfidence(care.dataConfidence);
+      setCompatibilityPreview(draft.compatibilityPreview);
+      setGroundingFacts(draft.groundingFacts);
+      setPackingProfile(draft.packingProfile);
+
       // Prefill the specimen's own photo if one was saved locally at mint/list.
       try {
         const saved = localStorage.getItem(`aquadex_specimen_photo_${Number(specimenInfo.id)}`);
@@ -223,6 +365,70 @@ export function ListSpecimenModal({
     })();
     return () => { cancelled = true; };
   }, [isOpen, specimenInfo]);
+
+  // Price suggestion (§2.1 buildPriceSuggestion) — median/range of comparable
+  // ACTIVE listings for this same species. A hint shown alongside the price
+  // field; null (and hidden) below the sample floor rather than a misleading
+  // single-comp number.
+  useEffect(() => {
+    if (!specimenInfo?.speciesId) { setPriceSuggestion(null); return; }
+    const comparables = (allListingsForPricing || []).filter(
+      (l) => Number(l.speciesId) === Number(specimenInfo.speciesId)
+    );
+    const draft = buildListingDraftFromSpecies(
+      { speciesId: specimenInfo.speciesId },
+      { comparables, speciesId: specimenInfo.speciesId }
+    );
+    setPriceSuggestion(draft.priceSuggestion);
+  }, [specimenInfo, allListingsForPricing]);
+
+  // The parcel preset currently selected for the capacity preview, normalized
+  // through the same engine the packing/cart math uses. Falls back to
+  // PACKING_DEFAULTS (via normalizeParcelPreset's own null handling) when the
+  // seller has no presets yet.
+  const selectedPresetPreview = useMemo(() => {
+    const raw = parcelPresets.find((p) => p.id === selectedPresetId);
+    return normalizeParcelPreset(
+      raw
+        ? {
+            label: raw.label,
+            usable_weight_oz: raw.usableWeightOz,
+            max_bags: raw.maxBags,
+            usable_volume_in3: raw.usableVolumeIn3,
+            thermal_pack_space_in3: raw.thermalPackSpaceIn3,
+            max_livestock: raw.maxLivestock,
+          }
+        : {}
+    );
+  }, [parcelPresets, selectedPresetId]);
+
+  const packingBoxesNeeded = useMemo(() => {
+    if (!packingProfile) return 0;
+    const usage = computeUsage([packingProfile]);
+    return boxesRequired(selectedPresetPreview, usage);
+  }, [packingProfile, selectedPresetPreview]);
+
+  const handleDraftWithPoseidon = async () => {
+    if (!groundingFacts) return;
+    setAiDraftLoading(true);
+    setAiDraftError(null);
+    try {
+      const result = await draftListingDescription(groundingFacts);
+      if (result.description) {
+        setAiDraftText(result.description);
+      } else {
+        setAiDraftError(result.error || "Couldn't generate a draft — write your own description.");
+      }
+    } finally {
+      setAiDraftLoading(false);
+    }
+  };
+
+  const applyAiDraft = () => {
+    if (!aiDraftText) return;
+    setDescription(aiDraftText);
+    setAiDraftText(null);
+  };
 
 
   const verifyToken = async (idToVerify) => {
@@ -375,6 +581,10 @@ export function ListSpecimenModal({
         healthStatus,
         doaGuarantee,
         photoDataUrl: photoPreview || "",
+        // Packing profile (Task 9 Increment 2 / Task 11) — the seller-editable
+        // default derived from species size/temperament. Additive: existing
+        // callers of relayCreateListing that never pass this are unaffected.
+        packingProfile: packingProfile || undefined,
       });
 
       if (!result.success) {
@@ -745,6 +955,25 @@ export function ListSpecimenModal({
                       required
                       style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none" }}
                     />
+                    {/* Price suggestion — a hint from comparable active listings,
+                        never a promise (buildPriceSuggestion, §2.1). Hidden below
+                        the sample floor rather than showing a misleading number. */}
+                    {priceSuggestion && (
+                      <button
+                        type="button"
+                        onClick={() => setPrice((parseFloat(priceSuggestion.suggestedCents) / 100).toFixed(2))}
+                        style={{
+                          marginTop: "0.4rem", display: "block", background: "rgba(56,189,248,0.06)",
+                          border: "1px solid rgba(56,189,248,0.2)", borderRadius: "6px", padding: "0.4rem 0.6rem",
+                          color: "var(--text-secondary)", fontSize: "0.68rem", cursor: "pointer", textAlign: "left", width: "100%",
+                        }}
+                      >
+                        💡 Similar listings suggest ~${(priceSuggestion.suggestedCents / 100).toFixed(2)}{" "}
+                        (${(priceSuggestion.low / 100).toFixed(2)}–${(priceSuggestion.high / 100).toFixed(2)}).{" "}
+                        <span style={{ textDecoration: "underline", color: "var(--accent-blue)" }}>Use this price</span>
+                        <div style={{ color: "var(--text-muted)", marginTop: "0.15rem" }}>{priceSuggestion.basis}</div>
+                      </button>
+                    )}
                   </div>
 
                   {/* Shipping is buyer-paid at checkout via live ShipEngine rates —
@@ -765,10 +994,34 @@ export function ListSpecimenModal({
                     </span>
                     {carePrefilled && (
                       <div style={{ fontSize: "0.65rem", color: "#34d399", marginTop: "0.35rem" }}>
-                        ✨ Prefilled from {specimenInfo.commonName} care data — edit anything.
+                        ✨ Auto-filled from Spec-Dex care data for {specimenInfo.commonName} — edit anything.
                       </div>
                     )}
                   </div>
+
+                  {/* Buyer-parity compatibility preview — "here's what buyers
+                      will see" (§2.2). Read-only mirror of the exact engine
+                      buyers get; reuses its icon+text verdict language so it's
+                      never color-only. */}
+                  {compatibilityPreview && (
+                    <div
+                      style={{
+                        padding: "0.65rem 0.75rem", borderRadius: "8px",
+                        background: compatibilityPreview.verdict === "ok" ? "rgba(52,211,153,0.06)" : "rgba(251,191,36,0.06)",
+                        border: `1px solid ${compatibilityPreview.verdict === "ok" ? "rgba(52,211,153,0.25)" : "rgba(251,191,36,0.25)"}`,
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.25rem" }}>
+                        <span aria-hidden="true">{compatibilityPreview.verdict === "ok" ? "✅" : "🔎"}</span>
+                        <strong style={{ fontSize: "0.75rem", color: "#fff" }}>
+                          Buyer view: {compatibilityPreview.headline}
+                        </strong>
+                      </div>
+                      <p style={{ margin: 0, fontSize: "0.68rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                        {compatibilityPreview.reasons[0]}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Photo Upload */}
                   <div>
@@ -817,9 +1070,63 @@ export function ListSpecimenModal({
 
                   {/* Description */}
                   <div>
-                    <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-                      Description / Seller Notes
-                    </label>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
+                      <label style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                        Description / Seller Notes
+                      </label>
+                      {groundingFacts && (
+                        <button
+                          type="button"
+                          onClick={handleDraftWithPoseidon}
+                          disabled={aiDraftLoading}
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: "0.35rem",
+                            padding: "0.3rem 0.65rem", borderRadius: "16px", border: "none", cursor: "pointer",
+                            background: "linear-gradient(135deg, #a78bfa, #22d3ee)",
+                            boxShadow: "0 0 12px rgba(167,139,250,0.35)",
+                            color: "#0b0f1a", fontSize: "0.68rem", fontWeight: 700,
+                            minHeight: "32px", opacity: aiDraftLoading ? 0.7 : 1,
+                          }}
+                        >
+                          ✨ {aiDraftLoading ? "Drafting…" : "Draft with Poseidon"}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* AI draft — clearly distinct (violet left-border) and
+                        explicitly labeled per §2.3/§3; editable, never
+                        auto-applied. Announced to screen readers so its
+                        provisional status isn't conveyed by color alone. */}
+                    {aiDraftText && (
+                      <div
+                        role="note"
+                        aria-label="AI draft, review before publishing"
+                        style={{
+                          marginBottom: "0.5rem", padding: "0.6rem 0.75rem",
+                          borderLeft: "3px solid #a78bfa", background: "rgba(167,139,250,0.06)",
+                          borderRadius: "0 6px 6px 0", fontSize: "0.75rem", color: "var(--text-secondary)",
+                        }}
+                      >
+                        <div style={{ fontSize: "0.62rem", fontWeight: 700, color: "#c4b5fd", marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                          AI draft — review before publishing
+                        </div>
+                        <p style={{ margin: "0 0 0.5rem", lineHeight: 1.5 }}>{aiDraftText}</p>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <button type="button" onClick={applyAiDraft} style={{ background: "none", border: "none", color: "#a78bfa", fontSize: "0.68rem", fontWeight: 600, cursor: "pointer", textDecoration: "underline", padding: 0 }}>
+                            Use this draft
+                          </button>
+                          <button type="button" onClick={() => setAiDraftText(null)} style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: "0.68rem", cursor: "pointer", padding: 0 }}>
+                            Dismiss
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {aiDraftError && (
+                      <div style={{ marginBottom: "0.5rem", fontSize: "0.68rem", color: "var(--text-muted)" }}>
+                        {aiDraftError}
+                      </div>
+                    )}
+
                     <textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
@@ -878,6 +1185,7 @@ export function ListSpecimenModal({
                     <div>
                       <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
                         Diet
+                        {careConfidence && <ConfidencePill known={careConfidence.diet} />}
                       </label>
                       <input
                         type="text"
@@ -890,6 +1198,7 @@ export function ListSpecimenModal({
                     <div>
                       <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
                         Temperament
+                        {careConfidence && <ConfidencePill known={careConfidence.temperament} />}
                       </label>
                       <select
                         value={temperament}
@@ -943,7 +1252,9 @@ export function ListSpecimenModal({
                     </label>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
                       <div>
-                        <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", display: "block", marginBottom: "0.2rem" }}>Temp (°F)</span>
+                        <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", display: "block", marginBottom: "0.2rem" }}>
+                          Temp (°F){careConfidence && <ConfidencePill known={careConfidence.tempRangeCelsius} />}
+                        </span>
                         <div style={{ display: "flex", gap: "0.2rem", alignItems: "center" }}>
                           <input type="number" value={minTemp} onChange={(e) => setMinTemp(e.target.value)} placeholder="72" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
                           <span style={{ color: "var(--text-muted)", fontSize: "0.7rem" }}>-</span>
@@ -951,7 +1262,9 @@ export function ListSpecimenModal({
                         </div>
                       </div>
                       <div>
-                        <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", display: "block", marginBottom: "0.2rem" }}>pH</span>
+                        <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", display: "block", marginBottom: "0.2rem" }}>
+                          pH{careConfidence && <ConfidencePill known={careConfidence.phRange} />}
+                        </span>
                         <div style={{ display: "flex", gap: "0.2rem", alignItems: "center" }}>
                           <input type="number" step="0.1" value={minPh} onChange={(e) => setMinPh(e.target.value)} placeholder="6.5" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
                           <span style={{ color: "var(--text-muted)", fontSize: "0.7rem" }}>-</span>
@@ -959,11 +1272,48 @@ export function ListSpecimenModal({
                         </div>
                       </div>
                       <div>
-                        <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", display: "block", marginBottom: "0.2rem" }}>Min Tank (gal)</span>
+                        <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", display: "block", marginBottom: "0.2rem" }}>
+                          Min Tank (gal){careConfidence && <ConfidencePill known={careConfidence.minVolumeGallons} />}
+                        </span>
                         <input type="number" value={tankSizeMin} onChange={(e) => setTankSizeMin(e.target.value)} placeholder="20" style={{ width: "100%", padding: "0.45rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", outline: "none", fontSize: "0.75rem" }} />
                       </div>
                     </div>
                   </div>
+
+                  {/* Packing profile + parcel-preset capacity preview (§2.1/§2.4).
+                      The derived default from deriveDefaultPackingProfile,
+                      previewed against the seller's own parcel preset so they
+                      see how their fish packs before they ship it. */}
+                  {packingProfile && (
+                    <div style={{ padding: "0.65rem 0.75rem", borderRadius: "8px", background: "rgba(34,211,238,0.05)", border: "1px solid rgba(34,211,238,0.2)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem", flexWrap: "wrap", gap: "0.4rem" }}>
+                        <strong style={{ fontSize: "0.72rem", color: "#fff" }}>📦 Packing profile</strong>
+                        {parcelPresets.length > 0 && (
+                          <select
+                            value={selectedPresetId ?? ""}
+                            onChange={(e) => setSelectedPresetId(Number(e.target.value))}
+                            style={{ fontSize: "0.68rem", padding: "0.25rem 0.4rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px" }}
+                          >
+                            {parcelPresets.map((p) => (
+                              <option key={p.id} value={p.id}>{p.label}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                      <p style={{ margin: 0, fontSize: "0.68rem", color: "var(--text-secondary)", fontFamily: "monospace" }}>
+                        ~{packingProfile.bagCount} bag{packingProfile.bagCount === 1 ? "" : "s"} · {packingProfile.packedWeightOz}oz ·{" "}
+                        {packingProfile.volumeIn3}in³{packingProfile.requiresThermalPack ? " · thermal pack" : ""}
+                        {packingProfile.separationRequired ? " · ships alone" : ""}
+                      </p>
+                      <p style={{ margin: "0.3rem 0 0", fontSize: "0.65rem", color: parcelPresets.length === 0 ? "var(--text-muted)" : (packingBoxesNeeded > 1 ? "#fbbf24" : "#34d399") }}>
+                        {parcelPresets.length === 0
+                          ? "Using a default box estimate — add a parcel preset in Shipping settings for an exact fit."
+                          : packingBoxesNeeded > 1
+                            ? `This fish alone would need ${packingBoxesNeeded} of this box size.`
+                            : "Fits comfortably in one of this box size."}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Health & Guarantee Row */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>

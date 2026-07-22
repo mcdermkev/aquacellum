@@ -382,6 +382,189 @@ function buildUserContext(sessionData) {
   return parts.join('\n');
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// LISTING-DESCRIPTION DRAFT (Task 9 Increment 2 §2.3) — Opus review gate
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Grounding contract: the draft MUST describe only the whitelisted care facts
+// supplied in `groundingFacts` (plus general species temperament/origin
+// derivable from them) and MUST NOT invent health status, "hardy/beginner-
+// safe" safety claims, DOA/live-arrival guarantees, lineage/pedigree, awards,
+// or pricing. This is the one server touch flagged for an Opus review pass
+// before this increment is considered done — the grounding guarantee lives
+// here and in listingDraft.js's groundingFacts whitelist (the data-layer half
+// of the same guarantee). Do not loosen this system prompt, the allowed-keys
+// whitelist below, or the request shape without that review.
+
+// The ONLY keys ever allowed through from a client-supplied groundingFacts
+// object. Anything else (health, guarantee, lineage, price, free-form seller
+// text) is stripped server-side before it ever reaches the model — the
+// server does not trust the client to have already sanitized it.
+const LISTING_DESCRIPTION_ALLOWED_KEYS = Object.freeze([
+  "commonName",
+  "scientificName",
+  "adultSizeCm",
+  "temperament",
+  "tempRangeCelsius",
+  "phRange",
+  "minVolumeGallons",
+  "careLevel",
+  "diet",
+  "origin",
+]);
+
+const CARE_LEVEL_LABEL = Object.freeze(["Beginner", "Intermediate", "Advanced"]);
+
+/**
+ * Strip a client-supplied groundingFacts object down to only the allowed
+ * whitelist keys with primitive/array-of-number values. Never trusts the
+ * client's own sanitization — this is the server-side half of the
+ * anti-fabrication guarantee (listingDraft.js's groundingFacts is the
+ * client-side half).
+ */
+function sanitizeGroundingFacts(raw = {}) {
+  const out = {};
+  for (const key of LISTING_DESCRIPTION_ALLOWED_KEYS) {
+    const value = raw?.[key];
+    if (value == null) continue;
+    if (key === "tempRangeCelsius" || key === "phRange") {
+      if (Array.isArray(value) && value.length === 2 && value.every((n) => Number.isFinite(Number(n)))) {
+        out[key] = [Number(value[0]), Number(value[1])];
+      }
+      continue;
+    }
+    if (key === "adultSizeCm" || key === "minVolumeGallons" || key === "careLevel") {
+      if (Number.isFinite(Number(value))) out[key] = Number(value);
+      continue;
+    }
+    // Remaining fields are short descriptive strings.
+    const str = String(value).slice(0, 300).trim();
+    if (str) out[key] = str;
+  }
+  return out;
+}
+
+/** Render the sanitized grounding facts as a plain-language fact sheet for the prompt. */
+function renderGroundingFactSheet(facts) {
+  const lines = [];
+  if (facts.commonName || facts.scientificName) {
+    lines.push(`- Species: ${[facts.commonName, facts.scientificName].filter(Boolean).join(" / ")}`);
+  }
+  if (facts.adultSizeCm != null) lines.push(`- Adult size: ~${facts.adultSizeCm} cm`);
+  if (facts.temperament) lines.push(`- Temperament classification: ${facts.temperament}`);
+  if (Array.isArray(facts.tempRangeCelsius)) lines.push(`- Temperature range: ${facts.tempRangeCelsius[0]}–${facts.tempRangeCelsius[1]}°C`);
+  if (Array.isArray(facts.phRange)) lines.push(`- pH range: ${facts.phRange[0]}–${facts.phRange[1]}`);
+  if (facts.minVolumeGallons != null) lines.push(`- Minimum tank volume: ${facts.minVolumeGallons} gallons`);
+  if (facts.careLevel != null) lines.push(`- Care level: ${CARE_LEVEL_LABEL[facts.careLevel] || "Unspecified"}`);
+  if (facts.diet) lines.push(`- Diet: ${facts.diet}`);
+  if (facts.origin) lines.push(`- Origin/biotope: ${facts.origin}`);
+  return lines.length > 0 ? lines.join("\n") : "(No care facts were provided — write only a brief, neutral species blurb.)";
+}
+
+const LISTING_DESCRIPTION_SYSTEM_PROMPT = `You are drafting a SHORT marketplace listing description for a single freshwater fish species, for a seller who will review and edit it before publishing.
+
+## HARD RULES — GROUNDING (do not violate any of these)
+1. You may ONLY describe the facts given to you in the "## CARE FACTS" section below, plus general, well-established species temperament/origin that follows directly from those facts. Do not use any outside knowledge, chat history, or assumptions beyond what is listed.
+2. You MUST NOT state or imply:
+   - Health status of this specific specimen (e.g. "healthy", "disease-free", "vet-checked")
+   - Safety/beginner-friendliness guarantees (e.g. "hardy", "beginner-safe", "easy to keep" — even if a care level is given, phrase it neutrally as "commonly rated <level> care" rather than a safety promise)
+   - Any live-arrival, DOA, or health guarantee ("guaranteed to arrive alive", "guaranteed healthy")
+   - Lineage, pedigree, breeding history, or awards of this specific specimen
+   - Any price, discount, or value claim
+3. If a fact is not present in the CARE FACTS section, do not mention it or estimate it. Omit it entirely rather than guessing.
+4. This is a DRAFT the seller will edit before publishing — write plainly and factually, not as a hard sell.
+5. Keep it to 2-4 short sentences.
+
+## RESPONSE FORMAT
+Respond with ONLY valid JSON matching this schema, nothing else:
+{ "description": "the drafted description text" }`;
+
+/**
+ * POST /api/ai?action=poseidon with { intent: 'listing_description',
+ * groundingFacts, mode? } — draft a grounded listing description. See the
+ * module-level comment above for the full grounding contract.
+ */
+async function handleListingDescriptionDraft(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: 'POST, OPTIONS' })) return;
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
+    || req.headers['x-real-ip']
+    || req.socket?.remoteAddress
+    || 'unknown';
+  const { allowed, remaining, resetIn } = checkRateLimit(`poseidon-listing-desc:${clientIp}`, {
+    maxRequests: 30,
+    windowMs: 60 * 60 * 1000,
+  });
+  res.setHeader('X-RateLimit-Limit', '30');
+  res.setHeader('X-RateLimit-Remaining', String(remaining));
+  res.setHeader('X-RateLimit-Reset', String(resetIn));
+  if (!allowed) {
+    return res.status(429).json({ description: null, error: `Rate limited. Retry in ${resetIn}s.` });
+  }
+
+  const rawFacts = req.body?.groundingFacts;
+  if (!rawFacts || typeof rawFacts !== 'object') {
+    return res.status(400).json({ error: 'Missing required field: groundingFacts' });
+  }
+  const facts = sanitizeGroundingFacts(rawFacts);
+
+  if (!isVertexConfigured()) {
+    return res.status(200).json({ description: null, offline: true, error: 'AI drafting is not configured right now — write your own description.' });
+  }
+
+  const prompt = [
+    LISTING_DESCRIPTION_SYSTEM_PROMPT,
+    '\n## CARE FACTS\n' + renderGroundingFactSheet(facts),
+  ].join('\n');
+
+  try {
+    const geminiResponse = await vertexGenerateContent('gemini-2.5-flash', {
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: 'object',
+          properties: { description: { type: 'string' } },
+          required: ['description'],
+        },
+        temperature: 0.5,
+        maxOutputTokens: 300,
+      },
+      safetySettings: [
+        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+      ],
+    });
+
+    if (!geminiResponse.ok) {
+      const errText = await geminiResponse.text();
+      console.error('[Listing description draft] Gemini error:', geminiResponse.status, errText);
+      return res.status(200).json({ description: null, error: 'Could not generate a draft right now — write your own description.' });
+    }
+
+    const result = await geminiResponse.json();
+    const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!responseText) {
+      return res.status(200).json({ description: null, error: 'Empty response — write your own description.' });
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(responseText);
+    } catch {
+      return res.status(200).json({ description: String(responseText).slice(0, 600) });
+    }
+
+    return res.status(200).json({ description: parsed.description || null });
+  } catch (error) {
+    console.error('[Listing description draft] Error:', error.message || error);
+    return res.status(200).json({ description: null, error: 'Could not generate a draft right now — write your own description.' });
+  }
+}
+
 async function handlePoseidon(req, res) {
   // GET requests → health check (previously /api/poseidon-health)
   if (req.method === 'GET') {
@@ -395,7 +578,18 @@ async function handlePoseidon(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed. Use GET for health check or POST for queries.' });
   }
 
-  const { message, mode, sessionData, conversationHistory } = req.body || {};
+  const { message, mode, sessionData, conversationHistory, intent } = req.body || {};
+
+  // ─── Grounded listing-description intent (Task 9 Increment 2 §2.3) ────────
+  // A separate, stricter contract from the conversational flow below. Bypasses
+  // the message/sessionData/conversationHistory path entirely: only the
+  // caller-supplied, sanitized `groundingFacts` whitelist reaches the model —
+  // never free-form seller claims, chat history, or session context. This
+  // branch (and the system prompt it builds) is the Opus-reviewed
+  // anti-fabrication guarantee for AI-drafted listing copy.
+  if (intent === 'listing_description') {
+    return handleListingDescriptionDraft(req, res);
+  }
 
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ error: 'Missing required field: message' });

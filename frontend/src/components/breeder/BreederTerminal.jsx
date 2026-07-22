@@ -23,12 +23,20 @@
  *   - useMarketplaceListings, filtered to this seller
  *   - hasEntitlement for gating convenience-only surfaces (bulk_management only)
  *
- * Out of scope for this increment (see spec §1 / §5): Spec-Dex/Poseidon listing
- * helpers, the parcel-preset editor, lineage/pedigree tools, deep analytics
- * beyond what SellerAnalytics already renders, a new seller claim-resolution
- * write path (curator-only `doa-resolve` stays the resolution surface), and
- * the local-courier request UI beyond a "coming soon" affordance (the Task 12
- * adapter isn't wired to a request action yet).
+ * Task 9 Increment 2 (docs/TASK_09_INC2_LISTING_FLOW_SPEC.md) adds: the
+ * Spec-Dex/Poseidon-assisted listing flow (built into ListSpecimenModal, not
+ * this shell) and the parcel-preset editor (`ParcelPresetEditor`, mounted
+ * alongside `ShipFromSetup` below). The Listings section here now renders
+ * real per-listing state and packing-profile summaries and routes "Edit" to
+ * the existing `EditListingModal`.
+ *
+ * Out of scope for this increment (see spec §5): lineage/pedigree tools, deep
+ * analytics beyond what SellerAnalytics already renders, a new seller
+ * claim-resolution write path (curator-only `doa-resolve` stays the
+ * resolution surface), the local-courier request UI beyond a "coming soon"
+ * affordance, and any new bulk operation on listings (bulk stays scoped to
+ * the Task 19 orders queue; entitlements.js's `bulk_management` gate would
+ * apply if listing bulk ops are added later).
  */
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -58,7 +66,9 @@ import { CONTRACT_ADDRESS, MARKETPLACE_ADDRESS } from "../../config/appConfig";
 import { SellerAnalytics } from "../storefront/SellerAnalytics";
 import { StorefrontSetup } from "../StorefrontSetup";
 import { ShipFromSetup } from "../ShipFromSetup";
+import { ParcelPresetEditor } from "./ParcelPresetEditor";
 import { ListSpecimenModal } from "../ListSpecimenModal";
+import { EditListingModal } from "../EditListingModal";
 import { HandshakeVerification } from "../HandshakeVerification";
 import { relayGetOrders, relayDispatchShipping } from "../../services/relayer";
 import { buyShippingLabel } from "../../services/shipping";
@@ -113,6 +123,7 @@ export function BreederTerminal({ walletAccount, casualModeActive = false }) {
   const [onboardingBusy, setOnboardingBusy] = useState(false);
   const [dashboardLinkBusy, setDashboardLinkBusy] = useState(false);
   const [isListModalOpen, setIsListModalOpen] = useState(false);
+  const [editingListing, setEditingListing] = useState(null); // Task 9 Inc2: Listings section inline edit
   const [existingStorefrontProfile, setExistingStorefrontProfile] = useState(null);
 
   // ─── Task 19: the seller fulfillment queue's own order source ────────────
@@ -506,6 +517,7 @@ export function BreederTerminal({ walletAccount, casualModeActive = false }) {
           listings={sellerListings}
           casualModeActive={casualModeActive}
           onNewListing={() => setIsListModalOpen(true)}
+          onEditListing={setEditingListing}
         />
       )}
 
@@ -517,7 +529,12 @@ export function BreederTerminal({ walletAccount, casualModeActive = false }) {
         />
       )}
 
-      {activeSection === SECTIONS.SHIPPING && <ShipFromSetup walletAccount={walletAccount} />}
+      {activeSection === SECTIONS.SHIPPING && (
+        <div className="glass-card" style={{ padding: "1.5rem" }}>
+          <ShipFromSetup walletAccount={walletAccount} />
+          <ParcelPresetEditor walletAccount={walletAccount} />
+        </div>
+      )}
 
       {activeSection === SECTIONS.ANALYTICS && (
         <>
@@ -552,6 +569,15 @@ export function BreederTerminal({ walletAccount, casualModeActive = false }) {
         marketplaceAddress={MARKETPLACE_ADDRESS}
         walletAccount={walletAccount}
         onSuccess={() => setIsListModalOpen(false)}
+      />
+
+      {/* Task 9 Inc2: Listings section inline edit launches the existing
+          EditListingModal — no new listing-write logic here. */}
+      <EditListingModal
+        isOpen={!!editingListing}
+        onClose={() => setEditingListing(null)}
+        item={editingListing}
+        onSuccess={() => setEditingListing(null)}
       />
 
       {/* Task 19: pickup + cash handoff scanning composes the existing
@@ -1173,8 +1199,31 @@ function SellerActionButton({ kind, copy, labelBuying, onBuyLabel, onOpenHandoff
 }
 
 // ─── Listings section (seller's listings + "New listing" launcher) ─────────
+//
+// Task 9 Increment 2 §2.5: a proper listings view — per-listing state
+// (active/paused/sold/draft where derivable from the listing shape), the
+// species/care summary, the packing profile, and inline edit (existing
+// EditListingModal) / new (existing ListSpecimenModal). No new write logic —
+// this section only reads `sellerListings` (already sourced from the shared
+// `useMarketplaceListings` hook) and routes to the two existing modals.
 
-function ListingsSection({ listings, casualModeActive, onNewListing }) {
+function listingStatus(item) {
+  if (item.isBatch) {
+    if (item.isActive === false) return { label: "Paused", tone: "muted", icon: "⏸️" };
+    if (Number(item.quantity) <= 0) return { label: "Sold out", tone: "alert", icon: "⚠️" };
+    return { label: "Active", tone: "good", icon: "✅" };
+  }
+  if (item.active === false || item.status === "sold") return { label: "Sold", tone: "muted", icon: "✅" };
+  return { label: "Active", tone: "good", icon: "✅" };
+}
+
+const LISTING_STATUS_COLOR = Object.freeze({
+  good: "#34d399",
+  alert: "#f87171",
+  muted: "var(--text-muted)",
+});
+
+function ListingsSection({ listings, casualModeActive, onNewListing, onEditListing }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
@@ -1190,18 +1239,57 @@ function ListingsSection({ listings, casualModeActive, onNewListing }) {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-          {listings.map((item) => (
-            <div
-              key={item.isBatch ? `batch-${item.listingId}` : `single-${item.tokenId}`}
-              className="glass-card"
-              style={{ padding: "0.9rem 1.1rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}
-            >
-              <strong style={{ color: "#fff", fontSize: "0.85rem" }}>{item.commonName}</strong>
-              <span style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>
-                {item.isBatch ? `${item.quantity} available` : "1 specimen"}
-              </span>
-            </div>
-          ))}
+          {listings.map((item) => {
+            const status = listingStatus(item);
+            const pp = item.packingProfile;
+            return (
+              <div
+                key={item.isBatch ? `batch-${item.listingId}` : `single-${item.tokenId}`}
+                className="glass-card"
+                style={{ padding: "0.9rem 1.1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem", flexWrap: "wrap" }}>
+                  <div>
+                    <strong style={{ color: "#fff", fontSize: "0.85rem" }}>{item.commonName}</strong>
+                    {item.scientificName && (
+                      <span style={{ display: "block", fontSize: "0.68rem", fontStyle: "italic", color: "var(--text-muted)" }}>
+                        {item.scientificName}
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: "0.3rem",
+                      fontSize: "0.68rem", fontWeight: 600, padding: "0.2rem 0.5rem", borderRadius: "12px",
+                      background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)",
+                      color: LISTING_STATUS_COLOR[status.tone],
+                    }}
+                  >
+                    <span aria-hidden="true">{status.icon}</span> {status.label}
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                  <span style={{ color: "var(--text-secondary)", fontSize: "0.75rem" }}>
+                    {item.isBatch ? `${item.quantity} available` : "1 specimen"}
+                    {pp && (
+                      <span style={{ color: "var(--text-muted)", fontFamily: "monospace", marginLeft: "0.5rem" }}>
+                        · 📦 ~{pp.bagCount} bag{pp.bagCount === 1 ? "" : "s"} · {pp.packedWeightOz}oz
+                      </span>
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => onEditListing(item)}
+                    style={{ minHeight: "36px", padding: "0.35rem 0.75rem", fontSize: "0.72rem" }}
+                  >
+                    Edit
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

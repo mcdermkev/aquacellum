@@ -531,6 +531,14 @@ export async function relayCreateListing({
   healthStatus = "healthy",
   doaGuarantee = true,
   photoDataUrl = "",
+  // Packing profile (Task 9 Increment 2 / Task 11) — the seller-editable
+  // starting point from packingEngine.deriveDefaultPackingProfile, or the
+  // seller's own override. Purely additive: omitting it (existing callers)
+  // leaves the listing exactly as before, and downstream packing math
+  // (packingEngine.js) already treats a missing/null profile as "derive
+  // defaults from species size/temperament" — this never changes that
+  // fallback, it only lets a listing carry its own profile when one exists.
+  packingProfile = null,
 } = {}) {
   try {
     // Store photo in localStorage for cross-session persistence
@@ -582,6 +590,10 @@ export async function relayCreateListing({
       healthStatus: String(healthStatus || "healthy"),
       doaGuarantee: !!doaGuarantee,
       photoUrl: photoDataUrl || "",
+      // Packing profile is stored as-is (packingEngine shape) when the seller
+      // provided/edited one; null/undefined means "let the packing engine
+      // derive defaults from species data" — never fabricated here.
+      packingProfile: packingProfile || null,
       isBatch: false,
       active: true,
       fuzzedLocation: { lat: 37.7749, lng: -122.4194 },

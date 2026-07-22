@@ -25,6 +25,7 @@ import { authenticateWithWallet, clearReefSession, refreshSession, sessionNeedsR
 import { setUserSigner, clearUserSigner } from "../services/smartAccountClient";
 import { setSessionTokenGetter } from "../services/stripePayments";
 import { setSessionTokenGetter as setShippingSessionTokenGetter } from "../services/shipping";
+import { setSessionTokenGetter as setParcelPresetsSessionTokenGetter } from "../services/parcelPresets";
 import { ensureProfile, updateProfile } from "../services/reefApi";
 import { identifyUser, resetAnalyticsIdentity, trackEvent } from "../services/analytics";
 
@@ -360,13 +361,16 @@ export function AuthProvider({ children }) {
     if (privyAuthenticated && typeof getAccessToken === "function") {
       setSessionTokenGetter(getAccessToken);
       setShippingSessionTokenGetter(getAccessToken);
+      setParcelPresetsSessionTokenGetter(getAccessToken);
     } else {
       setSessionTokenGetter(null);
       setShippingSessionTokenGetter(null);
+      setParcelPresetsSessionTokenGetter(null);
     }
     return () => {
       setSessionTokenGetter(null);
       setShippingSessionTokenGetter(null);
+      setParcelPresetsSessionTokenGetter(null);
     };
   }, [privyAuthenticated, getAccessToken]);
 

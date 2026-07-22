@@ -1738,6 +1738,226 @@ async function handleParcelPreset(req, res) {
 }
 
 /**
+ * Resolve the caller's lowercased wallet address from a verified Privy
+ * token ONLY — never from the request body. Mirrors api/cart.js's
+ * requireWallet: a client cannot read/write another seller's parcel presets
+ * by supplying a different wallet in the payload (Task 9 Increment 2 §2.4).
+ * Sends the 401 response itself when unauthorized; returns null in that case.
+ */
+async function requireWalletFromSession(req, res) {
+  const { verified, walletAddress, error } = await verifyPrivyToken(req);
+  if (!verified) {
+    res.status(401).json({ error: error || "Missing or invalid authentication" });
+    return null;
+  }
+  if (!walletAddress) {
+    res.status(401).json({ error: "Session has no linked account address" });
+    return null;
+  }
+  return walletAddress.toLowerCase();
+}
+
+/**
+ * Validate + coerce a parcel-preset payload's numeric fields to positive
+ * numbers/integers. Returns { ok, value, error }. Bounds are sanity checks,
+ * not business limits — the packing engine's own clampPos() is the last
+ * line of defense against a garbage row either way.
+ */
+function validateParcelPresetBody(body = {}) {
+  const label = String(body.label || "").trim();
+  if (!label) return { ok: false, error: "label is required" };
+  if (label.length > 60) return { ok: false, error: "label must be 60 characters or fewer" };
+
+  const numFields = {
+    usableWeightOz: body.usableWeightOz,
+    maxBags: body.maxBags,
+    usableVolumeIn3: body.usableVolumeIn3,
+    thermalPackSpaceIn3: body.thermalPackSpaceIn3,
+    maxLivestock: body.maxLivestock,
+  };
+  const value = { label };
+  for (const [key, raw] of Object.entries(numFields)) {
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n <= 0) {
+      return { ok: false, error: `${key} must be a positive number` };
+    }
+    if (n > 100000) {
+      return { ok: false, error: `${key} is unreasonably large` };
+    }
+    value[key] = key === "maxBags" || key === "maxLivestock" ? Math.round(n) : n;
+  }
+  value.isDefault = !!body.isDefault;
+  return { ok: true, value };
+}
+
+/** Map a seller_parcel_presets row (new capacity columns) to the client shape. */
+function parcelPresetRowToClient(row) {
+  return {
+    id: row.id,
+    label: row.label,
+    usableWeightOz: row.usable_weight_oz,
+    maxBags: row.max_bags,
+    usableVolumeIn3: row.usable_volume_in3,
+    thermalPackSpaceIn3: row.thermal_pack_space_in3,
+    maxLivestock: row.max_livestock,
+    isDefault: !!row.is_default,
+    createdAt: row.created_at,
+  };
+}
+
+/**
+ * ?action=parcel-presets — seller's own parcel-preset CRUD (Task 9
+ * Increment 2 §2.4). Distinct from the existing public, singular
+ * ?action=parcel-preset (read-only, old dimension columns, used by the
+ * buyer-facing box-capacity meter) — this is the authenticated editor
+ * surface that reads/writes the NEWER capacity columns
+ * (usable_weight_oz/max_bags/usable_volume_in3/thermal_pack_space_in3/
+ * max_livestock) added by 20260720_packing_capacity.sql, so every value
+ * round-trips through packingEngine.normalizeParcelPreset exactly as the
+ * seller configured it.
+ *
+ *   GET    → list the caller's presets
+ *   POST   → create a preset for the caller
+ *   PUT    → update one of the caller's existing presets (?id=123)
+ *   DELETE → remove one of the caller's presets (?id=123)
+ *
+ * Auth: verified Privy session required for every method. The wallet is
+ * derived ONLY from the session token (requireWalletFromSession) — never
+ * from the request body — and every mutation re-checks that the target row
+ * belongs to that wallet before writing.
+ */
+async function handleParcelPresets(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "GET, POST, PUT, DELETE, OPTIONS", headers: "Content-Type, Authorization" })) return;
+
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return; // response already sent
+
+  if (req.method === "GET") {
+    const { data, error } = await supabase
+      .from("seller_parcel_presets")
+      .select("*")
+      .eq("wallet_address", wallet)
+      .order("created_at", { ascending: true });
+    if (error) {
+      console.error("[parcel-presets] GET failed:", error.message);
+      return res.status(500).json({ error: "Could not load parcel presets" });
+    }
+    return res.status(200).json({ success: true, presets: (data || []).map(parcelPresetRowToClient) });
+  }
+
+  if (req.method === "POST") {
+    const validated = validateParcelPresetBody(req.body || {});
+    if (!validated.ok) return res.status(400).json({ error: validated.error });
+
+    const row = {
+      wallet_address: wallet,
+      label: validated.value.label,
+      usable_weight_oz: validated.value.usableWeightOz,
+      max_bags: validated.value.maxBags,
+      usable_volume_in3: validated.value.usableVolumeIn3,
+      thermal_pack_space_in3: validated.value.thermalPackSpaceIn3,
+      max_livestock: validated.value.maxLivestock,
+      is_default: validated.value.isDefault,
+      // Legacy NOT NULL columns from the original migration — populate with
+      // sane placeholders derived from the capacity fields so the insert
+      // never fails on an older schema constraint. Not read by the new
+      // editor/normalizeParcelPreset path.
+      weight_oz: validated.value.usableWeightOz,
+      length_in: 12,
+      width_in: 10,
+      height_in: 8,
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from("seller_parcel_presets")
+        .insert(row)
+        .select("*")
+        .single();
+      if (error) {
+        if (String(error.message || "").includes("duplicate")) {
+          return res.status(409).json({ error: "A preset with this label already exists" });
+        }
+        console.error("[parcel-presets] POST failed:", error.message);
+        return res.status(500).json({ error: "Could not create parcel preset" });
+      }
+      return res.status(201).json({ success: true, preset: parcelPresetRowToClient(data) });
+    } catch (err) {
+      console.error("[parcel-presets] POST error:", err.message);
+      return res.status(500).json({ error: "Could not create parcel preset" });
+    }
+  }
+
+  if (req.method === "PUT") {
+    const id = Number(req.query.id ?? req.body?.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: "Missing or invalid id" });
+
+    const validated = validateParcelPresetBody(req.body || {});
+    if (!validated.ok) return res.status(400).json({ error: validated.error });
+
+    // Ownership check before writing — the wallet came from the session, but
+    // the ROW must also belong to that wallet, not just the request.
+    const { data: existing } = await supabase
+      .from("seller_parcel_presets")
+      .select("id, wallet_address")
+      .eq("id", id)
+      .maybeSingle();
+    if (!existing || existing.wallet_address !== wallet) {
+      return res.status(404).json({ error: "Preset not found" });
+    }
+
+    const { data, error } = await supabase
+      .from("seller_parcel_presets")
+      .update({
+        label: validated.value.label,
+        usable_weight_oz: validated.value.usableWeightOz,
+        max_bags: validated.value.maxBags,
+        usable_volume_in3: validated.value.usableVolumeIn3,
+        thermal_pack_space_in3: validated.value.thermalPackSpaceIn3,
+        max_livestock: validated.value.maxLivestock,
+        is_default: validated.value.isDefault,
+        weight_oz: validated.value.usableWeightOz,
+      })
+      .eq("id", id)
+      .eq("wallet_address", wallet)
+      .select("*")
+      .single();
+    if (error) {
+      console.error("[parcel-presets] PUT failed:", error.message);
+      return res.status(500).json({ error: "Could not update parcel preset" });
+    }
+    return res.status(200).json({ success: true, preset: parcelPresetRowToClient(data) });
+  }
+
+  if (req.method === "DELETE") {
+    const id = Number(req.query.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: "Missing or invalid id" });
+
+    const { data: existing } = await supabase
+      .from("seller_parcel_presets")
+      .select("id, wallet_address")
+      .eq("id", id)
+      .maybeSingle();
+    if (!existing || existing.wallet_address !== wallet) {
+      return res.status(404).json({ error: "Preset not found" });
+    }
+
+    const { error } = await supabase
+      .from("seller_parcel_presets")
+      .delete()
+      .eq("id", id)
+      .eq("wallet_address", wallet);
+    if (error) {
+      console.error("[parcel-presets] DELETE failed:", error.message);
+      return res.status(500).json({ error: "Could not delete parcel preset" });
+    }
+    return res.status(200).json({ success: true });
+  }
+
+  return res.status(405).json({ error: "Method not allowed" });
+}
+
+/**
  * ?action=ship-from — seller manages their PRIVATE origin address.
  *   GET  ?wallet=0x..   → returns the stored address for the authenticated seller
  *   POST { walletAddress, ...address } → validates + upserts the origin
@@ -2296,6 +2516,8 @@ export default async function handler(req, res) {
       return handleShipMargin(req, res);
     case "parcel-preset":
       return handleParcelPreset(req, res);
+    case "parcel-presets":
+      return handleParcelPresets(req, res);
     default:
       return res.status(400).json({ error: `Unknown action: ${action}` });
   }
