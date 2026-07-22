@@ -16,7 +16,40 @@ const POSEIDON_API_URL = '/api/ai?action=poseidon';
 const MAX_REQUESTS_PER_HOUR = 20;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const SESSION_STORAGE_KEY = 'aquadex_poseidon_conversation';
+const RATE_LIMIT_STORAGE_KEY = 'aquadex_poseidon_rate_limit';
 const SESSION_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes — conversations expire after inactivity
+
+/**
+ * Load persisted request timestamps from localStorage for rate limiting.
+ */
+function loadPersistedRequestTimestamps() {
+  try {
+    const raw = localStorage.getItem(RATE_LIMIT_STORAGE_KEY);
+    if (!raw) return [];
+    const timestamps = JSON.parse(raw);
+    const now = Date.now();
+    // Filter out expired timestamps (older than 1 hour)
+    const validTimestamps = timestamps.filter(ts => now - ts < RATE_LIMIT_WINDOW_MS);
+    // Update localStorage with cleaned timestamps
+    if (validTimestamps.length !== timestamps.length) {
+      localStorage.setItem(RATE_LIMIT_STORAGE_KEY, JSON.stringify(validTimestamps));
+    }
+    return validTimestamps;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Persist request timestamps to localStorage for rate limiting.
+ */
+function persistRequestTimestamps(timestamps) {
+  try {
+    localStorage.setItem(RATE_LIMIT_STORAGE_KEY, JSON.stringify(timestamps));
+  } catch {
+    // localStorage full or unavailable — degrade gracefully
+  }
+}
 
 /**
  * Load persisted conversation from sessionStorage.
@@ -63,12 +96,33 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
-  const requestTimestamps = useRef([]);
+  const requestTimestamps = useRef(loadPersistedRequestTimestamps());
+  const [requestsRemaining, setRequestsRemaining] = useState(() => {
+    const validTimestamps = loadPersistedRequestTimestamps().filter(
+      ts => Date.now() - ts < RATE_LIMIT_WINDOW_MS
+    );
+    return MAX_REQUESTS_PER_HOUR - validTimestamps.length;
+  });
+
+  // Update requestsRemaining whenever timestamps change
+  const updateRequestsRemaining = useCallback(() => {
+    const now = Date.now();
+    const validTimestamps = requestTimestamps.current.filter(
+      ts => now - ts < RATE_LIMIT_WINDOW_MS
+    );
+    setRequestsRemaining(MAX_REQUESTS_PER_HOUR - validTimestamps.length);
+  }, []);
 
   // Persist messages whenever they change
   useEffect(() => {
     persistConversation(messages, persistKey);
   }, [messages, persistKey]);
+
+  // Persist request timestamps whenever they change
+  useEffect(() => {
+    persistRequestTimestamps(requestTimestamps.current);
+    updateRequestsRemaining();
+  }, [updateRequestsRemaining]);
 
   /**
    * Gather session context from Dexie for grounding Poseidon's responses.
@@ -143,11 +197,15 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
   const checkRateLimit = useCallback(() => {
     const now = Date.now();
     // Prune old timestamps
-    requestTimestamps.current = requestTimestamps.current.filter(
+    const validTimestamps = requestTimestamps.current.filter(
       ts => now - ts < RATE_LIMIT_WINDOW_MS
     );
+    requestTimestamps.current = validTimestamps;
+    // Persist updated timestamps
+    persistRequestTimestamps(requestTimestamps.current);
+    updateRequestsRemaining();
     return requestTimestamps.current.length < MAX_REQUESTS_PER_HOUR;
-  }, []);
+  }, [updateRequestsRemaining]);
 
   /**
    * Send a message to Poseidon.
@@ -228,6 +286,8 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
       // Track successful request for rate limiting (only if not an error response)
       if (!data.error && !data.offline) {
         requestTimestamps.current.push(Date.now());
+        persistRequestTimestamps(requestTimestamps.current);
+        updateRequestsRemaining();
       }
 
       const poseidonMsg = {
@@ -301,8 +361,6 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
     sendMessage,
     clearConversation,
     initGreeting,
-    requestsRemaining: MAX_REQUESTS_PER_HOUR - requestTimestamps.current.filter(
-      ts => Date.now() - ts < RATE_LIMIT_WINDOW_MS
-    ).length,
+    requestsRemaining,
   };
 }
