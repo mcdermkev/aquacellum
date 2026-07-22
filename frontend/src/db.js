@@ -519,6 +519,41 @@ db.version(21).stores({
   echoCompanionOnChain: "walletAddress, tokenId, cachedAt"
 });
 
+// Version 22: Persistent single-seller cart (Task 10). ADDITIVE / NON-DESTRUCTIVE —
+// every v21 store is carried forward verbatim; only the new `cart` table is added.
+//   - One row per carted listing (`id` = listingKey, e.g. "single-101" / "batch-7"),
+//     not one row per cart — the cart itself is just "all rows in this table" for
+//     the guest/local case. `seller` is indexed so cartStore can quickly confirm
+//     the single-seller invariant without loading every field.
+//   - `addedAt` indexed for chronological display without a full table scan.
+//   - See services/cartModel.js for the full row shape and services/cartStore.js
+//     for how this table is read/written (Dexie always; Supabase mirror only for
+//     authenticated accounts).
+db.version(22).stores({
+  species: "specCode, commonName, scientificName, type, difficulty",
+  listings: "id, tokenId, seller, price, isBatch, speciesId",
+  tanks: "id, ownerAddress, name, active",
+  userProfile: "walletAddress, totalXp, currentTier, zoneHash, isCouncilMember, onboardingComplete",
+  breederCompanion: "walletAddress, eggState, currentTier, selectedStats, zoneHash",
+  pendingHandshakes: "purchaseId, pin, salt, buyerAddress",
+  speciesManifest: "speciesId, scientificName, commonName, contractAddress, cachedAt",
+  actionLogs: "++id, tankId, actionType, timestamp, details",
+  spawnGrowout: "++id, spawnId, timestamp, type",
+  feedCache: "++id, contentId, authorWallet, createdAt, [authorWallet+createdAt]",
+  socialNotifications: "++id, category, isRead, createdAt",
+  draftContent: "++id, type, status, createdAt",
+  specimens: "id, ownerAddress, speciesId, currentTankId, status, createdAt, [ownerAddress+arrivalStatus], breederStockTag, onChainId, chainStatus",
+  localListings: "id, seller, speciesId, isBatch, listingId, tokenId",
+  marketOrders: "++key, orderType, status, state, buyer, seller, tokenId, purchaseId, listingId, assignedTankId",
+  spawns: "spawnId, sireId, damId, tankId, speciesId, status, timestamp",
+  tankNotes: "++id, tankId, createdAt",
+  xpCooldowns: "++id, walletAddress, actionType, tankId, timestamp, [walletAddress+actionType+tankId]",
+  storefrontCache: "id, walletAddress, cachedAt",
+  echoNeeds: "walletAddress, lastUpdate",
+  echoCompanionOnChain: "walletAddress, tokenId, cachedAt",
+  cart: "id, seller, listingKey, addedAt"
+});
+
 /**
  * Derive tier key from totalXp using the canonical tier ladder.
  * Used by the v15 migration and shared with xp.js.

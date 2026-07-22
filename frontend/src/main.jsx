@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { PrivyProvider } from '@privy-io/react-auth'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { CartProvider } from './contexts/CartContext'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { PwaManager } from './components/PwaManager'
 import { initAnalytics } from './services/analytics'
@@ -59,12 +60,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         }}
       >
         <AuthProvider>
-          <ErrorBoundary>
-            <BrowserRouter>
-              <App />
-              <PwaManager />
-            </BrowserRouter>
-          </ErrorBoundary>
+          <CartProvider>
+            <ErrorBoundary>
+              <BrowserRouter>
+                <App />
+                <PwaManager />
+              </BrowserRouter>
+            </ErrorBoundary>
+          </CartProvider>
         </AuthProvider>
       </PrivyProvider>
     </QueryClientProvider>

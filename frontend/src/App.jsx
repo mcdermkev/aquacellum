@@ -4,6 +4,8 @@ import "./styles/index.css";
 import "./styles/storefront-setup.css";
 import { GlobeHemisphereWest } from "@phosphor-icons/react";
 import { ConnectWallet } from "./components/ConnectWallet";
+import { CartButton } from "./components/cart/CartButton";
+import { CartDrawer } from "./components/cart/CartDrawer";
 import { SpecimenDetailModal } from "./components/SpecimenDetailModal";
 import { getLevelInfo, getXp } from "./utils/xp";
 import { haptic } from "./utils/haptics";
@@ -400,6 +402,7 @@ export default function App() {
   const [selectedSpecimenId, setSelectedSpecimenId] = useState(null);
   const [preselectedOrderForCheckout, setPreselectedOrderForCheckout] = useState(null);
   const [activeSellerFilter, setActiveSellerFilter] = useState(null);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Echo Whispers — real user state from Dexie (replaces hardcoded values)
   const [echoUserState, setEchoUserState] = useState({ totalXp: 0, streakDays: 0, lastActiveDate: null, currentTier: "Shallow" });
@@ -637,6 +640,14 @@ export default function App() {
   const handleSelectCheckoutOrder = (type, id, meta = null) => {
     setPreselectedOrderForCheckout({ type, id, meta });
     goToTab("orders");
+  };
+
+  // Task 10: CartDrawer's "Proceed to checkout" hand-off — routes the full
+  // (already-revalidated) cart into the existing checkout entry point rather
+  // than the cart owning any checkout logic of its own.
+  const handleProceedToCheckoutFromCart = (cart) => {
+    setIsCartOpen(false);
+    handleSelectCheckoutOrder("pending_cart", null, { items: cart.items });
   };
 
   const handleCheckoutSuccessRedirect = (sellerAddress) => {
@@ -1022,6 +1033,7 @@ export default function App() {
                 <span className="sync-status-text">{casualModeActive ? "Saved" : "Synced"}</span>
               </button>
             )}
+            {account && <CartButton onOpen={() => setIsCartOpen(true)} />}
             <ConnectWallet 
               onConnected={handleWalletConnected} 
               onDisconnected={handleWalletDisconnected} 
@@ -1442,6 +1454,14 @@ export default function App() {
 
       {/* What's New changelog modal — shows once per version bump */}
       <WhatsNewModal />
+
+      {/* Persistent cart drawer (Task 10) */}
+      <CartDrawer
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        onProceedToCheckout={handleProceedToCheckoutFromCart}
+        casualModeActive={casualModeActive}
+      />
     </div>
 
       {/* TODO: Onboarding wizard + tour temporarily disabled (mobile bug — step 1 blocks progress).

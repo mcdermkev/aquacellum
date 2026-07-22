@@ -33,6 +33,7 @@ export function ProductDetailModal({
   speciesRecord,
   displayTank,
   onClose,
+  onBuyNow,
   onAddToCart,
   walletAccount,
   casualModeActive = false,
@@ -202,16 +203,26 @@ export function ProductDetailModal({
             )}
           </div>
 
-          {/* Add to cart */}
+          {/* Add to cart (Task 10) + Buy Now shortcut (preserves the existing one-tap purchase) */}
           {!isOwner && (
-            <button
-              className={casualModeActive ? "btn-primary" : "btn-primary-pro"}
-              onClick={() => onAddToCart && onAddToCart(listing)}
-              disabled={!walletAccount}
-              style={{ width: "100%", padding: "0.65rem 1rem", justifyContent: "center" }}
-            >
-              {casualModeActive ? "Add to Cart" : "Secure Livestock"}
-            </button>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <button
+                className={casualModeActive ? "btn-primary" : "btn-primary-pro"}
+                onClick={() => onBuyNow && onBuyNow(listing)}
+                disabled={!walletAccount}
+                style={{ width: "100%", padding: "0.65rem 1rem", justifyContent: "center" }}
+              >
+                {casualModeActive ? "Buy Now" : "Secure Livestock"}
+              </button>
+              <button
+                className="btn-secondary"
+                onClick={() => onAddToCart && onAddToCart(listing)}
+                disabled={!walletAccount}
+                style={{ width: "100%", padding: "0.55rem 1rem", justifyContent: "center" }}
+              >
+                Add to Cart
+              </button>
+            </div>
           )}
         </div>
       </div>

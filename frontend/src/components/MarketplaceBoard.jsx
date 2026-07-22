@@ -27,6 +27,7 @@ import { evaluateTankFit } from "../services/addOnRecommender";
 import { applyCatalogQuery, SORT_OPTIONS, FULFILLMENT_TYPES, getListingKey } from "../services/catalogQuery";
 import { hasEntitlement } from "../services/entitlements";
 import { ProductDetailModal } from "./ProductDetailModal";
+import { useCart } from "../contexts/CartContext";
 
 // Helper: detect if a fishbase record or specCode is a plant entry
 const isPlantEntry = (specCodeOrItem) => {
@@ -118,6 +119,7 @@ export function MarketplaceBoard({
   const [fishbaseLookup, setFishbaseLookup] = useState({});
   const [fishbaseData, setFishbaseData] = useState([]);
   const [checkoutQuantityMap, setCheckoutQuantityMap] = useState({});
+  const { addItem: addToCart } = useCart();
   const [userLocation, setUserLocation] = useState({ lat: 37.7749, lng: -122.4194 }); // Default SF
   const [locationRequested, setLocationRequested] = useState(false);
 
@@ -2099,7 +2101,18 @@ export function MarketplaceBoard({
                                   disabled={claiming || !walletAccount}
                                   style={{ width: "100%", padding: "0.4rem 1rem", fontSize: "0.75rem", justifyContent: "center" }}
                                 >
-                                  {claiming ? (casualModeActive ? "Purchasing..." : "Securing...") : (casualModeActive ? "Purchase" : "Secure Livestock")}
+                                  {claiming ? (casualModeActive ? "Purchasing..." : "Securing...") : (casualModeActive ? "Buy Now" : "Secure Livestock")}
+                                </button>
+                                <button
+                                  className="btn-secondary"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    addToCart(item, item.isBatch ? (checkoutQuantityMap[item.listingId] || 1) : 1);
+                                  }}
+                                  disabled={!walletAccount}
+                                  style={{ width: "100%", padding: "0.35rem 1rem", fontSize: "0.7rem", justifyContent: "center" }}
+                                >
+                                  🛒 Add to Cart
                                 </button>
                                 <button
                                   className="btn-secondary"
@@ -2366,7 +2379,7 @@ export function MarketplaceBoard({
         walletAccount={walletAccount}
         casualModeActive={casualModeActive}
         onClose={closeProductDetail}
-        onAddToCart={(item) => {
+        onBuyNow={(item) => {
           closeProductDetail();
           if (!onSelectCheckoutOrder) return;
           if (item.isBatch) {
@@ -2374,6 +2387,10 @@ export function MarketplaceBoard({
           } else {
             onSelectCheckoutOrder("pending_purchase", item.tokenId);
           }
+        }}
+        onAddToCart={(item) => {
+          addToCart(item, item.isBatch ? (checkoutQuantityMap[item.listingId] || 1) : 1);
+          closeProductDetail();
         }}
       />
     </div>

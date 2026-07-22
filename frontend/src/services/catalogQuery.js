@@ -76,8 +76,13 @@ function compareListingKeys(a, b) {
  * `isActive`; single/cloud/local listings use `active`. Absence of the flag
  * means active (fetchListingsByBreed only returns already-active on-chain
  * listings, so most items simply won't carry the flag at all).
+ *
+ * Exported (Task 10) so cart revalidation can reuse this exact rule rather
+ * than re-deriving active/inactive status.
+ * @param {Object} item
+ * @returns {boolean}
  */
-function isListingActive(item) {
+export function isListingActive(item) {
   if (item.isBatch) return item.isActive !== false;
   return item.active !== false;
 }
