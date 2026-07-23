@@ -54,6 +54,7 @@ import {
   MagnifyingGlass,
   ChatCircleDots,
   ClockCounterClockwise,
+  Tag,
 } from "@phosphor-icons/react";
 import { fetchSellerOrders } from "../../services/ordersSync";
 import { checkSellerStatus, startSellerOnboarding, getSellerDashboardLink } from "../../services/stripePayments";
@@ -68,6 +69,7 @@ import { StorefrontSetup } from "../StorefrontSetup";
 import { ShipFromSetup } from "../ShipFromSetup";
 import { ParcelPresetEditor } from "./ParcelPresetEditor";
 import { StorefrontMerchandising } from "./StorefrontMerchandising";
+import { PromotionsManager } from "./PromotionsManager";
 import { ListSpecimenModal } from "../ListSpecimenModal";
 import { EditListingModal } from "../EditListingModal";
 import { HandshakeVerification } from "../HandshakeVerification";
@@ -84,6 +86,7 @@ const SECTIONS = Object.freeze({
   ORDERS: "orders",
   LISTINGS: "listings",
   STORE: "store",
+  PROMOTIONS: "promotions",
   SHIPPING: "shipping",
   ANALYTICS: "analytics",
   PAYOUTS: "payouts",
@@ -94,6 +97,7 @@ const NAV_ITEMS = [
   { id: SECTIONS.ORDERS, label: "Orders", icon: ClipboardText },
   { id: SECTIONS.LISTINGS, label: "Listings", icon: Package },
   { id: SECTIONS.STORE, label: "Store", icon: StorefrontIcon },
+  { id: SECTIONS.PROMOTIONS, label: "Promotions", icon: Tag },
   { id: SECTIONS.SHIPPING, label: "Shipping", icon: Truck },
   { id: SECTIONS.ANALYTICS, label: "Analytics", icon: ChartLineUp },
   { id: SECTIONS.PAYOUTS, label: "Payouts", icon: CurrencyDollar },
@@ -537,6 +541,10 @@ export function BreederTerminal({ walletAccount, casualModeActive = false }) {
             listings={sellerListings}
           />
         </>
+      )}
+
+      {activeSection === SECTIONS.PROMOTIONS && (
+        <PromotionsManager walletAccount={walletAccount} casualModeActive={casualModeActive} totalXp={xp} />
       )}
 
       {activeSection === SECTIONS.SHIPPING && (

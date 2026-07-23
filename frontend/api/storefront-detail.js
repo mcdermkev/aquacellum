@@ -29,6 +29,22 @@
  *                                                            → the seller's visible sections, ordered (public)
  *   PUT|POST /api/storefront-detail?action=sections          → authenticated owner replaces their sections
  *
+ * Task 21B (Promotions & Customer Segments) addition — same reasoning; both
+ * are seller-scoped (never public — promo codes are not publicly
+ * enumerable) and session-authed:
+ *
+ *   GET    /api/storefront-detail?action=promotions          → the authenticated seller's own promotions
+ *   POST   /api/storefront-detail?action=promotions          → create a promotion for the authenticated seller
+ *   PUT    /api/storefront-detail?action=promotions&id=<id>  → update one of the seller's own promotions
+ *   DELETE /api/storefront-detail?action=promotions&id=<id>  → delete one of the seller's own promotions
+ *   GET    /api/storefront-detail?action=segments             → the authenticated seller's alias-only customer segments
+ *
+ *   IMPORTANT: this router's promotions endpoint is authoring/storage ONLY.
+ *   It never applies a discount to a real charge and never touches
+ *   `api/stripe.js`. See docs/TASK_21B_PROMOTIONS_SPEC.md — wiring a
+ *   promotion into `handleCreateCheckout`'s charge math is a separate,
+ *   Tier A (Opus-reviewed) change.
+ *
  * Consolidated from separate functions to stay within Vercel Hobby plan limits.
  *
  * Environment variables:
@@ -51,6 +67,12 @@ import {
   validateSectionsPayload,
   assembleStorefrontLayout,
 } from "../src/services/storeMerchandising.js";
+import {
+  normalizePromotion,
+  validatePromotionDraft,
+  MAX_CODE_LENGTH,
+} from "../src/services/promotionEngine.js";
+import { buildCustomerSegments } from "../src/services/customerSegments.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL || "",
@@ -92,6 +114,11 @@ export default async function handler(req, res) {
     // ── Task 21A: Storefront Merchandising (sections) ──
     case "sections":
       return handleSections(req, res);
+    // ── Task 21B: Promotions & Customer Segments ──
+    case "promotions":
+      return handlePromotions(req, res);
+    case "segments":
+      return handleSegments(req, res);
     default:
       // No action = default storefront detail endpoint
       return handleStorefrontDetail(req, res);
@@ -1162,6 +1189,221 @@ async function handleSections(req, res) {
   }
 
   return res.status(405).json({ error: "Method not allowed. Use GET, POST, or PUT." });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TASK 21B: PROMOTIONS & CUSTOMER SEGMENTS
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// MONEY BOUNDARY: this section is authoring/storage ONLY. It validates and
+// persists promotion rows via the pure, tested promotionEngine.js
+// (validatePromotionDraft/normalizePromotion) — it never evaluates a
+// promotion against a real cart at checkout time, never increments
+// used_count, and never touches api/stripe.js or any charge/payout math.
+// Wiring a promotion into handleCreateCheckout is a separate, Tier A
+// (Opus-reviewed) change — see docs/TASK_21B_PROMOTIONS_SPEC.md §2/§6.
+
+/** Map a seller_promotions row to the client shape (normalizePromotion's own camelCase output). */
+function promotionRowToClient(row) {
+  return normalizePromotion(row);
+}
+
+/**
+ * ?action=promotions — the authenticated seller's own promotion CRUD.
+ * Never public: promo codes should not be publicly enumerable, and this
+ * endpoint returns the seller's full row set (including paused/expired)
+ * for the authoring UI, not a buyer-facing filtered list.
+ *
+ *   GET    → list the caller's promotions
+ *   POST   → create a promotion for the caller
+ *   PUT    → update one of the caller's existing promotions (?id=... or body.id)
+ *   DELETE → remove one of the caller's promotions (?id=... or body.id)
+ *
+ * Auth: verified Privy session required for every method (mirrors
+ * stripe.js's handleParcelPresets pattern) — wallet derived ONLY from the
+ * session token, and every mutation re-checks the target row belongs to
+ * that wallet before writing.
+ */
+async function handlePromotions(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "GET, POST, PUT, DELETE, OPTIONS", headers: "Content-Type, Authorization" })) return;
+
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+
+  if (req.method === "GET") {
+    try {
+      const { data, error } = await supabase
+        .from("seller_promotions")
+        .select("*")
+        .eq("wallet_address", wallet)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("[promotions] GET failed:", error);
+        return res.status(500).json({ error: "Could not load promotions" });
+      }
+      return res.status(200).json({ success: true, promotions: (data || []).map(promotionRowToClient) });
+    } catch (err) {
+      console.error("[promotions] GET error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  if (req.method === "POST") {
+    const draft = normalizePromotion(req.body || {});
+    const validation = validatePromotionDraft(draft);
+    if (!validation.ok) return res.status(400).json({ error: validation.error });
+
+    try {
+      const { data, error } = await supabase
+        .from("seller_promotions")
+        .insert(promotionDraftToRow(draft, wallet))
+        .select("*")
+        .single();
+
+      if (error) {
+        if (String(error.message || "").includes("duplicate") || error.code === "23505") {
+          return res.status(409).json({ error: "A promotion with this code already exists" });
+        }
+        console.error("[promotions] POST failed:", error);
+        return res.status(500).json({ error: "Could not create promotion" });
+      }
+      return res.status(201).json({ success: true, promotion: promotionRowToClient(data) });
+    } catch (err) {
+      console.error("[promotions] POST error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  if (req.method === "PUT") {
+    const id = req.query.id ?? req.body?.id;
+    if (!id) return res.status(400).json({ error: "Missing id" });
+
+    const draft = normalizePromotion(req.body || {});
+    const validation = validatePromotionDraft(draft);
+    if (!validation.ok) return res.status(400).json({ error: validation.error });
+
+    try {
+      // Ownership check before writing — the wallet came from the session,
+      // but the ROW must also belong to that wallet, not just the request.
+      const { data: existing } = await supabase
+        .from("seller_promotions")
+        .select("wallet_address")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (!existing || existing.wallet_address !== wallet) {
+        return res.status(404).json({ error: "Promotion not found" });
+      }
+
+      const { data, error } = await supabase
+        .from("seller_promotions")
+        .update(promotionDraftToRow(draft, wallet))
+        .eq("id", id)
+        .eq("wallet_address", wallet)
+        .select("*")
+        .single();
+
+      if (error) {
+        if (String(error.message || "").includes("duplicate") || error.code === "23505") {
+          return res.status(409).json({ error: "A promotion with this code already exists" });
+        }
+        console.error("[promotions] PUT failed:", error);
+        return res.status(500).json({ error: "Could not update promotion" });
+      }
+      return res.status(200).json({ success: true, promotion: promotionRowToClient(data) });
+    } catch (err) {
+      console.error("[promotions] PUT error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  if (req.method === "DELETE") {
+    const id = req.query.id ?? req.body?.id;
+    if (!id) return res.status(400).json({ error: "Missing id" });
+
+    try {
+      const { data: existing } = await supabase
+        .from("seller_promotions")
+        .select("wallet_address")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (!existing || existing.wallet_address !== wallet) {
+        return res.status(404).json({ error: "Promotion not found" });
+      }
+
+      const { error } = await supabase
+        .from("seller_promotions")
+        .delete()
+        .eq("id", id)
+        .eq("wallet_address", wallet);
+
+      if (error) {
+        console.error("[promotions] DELETE failed:", error);
+        return res.status(500).json({ error: "Could not delete promotion" });
+      }
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error("[promotions] DELETE error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  return res.status(405).json({ error: "Method not allowed. Use GET, POST, PUT, or DELETE." });
+}
+
+/** Map a normalized promotion draft to a seller_promotions row for insert/update. */
+function promotionDraftToRow(draft, wallet) {
+  return {
+    wallet_address: wallet,
+    code: draft.code ? String(draft.code).toUpperCase().slice(0, MAX_CODE_LENGTH) : null,
+    type: draft.type,
+    value: draft.value,
+    scope: draft.scope,
+    scope_refs: draft.scopeRefs.slice(0, 100),
+    min_subtotal_cents: draft.minSubtotalCents,
+    starts_at: draft.startsAt || null,
+    ends_at: draft.endsAt || null,
+    usage_limit: draft.usageLimit || null,
+    funding: draft.funding,
+    active: draft.active,
+  };
+}
+
+/**
+ * GET ?action=segments — the authenticated seller's own alias-only customer
+ * segments (repeat buyers / high-value buyers / at-risk buyers), computed by
+ * the pure, tested customerSegments.js over the seller's own `orders` rows.
+ * Never public, never exposes a raw wallet — buildCustomerSegments returns
+ * alias-only summaries by construction.
+ */
+async function handleSegments(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "GET, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed. Use GET." });
+
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("buyer_wallet, status, total_paid_cents, created_at")
+      .eq("seller_wallet", wallet)
+      .order("created_at", { ascending: false })
+      .limit(1000);
+
+    if (error) {
+      console.error("[segments] GET failed:", error);
+      return res.status(500).json({ error: "Could not load customer segments" });
+    }
+
+    const segments = buildCustomerSegments(data || []);
+    return res.status(200).json({ success: true, segments });
+  } catch (err) {
+    console.error("[segments] GET error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

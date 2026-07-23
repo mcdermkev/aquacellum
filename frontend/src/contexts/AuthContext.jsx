@@ -28,6 +28,7 @@ import { setSessionTokenGetter as setShippingSessionTokenGetter } from "../servi
 import { setSessionTokenGetter as setParcelPresetsSessionTokenGetter } from "../services/parcelPresets";
 import { setSessionTokenGetter as setReviewsSessionTokenGetter } from "../services/reviewsApi";
 import { setSessionTokenGetter as setMerchandisingSessionTokenGetter } from "../services/storeMerchandisingApi";
+import { setSessionTokenGetter as setPromotionsSessionTokenGetter } from "../services/promotionsApi";
 import { ensureProfile, updateProfile } from "../services/reefApi";
 import { identifyUser, resetAnalyticsIdentity, trackEvent } from "../services/analytics";
 
@@ -366,12 +367,14 @@ export function AuthProvider({ children }) {
       setParcelPresetsSessionTokenGetter(getAccessToken);
       setReviewsSessionTokenGetter(getAccessToken);
       setMerchandisingSessionTokenGetter(getAccessToken);
+      setPromotionsSessionTokenGetter(getAccessToken);
     } else {
       setSessionTokenGetter(null);
       setShippingSessionTokenGetter(null);
       setParcelPresetsSessionTokenGetter(null);
       setReviewsSessionTokenGetter(null);
       setMerchandisingSessionTokenGetter(null);
+      setPromotionsSessionTokenGetter(null);
     }
     return () => {
       setSessionTokenGetter(null);
@@ -379,6 +382,7 @@ export function AuthProvider({ children }) {
       setParcelPresetsSessionTokenGetter(null);
       setReviewsSessionTokenGetter(null);
       setMerchandisingSessionTokenGetter(null);
+      setPromotionsSessionTokenGetter(null);
     };
   }, [privyAuthenticated, getAccessToken]);
 
