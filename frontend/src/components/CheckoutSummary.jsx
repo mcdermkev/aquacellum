@@ -30,6 +30,7 @@ import { useRewardCredits, useApplyCredits } from "../hooks/useRewardsPool";
 import { calculateCheckoutDiscount } from "../services/rewardsPoolApi";
 import { ArrivalModal } from "./ArrivalModal";
 import { ShippingRateModal } from "./ShippingRateModal";
+import { PromoCodeField } from "./PromoCodeField";
 import { evaluateTankFit } from "../services/addOnRecommender";
 import { buyShippingLabel } from "../services/shipping";
 import { pushOrderToCloud, pullOrdersFromCloud, pushAllLocalOrders, subscribeToOrderUpdates } from "../services/ordersSync";
@@ -142,6 +143,12 @@ export function CheckoutSummary({
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [actionTx, setActionTx] = useState(null);
+
+  // Applied promo code (Task 21B buyer entry) — server-previewed, passed into
+  // the checkout call. Separate state per checkout lane (consolidated vs. the
+  // fry-batch panel) since they render and submit independently.
+  const [consolidatedPromo, setConsolidatedPromo] = useState(null); // { code, discountCents }
+  const [batchPromo, setBatchPromo] = useState(null);
 
   const openOrderDetail = (type, order) => {
     const key = type === "shipping" ? `ship-${order.tokenId}` : `batch-${order.purchaseId}`;
@@ -256,6 +263,16 @@ export function CheckoutSummary({
     }
   }, [preselectedOrderForCheckout, loading, shippingEscrows, purchases, clearPreselectedOrder, pendingTokenIds]);
 
+  // A previewed promo is against a specific cart — clear it if the cart changes
+  // so the displayed discount can't go stale (the server re-validates at
+  // checkout regardless, so this is display-hygiene, not a money guard). The
+  // PromoCodeField instances are also keyed on the same signature so their own
+  // internal "applied" state resets on remount.
+  useEffect(() => { setConsolidatedPromo(null); }, [pendingTokenIds]);
+  useEffect(() => {
+    setBatchPromo(null);
+  }, [pendingBatchCheckout?.listingId, pendingBatchCheckout?.quantity]);
+
   useEffect(() => {
     fetch("/fishbase_master.json?v=2")
       .then((res) => {
@@ -344,6 +361,7 @@ export function CheckoutSummary({
         imageUrl: listing.photoUrl || listing.imageUrl || undefined,
         buyerWallet: walletAccount,
         sellerWallet: listing.seller,
+        promoCode: batchPromo?.code,
       });
       // On success this redirects to Stripe; we only reach here on failure.
       if (!result.success) throw new Error(result.error || "Checkout failed");
@@ -401,7 +419,7 @@ export function CheckoutSummary({
           return;
         }
         // Local pickup → held until the in-person handshake (Stripe Checkout).
-        result = await purchasePickupSpecimen(base);
+        result = await purchasePickupSpecimen({ ...base, promoCode: consolidatedPromo?.code });
       } else {
         const items = pendingTokenIds.map((tid) => {
           const l = allActiveListings.find((x) => Number(x.tokenId) === tid);
@@ -413,7 +431,7 @@ export function CheckoutSummary({
             shippingFeeCents: toShipCents(l),
           };
         });
-        result = await stripePurchaseMultiple({ items, buyerWallet: walletAccount, sellerWallet: seller });
+        result = await stripePurchaseMultiple({ items, buyerWallet: walletAccount, sellerWallet: seller, promoCode: consolidatedPromo?.code });
       }
 
       // On success, stripePayments redirects the browser to Stripe's hosted
@@ -449,6 +467,7 @@ export function CheckoutSummary({
         shipServiceCode: rate.serviceCode,
         shipCarrierId: rate.carrierId,
         shipTo,
+        promoCode: consolidatedPromo?.code,
       });
       // On success this redirects to Stripe; we only reach here on failure.
       if (!result.success) throw new Error(result.error || "Checkout failed");
@@ -1168,6 +1187,8 @@ export function CheckoutSummary({
         const qty = Math.max(1, Math.min(available, Number(pendingBatchCheckout.quantity) || 1));
         const perFish = listing ? parseFloat(listing.priceUsd ?? listing.price ?? 0) : 0;
         const total = perFish * qty;
+        const netTotal = Math.max(0, total - (batchPromo?.discountCents || 0) / 100);
+        const batchPerFishCents = Number(listing?.priceCentsUSD) || Number(listing?.pricePerFishCents) || Math.round(perFish * 100);
         return (
           <div
             className="glass-card"
@@ -1234,6 +1255,19 @@ export function CheckoutSummary({
                   <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: 0, lineHeight: 1.5 }}>
                     🛡️ Your payment is held securely and only released to the breeder after you confirm the fry arrive safely. Nothing is reserved until you complete checkout.
                   </p>
+                  {/* Promo code (Task 21B) — server-previewed; reflected in the total. */}
+                  {listing?.seller && (
+                    <PromoCodeField
+                      key={"bpromo-" + pendingBatchCheckout.listingId + "-" + qty}
+                      sellerWallet={listing.seller}
+                      purchaseType="batch"
+                      casualModeActive={casualModeActive}
+                      items={[{ listingId: Number(pendingBatchCheckout.listingId), pricePerFishCents: batchPerFishCents, quantity: qty }]}
+                      onApply={(code, preview) =>
+                        setBatchPromo(code ? { code, discountCents: preview.discountCents } : null)
+                      }
+                    />
+                  )}
                 </div>
                 <div style={{ flex: "0 0 auto", width: "220px" }}>
                   <button
@@ -1242,7 +1276,7 @@ export function CheckoutSummary({
                     onClick={handleBatchCheckout}
                     style={{ width: "100%", justifyContent: "center" }}
                   >
-                    {actionLoading ? "Processing checkout..." : `Complete Purchase · $${total.toFixed(2)}`}
+                    {actionLoading ? "Processing checkout..." : `Complete Purchase · $${netTotal.toFixed(2)}`}
                   </button>
                 </div>
               </div>
@@ -1392,7 +1426,9 @@ export function CheckoutSummary({
                       creditData?.credits || 0,
                       useCreditsAtCheckout
                     );
-                    return discount.finalPrice;
+                    // Promo discount (server-previewed) is applied to goods on top
+                    // of the client-side tier/credit discount; clamp at 0.
+                    return Math.max(0, discount.finalPrice - (consolidatedPromo?.discountCents || 0) / 100);
                   })()).toFixed(2)}</strong>
                 </div>
 
@@ -1469,6 +1505,25 @@ export function CheckoutSummary({
                     </label>
                   </div>
                 )}
+
+                {/* Promo code (Task 21B) — server-previewed; the applied discount
+                    is reflected in the Total above and re-validated at checkout. */}
+                {activeSeller && (
+                  <PromoCodeField
+                    key={"promo-" + pendingTokenIds.slice().sort((a, b) => a - b).join("-")}
+                    sellerWallet={activeSeller}
+                    purchaseType="multi"
+                    casualModeActive={casualModeActive}
+                    items={cartItems.map((l) => ({
+                      tokenId: Number(l.tokenId),
+                      priceCentsUSD: Number(l.priceCentsUSD) || Math.round(parseFloat(l.priceUsd ?? l.price ?? "0") * 100),
+                    }))}
+                    onApply={(code, preview) =>
+                      setConsolidatedPromo(code ? { code, discountCents: preview.discountCents } : null)
+                    }
+                  />
+                )}
+
                 {casualModeActive && (
                   <div style={{
                     padding: "0.75rem",

@@ -2534,6 +2534,8 @@ export default async function handler(req, res) {
       return handleWebhook(req, res);
     case "create-checkout":
       return handleCreateCheckout(req, res);
+    case "preview-promo":
+      return handlePreviewPromo(req, res);
     case "connect-onboard":
       return handleConnectOnboard(req, res);
     case "release":
@@ -2748,6 +2750,74 @@ async function resolveCheckoutPromotion({ sellerWallet, promoCode, promotionId, 
   } catch (e) {
     console.warn("[Checkout] Promotion resolution skipped:", e.message);
     return null;
+  }
+}
+
+/**
+ * ?action=preview-promo — read-only promo check for the buyer's checkout UI.
+ * Resolves the seller's promo for a code and evaluates it (via the pure
+ * promotionEngine) against a DISPLAY cart, returning the discount + a reason.
+ *
+ * Deliberately does nothing money-related: no Stripe session, no coupon, no
+ * charge, no used_count. It lets the buyer see "code applied − $X" or "invalid
+ * code" BEFORE paying — the AUTHORITATIVE re-validation (server-resolved prices
+ * + the real coupon + fee/payout split) still happens only at create-checkout.
+ * Because it's display-only, it evaluates against the client-supplied item
+ * prices; a tampered preview only misleads the tamperer and never affects the
+ * real charge.
+ *
+ * POST { sellerWallet, promoCode?|promotionId?, items:[...], purchaseType }
+ */
+async function handlePreviewPromo(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const { sellerWallet, promoCode, promotionId, items, purchaseType } = req.body || {};
+  if (!sellerWallet || (!promoCode && !promotionId)) {
+    return res.status(400).json({ error: "Missing sellerWallet and promoCode/promotionId" });
+  }
+
+  const cart = {
+    items: (Array.isArray(items) ? items : []).map((it) => ({
+      unitPriceCents:
+        purchaseType === "batch"
+          ? Number(it.pricePerFishCents || it.priceCentsUSD || 0)
+          : Number(it.priceCentsUSD || 0),
+      quantity: purchaseType === "batch" ? (Number(it.quantity) || 1) : 1,
+      listingKey: purchaseType === "batch" ? `batch-${it.listingId}` : `single-${it.tokenId}`,
+    })),
+  };
+
+  try {
+    const seller = String(sellerWallet).toLowerCase();
+    let query = supabase.from("seller_promotions").select("*").eq("wallet_address", seller).eq("active", true);
+    if (promotionId) query = query.eq("id", promotionId);
+    const { data: rows } = await query;
+
+    // Match by id (already filtered) or a case-insensitive code compare in JS
+    // (never interpolate a buyer-supplied code into the query).
+    const wanted = promoCode ? String(promoCode).trim().toUpperCase() : null;
+    const promo = promotionId
+      ? (rows || [])[0]
+      : (rows || []).find((r) => (r.code || "").toUpperCase() === wanted);
+
+    if (!promo) {
+      return res.status(200).json({ applicable: false, discountCents: 0, reason: "That code isn't valid for this seller." });
+    }
+
+    const evaluation = evaluatePromotion(promo, cart, { now: Date.now() });
+    return res.status(200).json({
+      applicable: evaluation.applicable,
+      discountCents: evaluation.discountCents,
+      reason: evaluation.reason,
+      funding: evaluation.funding,
+      promotion: evaluation.applicable
+        ? { promotionId: promo.id, code: promo.code || null, funding: promo.funding }
+        : null,
+    });
+  } catch (e) {
+    console.warn("[Checkout] promo preview failed:", e.message);
+    return res.status(200).json({ applicable: false, discountCents: 0, reason: "Could not check that code right now." });
   }
 }
 

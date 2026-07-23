@@ -130,6 +130,7 @@ export async function purchaseShippingSpecimen({
   shipServiceCode,
   shipCarrierId,
   shipTo,
+  promoCode,
 }) {
   return _createCheckout({
     purchaseType: "shipping",
@@ -137,6 +138,8 @@ export async function purchaseShippingSpecimen({
     sellerWallet,
     // Buyer destination — stamped into order metadata for the seller's label buy.
     ...(shipTo ? { shipTo } : {}),
+    // Optional promotion code — the server re-validates + applies it (Task 21B).
+    ...(promoCode ? { promoCode } : {}),
     items: [{
       tokenId,
       commonName,
@@ -172,11 +175,13 @@ export async function purchaseBatch({
   imageUrl,
   buyerWallet,
   sellerWallet,
+  promoCode,
 }) {
   return _createCheckout({
     purchaseType: "batch",
     buyerWallet,
     sellerWallet,
+    ...(promoCode ? { promoCode } : {}),
     items: [{
       listingId,
       commonName,
@@ -196,11 +201,12 @@ export async function purchaseBatch({
  * @param {string} params.sellerWallet - Seller's wallet (all items must be same seller)
  * @returns {Promise<{success: boolean, checkoutUrl?: string, error?: string}>}
  */
-export async function purchaseMultiple({ items, buyerWallet, sellerWallet }) {
+export async function purchaseMultiple({ items, buyerWallet, sellerWallet, promoCode }) {
   return _createCheckout({
     purchaseType: "multi",
     buyerWallet,
     sellerWallet,
+    ...(promoCode ? { promoCode } : {}),
     items,
   });
 }
@@ -217,13 +223,51 @@ export async function purchasePickupSpecimen({
   imageUrl,
   buyerWallet,
   sellerWallet,
+  promoCode,
 }) {
   return _createCheckout({
     purchaseType: "pickup",
     buyerWallet,
     sellerWallet,
+    ...(promoCode ? { promoCode } : {}),
     items: [{ tokenId, commonName, scientificName, priceCentsUSD, imageUrl }],
   });
+}
+
+/**
+ * Read-only promo-code preview for the buyer's checkout UI. Asks the server to
+ * resolve + evaluate a seller's promotion against the current cart WITHOUT
+ * creating a checkout — so the buyer sees "code applied − $X" or an "invalid
+ * code" message before paying. The authoritative discount is still applied
+ * server-side at create-checkout; this is display-only.
+ *
+ * @param {Object} params
+ * @param {string} params.sellerWallet
+ * @param {string} [params.promoCode]
+ * @param {string} [params.promotionId]
+ * @param {Array} params.items - the cart items (tokenId/listingId + price fields)
+ * @param {string} params.purchaseType - "batch" switches the cart shape; else single/multi
+ * @returns {Promise<{applicable:boolean, discountCents:number, reason?:string, promotion?:Object|null}>}
+ */
+export async function previewPromotion({ sellerWallet, promoCode, promotionId, items, purchaseType }) {
+  try {
+    if (!sellerWallet || (!promoCode && !promotionId)) {
+      return { applicable: false, discountCents: 0, reason: "Enter a code to check." };
+    }
+    const response = await fetch(`${API_BASE}/stripe?action=preview-promo`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sellerWallet, promoCode, promotionId, items, purchaseType }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { applicable: false, discountCents: 0, reason: data.error || "Could not check that code." };
+    }
+    return data;
+  } catch (err) {
+    console.error("[StripePayments] previewPromotion failed:", err);
+    return { applicable: false, discountCents: 0, reason: "Network error checking the code." };
+  }
 }
 
 /**
