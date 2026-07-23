@@ -56,6 +56,28 @@ export function HandshakeVerification({
   
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const dialogRef = useRef(null);
+
+  // Task 21D a11y fix: this modal predated the shared accessible Modal
+  // component and had no Escape-to-close or initial-focus handling — mirror
+  // Modal.jsx's own behavior locally rather than migrating to <Modal> (this
+  // component has camera/scan state that would need re-verifying against a
+  // structural rewrite, which is out of scope for a hardening pass).
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    const timer = setTimeout(() => dialogRef.current?.focus(), 50);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      clearTimeout(timer);
+    };
+  }, [isOpen, onClose]);
 
   // If modal closes, reset states and camera stream
   useEffect(() => {
@@ -354,7 +376,13 @@ export function HandshakeVerification({
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&color=${qrColor}&bgcolor=0f172a&data=${encodeURIComponent(qrData)}`;
 
   return (
-    <div style={{
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="In-person handshake verification"
+      ref={dialogRef}
+      tabIndex={-1}
+      style={{
       position: "fixed",
       top: 0,
       left: 0,
@@ -421,6 +449,7 @@ export function HandshakeVerification({
           </div>
           <button 
             onClick={onClose}
+            aria-label="Close handshake verification"
             style={{
               background: "rgba(255,255,255,0.03)",
               border: "1px solid rgba(255,255,255,0.08)",

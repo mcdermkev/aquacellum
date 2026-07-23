@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { getShippingRates, describeRate, formatUSD } from "../services/shipping";
 
 /**
@@ -33,6 +33,28 @@ export function ShippingRateModal({ isOpen, onClose, listing, onProceed }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [quoted, setQuoted] = useState(false);
+  const dialogRef = useRef(null);
+
+  // Task 21D a11y fix: this modal predated the shared accessible Modal
+  // component and had no dialog semantics — Escape-to-close and initial
+  // focus into the dialog, matching Modal.jsx's own behavior (kept local
+  // rather than migrating to <Modal> to avoid restructuring this
+  // form-heavy layout in a hardening pass).
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    const timer = setTimeout(() => dialogRef.current?.focus(), 50);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      clearTimeout(timer);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -101,11 +123,19 @@ export function ShippingRateModal({ isOpen, onClose, listing, onProceed }) {
   const priceUSD = formatUSD(listing.priceCentsUSD || 0);
 
   return (
-    <div style={overlay} onClick={onClose}>
-      <div style={modal} onClick={(e) => e.stopPropagation()}>
+    <div style={overlay} onClick={onClose} aria-hidden="true">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Shipping options for ${listing.commonName || "live specimen"}`}
+        tabIndex={-1}
+        style={modal}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h3 style={{ margin: 0, color: "#fff" }}>🚚 Shipping — {listing.commonName || "Live specimen"}</h3>
-          <button onClick={onClose} style={closeBtn}>✕</button>
+          <button onClick={onClose} style={closeBtn} aria-label="Close shipping options">✕</button>
         </div>
 
         <p style={{ color: "var(--text-muted, #9fb3c8)", fontSize: "0.85rem", marginTop: 0 }}>

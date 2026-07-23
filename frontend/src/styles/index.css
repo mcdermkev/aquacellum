@@ -2002,6 +2002,56 @@ textarea:focus:not(:focus-visible) {
   }
 }
 
+/* =========================================================================
+   HIGH CONTRAST MODE (Task 21D)
+   Applies at BOTH the OS-level `prefers-contrast: more` media query and the
+   manual `[data-contrast="high"]` toggle (useHighContrast.js) so users get
+   the same raised-contrast treatment whether their OS requests it or they
+   opt in manually from the Settings tab. Stays on-brand: raises text/border
+   contrast and reduces glass transparency/blur without abandoning the dark
+   aquatic palette — no flat-white backgrounds.
+   ========================================================================= */
+
+@media (prefers-contrast: more) {
+  :root {
+    --text-primary: #ffffff;
+    --text-secondary: #e2e8f0;
+    --text-muted: #b8c4d4;
+    --glass-bg: rgba(10, 14, 22, 0.92);
+    --glass-bg-hover: rgba(255, 255, 255, 0.14);
+    --glass-border: rgba(255, 255, 255, 0.28);
+    --glass-border-hover: rgba(255, 255, 255, 0.4);
+  }
+}
+
+[data-contrast="high"] {
+  --text-primary: #ffffff;
+  --text-secondary: #e2e8f0;
+  --text-muted: #b8c4d4;
+  --glass-bg: rgba(10, 14, 22, 0.92);
+  --glass-bg-hover: rgba(255, 255, 255, 0.14);
+  --glass-border: rgba(255, 255, 255, 0.28);
+  --glass-border-hover: rgba(255, 255, 255, 0.4);
+}
+
+[data-contrast="high"] .glass-card,
+[data-contrast="high"] .sf-analytics__card,
+[data-contrast="high"] .sf-setup,
+[data-contrast="high"] .buyer-insights__xp-progress {
+  backdrop-filter: blur(6px);
+  border-width: 1.5px;
+}
+
+[data-contrast="high"] button:focus-visible,
+[data-contrast="high"] a:focus-visible,
+[data-contrast="high"] input:focus-visible,
+[data-contrast="high"] select:focus-visible,
+[data-contrast="high"] textarea:focus-visible,
+[data-contrast="high"] [tabindex]:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+}
+
 
 /* =========================================================================
    QUICK WIN 13: Shared Interactive Utility Classes

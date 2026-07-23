@@ -8,6 +8,8 @@ import { CartButton } from "./components/cart/CartButton";
 import { CartDrawer } from "./components/cart/CartDrawer";
 import { FontSizeSettings } from "./components/FontSizeSettings";
 import { useFontSettings } from "./hooks/useFontSettings";
+import { HighContrastToggle } from "./components/HighContrastToggle";
+import { useHighContrast } from "./hooks/useHighContrast";
 import { SpecimenDetailModal } from "./components/SpecimenDetailModal";
 import { getLevelInfo, getXp } from "./utils/xp";
 import { haptic } from "./utils/haptics";
@@ -118,6 +120,10 @@ export default function App() {
   // Settings tab's FontSizeSettings panel lets them change it; this call keeps
   // the choice applied globally, not just while that panel is mounted.
   useFontSettings();
+  // Task 21D: same pattern for high-contrast mode — apply the persisted
+  // preference app-wide on every load, not just while the Settings tab's
+  // HighContrastToggle happens to be mounted.
+  const highContrast = useHighContrast();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
@@ -788,6 +794,7 @@ export default function App() {
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             <FontSizeSettings />
+            <HighContrastToggle enabled={highContrast.enabled} onToggle={highContrast.toggle} />
             <DataPortabilityWidget 
               casualModeActive={casualModeActive} 
               onToggleMode={(newCasualVal) => {

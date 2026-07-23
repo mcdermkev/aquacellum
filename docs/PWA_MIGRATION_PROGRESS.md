@@ -158,6 +158,202 @@ Captured from the retired mockups; all were non-functional demos (no logic lost)
 
 ---
 
+## Task 21D — Hardening + accessibility audit pass (Tier B, no review gate)
+
+Ran the audit checklist from `docs/TASK_21D_PWA_HARDENING_SPEC.md` §2 against
+the infrastructure above (which already works — this was verification +
+targeted fixes, not a rebuild) and added the one net-new feature (high-contrast
+mode). **Honesty note:** actual install/update/offline/push/screen-reader
+behavior needs a real device + browser + assistive technology to fully verify;
+what follows is what could be checked by reading code/config plus the concrete
+fixes made. Items marked ⚠️ NEEDS MANUAL VERIFICATION were not (and cannot be)
+exercised in this environment.
+
+### Install — ✅ pass, no changes needed
+- `beforeinstallprompt` capture in `PwaManager.jsx` is gated behind
+  `!isStandalone()` (checks both `display-mode: standalone` and iOS's
+  `navigator.standalone`), so the prompt is suppressed once installed.
+- iOS hint (`showIosHint`) only sets when `isIosDevice() && !isStandalone()`
+  and the dismissal is remembered in `localStorage` (`aquadex_ios_install_hint_dismissed`).
+- Manifest `scope: '/'`, `start_url: '/app'` — `/store/*`, `/app/*`, and every
+  marketplace route fall inside scope; nothing needed narrowing/widening.
+- ⚠️ NEEDS MANUAL VERIFICATION: real Android/desktop Chrome `beforeinstallprompt`
+  firing, actual "Add to Home Screen" on a real iOS device, and confirming the
+  installed app opens at `/app` with no browser chrome.
+
+### Update — ✅ pass, no changes needed
+- `registerType: 'prompt'` + `useRegisterSW` wired correctly in `PwaManager.jsx`;
+  `updateServiceWorker(true)` on "Reload" triggers `sw.js`'s `SKIP_WAITING`
+  message handler → `self.skipWaiting()`.
+- Update checks fire on load, on window `focus`, on `visibilitychange` →
+  `visible`, and every 30 minutes for long-lived tabs — all present and
+  correctly wired to `registration.update()`.
+- ⚠️ NEEDS MANUAL VERIFICATION: that a real deploy actually flips `needRefresh`
+  promptly and that reload doesn't leave a stale shell (the `injectManifest`
+  precache + `skipWaiting` combination should prevent this, but only a live
+  deploy proves it).
+
+### Offline — ✅ pass (one real bug found and fixed elsewhere, see Push below)
+- App-shell precache + `StaleWhileRevalidate` runtime JS caching are configured
+  correctly in `sw.js`; `/api/*` is explicitly `NetworkOnly` (never serves stale
+  authenticated data offline).
+- `MarketplaceBoard.jsx` and `StorefrontPage.jsx` both track `navigator.onLine`
+  and render an explicit offline banner over cached data — offline never look
+  like a blank screen or a raw fetch error on those surfaces.
+- The Task 10 cart is Dexie-backed (`cartStore.js`) and reads/writes locally
+  first, syncing to the server only best-effort — usable offline by design.
+- The Task 18 buyer order cache (`relayGetOrders`/Dexie `marketOrders`) is the
+  same local-first pattern.
+- **Pending-handoff verification language:** checked the cash/pickup handoff
+  path (`HandshakeVerification.jsx`, `relaySettleHandshake`) — success/"settled"
+  toasts only render **after** the relay call resolves with `result.success`;
+  there is no optimistic "complete" state shown before that network
+  confirmation, which matches the plan's "pending verification, not complete"
+  requirement. There isn't a dedicated *offline* state for this flow (a fully
+  offline device just gets the relay's own error), so a genuinely offline
+  handoff attempt surfaces as an error rather than a distinct "pending
+  verification" banner — worth a small follow-up if beta testers hit this in
+  a low-signal venue setting, but it does not violate the "never show complete
+  before verification" rule.
+- ⚠️ NEEDS MANUAL VERIFICATION: actually going offline mid-session on a device
+  and exercising cart checkout, order viewing, and a cash handoff attempt.
+
+### Push — 🐛 real bug found and fixed
+- `supabase/functions/order-notifications/index.ts` (the Edge Function that
+  fires on every `orders` UPDATE/INSERT) was deep-linking every marketplace
+  push notification (new order, dispatched, released, disputed, resolved,
+  refunded — 9 call sites) to **`/marketplace?tab=orders`**, a URL from the
+  pre-Phase-1 multi-page-HTML era. Since Phase 1/2 of this migration,
+  `marketplace.html` is the static public browse page with no tab concept and
+  the real order surface is `/app/orders` (the React Router SPA). Every
+  marketplace push notification's deep link was silently broken (would land on
+  the public browse page, not the buyer/seller's actual order). **Fixed**: all
+  9 occurrences now deep-link to `/app/orders`.
+  - This function was not touched by the Phase 1 migration (which only updated
+    `js/shared-nav.js` and in-app navigation calls) — this is exactly the kind
+    of stale-link regression a URL migration leaves behind in server-side code
+    outside the audited client bundle.
+- **Smaller gap noted, not fixed (icon assets don't exist yet):** the same
+  function references `icon: "/icons/order-new.png"` /
+  `order-shipped.png`/`order-complete.png`/`order-alert.png`/`order-refund.png`
+  — none of these files exist in `frontend/public/icons/` (only the app-icon
+  set: `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`,
+  `apple-touch-icon-180.png`). Browsers fall back to a default icon when the
+  referenced image 404s, so this degrades gracefully (no broken notification),
+  but the intended per-event iconography never actually renders. Left as a
+  follow-up rather than fabricating five new icon assets in a hardening pass —
+  flagging here so it's tracked.
+- `sw.js`'s `notificationclick` handler correctly reads `event.notification.data.url`
+  (which now carries the fixed `/app/orders` path) and either focuses an
+  existing client + posts a `NOTIFICATION_CLICK` message, or opens a new
+  window at that URL.
+- ⚠️ NEEDS MANUAL VERIFICATION: an actual push round-trip (subscribe → trigger
+  an order status change → notification arrives → click → lands on
+  `/app/orders`) on a real device/browser with push permission granted.
+
+### Perf — ✅ pass, no changes needed
+- Marketplace listing images already lazy-load via `LazyImage.jsx`
+  (`IntersectionObserver`, `rootMargin: "300px"`, shimmer placeholder while
+  loading) — not a raw `<img>` per card.
+- `MarketplaceBoard.jsx` virtualizes the listing grid with
+  `@tanstack/react-virtual` (`useVirtualizer`) rather than rendering every
+  listing DOM node at once.
+- `vite.config.js`'s `manualChunks` already splits `react-vendor` and
+  `icons-vendor` out of the app entry chunk (Phase 4b, done); all nine main
+  tabs in `App.jsx` are `React.lazy`-loaded per-tab chunks; `ethers` is a
+  UMD-global shim, not bundled.
+- No obvious regression found; nothing flagged for follow-up here.
+
+### Accessibility sweep — 2 real gaps found and fixed, findings below
+Ten modal-like surfaces (`AcclimationChecklist`, `ArrivalModal`,
+`BatchListingWizard`, `EditListingModal`, `FeedbackWidget`, `ListSpecimenModal`,
+`OfferModal`, `ProductDetailModal`, `SpecimenDetailModal`, `WhatsNewModal`,
+plus `CartDrawer` via its sliding-drawer variant) already compose the shared
+accessible `Modal.jsx` (`role="dialog"`, `aria-modal`, focus trap, Escape-to-close,
+focus return on close). Two older, form/camera-heavy surfaces predated that
+component and had none of this:
+- **`ShippingRateModal.jsx`** (buyer address/rate picker at checkout) — was a
+  bare `<div>` overlay with no dialog role, no Escape handler, no focus
+  management, and an unlabeled `✕` close button. **Fixed**: added
+  `role="dialog"`/`aria-modal`/`aria-label`, an Escape-to-close keydown
+  listener scoped to `isOpen`, initial focus into the dialog on open, and
+  `aria-label="Close shipping options"` on the close button. Did not migrate
+  it onto the shared `<Modal>` component itself (would mean restructuring a
+  form-heavy layout with live rate-fetching state — out of scope for a
+  hardening pass; the fix gives it the same *contract* `Modal` provides).
+- **`HandshakeVerification.jsx`** (pickup/cash QR handoff + camera scanner) —
+  same gaps (no dialog role/Escape/focus management, unlabeled close button).
+  **Fixed** identically; left the camera/scan state untouched.
+- Both fixes are covered by source-guard tests
+  (`src/components/a11yAudit.catalog.test.js`).
+- Spot-check contrast pass (`meetsContrastAA` from `utils/a11y.js`,
+  checked manually against the documented tokens in
+  `docs/BRAND_KIT.md` — `--text-primary #f8fafc` / `--text-secondary #94a3b8`
+  on `--bg-primary #080c14` and glass surfaces):
+
+  | Surface | Text/bg pair | AA (normal text, 4.5:1)? |
+  |---|---|---|
+  | Cart drawer (`CartDrawer.jsx`) | `--text-primary` on `--bg-primary` | Pass (contrast ≈ 17.9:1) |
+  | Orders list (`CheckoutSummary.jsx`) | `--text-secondary` on `--bg-primary` | Pass (≈ 8.4:1) |
+  | Storefront (`StorefrontPage.jsx`) | `--text-muted #7d8fa3` on `--bg-primary` | **Borderline** (≈ 5.4:1, passes 4.5:1 but with less margin — fine for body text, avoid using `--text-muted` for anything below ~14px) |
+  | Breeder Terminal (`BreederTerminal.jsx`) | `--text-primary` on glass cards (`--glass-bg` over `--bg-primary`) | Pass (glass overlay only slightly lightens the effective background) |
+  | Checkout (`ShippingRateModal.jsx`) | `#fff` on `#0f1b2a` (component-local, not tokenized) | Pass (≈ 16.8:1) |
+
+  This was a manual token-value check, not an automated per-pixel audit (no
+  rendered DOM available in this environment) — treat as directional, not a
+  certified WCAG pass. ⚠️ NEEDS MANUAL VERIFICATION with a real contrast
+  checker against rendered pages, plus screen-reader (VoiceOver/NVDA/TalkBack)
+  passes over the fixed modals and the new high-contrast toggle.
+
+### Net-new: high-contrast mode toggle — done
+- `src/hooks/useHighContrast.js` — mirrors `useFontSettings.js`'s shape
+  exactly: a `localStorage`-persisted boolean (`aquadex_high_contrast`),
+  applied via a root `data-contrast="high"` attribute on
+  `document.documentElement`. The load/persist/apply functions each take an
+  injectable storage/target so they're unit-testable without a DOM (this
+  repo's vitest runs in a `node` environment).
+- Applied app-wide via a root-level `useHighContrast()` call in `App.jsx`,
+  next to the existing `useFontSettings()` call — same pattern, so the
+  preference is active immediately on load, not only while the Settings tab
+  is open.
+- `src/components/HighContrastToggle.jsx` — a real `<button role="switch"
+  aria-checked aria-label>` (keyboard-operable natively, ≥44px target),
+  `announce()`s the new state on toggle. Mounted in the Settings tab next to
+  `FontSizeSettings` (the accessibility cluster).
+- **CSS discrepancy vs. the spec's assumption:** the spec's §0 context claimed
+  `index.css`/`storefront.css` "already has `prefers-contrast`/
+  `prefers-reduced-motion` rules." Verified `prefers-reduced-motion` does
+  exist (several blocks in `index.css`, `storefront.css`); **`prefers-contrast`
+  did not exist anywhere in the codebase** — only the reduced-motion query was
+  real. Added both the OS-level `@media (prefers-contrast: more)` rule and the
+  manual `[data-contrast="high"]` rule together in `index.css`, sharing the
+  same raised-contrast token values (stronger `--text-*`, less transparent/less
+  blurred `--glass-*`, thicker glass-card borders, and a visible 3px white
+  focus ring on every interactive element) — so this toggle is the first place
+  either form of high-contrast support exists in the app, not a composition of
+  a pre-existing rule.
+- Tests: `src/hooks/useHighContrast.test.js` (persist/apply logic +
+  root-level-application source-guards), plus toggle keyboard/labeling
+  source-guards in the same file.
+
+### Summary
+| Area | Result |
+|---|---|
+| Install | ✅ Pass — no code changes needed |
+| Update | ✅ Pass — no code changes needed |
+| Offline | ✅ Pass — cart/orders/cash-handoff behavior all correct |
+| Push | 🐛 Fixed — 9 stale `/marketplace?tab=orders` deep links → `/app/orders`; noted (not fixed) 5 missing per-event icon assets |
+| Perf | ✅ Pass — lazy images + virtualized grid + code-split chunks already in place |
+| Accessibility | 🐛 Fixed — 2 modal-like surfaces lacked dialog semantics/focus management/Escape; added a spot-check contrast table |
+| High-contrast mode | ✅ Built — hook + toggle + CSS (both OS-level and manual), applied app-wide |
+
+**What still needs manual device/browser/AT testing** (cannot be verified from
+code alone): real install prompts on Android/desktop/iOS, a live deploy's
+update-prompt timing, going genuinely offline mid-session, an actual push
+subscribe→notify→click round trip, and a screen-reader pass (VoiceOver/NVDA/
+TalkBack) over the two newly-fixed modals and the high-contrast toggle. A full
+cross-device/AT matrix is Task-24-style scope, not this hardening pass.
+
 ## Key files touched
 - `frontend/src/main.jsx` — BrowserRouter + PwaManager mount
 - `frontend/src/App.jsx` — router-driven tabs + lazy tab imports
@@ -182,3 +378,15 @@ Captured from the retired mockups; all were non-functional demos (no logic lost)
 - `frontend/src/components/HatcheryLogs.jsx` — now imports the extracted tracker
 - `frontend/src/utils/xp.js` — added `ACCLIMATION_COMPLETED` (20) + `MORPH_REGISTERED` (30) XP actions
 - Deleted: `frontend/public/sw.js` + 7 legacy `*.html` pages
+
+### Task 21D additions
+- `frontend/src/hooks/useHighContrast.js` — high-contrast mode hook (new)
+- `frontend/src/hooks/useHighContrast.test.js` — unit tests (new)
+- `frontend/src/components/HighContrastToggle.jsx` — Settings-tab toggle (new)
+- `frontend/src/App.jsx` — root-level `useHighContrast()` call + `<HighContrastToggle>` mount in Settings
+- `frontend/src/styles/index.css` — added `@media (prefers-contrast: more)` + `[data-contrast="high"]` rulesets
+- `frontend/src/components/ShippingRateModal.jsx` — added dialog semantics, Escape-to-close, focus management, labeled close button
+- `frontend/src/components/HandshakeVerification.jsx` — same a11y fixes as above
+- `frontend/src/components/a11yAudit.catalog.test.js` — source-guards for both a11y fixes (new)
+- `frontend/src/components/PwaManager.test.js` — install/update source-guards (new)
+- `supabase/functions/order-notifications/index.ts` — fixed 9 stale `/marketplace?tab=orders` push deep links → `/app/orders`

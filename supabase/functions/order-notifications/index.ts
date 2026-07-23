@@ -90,7 +90,7 @@ serve(async (req) => {
         title: "New Order Received",
         body: `Someone purchased ${orderLabel}! Check your orders to fulfill.`,
         icon: "/icons/order-new.png",
-        url: "/marketplace?tab=orders",
+        url: "/app/orders",
         category: "order",
         tag: `order-new-${order.id}`,
       });
@@ -116,7 +116,7 @@ serve(async (req) => {
               ? `${orderLabel} is on its way! Tracking: ${order.tracking_number}`
               : `${orderLabel} has been dispatched by the breeder.`,
             icon: "/icons/order-shipped.png",
-            url: "/marketplace?tab=orders",
+            url: "/app/orders",
             category: "order",
             tag: `order-dispatched-${order.id}`,
           });
@@ -131,7 +131,7 @@ serve(async (req) => {
             title: "Funds Released!",
             body: `Payment for ${orderLabel} has been released to you. ($${(order.total_paid_cents / 100).toFixed(2)})`,
             icon: "/icons/order-complete.png",
-            url: "/marketplace?tab=orders",
+            url: "/app/orders",
             category: "order",
             tag: `order-released-${order.id}`,
           });
@@ -141,7 +141,7 @@ serve(async (req) => {
             title: "Order Complete",
             body: `Your order for ${orderLabel} is confirmed complete. Enjoy your new fish!`,
             icon: "/icons/order-complete.png",
-            url: "/marketplace?tab=orders",
+            url: "/app/orders",
             category: "order",
             tag: `order-complete-${order.id}`,
           });
@@ -154,7 +154,7 @@ serve(async (req) => {
             title: "Order Disputed",
             body: `A buyer has opened a dispute on ${orderLabel}. A curator will review.`,
             icon: "/icons/order-alert.png",
-            url: "/marketplace?tab=orders",
+            url: "/app/orders",
             category: "order",
             tag: `order-disputed-${order.id}`,
           });
@@ -167,7 +167,7 @@ serve(async (req) => {
             title: "Dispute Resolved — Funds Released",
             body: `The dispute on ${orderLabel} was resolved in your favor. Funds released.`,
             icon: "/icons/order-complete.png",
-            url: "/marketplace?tab=orders",
+            url: "/app/orders",
             category: "order",
             tag: `order-resolved-${order.id}`,
           });
@@ -176,7 +176,7 @@ serve(async (req) => {
             title: "Dispute Resolved",
             body: `The dispute on ${orderLabel} was reviewed. Funds released to seller.`,
             icon: "/icons/order-alert.png",
-            url: "/marketplace?tab=orders",
+            url: "/app/orders",
             category: "order",
             tag: `order-resolved-${order.id}`,
           });
@@ -189,7 +189,7 @@ serve(async (req) => {
             title: "Order Refunded",
             body: `Your order for ${orderLabel} has been refunded. ($${(order.total_paid_cents / 100).toFixed(2)})`,
             icon: "/icons/order-refund.png",
-            url: "/marketplace?tab=orders",
+            url: "/app/orders",
             category: "order",
             tag: `order-refunded-${order.id}`,
           });
@@ -199,7 +199,7 @@ serve(async (req) => {
             title: "Order Refunded",
             body: `Your order for ${orderLabel} has been refunded to the buyer.`,
             icon: "/icons/order-refund.png",
-            url: "/marketplace?tab=orders",
+            url: "/app/orders",
             category: "order",
             tag: `order-refunded-seller-${order.id}`,
           });
