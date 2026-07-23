@@ -3122,7 +3122,10 @@ async function handleCreateCheckout(req, res) {
             amount_off: candidate,
             currency: "usd",
             duration: "once",
-            name: resolved.code ? `Promo ${resolved.code}` : "Discount",
+            // Stripe caps the coupon name at 40 chars; a promo code can itself be
+            // up to 40, so slice to stay within the limit (otherwise coupons.create
+            // throws and the fail-open path would silently drop a valid discount).
+            name: (resolved.code ? `Promo ${resolved.code}` : "Discount").slice(0, 40),
             metadata: { promotionId: String(resolved.promotionId), funding: resolved.funding },
           });
           discounts = [{ coupon: coupon.id }];
