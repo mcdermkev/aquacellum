@@ -842,6 +842,40 @@
   color: var(--text-secondary);
 }
 
+/* Task 21C — accessible text/table equivalents for chart data */
+.sf-analytics__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.sf-analytics__table th,
+.sf-analytics__table td {
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+}
+
+.sf-analytics__table th[scope="row"] {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.sf-analytics__table thead th {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+}
+
+.sf-analytics__table td:last-child,
+.sf-analytics__table th:last-child {
+  text-align: right;
+  font-family: 'JetBrains Mono', monospace;
+}
+
 @media (max-width: 560px) {
   .sf-analytics__kpis {
     grid-template-columns: repeat(2, 1fr);
@@ -851,5 +885,65 @@
   }
   .sf-analytics__species-row {
     grid-template-columns: 90px 1fr auto;
+  }
+  .sf-analytics__table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+/* =========================================================================
+   BUYER INSIGHTS (Task 21C) — order-history area, universal base view +
+   XP-progress hero element
+   ========================================================================= */
+
+.buyer-insights {
+  max-width: 640px;
+  margin: 1.5rem auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.buyer-insights__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.75rem;
+}
+
+.buyer-insights__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+}
+
+.buyer-insights__xp-progress {
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(251, 191, 36, 0.18);
+}
+
+.buyer-insights__xp-bar-track {
+  height: 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.buyer-insights__xp-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--amber-300, #fcd34d), var(--teal-300, #5eead4));
+}
+
+@media (max-width: 560px) {
+  .buyer-insights__kpis {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

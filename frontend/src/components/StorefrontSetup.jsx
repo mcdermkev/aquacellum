@@ -32,6 +32,7 @@ import { getProfile } from "../services/reefApi";
 import { startSellerOnboarding, checkSellerStatus } from "../services/stripePayments";
 import { SellerAnalytics } from "./storefront/SellerAnalytics";
 import { ShipFromSetup } from "./ShipFromSetup";
+import { getXp } from "../utils/xp";
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/;
 const MAX_BIO = 280;
@@ -689,7 +690,7 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
 
       {/* Premium seller analytics — visible once the store is published */}
       {isEditing && (
-        <SellerAnalytics walletAccount={walletAccount} casualModeActive={casualModeActive} />
+        <SellerAnalytics walletAccount={walletAccount} casualModeActive={casualModeActive} totalXp={getXp()} />
       )}
     </div>
   );

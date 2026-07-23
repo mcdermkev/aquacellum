@@ -36,6 +36,7 @@ import { pushOrderToCloud, pullOrdersFromCloud, pushAllLocalOrders, subscribeToO
 import { OrderReceipt } from "./OrderReceipt";
 import { OrderAnalytics } from "./OrderAnalytics";
 import { OrderWatchlistReorder } from "./OrderWatchlistReorder";
+import { BuyerInsights } from "./BuyerInsights";
 import { getFeatureStatus, getNextTierUnlocks } from "../utils/orderFeatureGates";
 import { hasEntitlement } from "../services/entitlements";
 import { normalizeBuyerOrders, filterBuyerOrders } from "../services/buyerOrderView";
@@ -2018,6 +2019,12 @@ export function CheckoutSummary({
           </>
         );
       })()}
+
+      {/* Task 21C: Buyer insights + XP progress — universal, never gated.
+          Mounted here (the buyer's order-history surface) regardless of
+          order count, since XP-progress is meaningful even before a
+          buyer's first purchase. */}
+      <BuyerInsights walletAccount={walletAccount} totalXp={totalXp} casualModeActive={casualModeActive} />
 
       {/* ─── XP-Gated Advanced Features Section ──────────────────────── */}
       {(shippingEscrows.length > 0 || purchases.length > 0) && (

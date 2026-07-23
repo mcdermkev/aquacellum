@@ -39,8 +39,13 @@ import {
   DownloadSimple,
   Fish,
   Clock,
+  HandCoins,
 } from "@phosphor-icons/react";
 import { fetchSellerAnalytics, fetchSellerOrders } from "../../services/ordersSync";
+import { boxUtilization, localDeliveryPerformance, cashSaleReport, ANALYTICS_COPY } from "../../services/marketplaceAnalytics";
+import { hasEntitlement } from "../../services/entitlements";
+import { formatPriceCents } from "../../services/catalogQuery";
+import { prefersReducedMotion } from "../../utils/a11y";
 
 const COMPLETED_STATUSES = ["released", "completed", "settled", "resolved_released"];
 
@@ -64,10 +69,17 @@ const fmtHours = (h) => {
   return `${(h / 24).toFixed(1)}d`;
 };
 
-export function SellerAnalytics({ walletAccount, casualModeActive = false }) {
+export function SellerAnalytics({ walletAccount, casualModeActive = false, totalXp = 0 }) {
   const [viewStats, setViewStats] = useState(null); // from order_analytics view
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const reducedMotion = useMemo(() => prefersReducedMotion(), []);
+  // Base KPIs (revenue/orders/completion/avg order/disputes) above stay
+  // universal (Task 21C spec §3) — only the deepest breakdown (per-order
+  // packing/delivery/cash detail table) gates on full_analytics_dashboard
+  // (Hadal). The box-util/local-delivery/cash-sale KPI TILES themselves are
+  // never gated, matching "base analytics stay universal."
+  const canSeeDeepBreakdowns = hasEntitlement("full_analytics_dashboard", { xp: totalXp });
 
   useEffect(() => {
     if (!walletAccount) {
@@ -148,6 +160,14 @@ export function SellerAnalytics({ walletAccount, casualModeActive = false }) {
       topSpecies,
     };
   }, [orders]);
+
+  // Task 21C — box utilization / local delivery / cash sales. Every number
+  // here composes marketplaceAnalytics.js's pure reducers over the SAME
+  // `orders` array already fetched above; no separate fetch, no forked
+  // aggregation.
+  const boxUtil = useMemo(() => boxUtilization(orders), [orders]);
+  const localDelivery = useMemo(() => localDeliveryPerformance(orders), [orders]);
+  const cashSales = useMemo(() => cashSaleReport(orders), [orders]);
 
   // Prefer the SQL view for headline numbers (it counts all-time server-side),
   // fall back to the client-derived values when the view row is absent.
@@ -401,6 +421,116 @@ export function SellerAnalytics({ walletAccount, casualModeActive = false }) {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Task 21C: Box utilization / local delivery / cash sales — base
+              tiles are universal; the deep per-order breakdown table gates
+              on full_analytics_dashboard (Hadal). Every chart-equivalent
+              number below is ALSO rendered as plain text (never chart-only
+              data), per spec §4 accessibility requirement. */}
+          <div className="sf-analytics__two-col">
+            <div className="sf-analytics__card glass-card">
+              <div className="sf-analytics__card-title">
+                <Package weight="duotone" size={16} style={{ color: "var(--teal-400, #2dd4bf)" }} /> {ANALYTICS_COPY.boxUtilizationTitle}
+              </div>
+              {boxUtil.sampleSize === 0 ? (
+                <p className="sf-analytics__muted">{ANALYTICS_COPY.noDataYet}</p>
+              ) : (
+                <>
+                  <div
+                    role="progressbar"
+                    aria-valuenow={boxUtil.avgFillPercent}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label="Average box fill"
+                    style={{ height: "8px", borderRadius: "6px", background: "rgba(255,255,255,0.06)", overflow: "hidden", marginBottom: "0.5rem" }}
+                  >
+                    <div
+                      style={{
+                        height: "100%",
+                        width: `${boxUtil.avgFillPercent}%`,
+                        borderRadius: "6px",
+                        background: boxUtil.avgFillPercent >= 90
+                          ? "linear-gradient(90deg, var(--amber-400, #fbbf24), #f59e0b)"
+                          : "linear-gradient(90deg, var(--teal-400, #2dd4bf), var(--cyan-400, #22d3ee))",
+                        transition: reducedMotion ? "none" : "width 0.3s cubic-bezier(0.4,0,0.2,1)",
+                      }}
+                    />
+                  </div>
+                  {/* Text/table equivalent — always present, not chart-only. */}
+                  <p className="sf-analytics__muted" style={{ margin: 0 }}>
+                    {boxUtil.avgFillPercent}% average fill · {boxUtil.avoidedExtraBoxes} order{boxUtil.avoidedExtraBoxes === 1 ? "" : "s"} shipped in one box · based on {boxUtil.sampleSize} order{boxUtil.sampleSize === 1 ? "" : "s"} with packing data
+                  </p>
+                </>
+              )}
+            </div>
+
+            <div className="sf-analytics__card glass-card">
+              <div className="sf-analytics__card-title">
+                <Truck weight="duotone" size={16} style={{ color: "var(--accent-blue)" }} /> {ANALYTICS_COPY.localDeliveryTitle}
+              </div>
+              {localDelivery.sampleSize === 0 ? (
+                <p className="sf-analytics__muted">{ANALYTICS_COPY.noDataYet}</p>
+              ) : (
+                <table className="sf-analytics__table" aria-label="Local delivery performance">
+                  <tbody>
+                    <tr>
+                      <th scope="row">Quote acceptance</th>
+                      <td>{localDelivery.quoteAcceptanceRate != null ? `${Math.round(localDelivery.quoteAcceptanceRate * 100)}%` : "—"}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Successful delivery</th>
+                      <td>{localDelivery.successfulDeliveryRate != null ? `${Math.round(localDelivery.successfulDeliveryRate * 100)}%` : "—"}</td>
+                    </tr>
+                    <tr>
+                      <th scope="row">Delays</th>
+                      <td>{localDelivery.delayRate != null ? `${Math.round(localDelivery.delayRate * 100)}%` : "—"}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+
+          <div className="sf-analytics__card glass-card">
+            <div className="sf-analytics__card-title">
+              <HandCoins weight="duotone" size={16} style={{ color: "var(--amber-400, #fbbf24)" }} /> {ANALYTICS_COPY.cashSaleTitle}
+            </div>
+            {cashSales.sampleSize === 0 ? (
+              <p className="sf-analytics__muted">{ANALYTICS_COPY.noDataYet}</p>
+            ) : (
+              <p className="sf-analytics__muted" style={{ margin: 0 }}>
+                {cashSales.count} cash sale{cashSales.count === 1 ? "" : "s"} · {formatPriceCents(cashSales.volumeCents)} recorded.{" "}
+                {ANALYTICS_COPY.fundsStatusNote}
+              </p>
+            )}
+          </div>
+
+          {/* Deepest breakdown — gated (Hadal / full_analytics_dashboard). */}
+          {canSeeDeepBreakdowns && (
+            <div className="sf-analytics__card glass-card">
+              <div className="sf-analytics__card-title">Per-Order Fulfillment Detail</div>
+              <table className="sf-analytics__table" aria-label="Per-order fulfillment detail">
+                <thead>
+                  <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.slice(0, 25).map((o, i) => (
+                    <tr key={o.id || i}>
+                      <td>{new Date(o.created_at).toLocaleDateString()}</td>
+                      <td>{o.order_type}</td>
+                      <td>{o.status}</td>
+                      <td>{fmtUsd(o.total_paid_cents || 0, 2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </>

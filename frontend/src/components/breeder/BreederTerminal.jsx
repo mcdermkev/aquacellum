@@ -548,7 +548,7 @@ export function BreederTerminal({ walletAccount, casualModeActive = false }) {
 
       {activeSection === SECTIONS.ANALYTICS && (
         <>
-          <SellerAnalytics walletAccount={walletAccount} casualModeActive={casualModeActive} />
+          <SellerAnalytics walletAccount={walletAccount} casualModeActive={casualModeActive} totalXp={xp} />
           {/* Convenience-only surface: deep CSV export beyond SellerAnalytics'
               own basic export is gated. SellerAnalytics already renders its
               own always-available "Export CSV" button (never gated); this is
