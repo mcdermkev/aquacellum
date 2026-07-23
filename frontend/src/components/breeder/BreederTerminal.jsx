@@ -67,6 +67,7 @@ import { SellerAnalytics } from "../storefront/SellerAnalytics";
 import { StorefrontSetup } from "../StorefrontSetup";
 import { ShipFromSetup } from "../ShipFromSetup";
 import { ParcelPresetEditor } from "./ParcelPresetEditor";
+import { StorefrontMerchandising } from "./StorefrontMerchandising";
 import { ListSpecimenModal } from "../ListSpecimenModal";
 import { EditListingModal } from "../EditListingModal";
 import { HandshakeVerification } from "../HandshakeVerification";
@@ -522,11 +523,20 @@ export function BreederTerminal({ walletAccount, casualModeActive = false }) {
       )}
 
       {activeSection === SECTIONS.STORE && (
-        <StorefrontSetup
-          walletAccount={walletAccount}
-          casualModeActive={casualModeActive}
-          existingProfile={existingStorefrontProfile}
-        />
+        <>
+          <StorefrontSetup
+            walletAccount={walletAccount}
+            casualModeActive={casualModeActive}
+            existingProfile={existingStorefrontProfile}
+          />
+          {/* Task 21A: featured collections / storefront sections editor,
+              mounted alongside StorefrontSetup per spec §4. */}
+          <StorefrontMerchandising
+            walletAccount={walletAccount}
+            casualModeActive={casualModeActive}
+            listings={sellerListings}
+          />
+        </>
       )}
 
       {activeSection === SECTIONS.SHIPPING && (

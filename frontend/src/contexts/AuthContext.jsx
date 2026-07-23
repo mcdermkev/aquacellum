@@ -27,6 +27,7 @@ import { setSessionTokenGetter } from "../services/stripePayments";
 import { setSessionTokenGetter as setShippingSessionTokenGetter } from "../services/shipping";
 import { setSessionTokenGetter as setParcelPresetsSessionTokenGetter } from "../services/parcelPresets";
 import { setSessionTokenGetter as setReviewsSessionTokenGetter } from "../services/reviewsApi";
+import { setSessionTokenGetter as setMerchandisingSessionTokenGetter } from "../services/storeMerchandisingApi";
 import { ensureProfile, updateProfile } from "../services/reefApi";
 import { identifyUser, resetAnalyticsIdentity, trackEvent } from "../services/analytics";
 
@@ -364,17 +365,20 @@ export function AuthProvider({ children }) {
       setShippingSessionTokenGetter(getAccessToken);
       setParcelPresetsSessionTokenGetter(getAccessToken);
       setReviewsSessionTokenGetter(getAccessToken);
+      setMerchandisingSessionTokenGetter(getAccessToken);
     } else {
       setSessionTokenGetter(null);
       setShippingSessionTokenGetter(null);
       setParcelPresetsSessionTokenGetter(null);
       setReviewsSessionTokenGetter(null);
+      setMerchandisingSessionTokenGetter(null);
     }
     return () => {
       setSessionTokenGetter(null);
       setShippingSessionTokenGetter(null);
       setParcelPresetsSessionTokenGetter(null);
       setReviewsSessionTokenGetter(null);
+      setMerchandisingSessionTokenGetter(null);
     };
   }, [privyAuthenticated, getAccessToken]);
 

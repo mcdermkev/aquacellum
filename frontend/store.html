@@ -58,6 +58,15 @@
     .section-title { font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 10px; }
     .section-count { font-size: 0.7rem; font-weight: 500; color: var(--text-muted); background: rgba(255,255,255,0.04); padding: 3px 10px; border-radius: 50px; }
 
+    /* =========================================
+       STOREFRONT SECTIONS (Task 21A — featured/collections)
+    ========================================= */
+    .store-section { margin-bottom: 2.5rem; }
+    .store-section--featured .section-title { color: var(--teal-300, #5eead4); }
+    .store-section-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 20px; }
+    .store-section-grid .listing-card.tier-featured { border: 1px solid rgba(45,212,191,0.3); background: linear-gradient(180deg, rgba(45,212,191,0.04), var(--glass-bg)); }
+    .store-section-grid .listing-card.tier-featured:hover { border-color: rgba(139,92,246,0.4); box-shadow: 0 16px 48px rgba(45,212,191,0.1); }
+
     .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 20px; margin-bottom: 3rem; }
     .listing-card {
       aspect-ratio: 3 / 4; border-radius: var(--radius-md); overflow: hidden; cursor: pointer;
@@ -149,6 +158,11 @@
       <!-- Stats -->
       <div class="stats-bar" id="statsBar"></div>
 
+      <!-- Task 21A: Featured/collection sections, pre-arranged server-side via
+           storeMerchandising.assembleStorefrontLayout. Rendered above the
+           plain catalog when the seller has configured any. -->
+      <div id="storeSections"></div>
+
       <!-- Listings -->
       <div class="section-header">
         <div class="section-title">🐟 Active Listings <span class="section-count" id="listingCount">0</span></div>
@@ -235,15 +249,29 @@
           total_listings: s.totalListings,
           total_sales: s.totalSales,
         },
-        listings: (data.listings || []).map(l => ({
-          commonName: l.species?.commonName,
-          scientificName: l.species?.scientificName,
-          price: l.price?.eth,
-          isBatch: l.type === 'batch',
-          quantity: l.quantity,
-          imageUrl: l.imageUrl,
-        })),
+        listings: (data.listings || []).map(normalizeApiListing),
         reviews: data.reviews || [],
+        // Task 21A: sections arrive pre-arranged (featured -> collections ->
+        // catch-all already applied server-side); just normalize each
+        // section's nested listings the same way as the top-level array.
+        sections: (data.sections || []).map(sec => ({
+          id: sec.id,
+          type: sec.type,
+          title: sec.title,
+          listings: (sec.listings || []).map(normalizeApiListing),
+        })),
+      };
+    }
+
+    /** Map one API listing object (species/price/imageUrl shape) to the flat shape renderStorefront/buildListingCard expect. */
+    function normalizeApiListing(l) {
+      return {
+        commonName: l.species?.commonName,
+        scientificName: l.species?.scientificName,
+        price: l.price?.eth,
+        isBatch: l.type === 'batch',
+        quantity: l.quantity,
+        imageUrl: l.imageUrl,
       };
     }
 
@@ -460,12 +488,17 @@
         <div class="stat-card"><div class="stat-icon">✓</div><div><div class="stat-value">${stats.total_sales || 0}</div><div class="stat-label">Completed Sales</div></div></div>
       `;
 
+      // Task 21A: featured/collection sections render above the plain
+      // catalog, using the exact order the server already assembled
+      // (assembleStorefrontLayout) — this page never re-sorts them.
+      renderStoreSections(data.sections || []);
+
       // Listings
       document.getElementById('listingCount').textContent = listings.length;
       if (listings.length === 0) {
         document.getElementById('listingsGrid').innerHTML = '<div class="empty-state"><h3>No active listings</h3><p>This breeder hasn\'t listed any specimens yet. Check back soon!</p></div>';
       } else {
-        renderListings(listings);
+        renderListings(listings, 'listingsGrid');
       }
 
       // Reviews
@@ -488,32 +521,67 @@
       document.getElementById('storeContent').style.display = '';
     }
     // ── Render Listings Grid ──────────────────────────────────────────────
-    function renderListings(listings) {
-      const grid = document.getElementById('listingsGrid');
+    function renderListings(listings, targetId, featured) {
+      const grid = document.getElementById(targetId);
+      if (!grid) return;
 
       // Try to get species images from fishbase
       let fishbaseData = [];
       fetch('/fishbase_master.json?v=2').then(r => r.ok ? r.json() : []).then(data => {
         fishbaseData = data;
         // Re-render with images
-        grid.innerHTML = listings.map((item, idx) => buildListingCard(item, idx, fishbaseData)).join('');
+        grid.innerHTML = listings.map((item, idx) => buildListingCard(item, idx, fishbaseData, featured)).join('');
         animateCards(grid);
       }).catch(() => {
-        grid.innerHTML = listings.map((item, idx) => buildListingCard(item, idx, [])).join('');
+        grid.innerHTML = listings.map((item, idx) => buildListingCard(item, idx, [], featured)).join('');
         animateCards(grid);
       });
     }
 
-    function buildListingCard(item, idx, fishbaseData) {
+    // ── Task 21A: Featured/collection sections ────────────────────────────
+    // Sections arrive pre-ordered and pre-resolved from the server
+    // (assembleStorefrontLayout) — this just renders what it's given, in
+    // order, with no re-sorting/re-filtering.
+    function renderStoreSections(sections) {
+      const container = document.getElementById('storeSections');
+      if (!container) return;
+      if (!sections || sections.length === 0) { container.innerHTML = ''; return; }
+
+      container.innerHTML = sections.map((section, sIdx) => {
+        const isFeatured = section.type === 'featured';
+        const icon = isFeatured ? '⭐' : '📚';
+        const gridId = `storeSectionGrid-${sIdx}`;
+        return `
+          <div class="store-section ${isFeatured ? 'store-section--featured' : ''}">
+            <div class="section-header">
+              <div class="section-title">${icon} ${escapeHtml(section.title || 'Collection')} <span class="section-count">${section.listings.length}</span></div>
+            </div>
+            <div class="store-section-grid" id="${gridId}"></div>
+          </div>`;
+      }).join('');
+
+      sections.forEach((section, sIdx) => {
+        renderListings(section.listings, `storeSectionGrid-${sIdx}`, section.type === 'featured');
+      });
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str == null ? '' : String(str);
+      return div.innerHTML;
+    }
+
+    function buildListingCard(item, idx, fishbaseData, featured) {
       const pedigree = getPedigree(item);
       const price = ethToUSD(item.price);
       const imgUrl = getSpeciesImage(item.scientificName, fishbaseData);
       const imageHtml = imgUrl
         ? `<img src="${imgUrl}" alt="${item.commonName || 'Fish'}" loading="lazy">`
         : '<span class="placeholder-icon">🐟</span>';
+      const featuredClass = featured ? ' tier-featured' : '';
 
       return `
-        <div class="listing-card ${pedigree.tier}" data-idx="${idx}">
+        <div class="listing-card ${pedigree.tier}${featuredClass}" data-idx="${idx}">
           <div class="card-image">
             ${imageHtml}
             <span class="card-badge badge-${pedigree.cls}">${pedigree.label}</span>

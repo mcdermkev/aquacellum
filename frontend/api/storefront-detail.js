@@ -22,6 +22,13 @@
  *   POST /api/storefront-detail?action=report-review        → any authenticated user reports a review
  *   POST /api/storefront-detail?action=moderate-review      → curator-only: hide/dismiss a reported review
  *
+ * Task 21A (Storefront Merchandising) addition — same reasoning (stay under
+ * the 12-function cap; this router already owns storefront reads/writes):
+ *
+ *   GET  /api/storefront-detail?action=sections&seller=<wallet>
+ *                                                            → the seller's visible sections, ordered (public)
+ *   PUT|POST /api/storefront-detail?action=sections          → authenticated owner replaces their sections
+ *
  * Consolidated from separate functions to stay within Vercel Hobby plan limits.
  *
  * Environment variables:
@@ -39,6 +46,11 @@ import {
   applicableRatingDimensions,
   canRespondToReview,
 } from "../src/services/reviewEligibility.js";
+import {
+  normalizeSection,
+  validateSectionsPayload,
+  assembleStorefrontLayout,
+} from "../src/services/storeMerchandising.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL || "",
@@ -77,6 +89,9 @@ export default async function handler(req, res) {
       return handleReportReview(req, res);
     case "moderate-review":
       return handleModerateReview(req, res);
+    // ── Task 21A: Storefront Merchandising (sections) ──
+    case "sections":
+      return handleSections(req, res);
     default:
       // No action = default storefront detail endpoint
       return handleStorefrontDetail(req, res);
@@ -122,7 +137,7 @@ async function handleStorefrontDetail(req, res) {
 
     const wallet = profile.wallet_address;
 
-    const [listingsResult, statsResult, historyResult] = await Promise.all([
+    const [listingsResult, statsResult, historyResult, sectionsResult] = await Promise.all([
       // Listings live in aquadex_listings (the table the app writes to via
       // cloudSync). The full listing object is stored as a JSON blob in `data`.
       supabase
@@ -142,6 +157,14 @@ async function handleStorefrontDetail(req, res) {
         .eq("breeder_wallet", wallet)
         .order("spawn_date", { ascending: false })
         .limit(30),
+      // Task 21A: fold the store's visible sections into the same fetch so
+      // the public store page never needs a second round trip.
+      supabase
+        .from("store_sections")
+        .select("*")
+        .eq("wallet_address", wallet)
+        .eq("visible", true)
+        .order("sort_order", { ascending: true }),
     ]);
 
     // Normalize aquadex_listings rows (top-level columns + `data` JSON blob)
@@ -153,11 +176,14 @@ async function handleStorefrontDetail(req, res) {
       } catch {
         d = {};
       }
+      const isBatch = row.is_batch ?? d.isBatch ?? false;
+      const tokenId = d.tokenId || null;
+      const listingId = d.listingId || row.id;
       return {
         id: row.id,
-        is_batch: row.is_batch ?? d.isBatch ?? false,
-        token_id: d.tokenId || null,
-        listing_id: d.listingId || row.id,
+        is_batch: isBatch,
+        token_id: tokenId,
+        listing_id: listingId,
         common_name: row.common_name || d.commonName || "Unknown Species",
         scientific_name: d.scientificName || null,
         species_id: row.species_id || d.speciesId || null,
@@ -173,10 +199,24 @@ async function handleStorefrontDetail(req, res) {
         local_pickup: d.localPickup || false,
         description: d.description || null,
         created_at: row.created_at,
+        // camelCase aliases (Task 21A) — getListingKey/isListingActive from
+        // catalogQuery.js read isBatch/tokenId/listingId/isActive/active, not
+        // the snake_case fields above. Query already filters is_active=true,
+        // so both flags are true for every row reaching this map. These
+        // aliases let assembleStorefrontLayout resolve `listing_refs` (which
+        // were derived client-side from this same camelCase shape, via
+        // useMarketplaceListings/pullCloudListings) against the identical
+        // key derivation used to create them.
+        isBatch,
+        tokenId,
+        listingId,
+        isActive: true,
+        active: true,
       };
     });
     const stats = statsResult.data || {};
     const breedingHistory = historyResult.data || [];
+    const rawSections = (sectionsResult.data || []).map(sectionRowToClient);
 
     const response = {
       protocol: {
@@ -223,55 +263,7 @@ async function handleStorefrontDetail(req, res) {
         repeatBuyerRate: stats.repeat_buyer_rate || 0,
         lastActive: stats.last_active || null,
       },
-      listings: listings.map((listing) => ({
-        id: listing.id,
-        type: listing.is_batch ? "batch" : "specimen",
-        tokenId: listing.token_id || null,
-        listingId: listing.listing_id || listing.id,
-        species: {
-          commonName: listing.common_name || "Unknown Species",
-          scientificName: listing.scientific_name || null,
-          specCode: listing.species_id || null,
-        },
-        price: {
-          eth: listing.price_eth || listing.price || "0",
-          approximateUsd: listing.price_usd || null,
-        },
-        imageUrl: listing.image_cid
-          ? `${IPFS_GATEWAY}/${listing.image_cid}`
-          : listing.image_url || null,
-        quantity: listing.is_batch ? (listing.quantity_remaining || listing.quantity || 0) : 1,
-        pedigree: listing.pedigree || null,
-        shippingAvailable: listing.shipping_available || false,
-        localPickup: listing.local_pickup || false,
-        description: listing.description || null,
-        listedAt: listing.created_at,
-        purchaseActions: {
-          deepLink: `${BASE_URL}/app#directory`,
-          crypto: {
-            chainId: CHAIN_ID,
-            contract: MARKETPLACE_ADDRESS,
-            method: listing.is_batch ? "purchaseBatch" : "purchaseSpecimen",
-            params: listing.is_batch
-              ? { listingId: listing.listing_id || listing.id, quantity: 1 }
-              : { tokenId: listing.token_id },
-            value: listing.price_eth || listing.price || "0",
-          },
-          fiat: {
-            checkoutUrl: `${BASE_URL}/api/stripe?action=create-checkout`,
-            method: "POST",
-            body: {
-              purchaseType: listing.is_batch ? "batch" : "specimen",
-              sellerWallet: wallet,
-              items: [{
-                tokenId: listing.token_id,
-                commonName: listing.common_name,
-                priceCentsUSD: listing.price_usd ? Math.round(listing.price_usd * 100) : null,
-              }],
-            },
-          },
-        },
-      })),
+      listings: listings.map((listing) => mapListingForResponse(listing, wallet)),
       breedingHistory: breedingHistory.map((record) => ({
         spawnId: record.spawn_id || record.id,
         species: record.species_name || null,
@@ -280,6 +272,19 @@ async function handleStorefrontDetail(req, res) {
         offspringCount: record.offspring_count || 0,
         spawnDate: record.spawn_date,
         status: record.status || "completed",
+      })),
+      // Task 21A: sections pre-arranged through the pure, tested
+      // assembleStorefrontLayout — the exact fn the seller's editor preview
+      // uses (storeMerchandising.js). store.html (a static, bundler-free
+      // page) just renders these in order rather than re-implementing the
+      // featured/collection/catch-all + inactive-listing-drop logic in
+      // vanilla JS. Each entry's `listings` already carry the same
+      // response-mapped shape as the top-level `listings` array above.
+      sections: assembleStorefrontLayout(null, listings, rawSections).map((section) => ({
+        id: section.id,
+        type: section.type,
+        title: section.title,
+        listings: section.listings.map((listing) => mapListingForResponse(listing, wallet)),
       })),
       _aiInstructions: {
         description: "This is a breeder storefront from the Aquacellum marketplace. Use this data to render a storefront UI or generate purchase flows.",
@@ -1025,10 +1030,198 @@ async function handleModerateReview(req, res) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// TASK 21A: STOREFRONT MERCHANDISING (SECTIONS)
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// Ordering/emptiness decisions (featured-first, drop inactive listings, drop
+// empty sections) belong ONLY to the pure, tested
+// storeMerchandising.assembleStorefrontLayout — this router never re-sorts
+// or re-filters sections itself. It resolves rows, validates the write
+// payload via validateSectionsPayload, and returns rows in `sort_order` so
+// the public store page and the seller's live preview render identically.
+
+/**
+ * Resolve the caller's lowercased wallet from a verified Privy session token
+ * ONLY — never from the request body. Mirrors api/stripe.js's
+ * requireWalletFromSession / api/cart.js's requireWallet: a client cannot
+ * write another seller's sections by supplying a different wallet anywhere
+ * in the request.
+ */
+async function requireWalletFromSession(req, res) {
+  const { verified, walletAddress, error } = await verifyPrivyToken(req);
+  if (!verified) {
+    res.status(401).json({ error: error || "Missing or invalid authentication" });
+    return null;
+  }
+  if (!walletAddress) {
+    res.status(401).json({ error: "Session has no linked account address" });
+    return null;
+  }
+  return walletAddress.toLowerCase();
+}
+
+/** Map a store_sections row to the client shape (normalizeSection's own camelCase output). */
+function sectionRowToClient(row) {
+  return normalizeSection(row);
+}
+
+/**
+ * GET ?action=sections&seller=<wallet> — the store's visible sections,
+ * ordered by sort_order. Public (storefronts are public).
+ *
+ * PUT|POST ?action=sections — replace/upsert the authenticated owner's
+ * sections. Owner wallet comes ONLY from the verified session token.
+ */
+async function handleSections(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "GET, POST, PUT, OPTIONS", headers: "Content-Type, Authorization" })) return;
+
+  if (req.method === "GET") {
+    const seller = (req.query.seller || "").toLowerCase();
+    if (!seller) return res.status(400).json({ error: "Missing seller query parameter" });
+
+    try {
+      const { data, error } = await supabase
+        .from("store_sections")
+        .select("*")
+        .eq("wallet_address", seller)
+        .eq("visible", true)
+        .order("sort_order", { ascending: true });
+
+      if (error) {
+        console.error("[sections] GET failed:", error);
+        return res.status(500).json({ error: "Could not load storefront sections" });
+      }
+
+      res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=180");
+      return res.status(200).json({ sections: (data || []).map(sectionRowToClient) });
+    } catch (err) {
+      console.error("[sections] GET error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  if (req.method === "POST" || req.method === "PUT") {
+    const wallet = await requireWalletFromSession(req, res);
+    if (!wallet) return;
+
+    const sections = Array.isArray(req.body?.sections) ? req.body.sections : null;
+    if (!sections) {
+      return res.status(400).json({ error: "Missing sections array" });
+    }
+
+    const validation = validateSectionsPayload(sections);
+    if (!validation.ok) {
+      return res.status(400).json({ error: validation.error });
+    }
+
+    try {
+      // Replace-all semantics, scoped strictly to this wallet: delete the
+      // owner's existing rows, then insert the submitted set. Never touches
+      // another seller's rows — the delete/insert are both filtered to the
+      // session-derived wallet, not any id the client might supply.
+      const { error: deleteError } = await supabase
+        .from("store_sections")
+        .delete()
+        .eq("wallet_address", wallet);
+
+      if (deleteError) {
+        console.error("[sections] delete-before-replace failed:", deleteError);
+        return res.status(500).json({ error: "Could not save storefront sections" });
+      }
+
+      if (sections.length === 0) {
+        return res.status(200).json({ success: true, sections: [] });
+      }
+
+      const rows = sections.map((draft, idx) => ({
+        wallet_address: wallet,
+        type: draft.type,
+        title: typeof draft.title === "string" ? draft.title.slice(0, 60) : null,
+        listing_refs: Array.isArray(draft.listingRefs ?? draft.listing_refs)
+          ? (draft.listingRefs ?? draft.listing_refs).slice(0, 100)
+          : [],
+        sort_order: Number.isFinite(Number(draft.sortOrder ?? draft.sort_order)) ? Number(draft.sortOrder ?? draft.sort_order) : idx,
+        visible: draft.visible !== false,
+      }));
+
+      const { data: inserted, error: insertError } = await supabase
+        .from("store_sections")
+        .insert(rows)
+        .select("*");
+
+      if (insertError) {
+        console.error("[sections] insert failed:", insertError);
+        return res.status(500).json({ error: "Could not save storefront sections" });
+      }
+
+      return res.status(200).json({ success: true, sections: (inserted || []).map(sectionRowToClient) });
+    } catch (err) {
+      console.error("[sections] write error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  return res.status(405).json({ error: "Method not allowed. Use GET, POST, or PUT." });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // Helpers
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function truncateAddr(addr) {
   if (!addr) return "Unknown";
   return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+}
+
+/** Map one normalized listing (see handleStorefrontDetail's `listings` map) to the public response shape. */
+function mapListingForResponse(listing, wallet) {
+  return {
+    id: listing.id,
+    type: listing.is_batch ? "batch" : "specimen",
+    tokenId: listing.token_id || null,
+    listingId: listing.listing_id || listing.id,
+    species: {
+      commonName: listing.common_name || "Unknown Species",
+      scientificName: listing.scientific_name || null,
+      specCode: listing.species_id || null,
+    },
+    price: {
+      eth: listing.price_eth || listing.price || "0",
+      approximateUsd: listing.price_usd || null,
+    },
+    imageUrl: listing.image_cid
+      ? `${IPFS_GATEWAY}/${listing.image_cid}`
+      : listing.image_url || null,
+    quantity: listing.is_batch ? (listing.quantity_remaining || listing.quantity || 0) : 1,
+    pedigree: listing.pedigree || null,
+    shippingAvailable: listing.shipping_available || false,
+    localPickup: listing.local_pickup || false,
+    description: listing.description || null,
+    listedAt: listing.created_at,
+    purchaseActions: {
+      deepLink: `${BASE_URL}/app#directory`,
+      crypto: {
+        chainId: CHAIN_ID,
+        contract: MARKETPLACE_ADDRESS,
+        method: listing.is_batch ? "purchaseBatch" : "purchaseSpecimen",
+        params: listing.is_batch
+          ? { listingId: listing.listing_id || listing.id, quantity: 1 }
+          : { tokenId: listing.token_id },
+        value: listing.price_eth || listing.price || "0",
+      },
+      fiat: {
+        checkoutUrl: `${BASE_URL}/api/stripe?action=create-checkout`,
+        method: "POST",
+        body: {
+          purchaseType: listing.is_batch ? "batch" : "specimen",
+          sellerWallet: wallet,
+          items: [{
+            tokenId: listing.token_id,
+            commonName: listing.common_name,
+            priceCentsUSD: listing.price_usd ? Math.round(listing.price_usd * 100) : null,
+          }],
+        },
+      },
+    },
+  };
 }
