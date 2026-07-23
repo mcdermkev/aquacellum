@@ -35,6 +35,13 @@ import { recordDispatch, recordDelivery, autoAdvanceDeliveryOrders } from "./_li
 import { buildSettlementEffects } from "./_lib/canonicalSettlement.js";
 import { openClaim as openDoaClaim, resolveClaim as resolveDoaClaim } from "../src/services/doaClaimService.js";
 import { createSupabaseDoaClaimStore } from "./_lib/supabaseDoaClaimStore.js";
+// Tier A checkout-discount wiring (Task 21B carve-out): the pure promotion
+// evaluator is the SINGLE source of eligibility + discount amount. stripe.js
+// consumes it — the engine never imports stripe.js (enforced by a source-guard
+// in promotionsEndpoint.catalog.test.js). Applying that discount to the real
+// charge (coupon + fee/payout split by funding) lives only here.
+import { evaluatePromotion } from "../src/services/promotionEngine.js";
+import { computeCheckoutCharge } from "../src/services/checkoutPricing.js";
 
 let stripe;
 try {
@@ -416,6 +423,32 @@ async function handleWebhook(req, res) {
           console.log("[Canonical] reservations committed:", JSON.stringify(committed.results || committed));
         } catch (commitErr) {
           console.warn("[Canonical] reservation commit skipped:", commitErr.message);
+        }
+      }
+
+      // Idempotent promotion redemption (Task 21B — Tier A). If a promo was
+      // applied at checkout (metadata.promotionId stamped by handleCreateCheckout),
+      // record its consumption and bump used_count EXACTLY ONCE. redeem_promotion
+      // is keyed on the PaymentIntent (UNIQUE), so a replayed webhook re-runs it
+      // as a no-op — the count can never double. Runs BEFORE the guest early-
+      // return so guest and account orders both redeem. Not gated by the
+      // canonical flag (promotions are independent). Best-effort: the discount was
+      // already applied to the charge, so a redemption hiccup must never fail the
+      // webhook (Stripe would otherwise retry indefinitely).
+      if (metadata.promotionId) {
+        try {
+          const { data: counted, error: redeemErr } = await supabase.rpc("redeem_promotion", {
+            p_promotion_id: metadata.promotionId,
+            p_payment_intent: paymentIntentId,
+            p_discount_cents: Number(metadata.promotionDiscountCents || 0),
+            p_funding: metadata.promotionFunding || "seller_funded",
+            p_seller_wallet: (metadata.sellerWallet || "").toLowerCase(),
+            p_buyer_wallet: metadata.buyerWallet ? String(metadata.buyerWallet).toLowerCase() : null,
+          });
+          if (redeemErr) console.warn("[Promotion] redeem failed:", redeemErr.message);
+          else console.log(`[Promotion] ${metadata.promotionId} redeem: ${counted ? "counted" : "already counted (replay)"}`);
+        } catch (promoErr) {
+          console.warn("[Promotion] redeem skipped:", promoErr.message);
         }
       }
 
@@ -2638,6 +2671,70 @@ const PLATFORM_FEE_PERCENT = 4;
 const STRIPE_FEE_RATE = 0.029;
 const STRIPE_FEE_FIXED_CENTS = 30;
 
+/**
+ * Resolve + evaluate a promotion for a starting checkout — server-side and
+ * fail-open. Returns the applied discount descriptor, or null for "no discount".
+ *
+ * MONEY BOUNDARY (Task 21B): eligibility and the discount amount come ONLY from
+ * the pure promotionEngine.evaluatePromotion, evaluated against the AUTHORITATIVE
+ * cart (server-resolved goods prices — never the client-supplied price). This
+ * function never re-derives the discount math itself. Any lookup/eval failure
+ * resolves to null: a promo problem must never fail a checkout, and an
+ * unverified discount must never be applied.
+ *
+ * Opt-in only: a discount is considered solely when the request carries a
+ * `promoCode` or `promotionId`. Automatic (code-less) promotions are
+ * intentionally NOT auto-applied here yet — doing so would discount every
+ * checkout for a seller with an active auto-promo, a broader behavioral change
+ * that gets its own review. Keeping this explicit preserves "no promo signal →
+ * charge math unchanged".
+ *
+ * @param {{ sellerWallet:string, promoCode?:string, promotionId?:string, cart:Object, now:number }} args
+ * @returns {Promise<{ promotionId:string, discountCents:number, funding:string, code:(string|null) }|null>}
+ */
+async function resolveCheckoutPromotion({ sellerWallet, promoCode, promotionId, cart, now }) {
+  try {
+    const seller = (sellerWallet || "").toLowerCase();
+    if (!seller) return null;
+    if (!promoCode && !promotionId) return null;
+
+    let query = supabase
+      .from("seller_promotions")
+      .select("*")
+      .eq("wallet_address", seller)
+      .eq("active", true);
+    if (promotionId) query = query.eq("id", promotionId);
+
+    const { data: rows, error } = await query;
+    if (error || !rows || rows.length === 0) return null;
+
+    // Select the target promo: by id (already filtered to this seller), or by a
+    // case-insensitive code match done in JS (never interpolate a buyer-supplied
+    // code into the query, so a code containing SQL/ILIKE metacharacters is inert).
+    let promo = null;
+    if (promotionId) {
+      promo = rows[0];
+    } else {
+      const wanted = String(promoCode).trim().toUpperCase();
+      promo = rows.find((r) => (r.code || "").toUpperCase() === wanted) || null;
+    }
+    if (!promo) return null;
+
+    const evaluation = evaluatePromotion(promo, cart, { now });
+    if (!evaluation.applicable || !(evaluation.discountCents > 0)) return null;
+
+    return {
+      promotionId: promo.id,
+      discountCents: evaluation.discountCents,
+      funding: evaluation.funding,
+      code: promo.code || null,
+    };
+  } catch (e) {
+    console.warn("[Checkout] Promotion resolution skipped:", e.message);
+    return null;
+  }
+}
+
 async function handleCreateCheckout(req, res) {
   if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS" })) return;
 
@@ -2898,17 +2995,81 @@ async function handleCreateCheckout(req, res) {
     // seller gets 96% of the GOODS price only.
     const shippingCents = Number(metadata.shippingFeeCents || 0);
     const goodsPriceCents = totalAmountCents - shippingCents;
-    const platformFeeCents = Math.round(goodsPriceCents * (PLATFORM_FEE_PERCENT / 100));
-    const sellerPayoutCents = goodsPriceCents - platformFeeCents; // 96% of goods, shipping excluded
 
-    // Buyer covers Stripe's processing fee (grossed up). Round UP so we never
-    // under-collect and dip into the platform's 4%.
-    const buyerTotalCents = Math.ceil(
-      (totalAmountCents + STRIPE_FEE_FIXED_CENTS) / (1 - STRIPE_FEE_RATE)
-    );
-    const processingFeeCents = buyerTotalCents - totalAmountCents;
+    // ─── Promotion discount (Task 21B — Tier A checkout wiring) ────────────
+    // Opt-in ONLY: nothing here runs unless the request carries a promoCode or
+    // promotionId, so a request without one is byte-for-byte the legacy charge.
+    // Eligibility + amount come solely from the pure promotionEngine, evaluated
+    // against the AUTHORITATIVE cart (server-resolved goods, never client
+    // prices). A discount applies to GOODS only — never shipping or processing.
+    //
+    // Ordering matters for money-safety: we resolve the candidate discount, then
+    // create the Stripe coupon FIRST. Only if the coupon is actually created do
+    // we apply the discount to the fee/payout math. That guarantees the buyer's
+    // charge reduction and the seller-payout metadata can never desync — a
+    // coupon failure drops the promo entirely (buyer pays full, seller paid on
+    // full) rather than shorting either party.
+    let discountCents = 0;
+    let appliedPromotion = null;
+    let discounts;
+    if (req.body.promoCode || req.body.promotionId) {
+      const promoCart = {
+        items: items.map((it) => ({
+          unitPriceCents: purchaseType === "batch" ? it.pricePerFishCents : it.priceCentsUSD,
+          quantity: purchaseType === "batch" ? (Number(it.quantity) || 1) : 1,
+          listingKey: purchaseType === "batch" ? `batch-${it.listingId}` : `single-${it.tokenId}`,
+        })),
+      };
+      const resolved = await resolveCheckoutPromotion({
+        sellerWallet,
+        promoCode: req.body.promoCode,
+        promotionId: req.body.promotionId,
+        cart: promoCart,
+        now: Date.now(),
+      });
+      // Defense-in-depth over the engine's own clamp: a discount can never touch
+      // shipping and can never exceed the goods subtotal.
+      const candidate = resolved ? Math.max(0, Math.min(resolved.discountCents, goodsPriceCents)) : 0;
+      if (resolved && candidate > 0) {
+        try {
+          const coupon = await stripe.coupons.create({
+            amount_off: candidate,
+            currency: "usd",
+            duration: "once",
+            name: resolved.code ? `Promo ${resolved.code}` : "Discount",
+            metadata: { promotionId: String(resolved.promotionId), funding: resolved.funding },
+          });
+          discounts = [{ coupon: coupon.id }];
+          discountCents = candidate;
+          appliedPromotion = resolved;
+        } catch (couponErr) {
+          // Fail-open: drop the promo, charge + pay out at full price.
+          console.warn("[Checkout] Coupon creation failed, dropping promo:", couponErr.message);
+        }
+      }
+    }
 
-    // Surface the processing fee as its own line item so the buyer sees it.
+    // Fee + payout + gross-up split, computed by the pure checkoutPricing module
+    // (Tier A, independently unit-tested). seller_funded reduces the goods base so
+    // the 4% fee base AND the seller's 96% both drop; platform_funded leaves the
+    // seller whole and the platform absorbs the discount. The processing fee is
+    // grossed up on the DISCOUNTED chargeable amount so it stays exact after the
+    // coupon reduces the total.
+    const charge = computeCheckoutCharge({
+      goodsPriceCents,
+      shippingCents,
+      discountCents,
+      funding: appliedPromotion ? appliedPromotion.funding : "seller_funded",
+      feePercent: PLATFORM_FEE_PERCENT,
+      stripeRate: STRIPE_FEE_RATE,
+      stripeFixedCents: STRIPE_FEE_FIXED_CENTS,
+    });
+    const { platformFeeCents, sellerPayoutCents, processingFeeCents, buyerTotalCents, platformGoodsMarginCents } = charge;
+
+    // Surface the processing fee as its own line item so the buyer sees it. It is
+    // computed on the post-discount total; the coupon (amount_off = discountCents)
+    // then reduces the goods+shipping+processing line-item sum by exactly the
+    // discount, so the buyer pays (goods − discount) + shipping + processing.
     if (processingFeeCents > 0) {
       lineItems.push({
         price_data: {
@@ -2931,6 +3092,24 @@ async function handleCreateCheckout(req, res) {
     metadata.sellerPayoutCents = String(sellerPayoutCents);
     metadata.processingFeeCents = String(processingFeeCents);
     metadata.transferGroup = transferGroup;
+    if (appliedPromotion) {
+      // Stamped for the webhook's idempotent used_count redemption + receipts.
+      metadata.promotionId = String(appliedPromotion.promotionId);
+      metadata.promotionDiscountCents = String(discountCents);
+      metadata.promotionFunding = appliedPromotion.funding;
+      if (appliedPromotion.code) metadata.promotionCode = String(appliedPromotion.code).slice(0, 40);
+      // What the platform keeps on goods after the discount and the seller payout
+      // (from the pure charge calc). Negative ⇒ a platform_funded promo whose
+      // discount exceeds the 4% margin, i.e. the platform is funding the perk out
+      // of pocket (by design). Recorded for reconciliation; flagged so it's never
+      // silent.
+      metadata.platformGoodsMarginCents = String(platformGoodsMarginCents);
+      if (platformGoodsMarginCents < 0) {
+        console.warn(
+          `[Checkout] Promo ${appliedPromotion.promotionId} (${appliedPromotion.funding}) makes this order net-negative on goods: platform margin ${platformGoodsMarginCents}¢.`
+        );
+      }
+    }
 
     // ─── Reserve inventory (flagged): a bounded, oversell-guarded hold ─────
     // Checkout beginning is when the hold is taken (MARKETPLACE_STATE_MODEL §7).
@@ -2966,6 +3145,11 @@ async function handleCreateCheckout(req, res) {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: lineItems,
+      // Applied promotion (Task 21B) — a one-time coupon whose amount_off equals
+      // the goods discount. Present only when a promo was resolved AND its coupon
+      // was created above; the fee/payout metadata already reflects the same
+      // discount, so charge and payout stay in lockstep.
+      ...(discounts ? { discounts } : {}),
       payment_intent_data: {
         // No transfer_data / application_fee: funds land in the platform balance
         // and are held. The seller is paid via a later Transfer within transfer_group.
@@ -2992,6 +3176,11 @@ async function handleCreateCheckout(req, res) {
       buyerTotalCents,
       platformFeeCents,
       sellerReceivesCents: sellerPayoutCents,
+      // Applied promotion (null when none) — lets the client show the deal.
+      discountCents,
+      promotion: appliedPromotion
+        ? { promotionId: appliedPromotion.promotionId, code: appliedPromotion.code, funding: appliedPromotion.funding }
+        : null,
     });
   } catch (err) {
     console.error("[Stripe Checkout] Session creation failed:", err);
