@@ -14,6 +14,7 @@ import {
   mapPurchaseTypeToMethod,
   mapPIToCanonicalOrder,
   buildSettlementEffects,
+  buildLineItemsFromMetadata,
   settleViaCanonical,
   recordCanonicalOrderProtected,
 } from "../../api/_lib/canonicalSettlement.js";
@@ -145,8 +146,79 @@ function makeStore() {
     },
     async setOrderState(id, state, patch = {}) { orders.set(id, { ...orders.get(id), state, ...patch }); },
     async recordTransition(row) { transitions.push(row); },
+    _lineItems: new Map(),
+    async createLineItems(orderId, items) {
+      const ids = (items || []).map((_, i) => `li_${orderId}_${i}`);
+      this._lineItems.set(orderId, ids.map((id, i) => ({ id, ...items[i] })));
+      return ids;
+    },
+    async getLineItemIds(orderId) {
+      return (this._lineItems.get(orderId) || []).map((li) => li.id);
+    },
   };
 }
+
+describe("buildLineItemsFromMetadata", () => {
+  it("shipping → a single specimen line (token_id, quantity 1, goods price net of shipping)", () => {
+    const items = buildLineItemsFromMetadata({ purchaseType: "shipping", tokenId: 7, goodsTotalCents: 11000, shippingFeeCents: 1000 });
+    expect(items).toEqual([{ tokenId: 7, quantity: 1, priceCents: 10000 }]);
+  });
+
+  it("pickup → a single specimen line", () => {
+    const items = buildLineItemsFromMetadata({ purchaseType: "pickup", tokenId: 3, goodsTotalCents: 5000 });
+    expect(items).toEqual([{ tokenId: 3, quantity: 1, priceCents: 5000 }]);
+  });
+
+  it("multi → one line per token, goods split with the remainder on the first line", () => {
+    const items = buildLineItemsFromMetadata({ purchaseType: "multi", tokenIds: JSON.stringify([1, 2, 3]), goodsTotalCents: 10000 });
+    expect(items).toHaveLength(3);
+    expect(items.map((i) => i.tokenId)).toEqual([1, 2, 3]);
+    // 10000 / 3 = 3333 each; first line carries the +1 remainder → parts sum to goods.
+    expect(items[0].priceCents).toBe(3334);
+    expect(items[1].priceCents).toBe(3333);
+    expect(items[2].priceCents).toBe(3333);
+    expect(items.reduce((s, i) => s + i.priceCents, 0)).toBe(10000);
+    expect(items.every((i) => i.quantity === 1)).toBe(true);
+  });
+
+  it("multi accepts an already-parsed tokenIds array", () => {
+    const items = buildLineItemsFromMetadata({ purchaseType: "multi", tokenIds: [8, 9], goodsTotalCents: 200 });
+    expect(items.map((i) => i.tokenId)).toEqual([8, 9]);
+  });
+
+  it("batch → a single listing line carrying the quantity", () => {
+    const items = buildLineItemsFromMetadata({ purchaseType: "batch", listingId: "42", quantity: 5, goodsTotalCents: 5000 });
+    expect(items).toEqual([{ listingId: "42", quantity: 5, priceCents: 5000 }]);
+  });
+
+  it("returns an empty array (no crash) when the identifying id is missing", () => {
+    expect(buildLineItemsFromMetadata({ purchaseType: "shipping" })).toEqual([]);
+    expect(buildLineItemsFromMetadata({ purchaseType: "batch" })).toEqual([]);
+    expect(buildLineItemsFromMetadata({ purchaseType: "multi", tokenIds: "[]" })).toEqual([]);
+    expect(buildLineItemsFromMetadata({})).toEqual([]);
+  });
+});
+
+describe("recordCanonicalOrderProtected — line items + id read-through", () => {
+  const metadata = { purchaseType: "multi", buyerWallet: "0xbuyer", sellerWallet: "0xseller", tokenIds: JSON.stringify([11, 12]), goodsTotalCents: 8000 };
+
+  it("creates canonical line items and returns their ids on order creation", async () => {
+    const store = makeStore();
+    const res = await recordCanonicalOrderProtected({ store, paymentIntentId: "pi_li", metadata, paymentHash: "0xh", capturedCents: 8000 });
+    expect(res.created).toBe(true);
+    expect(res.lineItemIds).toHaveLength(2);
+    const persisted = await store.getLineItemIds(res.orderId);
+    expect(persisted).toEqual(res.lineItemIds);
+  });
+
+  it("returns the existing line-item ids on an idempotent replay (no duplicate items)", async () => {
+    const store = makeStore();
+    const first = await recordCanonicalOrderProtected({ store, paymentIntentId: "pi_li", metadata, paymentHash: "0xh", capturedCents: 8000 });
+    const replay = await recordCanonicalOrderProtected({ store, paymentIntentId: "pi_li", metadata, paymentHash: "0xh", capturedCents: 8000 });
+    expect(replay.created).toBe(false);
+    expect(replay.lineItemIds).toEqual(first.lineItemIds);
+  });
+});
 
 describe("settleViaCanonical", () => {
   const metadata = {

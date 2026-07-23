@@ -19,6 +19,7 @@
 const ORDERS = "canonical_orders";
 const LEDGER = "canonical_order_ledger";
 const TRANSITIONS = "canonical_order_transitions";
+const LINE_ITEMS = "canonical_order_line_items";
 
 /** Map a canonical_orders row to the order shape the cores expect. */
 function rowToOrder(row) {
@@ -152,6 +153,44 @@ export function createSupabaseOrderStore(supabase) {
       const { data, error } = await supabase.from(ORDERS).insert(row).select("id").single();
       if (error) throw new Error(`createOrder failed: ${error.message}`);
       return data.id;
+    },
+
+    /**
+     * Create the per-fish line items for an order and return their generated ids
+     * in insertion order. These are the ids the buyer's client references when
+     * opening a structured DOA claim (affectedLineItemIds), so a claim can name
+     * exactly which specimens arrived unhealthy. Idempotency is the caller's
+     * concern (recordCanonicalOrderProtected only creates line items when it
+     * created the order).
+     * @param {string} orderId
+     * @param {Array<{tokenId?:*, listingId?:*, commonName?:string, scientificName?:string, quantity?:number, priceCents?:number}>} items
+     * @returns {Promise<string[]>}
+     */
+    async createLineItems(orderId, items) {
+      if (!Array.isArray(items) || items.length === 0) return [];
+      const rows = items.map((it) => ({
+        order_id: orderId,
+        token_id: it.tokenId != null ? Number(it.tokenId) : null,
+        listing_id: it.listingId != null ? String(it.listingId) : null,
+        common_name: it.commonName ?? null,
+        scientific_name: it.scientificName ?? null,
+        quantity: Number.isFinite(Number(it.quantity)) ? Number(it.quantity) : 1,
+        price_cents: Number.isFinite(Number(it.priceCents)) ? Number(it.priceCents) : 0,
+      }));
+      const { data, error } = await supabase.from(LINE_ITEMS).insert(rows).select("id");
+      if (error) throw new Error(`createLineItems failed: ${error.message}`);
+      return (data || []).map((r) => r.id);
+    },
+
+    /** Return an order's line-item ids in creation order (for the idempotent replay path). */
+    async getLineItemIds(orderId) {
+      const { data, error } = await supabase
+        .from(LINE_ITEMS)
+        .select("id")
+        .eq("order_id", orderId)
+        .order("created_at", { ascending: true });
+      if (error) throw new Error(`getLineItemIds failed: ${error.message}`);
+      return (data || []).map((r) => r.id);
     },
 
     async getLedgerEntries(orderId) {

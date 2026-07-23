@@ -585,6 +585,22 @@ async function handleWebhook(req, res) {
               capturedCents: amountCents,
             });
             console.log(`[Canonical] order ${rec.created ? "created" : "exists"}: ${rec.orderId}`);
+            // Read-through: stamp the canonical order id + its line-item ids onto
+            // the legacy orders row the buyer's client syncs, so the buyer-facing
+            // "report a problem" flow can open a structured DOA claim against the
+            // real canonical line items (ArrivalModal). Best-effort — the order
+            // is still discoverable without it (falls back to the legacy dispute).
+            try {
+              await supabase
+                .from("orders")
+                .update({
+                  canonical_order_id: rec.orderId,
+                  canonical_line_item_ids: rec.lineItemIds || [],
+                })
+                .eq("stripe_payment_intent", paymentIntentId);
+            } catch (idErr) {
+              console.warn("[Canonical] orders canonical-id stamp skipped:", idErr.message);
+            }
           } catch (canonErr) {
             console.warn("[Canonical] order creation skipped:", canonErr.message);
           }

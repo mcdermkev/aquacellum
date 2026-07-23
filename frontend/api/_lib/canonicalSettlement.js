@@ -59,6 +59,57 @@ export function mapPIToCanonicalOrder({ metadata, paymentIntentId, paymentHash =
 }
 
 /**
+ * Derive the canonical line items for a held order from its PaymentIntent
+ * metadata. One line item per specimen so a buyer can open a DOA claim on
+ * exactly the fish that arrived unhealthy:
+ *   • shipping / pickup → a single specimen line (token_id).
+ *   • multi             → one line per token in metadata.tokenIds.
+ *   • batch             → a single line for the listing, quantity = metadata.quantity.
+ *
+ * price_cents is a best-effort even split of the goods total (goodsTotalCents −
+ * shippingFeeCents) across the lines; it's informational only — the DOA resolve
+ * step passes explicit refund amounts, so exact per-line pricing is not relied
+ * upon here. Pure/deterministic; unit-tested.
+ *
+ * @param {Object} metadata - PaymentIntent metadata stamped at checkout
+ * @returns {Array<{tokenId?:number, listingId?:string, quantity:number, priceCents:number}>}
+ */
+export function buildLineItemsFromMetadata(metadata) {
+  const md = metadata || {};
+  const goodsCents = Math.max(
+    0,
+    Number(md.goodsTotalCents || 0) - Number(md.shippingFeeCents || 0)
+  );
+
+  if (md.purchaseType === "multi") {
+    let tokenIds;
+    try {
+      tokenIds = Array.isArray(md.tokenIds) ? md.tokenIds : JSON.parse(md.tokenIds || "[]");
+    } catch {
+      tokenIds = [];
+    }
+    const n = tokenIds.length;
+    if (n === 0) return [];
+    const per = Math.floor(goodsCents / n);
+    return tokenIds.map((t, i) => ({
+      tokenId: Number(t),
+      quantity: 1,
+      // Put the rounding remainder on the first line so the parts sum to goods.
+      priceCents: i === 0 ? goodsCents - per * (n - 1) : per,
+    }));
+  }
+
+  if (md.purchaseType === "batch") {
+    if (md.listingId == null) return [];
+    return [{ listingId: String(md.listingId), quantity: Number(md.quantity) || 1, priceCents: goodsCents }];
+  }
+
+  // shipping | pickup — a single specimen line.
+  if (md.tokenId == null) return [];
+  return [{ tokenId: Number(md.tokenId), quantity: 1, priceCents: goodsCents }];
+}
+
+/**
  * Build the settlement effects that wrap the real side effects, split so the
  * coordinator transfers the certificate BEFORE initiating payout.
  *
@@ -141,7 +192,12 @@ export function buildSettlementEffects({ marketplace, transferToSeller, metadata
  */
 export async function recordCanonicalOrderProtected({ store, paymentIntentId, metadata, paymentHash, capturedCents = 0 }) {
   const existing = await store.getOrderByPaymentIntent(paymentIntentId);
-  if (existing) return { ok: true, orderId: existing.id, created: false };
+  if (existing) {
+    // Idempotent replay: return the existing line-item ids so the read-through
+    // (orders row → client) still surfaces them even on a duplicate webhook.
+    const lineItemIds = store.getLineItemIds ? await store.getLineItemIds(existing.id) : [];
+    return { ok: true, orderId: existing.id, created: false, lineItemIds };
+  }
 
   const row = mapPIToCanonicalOrder({
     metadata,
@@ -155,7 +211,14 @@ export async function recordCanonicalOrderProtected({ store, paymentIntentId, me
       { type: "charge_captured", id: paymentIntentId, amountCents: capturedCents },
     ]);
   }
-  return { ok: true, orderId, created: true };
+  // Create the per-fish line items so a buyer can open a structured DOA claim
+  // against real ids (previously nothing seeded canonical_order_line_items, so
+  // the claim path was inert). Best-effort within the flagged canonical block.
+  let lineItemIds = [];
+  if (store.createLineItems) {
+    lineItemIds = await store.createLineItems(orderId, buildLineItemsFromMetadata(metadata));
+  }
+  return { ok: true, orderId, created: true, lineItemIds };
 }
 
 export async function settleViaCanonical({ store, marketplace, transferToSeller, paymentIntentId, metadata, tokenId, paymentHash, capturedCents = 0 }) {

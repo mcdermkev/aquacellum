@@ -151,6 +151,22 @@ async function mergeCloudToLocal(cloudOrder, walletAddress) {
       return true;
     }
 
+    // Backfill canonical DOA ids onto a pre-existing local order that predates
+    // them (e.g. one created optimistically before the cloud row carried the
+    // canonical order/line-item ids). Independent of the status-advance merge
+    // below so a delivered-but-already-synced order still lights up the claim.
+    if (cloudOrder.canonical_order_id && !existing.canonicalOrderId) {
+      try {
+        await db.marketOrders.update(existing.key, {
+          canonicalOrderId: cloudOrder.canonical_order_id,
+          canonicalLineItemIds: cloudOrder.canonical_line_item_ids || [],
+          paymentIntentId: cloudOrder.stripe_payment_intent || existing.paymentIntentId || null,
+        });
+      } catch (e) {
+        // non-fatal: the legacy dispute path still works without the ids
+      }
+    }
+
     // Merge: cloud status wins if it's more advanced
     const cloudStatus = cloudOrder.status;
     const localStatus = getLocalStatusString(existing);
@@ -501,6 +517,16 @@ function mapCloudToLocal(cloudOrder, walletAddress) {
     commonName: firstItem.commonName || "Order",
     createdAt: Math.floor(new Date(cloudOrder.created_at).getTime() / 1000),
     role,
+    // Canonical DOA read-through (Task 17/18): surface the canonical order id +
+    // its line-item ids (set at webhook when CANONICAL_SETTLEMENT_ENABLED) so the
+    // buyer's "report a problem" flow can open a structured DOA claim against the
+    // real line items. Null/empty ⇒ the client guard stays inert and uses the
+    // legacy dispute path. paymentIntentId/stripeSessionId are the claim's order
+    // references (also used as fallbacks by ArrivalModal).
+    canonicalOrderId: cloudOrder.canonical_order_id || null,
+    canonicalLineItemIds: cloudOrder.canonical_line_item_ids || null,
+    paymentIntentId: cloudOrder.stripe_payment_intent || null,
+    stripeSessionId: cloudOrder.stripe_session_id || null,
   };
 
   if (cloudOrder.order_type === "shipping") {
