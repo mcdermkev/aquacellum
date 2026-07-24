@@ -38,9 +38,11 @@ export const STOREFRONT_BETA_WALLETS = [
 ];
 
 // ── Valid tab names for URL hash routing ──────────────────────────────────
+// Note: the legacy "storefront" ("My Store") tab was consolidated into
+// "breeder-terminal". App.jsx redirects any old /app/storefront links there.
 export const VALID_TABS = [
   "tanks", "breeder", "directory", "gallery", "map",
-  "orders", "incoming", "reef", "settings", "founders", "storefront",
+  "orders", "incoming", "reef", "settings", "founders",
   "breeder-terminal",
 ];
 

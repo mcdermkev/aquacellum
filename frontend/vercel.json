@@ -16,7 +16,7 @@
     { "source": "/breeder-tools", "destination": "/app/breeder", "permanent": false },
     { "source": "/orders", "destination": "/app/orders", "permanent": false },
     { "source": "/incoming", "destination": "/app/incoming", "permanent": false },
-    { "source": "/my-store", "destination": "/app/storefront", "permanent": false },
+    { "source": "/my-store", "destination": "/app/breeder-terminal", "permanent": false },
     { "source": "/settings", "destination": "/app/settings", "permanent": false },
     { "source": "/reef-social", "destination": "/app/reef", "permanent": false }
   ],

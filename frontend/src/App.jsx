@@ -93,10 +93,6 @@ const ReefFeed = lazy(() =>
   import("./components/reef").then((m) => ({ default: m.ReefFeed }))
 );
 
-// Lazy-load Storefront Setup (only needed for beta breeders)
-const StorefrontSetup = lazy(() =>
-  import("./components/StorefrontSetup").then((m) => ({ default: m.StorefrontSetup }))
-);
 
 // Lazy-load the Breeder Terminal (unified seller workspace, Task 9)
 const BreederTerminal = lazy(() =>
@@ -274,45 +270,9 @@ export default function App() {
 
   const isFounder = isFounderWallet(account, smartWalletForFounderCheck);
 
-  // Storefront beta: all authenticated users can access "My Store" during closed beta
+  // Storefront beta: all authenticated users get the seller workspace (Breeder
+  // Terminal, which owns storefront setup/editing) during closed beta.
   const isStorefrontBeta = !!account;
-
-  // Load the user's existing storefront profile (if any) so the "My Store" tab
-  // opens in edit mode with fields pre-filled, and a user can't accidentally
-  // create a second storefront. Fetched by the same wallet used at setup
-  // (smart wallet, falling back to EOA).
-  const [storefrontProfile, setStorefrontProfile] = useState(null);
-  const [storefrontProfileLoaded, setStorefrontProfileLoaded] = useState(false);
-  useEffect(() => {
-    const wallet = smartWalletForFounderCheck || account;
-    if (!wallet) {
-      setStorefrontProfile(null);
-      setStorefrontProfileLoaded(false);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`/api/storefront-detail?id=${encodeURIComponent(wallet)}`);
-        if (cancelled) return;
-        if (res.ok) {
-          const data = await res.json();
-          // API returns the profile under `breeder` (camelCase). StorefrontSetup
-          // reads slug/displayName/bio/specialties/location, all present here.
-          setStorefrontProfile(data.breeder || null);
-        } else {
-          // 404 = no storefront yet → create mode
-          setStorefrontProfile(null);
-        }
-      } catch (err) {
-        console.warn("[App] Storefront profile fetch failed:", err);
-        if (!cancelled) setStorefrontProfile(null);
-      } finally {
-        if (!cancelled) setStorefrontProfileLoaded(true);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [account, smartWalletForFounderCheck]);
 
   // ─── Router-driven tab state ──────────────────────────────────────────────
   // The active tab is derived from the URL path (/app/<tab>) instead of local
@@ -334,6 +294,12 @@ export default function App() {
   // /app to the canonical path-based route. Runs once on mount.
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
+    // Legacy: the standalone "My Store" tab was consolidated into the Breeder
+    // Terminal (which owns storefront setup). Redirect old links/bookmarks.
+    if (hash === "storefront" || tabFromPath === "storefront") {
+      navigate(`/app/breeder-terminal${window.location.search}`, { replace: true });
+      return;
+    }
     if (VALID_TABS.includes(hash)) {
       navigate(`/app/${hash}${window.location.search}`, { replace: true });
     } else if (!VALID_TABS.includes(tabFromPath)) {
@@ -341,6 +307,14 @@ export default function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Redirect any mid-session navigation to the retired "storefront" tab into
+  // the Breeder Terminal (covers stray links after the My Store consolidation).
+  useEffect(() => {
+    if (tabFromPath === "storefront") {
+      navigate(`/app/breeder-terminal${window.location.search}`, { replace: true });
+    }
+  }, [tabFromPath, navigate]);
 
   // Scroll to top when switching tabs (prevents reef/other tabs from rendering mid-page)
   useEffect(() => {
@@ -808,27 +782,6 @@ export default function App() {
         return (
           <FoundersDashboard casualModeActive={casualModeActive} />
         );
-      case "storefront":
-        return (
-          <Suspense fallback={
-            <div style={{ maxWidth: "640px", margin: "0 auto", padding: "2rem 0" }}>
-              <div className="shimmer-placeholder" style={{ width: "100%", height: "300px", borderRadius: "16px" }} />
-            </div>
-          }>
-            {storefrontProfileLoaded ? (
-              <StorefrontSetup
-                key={storefrontProfile?.slug || "new-storefront"}
-                walletAccount={smartWalletForFounderCheck || account}
-                casualModeActive={casualModeActive}
-                existingProfile={storefrontProfile}
-              />
-            ) : (
-              <div style={{ maxWidth: "640px", margin: "0 auto", padding: "2rem 0" }}>
-                <div className="shimmer-placeholder" style={{ width: "100%", height: "300px", borderRadius: "16px" }} />
-              </div>
-            )}
-          </Suspense>
-        );
       case "breeder-terminal":
         return (
           <Suspense fallback={
@@ -1168,7 +1121,6 @@ export default function App() {
             { id: "reef",      icon: "🪸",  label: casualModeActive ? "The Reef"      : "Social",        alwaysShow: true, badge: !postedFirstCurrent },
             { id: "settings",  icon: "⚙️", label: "Settings",                                           alwaysShow: true  },
             ...(isFounder ? [{ id: "founders", icon: "📊", label: "Founders", alwaysShow: true }] : []),
-            ...(isStorefrontBeta ? [{ id: "storefront", icon: "🏪", label: "My Store", alwaysShow: true }] : []),
             ...(isStorefrontBeta ? [{ id: "breeder-terminal", icon: "🧑‍🌾", label: casualModeActive ? "Seller Hub" : "Breeder Terminal", alwaysShow: true }] : []),
           ]
             .filter((t) => t.alwaysShow)
