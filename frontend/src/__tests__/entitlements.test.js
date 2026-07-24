@@ -213,6 +213,18 @@ describe("Task 18 — buyer order capabilities are REQUIRED, only analytics/watc
   });
 });
 
+describe("Task 15 — cash pickup handoff surfaces are REQUIRED (never gated)", () => {
+  // docs/TASK_15_CASH_PICKUP_UI_SPEC.md §5: presenting a pickup code
+  // (buyer) and confirming a cash handoff (seller) are core fulfillment and
+  // must never be XP-gated. cash_pickup_handshake already covers both —
+  // this reasserts it explicitly for Task 15's new PickupCode/
+  // CashPickupConfirm components.
+  it("cash_pickup_handshake is REQUIRED and granted at 0 XP / no role", () => {
+    expect(ENTITLEMENTS.cash_pickup_handshake.class).toBe(REQUIRED);
+    expect(hasEntitlement("cash_pickup_handshake", { xp: 0, tier: "Shallow", roles: [] })).toBe(true);
+  });
+});
+
 describe("hasEntitlement — unknown keys fail closed", () => {
   it("returns false for an unknown entitlement key regardless of context", () => {
     expect(hasEntitlement("not_a_real_entitlement", { xp: 999999, roles: ["curator", "operator"] })).toBe(false);

@@ -73,10 +73,12 @@ import { PromotionsManager } from "./PromotionsManager";
 import { ListSpecimenModal } from "../ListSpecimenModal";
 import { EditListingModal } from "../EditListingModal";
 import { HandshakeVerification } from "../HandshakeVerification";
+import { CashPickupConfirm } from "./CashPickupConfirm";
 import { relayGetOrders, relayDispatchShipping } from "../../services/relayer";
 import { buyShippingLabel } from "../../services/shipping";
 import { normalizeSellerOrders, filterSellerOrders } from "../../services/sellerOrderView";
 import { SELLER_ACTION_KIND } from "../../services/orderCopy";
+import { FULFILLMENT_METHODS } from "../../services/marketplaceStateMachine";
 import { getOrCreateConversation } from "../../services/messagesApi";
 
 const LAST_VISIT_STORAGE_KEY = "aquadex_breeder_last_visit";
@@ -598,9 +600,21 @@ export function BreederTerminal({ walletAccount, casualModeActive = false }) {
         onSuccess={() => setEditingListing(null)}
       />
 
-      {/* Task 19: pickup + cash handoff scanning composes the existing
-          breeder-scan role of HandshakeVerification — not a new scanner. */}
-      {handshakeModalView && (
+      {/* Task 15: the canonical cash-pickup order's confirm_cash action opens
+          the new, focused CashPickupConfirm — NOT the legacy
+          HandshakeVerification (its plain-JSON event-cash flow does not
+          settle the canonical cash-pickup order). Every other handoff
+          (prepaid pickup's scan_handoff, and any legacy event-cash order)
+          still composes the existing breeder-scan role of
+          HandshakeVerification unchanged. */}
+      {handshakeModalView && handshakeModalView.method === FULFILLMENT_METHODS.CASH_PICKUP ? (
+        <CashPickupConfirm
+          isOpen={!!handshakeModalView}
+          onClose={() => setHandshakeModalView(null)}
+          casualModeActive={casualModeActive}
+          onSuccess={handleHandoffSettled}
+        />
+      ) : handshakeModalView ? (
         <HandshakeVerification
           isOpen={!!handshakeModalView}
           onClose={() => setHandshakeModalView(null)}
@@ -611,7 +625,7 @@ export function BreederTerminal({ walletAccount, casualModeActive = false }) {
           defaultRole="breeder"
           onSuccess={handleHandoffSettled}
         />
-      )}
+      ) : null}
     </div>
   );
 }

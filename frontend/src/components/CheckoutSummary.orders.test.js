@@ -38,7 +38,7 @@ const ARRIVAL_SOURCE = stripComments(
 describe("CheckoutSummary — order list wiring (§4.8, composition)", () => {
   it("routes status/search/sort through filterBuyerOrders + normalizeBuyerOrders (no forked filter logic)", () => {
     expect(SUMMARY_SOURCE).toContain(
-      'import { normalizeBuyerOrders, filterBuyerOrders } from "../services/buyerOrderView"'
+      'import { normalizeBuyerOrders, filterBuyerOrders, assembleBuyerOrderView } from "../services/buyerOrderView"'
     );
     expect(SUMMARY_SOURCE).toContain("filterBuyerOrders(normalizeBuyerOrders(shippingEscrows)");
     expect(SUMMARY_SOURCE).toContain("filterBuyerOrders(normalizeBuyerOrders(purchases)");
@@ -91,6 +91,27 @@ describe("OrderTimeline — composition (no re-derived status/timeline logic)", 
 
   it("no longer contains its own inline buildSteps status-int switch (fully delegated)", () => {
     expect(TIMELINE_SOURCE).not.toMatch(/function buildSteps\(/);
+  });
+});
+
+describe("CheckoutSummary — cash-pickup buyer code wiring (Task 15)", () => {
+  it("derives the next action from assembleBuyerOrderView, not a bespoke check", () => {
+    expect(SUMMARY_SOURCE).toContain(
+      'import { normalizeBuyerOrders, filterBuyerOrders, assembleBuyerOrderView } from "../services/buyerOrderView"'
+    );
+    expect(SUMMARY_SOURCE).toContain("assembleBuyerOrderView(order, { casual: casualModeActive })");
+  });
+
+  it("opens PickupCode only for cash_pickup orders at the SHOW_PICKUP_CODE next action", () => {
+    expect(SUMMARY_SOURCE).toContain('import { FULFILLMENT_METHODS } from "../services/marketplaceStateMachine"');
+    expect(SUMMARY_SOURCE).toContain("view.method !== FULFILLMENT_METHODS.CASH_PICKUP");
+    expect(SUMMARY_SOURCE).toContain("view.nextAction.kind !== NEXT_ACTION_KIND.SHOW_PICKUP_CODE");
+    expect(SUMMARY_SOURCE).toContain("setPickupCodeOrder(order)");
+  });
+
+  it("mounts the buyer PickupCode component", () => {
+    expect(SUMMARY_SOURCE).toContain('import { PickupCode } from "./marketplace/PickupCode"');
+    expect(SUMMARY_SOURCE).toContain("<PickupCode");
   });
 });
 

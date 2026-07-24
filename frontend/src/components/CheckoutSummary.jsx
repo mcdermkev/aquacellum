@@ -40,7 +40,10 @@ import { OrderWatchlistReorder } from "./OrderWatchlistReorder";
 import { BuyerInsights } from "./BuyerInsights";
 import { getFeatureStatus, getNextTierUnlocks } from "../utils/orderFeatureGates";
 import { hasEntitlement } from "../services/entitlements";
-import { normalizeBuyerOrders, filterBuyerOrders } from "../services/buyerOrderView";
+import { normalizeBuyerOrders, filterBuyerOrders, assembleBuyerOrderView } from "../services/buyerOrderView";
+import { NEXT_ACTION_KIND } from "../services/orderCopy";
+import { FULFILLMENT_METHODS } from "../services/marketplaceStateMachine";
+import { PickupCode } from "./marketplace/PickupCode";
 
 /**
  * DisplayName — Resolves a wallet address to a human-readable display name.
@@ -204,6 +207,13 @@ export function CheckoutSummary({
   // Buyer-paid live shipping: rate-selection modal (opens before Stripe checkout
   // for shipping listings so the buyer picks a real, distance-based rate).
   const [shipRateModal, setShipRateModal] = useState(null); // { listing } | null
+
+  // Task 15: buyer's cash-pickup handoff code. The SHOW_PICKUP_CODE next
+  // action (orderCopy.js) already covers both prepaid_pickup and
+  // cash_pickup at pickup_ready; this state only opens PickupCode for the
+  // cash-pickup case (prepaid pickup is a different, held-payment handoff
+  // flow, out of scope for this task). Holds the order whose code is open.
+  const [pickupCodeOrder, setPickupCodeOrder] = useState(null);
   // Seller in-app label purchase (auto-dispatch) state.
   const [labelBuying, setLabelBuying] = useState(false);
 
@@ -2053,6 +2063,28 @@ export function CheckoutSummary({
               </div>
             </div>
 
+            {/* Task 15: cash-pickup orders at pickup_ready surface the
+                SHOW_PICKUP_CODE next action (orderCopy.js) — wired here to
+                open the buyer's PickupCode view. Derived from the same
+                canonical view model as the rest of the buyer surface
+                (assembleBuyerOrderView), not a bespoke check. */}
+            {(() => {
+              const view = assembleBuyerOrderView(order, { casual: casualModeActive });
+              if (view.method !== FULFILLMENT_METHODS.CASH_PICKUP || view.nextAction.kind !== NEXT_ACTION_KIND.SHOW_PICKUP_CODE) {
+                return null;
+              }
+              return (
+                <button
+                  type="button"
+                  className="btn-primary"
+                  style={{ width: "100%" }}
+                  onClick={() => setPickupCodeOrder(order)}
+                >
+                  {view.nextAction.copy}
+                </button>
+              );
+            })()}
+
             <button 
               className="btn-secondary" 
               style={{ width: "100%", marginTop: "0.5rem", padding: "0.4rem" }}
@@ -2499,6 +2531,17 @@ export function CheckoutSummary({
         onClose={() => setShipRateModal(null)}
         listing={shipRateModal?.listing || {}}
         onProceed={proceedShippingCheckout}
+      />
+
+      {/* Task 15: buyer's cash-pickup handoff code. tokenId/buyerWallet are
+          read straight off the existing order record and account — no new
+          wallet plumbing. */}
+      <PickupCode
+        isOpen={!!pickupCodeOrder}
+        onClose={() => setPickupCodeOrder(null)}
+        tokenId={pickupCodeOrder?.tokenId}
+        buyerWallet={pickupCodeOrder?.buyer || walletAccount}
+        casualModeActive={casualModeActive}
       />
     </div>
   );

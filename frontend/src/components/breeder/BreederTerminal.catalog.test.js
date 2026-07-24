@@ -195,6 +195,31 @@ describe("BreederTerminal — pickup/cash handoff composes HandshakeVerification
   });
 });
 
+// ─── Task 15: canonical cash-pickup confirm_cash routes to CashPickupConfirm ─
+
+describe("BreederTerminal — cash-pickup confirm_cash routes to the new CashPickupConfirm (Task 15)", () => {
+  it("imports and mounts CashPickupConfirm", () => {
+    expect(SOURCE).toContain('import { CashPickupConfirm } from "./CashPickupConfirm"');
+    expect(SOURCE).toContain("<CashPickupConfirm");
+  });
+
+  it("branches on the cash_pickup fulfillment method before choosing which modal to open", () => {
+    expect(SOURCE).toContain('import { FULFILLMENT_METHODS } from "../../services/marketplaceStateMachine"');
+    expect(SOURCE).toContain("handshakeModalView.method === FULFILLMENT_METHODS.CASH_PICKUP");
+  });
+
+  it("still mounts HandshakeVerification for every non-cash-pickup handoff (legacy callers unchanged)", () => {
+    expect(SOURCE).toMatch(/handshakeModalView\.method === FULFILLMENT_METHODS\.CASH_PICKUP \? \(\s*<CashPickupConfirm/);
+    expect(SOURCE).toContain("<HandshakeVerification");
+  });
+
+  it("CashPickupConfirm refreshes via the same handleHandoffSettled used by HandshakeVerification", () => {
+    const idx = SOURCE.indexOf("<CashPickupConfirm");
+    const block = SOURCE.slice(idx, idx + 300);
+    expect(block).toContain("onSuccess={handleHandoffSettled}");
+  });
+});
+
 describe("BreederTerminal — Orders queue entitlement guard (§4.8): only bulk actions are gated", () => {
   it("gates the bulk action bar behind hasEntitlement(\"bulk_management\", ...)", () => {
     expect(SOURCE).toMatch(/hasEntitlement\("bulk_management"/);
