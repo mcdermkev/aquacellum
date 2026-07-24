@@ -41,6 +41,22 @@ describe("issueHandoffChallenge", () => {
     expect(() => issueHandoffChallenge({ orderId: "o", buyer: "b", seller: "s" })).toThrow(/secret/);
     expect(() => issueHandoffChallenge({ secret: SECRET, buyer: "b", seller: "s" })).toThrow(/required/);
   });
+
+  it("omits tokenId when not provided (byte-identical legacy payload)", () => {
+    const { payload } = issue();
+    expect(payload).not.toHaveProperty("tokenId");
+  });
+
+  it("carries an explicit numeric tokenId when provided, and it survives verify", async () => {
+    const { token, payload } = issueHandoffChallenge({
+      orderId: "ord_cash", buyer: "0xBUYER", seller: "0xSELLER",
+      tokenId: 42, secret: SECRET, now: T0,
+    });
+    expect(payload.tokenId).toBe(42);
+    const res = await verifyHandoffChallenge(token, { secret: SECRET, now: T0 + 1000, expectedSeller: "0xSELLER" });
+    expect(res.ok).toBe(true);
+    expect(res.payload.tokenId).toBe(42);
+  });
 });
 
 describe("verifyHandoffChallenge — happy path", () => {

@@ -9,7 +9,7 @@
 // ── Deployed Contract Addresses — Base Sepolia Testnet ─────────────────────
 // Deployed: May 29, 2026 | Chain ID: 84532
 export const CONTRACT_ADDRESS = "0x351ca8f34D94F29F6f865Afa419A636324473DeF";
-export const MARKETPLACE_ADDRESS = "0xEC4d21Aa32c6c378Ba43E6d9038e93A9702177BF";
+export const MARKETPLACE_ADDRESS = "0x0741D50d49e7374b855b532c17aD36aBF8AF3b3e";
 export const COMPANION_ADDRESS = import.meta.env.VITE_COMPANION_ADDRESS || "0x90EB869AE5c7b0BcecF1b0BFE74A148A50C653B8";
 
 // ── Founders Dashboard Access Control ──────────────────────────────────────

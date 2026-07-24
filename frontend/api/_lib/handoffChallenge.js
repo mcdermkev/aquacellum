@@ -42,7 +42,7 @@ function sign(payloadB64, secret) {
  * @returns {{ token:string, payload:Object }}
  */
 export function issueHandoffChallenge({
-  orderId, buyer, seller, listingId = null, quantity = 1,
+  orderId, buyer, seller, listingId = null, quantity = 1, tokenId = null,
   type = HANDOFF_TYPES.CASH, secret, now = Date.now(), ttlMs = DEFAULT_HANDOFF_TTL_MS, nonce,
 }) {
   if (!secret) throw new Error("handoff signing secret required");
@@ -59,6 +59,10 @@ export function issueHandoffChallenge({
     iat: now,
     exp: now + ttlMs,
   };
+  // Specimen cash/pickup handoffs carry the explicit on-chain tokenId that the
+  // relayer settles (fulfillCashPickup). Added only when provided so existing
+  // challenges (no tokenId) serialize byte-identically.
+  if (tokenId != null) payload.tokenId = Number(tokenId);
   const payloadB64 = b64url(JSON.stringify(payload));
   return { token: `${payloadB64}.${sign(payloadB64, secret)}`, payload };
 }

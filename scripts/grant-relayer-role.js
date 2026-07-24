@@ -14,7 +14,7 @@ dotenv.config();
 
 const RPC_URL = process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org";
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
-const MARKETPLACE_ADDRESS = "0xEC4d21Aa32c6c378Ba43E6d9038e93A9702177BF";
+const MARKETPLACE_ADDRESS = "0x0741D50d49e7374b855b532c17aD36aBF8AF3b3e";
 
 const FIAT_RELAYER_ROLE = ethers.keccak256(ethers.toUtf8Bytes("FIAT_RELAYER_ROLE"));
 

@@ -64,6 +64,37 @@ function buildReleaseAuthMessage({ tokenId, paymentRef, issuedAt }) {
   ].join("\n");
 }
 
+/**
+ * Canonical cash-pickup confirmation message the SELLER signs to prove control
+ * of the listing's seller wallet. MUST match the server builder in
+ * frontend/api/stripe.js byte-for-byte, or the recovered signer won't match and
+ * the handoff is rejected. Bound to the challenge nonce so it can't be reused.
+ */
+function buildCashConfirmMessage({ nonce, issuedAt }) {
+  return [
+    "Aquacellum: confirm cash pickup handoff",
+    `nonce:${nonce}`,
+    `issued:${issuedAt}`,
+  ].join("\n");
+}
+
+/**
+ * Extract the challenge nonce from a scanned handoff token, WITHOUT verifying
+ * (the server does the authoritative verification). Returns null if unreadable.
+ * The seller needs the nonce to sign the confirmation over the code they just
+ * scanned from the buyer.
+ */
+function parseHandoffNonce(token) {
+  try {
+    let b64 = String(token).split(".")[0].replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4) b64 += "=";
+    const json = decodeURIComponent(escape(atob(b64)));
+    return JSON.parse(json).nonce || null;
+  } catch {
+    return null;
+  }
+}
+
 // ─── Buyer: Purchase Flow ──────────────────────────────────────────────────
 
 /**
@@ -436,6 +467,99 @@ export async function openDoaClaim({ orderId, paymentIntentId, sessionId, affect
   } catch (err) {
     console.error("[StripePayments] openDoaClaim failed:", err);
     return { success: false, error: err.message || "Network error opening claim" };
+  }
+}
+
+// ─── Cash pickup handoff (in-person, no money movement) ─────────────────────
+
+/**
+ * BUYER: request a one-time cash-pickup handoff code for an active specimen
+ * listing. Renders as a QR the buyer presents to the seller in person. The
+ * server binds the code to the listing's on-chain seller and the buyer's
+ * account address, signs it, and short-expires it. Authorized from the buyer's
+ * Privy session.
+ *
+ * @param {Object} params
+ * @param {number|string} params.tokenId - specimen token id being picked up
+ * @param {string} params.buyerWallet - the buyer's account address (NFT recipient)
+ * @returns {Promise<{success:boolean, token?:string, expiresAt?:number, seller?:string, error?:string}>}
+ */
+export async function issueCashHandoff({ tokenId, buyerWallet } = {}) {
+  try {
+    if (tokenId == null) return { success: false, error: "Missing item reference" };
+    if (!buyerWallet) return { success: false, error: "Missing your account address" };
+
+    const sessionToken = await getSessionToken();
+    if (!sessionToken) {
+      return { success: false, error: "Please sign in again to get your pickup code." };
+    }
+
+    const response = await fetch(`${API_BASE}/stripe?action=handoff-issue`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionToken}`,
+      },
+      body: JSON.stringify({ tokenId, buyerWallet }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, error: data.error || `Could not create pickup code (${response.status})` };
+    }
+    return { success: true, token: data.token, expiresAt: data.expiresAt, seller: data.seller };
+  } catch (err) {
+    console.error("[StripePayments] issueCashHandoff failed:", err);
+    return { success: false, error: err.message || "Network error creating pickup code" };
+  }
+}
+
+/**
+ * SELLER: confirm an in-person cash pickup by submitting the buyer's scanned
+ * handoff code. Signs the challenge nonce with the seller wallet (proving
+ * control of the listing's seller address), then the relayer transfers the
+ * specimen to the buyer. No money moves. Authorized from the seller's Privy
+ * session plus the wallet signature.
+ *
+ * @param {Object} params
+ * @param {string} params.token - the scanned handoff code (challenge token)
+ * @returns {Promise<{success:boolean, txHash?:string, tokenId?:number, error?:string}>}
+ */
+export async function confirmCashPickup({ token } = {}) {
+  try {
+    if (!token) return { success: false, error: "Missing handoff code" };
+
+    const sessionToken = await getSessionToken();
+    if (!sessionToken) {
+      return { success: false, error: "Please sign in again to confirm this handoff." };
+    }
+
+    const nonce = parseHandoffNonce(token);
+    if (!nonce) return { success: false, error: "Unreadable handoff code" };
+
+    const issuedAt = Date.now();
+    let signature;
+    try {
+      signature = await signPersonalMessage(buildCashConfirmMessage({ nonce, issuedAt }));
+    } catch (err) {
+      return { success: false, error: err.message || "Could not confirm the handoff" };
+    }
+
+    const response = await fetch(`${API_BASE}/stripe?action=cash-confirm`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionToken}`,
+      },
+      body: JSON.stringify({ token, signature, issuedAt }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, error: data.error || `Handoff failed (${response.status})` };
+    }
+    return { success: data.success !== false, ...data };
+  } catch (err) {
+    console.error("[StripePayments] confirmCashPickup failed:", err);
+    return { success: false, error: err.message || "Network error confirming handoff" };
   }
 }
 

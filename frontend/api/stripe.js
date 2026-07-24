@@ -28,6 +28,12 @@ import { handleCorsPreFlight } from "./_lib/cors.js";
 import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
 import * as shipengine from "./_lib/shipengine.js";
 import { captureServerEvent } from "./_lib/posthogServer.js";
+import {
+  issueHandoffChallenge,
+  verifyHandoffChallenge,
+  parseChallenge,
+  HANDOFF_TYPES,
+} from "./_lib/handoffChallenge.js";
 import { createSupabaseOrderStore } from "./_lib/supabaseOrderStore.js";
 import { isCanonicalSettlementEnabled, settleViaCanonical, recordCanonicalOrderProtected } from "./_lib/canonicalSettlement.js";
 import { reserveCheckoutStock, commitCheckoutReservations, releaseCheckoutReservations } from "./_lib/canonicalReservations.js";
@@ -70,6 +76,12 @@ const MARKETPLACE_ABI = [
   "function releaseFiatBatchEscrow(bytes32 stripePaymentHash)",
   "function refundFiatBatchEscrow(bytes32 stripePaymentHash)",
   "function releaseFiatShippingEscrow(uint256 tokenId)",
+  // General (non-event) cash pickup settlement: relayer transfers the escrowed
+  // specimen to the buyer after the two-party signed handoff is verified
+  // off-chain. handoffRef = keccak256(challenge nonce) is the on-chain
+  // single-use replay guard (cashPickupSettled).
+  "function fulfillCashPickup(uint256 tokenId, address buyer, bytes32 handoffRef)",
+  "function cashPickupSettled(bytes32) view returns (bool)",
   // v2 fiat refund/dispute (relayer-authorized NFT return; no ETH moves — the
   // USD side is settled via Stripe). Requires the redeployed marketplace.
   "function refundFiatShippingEscrow(uint256 tokenId)",
@@ -167,7 +179,7 @@ function getMarketplaceContract() {
   }
   const RPC_URL = process.env.RPC_URL || "https://sepolia.base.org";
   const MARKETPLACE_ADDRESS =
-    process.env.MARKETPLACE_ADDRESS || "0xEC4d21Aa32c6c378Ba43E6d9038e93A9702177BF";
+    process.env.MARKETPLACE_ADDRESS || "0x0741D50d49e7374b855b532c17aD36aBF8AF3b3e";
   const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
   const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
   return new ethers.Contract(MARKETPLACE_ADDRESS, MARKETPLACE_ABI, wallet);
@@ -2526,6 +2538,191 @@ async function handleShipMargin(req, res) {
 // MAIN ROUTER
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// CASH PICKUP HANDOFF (Task 15 — general in-person cash sale settlement)
+//
+// Cash sales move NO money through the platform (see MARKETPLACE_STATE_MODEL.md
+// §5.4). Ownership transfers on a verified two-party handoff:
+//   1. handoff-issue: the authenticated BUYER requests a short-lived, HMAC-
+//      signed, single-use challenge for a specimen listing (rendered as a QR).
+//   2. cash-confirm: the authenticated SELLER scans it in person and submits it
+//      with a wallet signature over the challenge nonce (proving control of the
+//      listing's seller address). The relayer then calls fulfillCashPickup,
+//      transferring the escrowed specimen to the buyer.
+//
+// There is no held payment and no Stripe payout on this path. Replay is
+// guaranteed once-only on-chain by cashPickupSettled[keccak256(nonce)].
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Handoff confirmation signatures are short-lived (anti-replay of the signed
+// seller confirmation; the on-chain single-use guard is the durable backstop).
+const HANDOFF_SIGN_MAX_AGE_MS = 15 * 60 * 1000;
+
+function handoffSecret() {
+  return process.env.HANDOFF_SIGNING_SECRET || "";
+}
+
+/**
+ * Canonical message the confirming SELLER signs to prove control of the
+ * listing's seller wallet. MUST match the client builder in
+ * frontend/src/services/stripePayments.js byte-for-byte. Bound to the challenge
+ * nonce so a signature can't be reused for a different handoff.
+ */
+function buildCashConfirmMessage({ nonce, issuedAt }) {
+  return [
+    "Aquacellum: confirm cash pickup handoff",
+    `nonce:${nonce}`,
+    `issued:${issuedAt}`,
+  ].join("\n");
+}
+
+/**
+ * POST /api/stripe?action=handoff-issue
+ * Buyer-authenticated. Issues a signed one-time cash-pickup handoff challenge
+ * bound to an active specimen listing. Returns the challenge token (QR payload)
+ * and its expiry. Issuing is harmless without the seller's later signed
+ * confirmation, so buyer authentication (anti-spam) is the only gate here.
+ */
+async function handleHandoffIssue(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const secret = handoffSecret();
+  if (!secret) return res.status(500).json({ error: "Handoff signing not configured" });
+
+  const { verified, error } = await verifyPrivyToken(req);
+  if (!verified) return res.status(401).json({ error: error || "Unauthorized" });
+
+  const { tokenId, buyerWallet } = req.body || {};
+  if (tokenId == null) return res.status(400).json({ error: "Missing tokenId" });
+  if (!buyerWallet || !ethers.utils.isAddress(buyerWallet)) {
+    return res.status(400).json({ error: "Missing or invalid buyerWallet" });
+  }
+
+  // Authoritative seller + active check from the on-chain listing. The specimen
+  // must be listed (escrowed in the marketplace) for a cash pickup to settle.
+  let seller;
+  try {
+    const marketplace = getMarketplaceContract();
+    const listing = await marketplace.listings(Number(tokenId));
+    if (!listing.active) return res.status(409).json({ error: "Listing is not active" });
+    seller = String(listing.seller).toLowerCase();
+  } catch (err) {
+    return res.status(502).json({ error: "Could not read listing", details: err.message });
+  }
+
+  const { token, payload } = issueHandoffChallenge({
+    orderId: `cash_${tokenId}`,
+    buyer: buyerWallet,
+    seller,
+    listingId: tokenId,
+    tokenId,
+    type: HANDOFF_TYPES.CASH,
+    secret,
+  });
+  return res.status(200).json({ token, expiresAt: payload.exp, seller });
+}
+
+/**
+ * POST /api/stripe?action=cash-confirm
+ * Seller-authenticated. Verifies the buyer's signed handoff challenge + the
+ * seller's wallet signature over the nonce, then relays fulfillCashPickup to
+ * transfer the escrowed specimen to the buyer. No money moves.
+ */
+async function handleCashConfirm(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const secret = handoffSecret();
+  if (!secret) return res.status(500).json({ error: "Handoff signing not configured" });
+
+  // The confirming seller must hold a valid Privy session.
+  const { verified, error } = await verifyPrivyToken(req);
+  if (!verified) return res.status(401).json({ error: error || "Unauthorized" });
+
+  const { token, signature, issuedAt } = req.body || {};
+  if (!token) return res.status(400).json({ error: "Missing handoff token" });
+  if (!signature || !issuedAt) {
+    return res.status(400).json({ error: "Missing seller confirmation signature" });
+  }
+
+  // Freshness on the seller's signed confirmation.
+  const sigAgeMs = Date.now() - Number(issuedAt);
+  if (!Number.isFinite(sigAgeMs) || sigAgeMs > HANDOFF_SIGN_MAX_AGE_MS || sigAgeMs < -60_000) {
+    return res.status(401).json({ error: "Confirmation signature expired or has an invalid timestamp" });
+  }
+
+  // Parse (unverified) only to read the nonce the signature must bind to. The
+  // full authenticity check is verifyHandoffChallenge below.
+  const preview = parseChallenge(token);
+  if (!preview || !preview.nonce) return res.status(400).json({ error: "Malformed handoff token" });
+
+  // Recover the confirming seller's wallet from the signature over the nonce.
+  let signer;
+  try {
+    const message = buildCashConfirmMessage({ nonce: preview.nonce, issuedAt });
+    signer = ethers.utils.verifyMessage(message, signature).toLowerCase();
+  } catch {
+    return res.status(401).json({ error: "Invalid confirmation signature" });
+  }
+
+  const marketplace = getMarketplaceContract();
+  const handoffRef = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(preview.nonce));
+
+  // Verify the challenge: HMAC signature, expiry, seller-match (the recovered
+  // signer must equal the challenge's seller), and the on-chain single-use
+  // replay guard (cashPickupSettled[handoffRef]).
+  const verifyRes = await verifyHandoffChallenge(token, {
+    secret,
+    expectedSeller: signer,
+    isNonceUsed: async () => {
+      try { return await marketplace.cashPickupSettled(handoffRef); }
+      catch { return false; }
+    },
+  });
+  if (!verifyRes.ok) {
+    const status = (verifyRes.reason || "").startsWith("replay") ? 409 : 401;
+    return res.status(status).json({ error: `Handoff not verified: ${verifyRes.reason}` });
+  }
+
+  const payload = verifyRes.payload;
+  const tokenId = payload.tokenId != null ? Number(payload.tokenId) : Number(payload.listingId);
+  if (!Number.isInteger(tokenId)) {
+    return res.status(400).json({ error: "Challenge is missing a specimen tokenId" });
+  }
+
+  // Cross-check the recovered seller against the authoritative on-chain listing
+  // (defense-in-depth; fulfillCashPickup also requires an active listing).
+  try {
+    const listing = await marketplace.listings(tokenId);
+    if (!listing.active) return res.status(409).json({ error: "Listing is not active" });
+    if (String(listing.seller).toLowerCase() !== signer) {
+      return res.status(403).json({ error: "Signer is not the seller of this listing" });
+    }
+  } catch (err) {
+    return res.status(502).json({ error: "Could not verify listing", details: err.message });
+  }
+
+  // Relayer settles: escrowed specimen → buyer. cashPickupSettled[handoffRef]
+  // makes this exactly-once even under a concurrent submit; a revert (already
+  // resolved) is surfaced as 409, never retried.
+  try {
+    const tx = await marketplace.fulfillCashPickup(tokenId, payload.buyer, handoffRef);
+    const receipt = await tx.wait();
+    return res.status(200).json({
+      success: true,
+      action: "cash_pickup_settled",
+      txHash: receipt.transactionHash,
+      tokenId,
+      buyer: payload.buyer,
+    });
+  } catch (err) {
+    console.error("[Cash Pickup] fulfillCashPickup failed:", err);
+    const already = /EscrowAlreadyResolved|already/i.test(err.reason || err.message || "");
+    return res.status(already ? 409 : 502).json({ success: false, error: err.reason || err.message });
+  }
+}
+
 export default async function handler(req, res) {
   const action = req.query.action || "webhook";
 
@@ -2569,6 +2766,11 @@ export default async function handler(req, res) {
       return handleParcelPreset(req, res);
     case "parcel-presets":
       return handleParcelPresets(req, res);
+    // ── Cash pickup handoff (in-person, no money movement) ──
+    case "handoff-issue":
+      return handleHandoffIssue(req, res);
+    case "cash-confirm":
+      return handleCashConfirm(req, res);
     default:
       return res.status(400).json({ error: `Unknown action: ${action}` });
   }
