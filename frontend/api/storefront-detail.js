@@ -1470,17 +1470,33 @@ function pickupLocationRowToClient(row) {
  * Mirrors the reviews system's loadOrderForReview exactly — same identity
  * scheme, same table. Returns null if neither is found.
  */
+const ORDER_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 async function loadOrderForPickup({ orderId, orderRef }) {
-  if (orderId) {
-    const { data } = await supabase.from("orders").select("*").eq("id", orderId).maybeSingle();
-    if (data) return data;
-  }
-  if (orderRef) {
-    const { data } = await supabase
-      .from("orders")
-      .select("*")
-      .or(`id.eq.${orderRef},local_key.eq.${orderRef},stripe_session_id.eq.${orderRef}`)
-      .maybeSingle();
+  // Route each candidate ref to the ONE column whose type it matches. A
+  // non-uuid ref (a Dexie local_key or a stripe session id) must never land
+  // in an `id.eq.<value>` comparison: `id` is a uuid column, and PostgREST
+  // evaluates every comparand in an .or() up front, 400-ing the whole query
+  // on the first type mismatch ("invalid input syntax for type uuid") — which
+  // would 404 every legacy-ref pickup lookup (verified against the live DB).
+  // uuid → id, all-digits → local_key (integer), anything else →
+  // stripe_session_id (text).
+  const seen = new Set();
+  for (const ref of [orderId, orderRef]) {
+    if (ref == null) continue;
+    const refStr = String(ref);
+    if (!refStr || seen.has(refStr)) continue;
+    seen.add(refStr);
+
+    let query = supabase.from("orders").select("*");
+    if (ORDER_UUID_RE.test(refStr)) {
+      query = query.eq("id", refStr);
+    } else if (/^\d+$/.test(refStr)) {
+      query = query.eq("local_key", Number(refStr));
+    } else {
+      query = query.eq("stripe_session_id", refStr);
+    }
+    const { data } = await query.maybeSingle();
     if (data) return data;
   }
   return null;

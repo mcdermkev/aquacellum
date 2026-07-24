@@ -98,13 +98,21 @@ describe("handlePickupForOrder — enforces the caller is the buyer or seller on
     expect(block).toMatch(/res\.status\(403\)/);
   });
 
-  it("loadOrderForPickup mirrors the reviews system's order-identity resolution (id / local_key / stripe_session_id)", () => {
+  it("loadOrderForPickup routes each ref to a type-compatible column, never a non-uuid into id.eq", () => {
     const idx = SOURCE.indexOf("async function loadOrderForPickup(");
     expect(idx).toBeGreaterThan(-1);
-    const block = SOURCE.slice(idx, idx + 700);
+    const block = SOURCE.slice(idx, idx + 1000);
     expect(block).toContain('.from("orders")');
-    expect(block).toMatch(/local_key\.eq/);
-    expect(block).toMatch(/stripe_session_id\.eq/);
+    // Resolves across all three identity columns (uuid id / numeric local_key
+    // / text stripe_session_id) via type-appropriate single-column lookups...
+    expect(block).toMatch(/\.eq\("id",/);
+    expect(block).toMatch(/\.eq\("local_key",/);
+    expect(block).toMatch(/\.eq\("stripe_session_id",/);
+    // ...but guards the uuid column so a non-uuid ref (a Dexie local_key or a
+    // stripe session id) never lands in an id.eq comparison. PostgREST 400s
+    // "invalid input syntax for type uuid" on a mixed .or() otherwise, which
+    // would 404 every legacy-ref pickup lookup (verified against the live DB).
+    expect(block).toMatch(/ORDER_UUID_RE/);
   });
 });
 
