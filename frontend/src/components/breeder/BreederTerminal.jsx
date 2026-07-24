@@ -68,6 +68,7 @@ import { SellerAnalytics } from "../storefront/SellerAnalytics";
 import { StorefrontSetup } from "../StorefrontSetup";
 import { ShipFromSetup } from "../ShipFromSetup";
 import { ParcelPresetEditor } from "./ParcelPresetEditor";
+import { PickupSpotSetup } from "./PickupSpotSetup";
 import { StorefrontMerchandising } from "./StorefrontMerchandising";
 import { PromotionsManager } from "./PromotionsManager";
 import { ListSpecimenModal } from "../ListSpecimenModal";
@@ -80,6 +81,8 @@ import { normalizeSellerOrders, filterSellerOrders } from "../../services/seller
 import { SELLER_ACTION_KIND } from "../../services/orderCopy";
 import { FULFILLMENT_METHODS } from "../../services/marketplaceStateMachine";
 import { getOrCreateConversation } from "../../services/messagesApi";
+import { fetchPickupForOrder, confirmPickupTime } from "../../services/pickupCoordinationApi";
+import { arrangementStatusView } from "../../services/pickupCoordination";
 
 const LAST_VISIT_STORAGE_KEY = "aquadex_breeder_last_visit";
 
@@ -155,6 +158,14 @@ export function BreederTerminal({ walletAccount, casualModeActive = false }) {
   const [selectedOrderIds, setSelectedOrderIds] = useState(() => new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [expandedCustomerId, setExpandedCustomerId] = useState(null);
+
+  // Task 25: pickup-arrangement confirm/counter, surfaced as an inline
+  // expandable block on the existing prepaid-pickup seller order row rather
+  // than a new queue (spec §4). Fetched lazily (on expand), keyed by the
+  // order's stable view id, so this never fans out an N+1 fetch on load.
+  const [expandedPickupId, setExpandedPickupId] = useState(null);
+  const [pickupArrangements, setPickupArrangements] = useState({}); // { [viewId]: { loading, data, error } }
+  const [pickupConfirmBusyId, setPickupConfirmBusyId] = useState(null);
 
   const fetchLocalSellerOrders = async (account) => {
     if (!account) { setLocalOrdersLoading(false); return; }
@@ -316,6 +327,47 @@ export function BreederTerminal({ walletAccount, casualModeActive = false }) {
     // communication channel so the seller can respond to the buyer directly.
     // Curator-only `?action=doa-resolve` remains the resolution path.
     await handleMessageCustomer(view);
+  };
+
+  // ─── Task 25: pickup-arrangement confirm/counter (prepaid pickup only) ───
+  // Pure logistics metadata layered on top of an already-paid order — never
+  // touches settlement/inventory (Guardrail 1). orderRef is the order's
+  // Dexie key (`view.raw.key`), which the server resolves against
+  // `orders.local_key` the same way the cloud sync already keys orders.
+
+  const handleTogglePickupArrangement = async (view) => {
+    const willOpen = expandedPickupId !== view.id;
+    setExpandedPickupId(willOpen ? view.id : null);
+    if (!willOpen || pickupArrangements[view.id]) return;
+
+    setPickupArrangements((prev) => ({ ...prev, [view.id]: { loading: true, data: null, error: null } }));
+    try {
+      const res = await fetchPickupForOrder(view.raw?.key);
+      if (!res.success) {
+        setPickupArrangements((prev) => ({ ...prev, [view.id]: { loading: false, data: null, error: res.error || "Could not load pickup details." } }));
+        return;
+      }
+      setPickupArrangements((prev) => ({ ...prev, [view.id]: { loading: false, data: res, error: null } }));
+    } catch (err) {
+      setPickupArrangements((prev) => ({ ...prev, [view.id]: { loading: false, data: null, error: err.message || "Could not load pickup details." } }));
+    }
+  };
+
+  const handleConfirmPickupTime = async (view, confirmedTime) => {
+    setPickupConfirmBusyId(view.id);
+    try {
+      const res = await confirmPickupTime({ orderRef: view.raw?.key, confirmedTime });
+      if (!res.success) {
+        setPickupArrangements((prev) => ({ ...prev, [view.id]: { ...(prev[view.id] || {}), error: res.error || "Could not confirm this time." } }));
+        return;
+      }
+      setPickupArrangements((prev) => ({
+        ...prev,
+        [view.id]: { loading: false, error: null, data: { ...(prev[view.id]?.data || {}), arrangement: res.arrangement } },
+      }));
+    } finally {
+      setPickupConfirmBusyId(null);
+    }
   };
 
   const handleMessageCustomer = async (view) => {
@@ -516,6 +568,11 @@ export function BreederTerminal({ walletAccount, casualModeActive = false }) {
           expandedCustomerId={expandedCustomerId}
           onToggleCustomerHistory={setExpandedCustomerId}
           allSellerOrders={localSellerOrders}
+          expandedPickupId={expandedPickupId}
+          pickupArrangements={pickupArrangements}
+          onTogglePickupArrangement={handleTogglePickupArrangement}
+          onConfirmPickupTime={handleConfirmPickupTime}
+          pickupConfirmBusyId={pickupConfirmBusyId}
         />
       )}
 
@@ -553,6 +610,9 @@ export function BreederTerminal({ walletAccount, casualModeActive = false }) {
         <div className="glass-card" style={{ padding: "1.5rem" }}>
           <ShipFromSetup walletAccount={walletAccount} />
           <ParcelPresetEditor walletAccount={walletAccount} />
+          {/* Task 25: seller's PUBLIC pickup meet spots — distinct from the
+              PRIVATE ship-from address above. */}
+          <PickupSpotSetup walletAccount={walletAccount} />
         </div>
       )}
 
@@ -814,6 +874,11 @@ function OrdersSection({
   expandedCustomerId,
   onToggleCustomerHistory,
   allSellerOrders,
+  expandedPickupId,
+  pickupArrangements,
+  onTogglePickupArrangement,
+  onConfirmPickupTime,
+  pickupConfirmBusyId,
 }) {
   if (loading) {
     return <div className="shimmer-placeholder" style={{ height: "240px", borderRadius: "12px" }} />;
@@ -983,6 +1048,11 @@ function OrdersSection({
               customerHistoryOpen={expandedCustomerId === view.id}
               onToggleCustomerHistory={() => onToggleCustomerHistory(expandedCustomerId === view.id ? null : view.id)}
               allSellerOrders={allSellerOrders}
+              pickupOpen={expandedPickupId === view.id}
+              pickupState={pickupArrangements[view.id]}
+              onTogglePickup={() => onTogglePickupArrangement(view)}
+              onConfirmPickupTime={(time) => onConfirmPickupTime(view, time)}
+              pickupConfirmBusy={pickupConfirmBusyId === view.id}
             />
           ))}
         </div>
@@ -1012,8 +1082,13 @@ function SellerOrderRow({
   customerHistoryOpen,
   onToggleCustomerHistory,
   allSellerOrders,
+  pickupOpen,
+  pickupState,
+  onTogglePickup,
+  onConfirmPickupTime,
+  pickupConfirmBusy,
 }) {
-  const { status, sellerNextAction, payout, customer, quantity, commonName, trackingNumber } = view;
+  const { status, sellerNextAction, payout, customer, quantity, commonName, trackingNumber, method } = view;
   const chip = PAYOUT_CHIP_STYLE[payout.bucket] || PAYOUT_CHIP_STYLE.none;
   const kind = sellerNextAction.kind;
 
@@ -1178,7 +1253,91 @@ function SellerOrderRow({
           )}
         </details>
       )}
+
+      {/* Task 25: pickup-arrangement confirm/counter, layered on the existing
+          prepaid-pickup order row rather than a new queue (spec §4). Pure
+          logistics metadata — never touches settlement/inventory. */}
+      {method === FULFILLMENT_METHODS.PREPAID_PICKUP && (
+        <PickupArrangementPanel
+          open={pickupOpen}
+          onToggle={onTogglePickup}
+          state={pickupState}
+          onConfirm={onConfirmPickupTime}
+          confirmBusy={pickupConfirmBusy}
+        />
+      )}
     </div>
+  );
+}
+
+function PickupArrangementPanel({ open, onToggle, state, onConfirm, confirmBusy }) {
+  const [counterTime, setCounterTime] = useState("");
+  const arrangement = state?.data?.arrangement;
+  const statusView = arrangementStatusView(arrangement || { status: "none" }, { casual: true });
+
+  return (
+    <details open={open}>
+      <summary
+        onClick={(e) => { e.preventDefault(); onToggle(); }}
+        style={{ fontSize: "0.7rem", color: "var(--text-muted)", cursor: "pointer" }}
+      >
+        📍 Pickup time — {open && arrangement ? statusView.label : "view / confirm"}
+      </summary>
+      {open && (
+        <div style={{ marginTop: "0.5rem", padding: "0.6rem 0.7rem", borderRadius: "6px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+          {state?.loading && <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>Loading…</span>}
+          {state?.error && <span style={{ fontSize: "0.72rem", color: "var(--accent-red, #f87171)" }} role="alert">{state.error}</span>}
+          {!state?.loading && !state?.error && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+              <span style={{ fontSize: "0.75rem", color: "#fff" }}>{statusView.label}</span>
+              {arrangement?.proposedTime && (
+                <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>
+                  Buyer proposed: <strong>{new Date(arrangement.proposedTime).toLocaleString()}</strong>
+                </span>
+              )}
+              {arrangement?.confirmedTime && (
+                <span style={{ fontSize: "0.7rem", color: "var(--accent-green, #34d399)" }}>
+                  Confirmed: <strong>{new Date(arrangement.confirmedTime).toLocaleString()}</strong>
+                </span>
+              )}
+              {arrangement?.status === "proposed" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    disabled={confirmBusy}
+                    onClick={() => onConfirm(arrangement.proposedTime)}
+                    style={{ fontSize: "0.72rem", padding: "0.4rem 0.65rem", alignSelf: "flex-start" }}
+                  >
+                    {confirmBusy ? "Confirming…" : "Confirm this time"}
+                  </button>
+                  <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
+                    <input
+                      type="datetime-local"
+                      value={counterTime}
+                      onChange={(e) => setCounterTime(e.target.value)}
+                      style={{ padding: "0.35rem 0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.72rem" }}
+                    />
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      disabled={!counterTime || confirmBusy}
+                      onClick={() => onConfirm(new Date(counterTime).toISOString())}
+                      style={{ fontSize: "0.72rem", padding: "0.4rem 0.65rem" }}
+                    >
+                      Counter with this time
+                    </button>
+                  </div>
+                </div>
+              )}
+              {!arrangement && (
+                <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>No pickup time proposed yet.</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </details>
   );
 }
 

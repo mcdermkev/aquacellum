@@ -1,10 +1,26 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { formatEther, parseEther } from "ethers";
 import { HandshakeVerification } from "./HandshakeVerification";
 import { db } from "../db";
 import { haptic } from "../utils/haptics";
+import { relayGetOrders } from "../services/relayer";
+import { fetchPickupForOrder } from "../services/pickupCoordinationApi";
+import { FULFILLMENT_METHODS, ORDER_STATES } from "../services/marketplaceStateMachine";
+import { resolveMethod, resolveCanonicalState } from "../services/buyerOrderView";
+
+// Terminal states where a pickup meet is no longer relevant to show on the map.
+const PICKUP_MAP_TERMINAL_STATES = new Set([
+  ORDER_STATES.HANDOFF_CONFIRMED,
+  ORDER_STATES.CERTIFICATE_TRANSFERRED,
+  ORDER_STATES.SELLER_PAID,
+  ORDER_STATES.COMPLETED,
+  ORDER_STATES.REFUNDED,
+  ORDER_STATES.CANCELLED,
+]);
 
 export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAccount, casualModeActive }) {
+  const navigate = useNavigate();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scanningPhase, setScanningPhase] = useState(true);
@@ -26,6 +42,14 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
   });
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [dotRevealProgress, setDotRevealProgress] = useState(0);
+
+  // Task 25: "My Pickups" layer — the buyer's own active PREPAID_PICKUP
+  // orders, drawn as REAL (un-fuzzed) pins, same technique as `mockEvents`
+  // below (real latMiles/lngMiles offsets from userLocation, not the fuzzed
+  // seller-hash offsets `listings` uses). The discovery radar's fuzzed dots
+  // are otherwise completely unchanged.
+  const [myPickups, setMyPickups] = useState([]);
+  const [showMyPickups, setShowMyPickups] = useState(true);
 
   const isPro = !casualModeActive;
 
@@ -156,6 +180,58 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
     fetchLocalListings();
     return () => { if (dotRevealTimerRef.current) cancelAnimationFrame(dotRevealTimerRef.current); };
   }, [contractAddress, marketplaceAddress, userLocation]);
+
+  // Task 25: fetch the buyer's own active prepaid-pickup orders + their
+  // resolved (real, un-fuzzed) pickup spot. Uses the same order-scoped
+  // reveal gate every buyer surface uses (fetchPickupForOrder) — this map
+  // never reads pickup_locations directly, so the reveal rule (exact
+  // coordinates only to the buyer/seller on that order) still holds.
+  useEffect(() => {
+    if (!walletAccount) { setMyPickups([]); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { purchases = [] } = await relayGetOrders(walletAccount);
+        const activePickupOrders = purchases.filter((o) => {
+          if (o.role !== "Buyer") return false;
+          if (resolveMethod(o) !== FULFILLMENT_METHODS.PREPAID_PICKUP) return false;
+          return !PICKUP_MAP_TERMINAL_STATES.has(resolveCanonicalState(o));
+        });
+
+        const resolved = [];
+        for (const order of activePickupOrders) {
+          try {
+            const res = await fetchPickupForOrder(order.key);
+            if (cancelled) return;
+            const loc = res?.location;
+            if (!res?.success || loc?.lat == null || loc?.lng == null) continue;
+
+            const latOffset = loc.lat - userLocation.lat;
+            const lngOffset = loc.lng - userLocation.lng;
+            resolved.push({
+              id: `pickup-${order.purchaseId}`,
+              orderKey: `batch-${order.purchaseId}`,
+              purchaseId: order.purchaseId,
+              label: loc.label || order.commonName || "Pickup",
+              latMiles: latOffset * 69,
+              lngMiles: lngOffset * 55,
+              distance: Math.sqrt((latOffset * 69) ** 2 + (lngOffset * 55) ** 2),
+            });
+          } catch {
+            // Non-fatal — skip this order's pin rather than failing the whole layer.
+          }
+        }
+        if (!cancelled) setMyPickups(resolved);
+      } catch {
+        if (!cancelled) setMyPickups([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [walletAccount, userLocation]);
+
+  const handleOpenPickupOrder = useCallback((pickup) => {
+    navigate(`/app/orders?order=${encodeURIComponent(pickup.orderKey)}`);
+  }, [navigate]);
 
   // Persist distance unit preference
   useEffect(() => {
@@ -389,6 +465,31 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
         ctx.fill();
       });
 
+      // Task 25: "My Pickups" — the buyer's own real (un-fuzzed) pickup
+      // pins, same drawing technique as mockEvents above (real
+      // latMiles/lngMiles), just visually distinct (a pin marker) so a
+      // buyer never confuses their own confirmed meet spot with the fuzzed
+      // discovery dots or the swap-meet/drop event markers.
+      if (showMyPickups) {
+        myPickups.forEach((pickup) => {
+          if (pickup.distance > rangeFilter) return;
+          const x = centerX + (pickup.lngMiles / rangeFilter) * maxRadius;
+          const y = centerY - (pickup.latMiles / rangeFilter) * maxRadius;
+          dotsCoords.push({ x, y, listing: { ...pickup, isMyPickup: true } });
+          const isActive = selectedListing && selectedListing.id === pickup.id;
+          ctx.beginPath();
+          ctx.arc(x, y, 10 * (isActive ? pulseScale : 1), 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(244, 114, 182, ${isActive ? 0.3 : 0.18})`;
+          ctx.fill();
+          ctx.strokeStyle = "rgba(244, 114, 182, 0.8)";
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(x, y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = "#fff";
+          ctx.fill();
+        });
+      }
+
       mappedDotsRef.current = dotsCoords;
       drawSweepAndCenter(centerX, centerY, maxRadius, angle);
       angle = (angle + 0.01) % (Math.PI * 2);
@@ -397,7 +498,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
 
     drawRadar();
     return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
-  }, [listings, rangeFilter, selectedListing, hoveredDot, viewMode, scanningPhase, dotRevealProgress, clusteredListings, useMetric, eventFilter]);
+  }, [listings, rangeFilter, selectedListing, hoveredDot, viewMode, scanningPhase, dotRevealProgress, clusteredListings, useMetric, eventFilter, myPickups, showMyPickups]);
 
   // Leaflet map view effect
   useEffect(() => {
@@ -437,6 +538,19 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
         marker.bindPopup(`<strong>${item.speciesName}</strong><br/>Qty: ${item.quantity}<br/>~${formatDistance(item.distance)} away`);
         marker.on("click", () => { setSelectedListing(item); setMobileDrawerOpen(true); haptic("tap"); });
       });
+
+      // Task 25: My Pickups markers (real, un-fuzzed) — round-trip to the order.
+      if (showMyPickups) {
+        myPickups.filter((p) => p.distance <= rangeFilter).forEach((pickup) => {
+          const pickupLat = userLocation.lat + pickup.latMiles / 69;
+          const pickupLng = userLocation.lng + pickup.lngMiles / 55;
+          const marker = L.circleMarker([pickupLat, pickupLng], {
+            radius: 8, fillColor: "#f472b6", fillOpacity: 0.85, color: "#fff", weight: 2
+          }).addTo(map);
+          marker.bindPopup(`<strong>📍 ${pickup.label}</strong><br/>~${formatDistance(pickup.distance)} away`);
+          marker.on("click", () => handleOpenPickupOrder(pickup));
+        });
+      }
     }
     return () => {
       if (mapContainerRef.current) {
@@ -444,7 +558,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
         if (mapContainerRef.current._leaflet_id) mapContainerRef.current._leaflet_id = null;
       }
     };
-  }, [viewMode, listings, rangeFilter, userLocation]);
+  }, [viewMode, listings, rangeFilter, userLocation, myPickups, showMyPickups, handleOpenPickupOrder]);
 
   // Canvas click handler
   const handleCanvasClick = (e) => {
@@ -465,6 +579,12 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
       if (clickedDot.isCluster) {
         const neededRange = Math.ceil(Math.max(...clickedDot.cluster.items.map(i => i.distance)) * 1.3);
         setRangeFilter(Math.min(25, Math.max(5, neededRange)));
+      } else if (clickedDot.listing?.isMyPickup) {
+        // Task 25: a My Pickups pin round-trips straight to the order's
+        // PickupPanel rather than opening the (fuzzed-radar-oriented)
+        // breeder detail panel — there's no checkout to initiate here.
+        handleOpenPickupOrder(clickedDot.listing);
+        haptic("tap");
       } else {
         setSelectedListing(clickedDot.listing);
         setMobileDrawerOpen(true);
@@ -584,6 +704,18 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
           <button onClick={() => setUseMetric(!useMetric)} style={{ padding: "0.25rem 0.6rem", fontSize: "0.65rem", fontWeight: "600", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "4px", cursor: "pointer", background: "rgba(0,0,0,0.2)", color: "var(--text-muted)", transition: "all 0.2s" }} title="Toggle distance units">
             {useMetric ? "km \u2192 mi" : "mi \u2192 km"}
           </button>
+
+          {/* Task 25: My Pickups layer toggle */}
+          {myPickups.length > 0 && (
+            <button
+              onClick={() => setShowMyPickups((v) => !v)}
+              aria-pressed={showMyPickups}
+              style={{ padding: "0.25rem 0.6rem", fontSize: "0.65rem", fontWeight: "600", border: showMyPickups ? "1px solid rgba(244,114,182,0.5)" : "1px solid rgba(255,255,255,0.06)", borderRadius: "4px", cursor: "pointer", background: showMyPickups ? "rgba(244,114,182,0.12)" : "rgba(0,0,0,0.2)", color: showMyPickups ? "#f472b6" : "var(--text-muted)", transition: "all 0.2s" }}
+              title="Toggle your pickup orders on the map"
+            >
+              📍 My Pickups ({myPickups.length})
+            </button>
+          )}
         </div>
 
         {/* Canvas / Map Area */}

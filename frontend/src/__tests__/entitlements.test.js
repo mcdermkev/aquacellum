@@ -225,6 +225,33 @@ describe("Task 15 — cash pickup handoff surfaces are REQUIRED (never gated)", 
   });
 });
 
+describe("Task 25 — pickup coordination capabilities are REQUIRED (never gated)", () => {
+  // docs/TASK_25_PICKUP_COORDINATION_SPEC.md §0: seller_pickup_scheduling,
+  // paid_pickup_handshake, handoff, and ownership_transfer are all
+  // REQUIRED-class and must stay that way — pickup coordination is core
+  // fulfillment, not a convenience feature. No new entitlement keys were
+  // introduced for this task; it reuses these existing REQUIRED keys.
+  const pickupCoordinationCapabilities = [
+    "seller_pickup_scheduling",
+    "paid_pickup_handshake",
+    "handoff",
+    "ownership_transfer",
+  ];
+
+  it.each(pickupCoordinationCapabilities)("%s is REQUIRED and granted at 0 XP / no role", (key) => {
+    expect(ENTITLEMENTS[key], `unknown entitlement key: ${key}`).toBeDefined();
+    expect(ENTITLEMENTS[key].class).toBe(REQUIRED);
+    expect(hasEntitlement(key, { xp: 0, tier: "Shallow", roles: [] })).toBe(true);
+  });
+
+  it("none of these carry a minTier or role gate", () => {
+    for (const key of pickupCoordinationCapabilities) {
+      expect(ENTITLEMENTS[key].minTier).toBeUndefined();
+      expect(ENTITLEMENTS[key].role).toBeUndefined();
+    }
+  });
+});
+
 describe("hasEntitlement — unknown keys fail closed", () => {
   it("returns false for an unknown entitlement key regardless of context", () => {
     expect(hasEntitlement("not_a_real_entitlement", { xp: 999999, roles: ["curator", "operator"] })).toBe(false);

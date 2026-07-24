@@ -45,6 +45,26 @@
  *   promotion into `handleCreateCheckout`'s charge math is a separate,
  *   Tier A (Opus-reviewed) change.
  *
+ * Task 25 (Local Pickup Coordination) addition — same reasoning (stay under
+ * the 12-function cap):
+ *
+ *   GET    /api/storefront-detail?action=pickup-locations         → the authenticated seller's own pickup spots
+ *   POST   /api/storefront-detail?action=pickup-locations          → create a pickup spot for the authenticated seller
+ *   PUT    /api/storefront-detail?action=pickup-locations&id=<id>  → update one of the seller's own spots
+ *   DELETE /api/storefront-detail?action=pickup-locations&id=<id>  → delete/deactivate one of the seller's own spots
+ *   GET    /api/storefront-detail?action=pickup-for-order&order=<ref>
+ *                                                            → resolved pickup spot + arrangement for ONE order, ONLY if the
+ *                                                              caller is the buyer or seller on that order (session-authed)
+ *   POST   /api/storefront-detail?action=pickup-arrange     → buyer proposes a pickup time for an order they own
+ *   POST   /api/storefront-detail?action=pickup-confirm     → seller confirms/counters the proposed time
+ *
+ *   GUARDRAIL (spec §0.1, review-critical): none of these handlers may call
+ *   settlement/release/reserve/refund/escrow code. A pickup arrangement is
+ *   pure logistics metadata layered on TOP of an already-paid prepaid-pickup
+ *   order — it never holds inventory and never changes the order's payment
+ *   state. Exact coordinates are revealed only via pickup-for-order, and
+ *   only to the buyer/seller verified against that specific order row.
+ *
  * Consolidated from separate functions to stay within Vercel Hobby plan limits.
  *
  * Environment variables:
@@ -73,6 +93,11 @@ import {
   MAX_CODE_LENGTH,
 } from "../src/services/promotionEngine.js";
 import { buildCustomerSegments } from "../src/services/customerSegments.js";
+import {
+  normalizePickupLocation,
+  validatePickupLocationDraft,
+  validateProposedTime,
+} from "../src/services/pickupCoordination.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL || "",
@@ -119,6 +144,15 @@ export default async function handler(req, res) {
       return handlePromotions(req, res);
     case "segments":
       return handleSegments(req, res);
+    // ── Task 25: Local Pickup Coordination ──
+    case "pickup-locations":
+      return handlePickupLocations(req, res);
+    case "pickup-for-order":
+      return handlePickupForOrder(req, res);
+    case "pickup-arrange":
+      return handlePickupArrange(req, res);
+    case "pickup-confirm":
+      return handlePickupConfirm(req, res);
     default:
       // No action = default storefront detail endpoint
       return handleStorefrontDetail(req, res);
@@ -1402,6 +1436,446 @@ async function handleSegments(req, res) {
     return res.status(200).json({ success: true, segments });
   } catch (err) {
     console.error("[segments] GET error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TASK 25: LOCAL PICKUP COORDINATION
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// GUARDRAIL 1 (spec §0.1, review-critical): none of the handlers below call
+// settlement/release/reserve/refund/escrow code, and none of them write to
+// `orders`/`canonical_orders`/`fiat_settlements`/any inventory or reservation
+// table. A prepaid-pickup order's payment is already held via the existing
+// Stripe flow (unchanged by this feature) — pickup_locations/
+// pickup_arrangements are pure logistics metadata describing where/when the
+// already-paid handoff happens. Verified by a source-guard test (grep-guard
+// for absence of release/settle/reserve/refund/escrow writes in this section).
+//
+// GUARDRAIL 2/3: exact coordinates are revealed only post-purchase, only to
+// the buyer/seller verified against that specific order row (never a public
+// read), and every write derives its wallet from the verified Privy session
+// token — never the request body. Mirrors the reviews system's
+// loadOrderForReview + requireWalletFromSession pattern above.
+
+/** Map a pickup_locations row to the client shape (normalizePickupLocation's own camelCase output). */
+function pickupLocationRowToClient(row) {
+  return normalizePickupLocation(row);
+}
+
+/**
+ * Resolve the canonical `orders` row a pickup arrangement targets, by
+ * orderId (uuid) or a legacy orderRef (local_key / stripe_session_id).
+ * Mirrors the reviews system's loadOrderForReview exactly — same identity
+ * scheme, same table. Returns null if neither is found.
+ */
+async function loadOrderForPickup({ orderId, orderRef }) {
+  if (orderId) {
+    const { data } = await supabase.from("orders").select("*").eq("id", orderId).maybeSingle();
+    if (data) return data;
+  }
+  if (orderRef) {
+    const { data } = await supabase
+      .from("orders")
+      .select("*")
+      .or(`id.eq.${orderRef},local_key.eq.${orderRef},stripe_session_id.eq.${orderRef}`)
+      .maybeSingle();
+    if (data) return data;
+  }
+  return null;
+}
+
+/** Map a pickup_arrangements row to the client shape (camelCase). */
+function arrangementRowToClient(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    orderRef: row.order_ref,
+    buyerWallet: row.buyer_wallet,
+    sellerWallet: row.seller_wallet,
+    pickupLocationId: row.pickup_location_id,
+    proposedTime: row.proposed_time,
+    confirmedTime: row.confirmed_time,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/**
+ * ?action=pickup-locations — the authenticated seller's own pickup-spot CRUD.
+ * Never public: exact coordinates must only be revealed post-purchase via
+ * pickup-for-order's order-scoped gate, never through a general listing read.
+ *
+ *   GET    → list the caller's own spots (including inactive, for the setup UI)
+ *   POST   → create a spot for the caller
+ *   PUT    → update one of the caller's existing spots (?id=... or body.id)
+ *   DELETE → remove one of the caller's spots (?id=... or body.id)
+ */
+async function handlePickupLocations(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "GET, POST, PUT, DELETE, OPTIONS", headers: "Content-Type, Authorization" })) return;
+
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+
+  if (req.method === "GET") {
+    try {
+      const { data, error } = await supabase
+        .from("pickup_locations")
+        .select("*")
+        .eq("wallet_address", wallet)
+        .order("sort_order", { ascending: true });
+
+      if (error) {
+        console.error("[pickup-locations] GET failed:", error);
+        return res.status(500).json({ error: "Could not load pickup spots" });
+      }
+      return res.status(200).json({ success: true, locations: (data || []).map(pickupLocationRowToClient) });
+    } catch (err) {
+      console.error("[pickup-locations] GET error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  if (req.method === "POST") {
+    const draft = normalizePickupLocation(req.body || {});
+    const validation = validatePickupLocationDraft(draft);
+    if (!validation.ok) return res.status(400).json({ error: validation.error });
+
+    try {
+      const { data, error } = await supabase
+        .from("pickup_locations")
+        .insert(pickupLocationDraftToRow(draft, wallet))
+        .select("*")
+        .single();
+
+      if (error) {
+        console.error("[pickup-locations] POST failed:", error);
+        return res.status(500).json({ error: "Could not create pickup spot" });
+      }
+      return res.status(201).json({ success: true, location: pickupLocationRowToClient(data) });
+    } catch (err) {
+      console.error("[pickup-locations] POST error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  if (req.method === "PUT") {
+    const id = req.query.id ?? req.body?.id;
+    if (!id) return res.status(400).json({ error: "Missing id" });
+
+    const draft = normalizePickupLocation(req.body || {});
+    const validation = validatePickupLocationDraft(draft);
+    if (!validation.ok) return res.status(400).json({ error: validation.error });
+
+    try {
+      const { data: existing } = await supabase
+        .from("pickup_locations")
+        .select("wallet_address")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (!existing || existing.wallet_address !== wallet) {
+        return res.status(404).json({ error: "Pickup spot not found" });
+      }
+
+      const { data, error } = await supabase
+        .from("pickup_locations")
+        .update(pickupLocationDraftToRow(draft, wallet))
+        .eq("id", id)
+        .eq("wallet_address", wallet)
+        .select("*")
+        .single();
+
+      if (error) {
+        console.error("[pickup-locations] PUT failed:", error);
+        return res.status(500).json({ error: "Could not update pickup spot" });
+      }
+      return res.status(200).json({ success: true, location: pickupLocationRowToClient(data) });
+    } catch (err) {
+      console.error("[pickup-locations] PUT error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  if (req.method === "DELETE") {
+    const id = req.query.id ?? req.body?.id;
+    if (!id) return res.status(400).json({ error: "Missing id" });
+
+    try {
+      const { data: existing } = await supabase
+        .from("pickup_locations")
+        .select("wallet_address")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (!existing || existing.wallet_address !== wallet) {
+        return res.status(404).json({ error: "Pickup spot not found" });
+      }
+
+      const { error } = await supabase
+        .from("pickup_locations")
+        .delete()
+        .eq("id", id)
+        .eq("wallet_address", wallet);
+
+      if (error) {
+        console.error("[pickup-locations] DELETE failed:", error);
+        return res.status(500).json({ error: "Could not delete pickup spot" });
+      }
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error("[pickup-locations] DELETE error:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  return res.status(405).json({ error: "Method not allowed. Use GET, POST, PUT, or DELETE." });
+}
+
+/** Map a normalized pickup-location draft to a pickup_locations row for insert/update. */
+function pickupLocationDraftToRow(draft, wallet) {
+  return {
+    wallet_address: wallet,
+    label: draft.label.slice(0, 80),
+    lat: draft.lat,
+    lng: draft.lng,
+    address_text: draft.addressText ? String(draft.addressText).slice(0, 500) : null,
+    notes: draft.notes ? String(draft.notes).slice(0, 500) : null,
+    availability: draft.availability,
+    active: draft.active,
+    sort_order: draft.sortOrder,
+  };
+}
+
+/**
+ * GET ?action=pickup-for-order&order=<orderId|orderRef> — the resolved
+ * pickup spot (exact lat/lng/address_text) + arrangement for ONE order.
+ * Session-authed; returns 403 unless the caller is the buyer or seller on
+ * that specific order (Guardrail 2/3 — the reveal gate).
+ */
+async function handlePickupForOrder(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "GET, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed. Use GET." });
+
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+
+  const orderRef = req.query.order;
+  if (!orderRef) return res.status(400).json({ error: "Missing order query parameter" });
+
+  try {
+    const orderRow = await loadOrderForPickup({ orderId: orderRef, orderRef });
+    if (!orderRow) return res.status(404).json({ error: "Order not found" });
+
+    const buyerWallet = (orderRow.buyer_wallet || "").toLowerCase();
+    const sellerWallet = (orderRow.seller_wallet || "").toLowerCase();
+    if (wallet !== buyerWallet && wallet !== sellerWallet) {
+      return res.status(403).json({ error: "You are not a party to this order" });
+    }
+
+    const { data: arrangementRow } = await supabase
+      .from("pickup_arrangements")
+      .select("*")
+      .eq("order_ref", orderRow.id)
+      .maybeSingle();
+
+    let location = null;
+    if (arrangementRow?.pickup_location_id) {
+      const { data: locationRow } = await supabase
+        .from("pickup_locations")
+        .select("*")
+        .eq("id", arrangementRow.pickup_location_id)
+        .maybeSingle();
+      if (locationRow) location = pickupLocationRowToClient(locationRow);
+    } else {
+      // No arrangement yet — fall back to the seller's active default spot
+      // (lowest sort_order) so the buyer sees available windows before a
+      // time is proposed.
+      const { data: defaultRows } = await supabase
+        .from("pickup_locations")
+        .select("*")
+        .eq("wallet_address", sellerWallet)
+        .eq("active", true)
+        .order("sort_order", { ascending: true })
+        .limit(1);
+      if (defaultRows && defaultRows[0]) location = pickupLocationRowToClient(defaultRows[0]);
+    }
+
+    return res.status(200).json({
+      success: true,
+      location,
+      arrangement: arrangementRowToClient(arrangementRow || null),
+    });
+  } catch (err) {
+    console.error("[pickup-for-order] error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+/**
+ * POST ?action=pickup-arrange — session buyer proposes a time for a
+ * prepaid-pickup order they own. Server re-validates the time against the
+ * seller's availability windows via validateProposedTime (never trusts a
+ * client-side check). Upserts the single arrangement row for this order.
+ */
+async function handlePickupArrange(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed. Use POST." });
+
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+
+  const { orderId, orderRef, pickupLocationId, proposedTime } = req.body || {};
+  if ((!orderId && !orderRef) || !proposedTime) {
+    return res.status(400).json({ error: "Missing orderId/orderRef or proposedTime" });
+  }
+
+  try {
+    const orderRow = await loadOrderForPickup({ orderId, orderRef });
+    if (!orderRow) return res.status(404).json({ error: "Order not found" });
+
+    const buyerWallet = (orderRow.buyer_wallet || "").toLowerCase();
+    const sellerWallet = (orderRow.seller_wallet || "").toLowerCase();
+    if (wallet !== buyerWallet) {
+      return res.status(403).json({ error: "Only the buyer on this order may propose a pickup time" });
+    }
+
+    // Resolve the target pickup spot: an explicit id, or the arrangement's
+    // existing spot, or the seller's default active spot.
+    let locationId = pickupLocationId || null;
+    if (!locationId) {
+      const { data: existingArrangement } = await supabase
+        .from("pickup_arrangements")
+        .select("pickup_location_id")
+        .eq("order_ref", orderRow.id)
+        .maybeSingle();
+      locationId = existingArrangement?.pickup_location_id || null;
+    }
+    if (!locationId) {
+      const { data: defaultRows } = await supabase
+        .from("pickup_locations")
+        .select("id")
+        .eq("wallet_address", sellerWallet)
+        .eq("active", true)
+        .order("sort_order", { ascending: true })
+        .limit(1);
+      locationId = defaultRows?.[0]?.id || null;
+    }
+    if (!locationId) {
+      return res.status(422).json({ error: "This seller has not set up a pickup spot yet" });
+    }
+
+    const { data: locationRow } = await supabase.from("pickup_locations").select("*").eq("id", locationId).maybeSingle();
+    if (!locationRow) return res.status(404).json({ error: "Pickup spot not found" });
+
+    const timeCheck = validateProposedTime(normalizePickupLocation(locationRow), proposedTime, {});
+    if (!timeCheck.ok) {
+      return res.status(422).json({ error: timeCheck.error });
+    }
+
+    const { data: upserted, error } = await supabase
+      .from("pickup_arrangements")
+      .upsert(
+        {
+          order_ref: orderRow.id,
+          buyer_wallet: buyerWallet,
+          seller_wallet: sellerWallet,
+          pickup_location_id: locationId,
+          proposed_time: proposedTime,
+          confirmed_time: null,
+          status: "proposed",
+        },
+        { onConflict: "order_ref" }
+      )
+      .select("*")
+      .single();
+
+    if (error) {
+      console.error("[pickup-arrange] upsert failed:", error);
+      return res.status(500).json({ error: "Could not propose this pickup time" });
+    }
+
+    return res.status(200).json({ success: true, arrangement: arrangementRowToClient(upserted) });
+  } catch (err) {
+    console.error("[pickup-arrange] error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+/**
+ * POST ?action=pickup-confirm — session seller confirms (or counters) the
+ * proposed time for an order they are selling. A countered time is
+ * re-validated against the seller's own availability windows exactly like
+ * a buyer proposal (a seller's counter must still land in a real window).
+ */
+async function handlePickupConfirm(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed. Use POST." });
+
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+
+  const { orderId, orderRef, confirmedTime } = req.body || {};
+  if (!orderId && !orderRef) {
+    return res.status(400).json({ error: "Missing orderId or orderRef" });
+  }
+
+  try {
+    const orderRow = await loadOrderForPickup({ orderId, orderRef });
+    if (!orderRow) return res.status(404).json({ error: "Order not found" });
+
+    const sellerWallet = (orderRow.seller_wallet || "").toLowerCase();
+    if (wallet !== sellerWallet) {
+      return res.status(403).json({ error: "Only the seller on this order may confirm a pickup time" });
+    }
+
+    const { data: existingArrangement } = await supabase
+      .from("pickup_arrangements")
+      .select("*")
+      .eq("order_ref", orderRow.id)
+      .maybeSingle();
+
+    if (!existingArrangement) {
+      return res.status(404).json({ error: "No proposed pickup time to confirm yet" });
+    }
+
+    const timeToConfirm = confirmedTime || existingArrangement.proposed_time;
+    if (!timeToConfirm) {
+      return res.status(400).json({ error: "Missing confirmedTime" });
+    }
+
+    // A seller counter-time must itself land in the spot's own availability.
+    if (existingArrangement.pickup_location_id) {
+      const { data: locationRow } = await supabase
+        .from("pickup_locations")
+        .select("*")
+        .eq("id", existingArrangement.pickup_location_id)
+        .maybeSingle();
+      if (locationRow) {
+        const timeCheck = validateProposedTime(normalizePickupLocation(locationRow), timeToConfirm, {});
+        if (!timeCheck.ok) {
+          return res.status(422).json({ error: timeCheck.error });
+        }
+      }
+    }
+
+    const { data: updated, error } = await supabase
+      .from("pickup_arrangements")
+      .update({ confirmed_time: timeToConfirm, status: "confirmed" })
+      .eq("order_ref", orderRow.id)
+      .select("*")
+      .single();
+
+    if (error) {
+      console.error("[pickup-confirm] update failed:", error);
+      return res.status(500).json({ error: "Could not confirm this pickup time" });
+    }
+
+    return res.status(200).json({ success: true, arrangement: arrangementRowToClient(updated) });
+  } catch (err) {
+    console.error("[pickup-confirm] error:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 }

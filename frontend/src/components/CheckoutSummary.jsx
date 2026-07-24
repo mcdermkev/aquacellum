@@ -44,6 +44,7 @@ import { normalizeBuyerOrders, filterBuyerOrders, assembleBuyerOrderView } from 
 import { NEXT_ACTION_KIND } from "../services/orderCopy";
 import { FULFILLMENT_METHODS } from "../services/marketplaceStateMachine";
 import { PickupCode } from "./marketplace/PickupCode";
+import { PickupPanel } from "./marketplace/PickupPanel";
 
 /**
  * DisplayName — Resolves a wallet address to a human-readable display name.
@@ -214,6 +215,9 @@ export function CheckoutSummary({
   // cash-pickup case (prepaid pickup is a different, held-payment handoff
   // flow, out of scope for this task). Holds the order whose code is open.
   const [pickupCodeOrder, setPickupCodeOrder] = useState(null);
+  // Task 25: buyer's PREPAID_PICKUP order — which order's PickupPanel
+  // (map/address/availability/propose-time) is currently expanded inline.
+  const [expandedPickupPanelId, setExpandedPickupPanelId] = useState(null);
   // Seller in-app label purchase (auto-dispatch) state.
   const [labelBuying, setLabelBuying] = useState(false);
 
@@ -2082,6 +2086,39 @@ export function CheckoutSummary({
                 >
                   {view.nextAction.copy}
                 </button>
+              );
+            })()}
+
+            {/* Task 25: PREPAID_PICKUP orders get the pickup coordination
+                panel (map/address/availability/propose-time) — a distinct
+                held-payment handoff flow from cash pickup's PickupCode
+                above, per the same assembleBuyerOrderView-derived check. */}
+            {(() => {
+              const view = assembleBuyerOrderView(order, { casual: casualModeActive });
+              if (view.method !== FULFILLMENT_METHODS.PREPAID_PICKUP) return null;
+              const orderKey = `batch-${order.purchaseId}`;
+              const isOpen = expandedPickupPanelId === orderKey;
+              return (
+                <div style={{ marginTop: "0.25rem" }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ width: "100%" }}
+                    onClick={() => setExpandedPickupPanelId(isOpen ? null : orderKey)}
+                  >
+                    {isOpen ? "Hide pickup details" : "📍 View pickup details"}
+                  </button>
+                  {isOpen && (
+                    <div style={{ marginTop: "0.5rem" }}>
+                      <PickupPanel
+                        orderRef={order.key}
+                        sellerWallet={order.seller}
+                        casualModeActive={casualModeActive}
+                        onOpenHandoff={() => openOrderDetail("batch", order)}
+                      />
+                    </div>
+                  )}
+                </div>
               );
             })()}
 
