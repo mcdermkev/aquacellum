@@ -98,8 +98,8 @@ describe("handlePickupForOrder — enforces the caller is the buyer or seller on
     expect(block).toMatch(/res\.status\(403\)/);
   });
 
-  it("loadOrderForPickup routes each ref to a type-compatible column, never a non-uuid into id.eq", () => {
-    const idx = SOURCE.indexOf("async function loadOrderForPickup(");
+  it("resolveOrderByRef routes each ref to a type-compatible column, never a non-uuid into id.eq", () => {
+    const idx = SOURCE.indexOf("async function resolveOrderByRef(");
     expect(idx).toBeGreaterThan(-1);
     const block = SOURCE.slice(idx, idx + 1000);
     expect(block).toContain('.from("orders")');
@@ -110,9 +110,16 @@ describe("handlePickupForOrder — enforces the caller is the buyer or seller on
     expect(block).toMatch(/\.eq\("stripe_session_id",/);
     // ...but guards the uuid column so a non-uuid ref (a Dexie local_key or a
     // stripe session id) never lands in an id.eq comparison. PostgREST 400s
-    // "invalid input syntax for type uuid" on a mixed .or() otherwise, which
-    // would 404 every legacy-ref pickup lookup (verified against the live DB).
+    // "invalid input syntax for type uuid/integer" on a mixed query otherwise,
+    // which would 404 every legacy-ref lookup (verified against the live DB).
     expect(block).toMatch(/ORDER_UUID_RE/);
+  });
+
+  it("loadOrderForPickup delegates to the shared type-routed resolveOrderByRef", () => {
+    const idx = SOURCE.indexOf("async function loadOrderForPickup(");
+    expect(idx).toBeGreaterThan(-1);
+    const block = SOURCE.slice(idx, idx + 160);
+    expect(block).toMatch(/resolveOrderByRef\(/);
   });
 });
 
