@@ -134,12 +134,15 @@ describe("CheckoutSummary — mounts BuyerInsights on the buyer order-history su
   });
 });
 
-describe("BreederTerminal / StorefrontSetup — pass totalXp into SellerAnalytics so the deep-breakdown gate has a real value", () => {
-  it("BreederTerminal passes totalXp={xp}", () => {
+describe("SellerAnalytics ownership after the My Store consolidation — lives only in the Breeder Terminal", () => {
+  it("BreederTerminal passes totalXp={xp} into SellerAnalytics so the deep-breakdown gate has a real value", () => {
     expect(BREEDER_TERMINAL_SOURCE).toContain("totalXp={xp}");
   });
 
-  it("StorefrontSetup passes totalXp={getXp()}", () => {
-    expect(STOREFRONT_SETUP_SOURCE).toContain("totalXp={getXp()}");
+  it("StorefrontSetup no longer embeds SellerAnalytics (analytics consolidated into the Terminal's Analytics section)", () => {
+    // The standalone "My Store" tab was folded into the Breeder Terminal;
+    // seller analytics now render only in the Terminal's Analytics section,
+    // never duplicated inside the storefront editor.
+    expect(STOREFRONT_SETUP_SOURCE).not.toContain("SellerAnalytics");
   });
 });
