@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { LivingTank } from "./LivingTank";
 import { deriveTankHealth } from "../../utils/tankHealth";
+import { getOrInitTankSchedules } from "../../services/tankSchedules";
 import "./CasualTankGallery.css";
 
 /**
@@ -28,13 +29,30 @@ export function CasualTankGallery({
   draggedOverTankId = null,
   onOpen,
   onDropSpecimen,
+  onDropSpecimenGroup,
   onDragEnterTank,
   onDragLeaveTank,
+  schedulesOverride,
 }) {
+  // Load (and lazily provision) each tank's schedules so the living-water ambient
+  // reflects overdue maintenance, not just water parameters. `schedulesOverride`
+  // bypasses the DB for preview/tests.
+  const [schedulesByTank, setSchedulesByTank] = useState(schedulesOverride || {});
+  useEffect(() => {
+    if (schedulesOverride) { setSchedulesByTank(schedulesOverride); return; }
+    let cancelled = false;
+    (async () => {
+      const map = {};
+      await Promise.all(tanks.map(async (t) => { map[t.id] = await getOrInitTankSchedules(t.id); }));
+      if (!cancelled) setSchedulesByTank(map);
+    })();
+    return () => { cancelled = true; };
+  }, [tanks, schedulesOverride]);
+
   return (
     <div className="casual-tank-gallery">
       {tanks.map((tank) => {
-        const health = deriveTankHealth(tank);
+        const health = deriveTankHealth(tank, { schedules: schedulesByTank[tank.id] || [] });
         const isActive = activeTankId != null && Number(activeTankId) === Number(tank.id);
         const isDragOver = draggedOverTankId != null && Number(draggedOverTankId) === Number(tank.id);
         const testedAgo = relativeTime(tank.latestTestTimestamp);
@@ -55,6 +73,7 @@ export function CasualTankGallery({
             role="button"
             tabIndex={0}
             aria-label={`Open ${tank.name || "tank"}`}
+            data-testid="tank-card"
             onClick={() => onOpen && onOpen(tank)}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -71,6 +90,14 @@ export function CasualTankGallery({
             onDrop={async (e) => {
               e.preventDefault();
               onDragLeaveTank && onDragLeaveTank();
+              const groupStr = e.dataTransfer.getData("application/aquadex-specimen-group");
+              if (groupStr && onDropSpecimenGroup) {
+                try {
+                  const ids = JSON.parse(groupStr);
+                  if (Array.isArray(ids) && ids.length) await onDropSpecimenGroup(ids, tank.id);
+                } catch { /* ignore malformed payload */ }
+                return;
+              }
               const specimenIdStr = e.dataTransfer.getData("application/aquadex-specimen");
               if (specimenIdStr && onDropSpecimen) {
                 await onDropSpecimen(Number(specimenIdStr), tank.id);

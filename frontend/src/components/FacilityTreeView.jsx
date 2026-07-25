@@ -5,6 +5,7 @@ import { addXp, XP_ACTIONS } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
 import { compressImage } from "../utils/imageCompression";
 import { relayRegisterTank, relayMintSpecimen } from "../services/relayer";
+import { putTankPhoto } from "../services/tankMedia";
 import { db } from "../db";
 import { useContractSpecies } from "../hooks/useSpeciesData";
 import { tankTypeLabel } from "../utils/tankUtils";
@@ -264,12 +265,9 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
       });
 
       if (newTankId && selectedPhoto) {
-        try {
-          localStorage.setItem(`aquadex_tank_photo_${newTankId}`, selectedPhoto);
-        } catch (storageErr) {
-          console.error("Storage quota error:", storageErr);
-          showToast("⚠️ Storage Quota Exceeded! Tank registered, but device is out of space for local photos.");
-        }
+        // Durable store (Dexie via tankMedia); it mirrors to localStorage so
+        // surfaces still reading localStorage keep working.
+        await putTankPhoto(newTankId, selectedPhoto);
       }
 
       if (casualModeActive && addedFishList.length > 0) {

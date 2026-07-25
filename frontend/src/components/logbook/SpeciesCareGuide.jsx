@@ -1,4 +1,5 @@
 import React from "react";
+import { buildSpeciesCarePrompt } from "../../utils/poseidonPrompts";
 import "./SpeciesCareGuide.css";
 
 /**
@@ -13,7 +14,7 @@ import "./SpeciesCareGuide.css";
  *   fishbaseData    — curated reference catalog (useSpeciesData)
  *   contractSpecies — on-chain species catalog with temp/pH/care level (useContractSpecies)
  */
-export function SpeciesCareGuide({ tank, fishbaseData = [], contractSpecies = [] }) {
+export function SpeciesCareGuide({ tank, fishbaseData = [], contractSpecies = [], onAskPoseidon }) {
   const refs = uniqueSpecies(tank?.specimens);
   if (refs.length === 0) return null;
 
@@ -45,6 +46,15 @@ export function SpeciesCareGuide({ tank, fishbaseData = [], contractSpecies = []
               {c.diet && <span className="cg-chip">🍽️ {c.diet}</span>}
             </div>
             {c.tip && <p className="cg-tip">{c.tip}</p>}
+            {onAskPoseidon && (
+              <button
+                type="button"
+                className="cg-ask"
+                onClick={() => onAskPoseidon(buildSpeciesCarePrompt(c.commonName, tank))}
+              >
+                💬 Ask Poseidon about {c.commonName}
+              </button>
+            )}
           </div>
         ))}
       </div>

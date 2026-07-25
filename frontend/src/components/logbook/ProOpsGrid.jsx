@@ -37,6 +37,7 @@ export function ProOpsGrid({
   draggedOverTankId = null,
   onOpen,
   onDropSpecimen,
+  onDropSpecimenGroup,
   onDragEnterTank,
   onDragLeaveTank,
   onLogDue,
@@ -118,7 +119,7 @@ export function ProOpsGrid({
         <div className="ops-worklist">
           <span className="ops-worklist-title">📋 Today's worklist</span>
           {worklist.map((g) => (
-            <button key={g.kind} type="button" className="ops-worklist-item" onClick={() => onLogDue(g.kind, g.tankIds)}>
+            <button key={g.kind} type="button" className="ops-worklist-item" data-testid="worklist-item" onClick={() => onLogDue(g.kind, g.tankIds)}>
               <span>{g.icon} <strong>{g.tankIds.length}</strong> due for {g.label}</span>
               <span className="ops-worklist-go">Log all →</span>
             </button>
@@ -132,6 +133,7 @@ export function ProOpsGrid({
           <button
             type="button"
             className={`ops-chip ${attentionOnly ? "ops-chip--active" : ""}`}
+            data-testid="ops-attention-filter"
             onClick={() => setAttentionOnly((v) => !v)}
             aria-pressed={attentionOnly}
           >
@@ -178,6 +180,7 @@ export function ProOpsGrid({
             <div
               key={tank.id}
               className={`ops-row ${isActive ? "ops-row--active" : ""} ${isDragOver ? "ops-row--dragover" : ""} ${needsAttention ? "ops-row--attention" : ""}`}
+              data-testid="ops-row"
               role="button"
               tabIndex={0}
               onClick={() => onOpen && onOpen(tank)}
@@ -188,6 +191,14 @@ export function ProOpsGrid({
               onDrop={async (e) => {
                 e.preventDefault();
                 onDragLeaveTank && onDragLeaveTank();
+                const groupStr = e.dataTransfer.getData("application/aquadex-specimen-group");
+                if (groupStr && onDropSpecimenGroup) {
+                  try {
+                    const ids = JSON.parse(groupStr);
+                    if (Array.isArray(ids) && ids.length) await onDropSpecimenGroup(ids, tank.id);
+                  } catch { /* ignore malformed payload */ }
+                  return;
+                }
                 const idStr = e.dataTransfer.getData("application/aquadex-specimen");
                 if (idStr && onDropSpecimen) await onDropSpecimen(Number(idStr), tank.id);
               }}

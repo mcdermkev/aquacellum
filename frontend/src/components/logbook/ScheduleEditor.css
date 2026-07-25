@@ -1,0 +1,62 @@
+/* ScheduleEditor — per-tank cadence editor (Task 8 polish). */
+
+.sched-editor {
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.12));
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.sched-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+}
+.sched-head-left { display: flex; align-items: center; gap: 0.5rem; }
+.sched-head-left strong { color: #fff; font-size: 0.85rem; }
+.sched-chevron { color: var(--text-muted, #94a3b8); transition: transform 0.2s ease; }
+.sched-chevron.open { transform: rotate(180deg); }
+
+.sched-body { padding: 0 0.9rem 0.85rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.sched-help { margin: 0 0 0.25rem; font-size: 0.72rem; line-height: 1.45; color: var(--text-muted, #94a3b8); }
+
+.sched-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.sched-row--off { opacity: 0.6; }
+
+.sched-toggle { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+.sched-toggle input { width: 15px; height: 15px; accent-color: #38bdf8; cursor: pointer; }
+.sched-label { color: #fff; font-size: 0.8rem; }
+
+.sched-cadence { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; color: var(--text-muted, #94a3b8); white-space: nowrap; }
+.sched-cadence input {
+  width: 46px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.12));
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.78rem;
+  padding: 0.2rem 0.35rem;
+  text-align: center;
+}
+.sched-cadence input:disabled { opacity: 0.5; }
+.sched-cadence input:focus { outline: none; border-color: rgba(56, 189, 248, 0.6); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sched-chevron { transition: none; }
+}

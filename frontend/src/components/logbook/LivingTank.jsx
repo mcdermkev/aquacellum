@@ -110,6 +110,9 @@ export function LivingTank({
       style={{ height: rootHeight }}
       role="img"
       aria-label={`${tank?.name || "Tank"} — ${typeName}, ${fishCount} fish, water status ${ambient.status}`}
+      data-testid="living-tank"
+      data-status={ambient.status}
+      data-animated={animate ? "true" : "false"}
     >
       {/* Water column (+ optional photo behind it) */}
       <div
@@ -144,7 +147,11 @@ export function LivingTank({
 
       {/* Fish layer — unmounted when offscreen so its rAF loop stops */}
       {inView && fishCount > 0 && (
-        <div className="lt-fish" style={{ opacity: fishOpacity, filter: fishBlur ? `blur(${fishBlur}px)` : "none" }}>
+        <div
+          className="lt-fish"
+          data-max-fish={cfg.maxFish}
+          style={{ opacity: fishOpacity, filter: fishBlur ? `blur(${fishBlur}px)` : "none" }}
+        >
           <TankFishVisualization
             specimens={specimens}
             fishbaseData={fishbaseData}

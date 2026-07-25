@@ -23,6 +23,101 @@ export function PoseidonGlobalWidget({ walletAddress, casualModeActive = true, a
   const messagesEndRef = useRef(null);
   const panelRef = useRef(null);
 
+  // ── Draggable "chat-head" FAB ──────────────────────────────────────────────
+  // Long-press to pick the bubble up, then drag it anywhere (it remembers where
+  // you leave it). A normal tap still opens the chat; keyboard Enter/Space still
+  // works via onClick. This lets the user move Poseidon off whatever it's
+  // covering (e.g. the Inhabitants bulk-select checkbox on a narrow screen)
+  // instead of us fighting three FABs over two fixed corners.
+  const FAB_POS_KEY = "aquadex_poseidon_fab_pos";
+  const LONG_PRESS_MS = 250;
+  const MOVE_THRESHOLD = 6; // px before a pre-arm move cancels the long-press
+  const fabRef = useRef(null);
+  const fabPosRef = useRef(null);
+  const suppressClickRef = useRef(false);
+  const dragRef = useRef({ pointerId: null, startX: 0, startY: 0, originX: 0, originY: 0, armed: false, moved: false, timer: null });
+  const [fabPos, setFabPos] = useState(() => {
+    try {
+      const s = localStorage.getItem(FAB_POS_KEY);
+      const p = s ? JSON.parse(s) : null;
+      fabPosRef.current = p;
+      return p;
+    } catch { return null; }
+  });
+  const [fabDragging, setFabDragging] = useState(false);
+
+  const clampFabPos = useCallback((x, y) => {
+    const el = fabRef.current;
+    const w = el?.offsetWidth ?? 120;
+    const h = el?.offsetHeight ?? 48;
+    const m = 8;
+    return {
+      x: Math.max(m, Math.min(x, window.innerWidth - w - m)),
+      y: Math.max(m, Math.min(y, window.innerHeight - h - m)),
+    };
+  }, []);
+
+  const applyFabPos = useCallback((p) => { fabPosRef.current = p; setFabPos(p); }, []);
+
+  // Keep the bubble on-screen if the viewport resizes.
+  useEffect(() => {
+    const onResize = () => { if (fabPosRef.current) applyFabPos(clampFabPos(fabPosRef.current.x, fabPosRef.current.y)); };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [applyFabPos, clampFabPos]);
+
+  const onFabPointerDown = (e) => {
+    const el = fabRef.current;
+    if (!el) return;
+    suppressClickRef.current = false; // fresh press; don't inherit a stale suppress
+    const rect = el.getBoundingClientRect();
+    const d = dragRef.current;
+    d.pointerId = e.pointerId;
+    d.startX = e.clientX; d.startY = e.clientY;
+    d.originX = rect.left; d.originY = rect.top;
+    d.armed = false; d.moved = false;
+    clearTimeout(d.timer);
+    d.timer = setTimeout(() => {
+      d.armed = true;
+      applyFabPos(clampFabPos(rect.left, rect.top)); // anchor at current spot so it doesn't jump
+      try { el.setPointerCapture(e.pointerId); } catch { /* older browsers */ }
+      setFabDragging(true);
+    }, LONG_PRESS_MS);
+  };
+
+  const onFabPointerMove = (e) => {
+    const d = dragRef.current;
+    if (d.pointerId !== e.pointerId) return;
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+    if (!d.armed) {
+      // Moved before the long-press armed → treat as a scroll/flick, not a drag.
+      if (Math.abs(dx) > MOVE_THRESHOLD || Math.abs(dy) > MOVE_THRESHOLD) clearTimeout(d.timer);
+      return;
+    }
+    d.moved = true;
+    applyFabPos(clampFabPos(d.originX + dx, d.originY + dy));
+  };
+
+  const endFabDrag = (e) => {
+    const d = dragRef.current;
+    if (d.pointerId !== e.pointerId) return;
+    clearTimeout(d.timer);
+    const wasDrag = d.armed && d.moved;
+    try { fabRef.current?.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+    d.pointerId = null; d.armed = false; d.moved = false;
+    setFabDragging(false);
+    if (wasDrag) {
+      suppressClickRef.current = true; // swallow the click the browser fires after a drag
+      try { localStorage.setItem(FAB_POS_KEY, JSON.stringify(fabPosRef.current)); } catch { /* quota */ }
+    }
+  };
+
+  const onFabClick = () => {
+    if (suppressClickRef.current) { suppressClickRef.current = false; return; } // this "click" was the end of a drag
+    setIsOpen((v) => !v);
+  };
+
   const mode = casualModeActive ? "casual" : "pro";
   const {
     messages,
@@ -186,13 +281,19 @@ export function PoseidonGlobalWidget({ walletAddress, casualModeActive = true, a
         </div>
       )}
 
-      {/* Floating Action Button */}
+      {/* Floating Action Button — tap to chat, long-press to drag/reposition */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`poseidon-global-fab ${isOpen ? "poseidon-global-fab--active" : ""}`}
+        ref={fabRef}
+        onClick={onFabClick}
+        onPointerDown={onFabPointerDown}
+        onPointerMove={onFabPointerMove}
+        onPointerUp={endFabDrag}
+        onPointerCancel={endFabDrag}
+        className={`poseidon-global-fab ${isOpen ? "poseidon-global-fab--active" : ""} ${fabDragging ? "poseidon-global-fab--dragging" : ""}`}
+        style={fabPos ? { left: `${fabPos.x}px`, top: `${fabPos.y}px`, right: "auto", bottom: "auto" } : undefined}
         aria-label={isOpen ? "Close Poseidon chat" : "Open Poseidon chat"}
         aria-expanded={isOpen}
-        title="Talk to Poseidon"
+        title="Tap to chat · long-press to move"
       >
         {isOpen ? (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

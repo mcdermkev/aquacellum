@@ -3,6 +3,7 @@ import { db } from "../db";
 import { relayMoveSpecimen } from "../services/relayer";
 import { syncSpecimenToCloud } from "../services/cloudSync";
 import { groupNurseryFish } from "../utils/nurseryGrouping";
+import { deriveSpeciesProfile, rankCompatibleTanks, profileHasCareData } from "../services/compatibleTanks";
 import "./logbook/FryNursery.css";
 
 /**
@@ -26,6 +27,7 @@ export function FryNursery({
   onListOnMarketplace,
   casualModeActive = false,
   fishbaseData = [],
+  contractSpecies = [],
   requestConfirm,
 }) {
   const [nurseryFish, setNurseryFish] = useState([]);
@@ -126,7 +128,7 @@ export function FryNursery({
   return (
     <div className="fry-nursery glass-card">
       {/* Header — collapsible triage banner */}
-      <button className="fn-header" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded}>
+      <button className="fn-header" data-testid="nursery-header" onClick={() => setExpanded((v) => !v)} aria-expanded={expanded}>
         <span className="fn-header-left">
           <span className="fn-emoji">🐣</span>
           <span>
@@ -152,6 +154,19 @@ export function FryNursery({
             const img = speciesThumb(group, fishbaseData);
             const isOpen = !!openGroups[group.key];
             const busy = busyKey === group.key;
+
+            // Rank the keeper's tanks by fit for this species (grounded in the
+            // shared compatibility engine). Only badge/reorder when we actually
+            // have species care data; otherwise fall back to the plain list.
+            const profile = deriveSpeciesProfile(group, fishbaseData, contractSpecies);
+            const showFit = profileHasCareData(profile);
+            const ranked = showFit ? rankCompatibleTanks(profile, activeTanks) : null;
+            const orderedTanks = ranked ? ranked.map((r) => r.tank) : activeTanks;
+            const verdictById = ranked
+              ? Object.fromEntries(ranked.map((r) => [String(r.tank.id), r.verdict]))
+              : {};
+            const bestFit = ranked && ranked[0] && ranked[0].verdict !== "blocked" ? ranked[0].tank : null;
+
             return (
               <div key={group.key} className="fn-group">
                 <div className="fn-group-row">
@@ -161,16 +176,26 @@ export function FryNursery({
                   <div className="fn-group-info">
                     <strong>{group.count}× {group.commonName}</strong>
                     <span className="fn-genders">{genderSummary(group.genders)}</span>
+                    {bestFit && (
+                      <span className="fn-fit-hint" title={`Best fit for ${group.commonName} based on tank size and water parameters`}>
+                        ✓ Best fit: {bestFit.name}
+                      </span>
+                    )}
                   </div>
                   <div className="fn-group-actions" onClick={(e) => e.stopPropagation()}>
                     <select
                       className="fn-select"
                       value={moveTarget[group.key] || ""}
                       onChange={(e) => setMoveTarget((p) => ({ ...p, [group.key]: e.target.value }))}
-                      aria-label={`Move ${group.commonName} to tank`}
+                      aria-label={`Move ${group.commonName} to tank${showFit ? " (sorted by fit)" : ""}`}
                     >
-                      <option value="">Move all to…</option>
-                      {activeTanks.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      <option value="">{showFit ? "Move all to… (best fit first)" : "Move all to…"}</option>
+                      {orderedTanks.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {verdictById[String(t.id)] === "blocked" ? "⚠ " : ""}{t.name}
+                          {verdictById[String(t.id)] === "blocked" ? " (may be too small)" : ""}
+                        </option>
+                      ))}
                     </select>
                     <button
                       className="fn-btn fn-btn-move"

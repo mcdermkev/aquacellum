@@ -70,26 +70,39 @@ export async function getTankSchedules(tankId) {
 /**
  * Read schedules for a tank, creating the default set (due now) if none exist.
  * Idempotent — only creates kinds that are missing.
+ *
+ * The read (check which kinds already exist) and the write (insert the missing
+ * defaults) run inside a single Dexie/IndexedDB "rw" transaction on
+ * `tankSchedules`. This matters because several sibling components mount at
+ * once and each call this on the same tank (CareCoach, HealthFlagExplainer,
+ * ScheduleEditor, the gallery/ops-grid ambient loaders) — IndexedDB serializes
+ * readwrite transactions against the same object store, so wrapping read+write
+ * together makes the whole "get-or-create" atomic across those concurrent
+ * callers. Without this, each caller's read could observe "no schedules yet"
+ * before any of the others' writes land, and every one of them would insert
+ * its own duplicate default row for the same tank/kind.
  */
 export async function getOrInitTankSchedules(tankId) {
   if (tankId == null) return [];
   try {
-    const existing = await getTankSchedules(tankId);
-    const present = new Set(existing.map((s) => s.kind));
-    const now = nowSeconds();
-    const toCreate = SCHEDULE_DEFAULTS.filter((d) => !present.has(d.kind)).map((d) => ({
-      tankId,
-      kind: d.kind,
-      cadenceDays: d.cadenceDays,
-      lastDoneAt: null,
-      nextDueAt: now, // due now → coach encourages the first one
-      enabled: true,
-    }));
-    if (toCreate.length > 0) {
-      await db.tankSchedules.bulkAdd(toCreate);
-      return [...existing, ...toCreate];
-    }
-    return existing;
+    return await db.transaction("rw", db.tankSchedules, async () => {
+      const existing = await getTankSchedules(tankId);
+      const present = new Set(existing.map((s) => s.kind));
+      const now = nowSeconds();
+      const toCreate = SCHEDULE_DEFAULTS.filter((d) => !present.has(d.kind)).map((d) => ({
+        tankId,
+        kind: d.kind,
+        cadenceDays: d.cadenceDays,
+        lastDoneAt: null,
+        nextDueAt: now, // due now → coach encourages the first one
+        enabled: true,
+      }));
+      if (toCreate.length > 0) {
+        await db.tankSchedules.bulkAdd(toCreate);
+        return [...existing, ...toCreate];
+      }
+      return existing;
+    });
   } catch {
     return [];
   }

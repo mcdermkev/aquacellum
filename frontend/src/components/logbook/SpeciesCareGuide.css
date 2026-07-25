@@ -69,3 +69,17 @@
   line-height: 1.5;
   color: var(--text-muted, #94a3b8);
 }
+
+.cg-ask {
+  margin-top: 0.5rem;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.cg-ask:hover { background: rgba(52, 211, 153, 0.16); }

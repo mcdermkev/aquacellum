@@ -2,6 +2,160 @@ import Dexie from "dexie";
 
 export const db = new Dexie("AquadexDB");
 
+// Task 11 E2E harness (docs/TASK_11_E2E_SPEC.md): expose the live Dexie
+// instance in-page so Playwright tests can seed/read tanks, specimens,
+// schedules, etc. directly via `page.evaluate(() => window.__aquadexDb...)`,
+// per the spec's "Dexie is reachable in-page" guidance. Dev-only — stripped
+// from production bundles because `import.meta.env.DEV` is a build-time
+// constant that Vite inlines to `false` for `npm run build`.
+if (import.meta.env.DEV && typeof window !== "undefined") {
+  window.__aquadexDb = db;
+  window.__seedForE2E = seedForE2E;
+  window.__clearE2EDb = clearE2EDb;
+}
+
+/**
+ * seedForE2E — writes a v23-shaped fixture directly into Dexie so Playwright
+ * Phase B tests can seed a fresh, deterministic tank state without going
+ * through the UI or a real wallet (docs/TASK_11_E2E_SPEC.md, "Phase B" /
+ * "the auth + seed problem"). Dev-only (see window.__seedForE2E above).
+ *
+ * Mirrors the shapes relayRegisterTank / relayMintSpecimen write in
+ * services/relayer.js, so seeded data is indistinguishable from real local-
+ * first writes to the rest of the app (useUserTanks, deriveTankHealth, etc.).
+ *
+ * @param {object} fixture
+ * @param {string} [fixture.ownerAddress] lowercase EOA; defaults to the E2E stub account
+ * @param {Array<object>} [fixture.tanks] each: { id?, name, tankType, volumeLiters,
+ *   facility?, room?, rack?, latestLog?, specimens?: [{ id?, speciesId, commonName,
+ *   scientificName?, gender?, status? }], schedules?: [{ kind, cadenceDays?,
+ *   lastDoneAt?, nextDueAt?, enabled? }], readings?: [{ timestamp?, temp?, ph?,
+ *   ammonia?, nitrite?, nitrate?, source?, notes? }] }
+ * @param {Array<object>} [fixture.unassignedSpecimens] nursery fixtures: same
+ *   per-specimen shape as above, written with currentTankId 0.
+ * @returns {Promise<{ tankIds: number[] }>}
+ */
+async function seedForE2E(fixture = {}) {
+  const owner = (fixture.ownerAddress || "0xe2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2").toLowerCase();
+  const now = Math.floor(Date.now() / 1000);
+  const tankIds = [];
+  let seq = 0;
+  const nextId = () => Date.now() + (seq++);
+
+  for (const t of fixture.tanks || []) {
+    const tankId = t.id ?? nextId();
+    const specimens = (t.specimens || []).map((s) => ({
+      id: s.id ?? nextId(),
+      speciesId: s.speciesId ?? 1,
+      commonName: s.commonName || "Fish",
+      scientificName: s.scientificName || "",
+      status: s.status ?? 0,
+      gender: s.gender || "Unsexed",
+    }));
+
+    await db.tanks.put({
+      id: tankId,
+      ownerAddress: owner,
+      name: t.name || `Tank ${tankId}`,
+      tankType: t.tankType ?? 0,
+      volumeLiters: t.volumeLiters ?? 75,
+      creationTimestamp: now,
+      active: true,
+      containment: 0,
+      parentUnitId: 0,
+      facility: t.facility || "Main Room",
+      room: t.room || "Main Room",
+      rack: t.rack || "",
+      logs: [],
+      latestLog: t.latestLog || null,
+      specimens,
+    });
+
+    for (const s of specimens) {
+      await db.specimens.put({
+        id: s.id,
+        ownerAddress: owner,
+        speciesId: s.speciesId,
+        currentTankId: tankId,
+        status: s.status,
+        gender: s.gender,
+        commonName: s.commonName,
+        scientificName: s.scientificName,
+        breeder: owner,
+        createdAt: now,
+        onChainId: null,
+        chainStatus: "local",
+        txHash: null,
+      });
+    }
+
+    for (const r of t.readings || []) {
+      await db.paramReadings.add({
+        tankId,
+        timestamp: r.timestamp ?? now,
+        temp: r.temp,
+        ph: r.ph,
+        ammonia: r.ammonia,
+        nitrite: r.nitrite,
+        nitrate: r.nitrate,
+        source: r.source || "manual",
+        notes: r.notes || "",
+      });
+    }
+
+    for (const sch of t.schedules || []) {
+      await db.tankSchedules.add({
+        tankId,
+        kind: sch.kind,
+        cadenceDays: sch.cadenceDays ?? 7,
+        lastDoneAt: sch.lastDoneAt ?? null,
+        nextDueAt: sch.nextDueAt ?? now,
+        enabled: sch.enabled !== false,
+      });
+    }
+
+    tankIds.push(tankId);
+  }
+
+  for (const s of fixture.unassignedSpecimens || []) {
+    const id = s.id ?? nextId();
+    await db.specimens.put({
+      id,
+      ownerAddress: owner,
+      speciesId: s.speciesId ?? 1,
+      currentTankId: 0,
+      status: s.status ?? 0,
+      gender: s.gender || "Unsexed",
+      commonName: s.commonName || "Fish",
+      scientificName: s.scientificName || "",
+      breeder: owner,
+      createdAt: now,
+      onChainId: null,
+      chainStatus: "local",
+      txHash: null,
+    });
+  }
+
+  return { tankIds };
+}
+
+/** Clear all logbook-relevant local tables — used between E2E test scenarios. */
+async function clearE2EDb() {
+  await db.transaction(
+    "rw",
+    [db.tanks, db.specimens, db.paramReadings, db.tankSchedules, db.tankMedia, db.actionLogs, db.marketOrders],
+    async () => {
+      await db.tanks.clear();
+      await db.specimens.clear();
+      await db.paramReadings.clear();
+      await db.tankSchedules.clear();
+      await db.tankMedia.clear();
+      await db.actionLogs.clear();
+      await db.marketOrders.clear();
+    }
+  );
+}
+
 // Define schema: primary key first, followed by indexed fields.
 // Non-indexed fields are saved automatically inside the stored objects.
 db.version(1).stores({

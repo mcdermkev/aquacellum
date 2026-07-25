@@ -6763,6 +6763,8 @@ input:checked + .broadcast-slider:before {
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   animation: poseidon-fab-entrance 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  /* Long-press-to-drag: stop touch scrolling the page from the bubble itself. */
+  touch-action: none;
 }
 
 .poseidon-global-fab:hover {
@@ -6776,6 +6778,23 @@ input:checked + .broadcast-slider:before {
 
 .poseidon-global-fab:active {
   transform: translateY(0) scale(0.97);
+}
+
+/* Picked up (long-press armed): lift it, kill transitions so it tracks the
+   finger 1:1, and hint the grab. */
+.poseidon-global-fab--dragging,
+.poseidon-global-fab--dragging:hover {
+  transition: none;
+  cursor: grabbing;
+  transform: scale(1.08);
+  opacity: 0.96;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.7),
+    0 0 36px rgba(56, 189, 248, 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poseidon-global-fab--dragging { transform: none; }
 }
 
 .poseidon-global-fab--active {

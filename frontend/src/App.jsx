@@ -54,6 +54,7 @@ import {
   isFounderWallet,
   formatSyncTime,
 } from "./config/appConfig";
+import { isE2EMode } from "./utils/e2eMode";
 
 
 // ── Code-split tab views ───────────────────────────────────────────────────
@@ -199,6 +200,11 @@ export default function App() {
 
   useEffect(() => {
     if (!account) return;
+    // Task 11 E2E harness: skip cloud sync for the stub account — there's no
+    // real Supabase data behind it, and pulling/pushing under a fake wallet
+    // address just adds noise (and, worse, writes test rows against the real
+    // Supabase project).
+    if (isE2EMode()) return;
     const signal = { cancelled: false };
     runCloudSync(account, signal);
     return () => { signal.cancelled = true; };
@@ -207,6 +213,10 @@ export default function App() {
   // Set up ethers event listeners for reactive background refetching
   useEffect(() => {
     if (!account) return;
+    // Task 11 E2E harness: the stub account has no real chain activity to
+    // listen for, and standing up contract listeners just adds RPC calls that
+    // can slow down or flake a test run for no benefit.
+    if (isE2EMode()) return;
 
     let managerContract = null;
     let marketplaceContract = null;
@@ -256,6 +266,8 @@ export default function App() {
   const [smartWalletForFounderCheck, setSmartWalletForFounderCheck] = useState(null);
   useEffect(() => {
     if (!account) { setSmartWalletForFounderCheck(null); return; }
+    // Task 11 E2E harness: the stub account has no real smart wallet to resolve.
+    if (isE2EMode()) return;
     let cancelled = false;
     const resolve = async () => {
       try {

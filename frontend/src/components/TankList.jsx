@@ -26,13 +26,19 @@ import { NotesTab } from "./NotesTab";
 import { QuickLogPanel } from "./QuickLogPanel";
 import { FryNursery } from "./FryNursery";
 import { CasualTankGallery } from "./logbook/CasualTankGallery";
+import { TankInhabitants } from "./logbook/TankInhabitants";
 import { JournalTimeline } from "./logbook/JournalTimeline";
 import { CareCoach } from "./logbook/CareCoach";
 import { ProOpsGrid } from "./logbook/ProOpsGrid";
 import { ParamTrends } from "./logbook/ParamTrends";
 import { SpeciesCareGuide } from "./logbook/SpeciesCareGuide";
+import { HealthFlagExplainer } from "./logbook/HealthFlagExplainer";
+import { StockingGuidance } from "./logbook/StockingGuidance";
+import { ScheduleEditor } from "./logbook/ScheduleEditor";
 import { LivingTank } from "./logbook/LivingTank";
 import { deriveTankHealth } from "../utils/tankHealth";
+import { getOrInitTankSchedules } from "../services/tankSchedules";
+import { getTankPhoto, putTankPhoto, getSpecimenPhoto as loadSpecimenPhoto, putSpecimenPhoto } from "../services/tankMedia";
 import { getSupabaseImageUrl, isInsideEnvelope, getTrackBackground, CONTAINMENT_TYPES, getWaterEnvelope, tankTypeLabel } from "../utils/tankUtils";
 export function TankList({ contractAddress, walletAccount, onViewLineage, onListOnMarketplace, onSelectSpecimen, casualModeActive = false }) {
   const queryClient = useQueryClient();
@@ -186,12 +192,19 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const [addFishGender, setAddFishGender] = useState("Not Sure");
   const { data: contractSpecies = [] } = useContractSpecies(contractAddress);
   const [poseidonChatOpen, setPoseidonChatOpen] = useState(false);
+  const [poseidonSeed, setPoseidonSeed] = useState(null); // grounded question seeded from a contextual "Ask Poseidon" tip
+  const [activeTankSchedules, setActiveTankSchedules] = useState([]); // schedules for the open tank, so the hero ambient reflects overdue maintenance
+  // Photos for the open tank, read durable-first from tankMedia (Dexie) with a
+  // localStorage fallback for photos other surfaces (mint/marketplace) still
+  // write only to localStorage. Logbook writes go through tankMedia (which
+  // mirrors to localStorage) so its photos survive a cache clear.
+  const [activeTankPhoto, setActiveTankPhoto] = useState(null);
+  const [specimenPhotos, setSpecimenPhotos] = useState({}); // specimenId -> dataUrl
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const photoInputRef = useRef(null);
   const [uploadingSpecimenId, setUploadingSpecimenId] = useState(null);
   const specimenPhotoInputRef = useRef(null);
   const [farewellSpecimen, setFarewellSpecimen] = useState(null);
-  const [activeMenuSpecimenId, setActiveMenuSpecimenId] = useState(null);
   const [activeCardMenuTankId, setActiveCardMenuTankId] = useState(null); // pro list-card ⋯ overflow
 
   // Bulk / Rack-Level Logging State (Phase 1)
@@ -353,6 +366,39 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       setComposerCategory("observation");
     }
   }, [detailSubTab, casualModeActive, companionData]);
+
+  // Load the open tank's maintenance schedules so the detail hero's living-water
+  // ambient reflects overdue maintenance (not just water parameters).
+  useEffect(() => {
+    let cancelled = false;
+    if (activeTank?.id == null) { setActiveTankSchedules([]); return; }
+    getOrInitTankSchedules(activeTank.id)
+      .then((rows) => { if (!cancelled) setActiveTankSchedules(rows || []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [activeTank?.id]);
+
+  // Load the open tank's photo + its specimens' photos, durable-first from
+  // tankMedia with a localStorage fallback (see the state declaration note).
+  const specimenIdsKey = (activeTank?.specimens || []).map((s) => s.id).join(",");
+  useEffect(() => {
+    let cancelled = false;
+    if (activeTank?.id == null) { setActiveTankPhoto(null); setSpecimenPhotos({}); return; }
+    (async () => {
+      const tankPhoto = (await getTankPhoto(activeTank.id)) || localStorage.getItem(`aquadex_tank_photo_${activeTank.id}`) || null;
+      if (!cancelled) setActiveTankPhoto(tankPhoto);
+
+      const specimens = (activeTank.specimens || []).filter((s) => !s.isBatchPlaceholder);
+      const entries = await Promise.all(
+        specimens.map(async (s) => {
+          const url = (await loadSpecimenPhoto(s.id)) || localStorage.getItem(`aquadex_specimen_photo_${s.id}`) || "";
+          return [s.id, url];
+        })
+      );
+      if (!cancelled) setSpecimenPhotos(Object.fromEntries(entries));
+    })();
+    return () => { cancelled = true; };
+  }, [activeTank?.id, specimenIdsKey]);
   const [tankComments, setTankComments] = useState(() => {
     const cached = localStorage.getItem("aquadex_tank_comments");
     if (cached) {
@@ -511,6 +557,67 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       console.error(err);
       showToast(`❌ ${mapContractError(err, casualModeActive)}`);
     }
+  };
+
+  // Bulk move: rehome several specimens at once (Inhabitants grouping + stack drag).
+  // Loops the same relayer primitive as the single move, then refreshes once so the
+  // list/detail don't thrash with a toast+refetch per fish.
+  const handleMoveSpecimensBulk = async (specimenIds, targetTankId) => {
+    const ids = (Array.isArray(specimenIds) ? specimenIds : []).map(Number).filter(Boolean);
+    if (ids.length === 0 || !targetTankId) return;
+    if (activeTank && Number(activeTank.id) === Number(targetTankId)) {
+      showToast("⚠️ Those fish are already in this tank!");
+      return;
+    }
+    try {
+      showToast(`🔄 Rehoming ${ids.length} fish to tank #${targetTankId}...`);
+      let moved = 0;
+      for (const specimenId of ids) {
+        const result = await relayMoveSpecimen({ specimenId, targetTankId });
+        if (result?.success) moved += 1;
+      }
+      if (moved > 0) addXp(10, "Specimens Rehomed");
+      showToast(moved === ids.length
+        ? `✅ Moved ${moved} fish successfully!`
+        : `Moved ${moved} of ${ids.length} fish.`);
+      await fetchDashboardData();
+      const fresh = await refetchTanks();
+      if (activeTank) {
+        const updated = fresh.data?.find((t) => t.id === activeTank.id);
+        if (updated) setActiveTank(updated);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast(`❌ ${mapContractError(err, casualModeActive)}`);
+    }
+  };
+
+  // Generate + print the tank's QR label PDF. Reachable from the detail
+  // quick-actions menu (was a click on the banner corner tag).
+  const printTankQRLabel = async (tank) => {
+    if (!tank) return;
+    try {
+      const { generateTankQRLabel } = await import("../utils/pdfExport");
+      await generateTankQRLabel({
+        tankId: tank.id,
+        tankName: tank.name,
+        facility: tank.facility,
+        room: tank.room,
+        rack: tank.rack,
+        volumeLiters: tank.volumeLiters,
+        containment: CONTAINMENT_TYPES[tank.containment],
+      });
+    } catch (err) {
+      console.error("QR label generation failed:", err);
+      showToast("Could not generate the QR label.");
+    }
+  };
+
+  // Open the Poseidon console pre-seeded with a grounded, contextual question.
+  // The console still routes any proposed write through its confirm-before-write bar.
+  const askPoseidon = (prompt) => {
+    setPoseidonSeed(prompt || null);
+    setPoseidonChatOpen(true);
   };
 
   const logFeedClick = async () => {
@@ -1428,6 +1535,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                 </div>
               </div>
 
+              {/* Rack-level averaged parameter trends — shown when a specific rack is selected (Pro). */}
+              {!casualModeActive && uniqueRacks.includes(selectedLocation) && topLevelTanks.length > 0 && (
+                <div style={{ marginBottom: "1rem" }}>
+                  <ParamTrends tanks={topLevelTanks} title={`Rack "${selectedLocation}" — averaged trends`} />
+                </div>
+              )}
+
               {topLevelTanks.length === 0 ? (
                 tanks.length === 0 ? (
                   <div className="glass-card" style={{ padding: "3rem 2rem", textAlign: "center", maxWidth: "520px", margin: "2rem auto" }}>
@@ -1473,6 +1587,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   draggedOverTankId={draggedOverTankId}
                   onOpen={setActiveTank}
                   onDropSpecimen={handleMoveSpecimen}
+                  onDropSpecimenGroup={handleMoveSpecimensBulk}
                   onDragEnterTank={setDraggedOverTankId}
                   onDragLeaveTank={() => setDraggedOverTankId(null)}
                 />
@@ -1484,6 +1599,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   draggedOverTankId={draggedOverTankId}
                   onOpen={setActiveTank}
                   onDropSpecimen={handleMoveSpecimen}
+                  onDropSpecimenGroup={handleMoveSpecimensBulk}
                   onDragEnterTank={setDraggedOverTankId}
                   onDragLeaveTank={() => setDraggedOverTankId(null)}
                   onLogDue={handleWorklistLog}
@@ -1514,6 +1630,14 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       onDrop={async (e) => {
                         e.preventDefault();
                         setDraggedOverTankId(null);
+                        const groupStr = e.dataTransfer.getData("application/aquadex-specimen-group");
+                        if (groupStr) {
+                          try {
+                            const ids = JSON.parse(groupStr);
+                            if (Array.isArray(ids) && ids.length) await handleMoveSpecimensBulk(ids, tank.id);
+                          } catch { /* ignore malformed payload */ }
+                          return;
+                        }
                         const specimenIdStr = e.dataTransfer.getData("application/aquadex-specimen");
                         if (specimenIdStr) {
                           const specId = Number(specimenIdStr);
@@ -1806,6 +1930,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             onListOnMarketplace={onListOnMarketplace}
             casualModeActive={casualModeActive}
             fishbaseData={fishbaseData}
+            contractSpecies={contractSpecies}
             requestConfirm={requestConfirm}
           />
         </div>
@@ -1923,7 +2048,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               style={{ 
                 backgroundImage: casualModeActive
                   ? "none"
-                  : `url('${localStorage.getItem(`aquadex_tank_photo_${activeTank.id}`) || getSupabaseImageUrl(activeTank)}')` 
+                  : `url('${activeTankPhoto || getSupabaseImageUrl(activeTank)}')` 
               }}
             >
               {/* Casual: the header itself is a Living Tank hero (water reflects health).
@@ -1932,11 +2057,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                 <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none" }}>
                   <LivingTank
                     tank={activeTank}
-                    health={deriveTankHealth(activeTank)}
+                    health={deriveTankHealth(activeTank, { schedules: activeTankSchedules })}
                     variant="hero"
                     height={200}
                     fishbaseData={fishbaseData}
-                    photoUrl={localStorage.getItem(`aquadex_tank_photo_${activeTank.id}`) || undefined}
+                    photoUrl={activeTankPhoto || undefined}
                     showLabel={false}
                   />
                 </div>
@@ -2009,25 +2134,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                 </div>
               )}
               
-              {/* QR tag identifier anchored over top-right — real generated QR */}
-              <div className="qr-anchor-tag" style={{ cursor: "pointer" }} onClick={async (e) => {
-                e.stopPropagation();
-                // Generate printable QR label PDF for this tank
-                try {
-                  const { generateTankQRLabel } = await import("../utils/pdfExport");
-                  await generateTankQRLabel({
-                    tankId: activeTank.id,
-                    tankName: activeTank.name,
-                    facility: activeTank.facility,
-                    room: activeTank.room,
-                    rack: activeTank.rack,
-                    volumeLiters: activeTank.volumeLiters,
-                    containment: CONTAINMENT_TYPES[activeTank.containment]
-                  });
-                } catch (err) {
-                  console.error("QR label generation failed:", err);
-                }
-              }} title="Click to print QR label">
+              {/* QR tag identifier anchored over top-right — passive identifier now;
+                  printing the label moved to the quick-actions menu (Task 4 declutter). */}
+              <div className="qr-anchor-tag" title={`UNIT #${activeTank.id}`}>
                 {/* Real QR code rendered as canvas-to-image */}
                 <TankQRCode tankId={activeTank.id} size={40} />
                 <span style={{ fontSize: "0.55rem", fontWeight: "700", color: "var(--bg-primary)" }}>UNIT #{activeTank.id}</span>
@@ -2049,7 +2158,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   tankId={activeTank.id}
                   casualModeActive={casualModeActive}
                   walletAccount={walletAccount}
-                  onClose={() => setPoseidonChatOpen(false)}
+                  seedPrompt={poseidonSeed}
+                  onClose={() => { setPoseidonChatOpen(false); setPoseidonSeed(null); }}
                 />
               )}
             </div>
@@ -2089,8 +2199,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   try {
                     const { compressImage } = await import("../utils/imageCompression");
                     const compressed = await compressImage(file, { maxWidth: 1200, quality: 0.8 });
-                    localStorage.setItem(`aquadex_tank_photo_${activeTank.id}`, compressed);
-                    setActiveTank({ ...activeTank });
+                    await putTankPhoto(activeTank.id, compressed); // durable (mirrors to localStorage)
+                    setActiveTankPhoto(compressed);
                   } catch (err) {
                     console.error("Photo upload failed:", err);
                   }
@@ -2109,8 +2219,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   try {
                     const { compressImage } = await import("../utils/imageCompression");
                     const compressed = await compressImage(file, { maxWidth: 1200, quality: 0.8 });
-                    localStorage.setItem(`aquadex_specimen_photo_${uploadingSpecimenId}`, compressed);
-                    setActiveTank({ ...activeTank });
+                    await putSpecimenPhoto(uploadingSpecimenId, compressed); // durable (mirrors to localStorage)
+                    setSpecimenPhotos((p) => ({ ...p, [uploadingSpecimenId]: compressed }));
                     showToast("Specimen photo updated!");
                   } catch (err) {
                     console.error("Specimen photo upload failed:", err);
@@ -2244,6 +2354,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           className="dropdown-action-item"
                         >
                           <span style={{ marginRight: "0.25rem" }}>📷</span> Upload Photo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { printTankQRLabel(activeTank); setQuickActionsOpen(false); }}
+                          className="dropdown-action-item"
+                        >
+                          <span style={{ marginRight: "0.25rem" }}>🏷️</span> Print QR label
                         </button>
                       </div>
                     ) : (
@@ -2447,6 +2564,23 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               <span className="console-tile-label">Upload Photo</span>
                               <span className="console-tile-desc">Attach visual log</span>
                             </button>
+
+                            <button
+                              type="button"
+                              onClick={() => { printTankQRLabel(activeTank); setQuickActionsOpen(false); }}
+                              className="console-tile tile-system"
+                            >
+                              <span className="console-tile-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                  <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                  <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                  <path d="M14 14h3v3h-3zM20 20h1M17 20v1"/>
+                                </svg>
+                              </span>
+                              <span className="console-tile-label">Print QR Label</span>
+                              <span className="console-tile-desc">Printable unit tag PDF</span>
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -2483,7 +2617,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   {casualModeActive ? (
                     <>
                     <CareCoach tank={activeTank} walletAccount={walletAccount} onAction={handleCoachAction} />
-                    <SpeciesCareGuide tank={activeTank} fishbaseData={fishbaseData} contractSpecies={contractSpecies} />
+                    <HealthFlagExplainer tank={activeTank} casualModeActive={casualModeActive} onAskPoseidon={askPoseidon} />
+                    <SpeciesCareGuide tank={activeTank} fishbaseData={fishbaseData} contractSpecies={contractSpecies} onAskPoseidon={askPoseidon} />
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                       {/* Water Type */}
                       <div className="telemetry-tile-premium" style={{ borderLeft: "3px solid var(--accent-blue)" }}>
@@ -2552,6 +2687,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     </>
                   ) : (
                     <>
+                      <HealthFlagExplainer tank={activeTank} casualModeActive={casualModeActive} onAskPoseidon={askPoseidon} />
                       <div className="telemetry-2x2-grid">
                         {/* Thermal */}
                         <div className="telemetry-tile-premium" style={{ borderLeft: `3px solid ${activeTank.latestLog ? getHslColor(activeTank.latestLog.tempCelsiusX10/10, minSafeTemp, maxSafeTemp, 5) : "var(--glass-border)"}` }}>
@@ -2703,433 +2839,48 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     </>
                   )}
 
+                  {/* Stocking / bioload guidance (both modes) — grounded, deterministic */}
+                  <StockingGuidance
+                    tank={activeTank}
+                    fishbaseData={fishbaseData}
+                    contractSpecies={contractSpecies}
+                    casualModeActive={casualModeActive}
+                  />
+
+                  {/* Per-tank maintenance cadence editor — writes tankSchedules */}
+                  <ScheduleEditor
+                    tank={activeTank}
+                    casualModeActive={casualModeActive}
+                    onChange={() => {
+                      getOrInitTankSchedules(activeTank.id)
+                        .then((rows) => setActiveTankSchedules(rows || []))
+                        .catch(() => {});
+                    }}
+                  />
+
                   {/* Tank Cam Setup */}
                   <TankCamSetup tankId={activeTank.id} tankName={activeTank.name} />
                 </div>
               ) }
 {/* 2.2 FISH SUB-TAB: Fish inside tank — consumer label in Casual mode */}
               {detailSubTab === "fish" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
-                    <strong style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                      {casualModeActive ? `Fish in this tank (${getSpecimenCount(activeTank)})` : `Registered Birth Certificates (Total: ${getSpecimenCount(activeTank)})`}
-                    </strong>
-                    <button
-                      className="btn-primary"
-                      onClick={() => openAddFish(activeTank)}
-                      style={{ padding: "0.35rem 0.75rem", fontSize: "0.78rem", whiteSpace: "nowrap" }}
-                    >
-                      + Add Fish
-                    </button>
-                  </div>
-                  {activeTank.specimens.length === 0 ? (
-                    <div style={{ padding: "2rem", textAlign: "center" }}>
-                      <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1rem" }}>
-                        {casualModeActive ? "No fish recorded in this tank yet." : "No birth certificates assigned to this containment unit."}
-                      </p>
-                      <button
-                        className="btn-primary"
-                        onClick={() => openAddFish(activeTank)}
-                        style={{ padding: "0.5rem 1rem", fontSize: "0.85rem" }}
-                      >
-                        {casualModeActive ? "+ Add your first fish" : "+ Register first specimen"}
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      {/* Click interceptor to dismiss the dropdown when clicking outside */}
-                      {activeMenuSpecimenId && (
-                        <div 
-                          style={{
-                            position: "fixed",
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            zIndex: 998,
-                            background: "transparent",
-                            cursor: "default"
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveMenuSpecimenId(null);
-                          }}
-                        />
-                      )}
-
-                      {activeTank.specimens.filter(s => !s.isBatchPlaceholder).map(spec => {
-                        const matchedSpecies = fishbaseData.find(f => Number(f.speciesId) === Number(spec.speciesId));
-                        const masterPhotoUrl = matchedSpecies?.masterPhotoUrl || "";
-                        const customPhoto = localStorage.getItem(`aquadex_specimen_photo_${spec.id}`);
-                        const finalImgSrc = customPhoto || masterPhotoUrl;
-                        const displayScientificName = spec.scientificName || matchedSpecies?.scientificName || "";
-
-                        return (
-                          <div 
-                            key={spec.id} 
-                            onClick={() => onSelectSpecimen && onSelectSpecimen(spec.id)}
-                            draggable="true"
-                            onDragStart={(e) => {
-                              e.dataTransfer.setData("application/aquadex-specimen", spec.id.toString());
-                              e.dataTransfer.effectAllowed = "move";
-                              e.currentTarget.style.opacity = "0.5";
-                            }}
-                            onDragEnd={(e) => {
-                              e.currentTarget.style.opacity = "1";
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.transform = "translateY(-1px)";
-                              e.currentTarget.style.background = casualModeActive 
-                                ? "linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(14, 165, 233, 0.02) 100%)" 
-                                : "rgba(255, 255, 255, 0.04)";
-                              e.currentTarget.style.borderColor = casualModeActive 
-                                ? "rgba(56, 189, 248, 0.3)" 
-                                : "rgba(255, 255, 255, 0.15)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = "translateY(0)";
-                              e.currentTarget.style.background = casualModeActive 
-                                ? "linear-gradient(135deg, rgba(14, 165, 233, 0.04) 0%, rgba(14, 165, 233, 0.01) 100%)" 
-                                : "rgba(0,0,0,0.2)";
-                              e.currentTarget.style.borderColor = casualModeActive 
-                                ? "rgba(56, 189, 248, 0.15)" 
-                                : "var(--glass-border)";
-                            }}
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              padding: casualModeActive ? "0.75rem 1rem" : "0.6rem 0.75rem",
-                              background: casualModeActive 
-                                ? "linear-gradient(135deg, rgba(14, 165, 233, 0.04) 0%, rgba(14, 165, 233, 0.01) 100%)" 
-                                : "rgba(0,0,0,0.2)",
-                              borderRadius: casualModeActive ? "12px" : "8px",
-                              border: casualModeActive ? "1px solid rgba(56,189,248,0.15)" : "1px solid var(--glass-border)",
-                              fontSize: "0.85rem",
-                              cursor: "grab",
-                              transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-                              gap: "0.75rem",
-                              marginBottom: "0.5rem",
-                              position: "relative"
-                            }}
-                          >
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1, minWidth: 0 }}>
-                              {/* Fish Avatar / Image */}
-                              {finalImgSrc ? (
-                                <img 
-                                  src={finalImgSrc} 
-                                  alt={spec.commonName}
-                                  style={{
-                                    width: "44px",
-                                    height: "44px",
-                                    borderRadius: "8px",
-                                    objectFit: "cover",
-                                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                                    flexShrink: 0
-                                  }}
-                                />
-                              ) : (
-                                <div style={{
-                                  width: "44px",
-                                  height: "44px",
-                                  borderRadius: "8px",
-                                  background: "linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(14, 165, 233, 0.2))",
-                                  border: "1px solid rgba(56, 189, 248, 0.2)",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  fontSize: "1.2rem",
-                                  flexShrink: 0
-                                }}>
-                                  🐠
-                                </div>
-                              )}
-                              
-                              <div style={{ minWidth: 0, flex: 1 }}>
-                                {!casualModeActive && (
-                                  <strong style={{ color: "var(--accent-blue)", display: "block", fontSize: "0.75rem" }}>
-                                    Cert. Serial No. {spec.id.toString().padStart(3, "0")}
-                                  </strong>
-                                )}
-                                <span style={{ color: "#fff", fontWeight: "600", display: "inline-flex", alignItems: "center", gap: "0.4rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>
-                                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{spec.commonName}</span>
-                                  {spec.gender && spec.gender !== "Not Sure" && (
-                                    <span style={{
-                                      fontSize: "0.6rem",
-                                      padding: "0.05rem 0.35rem",
-                                      borderRadius: "4px",
-                                      background: spec.gender === "Male" ? "rgba(56, 189, 248, 0.15)" : "rgba(244, 63, 94, 0.15)",
-                                      color: spec.gender === "Male" ? "#38bdf8" : "#f43f5e",
-                                      border: spec.gender === "Male" ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid rgba(244, 63, 94, 0.25)",
-                                      fontWeight: "600",
-                                      flexShrink: 0
-                                    }}>
-                                      {spec.gender === "Male" ? "♂" : "♀"}
-                                    </span>
-                                  )}
-                                </span>
-                                <span style={{ display: "block", fontSize: "0.7rem", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontStyle: displayScientificName ? "italic" : "normal" }}>
-                                  {casualModeActive ? (displayScientificName || "Unknown species") : displayScientificName}
-                                </span>
-                                {casualModeActive && spec.careLevel !== undefined && (
-                                  <span style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: "0.2rem",
-                                    marginTop: "0.25rem",
-                                    fontSize: "0.6rem",
-                                    padding: "0.05rem 0.35rem",
-                                    borderRadius: "20px",
-                                    background: "rgba(34, 197, 94, 0.12)",
-                                    border: "1px solid rgba(34, 197, 94, 0.3)",
-                                    color: "#4ade80"
-                                  }}>
-                                    ✓ Registry Verified
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Action buttons */}
-                            <div style={{ display: "flex", gap: "0.4rem", alignItems: "center", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-                              {casualModeActive ? (
-                                <div style={{ position: "relative" }} onClick={(e) => e.stopPropagation()}>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setActiveMenuSpecimenId(activeMenuSpecimenId === spec.id ? null : spec.id);
-                                    }}
-                                    style={{
-                                      background: activeMenuSpecimenId === spec.id ? "rgba(56, 189, 248, 0.15)" : "rgba(255, 255, 255, 0.05)",
-                                      border: activeMenuSpecimenId === spec.id ? "1px solid rgba(56, 189, 248, 0.3)" : "1px solid rgba(255, 255, 255, 0.08)",
-                                      borderRadius: "8px",
-                                      width: "32px",
-                                      height: "32px",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      color: activeMenuSpecimenId === spec.id ? "#38bdf8" : "rgba(255, 255, 255, 0.8)",
-                                      cursor: "pointer",
-                                      fontSize: "0.85rem",
-                                      transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                                      padding: 0
-                                    }}
-                                    title="Actions"
-                                    onMouseEnter={(e) => {
-                                      if (activeMenuSpecimenId !== spec.id) {
-                                        e.currentTarget.style.background = "rgba(56, 189, 248, 0.15)";
-                                        e.currentTarget.style.borderColor = "rgba(56, 189, 248, 0.3)";
-                                        e.currentTarget.style.color = "#38bdf8";
-                                      }
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      if (activeMenuSpecimenId !== spec.id) {
-                                        e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
-                                        e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.08)";
-                                        e.currentTarget.style.color = "rgba(255, 255, 255, 0.8)";
-                                      }
-                                    }}
-                                  >
-                                    •••
-                                  </button>
-
-                                  {activeMenuSpecimenId === spec.id && (
-                                    <div style={{
-                                      position: "absolute",
-                                      right: 0,
-                                      top: "calc(100% + 6px)",
-                                      background: "rgba(10, 25, 47, 0.96)",
-                                      backdropFilter: "blur(16px)",
-                                      WebkitBackdropFilter: "blur(16px)",
-                                      border: "1px solid rgba(56, 189, 248, 0.25)",
-                                      borderRadius: "10px",
-                                      padding: "0.4rem",
-                                      display: "flex",
-                                      flexDirection: "column",
-                                      gap: "0.2rem",
-                                      boxShadow: "0 12px 30px -4px rgba(0, 0, 0, 0.7), 0 0 15px rgba(56, 189, 248, 0.15)",
-                                      zIndex: 1000,
-                                      minWidth: "160px"
-                                    }}>
-                                      {/* Add/Update Photo Button */}
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setActiveMenuSpecimenId(null);
-                                          setUploadingSpecimenId(spec.id);
-                                          setTimeout(() => specimenPhotoInputRef.current?.click(), 50);
-                                        }}
-                                        style={{
-                                          background: "none",
-                                          border: "none",
-                                          borderRadius: "6px",
-                                          color: "#fff",
-                                          padding: "0.5rem 0.6rem",
-                                          fontSize: "0.78rem",
-                                          textAlign: "left",
-                                          cursor: "pointer",
-                                          transition: "all 0.15s ease",
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: "0.5rem"
-                                        }}
-                                        onMouseEnter={(e) => {
-                                          e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
-                                        }}
-                                        onMouseLeave={(e) => {
-                                          e.currentTarget.style.background = "none";
-                                        }}
-                                      >
-                                        <span style={{ fontSize: "0.95rem" }}>📷</span> {customPhoto ? "Update Photo" : "Add Photo"}
-                                      </button>
-
-                                      {/* List for Sale Button */}
-                                      {onListOnMarketplace && (
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setActiveMenuSpecimenId(null);
-                                            onListOnMarketplace(activeTank, spec);
-                                          }}
-                                          style={{
-                                            background: "none",
-                                            border: "none",
-                                            borderRadius: "6px",
-                                            color: "#38bdf8",
-                                            padding: "0.5rem 0.6rem",
-                                            fontSize: "0.78rem",
-                                            textAlign: "left",
-                                            cursor: "pointer",
-                                            transition: "all 0.15s ease",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "0.5rem"
-                                          }}
-                                          onMouseEnter={(e) => {
-                                            e.currentTarget.style.background = "rgba(56, 189, 248, 0.12)";
-                                          }}
-                                          onMouseLeave={(e) => {
-                                            e.currentTarget.style.background = "none";
-                                          }}
-                                        >
-                                          <span style={{ fontSize: "0.95rem" }}>💼</span> List for Sale
-                                        </button>
-                                      )}
-
-                                      {/* Say Farewell Button */}
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setActiveMenuSpecimenId(null);
-                                          setFarewellSpecimen(spec);
-                                        }}
-                                        style={{
-                                          background: "none",
-                                          border: "none",
-                                          borderRadius: "6px",
-                                          color: "#f43f5e",
-                                          padding: "0.5rem 0.6rem",
-                                          fontSize: "0.78rem",
-                                          textAlign: "left",
-                                          cursor: "pointer",
-                                          transition: "all 0.15s ease",
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: "0.5rem"
-                                        }}
-                                        onMouseEnter={(e) => {
-                                          e.currentTarget.style.background = "rgba(244, 63, 94, 0.12)";
-                                        }}
-                                        onMouseLeave={(e) => {
-                                          e.currentTarget.style.background = "none";
-                                        }}
-                                      >
-                                        <span style={{ fontSize: "0.95rem" }}>🌊</span> Farewell / Release
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <>
-                                  <button 
-                                    className="btn-secondary"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onViewLineage(spec.id);
-                                    }}
-                                    style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", minHeight: "32px" }}
-                                  >
-                                    Ancestry
-                                  </button>
-                                  {onListOnMarketplace && (
-                                    <button 
-                                      className="btn-primary"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onListOnMarketplace(activeTank, spec);
-                                      }}
-                                      style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem", minHeight: "32px" }}
-                                    >
-                                      Sell
-                                    </button>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-
-                      {/* Batch placeholders — shown as info cards without action buttons */}
-                      {activeTank.specimens.filter(s => s.isBatchPlaceholder).map(spec => (
-                        <div
-                          key={spec.id}
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            padding: "0.6rem 0.75rem",
-                            background: "rgba(56, 189, 248, 0.04)",
-                            borderRadius: "8px",
-                            border: "1px solid rgba(56, 189, 248, 0.12)",
-                            fontSize: "0.85rem",
-                            marginBottom: "0.5rem",
-                            gap: "0.75rem"
-                          }}
-                        >
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flex: 1, minWidth: 0 }}>
-                            <div style={{
-                              width: "44px",
-                              height: "44px",
-                              borderRadius: "8px",
-                              background: "linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(14, 165, 233, 0.2))",
-                              border: "1px solid rgba(56, 189, 248, 0.2)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "1.2rem",
-                              flexShrink: 0
-                            }}>
-                              🐣
-                            </div>
-                            <div style={{ minWidth: 0, flex: 1 }}>
-                              <span style={{ color: "#fff", fontWeight: "600", display: "block" }}>
-                                {spec.quantity || 1}x {spec.commonName || "Juvenile Fry"}
-                              </span>
-                              <span style={{ display: "block", fontSize: "0.7rem", color: "var(--text-muted)" }}>
-                                Pending individual registration
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </div>
+                <TankInhabitants
+                  tank={activeTank}
+                  tanks={tanks}
+                  fishbaseData={fishbaseData}
+                  casualModeActive={casualModeActive}
+                  getSpecimenPhoto={(spec) => specimenPhotos[spec.id] || ""}
+                  onAddFish={() => openAddFish(activeTank)}
+                  onOpenSpecimen={(id) => onSelectSpecimen && onSelectSpecimen(id)}
+                  onPhotoSpecimen={(spec) => {
+                    setUploadingSpecimenId(spec.id);
+                    setTimeout(() => specimenPhotoInputRef.current?.click(), 50);
+                  }}
+                  onListSpecimen={onListOnMarketplace ? (spec) => onListOnMarketplace(activeTank, spec) : undefined}
+                  onFarewellSpecimen={(spec) => setFarewellSpecimen(spec)}
+                  onViewLineage={onViewLineage ? (id) => onViewLineage(id) : undefined}
+                  onMoveSpecimens={handleMoveSpecimensBulk}
+                />
               )}
 
               {/* 2.3 ACTIVITY / HISTORY SUB-TAB: Casual gets the photo-first Journal

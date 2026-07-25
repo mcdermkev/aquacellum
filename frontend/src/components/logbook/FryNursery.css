@@ -83,6 +83,20 @@
 .fn-group-info { flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 0.15rem; }
 .fn-group-info strong { color: #fff; font-size: 0.88rem; }
 .fn-genders { font-size: 0.7rem; color: var(--text-muted, #94a3b8); letter-spacing: 0.03em; }
+.fn-fit-hint {
+  font-size: 0.66rem;
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.1);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  border-radius: 20px;
+  padding: 0.05rem 0.45rem;
+  align-self: flex-start;
+  margin-top: 0.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
 
 .fn-group-actions { display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
 

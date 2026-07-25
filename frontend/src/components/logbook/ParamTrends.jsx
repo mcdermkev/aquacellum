@@ -13,8 +13,14 @@ import "./ParamTrends.css";
  * plus any on-chain parameter logs. This is also the data feed shape the Breeder
  * Terminal analytics will consume.
  *
+ * Also supports a RACK mode: pass `tanks` (the rack's tanks) instead of a single
+ * `tank` and readings across the whole rack are averaged into a daily series, so
+ * a breeder can watch a rack drift as one line (per the plan's per-rack trends).
+ *
  * Props:
- *   tank             — active tank (tankType → envelope; id → readings)
+ *   tank             — active tank (tankType → envelope; id → readings)  [single mode]
+ *   tanks            — rack tanks; when provided, renders averaged rack trends [rack mode]
+ *   title            — optional heading override
  *   readingsOverride — optional readings array (preview/tests; bypasses Dexie)
  */
 const METRICS = [
@@ -23,36 +29,48 @@ const METRICS = [
   { key: "nitrate", label: "Nitrate", unit: "ppm", bandKey: [0, "nitrateMax"], decimals: 0 },
 ];
 
-export function ParamTrends({ tank, readingsOverride }) {
+const DAY_SECONDS = 86400;
+
+export function ParamTrends({ tank, tanks, title, readingsOverride }) {
+  const rackMode = Array.isArray(tanks) && tanks.length > 0;
+  const loadTanks = rackMode ? tanks : (tank ? [tank] : []);
+  // Envelope from the (first) tank's type; racks are typically one water type.
+  const envTankType = rackMode ? tanks[0]?.tankType : tank?.tankType;
+  const loadKey = loadTanks.map((t) => t?.id).join(",");
+
   const [readings, setReadings] = useState(readingsOverride || null);
 
   useEffect(() => {
     if (readingsOverride) { setReadings(readingsOverride); return; }
     let cancelled = false;
     (async () => {
-      const idKeys = [tank?.id, String(tank?.id), Number(tank?.id)];
-      let rows = [];
-      try {
-        rows = await db.paramReadings.where("tankId").anyOf(idKeys).toArray();
-      } catch { /* table absent */ }
-      const onChain = Array.isArray(tank?.logs) ? tank.logs : [];
-      if (!cancelled) setReadings([...rows, ...onChain]);
+      const all = [];
+      for (const t of loadTanks) {
+        const idKeys = [t?.id, String(t?.id), Number(t?.id)];
+        try {
+          const rows = await db.paramReadings.where("tankId").anyOf(idKeys).toArray();
+          all.push(...rows);
+        } catch { /* table absent */ }
+        if (Array.isArray(t?.logs)) all.push(...t.logs);
+      }
+      if (!cancelled) setReadings(all);
     })();
     return () => { cancelled = true; };
-  }, [tank?.id, readingsOverride]);
+  }, [loadKey, readingsOverride]);
 
   if (readings === null) {
     return <p className="pt-empty">Loading parameter history…</p>;
   }
 
-  const env = getWaterEnvelope(tank?.tankType);
+  const env = getWaterEnvelope(envTankType);
 
   return (
     <div className="param-trends">
-      <div className="pt-title">📈 Parameter trends</div>
+      <div className="pt-title">📈 {title || (rackMode ? "Rack trends (averaged)" : "Parameter trends")}</div>
       <div className="pt-grid">
         {METRICS.map((m) => {
-          const series = buildTrendSeries(readings, m.key);
+          let series = buildTrendSeries(readings, m.key);
+          if (rackMode) series = bucketAverageSeries(series, DAY_SECONDS);
           const bandMin = typeof m.bandKey[0] === "number" ? m.bandKey[0] : env[m.bandKey[0]];
           const bandMax = typeof m.bandKey[1] === "number" ? m.bandKey[1] : env[m.bandKey[1]];
           return (
@@ -79,6 +97,27 @@ export function buildTrendSeries(readings, key) {
     .filter(Boolean)
     .filter((r) => r[key] != null && !Number.isNaN(Number(r[key])))
     .map((r) => ({ t: Number(r.timestamp) || 0, v: Number(r[key]) }))
+    .sort((a, b) => a.t - b.t);
+}
+
+/**
+ * Average a {t,v} series into fixed time buckets (default one day), one point per
+ * bucket at the bucket start. Used for rack trends where several tanks report on
+ * the same day — a single averaged line reads far cleaner than every tank's
+ * points interleaved. Pure; exported for tests.
+ */
+export function bucketAverageSeries(series, bucketSeconds = DAY_SECONDS) {
+  const bucket = Number(bucketSeconds) > 0 ? Number(bucketSeconds) : DAY_SECONDS;
+  const groups = new Map(); // bucketStart -> { sum, n }
+  for (const p of Array.isArray(series) ? series : []) {
+    const start = Math.floor(Number(p.t) / bucket) * bucket;
+    const g = groups.get(start) || { sum: 0, n: 0 };
+    g.sum += Number(p.v);
+    g.n += 1;
+    groups.set(start, g);
+  }
+  return [...groups.entries()]
+    .map(([t, g]) => ({ t, v: g.sum / g.n }))
     .sort((a, b) => a.t - b.t);
 }
 
