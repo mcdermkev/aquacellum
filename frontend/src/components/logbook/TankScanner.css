@@ -1,0 +1,126 @@
+/* TankScanner — real camera QR scanner for tank labels. */
+
+.tank-scanner-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1rem;
+}
+
+.tank-scanner {
+  width: 100%;
+  max-width: 400px;
+  padding: 1.25rem;
+  background: var(--bg-secondary, #0a0f1e);
+  border: 1px solid var(--accent-blue, #38bdf8);
+  border-radius: 16px;
+}
+
+.ts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.ts-head strong { color: #fff; font-size: 1rem; text-transform: capitalize; }
+.ts-close {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.12));
+  color: #fff;
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.ts-viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 280px;
+  margin: 0 auto 1rem;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #020617;
+  border: 2px solid var(--accent-blue, #38bdf8);
+}
+.ts-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Corner reticle */
+.ts-reticle {
+  position: absolute;
+  inset: 14%;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  border-radius: 12px;
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.ts-laser {
+  position: absolute;
+  left: 8%; right: 8%;
+  height: 3px;
+  background: var(--accent-blue, #38bdf8);
+  box-shadow: 0 0 12px var(--accent-blue, #38bdf8);
+  top: 14%;
+  animation: ts-sweep 2s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes ts-sweep { from { top: 14%; } to { top: 84%; } }
+
+.ts-hint {
+  position: absolute;
+  left: 0; right: 0; bottom: 8px;
+  text-align: center;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
+.ts-error {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 10px;
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  color: #fcd34d;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.ts-notfound {
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.75rem;
+  border-radius: 8px;
+  background: rgba(244, 63, 94, 0.08);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  color: #fca5a5;
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.ts-manual { display: flex; gap: 0.5rem; }
+.ts-manual input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  color: #fff;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.85rem;
+}
+.ts-manual input:focus { outline: none; border-color: var(--accent-blue, #38bdf8); }
+.ts-manual .btn-primary { white-space: nowrap; padding: 0.55rem 1rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ts-laser { animation: none; top: 50%; }
+}

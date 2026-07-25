@@ -27,6 +27,7 @@ import { QuickLogPanel } from "./QuickLogPanel";
 import { FryNursery } from "./FryNursery";
 import { CasualTankGallery } from "./logbook/CasualTankGallery";
 import { TankInhabitants } from "./logbook/TankInhabitants";
+import { TankScanner } from "./logbook/TankScanner";
 import { JournalTimeline } from "./logbook/JournalTimeline";
 import { CareCoach } from "./logbook/CareCoach";
 import { ProOpsGrid } from "./logbook/ProOpsGrid";
@@ -171,10 +172,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     }
   }, [casualModeActive]);
 
-  // Scanner Simulator State
+  // Tank QR scanner (real camera scan → open the matching tank)
   const [scannerOpen, setScannerOpen] = useState(false);
-  const [scanning, setScanning] = useState(false);
-  const [scanResult, setScanResult] = useState("");
 
   // Quick Log Drawer State
   const [quickLogOpen, setQuickLogOpen] = useState(false);
@@ -1051,25 +1050,16 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     }
   };
 
-  // Scanner simulation triggers
-  const triggerScan = () => {
-    setScannerOpen(true);
-    setScanning(true);
-    setScanResult("");
-    setTimeout(() => {
-      setScanning(false);
-      // Pick a random tank from owner list
-      if (tanks.length > 0) {
-        const randomTank = tanks[Math.floor(Math.random() * tanks.length)];
-        setScanResult(randomTank.name);
-        setTimeout(() => {
-          setActiveTank(randomTank);
-          setScannerOpen(false);
-        }, 1200);
-      } else {
-        setScanResult("No active tanks registered.");
-      }
-    }, 2000);
+  // Open the real camera QR scanner.
+  const triggerScan = () => setScannerOpen(true);
+
+  // A scanned (or manually entered) tank id resolved to one of the user's tanks.
+  const handleScanSelect = (tank) => {
+    setScannerOpen(false);
+    if (tank) {
+      setActiveTank(tank);
+      showToast(`📷 Opened ${tank.name || `tank #${tank.id}`}`);
+    }
   };
 
   // Convert Liters to US Gallons
@@ -3448,77 +3438,12 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
       {/* 3. SIMULATED CAMERA SCANNER DIALOG */}
       {scannerOpen && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.85)",
-          backdropFilter: "blur(12px)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 2000,
-          padding: "1rem"
-        }}>
-          <div className="glass-card" style={{
-            width: "100%",
-            maxWidth: "400px",
-            padding: "2rem",
-            background: "var(--bg-secondary)",
-            textAlign: "center",
-            border: "1px solid var(--accent-blue)"
-          }}>
-            <h3 style={{ color: "#fff", marginBottom: "1rem" }}>📸 Barcode / QR Tag Scanner</h3>
-            
-            <div style={{ 
-              width: "240px", 
-              height: "240px", 
-              margin: "0 auto 1.5rem", 
-              border: "2px solid var(--accent-blue)", 
-              borderRadius: "16px",
-              position: "relative",
-              overflow: "hidden",
-              background: "rgba(0,0,0,0.5)"
-            }}>
-              {/* Laser scanner line effect */}
-              {scanning && (
-                <div style={{
-                  position: "absolute",
-                  left: 0,
-                  right: 0,
-                  height: "3px",
-                  background: "var(--accent-blue)",
-                  boxShadow: "0 0 10px var(--accent-blue)",
-                  top: 0,
-                  animation: "scanner-sweep 2s linear infinite"
-                }}></div>
-              )}
-              
-              <div style={{ display: "flex", width: "100%", height: "100%", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "0.5rem" }}>
-                <span style={{ fontSize: "2rem" }}>📷</span>
-                <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                  {scanning ? "Detecting containment QR identifier..." : "Decoding..."}
-                </span>
-              </div>
-            </div>
-
-            {scanResult && (
-              <div style={{ padding: "0.75rem", background: "var(--accent-blue-glow)", borderRadius: "8px", fontSize: "0.85rem", color: "var(--accent-blue)" }}>
-                <strong>Linked Unit:</strong> {scanResult}
-              </div>
-            )}
-
-            <button 
-              className="btn-secondary" 
-              onClick={() => setScannerOpen(false)}
-              style={{ width: "100%", marginTop: "1rem" }}
-            >
-              Cancel Scan
-            </button>
-          </div>
-        </div>
+        <TankScanner
+          tanks={tanks}
+          casualModeActive={casualModeActive}
+          onSelect={handleScanSelect}
+          onClose={() => setScannerOpen(false)}
+        />
       )}
 
       {/* 3.5 ADD FISH SLIDING DRAWER */}
