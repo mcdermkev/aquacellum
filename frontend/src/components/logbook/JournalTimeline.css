@@ -1,0 +1,115 @@
+/* JournalTimeline — Casual-mode tank story (Task 5). */
+
+.journal-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.journal-header {
+  padding: 0.6rem 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+}
+
+.journal-empty {
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 2rem 1rem;
+  line-height: 1.6;
+}
+
+.journal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+}
+
+/* Vertical thread connecting entries */
+.journal-list::before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: linear-gradient(to bottom, rgba(56, 189, 248, 0.25), rgba(56, 189, 248, 0.03));
+}
+
+.journal-entry {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  position: relative;
+  padding: 0.5rem 0.6rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.journal-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  border-radius: 50%;
+  background: rgba(8, 25, 48, 0.9);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  z-index: 1;
+}
+
+.journal-entry--waterChange .journal-icon { border-color: rgba(56, 189, 248, 0.4); }
+.journal-entry--reading .journal-icon { border-color: rgba(251, 191, 36, 0.4); }
+.journal-entry--feed .journal-icon { border-color: rgba(52, 211, 153, 0.4); }
+.journal-entry--photo .journal-icon { border-color: rgba(168, 85, 247, 0.4); }
+
+.journal-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.journal-entry-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.journal-title {
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+.journal-time {
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.68rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.journal-detail {
+  color: var(--text-secondary, #cbd5e1);
+  font-size: 0.78rem;
+  word-break: break-word;
+}
+
+.journal-photo {
+  margin-top: 0.4rem;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}

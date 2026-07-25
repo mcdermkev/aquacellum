@@ -1,0 +1,85 @@
+/* SpeciesCareGuide — Casual knowledge panel (Task 10). */
+
+.care-guide {
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.08), rgba(16, 185, 129, 0.03));
+  border: 1px solid rgba(52, 211, 153, 0.2);
+}
+
+.care-guide-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.6rem;
+}
+
+.care-guide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cg-card {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+}
+
+.cg-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.cg-name { color: #fff; font-size: 0.85rem; }
+
+.cg-level {
+  font-size: 0.62rem;
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 20px;
+  padding: 0.1rem 0.5rem;
+  white-space: nowrap;
+}
+
+.cg-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.cg-chip {
+  font-size: 0.7rem;
+  color: var(--text-secondary, #cbd5e1);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 0.2rem 0.5rem;
+  white-space: nowrap;
+}
+
+.cg-tip {
+  margin: 0.5rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--text-muted, #94a3b8);
+}
+
+.cg-ask {
+  margin-top: 0.5rem;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.cg-ask:hover { background: rgba(52, 211, 153, 0.16); }

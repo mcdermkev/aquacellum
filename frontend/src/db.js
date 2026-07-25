@@ -2,6 +2,160 @@ import Dexie from "dexie";
 
 export const db = new Dexie("AquadexDB");
 
+// Task 11 E2E harness (docs/TASK_11_E2E_SPEC.md): expose the live Dexie
+// instance in-page so Playwright tests can seed/read tanks, specimens,
+// schedules, etc. directly via `page.evaluate(() => window.__aquadexDb...)`,
+// per the spec's "Dexie is reachable in-page" guidance. Dev-only — stripped
+// from production bundles because `import.meta.env.DEV` is a build-time
+// constant that Vite inlines to `false` for `npm run build`.
+if (import.meta.env.DEV && typeof window !== "undefined") {
+  window.__aquadexDb = db;
+  window.__seedForE2E = seedForE2E;
+  window.__clearE2EDb = clearE2EDb;
+}
+
+/**
+ * seedForE2E — writes a v23-shaped fixture directly into Dexie so Playwright
+ * Phase B tests can seed a fresh, deterministic tank state without going
+ * through the UI or a real wallet (docs/TASK_11_E2E_SPEC.md, "Phase B" /
+ * "the auth + seed problem"). Dev-only (see window.__seedForE2E above).
+ *
+ * Mirrors the shapes relayRegisterTank / relayMintSpecimen write in
+ * services/relayer.js, so seeded data is indistinguishable from real local-
+ * first writes to the rest of the app (useUserTanks, deriveTankHealth, etc.).
+ *
+ * @param {object} fixture
+ * @param {string} [fixture.ownerAddress] lowercase EOA; defaults to the E2E stub account
+ * @param {Array<object>} [fixture.tanks] each: { id?, name, tankType, volumeLiters,
+ *   facility?, room?, rack?, latestLog?, specimens?: [{ id?, speciesId, commonName,
+ *   scientificName?, gender?, status? }], schedules?: [{ kind, cadenceDays?,
+ *   lastDoneAt?, nextDueAt?, enabled? }], readings?: [{ timestamp?, temp?, ph?,
+ *   ammonia?, nitrite?, nitrate?, source?, notes? }] }
+ * @param {Array<object>} [fixture.unassignedSpecimens] nursery fixtures: same
+ *   per-specimen shape as above, written with currentTankId 0.
+ * @returns {Promise<{ tankIds: number[] }>}
+ */
+async function seedForE2E(fixture = {}) {
+  const owner = (fixture.ownerAddress || "0xe2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2").toLowerCase();
+  const now = Math.floor(Date.now() / 1000);
+  const tankIds = [];
+  let seq = 0;
+  const nextId = () => Date.now() + (seq++);
+
+  for (const t of fixture.tanks || []) {
+    const tankId = t.id ?? nextId();
+    const specimens = (t.specimens || []).map((s) => ({
+      id: s.id ?? nextId(),
+      speciesId: s.speciesId ?? 1,
+      commonName: s.commonName || "Fish",
+      scientificName: s.scientificName || "",
+      status: s.status ?? 0,
+      gender: s.gender || "Unsexed",
+    }));
+
+    await db.tanks.put({
+      id: tankId,
+      ownerAddress: owner,
+      name: t.name || `Tank ${tankId}`,
+      tankType: t.tankType ?? 0,
+      volumeLiters: t.volumeLiters ?? 75,
+      creationTimestamp: now,
+      active: true,
+      containment: 0,
+      parentUnitId: 0,
+      facility: t.facility || "Main Room",
+      room: t.room || "Main Room",
+      rack: t.rack || "",
+      logs: [],
+      latestLog: t.latestLog || null,
+      specimens,
+    });
+
+    for (const s of specimens) {
+      await db.specimens.put({
+        id: s.id,
+        ownerAddress: owner,
+        speciesId: s.speciesId,
+        currentTankId: tankId,
+        status: s.status,
+        gender: s.gender,
+        commonName: s.commonName,
+        scientificName: s.scientificName,
+        breeder: owner,
+        createdAt: now,
+        onChainId: null,
+        chainStatus: "local",
+        txHash: null,
+      });
+    }
+
+    for (const r of t.readings || []) {
+      await db.paramReadings.add({
+        tankId,
+        timestamp: r.timestamp ?? now,
+        temp: r.temp,
+        ph: r.ph,
+        ammonia: r.ammonia,
+        nitrite: r.nitrite,
+        nitrate: r.nitrate,
+        source: r.source || "manual",
+        notes: r.notes || "",
+      });
+    }
+
+    for (const sch of t.schedules || []) {
+      await db.tankSchedules.add({
+        tankId,
+        kind: sch.kind,
+        cadenceDays: sch.cadenceDays ?? 7,
+        lastDoneAt: sch.lastDoneAt ?? null,
+        nextDueAt: sch.nextDueAt ?? now,
+        enabled: sch.enabled !== false,
+      });
+    }
+
+    tankIds.push(tankId);
+  }
+
+  for (const s of fixture.unassignedSpecimens || []) {
+    const id = s.id ?? nextId();
+    await db.specimens.put({
+      id,
+      ownerAddress: owner,
+      speciesId: s.speciesId ?? 1,
+      currentTankId: 0,
+      status: s.status ?? 0,
+      gender: s.gender || "Unsexed",
+      commonName: s.commonName || "Fish",
+      scientificName: s.scientificName || "",
+      breeder: owner,
+      createdAt: now,
+      onChainId: null,
+      chainStatus: "local",
+      txHash: null,
+    });
+  }
+
+  return { tankIds };
+}
+
+/** Clear all logbook-relevant local tables — used between E2E test scenarios. */
+async function clearE2EDb() {
+  await db.transaction(
+    "rw",
+    [db.tanks, db.specimens, db.paramReadings, db.tankSchedules, db.tankMedia, db.actionLogs, db.marketOrders],
+    async () => {
+      await db.tanks.clear();
+      await db.specimens.clear();
+      await db.paramReadings.clear();
+      await db.tankSchedules.clear();
+      await db.tankMedia.clear();
+      await db.actionLogs.clear();
+      await db.marketOrders.clear();
+    }
+  );
+}
+
 // Define schema: primary key first, followed by indexed fields.
 // Non-indexed fields are saved automatically inside the stored objects.
 db.version(1).stores({
@@ -553,6 +707,176 @@ db.version(22).stores({
   echoCompanionOnChain: "walletAddress, tokenId, cachedAt",
   cart: "id, seller, listingKey, addedAt"
 });
+
+// Version 23: Logbook Rework — data spine (Logbook Rework Task 1).
+// ADDITIVE for the three new tables; the upgrade also does a one-time, idempotent,
+// non-destructive backfill. Every v22 store is carried forward verbatim.
+//   NEW TABLES
+//   - paramReadings: first-class water-parameter readings (normalized units).
+//       Replaces the split of on-chain tankParameterLogs vs. freeform actionLogs
+//       as the UI source of truth. `source` = "manual" | "onchain" | "batch" |
+//       "backfill". [tankId+timestamp] compound index for fast per-tank history.
+//   - tankSchedules: per-tank maintenance cadence (waterChange | test | filter |
+//       dose) with nextDueAt so "due/overdue" is a real value, not inferred.
+//   - tankMedia: durable photo storage keyed by [refType+refId] (tank/specimen),
+//       moving base64 photos off localStorage (5MB quota) onto Dexie + cloud sync.
+//   NON-INDEXED ADDITION
+//   - actionLogs gains a `payload` object (typed care detail) alongside the
+//       human `details` string. Non-indexed, so the actionLogs schema string is
+//       unchanged; Dexie stores it automatically.
+//   MIGRATION (idempotent, non-destructive)
+//   - Saltwater removal: any tank with tankType === 1 (legacy saltwater) is
+//       converted to Freshwater (0). Aquacellum is freshwater-only; index 1 is
+//       retired. See tankUtils.TANK_TYPE_OPTIONS.
+//   - Backfill actionLogs.payload from parseable `details` (skips rows that
+//       already have a payload).
+//   - Seed paramReadings from historical water-test actionLogs where temp/pH can
+//       be parsed from the details string (guarded against duplicates).
+//   - Import any localStorage photos (aquadex_tank_photo_* / aquadex_specimen_photo_*)
+//       into tankMedia. Photos are COPIED, not deleted — current UI still reads
+//       localStorage; freeing it is deferred to the surface rework so nothing
+//       visually breaks now.
+db.version(23).stores({
+  species: "specCode, commonName, scientificName, type, difficulty",
+  listings: "id, tokenId, seller, price, isBatch, speciesId",
+  tanks: "id, ownerAddress, name, active",
+  userProfile: "walletAddress, totalXp, currentTier, zoneHash, isCouncilMember, onboardingComplete",
+  breederCompanion: "walletAddress, eggState, currentTier, selectedStats, zoneHash",
+  pendingHandshakes: "purchaseId, pin, salt, buyerAddress",
+  speciesManifest: "speciesId, scientificName, commonName, contractAddress, cachedAt",
+  actionLogs: "++id, tankId, actionType, timestamp, details",
+  spawnGrowout: "++id, spawnId, timestamp, type",
+  feedCache: "++id, contentId, authorWallet, createdAt, [authorWallet+createdAt]",
+  socialNotifications: "++id, category, isRead, createdAt",
+  draftContent: "++id, type, status, createdAt",
+  specimens: "id, ownerAddress, speciesId, currentTankId, status, createdAt, [ownerAddress+arrivalStatus], breederStockTag, onChainId, chainStatus",
+  localListings: "id, seller, speciesId, isBatch, listingId, tokenId",
+  marketOrders: "++key, orderType, status, state, buyer, seller, tokenId, purchaseId, listingId, assignedTankId",
+  spawns: "spawnId, sireId, damId, tankId, speciesId, status, timestamp",
+  tankNotes: "++id, tankId, createdAt",
+  xpCooldowns: "++id, walletAddress, actionType, tankId, timestamp, [walletAddress+actionType+tankId]",
+  storefrontCache: "id, walletAddress, cachedAt",
+  echoNeeds: "walletAddress, lastUpdate",
+  echoCompanionOnChain: "walletAddress, tokenId, cachedAt",
+  cart: "id, seller, listingKey, addedAt",
+  // NEW in v23:
+  paramReadings: "++id, tankId, timestamp, source, [tankId+timestamp]",
+  tankSchedules: "++id, tankId, kind, nextDueAt, enabled, [tankId+kind]",
+  tankMedia: "++id, refType, refId, createdAt, [refType+refId]"
+}).upgrade((tx) => upgradeV23(tx));
+
+// v23 upgrade logic — extracted as a named export so the real transformations can
+// be integration-tested against a controlled Dexie (see db/migrationV23.test.js).
+export async function upgradeV23(tx) {
+  // 1. Saltwater removal — convert legacy tankType === 1 records to Freshwater (0).
+  try {
+    const tanks = await tx.table("tanks").toArray();
+    for (const t of tanks) {
+      if (Number(t.tankType) === 1) {
+        await tx.table("tanks").update(t.id, { tankType: 0 });
+      }
+    }
+  } catch (e) {
+    console.warn("[v23] Saltwater remap skipped:", e?.message);
+  }
+
+  // 2. Backfill actionLogs.payload from parseable `details` (idempotent: skip rows
+  //    that already carry a payload).
+  try {
+    const parsePct = (s) => {
+      const m = typeof s === "string" && s.match(/(\d{1,3})\s*%/);
+      return m ? Number(m[1]) : undefined;
+    };
+    const parseNum = (s, label) => {
+      const re = new RegExp(`${label}:\\s*([\\d.]+)`, "i");
+      const m = typeof s === "string" && s.match(re);
+      return m ? Number(m[1]) : undefined;
+    };
+    const payloadFor = (log) => {
+      const d = log.details || "";
+      switch (log.actionType) {
+        case "Water Change":
+        case "Log Immediate Water Change": {
+          const percent = parsePct(d);
+          return { kind: "waterChange", ...(percent !== undefined ? { percent } : {}), _backfilled: true };
+        }
+        case "Feed":
+          return { kind: "feed", _backfilled: true };
+        case "Scraped Algae":
+          return { kind: "clean", _backfilled: true };
+        case "Quick Water Test":
+        case "Water Test":
+        case "Detailed Test": {
+          const temp = parseNum(d, "Temp");
+          const ph = parseNum(d, "pH");
+          return { kind: "test", ...(temp !== undefined ? { temp } : {}), ...(ph !== undefined ? { ph } : {}), _backfilled: true };
+        }
+        default:
+          return { kind: "other", _backfilled: true };
+      }
+    };
+
+    const logs = await tx.table("actionLogs").toArray();
+    for (const log of logs) {
+      if (log.payload) continue; // already structured — leave it
+      await tx.table("actionLogs").update(log.id, { payload: payloadFor(log) });
+    }
+
+    // 3. Seed paramReadings from water-test action logs that carry parseable values.
+    const testTypes = new Set(["Quick Water Test", "Water Test", "Detailed Test"]);
+    for (const log of logs) {
+      if (!testTypes.has(log.actionType)) continue;
+      const temp = parseNum(log.details, "Temp");
+      const ph = parseNum(log.details, "pH");
+      if (temp === undefined && ph === undefined) continue;
+      // Guard against duplicates if the upgrade is ever re-run.
+      const existing = await tx.table("paramReadings")
+        .where("[tankId+timestamp]").equals([log.tankId, log.timestamp]).count();
+      if (existing > 0) continue;
+      await tx.table("paramReadings").add({
+        tankId: log.tankId,
+        timestamp: log.timestamp,
+        temp,
+        ph,
+        source: "backfill",
+        notes: log.details || "",
+      });
+    }
+  } catch (e) {
+    console.warn("[v23] actionLogs/paramReadings backfill skipped:", e?.message);
+  }
+
+  // 4. Import localStorage photos into tankMedia (COPY, do not delete). Idempotent
+  //    via the [refType+refId] guard. Current UI still reads localStorage; freeing
+  //    it is deferred to the surface rework (Task 4/5).
+  try {
+    if (typeof localStorage !== "undefined") {
+      const importPhoto = async (refType, refId, dataUrl) => {
+        if (!dataUrl) return;
+        const existing = await tx.table("tankMedia")
+          .where("[refType+refId]").equals([refType, String(refId)]).count();
+        if (existing > 0) return;
+        await tx.table("tankMedia").add({
+          refType,
+          refId: String(refId),
+          dataUrl,
+          createdAt: Date.now(),
+        });
+      };
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        if (key.startsWith("aquadex_tank_photo_")) {
+          await importPhoto("tank", key.replace("aquadex_tank_photo_", ""), localStorage.getItem(key));
+        } else if (key.startsWith("aquadex_specimen_photo_")) {
+          await importPhoto("specimen", key.replace("aquadex_specimen_photo_", ""), localStorage.getItem(key));
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("[v23] localStorage photo import skipped:", e?.message);
+  }
+}
 
 /**
  * Derive tier key from totalXp using the canonical tier ladder.

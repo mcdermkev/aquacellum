@@ -5,10 +5,11 @@ import { addXp, XP_ACTIONS } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
 import { compressImage } from "../utils/imageCompression";
 import { relayRegisterTank, relayMintSpecimen } from "../services/relayer";
+import { putTankPhoto } from "../services/tankMedia";
 import { db } from "../db";
 import { useContractSpecies } from "../hooks/useSpeciesData";
+import { tankTypeLabel } from "../utils/tankUtils";
 
-const TANK_TYPES = ["Freshwater", "Saltwater", "Brackish", "Pond"];
 const CONTAINMENT_TYPES = ["Tank", "Tub", "Basket"];
 
 export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank, onReload, openRegisterOnTreeMount, onCloseRegister, casualModeActive = false }) {
@@ -264,12 +265,9 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
       });
 
       if (newTankId && selectedPhoto) {
-        try {
-          localStorage.setItem(`aquadex_tank_photo_${newTankId}`, selectedPhoto);
-        } catch (storageErr) {
-          console.error("Storage quota error:", storageErr);
-          showToast("⚠️ Storage Quota Exceeded! Tank registered, but device is out of space for local photos.");
-        }
+        // Durable store (Dexie via tankMedia); it mirrors to localStorage so
+        // surfaces still reading localStorage keep working.
+        await putTankPhoto(newTankId, selectedPhoto);
       }
 
       if (casualModeActive && addedFishList.length > 0) {
@@ -430,8 +428,8 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                 ⚠️ {warning}
               </span>
             )}
-            <span className={`badge ${node.tankType === 1 ? "badge-blue" : "badge-green"}`} style={{ fontSize: "0.65rem" }}>
-              {TANK_TYPES[node.tankType]}
+            <span className="badge badge-green" style={{ fontSize: "0.65rem" }}>
+              {tankTypeLabel(node.tankType)}
             </span>
             {hasChildren && (
               <button 

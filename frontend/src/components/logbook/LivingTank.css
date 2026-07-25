@@ -1,0 +1,269 @@
+/*
+ * LivingTank.css — Task 3 prototype (Living Tank visual engine).
+ *
+ * Layered CSS aquarium: water column, substrate, plants, caustic light,
+ * bubbles, surface shimmer, haze (health), and a glass front. Animations
+ * only run when the root carries `.lt--animate` (added when the tank is
+ * in view AND the user has not requested reduced motion), so offscreen and
+ * reduced-motion tanks are static-but-still-pretty and cheap.
+ */
+
+.lt-root {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 14px;
+  isolation: isolate;
+  background: #04121f;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.lt-root.lt-hero {
+  border-radius: 16px;
+}
+
+.lt-root.lt-strip {
+  border-radius: 8px;
+}
+
+/* ── Water column ─────────────────────────────────────────── */
+.lt-water {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* Murk / tint overlay driven by health (opacity set inline) */
+.lt-tint {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: radial-gradient(
+    120% 90% at 50% 0%,
+    rgba(120, 140, 70, 0.0) 0%,
+    rgba(74, 92, 40, 0.9) 100%
+  );
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+
+/* ── Caustic light bands ──────────────────────────────────── */
+.lt-caustic {
+  position: absolute;
+  left: -30%;
+  right: -30%;
+  height: 60%;
+  top: -10%;
+  z-index: 2;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 40%,
+    rgba(255, 255, 255, 0.14) 50%,
+    rgba(255, 255, 255, 0.05) 60%,
+    transparent 100%
+  );
+  filter: blur(6px);
+  opacity: 0;
+  transform: translateX(-10%) rotate(8deg);
+  pointer-events: none;
+}
+
+.lt-caustic.lt-caustic-2 {
+  top: 20%;
+  height: 70%;
+  opacity: 0;
+}
+
+.lt--animate .lt-caustic {
+  opacity: 1;
+  animation: lt-caustic-drift 9s ease-in-out infinite;
+}
+
+.lt--animate .lt-caustic.lt-caustic-2 {
+  opacity: 1;
+  animation: lt-caustic-drift 13s ease-in-out infinite reverse;
+  animation-delay: -3s;
+}
+
+@keyframes lt-caustic-drift {
+  0%   { transform: translateX(-12%) rotate(8deg); }
+  50%  { transform: translateX(12%) rotate(11deg); }
+  100% { transform: translateX(-12%) rotate(8deg); }
+}
+
+/* ── Surface shimmer (top light line) ─────────────────────── */
+.lt-surface {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 14%;
+  z-index: 3;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.05) 40%,
+    transparent 100%
+  );
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.lt--animate .lt-surface {
+  animation: lt-surface-shimmer 6s ease-in-out infinite;
+}
+
+@keyframes lt-surface-shimmer {
+  0%, 100% { opacity: 0.5; transform: translateY(0); }
+  50%      { opacity: 0.9; transform: translateY(1px); }
+}
+
+/* ── Plants / décor silhouettes ───────────────────────────── */
+.lt-plants {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  width: 100%;
+  height: 48%;
+  pointer-events: none;
+}
+
+.lt--animate .lt-plant {
+  transform-origin: bottom center;
+  animation: lt-sway 7s ease-in-out infinite;
+}
+
+.lt--animate .lt-plant.lt-plant-b { animation-duration: 9s; animation-delay: -2s; }
+.lt--animate .lt-plant.lt-plant-c { animation-duration: 11s; animation-delay: -4s; }
+
+@keyframes lt-sway {
+  0%, 100% { transform: rotate(-2.5deg); }
+  50%      { transform: rotate(2.5deg); }
+}
+
+/* ── Substrate ────────────────────────────────────────────── */
+.lt-substrate {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  height: 14%;
+  background:
+    radial-gradient(circle at 20% 40%, rgba(255,255,255,0.05) 0 2px, transparent 3px),
+    radial-gradient(circle at 60% 60%, rgba(255,255,255,0.04) 0 2px, transparent 3px),
+    radial-gradient(circle at 85% 45%, rgba(255,255,255,0.04) 0 2px, transparent 3px),
+    linear-gradient(to bottom, #2a2018 0%, #15100a 100%);
+  border-top: 1px solid rgba(0, 0, 0, 0.4);
+}
+
+/* ── Fish layer host ──────────────────────────────────────── */
+.lt-fish {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  transition: opacity 0.6s ease, filter 0.6s ease;
+}
+
+/* ── Bubbles ──────────────────────────────────────────────── */
+.lt-bubbles {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.lt-bubble {
+  position: absolute;
+  bottom: 6%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.85), rgba(255,255,255,0.15));
+  opacity: 0;
+}
+
+.lt--animate .lt-bubble {
+  animation: lt-bubble-rise linear infinite;
+}
+
+@keyframes lt-bubble-rise {
+  0%   { transform: translateY(0) translateX(0); opacity: 0; }
+  10%  { opacity: 0.8; }
+  90%  { opacity: 0.5; }
+  100% { transform: translateY(-160px) translateX(6px); opacity: 0; }
+}
+
+/* ── Glass front ──────────────────────────────────────────── */
+.lt-glass {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 2px 14px rgba(255, 255, 255, 0.08),
+    inset 0 -18px 40px rgba(0, 0, 0, 0.45);
+}
+
+.lt-glass::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 6%;
+  width: 26%;
+  height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.10) 45%,
+    rgba(255, 255, 255, 0.02) 55%,
+    transparent 100%
+  );
+  transform: skewX(-12deg);
+}
+
+/* ── Content overlay (label strip etc.) ───────────────────── */
+.lt-content {
+  position: relative;
+  z-index: 8;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.lt-label {
+  pointer-events: auto;
+  margin: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 10px;
+  background: rgba(6, 18, 31, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.lt-strip .lt-content {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lt-strip .lt-label {
+  margin: 0 0.6rem;
+  padding: 0.2rem 0.5rem;
+  background: transparent;
+  border: none;
+  backdrop-filter: none;
+  flex: 1;
+}

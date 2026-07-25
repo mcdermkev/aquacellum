@@ -32,10 +32,17 @@ import { setSessionTokenGetter as setPromotionsSessionTokenGetter } from "../ser
 import { setSessionTokenGetter as setPickupCoordinationSessionTokenGetter } from "../services/pickupCoordinationApi";
 import { ensureProfile, updateProfile } from "../services/reefApi";
 import { identifyUser, resetAnalyticsIdentity, trackEvent } from "../services/analytics";
+import { isE2EMode, E2E_STUB_ACCOUNT } from "../utils/e2eMode";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  // Task 11 E2E harness (docs/TASK_11_E2E_SPEC.md, "auth + seed problem"). When
+  // active (dev-only, `?e2e=1`) the dashboard renders with a stub account and
+  // every Privy/Supabase side effect below is skipped — this is a test-only
+  // bypass, never reachable in a production build (see utils/e2eMode.js).
+  const e2eMode = isE2EMode();
+
   // Privy hooks
   const {
     ready: privyReady,
@@ -49,7 +56,7 @@ export function AuthProvider({ children }) {
   const { createWallet } = useCreateWallet();
 
   // Unified state
-  const [account, setAccount] = useState(null);
+  const [account, setAccount] = useState(() => (e2eMode ? E2E_STUB_ACCOUNT : null));
   const [loginMethod, setLoginMethod] = useState(null); // "privy" | "metamask" | null
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState(null);
@@ -167,6 +174,10 @@ export function AuthProvider({ children }) {
   // REEF SOCIAL: Bridge wallet auth to Supabase session (JWT bridge)
   // ─────────────────────────────────────────────────────────────────────────
   useEffect(() => {
+    // Skip entirely under the E2E stub account — there's no real Privy/Supabase
+    // session behind it, and we don't want to write test traffic to the real
+    // Supabase project under a fake wallet address.
+    if (e2eMode) return;
     if (account) {
       // Get the Privy access token to authenticate with the JWT bridge.
       // For Privy users, this mints a real Supabase JWT with wallet_address claim.
@@ -200,6 +211,10 @@ export function AuthProvider({ children }) {
       resetAnalyticsIdentity();
       return;
     }
+    // Skip analytics identification + Supabase profile writes for the E2E stub
+    // account — there's nothing real to identify and no reason to write test
+    // rows against the real analytics/Supabase projects under a fake wallet.
+    if (e2eMode) return;
     identifyUser(account, { login_method: loginMethod });
     trackEvent("login", { login_method: loginMethod });
 
@@ -570,8 +585,10 @@ export function AuthProvider({ children }) {
     isConnecting,
     error,
     wrongNetwork,
-    ready: privyReady,
-    authenticated: privyAuthenticated,
+    // E2E stub: report ready+authenticated immediately so App.jsx's gates
+    // (onboarding, enteredDashboard, etc.) behave exactly as a logged-in user.
+    ready: e2eMode ? true : privyReady,
+    authenticated: e2eMode ? true : privyAuthenticated,
 
     // Actions
     connectPrivy,

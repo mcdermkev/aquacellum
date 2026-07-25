@@ -24,7 +24,7 @@ function formatActionLabel(actionType, casual = true) {
  * Architecture: Uses the Poseidon Edge Function gateway (Gemini-powered) as primary,
  * with the local Web Worker as offline fallback.
  */
-export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, onClose }) {
+export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, seedPrompt = null, onClose }) {
   const mode = casualModeActive ? "casual" : "pro";
   const {
     messages,
@@ -39,11 +39,22 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, o
   const [pendingAction, setPendingAction] = useState(null); // { type, payload, msgId }
   const messagesEndRef = useRef(null);
   const workerRef = useRef(null);
+  const lastSeedRef = useRef(null);
 
   // Initialize greeting on mount
   useEffect(() => {
     initGreeting();
   }, [initGreeting]);
+
+  // Contextual "Ask Poseidon" tips seed a grounded question and auto-send it
+  // once. Any write Poseidon proposes still queues in the confirmation bar
+  // below — seeding only asks the question, it never bypasses confirm-before-write.
+  useEffect(() => {
+    if (seedPrompt && seedPrompt !== lastSeedRef.current) {
+      lastSeedRef.current = seedPrompt;
+      sendMessage(seedPrompt);
+    }
+  }, [seedPrompt, sendMessage]);
 
   // Initialize Web Worker as offline fallback
   useEffect(() => {

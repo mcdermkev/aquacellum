@@ -33,9 +33,10 @@ export async function handlePoseidonAction(actionPayload) {
         const volumeLiters = Math.round(volumeGallons * 3.78541);
         const ownerAddress = actionPayload.walletAddress || "0x0000000000000000000000000000000000000000";
 
-        // Determine if saltwater
-        const isSaltwater = rawQuery.includes("saltwater") || rawQuery.includes("marine") || rawQuery.includes("reef");
-        const tankType = isSaltwater ? 2 : 1; // 2 = Saltwater, 1 = Freshwater
+        // Aquacellum is freshwater-only — saltwater is removed from the product.
+        // Freshwater is enum index 0 (the previous `? 2 : 1` mapping was a bug:
+        // it stored "freshwater" as index 1, which is actually Saltwater).
+        const tankType = 0; // Freshwater
 
         // Parse temperature (10x scaling)
         let tempCelsiusX10 = 245; // 24.5 C default
@@ -77,7 +78,7 @@ export async function handlePoseidonAction(actionPayload) {
               timestamp: Math.round(Date.now() / 1000),
               tempCelsiusX10,
               phX10,
-              salinitySgX10000: isSaltwater ? 10250 : 10000,
+              salinitySgX10000: 10000,
               ammoniaPpmX100: 0,
               nitritePpmX100: 0,
               nitratePpmX100: 500, // 5.0 ppm

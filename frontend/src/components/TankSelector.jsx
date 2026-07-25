@@ -1,13 +1,11 @@
 import React from "react";
+import { tankTypeLabel, tankTypeIcon } from "../utils/tankUtils";
 
 /**
  * TankSelector — Reusable tank picker for the Arrival Flow.
  * Displays user's tanks as selectable cards, ordered by most recently interacted.
  * Supports suggested/pre-selected tank and persona-aware labels.
  */
-
-const TANK_TYPE_LABELS = ["Freshwater", "Saltwater", "Brackish", "Pond"];
-const TANK_TYPE_ICONS = ["💧", "🌊", "🌿", "🏞️"];
 
 function TankSelector({
   tanks = [],
@@ -71,7 +69,7 @@ function TankSelector({
           >
             {/* Tank type icon */}
             <span style={{ fontSize: "1.3rem", flexShrink: 0 }}>
-              {TANK_TYPE_ICONS[typeIndex] || "🐟"}
+              {tankTypeIcon(typeIndex)}
             </span>
 
             {/* Tank info */}
@@ -91,7 +89,7 @@ function TankSelector({
                 color: "var(--text-muted, #94a3b8)",
                 marginTop: "0.15rem",
               }}>
-                {TANK_TYPE_LABELS[typeIndex] || "Unknown"} · {tank.volumeLiters || "?"}L · {specimenCount} {casualModeActive ? "fish" : "specimens"}
+                {tankTypeLabel(typeIndex)} · {tank.volumeLiters || "?"}L · {specimenCount} {casualModeActive ? "fish" : "specimens"}
               </div>
             </div>
 

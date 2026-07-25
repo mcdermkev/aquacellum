@@ -1,0 +1,66 @@
+/* CasualTankGallery — responsive grid of living-aquarium cards (Task 5). */
+
+.casual-tank-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.ctg-card {
+  border-radius: 16px;
+  cursor: pointer;
+  outline: none;
+  border: 1px solid transparent;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.ctg-card:hover,
+.ctg-card:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.ctg-card--active {
+  border-color: var(--accent-blue, #38bdf8);
+  box-shadow: 0 0 16px var(--accent-blue-glow, rgba(56, 189, 248, 0.35));
+}
+
+.ctg-card--dragover {
+  transform: scale(1.03);
+  border-color: #38bdf8;
+  box-shadow: 0 0 22px rgba(56, 189, 248, 0.45);
+}
+
+.ctg-card--alert {
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+.ctg-footer {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 0.65rem;
+}
+
+.ctg-chip {
+  font-size: 0.72rem;
+  color: var(--text-secondary, #cbd5e1);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 0.2rem 0.5rem;
+  white-space: nowrap;
+}
+
+/* Respect reduced motion — the LivingTank engine handles its own animations;
+   here we just drop the hover lift. */
+@media (prefers-reduced-motion: reduce) {
+  .ctg-card,
+  .ctg-card:hover,
+  .ctg-card:focus-visible {
+    transition: none;
+    transform: none;
+  }
+}

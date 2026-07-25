@@ -1,0 +1,41 @@
+/* StockingGuidance — deterministic combined-inhabitants stocking panel (Task 10). */
+
+.stocking-guide {
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.12));
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0.85rem 1rem;
+}
+.stocking-guide.sg--warn { border-color: rgba(251, 191, 36, 0.3); background: rgba(251, 191, 36, 0.05); }
+.stocking-guide.sg--alert { border-color: rgba(244, 63, 94, 0.3); background: rgba(244, 63, 94, 0.06); }
+
+.sg-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.55rem; }
+.sg-icon { font-size: 1.05rem; }
+.sg-title { color: #fff; font-size: 0.88rem; }
+.sg-meta { margin-left: auto; font-size: 0.72rem; color: var(--text-muted, #94a3b8); white-space: nowrap; }
+
+.sg-bar {
+  position: relative;
+  height: 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  margin-bottom: 0.45rem;
+}
+.sg-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; background: #34d399; transition: width 0.3s ease; }
+.sg-bar-fill.sg--warn { background: #fbbf24; }
+.sg-bar-fill.sg--alert { background: #f43f5e; }
+.sg-bar-fill.sg--ok { background: #34d399; }
+/* The "100% guideline" reference mark. */
+.sg-bar-mark { position: absolute; right: 0; top: 0; bottom: 0; width: 2px; background: rgba(255, 255, 255, 0.35); }
+
+.sg-line { margin: 0 0 0.4rem; font-size: 0.78rem; line-height: 1.45; color: var(--text-secondary, #cbd5e1); }
+.sg-line strong { color: #fff; }
+
+.sg-notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.sg-notes li { font-size: 0.68rem; line-height: 1.4; color: var(--text-muted, #94a3b8); padding-left: 0.8rem; position: relative; }
+.sg-notes li::before { content: "•"; position: absolute; left: 0; color: var(--text-muted, #94a3b8); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sg-bar-fill { transition: none; }
+}
