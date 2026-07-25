@@ -71,7 +71,15 @@ export function LivingTank({
 }) {
   const cfg = VARIANT[variant] || VARIANT.card;
   const rootHeight = height != null ? height : cfg.height;
-  const fishHeight = typeof height === "number" ? Math.max(90, height - 38) : cfg.fishHeight;
+  // Fish are distributed across `fishHeight` px vertically (see
+  // TankFishVisualization); it must track the tank's ACTUAL visible height or
+  // fish end up positioned below a short container (e.g. the 40px Pro ops-grid
+  // strip) and get clipped, leaving the water looking empty. The chrome
+  // allowance is small for the strip (no label) and larger for card/hero.
+  const chromeAllowance = variant === "strip" ? 6 : 38;
+  const fishHeight = typeof height === "number"
+    ? Math.max(24, height - chromeAllowance)
+    : cfg.fishHeight;
   const rootRef = useRef(null);
   const [inView, setInView] = useState(true);
   const reducedMotion = usePrefersReducedMotion();
