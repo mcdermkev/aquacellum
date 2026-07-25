@@ -29,6 +29,7 @@ export function TankFishVisualization({
   maxVisible = MAX_FISH_DEFAULT,
   containerWidth,
   containerHeight = 180,
+  speedMultiplier = 1,
 }) {
   const containerRef = useRef(null);
   const rafRef = useRef(null);
@@ -99,7 +100,7 @@ export function TankFishVisualization({
       const startX = PADDING + pseudoRand(1) * (w - PADDING * 2 - 40);
       const startY = PADDING + pseudoRand(2) * (h - PADDING * 2 - 20);
       const dir = pseudoRand(3) > 0.5 ? 1 : -1;
-      const baseSpeed = config.visual.swimSpeed;
+      const baseSpeed = config.visual.swimSpeed * speedMultiplier;
 
       return {
         x: startX,
@@ -116,7 +117,7 @@ export function TankFishVisualization({
 
     fishStateRef.current = states;
     setFishPositions(states.map((s) => ({ x: s.x, y: s.y, dir: s.dir })));
-  }, [fishConfigs, containerWidth, containerHeight]);
+  }, [fishConfigs, containerWidth, containerHeight, speedMultiplier]);
 
   // Animation loop
   useEffect(() => {
@@ -138,7 +139,7 @@ export function TankFishVisualization({
         const config = fishConfigs[i];
         if (!config) continue;
 
-        const speed = config.visual.swimSpeed;
+        const speed = config.visual.swimSpeed * speedMultiplier;
         const scaleFactor = dt / 16; // normalize to ~60fps
 
         // Update position
@@ -192,7 +193,7 @@ export function TankFishVisualization({
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [fishConfigs, prefersReducedMotion, containerWidth, containerHeight]);
+  }, [fishConfigs, prefersReducedMotion, containerWidth, containerHeight, speedMultiplier]);
 
   if (!fishConfigs.length) return null;
 

@@ -360,7 +360,7 @@ function buildUserContext(sessionData) {
   if (sessionData.tanks && sessionData.tanks.length > 0) {
     parts.push("\n## USER'S TANKS");
     for (const tank of sessionData.tanks.slice(0, 5)) {
-      parts.push(`- Tank "${tank.name}" (${tank.volumeLiters}L, ${tank.tankType === 2 ? 'Saltwater' : 'Freshwater'})`);
+      parts.push(`- Tank "${tank.name}" (${tank.volumeLiters}L, ${tank.tankType === 2 ? 'Brackish' : tank.tankType === 3 ? 'Pond' : 'Freshwater'})`);
       if (tank.logs && tank.logs.length > 0) {
         const latest = tank.logs[tank.logs.length - 1];
         parts.push(`  Last reading: ${(latest.tempCelsiusX10 / 10).toFixed(1)}°C, pH ${(latest.phX10 / 10).toFixed(1)}, NH₃ ${(latest.ammoniaPpmX100 / 100).toFixed(2)}ppm`);

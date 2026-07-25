@@ -1,0 +1,115 @@
+/* CareCoach — Casual habit-coaching card (Task 5). */
+
+.care-coach {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, rgba(14, 165, 233, 0.05) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.care-coach--urgent {
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.14) 0%, rgba(239, 68, 68, 0.05) 100%);
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.care-coach--praise {
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.12) 0%, rgba(16, 185, 129, 0.04) 100%);
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+.care-coach-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 200px;
+}
+
+.care-coach-icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
+.care-coach-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.care-coach-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.care-coach-title {
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.care-coach-streak {
+  font-size: 0.68rem;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 20px;
+  padding: 0.1rem 0.5rem;
+  white-space: nowrap;
+}
+
+.care-coach-why {
+  color: var(--text-secondary, #cbd5e1);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.care-coach-cta {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #0ea5e9, #0369a1);
+  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.care-coach--urgent .care-coach-cta {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+}
+
+.care-coach-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(14, 165, 233, 0.45);
+}
+
+.care-coach-pts {
+  font-size: 0.68rem;
+  opacity: 0.9;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  padding: 0.05rem 0.4rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .care-coach-cta,
+  .care-coach-cta:hover {
+    transition: none;
+    transform: none;
+  }
+}

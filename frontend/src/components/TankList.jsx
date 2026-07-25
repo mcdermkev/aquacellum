@@ -3,7 +3,7 @@ import { ethers, Contract } from "ethers";
 import { FishSimple, Flask, Drop, Asterisk } from "@phosphor-icons/react";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { addXp, XP_ACTIONS, getPointsSuffix } from "../utils/xp";
-import { checkCooldown } from "../utils/xpCooldowns";
+import { logCareAction, logCareActionBulk } from "../services/careLog";
 import { FacilityTreeView } from "./FacilityTreeView";
 import { getProvider } from "../utils/smartAccount";
 import { LoadingSkeleton } from "./LoadingSkeleton";
@@ -25,7 +25,15 @@ import { ActivityLog } from "./ActivityLog";
 import { NotesTab } from "./NotesTab";
 import { QuickLogPanel } from "./QuickLogPanel";
 import { FryNursery } from "./FryNursery";
-import { getSupabaseImageUrl, isInsideEnvelope, getTrackBackground, TANK_TYPES, CONTAINMENT_TYPES } from "../utils/tankUtils";
+import { CasualTankGallery } from "./logbook/CasualTankGallery";
+import { JournalTimeline } from "./logbook/JournalTimeline";
+import { CareCoach } from "./logbook/CareCoach";
+import { ProOpsGrid } from "./logbook/ProOpsGrid";
+import { ParamTrends } from "./logbook/ParamTrends";
+import { SpeciesCareGuide } from "./logbook/SpeciesCareGuide";
+import { LivingTank } from "./logbook/LivingTank";
+import { deriveTankHealth } from "../utils/tankHealth";
+import { getSupabaseImageUrl, isInsideEnvelope, getTrackBackground, CONTAINMENT_TYPES, getWaterEnvelope, tankTypeLabel } from "../utils/tankUtils";
 export function TankList({ contractAddress, walletAccount, onViewLineage, onListOnMarketplace, onSelectSpecimen, casualModeActive = false }) {
   const queryClient = useQueryClient();
   const { data: fishbaseData = [] } = useSpeciesData();
@@ -140,6 +148,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
   // Layout View Modes: "list" | "tree" | "quicklog"
   const [viewMode, setViewMode] = useState("list");
+  // Pro list rendering: "grid" (Fish Room Ops) | "cards" (verbose legacy cards)
+  const [proListView, setProListView] = useState("grid");
   const [openRegisterOnTreeMount, setOpenRegisterOnTreeMount] = useState(false);
 
   // Filter & Search states
@@ -182,6 +192,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const specimenPhotoInputRef = useRef(null);
   const [farewellSpecimen, setFarewellSpecimen] = useState(null);
   const [activeMenuSpecimenId, setActiveMenuSpecimenId] = useState(null);
+  const [activeCardMenuTankId, setActiveCardMenuTankId] = useState(null); // pro list-card ⋯ overflow
 
   // Bulk / Rack-Level Logging State (Phase 1)
   const [bulkLogScope, setBulkLogScope] = useState("single"); // "single" | "rack" | "room"
@@ -282,14 +293,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       // award still goes through that hook's per-tank cooldown (no separate
       // addXp() call here, which previously let a "Log All" spam-click farm
       // unlimited XP across every tank in the rack with no cooldown).
-      for (const tank of targets) {
-        await db.actionLogs.add({
-          tankId: tank.id,
-          actionType: hookInfo ? hookInfo.actionType : BULK_ACTION_LABELS[bulkLogAction].label,
-          timestamp: ts,
-          details: detail
-        });
-      }
+      const bulkActionType = hookInfo ? hookInfo.actionType : BULK_ACTION_LABELS[bulkLogAction].label;
+      await logCareActionBulk({ tankIds: targets.map((t) => t.id), actionType: bulkActionType, details: detail, timestamp: ts });
       setBulkLogResult({ count: targets.length, action: BULK_ACTION_LABELS[bulkLogAction].label });
       setBulkLogDetail("");
       fetchLocalActionLogs();
@@ -509,19 +514,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   };
 
   const logFeedClick = async () => {
-    // XP is awarded (and cooldown-checked) exclusively by the Dexie
-    // actionLogs "creating" hook in useXPSync — don't call addXp() here.
-    // Doing so previously double-awarded XP with no cooldown, which is how
-    // spam-feeding was able to farm unlimited tier progress.
-    const cooldown = await checkCooldown(walletAccount, "LOG_FEEDING", String(activeTank.id));
-    await db.actionLogs.add({
-      tankId: activeTank.id,
-      actionType: "Feed",
-      timestamp: Math.round(Date.now() / 1000),
-      details: "Routine Feeding (Standard Diet)"
+    // Write + advisory cooldown check go through the careLog service; XP is still
+    // awarded exclusively by the useXPSync actionLogs.creating hook.
+    const { allowed } = await logCareAction({
+      tankId: activeTank.id, walletAccount, actionType: "Feed", details: "Routine Feeding (Standard Diet)",
     });
     const suffix = getPointsSuffix(casualModeActive);
-    showToast(cooldown.allowed
+    showToast(allowed
       ? (casualModeActive
           ? `🥣 Yum! Your fish are loving it! +${XP_ACTIONS.LOG_FEEDING.points} ${suffix}!`
           : `🥣 Feeding logged (+${XP_ACTIONS.LOG_FEEDING.points} ${suffix})`)
@@ -539,17 +538,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   };
 
   const logAlgaeClick = async () => {
-    // XP is awarded (and cooldown-checked) exclusively by the Dexie
-    // actionLogs "creating" hook in useXPSync — don't call addXp() here.
-    const cooldown = await checkCooldown(walletAccount, "LOG_FEEDING", String(activeTank.id));
-    await db.actionLogs.add({
-      tankId: activeTank.id,
-      actionType: "Scraped Algae",
-      timestamp: Math.round(Date.now() / 1000),
-      details: "Routine Algae Scraped"
+    const { allowed } = await logCareAction({
+      tankId: activeTank.id, walletAccount, actionType: "Scraped Algae", details: "Routine Algae Scraped",
     });
     const suffix = getPointsSuffix(casualModeActive);
-    showToast(cooldown.allowed
+    showToast(allowed
       ? (casualModeActive
           ? `🧹 Sparkly clean! Your tank is gleaming! +${XP_ACTIONS.LOG_FEEDING.points} ${suffix}!`
           : `🧹 Maintenance logged (+${XP_ACTIONS.LOG_FEEDING.points} ${suffix})`)
@@ -560,17 +553,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   };
 
   const logWaterChange = async () => {
-    // XP is awarded (and cooldown-checked) exclusively by the Dexie
-    // actionLogs "creating" hook in useXPSync — don't call addXp() here.
-    const cooldown = await checkCooldown(walletAccount, "LOG_WATER", String(activeTank.id));
-    await db.actionLogs.add({
-      tankId: activeTank.id,
-      actionType: "Water Change",
-      timestamp: Math.round(Date.now() / 1000),
-      details: "Partial water change performed"
+    const { allowed } = await logCareAction({
+      tankId: activeTank.id, walletAccount, actionType: "Water Change", details: "Partial water change performed",
     });
     const suffix = getPointsSuffix(casualModeActive);
-    showToast(cooldown.allowed
+    showToast(allowed
       ? (casualModeActive
           ? `💧 Fresh water! Your fish are loving it! +${XP_ACTIONS.LOG_WATER.points} ${suffix}!`
           : `💧 Water change logged (+${XP_ACTIONS.LOG_WATER.points} ${suffix})`)
@@ -594,32 +581,22 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     }
     const details = inlineDetailText.trim();
     if (inlineDetailType === "feed") {
-      // XP is awarded (and cooldown-checked) exclusively by the Dexie
-      // actionLogs "creating" hook in useXPSync — don't call addXp() here.
-      const cooldown = await checkCooldown(walletAccount, "LOG_FEEDING", String(activeTank.id));
-      await db.actionLogs.add({
-        tankId: activeTank.id,
-        actionType: "Feed",
-        timestamp: Math.round(Date.now() / 1000),
-        details: details
+      const { allowed } = await logCareAction({
+        tankId: activeTank.id, walletAccount, actionType: "Feed", details,
       });
       const suffix = getPointsSuffix(casualModeActive);
-      showToast(cooldown.allowed
+      showToast(allowed
         ? (casualModeActive
             ? `🥣 Custom meal logged — great care! +${XP_ACTIONS.LOG_FEEDING.points} ${suffix}!`
             : `🥣 Custom feeding logged (+${XP_ACTIONS.LOG_FEEDING.points} ${suffix})`)
         : `🥣 Custom feeding logged (already earned ${suffix} for this tank today)`
       );
     } else if (inlineDetailType === "algae") {
-      const cooldown = await checkCooldown(walletAccount, "LOG_FEEDING", String(activeTank.id));
-      await db.actionLogs.add({
-        tankId: activeTank.id,
-        actionType: "Scraped Algae",
-        timestamp: Math.round(Date.now() / 1000),
-        details: details
+      const { allowed } = await logCareAction({
+        tankId: activeTank.id, walletAccount, actionType: "Scraped Algae", details,
       });
       const suffix = getPointsSuffix(casualModeActive);
-      showToast(cooldown.allowed
+      showToast(allowed
         ? (casualModeActive
             ? `🧹 Custom clean logged — looking great! +${XP_ACTIONS.LOG_FEEDING.points} ${suffix}!`
             : `🧹 Custom maintenance logged (+${XP_ACTIONS.LOG_FEEDING.points} ${suffix})`)
@@ -704,17 +681,12 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
 
   const logTestClick = async () => {
-    // XP is awarded (and cooldown-checked) exclusively by the Dexie
-    // actionLogs "creating" hook in useXPSync — don't call addXp() here.
-    const cooldown = await checkCooldown(walletAccount, "LOG_PARAMETERS", String(activeTank.id));
-    await db.actionLogs.add({
-      tankId: activeTank.id,
-      actionType: "Quick Water Test",
-      timestamp: Math.round(Date.now() / 1000),
-      details: "Baseline Water Test (Temp: 24.5°C, pH: 7.2)"
+    const { allowed } = await logCareAction({
+      tankId: activeTank.id, walletAccount, actionType: "Quick Water Test",
+      details: "Baseline Water Test (Temp: 24.5°C, pH: 7.2)",
     });
     const suffix = getPointsSuffix(casualModeActive);
-    showToast(cooldown.allowed
+    showToast(allowed
       ? (casualModeActive
           ? `🧪 Water looks perfect — great job! +${XP_ACTIONS.LOG_PARAMETERS.points} ${suffix}!`
           : `🧪 Water test recorded (+${XP_ACTIONS.LOG_PARAMETERS.points} ${suffix})`)
@@ -722,6 +694,37 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     );
     fetchLocalActionLogs();
     await fetchDashboardData();
+  };
+
+  // CareCoach dispatch — map the suggested habit to the existing logging handlers
+  // (which handle the toast + XP + refresh). Casual habit-coaching loop (Task 5).
+  const handleCoachAction = (kind) => {
+    if (kind === "test") return logTestClick();
+    if (kind === "waterChange") return logWaterChange();
+  };
+
+  // Pro Fish Room worklist — batch-log a maintenance kind across all due tanks
+  // (Task 6). careLog advances each tank's schedule; a confirm avoids surprises.
+  const handleWorklistLog = (kind, tankIds) => {
+    const actionType = kind === "waterChange" ? "Water Change" : kind === "test" ? "Quick Water Test" : null;
+    if (!actionType || !tankIds?.length) return;
+    const label = kind === "waterChange" ? "water change" : "water test";
+    requestConfirm({
+      title: `Log ${label} for ${tankIds.length} tank${tankIds.length !== 1 ? "s" : ""}?`,
+      message: `Logs a ${label} on every tank due today and resets their schedules.`,
+      confirmLabel: `Log ${tankIds.length}`,
+      danger: false,
+      onConfirm: async () => {
+        try {
+          await logCareActionBulk({ tankIds, actionType, details: `Batch ${label} via worklist` });
+          showToast(`✅ Logged ${label} for ${tankIds.length} tank${tankIds.length !== 1 ? "s" : ""}`);
+          await fetchDashboardData();
+        } catch (err) {
+          console.error("Worklist batch log failed:", err);
+          showToast("❌ Batch log failed. Please try again.");
+        }
+      },
+    });
   };
 
   const logTestLongPress = () => {
@@ -1026,35 +1029,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
   // Determine safe parameters based on selected quick log tank or active tank
   const selectedLogTank = tanks.find(t => t.id.toString() === quickLogTankId.toString()) || activeTank || tanks[0];
-  let minSafeTemp = 22.0;
-  let maxSafeTemp = 28.0;
-  let minSafePh = 6.5;
-  let maxSafePh = 8.2;
-
-  if (selectedLogTank) {
-    const typeIdx = selectedLogTank.tankType;
-    if (typeIdx === 1) { // Saltwater
-      minSafeTemp = 24.0;
-      maxSafeTemp = 27.0;
-      minSafePh = 8.0;
-      maxSafePh = 8.4;
-    } else if (typeIdx === 2) { // Brackish
-      minSafeTemp = 22.0;
-      maxSafeTemp = 28.0;
-      minSafePh = 7.2;
-      maxSafePh = 8.2;
-    } else if (typeIdx === 3) { // Pond
-      minSafeTemp = 10.0;
-      maxSafeTemp = 28.0;
-      minSafePh = 6.8;
-      maxSafePh = 8.0;
-    } else { // Freshwater (0)
-      minSafeTemp = 22.0;
-      maxSafeTemp = 26.0;
-      minSafePh = 6.5;
-      maxSafePh = 7.8;
-    }
-  }
+  // Safe ranges come from the single envelope source (tankUtils.getWaterEnvelope),
+  // not an inline per-type if/else. Saltwater is gone; unknown types fall back to FW.
+  const _env = getWaterEnvelope(selectedLogTank ? selectedLogTank.tankType : 0);
+  const minSafeTemp = _env.tempMin;
+  const maxSafeTemp = _env.tempMax;
+  const minSafePh = _env.phMin;
+  const maxSafePh = _env.phMax;
 
   // Location filter setup
   const locations = ["All", "Main Room", "Garage Rack", "Outdoor Ponds"];
@@ -1066,17 +1047,19 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
   const topLevelTanks = filteredTanks.filter(t => t.parentUnitId === 0);
 
-  // Check chemistry metrics warning
+  // Check chemistry metrics warning — thresholds come from the single envelope
+  // source (tankUtils), not copy-pasted magic numbers.
   const getChemistryAlerts = (tank) => {
     if (!tank.latestLog) return [];
+    const env = getWaterEnvelope(tank.tankType);
     const ammonia = Number(tank.latestLog.ammoniaPpmX100) / 100;
     const nitrite = Number(tank.latestLog.nitritePpmX100) / 100;
     const nitrate = Number(tank.latestLog.nitratePpmX100) / 100;
 
     const alerts = [];
-    if (ammonia > 0.05) alerts.push(`High NH₃ (${ammonia} ppm)`);
-    if (nitrite > 0.05) alerts.push(`High NO₂ (${nitrite} ppm)`);
-    if (nitrate > 20.0) alerts.push(`High NO₃ (${nitrate} ppm)`);
+    if (ammonia > env.ammoniaMax) alerts.push(`High NH₃ (${ammonia} ppm)`);
+    if (nitrite > env.nitriteMax) alerts.push(`High NO₂ (${nitrite} ppm)`);
+    if (nitrate > env.nitrateMax) alerts.push(`High NO₃ (${nitrate} ppm)`);
     return alerts;
   };
 
@@ -1434,7 +1417,15 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             <div className="vertical-tank-rows">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
                 <h3 style={{ fontSize: "1.25rem", color: "#fff" }}>{casualModeActive ? "🐠 My Tanks" : "Aquarium Containment Systems"}</h3>
-                <span className="badge badge-blue">{filteredTanks.length} Units Found</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                  {!casualModeActive && (
+                    <div className="ops-viewtoggle" role="radiogroup" aria-label="List view">
+                      <button type="button" className={proListView === "grid" ? "active" : ""} onClick={() => setProListView("grid")} role="radio" aria-checked={proListView === "grid"}>⚡ Grid</button>
+                      <button type="button" className={proListView === "cards" ? "active" : ""} onClick={() => setProListView("cards")} role="radio" aria-checked={proListView === "cards"}>🗂 Cards</button>
+                    </div>
+                  )}
+                  <span className="badge badge-blue">{filteredTanks.length} Units Found</span>
+                </div>
               </div>
 
               {topLevelTanks.length === 0 ? (
@@ -1474,6 +1465,29 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     <p style={{ color: "var(--text-muted)" }}>No top-level units match the current filters.</p>
                   </div>
                 )
+              ) : casualModeActive ? (
+                <CasualTankGallery
+                  tanks={topLevelTanks}
+                  fishbaseData={fishbaseData}
+                  activeTankId={activeTank?.id}
+                  draggedOverTankId={draggedOverTankId}
+                  onOpen={setActiveTank}
+                  onDropSpecimen={handleMoveSpecimen}
+                  onDragEnterTank={setDraggedOverTankId}
+                  onDragLeaveTank={() => setDraggedOverTankId(null)}
+                />
+              ) : proListView === "grid" ? (
+                <ProOpsGrid
+                  tanks={topLevelTanks}
+                  fishbaseData={fishbaseData}
+                  activeTankId={activeTank?.id}
+                  draggedOverTankId={draggedOverTankId}
+                  onOpen={setActiveTank}
+                  onDropSpecimen={handleMoveSpecimen}
+                  onDragEnterTank={setDraggedOverTankId}
+                  onDragLeaveTank={() => setDraggedOverTankId(null)}
+                  onLogDue={handleWorklistLog}
+                />
               ) : (
                 topLevelTanks.map((tank) => {
                   const alerts = getChemistryAlerts(tank);
@@ -1533,8 +1547,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       <div className="tank-row-header">
                         <div>
                           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                            <span className={`badge ${tank.tankType === 1 ? "badge-blue" : "badge-green"}`} style={{ fontSize: "0.6rem" }}>
-                              {TANK_TYPES[tank.tankType]}
+                            <span className="badge badge-green" style={{ fontSize: "0.6rem" }}>
+                              {tankTypeLabel(tank.tankType)}
                             </span>
                             <h4 style={{ color: "#fff", fontSize: "1.1rem" }}>{tank.name}</h4>
                             {!casualModeActive && <span className="mono-id-chip">UNIT #{tank.id}</span>}
@@ -1647,21 +1661,36 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                         </div>
                       )}
 
-                      {/* Quick actions: Remove / Reset */}
+                      {/* Quick actions overflow — declutter destructive actions off the card face (Task 4) */}
                       <div
                         style={{
-                          display: "flex",
-                          gap: "0.5rem",
                           marginTop: "0.75rem",
                           paddingTop: "0.6rem",
                           borderTop: "1px solid rgba(255, 255, 255, 0.04)",
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          position: "relative",
                         }}
                         onClick={(e) => e.stopPropagation()}
                       >
                         <button
                           type="button"
+                          aria-label="Tank options"
+                          title="Tank options"
+                          onClick={() => setActiveCardMenuTankId(activeCardMenuTankId === tank.id ? null : tank.id)}
+                          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid var(--glass-border)", borderRadius: "6px", color: "#fff", width: "34px", height: "28px", cursor: "pointer", fontSize: "1.1rem", lineHeight: 1 }}
+                        >
+                          ⋯
+                        </button>
+                        {activeCardMenuTankId === tank.id && (
+                          <>
+                            <div onClick={() => setActiveCardMenuTankId(null)} style={{ position: "fixed", inset: 0, zIndex: 98 }} />
+                            <div style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", zIndex: 99, display: "flex", flexDirection: "column", gap: "0.4rem", background: "rgba(8,25,48,0.98)", border: "1px solid var(--glass-border)", borderRadius: "8px", padding: "0.45rem", minWidth: "230px", boxShadow: "0 12px 30px rgba(0,0,0,0.6)" }}>
+                        <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
+                            setActiveCardMenuTankId(null);
                             requestConfirm({
                               title: casualModeActive ? "🔄 Reset Tank" : "🔄 Reset Unit",
                               message: casualModeActive
@@ -1699,12 +1728,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             transition: "all 0.15s ease",
                           }}
                         >
-                          🔄 {casualModeActive ? "Reset Tank" : "Reset Unit"}
+                          🔄 Reset logs (keep fish)
                         </button>
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
+                            setActiveCardMenuTankId(null);
                             requestConfirm({
                               title: casualModeActive ? "🗑️ Remove Tank" : "🗑️ Decommission Unit",
                               message: casualModeActive
@@ -1749,8 +1779,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             transition: "all 0.15s ease",
                           }}
                         >
-                          🗑️ {casualModeActive ? "Remove Tank" : "Decommission"}
+                          🗑️ Remove tank (fish → Nursery)
                         </button>
+                            </div>
+                          </>
+                        )}
                       </div>
 
                       {/* Recursive nested child containers */}
@@ -1772,6 +1805,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             }}
             onListOnMarketplace={onListOnMarketplace}
             casualModeActive={casualModeActive}
+            fishbaseData={fishbaseData}
+            requestConfirm={requestConfirm}
           />
         </div>
 
@@ -1886,13 +1921,31 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             <div 
               className="biotope-banner"
               style={{ 
-                backgroundImage: `url('${localStorage.getItem(`aquadex_tank_photo_${activeTank.id}`) || getSupabaseImageUrl(activeTank)}')` 
+                backgroundImage: casualModeActive
+                  ? "none"
+                  : `url('${localStorage.getItem(`aquadex_tank_photo_${activeTank.id}`) || getSupabaseImageUrl(activeTank)}')` 
               }}
             >
+              {/* Casual: the header itself is a Living Tank hero (water reflects health).
+                  Sits behind the overlays; its own fish layer replaces the pro one. */}
+              {casualModeActive && (
+                <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none" }}>
+                  <LivingTank
+                    tank={activeTank}
+                    health={deriveTankHealth(activeTank)}
+                    variant="hero"
+                    height={200}
+                    fishbaseData={fishbaseData}
+                    photoUrl={localStorage.getItem(`aquadex_tank_photo_${activeTank.id}`) || undefined}
+                    showLabel={false}
+                  />
+                </div>
+              )}
+
               <div className="biotope-banner-overlay"></div>
 
-              {/* Dynamic Tank Fish — renders species-accurate SVG fish for each specimen */}
-              {activeTank.specimens && activeTank.specimens.length > 0 && (
+              {/* Dynamic Tank Fish — Pro only; casual uses the LivingTank hero's own fish */}
+              {!casualModeActive && activeTank.specimens && activeTank.specimens.length > 0 && (
                 <TankFishVisualization
                   specimens={activeTank.specimens}
                   fishbaseData={fishbaseData}
@@ -1981,8 +2034,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               </div>
 
               <div style={{ position: "absolute", bottom: "1rem", left: "1rem", zIndex: "2" }}>
-                <span className={`badge ${activeTank.tankType === 1 ? "badge-blue" : "badge-green"}`} style={{ marginBottom: "0.25rem" }}>
-                  {TANK_TYPES[activeTank.tankType]} {casualModeActive ? "Tank" : CONTAINMENT_TYPES[activeTank.containment]}
+                <span className="badge badge-green" style={{ marginBottom: "0.25rem" }}>
+                  {tankTypeLabel(activeTank.tankType)} {casualModeActive ? "Tank" : CONTAINMENT_TYPES[activeTank.containment]}
                 </span>
                 <h3 style={{ color: "#fff", fontSize: "1.5rem" }}>{activeTank.name}</h3>
                 {!casualModeActive && (
@@ -2013,6 +2066,16 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               margin: "1rem 0"
             }}>
               <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Quick Actions:</span>
+
+              {/* Share — secondary action; opens the composer (no longer a permanent tab) */}
+              <button
+                type="button"
+                onClick={() => setDetailSubTab("social")}
+                style={{ order: 2, marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.4rem 0.8rem", fontSize: "0.8rem", background: "rgba(255, 255, 255, 0.03)", border: "1px solid var(--glass-border)", borderRadius: "6px", color: "#fff", cursor: "pointer" }}
+                aria-label={casualModeActive ? "Share tank on The Reef" : "Share to Social Feed"}
+              >
+                📢 <span>Share</span>
+              </button>
               
               {/* Invisible Photo Input */}
               <input
@@ -2395,10 +2458,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
             {/* Subtabs Menu */}
             <div className="horizontal-subtabs">
-              {["overview", "fish", "history", "notes", "social"].map(subTab => {
+              {["overview", "fish", "history"].map(subTab => {
                 const labelMap = casualModeActive 
-                  ? { overview: "About", fish: "My Fish", history: "Activity", notes: "Notes", social: "Community" }
-                  : { overview: "Overview", fish: "Specimens", history: "Parameter History", notes: "Observations", social: "Social Feed" };
+                  ? { overview: "About", fish: "My Fish", history: "Journal" }
+                  : { overview: "Overview", fish: "Specimens", history: "History" };
                 return (
                   <button 
                     key={subTab} 
@@ -2418,6 +2481,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               {detailSubTab === "overview" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                   {casualModeActive ? (
+                    <>
+                    <CareCoach tank={activeTank} walletAccount={walletAccount} onAction={handleCoachAction} />
+                    <SpeciesCareGuide tank={activeTank} fishbaseData={fishbaseData} contractSpecies={contractSpecies} />
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                       {/* Water Type */}
                       <div className="telemetry-tile-premium" style={{ borderLeft: "3px solid var(--accent-blue)" }}>
@@ -2425,9 +2491,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>💧 Water Type</span>
                         </div>
                         <strong style={{ fontSize: "1.25rem", color: "#fff", display: "block", marginTop: "0.5rem" }}>
-                          {TANK_TYPES[activeTank.tankType]}
+                          {tankTypeLabel(activeTank.tankType)}
                         </strong>
-                        <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Freshwater ecosystem</span>
+                        <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>{tankTypeLabel(activeTank.tankType)} ecosystem</span>
                       </div>
 
                       {/* Volume */}
@@ -2483,6 +2549,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                         </button>
                       </div>
                     </div>
+                    </>
                   ) : (
                     <>
                       <div className="telemetry-2x2-grid">
@@ -3065,18 +3132,25 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                 </div>
               )}
 
-              {/* 2.3 ACTIVITY / HISTORY SUB-TAB: Action logs + water parameter logs */}
+              {/* 2.3 ACTIVITY / HISTORY SUB-TAB: Casual gets the photo-first Journal
+                  timeline; Pro keeps the dense parameter-history list. */}
               {detailSubTab === "history" && (
-                <ActivityLog
-                  onChainLogs={activeTank.logs || []}
-                  actionLogs={localActionLogs}
-                  casualModeActive={casualModeActive}
-                />
-              )}
-
-              {/* 2.4 NOTES SUB-TAB: Freeform tank notes editor */}
-              {detailSubTab === "notes" && (
-                <NotesTab tankId={activeTank.id} />
+                <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+                  {casualModeActive ? (
+                    <JournalTimeline tank={activeTank} />
+                  ) : (
+                    <>
+                      <ParamTrends tank={activeTank} />
+                      <ActivityLog
+                        onChainLogs={activeTank.logs || []}
+                        actionLogs={localActionLogs}
+                        casualModeActive={casualModeActive}
+                      />
+                    </>
+                  )}
+                  {/* Notes folded into History — observations live in one place now. */}
+                  <NotesTab tankId={activeTank.id} />
+                </div>
               )}
 
               {/* 2.5 SOCIAL SUB-TAB: Tank Progress Social Feed */}
@@ -3096,6 +3170,14 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
                 return (
                   <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    {/* Back — Share is an action now, not a tab */}
+                    <button
+                      type="button"
+                      onClick={() => setDetailSubTab("overview")}
+                      style={{ alignSelf: "flex-start", background: "none", border: "none", color: "var(--accent-blue)", cursor: "pointer", fontSize: "0.8rem", padding: 0 }}
+                    >
+                      ← Back to tank
+                    </button>
                     {/* Share on The Reef CTA */}
                     <div style={{
                       padding: "0.75rem 1rem",

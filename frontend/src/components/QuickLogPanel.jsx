@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { db } from "../db";
-import { addXp, XP_ACTIONS } from "../utils/xp";
+import { XP_ACTIONS } from "../utils/xp";
+import { logCareActionBulk } from "../services/careLog";
 
 /**
  * QuickLogPanel — Multi-tank rapid logging for breeders with many tanks.
@@ -48,28 +48,19 @@ export function QuickLogPanel({ tanks = [], casualModeActive = false, onComplete
     setSubmitting(true);
     setResult(null);
 
-    // Stored in seconds (not ms) — matches every other actionLogs writer and
-    // what ActivityLog.jsx expects when it renders `new Date(ts * 1000)`.
-    // Storing raw Date.now() here previously produced a 1000x-inflated,
-    // garbled date (e.g. year 58471) in the Parameter History view.
-    const timestamp = Math.round(Date.now() / 1000);
-    const logs = [];
-
     // "Fed" didn't match the XP hook's exact "Feed" check, so batch feeding
     // silently earned 0 real XP despite the success toast claiming otherwise.
     const actionType = action === "Fed" ? "Feed" : action;
 
-    for (const tankId of selectedTanks) {
-      logs.push({
-        tankId,
-        actionType,
-        timestamp,
-        details: `Quick-logged via batch panel`,
-      });
-    }
-
     try {
-      await db.actionLogs.bulkAdd(logs);
+      // Timestamps are seconds (not ms) — the careLog service handles this and
+      // writes the structured actionLogs.payload. Storing raw Date.now() here
+      // previously produced a 1000x-inflated, garbled date in Parameter History.
+      await logCareActionBulk({
+        tankIds: [...selectedTanks],
+        actionType,
+        details: "Quick-logged via batch panel",
+      });
 
       // XP is awarded per-tank by the Dexie "creating" hook in useXPSync,
       // which also enforces the per-tank cooldown — so a tank logged twice

@@ -63,6 +63,10 @@ import {
 const TankList = lazy(() =>
   import("./components/TankList").then((m) => ({ default: m.TankList }))
 );
+// Task 3 prototype — Living Tank engine gallery, reachable at ?preview=living-tank
+const LivingTankPreview = lazy(() =>
+  import("./components/logbook/LivingTankPreview").then((m) => ({ default: m.LivingTankPreview }))
+);
 const BreederTools = lazy(() =>
   import("./components/BreederTools").then((m) => ({ default: m.BreederTools }))
 );
@@ -824,6 +828,16 @@ export default function App() {
         );
     }
   };
+
+  // Task 3 prototype preview — standalone, bypasses the normal app shell.
+  // Visit any URL with ?preview=living-tank to view it.
+  if (new URLSearchParams(location.search).get("preview") === "living-tank") {
+    return (
+      <Suspense fallback={<div style={{ padding: "2rem", color: "#9fb4c7" }}>Loading Living Tank preview…</div>}>
+        <LivingTankPreview />
+      </Suspense>
+    );
+  }
 
   if (!enteredDashboard) {
     if (viewParam === "breeder") {

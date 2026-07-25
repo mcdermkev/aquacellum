@@ -7,8 +7,8 @@ import { compressImage } from "../utils/imageCompression";
 import { relayRegisterTank, relayMintSpecimen } from "../services/relayer";
 import { db } from "../db";
 import { useContractSpecies } from "../hooks/useSpeciesData";
+import { tankTypeLabel } from "../utils/tankUtils";
 
-const TANK_TYPES = ["Freshwater", "Saltwater", "Brackish", "Pond"];
 const CONTAINMENT_TYPES = ["Tank", "Tub", "Basket"];
 
 export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank, onReload, openRegisterOnTreeMount, onCloseRegister, casualModeActive = false }) {
@@ -430,8 +430,8 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                 ⚠️ {warning}
               </span>
             )}
-            <span className={`badge ${node.tankType === 1 ? "badge-blue" : "badge-green"}`} style={{ fontSize: "0.65rem" }}>
-              {TANK_TYPES[node.tankType]}
+            <span className="badge badge-green" style={{ fontSize: "0.65rem" }}>
+              {tankTypeLabel(node.tankType)}
             </span>
             {hasChildren && (
               <button 

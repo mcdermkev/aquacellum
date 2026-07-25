@@ -554,6 +554,176 @@ db.version(22).stores({
   cart: "id, seller, listingKey, addedAt"
 });
 
+// Version 23: Logbook Rework — data spine (Logbook Rework Task 1).
+// ADDITIVE for the three new tables; the upgrade also does a one-time, idempotent,
+// non-destructive backfill. Every v22 store is carried forward verbatim.
+//   NEW TABLES
+//   - paramReadings: first-class water-parameter readings (normalized units).
+//       Replaces the split of on-chain tankParameterLogs vs. freeform actionLogs
+//       as the UI source of truth. `source` = "manual" | "onchain" | "batch" |
+//       "backfill". [tankId+timestamp] compound index for fast per-tank history.
+//   - tankSchedules: per-tank maintenance cadence (waterChange | test | filter |
+//       dose) with nextDueAt so "due/overdue" is a real value, not inferred.
+//   - tankMedia: durable photo storage keyed by [refType+refId] (tank/specimen),
+//       moving base64 photos off localStorage (5MB quota) onto Dexie + cloud sync.
+//   NON-INDEXED ADDITION
+//   - actionLogs gains a `payload` object (typed care detail) alongside the
+//       human `details` string. Non-indexed, so the actionLogs schema string is
+//       unchanged; Dexie stores it automatically.
+//   MIGRATION (idempotent, non-destructive)
+//   - Saltwater removal: any tank with tankType === 1 (legacy saltwater) is
+//       converted to Freshwater (0). Aquacellum is freshwater-only; index 1 is
+//       retired. See tankUtils.TANK_TYPE_OPTIONS.
+//   - Backfill actionLogs.payload from parseable `details` (skips rows that
+//       already have a payload).
+//   - Seed paramReadings from historical water-test actionLogs where temp/pH can
+//       be parsed from the details string (guarded against duplicates).
+//   - Import any localStorage photos (aquadex_tank_photo_* / aquadex_specimen_photo_*)
+//       into tankMedia. Photos are COPIED, not deleted — current UI still reads
+//       localStorage; freeing it is deferred to the surface rework so nothing
+//       visually breaks now.
+db.version(23).stores({
+  species: "specCode, commonName, scientificName, type, difficulty",
+  listings: "id, tokenId, seller, price, isBatch, speciesId",
+  tanks: "id, ownerAddress, name, active",
+  userProfile: "walletAddress, totalXp, currentTier, zoneHash, isCouncilMember, onboardingComplete",
+  breederCompanion: "walletAddress, eggState, currentTier, selectedStats, zoneHash",
+  pendingHandshakes: "purchaseId, pin, salt, buyerAddress",
+  speciesManifest: "speciesId, scientificName, commonName, contractAddress, cachedAt",
+  actionLogs: "++id, tankId, actionType, timestamp, details",
+  spawnGrowout: "++id, spawnId, timestamp, type",
+  feedCache: "++id, contentId, authorWallet, createdAt, [authorWallet+createdAt]",
+  socialNotifications: "++id, category, isRead, createdAt",
+  draftContent: "++id, type, status, createdAt",
+  specimens: "id, ownerAddress, speciesId, currentTankId, status, createdAt, [ownerAddress+arrivalStatus], breederStockTag, onChainId, chainStatus",
+  localListings: "id, seller, speciesId, isBatch, listingId, tokenId",
+  marketOrders: "++key, orderType, status, state, buyer, seller, tokenId, purchaseId, listingId, assignedTankId",
+  spawns: "spawnId, sireId, damId, tankId, speciesId, status, timestamp",
+  tankNotes: "++id, tankId, createdAt",
+  xpCooldowns: "++id, walletAddress, actionType, tankId, timestamp, [walletAddress+actionType+tankId]",
+  storefrontCache: "id, walletAddress, cachedAt",
+  echoNeeds: "walletAddress, lastUpdate",
+  echoCompanionOnChain: "walletAddress, tokenId, cachedAt",
+  cart: "id, seller, listingKey, addedAt",
+  // NEW in v23:
+  paramReadings: "++id, tankId, timestamp, source, [tankId+timestamp]",
+  tankSchedules: "++id, tankId, kind, nextDueAt, enabled, [tankId+kind]",
+  tankMedia: "++id, refType, refId, createdAt, [refType+refId]"
+}).upgrade((tx) => upgradeV23(tx));
+
+// v23 upgrade logic — extracted as a named export so the real transformations can
+// be integration-tested against a controlled Dexie (see db/migrationV23.test.js).
+export async function upgradeV23(tx) {
+  // 1. Saltwater removal — convert legacy tankType === 1 records to Freshwater (0).
+  try {
+    const tanks = await tx.table("tanks").toArray();
+    for (const t of tanks) {
+      if (Number(t.tankType) === 1) {
+        await tx.table("tanks").update(t.id, { tankType: 0 });
+      }
+    }
+  } catch (e) {
+    console.warn("[v23] Saltwater remap skipped:", e?.message);
+  }
+
+  // 2. Backfill actionLogs.payload from parseable `details` (idempotent: skip rows
+  //    that already carry a payload).
+  try {
+    const parsePct = (s) => {
+      const m = typeof s === "string" && s.match(/(\d{1,3})\s*%/);
+      return m ? Number(m[1]) : undefined;
+    };
+    const parseNum = (s, label) => {
+      const re = new RegExp(`${label}:\\s*([\\d.]+)`, "i");
+      const m = typeof s === "string" && s.match(re);
+      return m ? Number(m[1]) : undefined;
+    };
+    const payloadFor = (log) => {
+      const d = log.details || "";
+      switch (log.actionType) {
+        case "Water Change":
+        case "Log Immediate Water Change": {
+          const percent = parsePct(d);
+          return { kind: "waterChange", ...(percent !== undefined ? { percent } : {}), _backfilled: true };
+        }
+        case "Feed":
+          return { kind: "feed", _backfilled: true };
+        case "Scraped Algae":
+          return { kind: "clean", _backfilled: true };
+        case "Quick Water Test":
+        case "Water Test":
+        case "Detailed Test": {
+          const temp = parseNum(d, "Temp");
+          const ph = parseNum(d, "pH");
+          return { kind: "test", ...(temp !== undefined ? { temp } : {}), ...(ph !== undefined ? { ph } : {}), _backfilled: true };
+        }
+        default:
+          return { kind: "other", _backfilled: true };
+      }
+    };
+
+    const logs = await tx.table("actionLogs").toArray();
+    for (const log of logs) {
+      if (log.payload) continue; // already structured — leave it
+      await tx.table("actionLogs").update(log.id, { payload: payloadFor(log) });
+    }
+
+    // 3. Seed paramReadings from water-test action logs that carry parseable values.
+    const testTypes = new Set(["Quick Water Test", "Water Test", "Detailed Test"]);
+    for (const log of logs) {
+      if (!testTypes.has(log.actionType)) continue;
+      const temp = parseNum(log.details, "Temp");
+      const ph = parseNum(log.details, "pH");
+      if (temp === undefined && ph === undefined) continue;
+      // Guard against duplicates if the upgrade is ever re-run.
+      const existing = await tx.table("paramReadings")
+        .where("[tankId+timestamp]").equals([log.tankId, log.timestamp]).count();
+      if (existing > 0) continue;
+      await tx.table("paramReadings").add({
+        tankId: log.tankId,
+        timestamp: log.timestamp,
+        temp,
+        ph,
+        source: "backfill",
+        notes: log.details || "",
+      });
+    }
+  } catch (e) {
+    console.warn("[v23] actionLogs/paramReadings backfill skipped:", e?.message);
+  }
+
+  // 4. Import localStorage photos into tankMedia (COPY, do not delete). Idempotent
+  //    via the [refType+refId] guard. Current UI still reads localStorage; freeing
+  //    it is deferred to the surface rework (Task 4/5).
+  try {
+    if (typeof localStorage !== "undefined") {
+      const importPhoto = async (refType, refId, dataUrl) => {
+        if (!dataUrl) return;
+        const existing = await tx.table("tankMedia")
+          .where("[refType+refId]").equals([refType, String(refId)]).count();
+        if (existing > 0) return;
+        await tx.table("tankMedia").add({
+          refType,
+          refId: String(refId),
+          dataUrl,
+          createdAt: Date.now(),
+        });
+      };
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        if (key.startsWith("aquadex_tank_photo_")) {
+          await importPhoto("tank", key.replace("aquadex_tank_photo_", ""), localStorage.getItem(key));
+        } else if (key.startsWith("aquadex_specimen_photo_")) {
+          await importPhoto("specimen", key.replace("aquadex_specimen_photo_", ""), localStorage.getItem(key));
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("[v23] localStorage photo import skipped:", e?.message);
+  }
+}
+
 /**
  * Derive tier key from totalXp using the canonical tier ladder.
  * Used by the v15 migration and shared with xp.js.
