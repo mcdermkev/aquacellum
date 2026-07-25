@@ -31,9 +31,29 @@ const queryClient = new QueryClient({
 
 const privyAppId = import.meta.env.VITE_PRIVY_APP_ID;
 
+// The provider tree below <PrivyProvider>. Extracted so we can mount it with or
+// without Privy: PrivyProvider requires a valid appId, so when none is
+// configured (E2E harness / CI, or a misconfigured env) we render the tree
+// without it and AuthProvider falls back to its no-Privy path (see
+// AuthContext.jsx) instead of white-screening the whole app.
+const appTree = (
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <CartProvider>
+        <ErrorBoundary>
+          <BrowserRouter>
+            <App />
+            <PwaManager />
+          </BrowserRouter>
+        </ErrorBoundary>
+      </CartProvider>
+    </AuthProvider>
+  </QueryClientProvider>
+);
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
+    {privyAppId ? (
       <PrivyProvider
         appId={privyAppId}
         config={{
@@ -59,17 +79,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           },
         }}
       >
-        <AuthProvider>
-          <CartProvider>
-            <ErrorBoundary>
-              <BrowserRouter>
-                <App />
-                <PwaManager />
-              </BrowserRouter>
-            </ErrorBoundary>
-          </CartProvider>
-        </AuthProvider>
+        {appTree}
       </PrivyProvider>
-    </QueryClientProvider>
+    ) : appTree}
   </React.StrictMode>,
 )
