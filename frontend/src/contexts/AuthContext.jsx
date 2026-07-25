@@ -36,7 +36,62 @@ import { isE2EMode, E2E_STUB_ACCOUNT } from "../utils/e2eMode";
 
 const AuthContext = createContext(null);
 
+/**
+ * AuthProvider — dispatches to the real Privy-backed provider, or a no-Privy
+ * fallback when no Privy app id is configured (`main.jsx` only mounts
+ * `<PrivyProvider>` when `VITE_PRIVY_APP_ID` is set). Without that provider the
+ * Privy hooks below would throw, so in that case (the E2E harness / CI, or a
+ * misconfigured env) we render `NoPrivyAuthProvider` and the app still boots
+ * instead of white-screening. Production always has the id set, so it always
+ * takes the `PrivyAuthProvider` path — behavior there is unchanged.
+ */
 export function AuthProvider({ children }) {
+  const noPrivy = isE2EMode() || !import.meta.env.VITE_PRIVY_APP_ID;
+  return noPrivy
+    ? <NoPrivyAuthProvider>{children}</NoPrivyAuthProvider>
+    : <PrivyAuthProvider>{children}</PrivyAuthProvider>;
+}
+
+/**
+ * NoPrivyAuthProvider — context value with the same shape as the real provider
+ * but no Privy dependency. Used for the E2E harness (stub account) and any
+ * environment without a Privy app id. Wallet login is unavailable here (the
+ * tests seed state directly); everything else no-ops safely.
+ */
+function NoPrivyAuthProvider({ children }) {
+  const e2eMode = isE2EMode();
+  const [account, setAccount] = useState(() => (e2eMode ? E2E_STUB_ACCOUNT : null));
+  const [error, setError] = useState(null);
+
+  const unavailable = useCallback(() => {
+    setError("Wallet login is unavailable in this environment.");
+  }, []);
+  const disconnect = useCallback(async () => { setAccount(null); }, []);
+  const getSigner = useCallback(async () => { throw new Error("Not connected. Please log in first."); }, []);
+  const noop = useCallback(async () => {}, []);
+  const getAccessToken = useCallback(async () => null, []);
+
+  const value = {
+    account,
+    loginMethod: e2eMode ? "e2e" : null,
+    isConnecting: false,
+    error,
+    wrongNetwork: false,
+    ready: true,
+    authenticated: e2eMode,
+    connectPrivy: unavailable,
+    connectMetaMask: unavailable,
+    disconnect,
+    getSigner,
+    handleSwitchNetwork: noop,
+    getReadOnlyProvider,
+    getAccessToken,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+function PrivyAuthProvider({ children }) {
   // Task 11 E2E harness (docs/TASK_11_E2E_SPEC.md, "auth + seed problem"). When
   // active (dev-only, `?e2e=1`) the dashboard renders with a stub account and
   // every Privy/Supabase side effect below is skipped — this is a test-only
