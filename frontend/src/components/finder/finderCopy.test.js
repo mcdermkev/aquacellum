@@ -5,10 +5,11 @@
  *   1. Web2 language — no PROHIBITED_TERMS, reusing the canonical checker in
  *      services/orderCopy.js (same style as __tests__/orderCopy.test.js and
  *      __tests__/listingFlowCopy.test.js).
- *   2. One Casual vocabulary — the keeper's setup is an "aquarium" everywhere,
- *      matching the "My Aquariums" nav label. This is the drift T10 fixed: the
- *      finder previously rendered "Add an aquarium…" directly above "Add a
- *      tank →".
+ *   2. One Casual vocabulary — the keeper's setup is a "tank" everywhere. This
+ *      is the drift T10 fixed: the finder previously rendered "Add an
+ *      aquarium…" directly above "Add a tank →". "Tank" is canonical because
+ *      it's what keepers say and it's already the noun in the fit engine's
+ *      generated verdicts, which are the most prominent copy on every card.
  *
  * Source guards at the bottom keep the components consuming this module, so a
  * future inline string can't quietly reintroduce either problem.
@@ -61,8 +62,8 @@ function allCopyStrings() {
     c.home.titleFallback,
     c.home.fallbackName,
     c.home.loadingAria,
-    c.home.needAquarium,
-    c.home.chooseAquarium,
+    c.home.needTank,
+    c.home.chooseTank,
     c.home.empty,
     // Browse
     c.browse.title,
@@ -104,34 +105,41 @@ describe("Fish Finder copy — Web2 language invariant", () => {
 });
 
 describe("Fish Finder copy — one Casual vocabulary", () => {
-  it("calls the keeper's setup an aquarium", () => {
-    expect(CONTAINER_NOUN).toBe("aquarium");
-    expect(CONTAINER_NOUN_PLURAL).toBe("aquariums");
+  it("calls the keeper's setup a tank", () => {
+    expect(CONTAINER_NOUN).toBe("tank");
+    expect(CONTAINER_NOUN_PLURAL).toBe("tanks");
   });
 
-  it("never says \"tank\" in user-visible copy", () => {
+  it("never says \"aquarium\" in user-visible copy", () => {
     for (const text of allCopyStrings()) {
       expect(usesOffVocabulary(text), `string: "${text}"`).toBe(false);
     }
   });
 
   it("usesOffVocabulary flags the drift it exists to catch, and only that", () => {
-    expect(usesOffVocabulary("Add a tank →")).toBe(true);
-    expect(usesOffVocabulary("Nano / small tanks")).toBe(true);
-    expect(usesOffVocabulary("Choose a tank to match against")).toBe(true);
+    expect(usesOffVocabulary("Add an aquarium →")).toBe(true);
+    expect(usesOffVocabulary("Does it fit your aquarium?")).toBe(true);
+    expect(usesOffVocabulary("Loading your aquariums")).toBe(true);
     // The canonical wording must pass, including words that merely contain a
     // banned term as a substring.
-    expect(usesOffVocabulary("Add an aquarium →")).toBe(false);
-    expect(usesOffVocabulary("Does it fit your aquarium?")).toBe(false);
-    expect(usesOffVocabulary("Thanksgiving")).toBe(false);
+    expect(usesOffVocabulary("Add a tank →")).toBe(false);
+    expect(usesOffVocabulary("Nano / small tanks")).toBe(false);
+    expect(usesOffVocabulary("Choose a tank to match against")).toBe(false);
   });
 
   it("uses the canonical noun in the strings a keeper actually reads first", () => {
-    expect(FINDER_COPY.contextBar.emptyCta).toContain("aquarium");
-    expect(FINDER_COPY.contextBar.emptyText).toContain("aquarium");
-    expect(FINDER_COPY.home.titleFallback).toContain("aquarium");
-    expect(DETAIL_COPY.fitTitle).toContain("aquarium");
-    expect(DETAIL_COPY.emptyFitCta).toContain("aquarium");
+    expect(FINDER_COPY.contextBar.emptyCta).toContain("tank");
+    expect(FINDER_COPY.contextBar.emptyText).toContain("tank");
+    expect(FINDER_COPY.home.titleFallback).toContain("tank");
+    expect(DETAIL_COPY.fitTitle).toContain("tank");
+    expect(DETAIL_COPY.emptyFitCta).toContain("tank");
+  });
+
+  it("agrees with the fit engine's generated verdicts, which also say tank", () => {
+    // The whole point of choosing "tank": the chrome copy and the engine's
+    // headline no longer disagree on the same card.
+    expect(DETAIL_COPY.fitTitle).toContain(CONTAINER_NOUN);
+    expect(FINDER_COPY.home.titleFallback).toContain(CONTAINER_NOUN);
   });
 });
 
@@ -160,8 +168,15 @@ describe("Fish Finder copy — empty states lead somewhere", () => {
 });
 
 describe("Fish Finder copy — components consume this module", () => {
+  // Comments are stripped before guarding (the convention in
+  // __tests__/localBreederMapPickups.catalog.test.js): a JSX comment that
+  // quotes a section title for readability is not rendered copy, and shouldn't
+  // trip a check aimed at inlined strings.
+  const stripComments = (src) =>
+    src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+
   const read = (rel) =>
-    readFileSync(fileURLToPath(new URL(rel, import.meta.url)), "utf8");
+    stripComments(readFileSync(fileURLToPath(new URL(rel, import.meta.url)), "utf8"));
 
   const SURFACES = {
     "FishFinder.jsx": read("./FishFinder.jsx"),
@@ -175,8 +190,10 @@ describe("Fish Finder copy — components consume this module", () => {
     }
   });
 
-  it("no finder surface still renders the old mixed-vocabulary literals", () => {
-    const RETIRED = ["Add a tank →", "Unnamed Tank", "Does it fit your tank?"];
+  it("no finder surface still renders a hardcoded container-noun literal", () => {
+    // These must come from finderCopy, not be inlined — that's how the two
+    // nouns diverged in the first place.
+    const RETIRED = ['"Add a tank →"', '"Unnamed Tank"', '"Does it fit your tank?"', "Add an aquarium"];
     for (const [name, src] of Object.entries(SURFACES)) {
       for (const literal of RETIRED) {
         expect(src.includes(literal), `${name} still contains: ${literal}`).toBe(false);

@@ -5,10 +5,11 @@
  * T5–T9 built the finder surfaces with their copy inlined in JSX, which let
  * two kinds of drift in:
  *
- *   1. VOCABULARY DRIFT. The Casual nav calls a keeper's setup an "aquarium"
- *      ("My Aquariums", App.jsx tab label), but the finder said "tank" — often
+ *   1. VOCABULARY DRIFT. The finder used both nouns for the same thing, often
  *      in adjacent lines of the same block ("Add an aquarium to get matches…"
- *      directly above "Add a tank →"). See CONTAINER_NOUN below.
+ *      directly above "Add a tank →"), and the species detail asked "Does it
+ *      fit your tank?" above "Add an aquarium to check…". See CONTAINER_NOUN
+ *      below for which one won and why.
  *   2. THIN EMPTY STATES. Dead ends like "No matches to show yet." named no
  *      cause and offered no next step.
  *
@@ -23,21 +24,26 @@
 
 // ─── Canonical Casual vocabulary ────────────────────────────────────────────
 //
-// CONTAINER_NOUN: "aquarium", not "tank".
+// CONTAINER_NOUN: "tank", not "aquarium".
 //
-// Casual mode's own navigation is the tiebreaker — App.jsx labels the tab
-// `casualModeActive ? "My Aquariums" : "Aquariums"`, so a Casual keeper is
-// already reading "aquarium" everywhere else in the shell. "Tank" stays in
-// PROP and VARIABLE names (displayTank, selectedTankId, tankFitInputs) because
-// that's the internal data model and renaming it is out of T10's scope — this
-// is a user-facing-copy contract only.
-export const CONTAINER_NOUN = "aquarium";
-export const CONTAINER_NOUN_PLURAL = "aquariums";
+// "Tank" is what aquarium keepers actually say, and it's already the word in
+// the two places a keeper reads most: the fit engine's generated verdicts
+// ("Good fit for your tank", "Your 20-gallon tank meets this species'
+// 10-gallon minimum" — services/speciesFit.js, shared with the Pro surfaces)
+// and the internal data model (displayTank, tankFitInputs). Standardizing on
+// "tank" therefore aligns the finder's chrome copy with the most prominent
+// copy on every card, without touching the shared fit engine or Pro wording.
+//
+// Known remaining mismatch: App.jsx still labels the Casual nav tab
+// "My Aquariums". That's a global shell/product naming call, not a finder one,
+// so it's deliberately left alone here — see the T11/T12 handoff note.
+export const CONTAINER_NOUN = "tank";
+export const CONTAINER_NOUN_PLURAL = "tanks";
 
-// Terms that must never appear in Casual finder copy. "tank" is here for the
-// alignment reason above; the Web3 terms are covered separately and
-// canonically by orderCopy.PROHIBITED_TERMS, which the test also applies.
-export const OFF_VOCABULARY_TERMS = Object.freeze(["tank", "specimen", "taxonomy", "breeder-grade"]);
+// Terms that must never appear in Casual finder copy. "aquarium" is here to
+// keep one container noun (see above); the Web3 terms are covered separately
+// and canonically by orderCopy.PROHIBITED_TERMS, which the test also applies.
+export const OFF_VOCABULARY_TERMS = Object.freeze(["aquarium", "specimen", "taxonomy", "breeder-grade"]);
 
 /**
  * Whether a string uses off-vocabulary Casual wording (case-insensitive).
@@ -57,11 +63,11 @@ export const FINDER_COPY = Object.freeze({
   // Aquarium context bar (FishFinder)
   contextBar: Object.freeze({
     label: "Matching against",
-    pickerAria: "Choose an aquarium to match against",
-    loadingAria: "Loading your aquariums",
-    emptyText: "Add an aquarium to get fish picked for your water.",
-    emptyCta: "Add an aquarium →",
-    unnamed: "Unnamed aquarium",
+    pickerAria: "Choose a tank to match against",
+    loadingAria: "Loading your tanks",
+    emptyText: "Add a tank to get fish picked for your water.",
+    emptyCta: "Add a tank →",
+    unnamed: "Unnamed tank",
   }),
 
   // "My Dex" collection panel (MyDexPanel)
@@ -97,19 +103,19 @@ export const FINDER_COPY = Object.freeze({
 
   // "Good matches" home
   home: Object.freeze({
-    /** @param {string} aquariumName */
-    title: (aquariumName) => `Good matches for ${aquariumName}`,
-    titleFallback: "Good matches for your aquarium",
-    fallbackName: "your aquarium",
+    /** @param {string} tankName */
+    title: (tankName) => `Good matches for ${tankName}`,
+    titleFallback: "Good matches for your tank",
+    fallbackName: "your tank",
     loadingAria: "Finding matches",
-    // No aquariums at all yet.
-    needAquarium: "Add an aquarium above to see fish picked for your water.",
-    // Aquariums exist but none is selected (guard — the bar auto-selects).
-    chooseAquarium: "Choose an aquarium above to see matches picked for your water.",
+    // No tanks at all yet.
+    needTank: "Add a tank above to see fish picked for your water.",
+    // Tanks exist but none is selected (guard — the bar auto-selects).
+    chooseTank: "Choose a tank above to see matches picked for your water.",
     // Honest dead end: state both plausible causes without asserting either,
     // then hand the keeper somewhere to go.
     empty:
-      "No matches to show for this aquarium yet — the species we checked either " +
+      "No matches to show for this tank yet — the species we checked either " +
       "already live here or need different water. Browse all species below to keep looking.",
   }),
 
@@ -130,29 +136,29 @@ export const FINDER_COPY = Object.freeze({
 // ─── Casual species detail surface ──────────────────────────────────────────
 
 export const DETAIL_COPY = Object.freeze({
-  fitTitle: "Does it fit your aquarium?",
+  fitTitle: "Does it fit your tank?",
   careTitle: "Care needs",
   stockingTitle: "Stocking impact",
 
   contextBar: Object.freeze({
     pickerLabel: "Matching against",
-    pickerAria: "Choose an aquarium to match against",
-    unnamed: "Unnamed aquarium",
+    pickerAria: "Choose a tank to match against",
+    unnamed: "Unnamed tank",
   }),
 
   /** @param {string} subjectWord — e.g. "this fish" / the species' name */
-  emptyFit: (subjectWord) => `Add an aquarium to check whether ${subjectWord} fits your water.`,
-  emptyFitCta: "Add an aquarium →",
+  emptyFit: (subjectWord) => `Add a tank to check whether ${subjectWord} fits your water.`,
+  emptyFitCta: "Add a tank →",
 
   /**
    * Full stocking sentence, so the whole claim lives in one place rather than
    * being split across JSX lines.
-   * @param {string} subjectWord @param {string} aquariumName
+   * @param {string} subjectWord @param {string} tankName
    * @param {number} afterPercent @param {number} beforePercent
    */
-  stockingImpact: (subjectWord, aquariumName, afterPercent, beforePercent) =>
-    `Adding ${subjectWord} would bring ${aquariumName} to ~${afterPercent}% ` +
+  stockingImpact: (subjectWord, tankName, afterPercent, beforePercent) =>
+    `Adding ${subjectWord} would bring ${tankName} to ~${afterPercent}% ` +
     `of its stocking guideline (from ~${beforePercent}%).`,
   stockingUnknown: "We can't estimate the bioload — adult size unknown for this species.",
-  fallbackName: "your aquarium",
+  fallbackName: "your tank",
 });

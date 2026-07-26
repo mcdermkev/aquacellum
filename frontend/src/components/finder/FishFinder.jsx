@@ -409,7 +409,7 @@ export function FishFinder({
 
           {!tankContext ? (
             <p className="fish-finder__home-hint">
-              {tanks.length === 0 ? FINDER_COPY.home.needAquarium : FINDER_COPY.home.chooseAquarium}
+              {tanks.length === 0 ? FINDER_COPY.home.needTank : FINDER_COPY.home.chooseTank}
             </p>
           ) : isLoadingCandidates ? (
             <div role="status" aria-label={FINDER_COPY.home.loadingAria}>

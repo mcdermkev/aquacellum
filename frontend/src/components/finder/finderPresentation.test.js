@@ -160,7 +160,7 @@ describe("Fish Finder card presentation — availability line", () => {
 });
 
 describe("Casual species detail presentation — copy snapshots", () => {
-  it("renders the detail's aquarium-facing copy for a known species", () => {
+  it("renders the detail's tank-facing copy for a known species", () => {
     expect({
       fitTitle: DETAIL_COPY.fitTitle,
       careTitle: DETAIL_COPY.careTitle,
@@ -173,13 +173,22 @@ describe("Casual species detail presentation — copy snapshots", () => {
   });
 
   it("renders the finder's empty and loading states", () => {
-    expect({
+    const states = {
       contextBarEmpty: FINDER_COPY.contextBar.emptyText,
       contextBarCta: FINDER_COPY.contextBar.emptyCta,
-      homeNeedAquarium: FINDER_COPY.home.needAquarium,
+      homeNeedTank: FINDER_COPY.home.needTank,
+      homeChooseTank: FINDER_COPY.home.chooseTank,
       homeEmpty: FINDER_COPY.home.empty,
       resultsEmpty: FINDER_COPY.results.empty,
       dexEmpty: FINDER_COPY.dex.emptyHint,
-    }).toMatchSnapshot();
+    };
+    // Guard before snapshotting: a renamed copy key would otherwise resolve to
+    // `undefined`, and `toMatchSnapshot` would happily RECORD that as the
+    // expected value on the next `-u` run. (This is not hypothetical — it
+    // happened when home.needAquarium became home.needTank.)
+    for (const [key, value] of Object.entries(states)) {
+      expect(typeof value, `copy key "${key}" resolved to ${value}`).toBe("string");
+    }
+    expect(states).toMatchSnapshot();
   });
 });

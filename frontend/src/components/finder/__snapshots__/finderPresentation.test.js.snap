@@ -1,11 +1,11 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Casual species detail presentation — copy snapshots > renders the detail's aquarium-facing copy for a known species 1`] = `
+exports[`Casual species detail presentation — copy snapshots > renders the detail's tank-facing copy for a known species 1`] = `
 {
   "careTitle": "Care needs",
-  "emptyFit": "Add an aquarium to check whether the Neon Tetra fits your water.",
-  "emptyFitCta": "Add an aquarium →",
-  "fitTitle": "Does it fit your aquarium?",
+  "emptyFit": "Add a tank to check whether the Neon Tetra fits your water.",
+  "emptyFitCta": "Add a tank →",
+  "fitTitle": "Does it fit your tank?",
   "stocking": "Adding the Neon Tetra would bring The Living Room to ~68% of its stocking guideline (from ~41%).",
   "stockingTitle": "Stocking impact",
   "stockingUnknown": "We can't estimate the bioload — adult size unknown for this species.",
@@ -14,11 +14,12 @@ exports[`Casual species detail presentation — copy snapshots > renders the det
 
 exports[`Casual species detail presentation — copy snapshots > renders the finder's empty and loading states 1`] = `
 {
-  "contextBarCta": "Add an aquarium →",
-  "contextBarEmpty": "Add an aquarium to get fish picked for your water.",
+  "contextBarCta": "Add a tank →",
+  "contextBarEmpty": "Add a tank to get fish picked for your water.",
   "dexEmpty": "Every species you keep gets logged here. Add a fish to start your Dex.",
-  "homeEmpty": "No matches to show for this aquarium yet — the species we checked either already live here or need different water. Browse all species below to keep looking.",
-  "homeNeedAquarium": "Add an aquarium above to see fish picked for your water.",
+  "homeChooseTank": "Choose a tank above to see matches picked for your water.",
+  "homeEmpty": "No matches to show for this tank yet — the species we checked either already live here or need different water. Browse all species below to keep looking.",
+  "homeNeedTank": "Add a tank above to see fish picked for your water.",
   "resultsEmpty": "Nothing matched that. Try a different filter, or clear your search.",
 }
 `;

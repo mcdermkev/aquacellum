@@ -177,7 +177,7 @@ export function CasualSpeciesDetail({
         {flavorText && <p className="csd-flavor">"{flavorText}"</p>}
       </div>
 
-      {/* ── "Does it fit your aquarium?" (the hero panel) ───────────────── */}
+      {/* ── "Does it fit your tank?" (the hero panel) ───────────────────── */}
       <div className="glass-card csd-fit-panel">
         <h3 className="csd-section-title">{DETAIL_COPY.fitTitle}</h3>
 
