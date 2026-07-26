@@ -103,3 +103,45 @@ export function assessSpeciesFit(entry, tankContext, opts = {}) {
     minVolumeGallons: isNum(profile?.minVolumeGallons) ? Number(profile.minVolumeGallons) : null,
   };
 }
+
+function isRange(r) {
+  return Array.isArray(r) && r.length === 2 && Number.isFinite(Number(r[0])) && Number.isFinite(Number(r[1]));
+}
+
+/**
+ * Collapse a fit result into a single presentation kind, distinguishing a
+ * missing-data caution (informational — "we don't know yet") from a real
+ * mismatch caution (a warning — "this is borderline"). Fish Finder Rework
+ * Task 6 / Decision D1: unknown data must never read as a warning.
+ *
+ * Derived from `fit.verdict` + `fit.profile` completeness — NEVER from
+ * `fit.reasons` string content. This exactly mirrors `evaluateTankFit`
+ * (addOnRecommender.js), which caps at "caution" precisely when one of
+ * minVolumeGallons/tempRange/phRange is unknown: a caution with any of those
+ * three missing on the profile is a data gap; a caution with all three known
+ * is a real (if borderline) mismatch.
+ *
+ * @param {{verdict?:string, profile?:Object}|null|undefined} fit - assessSpeciesFit output
+ * @returns {'ok'|'caution_data'|'caution_mismatch'|'blocked'|'no_tank'}
+ */
+export function fitPresentationKind(fit) {
+  if (!fit) return "no_tank";
+
+  switch (fit.verdict) {
+    case "no_tank":
+      return "no_tank";
+    case "ok":
+      return "ok";
+    case "blocked":
+      return "blocked";
+    case "caution": {
+      const profile = fit.profile || {};
+      const knownVolume = isNum(profile.minVolumeGallons);
+      const knownTemp = isRange(profile.tempRange);
+      const knownPh = isRange(profile.phRange);
+      return knownVolume && knownTemp && knownPh ? "caution_mismatch" : "caution_data";
+    }
+    default:
+      return "no_tank";
+  }
+}

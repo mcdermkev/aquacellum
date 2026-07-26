@@ -4,6 +4,7 @@ import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";
 import { getPersonality } from "../utils/personality";
 import { getEasterEggConfig } from "./BreedGallery";
 import { CARE_LABELS, CARE_BADGE_CLASS } from "../services/speciesCatalog";
+import { fitPresentationKind } from "../services/speciesFit";
 
 const isPlantEntry = (item) => {
   if (typeof item === "object" && item !== null) {
@@ -11,6 +12,31 @@ const isPlantEntry = (item) => {
   }
   return false;
 };
+
+// Verdict chip presentation, keyed by fitPresentationKind (Fish Finder T6).
+// Colors match VERDICT_COLOR in BreedGallery.jsx/FishFinder.jsx for ok/blocked
+// so the chip never disagrees with the "Tank Match" widget. caution_data gets
+// its OWN neutral tone — it is informational ("we don't know yet"), never a
+// warning (Decision D1: unknown data must never read as a mismatch).
+const VERDICT_CHIP = Object.freeze({
+  ok: { label: "Good fit", color: "hsl(140, 70%, 45%)", border: "hsla(140, 70%, 45%, 0.4)" },
+  caution_mismatch: { label: "Double-check", color: "hsl(42, 92%, 52%)", border: "hsla(42, 92%, 52%, 0.4)" },
+  caution_data: { label: "Limited data", color: "hsl(210, 15%, 60%)", border: "hsla(210, 15%, 60%, 0.4)" },
+  blocked: { label: "Not a fit", color: "hsl(0, 78%, 55%)", border: "hsla(0, 78%, 55%, 0.4)" },
+});
+
+// Resolve the canonical difficulty descriptor for tier styling, without
+// fabricating one. Only T1 global entries carry a canonical `.difficulty`
+// (see speciesCatalog.js toCatalogEntry). Contract entries (numeric
+// `careLevel` only, no raw string to normalize) resolve to null here — they
+// keep today's CARE_LABELS badge with no added tier class, per the "unknown
+// stays unstyled/neutral" rule.
+function resolveDifficultyDescriptor(breed) {
+  if (breed?.difficulty && typeof breed.difficulty === "object" && breed.difficulty.tierClass) {
+    return breed.difficulty.key === "unknown" ? null : breed.difficulty;
+  }
+  return null;
+}
 
 export function SpeciesCardPremium({
   breed,
@@ -23,6 +49,9 @@ export function SpeciesCardPremium({
   magikarpEvolved,
   onSelect,
   onEasterEgg,
+  fit,
+  availabilitySummary,
+  onViewListings,
 }) {
   const proMode = !casualModeActive;
 
@@ -79,13 +108,34 @@ export function SpeciesCardPremium({
   const careLabel = CARE_LABELS[breed.careLevel] || "Easy";
   const badgeClass = CARE_BADGE_CLASS[breed.careLevel] || "easy";
 
-  const ctaText = casualModeActive
-    ? (breed.specimenCount > 0 ? "Browse Available" : "Learn More")
-    : (viewMode === "global" ? "Propose to Catalog" : "View Certificates");
+  // Honest difficulty tier (T6). Additive to the existing care-level badge —
+  // never fabricated for a species with no recognized difficulty.
+  const difficultyDescriptor = resolveDifficultyDescriptor(breed);
+
+  // Verdict chip (T6): only when a fit was passed and there's an active tank.
+  const presentationKind = fit ? fitPresentationKind(fit) : null;
+  const verdictChip = presentationKind && presentationKind !== "no_tank"
+    ? VERDICT_CHIP[presentationKind]
+    : null;
+
+  const hasAvailability = !!availabilitySummary;
+
+  const ctaText = hasAvailability
+    ? "View listings"
+    : casualModeActive
+      ? (breed.specimenCount > 0 ? "Browse Available" : "Learn More")
+      : (viewMode === "global" ? "Propose to Catalog" : "View Certificates");
+
+  const handleCtaClick = (e) => {
+    if (hasAvailability && typeof onViewListings === "function") {
+      e.stopPropagation();
+      onViewListings();
+    }
+  };
 
   return (
     <div
-      className={`species-card-premium${isOwned ? " card-owned" : ""}`}
+      className={`species-card-premium${isOwned ? " card-owned" : ""}${difficultyDescriptor ? ` ${difficultyDescriptor.tierClass}` : ""}`}
       onClick={onSelect}
     >
       {/* Image Section */}
@@ -101,6 +151,16 @@ export function SpeciesCardPremium({
         <span className={`species-card-premium__badge species-card-premium__badge--${badgeClass}`}>
           {careLabel}
         </span>
+
+        {/* Verdict Chip (T6) — informational for missing data, warning for a real mismatch */}
+        {verdictChip && (
+          <span
+            className="species-card-premium__verdict-chip"
+            style={{ color: verdictChip.color, borderColor: verdictChip.border }}
+          >
+            {verdictChip.label}
+          </span>
+        )}
 
         {/* Owned Badge */}
         {isOwned && (
@@ -190,6 +250,12 @@ export function SpeciesCardPremium({
           )}
         </div>
 
+        {/* Acquisition hook (T6) — rendered ONLY from summarizeAvailability's
+            output; this component never computes its own price/seller count. */}
+        {hasAvailability && (
+          <p className="species-card-premium__availability">{availabilitySummary}</p>
+        )}
+
         {/* Casual: Tagline */}
         {casualModeActive && tagline && (
           <p className="species-card-premium__tagline">"{tagline}"</p>
@@ -218,11 +284,20 @@ export function SpeciesCardPremium({
         )}
       </div>
 
-      {/* Footer CTA */}
-      <div className="species-card-premium__cta">
-        <span className="species-card-premium__cta-text">{ctaText}</span>
-        <span className="species-card-premium__cta-arrow">→</span>
-      </div>
+      {/* Footer CTA. When it carries a real standalone action (View listings,
+          T6), it's a focusable/keyboard-activatable button rather than a bare
+          div, since it now does something distinct from the card's onSelect. */}
+      {hasAvailability ? (
+        <button type="button" className="species-card-premium__cta" onClick={handleCtaClick}>
+          <span className="species-card-premium__cta-text">{ctaText}</span>
+          <span className="species-card-premium__cta-arrow">→</span>
+        </button>
+      ) : (
+        <div className="species-card-premium__cta">
+          <span className="species-card-premium__cta-text">{ctaText}</span>
+          <span className="species-card-premium__cta-arrow">→</span>
+        </div>
+      )}
     </div>
   );
 }

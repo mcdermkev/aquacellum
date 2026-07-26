@@ -6147,6 +6147,26 @@ input:checked + .broadcast-slider:before {
   border: 1px solid rgba(167, 139, 250, 0.35);
 }
 
+/* --- Verdict Chip (Fish Finder T6) — honest fit verdict, distinguishing a
+   missing-data caution (informational) from a real mismatch (warning). Sits
+   directly under the difficulty badge so it never overlaps the "In Tank"
+   indicator on the opposite corner. --- */
+.species-card-premium__verdict-chip {
+  position: absolute;
+  top: 2.35rem;
+  right: 0.75rem;
+  z-index: 3;
+  padding: 0.2rem 0.65rem;
+  border-radius: 50px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  background: rgba(8, 12, 20, 0.75);
+  border: 1px solid;
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+}
+
 /* --- Owned Indicator on Image --- */
 .species-card-premium__owned {
   position: absolute;
@@ -6220,6 +6240,14 @@ input:checked + .broadcast-slider:before {
   opacity: 0.7;
 }
 
+/* --- Acquisition hook (Fish Finder T6) --- */
+.species-card-premium__availability {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #67e8f9;
+  margin: 0.15rem 0 0;
+}
+
 /* --- Tagline (casual) --- */
 .species-card-premium__tagline {
   font-size: 0.72rem;
@@ -6262,6 +6290,15 @@ input:checked + .broadcast-slider:before {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* Reset when rendered as a real <button> (T6 acquisition CTA) so it matches
+     the plain-div appearance used everywhere else this card renders. */
+  width: 100%;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .species-card-premium__cta-text {
@@ -6285,6 +6322,48 @@ input:checked + .broadcast-slider:before {
 .species-card-premium:hover .species-card-premium__cta-arrow {
   transform: translateX(3px);
   color: #38bdf8;
+}
+
+/* --- Difficulty Tier Treatment (Fish Finder T6) ---
+   Applied via the canonical tierClass (speciesCatalog.js DIFFICULTY
+   descriptors) — subtle for beginner, progressively more emphasis toward a
+   holographic treatment for "difficult", echoing the public database.html
+   card language. Never applied for unknown difficulty (stays plain). */
+.species-card-premium.tier-intermediate {
+  border-color: rgba(251, 191, 36, 0.12);
+}
+
+.species-card-premium.tier-advanced {
+  border-color: rgba(248, 113, 113, 0.14);
+}
+
+.species-card-premium.tier-difficult {
+  border-color: rgba(167, 139, 250, 0.22);
+  background: linear-gradient(165deg, rgba(23, 12, 38, 0.92) 0%, rgba(8, 12, 20, 0.98) 100%);
+}
+
+.species-card-premium.tier-difficult::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 20%, rgba(167, 139, 250, 0.12) 45%, rgba(103, 232, 249, 0.1) 55%, transparent 80%);
+  opacity: 0.7;
+  mix-blend-mode: screen;
+}
+
+.species-card-premium.tier-difficult:hover {
+  border-color: rgba(167, 139, 250, 0.45);
+  box-shadow: 0 20px 60px rgba(167, 139, 250, 0.15),
+              0 0 0 1px rgba(167, 139, 250, 0.2),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .species-card-premium.tier-difficult::before {
+    opacity: 0.4;
+  }
 }
 
 /* --- Staggered Entrance Animation --- */

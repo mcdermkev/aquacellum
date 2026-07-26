@@ -4,39 +4,29 @@ import { SpeciesCardPremium } from "../SpeciesCardPremium";
 import { LoadingSkeleton } from "../LoadingSkeleton";
 import { useContractSpecies, useSpeciesData } from "../../hooks/useSpeciesData";
 import { useUserTanks } from "../../hooks/useUserTanks";
+import { useSpeciesAvailability } from "../../hooks/useSpeciesAvailability";
 import { buildGlobalCatalog } from "../../services/speciesCatalog";
 import { tankFitInputs } from "../../services/compatibleTanks";
+import { summarizeAvailability } from "../../services/speciesAvailability";
 import { rankSpeciesMatches } from "./matchRanking";
 import "./FishFinder.css";
 
-// Same verdict → color mapping BreedGallery uses (Fish Finder T2), so the
-// chip on a match card always agrees with the "Tank Match" widget below.
-const VERDICT_COLOR = Object.freeze({
-  ok: "hsl(140, 70%, 45%)",       // green
-  caution: "hsl(42, 92%, 52%)",   // amber
-  blocked: "hsl(0, 78%, 55%)",    // red
-  no_tank: "hsl(210, 10%, 55%)",  // neutral
-});
-
-const VERDICT_LABEL = Object.freeze({
-  ok: "Good fit",
-  caution: "Caution",
-  blocked: "Not a fit",
-  no_tank: "No tank",
-});
-
 /**
- * FishFinder — the Casual `gallery` tab surface (Fish Finder Rework, Task 5).
+ * FishFinder — the Casual `gallery` tab surface (Fish Finder Rework, Task 5;
+ * cards evolved to a compatibility-first, acquisition-aware design in Task 6).
  *
  * Renders, top to bottom:
  *   1. a tank context bar (pick which tank to match against)
- *   2. the "Good matches for [Tank]" home section (new, this task)
+ *   2. the "Good matches for [Tank]" home section
  *   3. the existing <BreedGallery casualModeActive /> unchanged, as the
  *      "Browse all species" continuation.
  *
  * Accepts and forwards every prop BreedGallery receives today. Does not fork
- * any fit/compatibility logic — composes rankSpeciesMatches (matchRanking.js),
- * which itself composes the canonical assessSpeciesFit.
+ * any fit/compatibility/availability logic — composes rankSpeciesMatches
+ * (matchRanking.js, itself composing assessSpeciesFit) and
+ * useSpeciesAvailability/summarizeAvailability for the acquisition hook. The
+ * card itself (SpeciesCardPremium) owns the verdict-chip presentation via
+ * fitPresentationKind — no chip is rendered here to avoid a duplicate.
  */
 export function FishFinder({
   contractAddress,
@@ -59,6 +49,7 @@ export function FishFinder({
   const { data: tanks = [], isLoading: tanksLoading } = useUserTanks(contractAddress, walletAccount);
   const { data: fishbaseData = [], isLoading: speciesLoading } = useSpeciesData();
   const { data: contractSpecies = [], isLoading: contractLoading } = useContractSpecies(contractAddress);
+  const { getAvailability } = useSpeciesAvailability(contractAddress, marketplaceAddress);
 
   // One source of candidates: prefer the on-chain registered catalog when
   // non-empty, else fall back to the curated global catalog. Keeps this
@@ -157,6 +148,13 @@ export function FishFinder({
     if (typeof onClearPreselectedBreed === "function") onClearPreselectedBreed();
   };
 
+  // "View listings" CTA (T6). Bounded scope: opens the marketplace tab.
+  // Species-filtered deep-linking is out of scope here — see T4.
+  const handleViewListings = () => {
+    // TODO(T4): filter marketplace to entry.speciesId
+    window.dispatchEvent(new CustomEvent("aquadex:navigate-tab", { detail: { tab: "directory" } }));
+  };
+
   return (
     <div className="fish-finder">
       {/* ── Tank context bar ────────────────────────────────────────────── */}
@@ -225,13 +223,10 @@ export function FishFinder({
                   viewMode={Array.isArray(contractSpecies) && contractSpecies.length > 0 ? "contract" : "global"}
                   searchTerm=""
                   onSelect={() => handleSelectMatch(entry)}
+                  fit={fit}
+                  availabilitySummary={summarizeAvailability(getAvailability(entry))}
+                  onViewListings={handleViewListings}
                 />
-                <span
-                  className="fish-finder__verdict-chip"
-                  style={{ color: VERDICT_COLOR[fit.verdict], borderColor: `${VERDICT_COLOR[fit.verdict]}50` }}
-                >
-                  {VERDICT_LABEL[fit.verdict] || "Caution"}
-                </span>
               </div>
             ))}
           </div>

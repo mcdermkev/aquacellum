@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { speciesProfileForFit, assessSpeciesFit } from "./speciesFit.js";
+import { speciesProfileForFit, assessSpeciesFit, fitPresentationKind } from "./speciesFit.js";
 import { buildCompatibilityExplanation } from "./compatibilityExplanation.js";
 import { evaluateTankFit } from "./addOnRecommender.js";
 import { toCatalogEntry } from "./speciesCatalog.js";
@@ -155,5 +155,84 @@ describe("honest handling of unknown-data species (the intended T2 fix)", () => 
     const fit = assessSpeciesFit(SPARSE_ENTRY, { volume: 100, temp: 25, ph: 7 }, { fishbaseData: [] });
     expect(fit.verdict).toBe("caution");
     expect(fit.reasons.join(" ")).toMatch(/don't have|unknown|confirmed/i);
+  });
+});
+
+describe("fitPresentationKind — the honest-caution classifier (T6, Decision D1)", () => {
+  it("returns 'no_tank' for a falsy fit", () => {
+    expect(fitPresentationKind(null)).toBe("no_tank");
+    expect(fitPresentationKind(undefined)).toBe("no_tank");
+  });
+
+  it("passes through 'no_tank' when there is no tank context", () => {
+    const fit = assessSpeciesFit(NEON_ENTRY, null, { fishbaseData: [NEON_RECORD] });
+    expect(fit.verdict).toBe("no_tank");
+    expect(fitPresentationKind(fit)).toBe("no_tank");
+  });
+
+  it("passes through 'ok'", () => {
+    const fit = assessSpeciesFit(NEON_ENTRY, { volume: 20, temp: 23, ph: 6.5 }, { fishbaseData: [NEON_RECORD] });
+    expect(fit.verdict).toBe("ok");
+    expect(fitPresentationKind(fit)).toBe("ok");
+  });
+
+  it("passes through 'blocked'", () => {
+    // Tank is less than half the Neon's 10-gallon minimum → blocked.
+    const fit = assessSpeciesFit(NEON_ENTRY, { volume: 2, temp: 23, ph: 6.5 }, { fishbaseData: [NEON_RECORD] });
+    expect(fit.verdict).toBe("blocked");
+    expect(fitPresentationKind(fit)).toBe("blocked");
+  });
+
+  it("classifies a caution with all three of volume/temp/pH known as 'caution_mismatch'", () => {
+    // Borderline (not blocked, score < 80): pH just outside range.
+    const fit = assessSpeciesFit(NEON_ENTRY, { volume: 20, temp: 23, ph: 7.8 }, { fishbaseData: [NEON_RECORD] });
+    expect(fit.verdict).toBe("caution");
+    expect(fit.profile.minVolumeGallons).not.toBeNull();
+    expect(fit.profile.tempRange).not.toBeNull();
+    expect(fit.profile.phRange).not.toBeNull();
+    expect(fitPresentationKind(fit)).toBe("caution_mismatch");
+  });
+
+  it("classifies a caution with an unknown minVolumeGallons as 'caution_data'", () => {
+    const fit = assessSpeciesFit(SPARSE_ENTRY, { volume: 100, temp: 25, ph: 7 }, { fishbaseData: [] });
+    expect(fit.verdict).toBe("caution");
+    expect(fit.profile.minVolumeGallons).toBeNull();
+    expect(fitPresentationKind(fit)).toBe("caution_data");
+  });
+
+  it("classifies a caution with an unknown tempRange as 'caution_data'", () => {
+    const entry = toCatalogEntry({
+      specCode: 200,
+      scientificName: "Partialus rangeus",
+      commonName: "Partial Data Fish",
+      tankMetrics: { phRange: [6, 7], difficulty: "Beginner", minVolumeGallons: 10 },
+      // no tempRangeCelsius
+    });
+    const fit = assessSpeciesFit(entry, { volume: 100, temp: 25, ph: 6.5 }, { fishbaseData: [] });
+    expect(fit.verdict).toBe("caution");
+    expect(fit.profile.tempRange).toBeNull();
+    expect(fitPresentationKind(fit)).toBe("caution_data");
+  });
+
+  it("classifies a caution with an unknown phRange as 'caution_data'", () => {
+    const entry = toCatalogEntry({
+      specCode: 201,
+      scientificName: "Partialus phus",
+      commonName: "Partial pH Fish",
+      tankMetrics: { tempRangeCelsius: [20, 26], difficulty: "Beginner", minVolumeGallons: 10 },
+      // no phRange
+    });
+    const fit = assessSpeciesFit(entry, { volume: 100, temp: 23, ph: 7 }, { fishbaseData: [] });
+    expect(fit.verdict).toBe("caution");
+    expect(fit.profile.phRange).toBeNull();
+    expect(fitPresentationKind(fit)).toBe("caution_data");
+  });
+
+  it("never fabricates a warning for unknown data even against a perfect-looking tank", () => {
+    // Guards the exact D1 scenario the spec calls out: a "perfect water"
+    // tank should still show the neutral/informational kind, not a mismatch.
+    const fit = assessSpeciesFit(SPARSE_ENTRY, { volume: 1000, temp: 24, ph: 7 }, { fishbaseData: [] });
+    expect(fitPresentationKind(fit)).toBe("caution_data");
+    expect(fitPresentationKind(fit)).not.toBe("caution_mismatch");
   });
 });
