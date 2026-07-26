@@ -248,8 +248,22 @@ export function FishFinder({
     </div>
   );
 
+  // When the inner BreedGallery opens a species detail, it reports that up via
+  // onSelectedBreedChange → App.gallerySelectedBreed, which flows back to us as
+  // `initialSelectedBreed`. A truthy value means a detail is open — let it take
+  // over full-page by hiding the tank bar, discovery, and home so the detail
+  // isn't buried beneath them. Covers match cards, the browse grid, and
+  // ?species deep links alike (all set the inner gallery's selection). The
+  // inner BreedGallery stays mounted throughout, so no state loss or refetch.
+  const detailOpen = !!initialSelectedBreed;
+  useEffect(() => {
+    if (detailOpen) window.scrollTo(0, 0);
+  }, [detailOpen]);
+
   return (
     <div className="fish-finder">
+      {!detailOpen && (
+        <>
       {/* ── Tank context bar ────────────────────────────────────────────── */}
       <div className="fish-finder__tank-bar glass-card">
         <div className="fish-finder__tank-bar-label">
@@ -362,10 +376,14 @@ export function FishFinder({
           )}
         </div>
       )}
+        </>
+      )}
 
-      {/* ── Browse all species — the existing gallery, unchanged ───────── */}
+      {/* ── Browse all species — the existing gallery. Also hosts the species
+          detail; when a detail is open, the sections above are hidden so it
+          takes over full-page (detailOpen). ────────────────────────────── */}
       <div className="fish-finder__browse" ref={browseSectionRef}>
-        <h2 className="fish-finder__browse-title">Browse all species</h2>
+        {!detailOpen && <h2 className="fish-finder__browse-title">Browse all species</h2>}
         <BreedGallery
           contractAddress={contractAddress}
           marketplaceAddress={marketplaceAddress}
