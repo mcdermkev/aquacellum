@@ -8,6 +8,7 @@ import { relayRegisterTank, relayMintSpecimen } from "../services/relayer";
 import { putTankPhoto } from "../services/tankMedia";
 import { db } from "../db";
 import { useContractSpecies } from "../hooks/useSpeciesData";
+import { useTankGroups } from "../hooks/useTankGroups";
 import { tankTypeLabel } from "../utils/tankUtils";
 
 const CONTAINMENT_TYPES = ["Tank", "Tub", "Basket"];
@@ -19,6 +20,9 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
   const [toastMessage, setToastMessage] = useState(null);
 
   const { data: contractSpecies = [] } = useContractSpecies(contractAddress);
+  // The keeper's existing location groups, offered as suggestions on the Group
+  // field so registering a unit joins a group instead of typo-ing a new one.
+  const { groups: locationGroups } = useTankGroups(walletAccount, tanks);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -33,7 +37,9 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
     volumeLiters: "13", // Represents volume in gallons in the form state
     containment: "0",
     parentUnitId: "0",
-    facility: casualModeActive ? "" : "Main Room",
+    // Blank by default: a location group is the keeper's to name, and a blank
+    // stays honestly "Unassigned" instead of minting a stock "Main Room" group.
+    facility: "",
     room: casualModeActive ? "" : "Aisle 1",
     rack: casualModeActive ? "" : "Tier 2"
   });
@@ -183,9 +189,13 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                 active: tankData.active,
                 containment: Number(tankData.containment),
                 parentUnitId: Number(tankData.parentUnitId),
-                facility: tankData.facility || "Main Room",
-                room: tankData.room || "Garage Rack",
-                rack: tankData.rack || "Outdoor Ponds",
+                // No invented placeholders: an unset location must stay unset so it
+                // lands in "Unassigned" instead of fabricating a location group the
+                // keeper never created (these used to default to "Garage Rack" /
+                // "Outdoor Ponds" regardless of where the unit actually is).
+                facility: tankData.facility || "",
+                room: tankData.room || "",
+                rack: tankData.rack || "",
                 latestLog,
                 logs: [],
                 specimens: []
@@ -235,7 +245,9 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
         volumeLiters: Math.round(Number(registerForm.volumeLiters) * 3.78541),
         containment: Number(registerForm.containment),
         parentUnitId: Number(registerForm.parentUnitId),
-        facility: registerForm.facility || "Main Room",
+        // "" (not "Main Room"): an unnamed group would otherwise be re-created on
+        // every registration, right next to the groups the keeper actually made.
+        facility: registerForm.facility.trim(),
         room: registerForm.room || "",
         rack: registerForm.rack || "",
         ownerAddress: walletAccount,
@@ -305,7 +317,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
         volumeLiters: "13",
         containment: "0",
         parentUnitId: "0",
-        facility: casualModeActive ? "" : "Main Room",
+        facility: "",
         room: casualModeActive ? "" : "Aisle 1",
         rack: casualModeActive ? "" : "Tier 2"
       });
@@ -874,14 +886,22 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
 
                   <div className="form-grid-3col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
                     <div>
-                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Facility</label>
+                      <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }} htmlFor="register-facility">
+                        Group
+                      </label>
                       <input 
+                        id="register-facility"
                         type="text" 
+                        list="register-facility-groups"
                         value={registerForm.facility}
                         onChange={(e) => setRegisterForm({ ...registerForm, facility: e.target.value })}
-                        placeholder="e.g. Main Room"
+                        placeholder="Your group name"
                         style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
                       />
+                      {/* Suggestions only — typing a new name still creates a new group. */}
+                      <datalist id="register-facility-groups">
+                        {locationGroups.map((g) => <option key={g} value={g} />)}
+                      </datalist>
                     </div>
                     <div>
                       <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Room</label>

@@ -377,9 +377,11 @@ export function SpecimenDetailModal({
           setTankInfo({
             id: resolvedSpec.currentTankId,
             name: rawTank.name,
-            facility: rawTank.facility || "Main Room",
-            room: rawTank.room || "Garage Rack",
-            rack: rawTank.rack || "Outdoor Ponds"
+            // Don't invent a location the keeper never set — these previously
+            // defaulted to "Garage Rack" / "Outdoor Ponds" for every unit.
+            facility: rawTank.facility || "",
+            room: rawTank.room || "",
+            rack: rawTank.rack || ""
           });
         } else {
           // Fallback to local Dexie database for tank details
@@ -863,7 +865,9 @@ export function SpecimenDetailModal({
                       </div>
                       <div>
                         <span style={{ color: "var(--text-secondary)" }}>Location:</span>{" "}
-                        <span style={{ color: "var(--text-primary)" }}>{tankInfo.facility} › {tankInfo.room} › {tankInfo.rack}</span>
+                        <span style={{ color: "var(--text-primary)" }}>
+                          {[tankInfo.facility, tankInfo.room, tankInfo.rack].filter(Boolean).join(" › ") || "—"}
+                        </span>
                       </div>
                     </div>
                   ) : (

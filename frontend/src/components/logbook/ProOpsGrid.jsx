@@ -29,6 +29,8 @@ const WORKLIST_META = {
  *   activeTankId     — currently-open tank (row highlight)
  *   draggedOverTankId/ onDragEnterTank / onDragLeaveTank / onDropSpecimen — drag-to-assign parity
  *   onOpen(tank)     — open the detail panel
+ *   tankDragProps(tank) — optional drag-source props so a row can be dragged onto
+ *                      a location group chip (see LocationGroupBar)
  */
 export function ProOpsGrid({
   tanks = [],
@@ -42,6 +44,7 @@ export function ProOpsGrid({
   onDragLeaveTank,
   onLogDue,
   schedulesOverride,
+  tankDragProps,
 }) {
   const [schedulesByTank, setSchedulesByTank] = useState(schedulesOverride || {});
   const [sortKey, setSortKey] = useState("attention");
@@ -181,6 +184,7 @@ export function ProOpsGrid({
               key={tank.id}
               className={`ops-row ${isActive ? "ops-row--active" : ""} ${isDragOver ? "ops-row--dragover" : ""} ${needsAttention ? "ops-row--attention" : ""}`}
               data-testid="ops-row"
+              {...(tankDragProps ? tankDragProps(tank) : {})}
               role="button"
               tabIndex={0}
               onClick={() => onOpen && onOpen(tank)}
@@ -212,7 +216,9 @@ export function ProOpsGrid({
                   <strong>{tank.name || `Unit #${tank.id}`}</strong>
                 </span>
                 <span className="ops-breadcrumb">
-                  {[tank.room, tank.rack].filter(Boolean).join(" · ") || "—"}
+                  {/* Lead with the location group (facility) so a drag-to-group move
+                      is immediately visible on the row it came from. */}
+                  {[tank.facility, tank.room, tank.rack].filter(Boolean).join(" · ") || "—"}
                   {speciesText ? ` · ${speciesText}` : ""}
                 </span>
               </span>

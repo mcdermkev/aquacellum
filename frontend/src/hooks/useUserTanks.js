@@ -105,7 +105,10 @@ export function useUserTanks(contractAddress, walletAccount) {
                 active: tankData.active,
                 containment: Number(tankData.containment),
                 parentUnitId: Number(tankData.parentUnitId),
-                facility: tankData.facility || "Main Room",
+                // Leave an unset location unset — defaulting facility to "Main Room"
+                // fabricated a location group the keeper never created (facility is
+                // what backs the Logbook's group chips; see services/tankGroups).
+                facility: tankData.facility || "",
                 room: tankData.room || "",
                 rack: tankData.rack || "",
                 logs,

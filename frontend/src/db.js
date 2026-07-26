@@ -878,6 +878,109 @@ export async function upgradeV23(tx) {
   }
 }
 
+// Version 24: Fish Finder Rework Task 9 — "My Dex" + wishlist.
+// ADDITIVE / NON-DESTRUCTIVE — every v23 store carried forward verbatim; no
+// upgrade function needed (both new tables start empty for every user).
+//   - dexEntries: one row per (walletAddress, speciesKey) species the user has
+//       actually kept (had a specimen residing in one of their tanks) at least
+//       once. `speciesKey` is the lowercased scientificName — the same durable,
+//       catalog-agnostic key `speciesFit.js`/`discoveryIntents.js` already use
+//       to join contract entries to the curated master catalog — because a
+//       given species can carry a DIFFERENT numeric speciesId in the on-chain
+//       catalog vs. the curated global catalog, so speciesId alone can't be
+//       the Dex's identity key. Compound primary key `[walletAddress+speciesKey]`
+//       makes "have I already recorded this species for this user" an
+//       upsert-safe existence check — the mechanism the one-time ADD_SPECIES
+//       XP award (GAMIFICATION_SPEC §2.1, "no cooldown, one-time per species
+//       instance") relies on to never double-award.
+//   - wishlist: one row per (walletAddress, speciesKey) species the user has
+//       saved for later from a Fish Finder card. Same compound-key shape;
+//       toggling is add/delete on this row, not a status flag, so "is this
+//       wishlisted" is a single indexed existence check.
+db.version(24).stores({
+  species: "specCode, commonName, scientificName, type, difficulty",
+  listings: "id, tokenId, seller, price, isBatch, speciesId",
+  tanks: "id, ownerAddress, name, active",
+  userProfile: "walletAddress, totalXp, currentTier, zoneHash, isCouncilMember, onboardingComplete",
+  breederCompanion: "walletAddress, eggState, currentTier, selectedStats, zoneHash",
+  pendingHandshakes: "purchaseId, pin, salt, buyerAddress",
+  speciesManifest: "speciesId, scientificName, commonName, contractAddress, cachedAt",
+  actionLogs: "++id, tankId, actionType, timestamp, details",
+  spawnGrowout: "++id, spawnId, timestamp, type",
+  feedCache: "++id, contentId, authorWallet, createdAt, [authorWallet+createdAt]",
+  socialNotifications: "++id, category, isRead, createdAt",
+  draftContent: "++id, type, status, createdAt",
+  specimens: "id, ownerAddress, speciesId, currentTankId, status, createdAt, [ownerAddress+arrivalStatus], breederStockTag, onChainId, chainStatus",
+  localListings: "id, seller, speciesId, isBatch, listingId, tokenId",
+  marketOrders: "++key, orderType, status, state, buyer, seller, tokenId, purchaseId, listingId, assignedTankId",
+  spawns: "spawnId, sireId, damId, tankId, speciesId, status, timestamp",
+  tankNotes: "++id, tankId, createdAt",
+  xpCooldowns: "++id, walletAddress, actionType, tankId, timestamp, [walletAddress+actionType+tankId]",
+  storefrontCache: "id, walletAddress, cachedAt",
+  echoNeeds: "walletAddress, lastUpdate",
+  echoCompanionOnChain: "walletAddress, tokenId, cachedAt",
+  cart: "id, seller, listingKey, addedAt",
+  paramReadings: "++id, tankId, timestamp, source, [tankId+timestamp]",
+  tankSchedules: "++id, tankId, kind, nextDueAt, enabled, [tankId+kind]",
+  tankMedia: "++id, refType, refId, createdAt, [refType+refId]",
+  // NEW in v24:
+  dexEntries: "[walletAddress+speciesKey], walletAddress, speciesKey, firstKeptAt",
+  wishlist: "[walletAddress+speciesKey], walletAddress, speciesKey, addedAt"
+});
+
+// Version 25: User-defined location groups for the Logbook location filter.
+// ADDITIVE / NON-DESTRUCTIVE — every v24 store carried forward verbatim; no
+// upgrade function needed (the new table starts empty for every user).
+//   - tankGroups: one row per (ownerAddress, name) location group the user
+//       created by hand — "Fish Room", "Basement Rack", "Greenhouse", whatever
+//       they actually call it — replacing the previously hardcoded
+//       ["Main Room", "Garage Rack", "Outdoor Ponds"] chip list.
+//
+//       A tank's group membership is NOT stored here. It stays on the tank
+//       record's existing `facility` field (the top-level segment of the
+//       facility › room › rack breadcrumb), so a group assignment survives in
+//       the same place it always lived and still rides along to chain/relayer
+//       writes. This table exists only so a group the user created can show up
+//       as an EMPTY chip (zero tanks) — something a purely derived-from-tanks
+//       list can't represent, and the thing you need for "make the group, then
+//       drag tanks into it".
+//
+//       Compound primary key `[ownerAddress+name]` makes "does this user
+//       already have a group by this name" a single indexed existence check,
+//       and makes group creation idempotent (put = upsert). Rename is a
+//       delete + put because the name participates in the primary key.
+db.version(25).stores({
+  species: "specCode, commonName, scientificName, type, difficulty",
+  listings: "id, tokenId, seller, price, isBatch, speciesId",
+  tanks: "id, ownerAddress, name, active",
+  userProfile: "walletAddress, totalXp, currentTier, zoneHash, isCouncilMember, onboardingComplete",
+  breederCompanion: "walletAddress, eggState, currentTier, selectedStats, zoneHash",
+  pendingHandshakes: "purchaseId, pin, salt, buyerAddress",
+  speciesManifest: "speciesId, scientificName, commonName, contractAddress, cachedAt",
+  actionLogs: "++id, tankId, actionType, timestamp, details",
+  spawnGrowout: "++id, spawnId, timestamp, type",
+  feedCache: "++id, contentId, authorWallet, createdAt, [authorWallet+createdAt]",
+  socialNotifications: "++id, category, isRead, createdAt",
+  draftContent: "++id, type, status, createdAt",
+  specimens: "id, ownerAddress, speciesId, currentTankId, status, createdAt, [ownerAddress+arrivalStatus], breederStockTag, onChainId, chainStatus",
+  localListings: "id, seller, speciesId, isBatch, listingId, tokenId",
+  marketOrders: "++key, orderType, status, state, buyer, seller, tokenId, purchaseId, listingId, assignedTankId",
+  spawns: "spawnId, sireId, damId, tankId, speciesId, status, timestamp",
+  tankNotes: "++id, tankId, createdAt",
+  xpCooldowns: "++id, walletAddress, actionType, tankId, timestamp, [walletAddress+actionType+tankId]",
+  storefrontCache: "id, walletAddress, cachedAt",
+  echoNeeds: "walletAddress, lastUpdate",
+  echoCompanionOnChain: "walletAddress, tokenId, cachedAt",
+  cart: "id, seller, listingKey, addedAt",
+  paramReadings: "++id, tankId, timestamp, source, [tankId+timestamp]",
+  tankSchedules: "++id, tankId, kind, nextDueAt, enabled, [tankId+kind]",
+  tankMedia: "++id, refType, refId, createdAt, [refType+refId]",
+  dexEntries: "[walletAddress+speciesKey], walletAddress, speciesKey, firstKeptAt",
+  wishlist: "[walletAddress+speciesKey], walletAddress, speciesKey, addedAt",
+  // NEW in v25:
+  tankGroups: "[ownerAddress+name], ownerAddress, name, createdAt, sortOrder"
+});
+
 /**
  * Derive tier key from totalXp using the canonical tier ladder.
  * Used by the v15 migration and shared with xp.js.

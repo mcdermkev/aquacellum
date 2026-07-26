@@ -31,6 +31,18 @@ import { TankScanner } from "./logbook/TankScanner";
 import { JournalTimeline } from "./logbook/JournalTimeline";
 import { CareCoach } from "./logbook/CareCoach";
 import { ProOpsGrid } from "./logbook/ProOpsGrid";
+import { LocationGroupBar, TANK_DND_MIME } from "./logbook/LocationGroupBar";
+import { useTankGroups } from "../hooks/useTankGroups";
+import {
+  ALL_GROUPS,
+  UNASSIGNED,
+  assignTankToGroup,
+  createGroup,
+  deleteGroup,
+  filterTanksByGroup,
+  renameGroup,
+  tankGroupName,
+} from "../services/tankGroups";
 import { ParamTrends } from "./logbook/ParamTrends";
 import { SpeciesCareGuide } from "./logbook/SpeciesCareGuide";
 import { HealthFlagExplainer } from "./logbook/HealthFlagExplainer";
@@ -160,13 +172,20 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const [openRegisterOnTreeMount, setOpenRegisterOnTreeMount] = useState(false);
 
   // Filter & Search states
-  const [selectedLocation, setSelectedLocation] = useState("All");
+  // selectedLocation is ALL_GROUPS, UNASSIGNED, or a user-defined group name.
+  const [selectedLocation, setSelectedLocation] = useState(ALL_GROUPS);
   const [locationsFilterOpen, setLocationsFilterOpen] = useState(false);
+  // Location groups are the keeper's own (services/tankGroups): the chip list
+  // merges hand-created groups with any group name already on a tank record.
+  const { groups: locationGroups, reload: reloadLocationGroups } = useTankGroups(walletAccount, tanks);
+  // True while a tank card is being dragged, so the group chips can advertise
+  // themselves as drop targets.
+  const [tankDragActive, setTankDragActive] = useState(false);
 
   // Reset selected location when switching back to casual mode
   useEffect(() => {
     if (casualModeActive) {
-      setSelectedLocation("All");
+      setSelectedLocation(ALL_GROUPS);
       setLocationsFilterOpen(false);
       setViewMode("list");
     }
@@ -204,7 +223,44 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const [uploadingSpecimenId, setUploadingSpecimenId] = useState(null);
   const specimenPhotoInputRef = useRef(null);
   const [farewellSpecimen, setFarewellSpecimen] = useState(null);
-  const [activeCardMenuTankId, setActiveCardMenuTankId] = useState(null); // pro list-card ⋯ overflow
+  // Pro list-card ⋯ overflow menu. Stored as a viewport-anchored position, not a
+  // bare id, because the menu is rendered once as a fixed-position layer outside
+  // the card list (renderTankCardMenu) rather than nested inside the card.
+  const [cardMenu, setCardMenu] = useState(null); // { tankId, top, left, width }
+  const cardMenuRef = useRef(null);
+
+  // NOTE: both menu effects live up here with the state, ABOVE this component's
+  // early returns (not-connected / loading / error). Declaring them further down
+  // next to the menu's render helpers would change the hook count between a
+  // loading render and a loaded one — "Rendered more hooks than during the
+  // previous render".
+
+  // A viewport-anchored layer drifts away from its trigger on scroll/resize, so
+  // dismiss it instead of letting it float off.
+  useEffect(() => {
+    if (!cardMenu) return;
+    const dismiss = () => setCardMenu(null);
+    const onKey = (e) => { if (e.key === "Escape") setCardMenu(null); };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", dismiss, true);
+    window.addEventListener("resize", dismiss);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", dismiss, true);
+      window.removeEventListener("resize", dismiss);
+    };
+  }, [cardMenu]);
+
+  // Measured correction: the open-position estimate can still run past the bottom
+  // edge (the menu grows with the number of groups), so clamp once mounted.
+  useEffect(() => {
+    if (!cardMenu || !cardMenuRef.current) return;
+    const height = cardMenuRef.current.offsetHeight;
+    const maxTop = window.innerHeight - height - 8;
+    if (cardMenu.top > maxTop) {
+      setCardMenu((cur) => (cur ? { ...cur, top: Math.max(8, maxTop) } : cur));
+    }
+  }, [cardMenu]);
 
   // Bulk / Rack-Level Logging State (Phase 1)
   const [bulkLogScope, setBulkLogScope] = useState("single"); // "single" | "rack" | "room"
@@ -1135,12 +1191,320 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const maxSafePh = _env.phMax;
 
   // Location filter setup
-  const locations = ["All", "Main Room", "Garage Rack", "Outdoor Ponds"];
+  // Group CRUD + assignment. Writes go to Dexie (group list) and to the tank's
+  // `facility` field (membership), then the tanks query is invalidated so every
+  // chip count, breadcrumb, and filtered list re-derives from one source.
+  const refreshAfterGroupWrite = async () => {
+    await reloadLocationGroups();
+    queryClient.invalidateQueries({ queryKey: ["tanks", walletAccount] });
+  };
+
+  const handleCreateGroup = async (name) => {
+    const created = await createGroup(walletAccount, name, locationGroups);
+    await refreshAfterGroupWrite();
+    showToast(`📍 Group "${created}" created.`);
+  };
+
+  const handleRenameGroup = async (from, to) => {
+    const moved = await renameGroup(walletAccount, from, to, tanks, locationGroups);
+    if (selectedLocation === from) setSelectedLocation(to);
+    await refreshAfterGroupWrite();
+    showToast(`📍 Renamed to "${to}"${moved ? ` — ${moved} tank${moved === 1 ? "" : "s"} updated.` : "."}`);
+  };
+
+  const handleDeleteGroup = (name) => {
+    const memberCount = filterTanksByGroup(tanks, name).length;
+    requestConfirm({
+      title: "🗑️ Delete group",
+      message: memberCount
+        ? `Delete the group "${name}"? The ${memberCount} tank${memberCount === 1 ? "" : "s"} in it stay put — they just become Unassigned.`
+        : `Delete the empty group "${name}"?`,
+      confirmLabel: "Delete group",
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await deleteGroup(walletAccount, name, tanks);
+          if (selectedLocation === name) setSelectedLocation(ALL_GROUPS);
+          await refreshAfterGroupWrite();
+          showToast(`Group "${name}" deleted.`);
+        } catch (err) {
+          console.error("Delete group failed:", err);
+          showToast("Failed to delete that group.");
+        }
+      },
+    });
+  };
+
+  /** Move one tank into a group (drag-drop onto a chip, or the card's ⋯ menu). */
+  const handleAssignTankToGroup = async (tankId, group) => {
+    const tank = tanks.find((t) => Number(t.id) === Number(tankId));
+    if (!tank) return;
+    if (group !== UNASSIGNED && tankGroupName(tank) === group) return;
+    try {
+      const assigned = await assignTankToGroup(tank, group);
+      queryClient.invalidateQueries({ queryKey: ["tanks", walletAccount] });
+      // The open detail panel holds its own copy of the tank, so patch it too or
+      // the header breadcrumb would keep showing the old group until reopened.
+      setActiveTank((cur) => (cur && Number(cur.id) === Number(tank.id) ? { ...cur, facility: assigned } : cur));
+      showToast(
+        group === UNASSIGNED
+          ? `📍 "${tank.name}" removed from its group.`
+          : `📍 "${tank.name}" moved to ${group}.`
+      );
+    } catch (err) {
+      console.error("Assign tank to group failed:", err);
+      showToast("Failed to move that tank.");
+    }
+  };
+
+  /** Shared drag-source wiring for a tank row/card. */
+  const tankDragProps = (tank) => ({
+    draggable: true,
+    onDragStart: (e) => {
+      // Don't hijack a drag that starts on a control inside the card.
+      if (e.target?.closest?.("button, input, select, textarea, a")) {
+        e.preventDefault();
+        return;
+      }
+      e.dataTransfer.setData(TANK_DND_MIME, String(tank.id));
+      e.dataTransfer.effectAllowed = "move";
+      setTankDragActive(true);
+    },
+    onDragEnd: () => setTankDragActive(false),
+  });
+
+  // ---------------------------------------------------------------------------
+  // Pro card ⋯ overflow menu
+  //
+  // Previously this popover lived inside the card and relied on z-index alone.
+  // That never worked: each card carries an inline `transform`, which makes it a
+  // stacking context, so the popover was confined to its own card's layer and the
+  // next card down painted straight over the bottom menu item — clicks landed on
+  // that card instead (it "just selected the tank"). The same transform also made
+  // the position:fixed click-outside scrim cover only the card.
+  //
+  // The fix is structural, not another z-index bump: anchor the menu in viewport
+  // coordinates and render it once, outside the list.
+  // ---------------------------------------------------------------------------
+  const closeCardMenu = () => setCardMenu(null);
+
+  const toggleCardMenu = (e, tankId) => {
+    if (cardMenu?.tankId === tankId) { closeCardMenu(); return; }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const width = 262;
+    const estimatedHeight = 240;
+    const left = Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8));
+    const spaceBelow = window.innerHeight - rect.bottom;
+    // Flip above the trigger when there isn't room below, so the last item is
+    // always reachable even for the bottom card in the list.
+    const top = spaceBelow >= estimatedHeight + 12
+      ? rect.bottom + 6
+      : Math.max(8, rect.top - estimatedHeight - 6);
+    setCardMenu({ tankId, top, left, width });
+  };
+
+  const cardMenuItemStyle = (tone) => ({
+    width: "100%",
+    textAlign: "left",
+    padding: "0.45rem 0.6rem",
+    fontSize: "0.72rem",
+    fontWeight: 500,
+    borderRadius: "6px",
+    cursor: "pointer",
+    transition: "all 0.15s ease",
+    border: tone === "danger" ? "1px solid rgba(248, 113, 113, 0.25)" : "1px solid rgba(251, 191, 36, 0.25)",
+    background: tone === "danger" ? "rgba(248, 113, 113, 0.06)" : "rgba(251, 191, 36, 0.06)",
+    color: tone === "danger" ? "var(--accent-red, #f87171)" : "var(--accent-amber, #fbbf24)",
+  });
+
+  const handleResetTankLogs = (tank) => {
+    requestConfirm({
+      title: casualModeActive ? "🔄 Reset Tank" : "🔄 Reset Unit",
+      message: casualModeActive
+        ? `Reset "${tank.name}"? This clears all water logs and action history but keeps your fish.`
+        : `Reset unit "${tank.name}"? Purges telemetry & action logs. Specimens preserved.`,
+      confirmLabel: casualModeActive ? "Reset Tank" : "Reset Unit",
+      danger: false,
+      onConfirm: async () => {
+        try {
+          await db.actionLogs.where("tankId").equals(tank.id).delete();
+          await db.tanks.update(tank.id, {
+            latestTestTimestamp: null,
+            latestChangeTimestamp: null,
+            waterParams: null,
+          });
+          queryClient.invalidateQueries({ queryKey: ["tanks", walletAccount] });
+          showToast(casualModeActive ? "🔄 Tank reset! Starting fresh." : "Unit telemetry purged.");
+        } catch (err) {
+          console.error("Reset tank failed:", err);
+          showToast("Failed to reset tank.");
+        }
+      },
+    });
+  };
+
+  const handleRemoveTank = (tank) => {
+    requestConfirm({
+      title: casualModeActive ? "🗑️ Remove Tank" : "🗑️ Decommission Unit",
+      message: casualModeActive
+        ? `Remove "${tank.name}"? Your fish will be moved to the Nursery where you can reassign them later.`
+        : `Decommission unit "${tank.name}"? Specimens will be moved to the Nursery (unassigned pool).`,
+      confirmLabel: casualModeActive ? "Remove Tank" : "Decommission",
+      danger: true,
+      onConfirm: async () => {
+        try {
+          // Move all specimens from this tank to unassigned (nursery)
+          const tankSpecimens = await db.specimens
+            .where("currentTankId").equals(Number(tank.id))
+            .filter(s => Number(s.status) === 0)
+            .toArray();
+          for (const spec of tankSpecimens) {
+            await db.specimens.update(spec.id, { currentTankId: 0 });
+          }
+          // Clear the tank's embedded specimens array
+          await db.tanks.update(tank.id, { active: false, specimens: [] });
+          queryClient.invalidateQueries({ queryKey: ["tanks", walletAccount] });
+          const fishCount = tankSpecimens.length;
+          showToast(casualModeActive
+            ? `🗑️ Tank removed. ${fishCount} fish moved to Nursery.`
+            : `Unit decommissioned. ${fishCount} specimen${fishCount !== 1 ? "s" : ""} moved to Nursery.`);
+        } catch (err) {
+          console.error("Remove tank failed:", err);
+          showToast("Failed to remove tank.");
+        }
+      },
+    });
+  };
+
+  const renderTankCardMenu = () => {
+    if (!cardMenu) return null;
+    const tank = tanks.find((t) => Number(t.id) === Number(cardMenu.tankId));
+    if (!tank) return null;
+    const currentGroup = tankGroupName(tank);
+
+    return (
+      <>
+        {/* Click-outside scrim. Fixed to the viewport (the card no longer creates
+            a containing block for it), so a click anywhere dismisses the menu. */}
+        <div
+          onClick={closeCardMenu}
+          onContextMenu={closeCardMenu}
+          style={{ position: "fixed", inset: 0, zIndex: 1100 }}
+        />
+        <div
+          ref={cardMenuRef}
+          role="menu"
+          aria-label={`Options for ${tank.name}`}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: "fixed",
+            top: cardMenu.top,
+            left: cardMenu.left,
+            width: cardMenu.width,
+            zIndex: 1101,
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.4rem",
+            background: "rgba(8,25,48,0.98)",
+            border: "1px solid var(--glass-border)",
+            borderRadius: "8px",
+            padding: "0.45rem",
+            maxHeight: "calc(100vh - 16px)",
+            overflowY: "auto",
+            boxShadow: "0 12px 30px rgba(0,0,0,0.6)",
+          }}
+        >
+          <span style={{ fontSize: "0.62rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)", padding: "0.15rem 0.25rem" }}>
+            Move to group
+          </span>
+          {locationGroups.length === 0 ? (
+            <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", padding: "0 0.25rem 0.25rem" }}>
+              No groups yet — create one with “+ New group” above.
+            </span>
+          ) : (
+            locationGroups.map((group) => {
+              const isCurrent = currentGroup.toLowerCase() === group.toLowerCase();
+              return (
+                <button
+                  key={group}
+                  type="button"
+                  role="menuitem"
+                  disabled={isCurrent}
+                  onClick={async () => {
+                    closeCardMenu();
+                    await handleAssignTankToGroup(tank.id, group);
+                  }}
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "0.4rem 0.6rem",
+                    fontSize: "0.72rem",
+                    fontWeight: 500,
+                    borderRadius: "6px",
+                    border: `1px solid ${isCurrent ? "rgba(168, 85, 247, 0.4)" : "rgba(56, 189, 248, 0.2)"}`,
+                    background: isCurrent ? "rgba(168, 85, 247, 0.12)" : "rgba(56, 189, 248, 0.05)",
+                    color: isCurrent ? "#e9d5ff" : "#bae6fd",
+                    cursor: isCurrent ? "default" : "pointer",
+                  }}
+                >
+                  📍 {group}{isCurrent ? " · current" : ""}
+                </button>
+              );
+            })
+          )}
+          {currentGroup && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={async () => {
+                closeCardMenu();
+                await handleAssignTankToGroup(tank.id, UNASSIGNED);
+              }}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                padding: "0.4rem 0.6rem",
+                fontSize: "0.72rem",
+                borderRadius: "6px",
+                border: "1px dashed rgba(255,255,255,0.18)",
+                background: "rgba(255,255,255,0.03)",
+                color: "var(--text-secondary)",
+                cursor: "pointer",
+              }}
+            >
+              ◌ Remove from group
+            </button>
+          )}
+
+          <div style={{ height: "1px", background: "rgba(255,255,255,0.07)", margin: "0.15rem 0" }} />
+
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => { closeCardMenu(); handleResetTankLogs(tank); }}
+            style={cardMenuItemStyle("warn")}
+          >
+            🔄 Reset logs (keep fish)
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => { closeCardMenu(); handleRemoveTank(tank); }}
+            style={cardMenuItemStyle("danger")}
+          >
+            🗑️ Remove tank (fish → Nursery)
+          </button>
+        </div>
+      </>
+    );
+  };
   
-  // Filter active list of tanks based on selected chip location
-  const filteredTanks = selectedLocation === "All" 
+  // Filter the active list to the selected group. Membership is the tank's
+  // `facility` field only — the previous facility||room||rack match let a single
+  // tank satisfy three different chips at once and inflated every count.
+  const filteredTanks = selectedLocation === ALL_GROUPS
     ? tanks 
-    : tanks.filter(t => t.facility === selectedLocation || t.room === selectedLocation || t.rack === selectedLocation);
+    : filterTanksByGroup(tanks, selectedLocation);
 
   const topLevelTanks = filteredTanks.filter(t => t.parentUnitId === 0);
 
@@ -1420,63 +1784,19 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         </button>
       </div>
 
-      {/* 2. DYNAMIC LOCATION CAROUSEL (Pro Mode Only) */}
+      {/* 2. LOCATION GROUPS (Pro Mode Only) — keeper-defined, drag-to-assign */}
       {!casualModeActive && (
-        <div style={{ marginBottom: "2rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-            <span style={{ fontSize: "0.7rem", fontWeight: "700", color: "var(--text-muted)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
-              📍 Filter by Location
-            </span>
-            {selectedLocation !== "All" && (
-              <button 
-                type="button"
-                onClick={() => setSelectedLocation("All")} 
-                style={{ 
-                  background: "none", 
-                  border: "none", 
-                  color: "var(--accent-blue)", 
-                  fontSize: "0.75rem", 
-                  fontWeight: "600",
-                  cursor: "pointer", 
-                  textDecoration: "underline",
-                  padding: 0 
-                }}
-              >
-                Reset Filter
-              </button>
-            )}
-          </div>
-          <div className="location-carousel-container">
-            {locations.map((loc) => {
-              // Calculate how many tanks match this location
-              const count = loc === "All" 
-                ? tanks.length 
-                : tanks.filter(t => t.facility === loc || t.room === loc || t.rack === loc).length;
-              
-              return (
-                <button 
-                  key={loc}
-                  className={`location-chip-premium ${selectedLocation === loc ? "active" : ""}`}
-                  onClick={() => setSelectedLocation(loc)}
-                >
-                  <span>📍</span>
-                  <span>{loc}</span>
-                  <span style={{ 
-                    fontSize: "0.65rem", 
-                    opacity: 0.8,
-                    background: selectedLocation === loc ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.06)",
-                    padding: "0.05rem 0.35rem",
-                    borderRadius: "10px",
-                    marginLeft: "0.25rem",
-                    fontWeight: "700"
-                  }}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <LocationGroupBar
+          tanks={tanks}
+          groups={locationGroups}
+          selected={selectedLocation}
+          dragActive={tankDragActive}
+          onSelect={setSelectedLocation}
+          onCreate={handleCreateGroup}
+          onRename={handleRenameGroup}
+          onDelete={handleDeleteGroup}
+          onDropTank={handleAssignTankToGroup}
+        />
       )}
 
       <div className="tank-detail-split-grid" style={{ display: "grid", gridTemplateColumns: activeTank ? "1.2fr 1fr" : "1fr", gap: "2rem", alignItems: "start" }}>
@@ -1525,10 +1845,12 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                 </div>
               </div>
 
-              {/* Rack-level averaged parameter trends — shown when a specific rack is selected (Pro). */}
-              {!casualModeActive && uniqueRacks.includes(selectedLocation) && topLevelTanks.length > 0 && (
+              {/* Group-level averaged parameter trends — shown whenever the list is
+                  narrowed to one group (Pro). Previously this only fired when the
+                  selected chip happened to be a rack name. */}
+              {!casualModeActive && selectedLocation !== ALL_GROUPS && selectedLocation !== UNASSIGNED && topLevelTanks.length > 1 && (
                 <div style={{ marginBottom: "1rem" }}>
-                  <ParamTrends tanks={topLevelTanks} title={`Rack "${selectedLocation}" — averaged trends`} />
+                  <ParamTrends tanks={topLevelTanks} title={`"${selectedLocation}" — averaged trends`} />
                 </div>
               )}
 
@@ -1566,7 +1888,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   </div>
                 ) : (
                   <div className="glass-card" style={{ padding: "3rem", textAlign: "center" }}>
-                    <p style={{ color: "var(--text-muted)" }}>No top-level units match the current filters.</p>
+                    <p style={{ color: "var(--text-muted)" }}>
+                      {selectedLocation !== ALL_GROUPS && selectedLocation !== UNASSIGNED
+                        ? `Nothing in "${selectedLocation}" yet — pick All, then drag a tank onto the group chip (or use the tank's ⋯ menu) to move it here.`
+                        : "No top-level units match the current filters."}
+                    </p>
                   </div>
                 )
               ) : casualModeActive ? (
@@ -1593,6 +1919,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   onDragEnterTank={setDraggedOverTankId}
                   onDragLeaveTank={() => setDraggedOverTankId(null)}
                   onLogDue={handleWorklistLog}
+                  tankDragProps={tankDragProps}
                 />
               ) : (
                 topLevelTanks.map((tank) => {
@@ -1606,6 +1933,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     <div 
                       key={tank.id} 
                       className="tank-row-card"
+                      {...tankDragProps(tank)}
                       onClick={() => setActiveTank(tank)}
                       onDragOver={(e) => {
                         e.preventDefault();
@@ -1641,7 +1969,12 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       }}
                       style={{
                         cursor: "pointer",
-                        transform: draggedOverTankId === tank.id ? "scale(1.03)" : "scale(1)",
+                        // "none", not "scale(1)": any non-none transform makes the card
+                        // its own stacking context AND the containing block for
+                        // position:fixed descendants — which is exactly what buried the
+                        // ⋯ overflow menu behind the next card down and made its
+                        // click-outside scrim cover only this card.
+                        transform: draggedOverTankId === tank.id ? "scale(1.03)" : "none",
                         border: draggedOverTankId === tank.id
                           ? "1px solid #38bdf8"
                           : activeTank && activeTank.id === tank.id 
@@ -1670,11 +2003,18 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           {!casualModeActive && (
                             <div className="micro-breadcrumbs" style={{ marginTop: "0.25rem" }}>
                               <span>📍</span>
-                              <span>{tank.facility}</span>
-                              <span className="micro-breadcrumbs-separator">›</span>
-                              <span>{tank.room}</span>
-                              <span className="micro-breadcrumbs-separator">›</span>
-                              <span>{tank.rack}</span>
+                              {/* Only render the segments that exist, so an unassigned
+                                  unit reads "Unassigned" instead of "Main Room ›› ". */}
+                              {[tank.facility, tank.room, tank.rack].filter(Boolean).length === 0 ? (
+                                <span style={{ opacity: 0.7 }}>Unassigned</span>
+                              ) : (
+                                [tank.facility, tank.room, tank.rack].filter(Boolean).map((seg, i) => (
+                                  <React.Fragment key={`${seg}-${i}`}>
+                                    {i > 0 && <span className="micro-breadcrumbs-separator">›</span>}
+                                    <span>{seg}</span>
+                                  </React.Fragment>
+                                ))
+                              )}
                             </div>
                           )}
                         </div>
@@ -1775,7 +2115,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                         </div>
                       )}
 
-                      {/* Quick actions overflow — declutter destructive actions off the card face (Task 4) */}
+                      {/* Quick actions overflow — destructive actions live behind ⋯ (Task 4).
+                          The menu body is rendered ONCE at the root of this view as a
+                          fixed-position layer (renderTankCardMenu) instead of inside the
+                          card, so the next card down can never paint over it or swallow
+                          its clicks. */}
                       <div
                         style={{
                           marginTop: "0.75rem",
@@ -1783,121 +2127,20 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           borderTop: "1px solid rgba(255, 255, 255, 0.04)",
                           display: "flex",
                           justifyContent: "flex-end",
-                          position: "relative",
                         }}
                         onClick={(e) => e.stopPropagation()}
                       >
                         <button
                           type="button"
                           aria-label="Tank options"
+                          aria-haspopup="menu"
+                          aria-expanded={cardMenu?.tankId === tank.id}
                           title="Tank options"
-                          onClick={() => setActiveCardMenuTankId(activeCardMenuTankId === tank.id ? null : tank.id)}
+                          onClick={(e) => { e.stopPropagation(); toggleCardMenu(e, tank.id); }}
                           style={{ background: "rgba(255,255,255,0.05)", border: "1px solid var(--glass-border)", borderRadius: "6px", color: "#fff", width: "34px", height: "28px", cursor: "pointer", fontSize: "1.1rem", lineHeight: 1 }}
                         >
                           ⋯
                         </button>
-                        {activeCardMenuTankId === tank.id && (
-                          <>
-                            <div onClick={() => setActiveCardMenuTankId(null)} style={{ position: "fixed", inset: 0, zIndex: 98 }} />
-                            <div style={{ position: "absolute", right: 0, top: "calc(100% + 4px)", zIndex: 99, display: "flex", flexDirection: "column", gap: "0.4rem", background: "rgba(8,25,48,0.98)", border: "1px solid var(--glass-border)", borderRadius: "8px", padding: "0.45rem", minWidth: "230px", boxShadow: "0 12px 30px rgba(0,0,0,0.6)" }}>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveCardMenuTankId(null);
-                            requestConfirm({
-                              title: casualModeActive ? "🔄 Reset Tank" : "🔄 Reset Unit",
-                              message: casualModeActive
-                                ? `Reset "${tank.name}"? This clears all water logs and action history but keeps your fish.`
-                                : `Reset unit "${tank.name}"? Purges telemetry & action logs. Specimens preserved.`,
-                              confirmLabel: casualModeActive ? "Reset Tank" : "Reset Unit",
-                              danger: false,
-                              onConfirm: async () => {
-                                try {
-                                  await db.actionLogs.where("tankId").equals(tank.id).delete();
-                                  await db.tanks.update(tank.id, {
-                                    latestTestTimestamp: null,
-                                    latestChangeTimestamp: null,
-                                    waterParams: null,
-                                  });
-                                  queryClient.invalidateQueries({ queryKey: ["tanks", walletAccount] });
-                                  showToast(casualModeActive ? "🔄 Tank reset! Starting fresh." : "Unit telemetry purged.");
-                                } catch (err) {
-                                  console.error("Reset tank failed:", err);
-                                  showToast("Failed to reset tank.");
-                                }
-                              },
-                            });
-                          }}
-                          style={{
-                            flex: 1,
-                            padding: "0.4rem 0.6rem",
-                            fontSize: "0.72rem",
-                            fontWeight: 500,
-                            borderRadius: "6px",
-                            border: "1px solid rgba(251, 191, 36, 0.25)",
-                            background: "rgba(251, 191, 36, 0.06)",
-                            color: "var(--accent-amber, #fbbf24)",
-                            cursor: "pointer",
-                            transition: "all 0.15s ease",
-                          }}
-                        >
-                          🔄 Reset logs (keep fish)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveCardMenuTankId(null);
-                            requestConfirm({
-                              title: casualModeActive ? "🗑️ Remove Tank" : "🗑️ Decommission Unit",
-                              message: casualModeActive
-                                ? `Remove "${tank.name}"? Your fish will be moved to the Nursery where you can reassign them later.`
-                                : `Decommission unit "${tank.name}"? Specimens will be moved to the Nursery (unassigned pool).`,
-                              confirmLabel: casualModeActive ? "Remove Tank" : "Decommission",
-                              danger: true,
-                              onConfirm: async () => {
-                                try {
-                                  // Move all specimens from this tank to unassigned (nursery)
-                                  const tankSpecimens = await db.specimens
-                                    .where("currentTankId").equals(Number(tank.id))
-                                    .filter(s => Number(s.status) === 0)
-                                    .toArray();
-                                  for (const spec of tankSpecimens) {
-                                    await db.specimens.update(spec.id, { currentTankId: 0 });
-                                  }
-                                  // Clear the tank's embedded specimens array
-                                  await db.tanks.update(tank.id, { active: false, specimens: [] });
-                                  queryClient.invalidateQueries({ queryKey: ["tanks", walletAccount] });
-                                  const fishCount = tankSpecimens.length;
-                                  showToast(casualModeActive
-                                    ? `🗑️ Tank removed. ${fishCount} fish moved to Nursery.`
-                                    : `Unit decommissioned. ${fishCount} specimen${fishCount !== 1 ? "s" : ""} moved to Nursery.`);
-                                } catch (err) {
-                                  console.error("Remove tank failed:", err);
-                                  showToast("Failed to remove tank.");
-                                }
-                              },
-                            });
-                          }}
-                          style={{
-                            flex: 1,
-                            padding: "0.4rem 0.6rem",
-                            fontSize: "0.72rem",
-                            fontWeight: 500,
-                            borderRadius: "6px",
-                            border: "1px solid rgba(248, 113, 113, 0.25)",
-                            background: "rgba(248, 113, 113, 0.06)",
-                            color: "var(--accent-red, #f87171)",
-                            cursor: "pointer",
-                            transition: "all 0.15s ease",
-                          }}
-                        >
-                          🗑️ Remove tank (fish → Nursery)
-                        </button>
-                            </div>
-                          </>
-                        )}
                       </div>
 
                       {/* Recursive nested child containers */}
@@ -2138,9 +2381,38 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                 </span>
                 <h3 style={{ color: "#fff", fontSize: "1.5rem" }}>{activeTank.name}</h3>
                 {!casualModeActive && (
-                  <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                    📍 {activeTank.facility} › {activeTank.room} › {activeTank.rack}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                    <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                      📍 {[activeTank.facility, activeTank.room, activeTank.rack].filter(Boolean).join(" › ") || "Unassigned"}
+                    </span>
+                    {/* Group picker — the drag-onto-a-chip shortcut needs a keyboard
+                        and touch equivalent, and this one works from every view. */}
+                    <select
+                      aria-label="Location group"
+                      value={tankGroupName(activeTank)}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => handleAssignTankToGroup(activeTank.id, e.target.value || UNASSIGNED)}
+                      style={{
+                        background: "rgba(8,25,48,0.85)",
+                        border: "1px solid var(--glass-border)",
+                        borderRadius: "50px",
+                        color: "#fff",
+                        fontSize: "0.7rem",
+                        padding: "0.2rem 0.5rem",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <option value="">◌ Unassigned</option>
+                      {locationGroups.map((g) => (
+                        <option key={g} value={g}>📍 {g}</option>
+                      ))}
+                      {/* A group only present on this tank (legacy value) still needs an
+                          option, or the select would silently show the wrong entry. */}
+                      {tankGroupName(activeTank) && !locationGroups.some((g) => g.toLowerCase() === tankGroupName(activeTank).toLowerCase()) && (
+                        <option value={tankGroupName(activeTank)}>📍 {tankGroupName(activeTank)}</option>
+                      )}
+                    </select>
+                  </div>
                 )}
               </div>
               {poseidonChatOpen && (
@@ -4182,6 +4454,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
           100% { top: 0%; }
         }
       `}</style>
+
+      {/* Pro card ⋯ overflow menu — one fixed-position layer for the whole list,
+          rendered here (not inside a card) so no card can paint over it. */}
+      {renderTankCardMenu()}
 
       {/* Floating Action Toast Notification */}
       {toastMessage && (
