@@ -54,6 +54,9 @@ export function SpeciesCardPremium({
   fit,
   availabilitySummary,
   onViewListings,
+  isWishlisted,
+  onToggleWishlist,
+  isKept,
 }) {
   const proMode = !casualModeActive;
 
@@ -161,6 +164,31 @@ export function SpeciesCardPremium({
             style={{ color: verdictChip.color, borderColor: verdictChip.border }}
           >
             {verdictChip.label}
+          </span>
+        )}
+
+        {/* Wishlist toggle (T9) — only rendered when the caller wires it in
+            (FishFinder); BreedGallery's call site passes neither prop, so this
+            never appears there. A bookmark, not an achievement — no XP here. */}
+        {typeof onToggleWishlist === "function" && (
+          <button
+            type="button"
+            className={`species-card-premium__wishlist${isWishlisted ? " species-card-premium__wishlist--active" : ""}`}
+            aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+            aria-pressed={!!isWishlisted}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleWishlist();
+            }}
+          >
+            {isWishlisted ? "♥" : "♡"}
+          </button>
+        )}
+
+        {/* "Kept" ribbon (T9) — this species is already in the keeper's Dex. */}
+        {isKept && (
+          <span className="species-card-premium__kept-ribbon" title="Already in your Dex">
+            ✓ In your Dex
           </span>
         )}
 

@@ -155,6 +155,85 @@
   text-decoration: underline;
 }
 
+/* ── "My Dex" panel (Task 9) ──────────────────────────────────────────────── */
+
+.my-dex-panel {
+  padding: 1.25rem 1.5rem;
+}
+
+.my-dex-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.my-dex-panel__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.my-dex-panel__wishlist-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #f472b6;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.my-dex-panel__hint {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  margin: 0.5rem 0 0;
+}
+
+.my-dex-panel__stat-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.my-dex-panel__count {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.my-dex-panel__count-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.my-dex-panel__bar {
+  margin-top: 0.6rem;
+  height: 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.my-dex-panel__bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #38bdf8, #7dd3fc);
+  transition: width 0.4s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .my-dex-panel__bar-fill {
+    transition: none;
+  }
+}
+
 /* ── "Good matches" home ─────────────────────────────────────────────────── */
 
 .fish-finder__home-title,

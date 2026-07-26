@@ -6,11 +6,14 @@ import { useContractSpecies, useSpeciesData } from "../../hooks/useSpeciesData";
 import { useUserTanks } from "../../hooks/useUserTanks";
 import { useSpeciesAvailability } from "../../hooks/useSpeciesAvailability";
 import { useSpeciesSearch } from "../../hooks/useSpeciesSearch";
+import { useDex } from "../../hooks/useDex";
+import { XP_ACTIONS } from "../../utils/xp";
 import { buildGlobalCatalog } from "../../services/speciesCatalog";
 import { tankFitInputs } from "../../services/compatibleTanks";
 import { summarizeAvailability } from "../../services/speciesAvailability";
 import { rankSpeciesMatches } from "./matchRanking";
 import { DISCOVERY_INTENTS, filterByIntent } from "./discoveryIntents";
+import { MyDexPanel } from "./MyDexPanel";
 import "./FishFinder.css";
 
 /**
@@ -58,6 +61,34 @@ export function FishFinder({
   const { data: fishbaseData = [], isLoading: speciesLoading } = useSpeciesData();
   const { data: contractSpecies = [], isLoading: contractLoading } = useContractSpecies(contractAddress);
   const { getAvailability } = useSpeciesAvailability(contractAddress, marketplaceAddress);
+
+  // ── "My Dex" + wishlist (T9) ──────────────────────────────────────────────
+  // Reconciles once tanks have loaded; composes dexService.js for every
+  // read/write (including the one-time ADD_SPECIES XP award on genuine
+  // first-discovery). Toast surfaces newly-discovered species so the reward
+  // loop is visible, mirroring the existing showToast pattern (BreedGallery,
+  // TankList, MintSpecimen, etc.).
+  const { dexEntries, wishlist, lastAdded, isWishlisted, toggleWishlist, isKept } = useDex(walletAccount, tanks, !tanksLoading);
+  const [toastMessage, setToastMessage] = useState(null);
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+  useEffect(() => {
+    // Toast ONLY what reconcile actually added (and therefore actually awarded
+    // XP for). Deliberately not derived by diffing `dexEntries` against a
+    // previous-render ref: on a normal load that populates a returning keeper's
+    // existing Dex, every known species would look "new" and the toast would
+    // announce points that were never awarded. Points come from XP_ACTIONS so
+    // the number shown can never drift from the amount granted.
+    if (lastAdded.length === 0) return;
+    const points = (XP_ACTIONS.ADD_SPECIES?.points || 0) * lastAdded.length;
+    showToast(
+      lastAdded.length === 1
+        ? `🎉 ${lastAdded[0].commonName} added to your Dex! +${points} pts`
+        : `🎉 ${lastAdded.length} new species added to your Dex! +${points} pts`
+    );
+  }, [lastAdded]);
 
   // One source of candidates: prefer the on-chain registered catalog when
   // non-empty, else fall back to the curated global catalog. Keeps this
@@ -244,6 +275,9 @@ export function FishFinder({
         fit={fit}
         availabilitySummary={summarizeAvailability(getAvailability(entry))}
         onViewListings={() => handleViewListings(entry)}
+        isWishlisted={isWishlisted(entry.scientificName)}
+        onToggleWishlist={() => toggleWishlist(entry)}
+        isKept={isKept(entry.scientificName)}
       />
     </div>
   );
@@ -262,6 +296,8 @@ export function FishFinder({
 
   return (
     <div className="fish-finder">
+      {toastMessage && <div className="inline-toast">{toastMessage}</div>}
+
       {!detailOpen && (
         <>
       {/* ── Tank context bar ────────────────────────────────────────────── */}
@@ -300,6 +336,9 @@ export function FishFinder({
           </div>
         )}
       </div>
+
+      {/* ── "My Dex" (T9) ───────────────────────────────────────────────── */}
+      <MyDexPanel dexEntries={dexEntries} candidates={candidates} wishlistCount={wishlist.length} />
 
       {/* ── "Find my next fish" — guided discovery (T7) ─────────────────── */}
       <div className="fish-finder__discovery">
