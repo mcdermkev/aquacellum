@@ -3,6 +3,7 @@ import {
   buildSpeciesAvailability,
   getAvailabilityFor,
   summarizeAvailability,
+  serializePublicAvailability,
 } from "./speciesAvailability.js";
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
@@ -134,5 +135,50 @@ describe("summarizeAvailability", () => {
   it("returns null when there's nothing to show", () => {
     expect(summarizeAvailability(null)).toBeNull();
     expect(summarizeAvailability({ listingCount: 0, sellerCount: 0 })).toBeNull();
+  });
+});
+
+describe("serializePublicAvailability", () => {
+  const index = buildSpeciesAvailability([
+    single({ tokenId: 1, seller: "0xAAA", scientificName: "Betta splendens", commonName: "Betta", priceCentsUSD: 1500 }),
+    single({ tokenId: 2, seller: "0xBBB", scientificName: "Betta splendens", commonName: "Betta", priceCentsUSD: 1200 }),
+    single({ tokenId: 3, seller: "0xCCC", scientificName: "Paracheirodon innesi", commonName: "Neon Tetra", priceCentsUSD: 300 }),
+  ]);
+
+  it("keys by lowercased scientific name and exposes only aggregate fields", () => {
+    const pub = serializePublicAvailability(index);
+    expect(Object.keys(pub).sort()).toEqual(["betta splendens", "paracheirodon innesi"]);
+    const betta = pub["betta splendens"];
+    expect(betta).toEqual({
+      scientificName: "Betta splendens",
+      commonName: "Betta",
+      sellerCount: 2,
+      listingCount: 2,
+      unitsAvailable: 2,
+      fromPriceCents: 1200,
+      fromPriceDisplay: "$12.00",
+      hasShipping: true,
+    });
+  });
+
+  it("never leaks seller identities or per-listing detail (privacy boundary)", () => {
+    const pub = serializePublicAvailability(index);
+    const serialized = JSON.stringify(pub).toLowerCase();
+    // No seller wallet addresses and no internal seller set / listing keys.
+    expect(serialized).not.toContain("0xaaa");
+    expect(serialized).not.toContain("0xbbb");
+    expect(serialized).not.toContain("0xccc");
+    expect(serialized).not.toContain("_sellers");
+    expect(serialized).not.toContain("_keys");
+    for (const proj of Object.values(pub)) {
+      expect(proj).not.toHaveProperty("_sellers");
+      expect(proj).not.toHaveProperty("seller");
+    }
+  });
+
+  it("omits species with no active listings and handles empty/invalid input", () => {
+    expect(serializePublicAvailability(buildSpeciesAvailability([]))).toEqual({});
+    expect(serializePublicAvailability(null)).toEqual({});
+    expect(serializePublicAvailability({})).toEqual({});
   });
 });

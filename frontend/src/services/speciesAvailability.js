@@ -177,3 +177,41 @@ export function summarizeAvailability(projection) {
       : "";
   return `Available from ${sellers}${price}`;
 }
+
+/**
+ * Serialize an availability index into a public, key-by-scientific-name map
+ * safe for anonymous exposure (Fish Finder Rework, Task 4c). This is the
+ * privacy boundary: it whitelists ONLY aggregate fields — counts, from-price,
+ * shipping flag, and display names — and deliberately drops any per-listing
+ * detail and seller identity. (The projections already collapse sellers to a
+ * `sellerCount`, but whitelisting here makes the public contract explicit so a
+ * future projection field can't leak by default.)
+ *
+ * Keyed by lowercased scientific name because a public consumer (the species
+ * database page) joins by name, not by the on-chain speciesId.
+ *
+ * @param {{byScientificName: Map<string,Object>}} index - buildSpeciesAvailability output
+ * @returns {{ [scientificNameLower:string]: {
+ *   scientificName:(string|null), commonName:(string|null), sellerCount:number,
+ *   listingCount:number, unitsAvailable:number, fromPriceCents:(number|null),
+ *   fromPriceDisplay:(string|null), hasShipping:boolean
+ * } }}
+ */
+export function serializePublicAvailability(index) {
+  const out = {};
+  if (!index || !(index.byScientificName instanceof Map)) return out;
+  for (const [name, p] of index.byScientificName) {
+    if (!name || !p || p.listingCount <= 0 || p.sellerCount <= 0) continue;
+    out[name] = {
+      scientificName: p.scientificName ?? null,
+      commonName: p.commonName ?? null,
+      sellerCount: p.sellerCount,
+      listingCount: p.listingCount,
+      unitsAvailable: p.unitsAvailable,
+      fromPriceCents: p.fromPriceCents,
+      fromPriceDisplay: p.fromPriceDisplay,
+      hasShipping: p.hasShipping,
+    };
+  }
+  return out;
+}

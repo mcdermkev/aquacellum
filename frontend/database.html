@@ -512,6 +512,24 @@
       opacity: 1;
       transform: translateY(0);
     }
+    /* Public marketplace availability pill (Fish Finder T4c) */
+    .card-avail {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: var(--teal-300);
+      background: rgba(45,212,191,0.08);
+      border: 1px solid rgba(45,212,191,0.25);
+      border-radius: 20px;
+      padding: 2px 8px;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+    .card-avail:hover {
+      background: rgba(45,212,191,0.16);
+      border-color: rgba(45,212,191,0.4);
+    }
 
     /* =========================================
        SKELETON LOADING CARDS
@@ -1078,6 +1096,7 @@
     let isFlipped = false;
     let currentView = 'hobbyist';
     let currentSort = 'popular';
+    let availabilityByName = {}; // Fish Finder T4c: public marketplace availability, keyed by lowercased scientific name
 
     // Species that have videos — these are the most popular aquarium fish
     const videoSlugs = new Set([
@@ -1147,6 +1166,22 @@
     }
 
     // ---- Fetch & Initialize ----
+    // ---- Public marketplace availability (Fish Finder T4c) ----
+    // Aggregate-only signal from /api/species-availability (never raw listings).
+    async function fetchAvailability() {
+      try {
+        const res = await fetch('/api/species-availability');
+        if (!res.ok) return;
+        const data = await res.json();
+        availabilityByName = data.byScientificName || {};
+        if (Object.keys(availabilityByName).length > 0) {
+          renderGrid(); // re-render so cards pick up the availability pill
+        }
+      } catch (e) {
+        // Graceful: no availability shown if the endpoint is unavailable.
+      }
+    }
+
     async function init() {
       try {
         const res = await fetch('/fishbase_master.json?v=2');
@@ -1172,6 +1207,10 @@
         }
 
         applyFilters();
+
+        // Fish Finder T4c: fetch public marketplace availability (non-blocking,
+        // graceful). Cards re-render with an availability pill when it arrives.
+        fetchAvailability();
       } catch (err) {
         document.getElementById('speciesGrid').innerHTML = `
           <div class="empty-state">
@@ -1371,6 +1410,11 @@
           </div>`;
         }
 
+        const avail = availabilityByName[(sp.scientificName || '').toLowerCase()];
+        const availHtml = avail
+          ? `<a href="/app/gallery?species=${encodeURIComponent(sp.scientificName)}" class="card-avail" onclick="event.stopPropagation()" title="See sellers in the app">🛒 ${avail.sellerCount} seller${avail.sellerCount === 1 ? '' : 's'}${avail.fromPriceDisplay ? ` · from ${avail.fromPriceDisplay}` : ''}</a>`
+          : '';
+
         return `
           <div class="species-card ${tierClass}" onclick="openPopup(${idx})" data-idx="${idx}">
             <div class="card-image">
@@ -1383,6 +1427,7 @@
               <div class="card-common-name">${sp.commonName || 'Unknown'}</div>
               <div class="card-sci-name">${sp.scientificName}</div>
               ${metaHtml}
+              ${availHtml}
               <div class="card-cta">View Details →</div>
               <a href="/species/${toSlug(sp.scientificName)}" class="card-cta" style="display:block;margin-top:2px;color:var(--emerald-400);opacity:0.7;font-size:0.64rem;" onclick="event.stopPropagation()">Full Profile ↗</a>
             </div>
