@@ -4,7 +4,7 @@ import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";
 import { getPersonality } from "../utils/personality";
 import { getEasterEggConfig } from "./BreedGallery";
 import { CARE_LABELS, CARE_BADGE_CLASS } from "../services/speciesCatalog";
-import { fitPresentationKind } from "../services/speciesFit";
+import { fitPresentationKind, VERDICT_CHIP } from "../services/speciesFit";
 
 const isPlantEntry = (item) => {
   if (typeof item === "object" && item !== null) {
@@ -13,19 +13,14 @@ const isPlantEntry = (item) => {
   return false;
 };
 
-// Verdict chip presentation, keyed by fitPresentationKind (Fish Finder T6).
-// Colors match VERDICT_COLOR in BreedGallery.jsx/FishFinder.jsx for ok/blocked
-// so the chip never disagrees with the "Tank Match" widget. caution_data gets
-// its OWN neutral tone — it is informational ("we don't know yet"), never a
-// warning (Decision D1: unknown data must never read as a mismatch).
-// Exported (T8) so CasualSpeciesDetail's verdict panel uses the exact same
-// tones instead of a third copy of these colors.
-export const VERDICT_CHIP = Object.freeze({
-  ok: { label: "Good fit", color: "hsl(140, 70%, 45%)", border: "hsla(140, 70%, 45%, 0.4)" },
-  caution_mismatch: { label: "Double-check", color: "hsl(42, 92%, 52%)", border: "hsla(42, 92%, 52%, 0.4)" },
-  caution_data: { label: "Limited data", color: "hsl(210, 15%, 60%)", border: "hsla(210, 15%, 60%, 0.4)" },
-  blocked: { label: "Not a fit", color: "hsl(0, 78%, 55%)", border: "hsla(0, 78%, 55%, 0.4)" },
-});
+// Verdict chip presentation now lives with the fit engine that keys it
+// (services/speciesFit.js, beside fitPresentationKind) so tests and other pure
+// consumers can read the chip vocabulary without importing this component —
+// which transitively pulls in BreedGallery → ethersCompat → `window.ethers`,
+// unavailable in the node test environment (Fish Finder T11).
+// Re-exported here so existing `from "./SpeciesCardPremium"` imports keep
+// working unchanged.
+export { VERDICT_CHIP } from "../services/speciesFit";
 
 // Resolve the canonical difficulty descriptor for tier styling, without
 // fabricating one. Only T1 global entries carry a canonical `.difficulty`

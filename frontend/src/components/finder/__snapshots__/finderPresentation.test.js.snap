@@ -1,0 +1,348 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Casual species detail presentation — copy snapshots > renders the detail's aquarium-facing copy for a known species 1`] = `
+{
+  "careTitle": "Care needs",
+  "emptyFit": "Add an aquarium to check whether the Neon Tetra fits your water.",
+  "emptyFitCta": "Add an aquarium →",
+  "fitTitle": "Does it fit your aquarium?",
+  "stocking": "Adding the Neon Tetra would bring The Living Room to ~68% of its stocking guideline (from ~41%).",
+  "stockingTitle": "Stocking impact",
+  "stockingUnknown": "We can't estimate the bioload — adult size unknown for this species.",
+}
+`;
+
+exports[`Casual species detail presentation — copy snapshots > renders the finder's empty and loading states 1`] = `
+{
+  "contextBarCta": "Add an aquarium →",
+  "contextBarEmpty": "Add an aquarium to get fish picked for your water.",
+  "dexEmpty": "Every species you keep gets logged here. Add a fish to start your Dex.",
+  "homeEmpty": "No matches to show for this aquarium yet — the species we checked either already live here or need different water. Browse all species below to keep looking.",
+  "homeNeedAquarium": "Add an aquarium above to see fish picked for your water.",
+  "resultsEmpty": "Nothing matched that. Try a different filter, or clear your search.",
+}
+`;
+
+exports[`Fish Finder card presentation — snapshots across the species × aquarium matrix > resolves consistent card content for every species in the coldwater aquarium 1`] = `
+{
+  "Betta": {
+    "availability": "Available from 1 seller · from $25.00",
+    "chipLabel": "Not a fit",
+    "commonName": "Betta",
+    "headline": "Not a safe fit for your tank",
+    "presentationKind": "blocked",
+    "reasons": [
+      "Your tank's 18°C temperature is well outside this species' comfortable range.",
+    ],
+    "verdict": "blocked",
+  },
+  "Goldfish": {
+    "availability": null,
+    "chipLabel": "Good fit",
+    "commonName": "Goldfish",
+    "headline": "Good fit for your tank",
+    "presentationKind": "ok",
+    "reasons": [
+      "Your 30-gallon tank meets this species' 30-gallon minimum.",
+      "Temperature is a good match (species range 10–21°C).",
+      "pH is a good match (species range 6.5–8).",
+    ],
+    "verdict": "ok",
+  },
+  "Mystery Fish (sparse data)": {
+    "availability": null,
+    "chipLabel": "Limited data",
+    "commonName": "Mystery Fish",
+    "headline": "Proceed with caution",
+    "presentationKind": "caution_data",
+    "reasons": [
+      "We don't have a confirmed minimum tank size for this species yet, so double-check care guides before adding.",
+      "We don't have a confirmed temperature range for this species yet.",
+      "We don't have a confirmed pH range for this species yet.",
+    ],
+    "verdict": "caution",
+  },
+  "Neon Tetra": {
+    "availability": "Available from 2 sellers · from $3.50",
+    "chipLabel": "Double-check",
+    "commonName": "Neon Tetra",
+    "headline": "Proceed with caution",
+    "presentationKind": "caution_mismatch",
+    "reasons": [
+      "Some water parameters are a stretch for this species — double-check before adding it to your tank.",
+    ],
+    "verdict": "caution",
+  },
+  "Oscar": {
+    "availability": null,
+    "chipLabel": "Not a fit",
+    "commonName": "Oscar",
+    "headline": "Not a safe fit for your tank",
+    "presentationKind": "blocked",
+    "reasons": [
+      "Your 30-gallon tank is well below this species' 75-gallon minimum.",
+      "Your tank's 18°C temperature is well outside this species' comfortable range.",
+    ],
+    "verdict": "blocked",
+  },
+}
+`;
+
+exports[`Fish Finder card presentation — snapshots across the species × aquarium matrix > resolves consistent card content for every species in the community aquarium 1`] = `
+{
+  "Betta": {
+    "availability": "Available from 1 seller · from $25.00",
+    "chipLabel": "Good fit",
+    "commonName": "Betta",
+    "headline": "Good fit for your tank",
+    "presentationKind": "ok",
+    "reasons": [
+      "Your 20-gallon tank meets this species' 5-gallon minimum.",
+      "Temperature is a good match (species range 24–28°C).",
+      "pH is a good match (species range 6–7.5).",
+    ],
+    "verdict": "ok",
+  },
+  "Goldfish": {
+    "availability": null,
+    "chipLabel": "Double-check",
+    "commonName": "Goldfish",
+    "headline": "Proceed with caution",
+    "presentationKind": "caution_mismatch",
+    "reasons": [
+      "Some water parameters are a stretch for this species — double-check before adding it to your tank.",
+    ],
+    "verdict": "caution",
+  },
+  "Mystery Fish (sparse data)": {
+    "availability": null,
+    "chipLabel": "Limited data",
+    "commonName": "Mystery Fish",
+    "headline": "Proceed with caution",
+    "presentationKind": "caution_data",
+    "reasons": [
+      "We don't have a confirmed minimum tank size for this species yet, so double-check care guides before adding.",
+      "We don't have a confirmed temperature range for this species yet.",
+      "We don't have a confirmed pH range for this species yet.",
+    ],
+    "verdict": "caution",
+  },
+  "Neon Tetra": {
+    "availability": "Available from 2 sellers · from $3.50",
+    "chipLabel": "Good fit",
+    "commonName": "Neon Tetra",
+    "headline": "Good fit for your tank",
+    "presentationKind": "ok",
+    "reasons": [
+      "Your 20-gallon tank meets this species' 10-gallon minimum.",
+      "Temperature is a good match (species range 20–26°C).",
+      "pH is a good match (species range 6–7).",
+    ],
+    "verdict": "ok",
+  },
+  "Oscar": {
+    "availability": null,
+    "chipLabel": "Not a fit",
+    "commonName": "Oscar",
+    "headline": "Not a safe fit for your tank",
+    "presentationKind": "blocked",
+    "reasons": [
+      "Your 20-gallon tank is well below this species' 75-gallon minimum.",
+    ],
+    "verdict": "blocked",
+  },
+}
+`;
+
+exports[`Fish Finder card presentation — snapshots across the species × aquarium matrix > resolves consistent card content for every species in the large aquarium 1`] = `
+{
+  "Betta": {
+    "availability": "Available from 1 seller · from $25.00",
+    "chipLabel": "Good fit",
+    "commonName": "Betta",
+    "headline": "Good fit for your tank",
+    "presentationKind": "ok",
+    "reasons": [
+      "Your 75-gallon tank meets this species' 5-gallon minimum.",
+      "Temperature is a good match (species range 24–28°C).",
+      "pH is a good match (species range 6–7.5).",
+    ],
+    "verdict": "ok",
+  },
+  "Goldfish": {
+    "availability": null,
+    "chipLabel": "Not a fit",
+    "commonName": "Goldfish",
+    "headline": "Not a safe fit for your tank",
+    "presentationKind": "blocked",
+    "reasons": [
+      "Your tank's 25°C temperature is well outside this species' comfortable range.",
+    ],
+    "verdict": "blocked",
+  },
+  "Mystery Fish (sparse data)": {
+    "availability": null,
+    "chipLabel": "Limited data",
+    "commonName": "Mystery Fish",
+    "headline": "Proceed with caution",
+    "presentationKind": "caution_data",
+    "reasons": [
+      "We don't have a confirmed minimum tank size for this species yet, so double-check care guides before adding.",
+      "We don't have a confirmed temperature range for this species yet.",
+      "We don't have a confirmed pH range for this species yet.",
+    ],
+    "verdict": "caution",
+  },
+  "Neon Tetra": {
+    "availability": "Available from 2 sellers · from $3.50",
+    "chipLabel": "Good fit",
+    "commonName": "Neon Tetra",
+    "headline": "Good fit for your tank",
+    "presentationKind": "ok",
+    "reasons": [
+      "Your 75-gallon tank meets this species' 10-gallon minimum.",
+      "Temperature is a good match (species range 20–26°C).",
+      "pH is a good match (species range 6–7).",
+    ],
+    "verdict": "ok",
+  },
+  "Oscar": {
+    "availability": null,
+    "chipLabel": "Good fit",
+    "commonName": "Oscar",
+    "headline": "Good fit for your tank",
+    "presentationKind": "ok",
+    "reasons": [
+      "Your 75-gallon tank meets this species' 75-gallon minimum.",
+      "Temperature is a good match (species range 22–27°C).",
+      "pH is a good match (species range 6–7.5).",
+    ],
+    "verdict": "ok",
+  },
+}
+`;
+
+exports[`Fish Finder card presentation — snapshots across the species × aquarium matrix > resolves consistent card content for every species in the nano aquarium 1`] = `
+{
+  "Betta": {
+    "availability": "Available from 1 seller · from $25.00",
+    "chipLabel": "Good fit",
+    "commonName": "Betta",
+    "headline": "Good fit for your tank",
+    "presentationKind": "ok",
+    "reasons": [
+      "Your 5-gallon tank meets this species' 5-gallon minimum.",
+      "Temperature is a good match (species range 24–28°C).",
+      "pH is a good match (species range 6–7.5).",
+    ],
+    "verdict": "ok",
+  },
+  "Goldfish": {
+    "availability": null,
+    "chipLabel": "Not a fit",
+    "commonName": "Goldfish",
+    "headline": "Not a safe fit for your tank",
+    "presentationKind": "blocked",
+    "reasons": [
+      "Your 5-gallon tank is well below this species' 30-gallon minimum.",
+      "Your tank's 25°C temperature is well outside this species' comfortable range.",
+    ],
+    "verdict": "blocked",
+  },
+  "Mystery Fish (sparse data)": {
+    "availability": null,
+    "chipLabel": "Limited data",
+    "commonName": "Mystery Fish",
+    "headline": "Proceed with caution",
+    "presentationKind": "caution_data",
+    "reasons": [
+      "We don't have a confirmed minimum tank size for this species yet, so double-check care guides before adding.",
+      "We don't have a confirmed temperature range for this species yet.",
+      "We don't have a confirmed pH range for this species yet.",
+    ],
+    "verdict": "caution",
+  },
+  "Neon Tetra": {
+    "availability": "Available from 2 sellers · from $3.50",
+    "chipLabel": "Double-check",
+    "commonName": "Neon Tetra",
+    "headline": "Proceed with caution",
+    "presentationKind": "caution_mismatch",
+    "reasons": [
+      "Some water parameters are a stretch for this species — double-check before adding it to your tank.",
+    ],
+    "verdict": "caution",
+  },
+  "Oscar": {
+    "availability": null,
+    "chipLabel": "Not a fit",
+    "commonName": "Oscar",
+    "headline": "Not a safe fit for your tank",
+    "presentationKind": "blocked",
+    "reasons": [
+      "Your 5-gallon tank is well below this species' 75-gallon minimum.",
+    ],
+    "verdict": "blocked",
+  },
+}
+`;
+
+exports[`Fish Finder card presentation — snapshots across the species × aquarium matrix > resolves the no-aquarium state (nothing selected yet) 1`] = `
+{
+  "Betta": {
+    "availability": "Available from 1 seller · from $25.00",
+    "chipLabel": null,
+    "commonName": "Betta",
+    "headline": "Select a tank to check fit",
+    "presentationKind": "no_tank",
+    "reasons": [
+      "Set up your display tank to see a personalized compatibility check for this species.",
+    ],
+    "verdict": "no_tank",
+  },
+  "Goldfish": {
+    "availability": null,
+    "chipLabel": null,
+    "commonName": "Goldfish",
+    "headline": "Select a tank to check fit",
+    "presentationKind": "no_tank",
+    "reasons": [
+      "Set up your display tank to see a personalized compatibility check for this species.",
+    ],
+    "verdict": "no_tank",
+  },
+  "Mystery Fish (sparse data)": {
+    "availability": null,
+    "chipLabel": null,
+    "commonName": "Mystery Fish",
+    "headline": "Select a tank to check fit",
+    "presentationKind": "no_tank",
+    "reasons": [
+      "Set up your display tank to see a personalized compatibility check for this species.",
+    ],
+    "verdict": "no_tank",
+  },
+  "Neon Tetra": {
+    "availability": "Available from 2 sellers · from $3.50",
+    "chipLabel": null,
+    "commonName": "Neon Tetra",
+    "headline": "Select a tank to check fit",
+    "presentationKind": "no_tank",
+    "reasons": [
+      "Set up your display tank to see a personalized compatibility check for this species.",
+    ],
+    "verdict": "no_tank",
+  },
+  "Oscar": {
+    "availability": null,
+    "chipLabel": null,
+    "commonName": "Oscar",
+    "headline": "Select a tank to check fit",
+    "presentationKind": "no_tank",
+    "reasons": [
+      "Set up your display tank to see a personalized compatibility check for this species.",
+    ],
+    "verdict": "no_tank",
+  },
+}
+`;

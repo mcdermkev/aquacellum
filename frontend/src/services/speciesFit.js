@@ -124,6 +124,29 @@ function isRange(r) {
  * @param {{verdict?:string, profile?:Object}|null|undefined} fit - assessSpeciesFit output
  * @returns {'ok'|'caution_data'|'caution_mismatch'|'blocked'|'no_tank'}
  */
+/**
+ * Verdict chip presentation, keyed by fitPresentationKind (Fish Finder T6).
+ *
+ * Colors match VERDICT_COLOR in BreedGallery.jsx/FishFinder.jsx for ok/blocked
+ * so the chip never disagrees with the "Tank Match" widget. caution_data gets
+ * its OWN neutral tone — it is informational ("we don't know yet"), never a
+ * warning (Decision D1: unknown data must never read as a mismatch).
+ *
+ * Lives here rather than in SpeciesCardPremium.jsx (T11) so pure consumers —
+ * CasualSpeciesDetail's verdict panel and the presentation snapshot tests — can
+ * read one copy of these tones without importing a component that transitively
+ * requires `window`. SpeciesCardPremium re-exports it for existing importers.
+ *
+ * Note there is deliberately NO `no_tank` entry: with no aquarium selected
+ * there is no verdict to show, so callers render no chip at all.
+ */
+export const VERDICT_CHIP = Object.freeze({
+  ok: { label: "Good fit", color: "hsl(140, 70%, 45%)", border: "hsla(140, 70%, 45%, 0.4)" },
+  caution_mismatch: { label: "Double-check", color: "hsl(42, 92%, 52%)", border: "hsla(42, 92%, 52%, 0.4)" },
+  caution_data: { label: "Limited data", color: "hsl(210, 15%, 60%)", border: "hsla(210, 15%, 60%, 0.4)" },
+  blocked: { label: "Not a fit", color: "hsl(0, 78%, 55%)", border: "hsla(0, 78%, 55%, 0.4)" },
+});
+
 export function fitPresentationKind(fit) {
   if (!fit) return "no_tank";
 

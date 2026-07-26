@@ -17,6 +17,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 import { containsProhibitedTerm } from "../../services/orderCopy.js";
+import { VERDICT_CHIP } from "../../services/speciesFit.js";
 import {
   CONTAINER_NOUN,
   CONTAINER_NOUN_PLURAL,
@@ -80,6 +81,9 @@ function allCopyStrings() {
     d.stockingImpact("this fish", "The Living Room", 68, 41),
     d.stockingUnknown,
     d.fallbackName,
+    // Verdict chip labels are the most prominent copy on a card, so they're
+    // held to the same contract (T11 moved them to services/speciesFit.js).
+    ...Object.values(VERDICT_CHIP).map((chip) => chip.label),
   ];
 }
 

@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { useUserTanks } from "../../hooks/useUserTanks";
 import { useSpeciesAvailability } from "../../hooks/useSpeciesAvailability";
 import { tankFitInputs } from "../../services/compatibleTanks";
-import { assessSpeciesFit, fitPresentationKind } from "../../services/speciesFit";
+import { assessSpeciesFit, fitPresentationKind, VERDICT_CHIP } from "../../services/speciesFit";
 import { summarizeAvailability } from "../../services/speciesAvailability";
 import { estimateAddedStocking } from "../../utils/stockingGuidance";
 import { getSpeciesCare } from "../logbook/SpeciesCareGuide";
@@ -10,7 +10,6 @@ import { buildSpeciesCarePrompt } from "../../utils/poseidonPrompts";
 import { getPersonality } from "../../utils/personality";
 import { SpeciesInsights } from "../reef/SpeciesInsights";
 import { PoseidonChatConsole } from "../PoseidonChatConsole";
-import { VERDICT_CHIP } from "../SpeciesCardPremium";
 import { DETAIL_COPY } from "./finderCopy";
 import "./CasualSpeciesDetail.css";
 
