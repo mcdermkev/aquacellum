@@ -1167,10 +1167,12 @@
 
     // ---- Fetch & Initialize ----
     // ---- Public marketplace availability (Fish Finder T4c) ----
-    // Aggregate-only signal from /api/species-availability (never raw listings).
+    // Aggregate-only signal from /api/species?availability=true (never raw
+    // listings). Merged into the species function to stay within Vercel's
+    // Hobby-plan 12-serverless-function limit.
     async function fetchAvailability() {
       try {
-        const res = await fetch('/api/species-availability');
+        const res = await fetch('/api/species?availability=true');
         if (!res.ok) return;
         const data = await res.json();
         availabilityByName = data.byScientificName || {};

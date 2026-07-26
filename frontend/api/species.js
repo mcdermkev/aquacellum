@@ -32,6 +32,10 @@ import { join } from "path";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { checkRateLimit } from "./_lib/rateLimiter.js";
+import {
+  buildSpeciesAvailability,
+  serializePublicAvailability,
+} from "../src/services/speciesAvailability.js";
 
 const BASE_URL = "https://aquadex.fish";
 const APP_URL = `${BASE_URL}/app`;
@@ -373,6 +377,16 @@ export default async function handler(req, res) {
   setOpenCors(res);
   if (req.method === "OPTIONS") return res.status(204).end();
 
+  // Public per-species marketplace availability (Fish Finder T4c). Merged into
+  // this function from the former standalone /api/species-availability to stay
+  // within Vercel's Hobby-plan 12-serverless-function limit. Aggregate-only
+  // (never raw listings), service-key read, edge-cached, no rate limit — it is
+  // its own self-contained branch handled before the catalog/rate-limit path.
+  //   GET /api/species?availability=true
+  if (req.query.availability === "true") {
+    return handleAvailability(req, res);
+  }
+
   const action = (req.query.action || "").toLowerCase();
   if (action === "request-key") {
     return handleRequestKey(req, res);
@@ -422,6 +436,76 @@ export default async function handler(req, res) {
 
   logUsage(caller, "list");
   return handleList(req, res);
+}
+
+// ── GET /api/species?availability=true ──────────────────────────────────
+// Aggregate-only "who's selling what" for the public species database. Reuses
+// the EXACT in-app aggregator (buildSpeciesAvailability) + public whitelist
+// (serializePublicAvailability) so public and in-app numbers can't drift, and
+// there is one place that decides what is public. Returns ONLY counts +
+// from-price + shipping flag, keyed by lowercased scientific name — never raw
+// listings, seller wallet addresses, or per-listing detail. Degrades to an
+// empty aggregate (never an error page) on missing env / query failure.
+
+const AVAILABILITY_MAX_ROWS = 5000; // generous ceiling; the aggregate collapses per-species
+
+async function handleAvailability(req, res) {
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed. Use GET." });
+  }
+  try {
+    const listings = await fetchActiveListings();
+    const index = buildSpeciesAvailability(listings);
+    const byScientificName = serializePublicAvailability(index);
+
+    // Edge cache: 5 min fresh, 10 min stale-while-revalidate. Availability is a
+    // discovery signal, not real-time, and caching shields Supabase from public
+    // traffic.
+    res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
+    return res.status(200).json({
+      byScientificName,
+      count: Object.keys(byScientificName).length,
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    // Never surface an error page to the public site — degrade to empty.
+    console.error("[species availability] failed:", err?.message || err);
+    return res.status(200).json({
+      byScientificName: {},
+      count: 0,
+      generatedAt: new Date().toISOString(),
+      degraded: true,
+    });
+  }
+}
+
+/**
+ * Fetch active cloud listings and return their listing objects (the `data`
+ * JSON blob per row), ready for buildSpeciesAvailability. Server-side read with
+ * the service key (the SUPABASE_SERVICE_KEY-backed `supabase` client above).
+ */
+async function fetchActiveListings() {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("aquadex_listings")
+    .select("data")
+    .eq("is_active", true)
+    .limit(AVAILABILITY_MAX_ROWS);
+
+  if (error) {
+    console.warn("[species availability] listings query failed:", error.message);
+    return [];
+  }
+
+  return (data || [])
+    .map((row) => {
+      try {
+        return typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
 }
 
 // ── GET /api/species ────────────────────────────────────────────────────
