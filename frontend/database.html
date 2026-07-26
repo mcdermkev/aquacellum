@@ -1556,9 +1556,11 @@
       backHtml += `</div>
         </div>
         <div class="flip-back-hint">
-          <a href="/species/${toSlug(sp.scientificName)}" style="color:var(--emerald-300);font-weight:600;font-size:0.78rem;text-decoration:none;" onclick="event.stopPropagation()">View Full Profile →</a>
+          <a href="/app/gallery?species=${encodeURIComponent(sp.scientificName)}" style="color:var(--teal-300);font-weight:600;font-size:0.78rem;text-decoration:none;" onclick="event.stopPropagation()">Check if it fits my tank →</a>
           <span style="margin:0 8px;color:var(--text-muted);">·</span>
-          Tap to flip back · Click outside to close
+          <a href="/species/${toSlug(sp.scientificName)}" style="color:var(--emerald-300);font-weight:600;font-size:0.78rem;text-decoration:none;" onclick="event.stopPropagation()">Full Profile →</a>
+          <span style="margin:0 8px;color:var(--text-muted);">·</span>
+          Tap to flip back
         </div>`;
 
       document.getElementById('flipBack').innerHTML = backHtml;

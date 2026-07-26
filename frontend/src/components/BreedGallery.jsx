@@ -115,7 +115,8 @@ export function BreedGallery({
   onCheckoutSuccessRedirect,
   casualModeActive,
   initialSelectedBreed,
-  onSelectedBreedChange
+  onSelectedBreedChange,
+  deepLinkSpecies
 }) {
   const proMode = !casualModeActive;
   const [selectedBreed, setSelectedBreed] = useState(initialSelectedBreed || null);
@@ -609,6 +610,26 @@ export function BreedGallery({
       }
     }
   }, [preselectedBreedId, speciesList, onClearPreselectedBreed]);
+
+  // Deep-link support (Fish Finder T4b): open a species' detail from a
+  // ?species=<scientificName> deep link. Resolved by scientific name across
+  // BOTH the contract catalog and the global catalog (so it works regardless
+  // of the specCode-vs-on-chain-id scheme), once, and only when no detail is
+  // already open.
+  const deepLinkHandledRef = useRef(false);
+  useEffect(() => {
+    if (!deepLinkSpecies || deepLinkHandledRef.current || selectedBreed) return;
+    const target = String(deepLinkSpecies).toLowerCase();
+    const pool = [...(speciesList || []), ...(globalRefList || [])];
+    const match = pool.find(
+      (b) => b?.scientificName && b.scientificName.toLowerCase() === target
+    );
+    if (match) {
+      deepLinkHandledRef.current = true;
+      setSelectedBreed(match);
+      loadBreedSpecimens(match);
+    }
+  }, [deepLinkSpecies, speciesList, globalRefList, selectedBreed]);
 
   // Compatibility calculation - must be at top level (Rules of Hooks).
   // Composes the canonical fit engine (Fish Finder T2 → speciesFit.js) so this

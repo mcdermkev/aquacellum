@@ -50,6 +50,7 @@ export function FishFinder({
   casualModeActive,
   initialSelectedBreed,
   onSelectedBreedChange,
+  deepLinkSpecies,
 }) {
   const browseSectionRef = useRef(null);
 
@@ -219,9 +220,11 @@ export function FishFinder({
 
   // "View listings" CTA (T6). Bounded scope: opens the marketplace tab.
   // Species-filtered deep-linking is out of scope here — see T4.
-  const handleViewListings = () => {
-    // TODO(T4): filter marketplace to entry.speciesId
-    window.dispatchEvent(new CustomEvent("aquadex:navigate-tab", { detail: { tab: "directory" } }));
+  const handleViewListings = (entry) => {
+    // T4a: open the marketplace filtered to this species.
+    window.dispatchEvent(new CustomEvent("aquadex:navigate-tab", {
+      detail: { tab: "directory", speciesId: entry?.speciesId, speciesName: entry?.commonName },
+    }));
   };
 
   // Shared card-rendering path for both the "Good matches" home and the
@@ -240,7 +243,7 @@ export function FishFinder({
         onSelect={() => handleSelectMatch(entry)}
         fit={fit}
         availabilitySummary={summarizeAvailability(getAvailability(entry))}
-        onViewListings={handleViewListings}
+        onViewListings={() => handleViewListings(entry)}
       />
     </div>
   );
@@ -378,6 +381,7 @@ export function FishFinder({
           casualModeActive={casualModeActive}
           initialSelectedBreed={initialSelectedBreed}
           onSelectedBreedChange={onSelectedBreedChange}
+          deepLinkSpecies={deepLinkSpecies}
         />
       </div>
     </div>

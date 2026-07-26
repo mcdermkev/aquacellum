@@ -133,8 +133,10 @@ export function CasualSpeciesDetail({
   // ── Acquisition hook (T3/T6 — composed, never re-derived) ─────────────────
   const availabilitySummary = summarizeAvailability(getAvailability(breed));
   const handleViewListings = () => {
-    // TODO(T4): filter marketplace to breed.speciesId
-    window.dispatchEvent(new CustomEvent("aquadex:navigate-tab", { detail: { tab: "directory" } }));
+    // T4a: open the marketplace filtered to this species.
+    window.dispatchEvent(new CustomEvent("aquadex:navigate-tab", {
+      detail: { tab: "directory", speciesId: breed?.speciesId, speciesName: breed?.commonName },
+    }));
   };
 
   if (!breed) return null;

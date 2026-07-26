@@ -344,6 +344,20 @@ export default function App() {
   // directly into that sub-tab when the breeder page loads.
   const sectionParam = new URLSearchParams(location.search).get("section");
 
+  // Deep-link support (Fish Finder T4b): ?species=<scientificName> lands the
+  // visitor on the Fish Finder (gallery) tab with that species' detail open.
+  // Keyed on scientific name (not id) to avoid the specCode-vs-on-chain-id
+  // ambiguity; BreedGallery resolves it against its catalog. A fresh
+  // /app?species=… (or any non-gallery tab) is routed to the gallery first.
+  const deepLinkSpecies = new URLSearchParams(location.search).get("species");
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search).get("species");
+    if (sp && activeTab !== "gallery") {
+      navigate(`/app/gallery${window.location.search}`, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [preselectedLineageId, setPreselectedLineageId] = useState(null);
   const [breederToolsSection, setBreederToolsSection] = useState(sectionParam || "register");
   const [selectedBreedId, setSelectedBreedId] = useState(null);
@@ -407,6 +421,10 @@ export default function App() {
   const [selectedSpecimenId, setSelectedSpecimenId] = useState(null);
   const [preselectedOrderForCheckout, setPreselectedOrderForCheckout] = useState(null);
   const [activeSellerFilter, setActiveSellerFilter] = useState(null);
+  // Top-level marketplace species filter (Fish Finder T4a) — set when a
+  // "View listings" action deep-links into the directory for a species.
+  // Shape: { id:number, name:string|null } | null.
+  const [activeSpeciesFilter, setActiveSpeciesFilter] = useState(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Echo Whispers — real user state from Dexie (replaces hardcoded values)
@@ -626,6 +644,7 @@ export default function App() {
     }
     if (tabName !== "directory") {
       setActiveSellerFilter(null);
+      setActiveSpeciesFilter(null);
     }
     goToTab(tabName);
   };
@@ -636,7 +655,17 @@ export default function App() {
   useEffect(() => {
     const onNavigateTab = (e) => {
       const tab = e?.detail?.tab;
-      if (tab) handleTabChange(tab);
+      if (!tab) return;
+      // Species-filtered "View listings" (T4a): stash the filter, then switch.
+      // handleTabChange only clears the filter when *leaving* directory, so
+      // setting it here and navigating to directory preserves it.
+      if (tab === "directory") {
+        const { speciesId, speciesName } = e.detail || {};
+        setActiveSpeciesFilter(
+          speciesId != null ? { id: Number(speciesId), name: speciesName || null } : null
+        );
+      }
+      handleTabChange(tab);
     };
     window.addEventListener("aquadex:navigate-tab", onNavigateTab);
     return () => window.removeEventListener("aquadex:navigate-tab", onNavigateTab);
@@ -712,24 +741,40 @@ export default function App() {
         );
       case "directory":
         return (
-          <MarketplaceBoard 
-            contractAddress={CONTRACT_ADDRESS} 
-            marketplaceAddress={MARKETPLACE_ADDRESS} 
-            walletAccount={account} 
-            onLineageSelect={handleLineageSelect} 
-            preselectedListSpecimen={preselectedListSpecimen}
-            preselectedListTank={preselectedListTank}
-            onClearPreselectedList={() => {
-              setPreselectedListSpecimen(null);
-              setPreselectedListTank(null);
-            }}
-            casualModeActive={casualModeActive}
-            displayTank={displayTank}
-            setDisplayTank={setDisplayTank}
-            onSelectCheckoutOrder={handleSelectCheckoutOrder}
-            activeSellerFilter={activeSellerFilter}
-            setActiveSellerFilter={setActiveSellerFilter}
-          />
+          <>
+            {/* Species filter banner (Fish Finder T4a). MarketplaceBoard hides
+                its own header when filterSpeciesId is set, so App owns the
+                "showing / clear" affordance for the top-level filtered view. */}
+            {activeSpeciesFilter && (
+              <div className="glass-card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", padding: "0.75rem 1.25rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                  Showing listings for <strong style={{ color: "#fff" }}>{activeSpeciesFilter.name || "this species"}</strong>
+                </span>
+                <button className="btn-secondary" style={{ fontSize: "0.75rem", padding: "0.35rem 0.9rem" }} onClick={() => setActiveSpeciesFilter(null)}>
+                  Clear filter
+                </button>
+              </div>
+            )}
+            <MarketplaceBoard 
+              contractAddress={CONTRACT_ADDRESS} 
+              marketplaceAddress={MARKETPLACE_ADDRESS} 
+              walletAccount={account} 
+              onLineageSelect={handleLineageSelect} 
+              preselectedListSpecimen={preselectedListSpecimen}
+              preselectedListTank={preselectedListTank}
+              onClearPreselectedList={() => {
+                setPreselectedListSpecimen(null);
+                setPreselectedListTank(null);
+              }}
+              casualModeActive={casualModeActive}
+              displayTank={displayTank}
+              setDisplayTank={setDisplayTank}
+              onSelectCheckoutOrder={handleSelectCheckoutOrder}
+              activeSellerFilter={activeSellerFilter}
+              setActiveSellerFilter={setActiveSellerFilter}
+              filterSpeciesId={activeSpeciesFilter?.id ?? null}
+            />
+          </>
         );
       case "gallery": {
         const galleryProps = {
@@ -747,6 +792,7 @@ export default function App() {
           casualModeActive: casualModeActive,
           initialSelectedBreed: gallerySelectedBreed,
           onSelectedBreedChange: setGallerySelectedBreed,
+          deepLinkSpecies: deepLinkSpecies,
         };
         return casualModeActive
           ? <FishFinder {...galleryProps} />
