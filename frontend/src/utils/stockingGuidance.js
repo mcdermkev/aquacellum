@@ -115,6 +115,64 @@ export function assessStocking(tank, opts = {}) {
   };
 }
 
+/**
+ * Estimate the stocking impact of adding one more species to a tank (Fish
+ * Finder Rework Task 8). Composes `assessStocking` itself — runs it once on
+ * the tank as-is, once on a shallow clone with a synthetic specimen for
+ * `breed` appended, and reports the before/after percentages. Never re-derives
+ * the stocking math or the "unknown size → excluded, not guessed" rule; it
+ * inherits both from `assessStocking`.
+ *
+ * @param {object} tank - tank with `volumeLiters` and `specimens` (may be null/absent)
+ * @param {{speciesId?:(number|string), commonName?:string, scientificName?:string}} breed
+ * @param {object} [opts]
+ * @param {Array}  [opts.fishbaseData]
+ * @param {Array}  [opts.contractSpecies]
+ * @returns {{
+ *   beforePercent:(number|null), afterPercent:(number|null), deltaPercent:(number|null),
+ *   canEstimate:boolean
+ * }}
+ */
+export function estimateAddedStocking(tank, breed, opts = {}) {
+  const { fishbaseData = [], contractSpecies = [] } = opts;
+
+  const baseTank = tank || {};
+  const before = assessStocking(baseTank, { fishbaseData, contractSpecies });
+
+  const syntheticSpecimen = {
+    speciesId: breed?.speciesId,
+    commonName: breed?.commonName,
+    scientificName: breed?.scientificName,
+    status: 0,
+  };
+  const afterTank = {
+    ...baseTank,
+    specimens: [...(Array.isArray(baseTank.specimens) ? baseTank.specimens : []), syntheticSpecimen],
+  };
+  const after = assessStocking(afterTank, { fishbaseData, contractSpecies });
+
+  // Can't estimate the delta when the ratio itself is unknown on either side
+  // (no species in the mix — before OR the one being added — has a known
+  // adult size), or when adding this species didn't register as "known" at
+  // all (its own size is unknown). Disclose rather than guess.
+  const addedSpeciesKnown = after.knownCount > before.knownCount;
+  const canEstimate = addedSpeciesKnown && after.ratio != null;
+
+  if (!canEstimate) {
+    return { beforePercent: null, afterPercent: null, deltaPercent: null, canEstimate: false };
+  }
+
+  const beforePercent = before.ratio != null ? Math.round(before.ratio * 100) : 0;
+  const afterPercent = Math.round(after.ratio * 100);
+
+  return {
+    beforePercent,
+    afterPercent,
+    deltaPercent: afterPercent - beforePercent,
+    canEstimate: true,
+  };
+}
+
 /** Headline + tone for a stocking band. */
 export function stockingHeadline(band) {
   switch (band) {

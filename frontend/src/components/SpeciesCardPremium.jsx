@@ -18,7 +18,9 @@ const isPlantEntry = (item) => {
 // so the chip never disagrees with the "Tank Match" widget. caution_data gets
 // its OWN neutral tone — it is informational ("we don't know yet"), never a
 // warning (Decision D1: unknown data must never read as a mismatch).
-const VERDICT_CHIP = Object.freeze({
+// Exported (T8) so CasualSpeciesDetail's verdict panel uses the exact same
+// tones instead of a third copy of these colors.
+export const VERDICT_CHIP = Object.freeze({
   ok: { label: "Good fit", color: "hsl(140, 70%, 45%)", border: "hsla(140, 70%, 45%, 0.4)" },
   caution_mismatch: { label: "Double-check", color: "hsl(42, 92%, 52%)", border: "hsla(42, 92%, 52%, 0.4)" },
   caution_data: { label: "Limited data", color: "hsl(210, 15%, 60%)", border: "hsla(210, 15%, 60%, 0.4)" },

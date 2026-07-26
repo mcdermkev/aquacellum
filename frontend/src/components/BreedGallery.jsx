@@ -22,6 +22,7 @@ import { SpeciesInsights } from "./reef/SpeciesInsights";
 import { SpeciesCardPremium } from "./SpeciesCardPremium";
 import { buildGlobalCatalog, CARE_LABELS } from "../services/speciesCatalog";
 import { assessSpeciesFit } from "../services/speciesFit";
+import { CasualSpeciesDetail } from "./finder/CasualSpeciesDetail";
 
 // Compatibility ring/label hue per honest fit verdict (Fish Finder T2). Driven
 // by verdict rather than raw score so an unknown-data "caution" never shows a
@@ -653,6 +654,25 @@ export function BreedGallery({
   }
 
   if (selectedBreed) {
+    // Casual: the care-first "can I keep this well?" detail (Fish Finder
+    // Rework Task 8) replaces the breeder-flavored detail below. The Pro
+    // branch beneath this early-return is untouched.
+    if (casualModeActive) {
+      return (
+        <CasualSpeciesDetail
+          breed={selectedBreed}
+          fishbaseData={fishbaseData}
+          contractSpecies={contractSpeciesList}
+          contractAddress={contractAddress}
+          marketplaceAddress={marketplaceAddress}
+          walletAccount={walletAccount}
+          displayTank={displayTank}
+          setDisplayTank={setDisplayTank}
+          onBack={() => setSelectedBreed(null)}
+        />
+      );
+    }
+
     const { score, color, text, minVol, verdict, reasons } = compatibility;
     const fullProfile = fishbaseData.find(
       (f) => f.scientificName.toLowerCase() === selectedBreed.scientificName.toLowerCase()

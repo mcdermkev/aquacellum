@@ -1,0 +1,278 @@
+/* CasualSpeciesDetail — care-first Casual species detail (Fish Finder Rework,
+   Task 8). Reuses existing tokens (glass-card, --text-*, --radius-*,
+   care-guide's .cg-chip/.cg-tip/.cg-ask); no new design system. */
+
+.casual-species-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  position: relative;
+}
+
+/* ── Header ───────────────────────────────────────────────────────────── */
+
+.csd-back {
+  margin-bottom: 1rem;
+}
+
+.csd-hero {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.csd-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.csd-hero-fade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(10, 15, 30, 0.85) 0%, transparent 60%);
+}
+
+.csd-name {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.25rem;
+}
+
+.csd-sci {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0 0 0.75rem;
+}
+
+.csd-meta-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.csd-meta-badge {
+  position: static;
+}
+
+.csd-flavor {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0.25rem 0 0;
+}
+
+/* ── Shared section styling ──────────────────────────────────────────── */
+
+.csd-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 1rem;
+}
+
+.glass-card.csd-fit-panel,
+.glass-card.csd-care-panel,
+.glass-card.csd-stocking-panel,
+.glass-card.csd-availability-panel {
+  padding: 1.25rem 1.5rem;
+}
+
+/* ── "Does it fit your tank?" panel ──────────────────────────────────── */
+
+.csd-empty-tank {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Local copy of the FishFinder "Add a tank" CTA button style — kept local
+   rather than depending on FishFinder.css being loaded, since this component
+   can in principle render without it. */
+.csd-empty-tank button {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 20px;
+  color: var(--accent-blue, #38bdf8);
+  padding: 0.4rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.csd-tank-select {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.csd-tank-select label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.csd-tank-select select {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.csd-verdict {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+  background: rgba(0, 0, 0, 0.2);
+  margin-bottom: 0.75rem;
+}
+
+.csd-verdict-chip {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 0.2rem 0.65rem;
+  border-radius: 50px;
+  white-space: nowrap;
+  color: inherit;
+}
+
+.csd-verdict-headline {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.csd-reasons {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.csd-reasons li {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  padding-left: 1rem;
+  position: relative;
+}
+
+.csd-reasons li::before {
+  content: '•';
+  position: absolute;
+  left: 0.2rem;
+}
+
+/* ── Care needs panel ─────────────────────────────────────────────────── */
+
+.csd-care-panel .cg-chips {
+  margin-bottom: 0.5rem;
+}
+
+.csd-care-extra {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.csd-care-extra p {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.csd-care-extra strong {
+  color: var(--text-primary);
+}
+
+.csd-tips {
+  margin-top: 1rem;
+}
+
+/* ── Stocking impact panel ───────────────────────────────────────────── */
+
+.csd-stocking-panel p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.csd-hint {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ── Acquisition hook (T3/T6) ────────────────────────────────────────── */
+
+.csd-availability-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.csd-availability-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #67e8f9;
+  margin: 0;
+}
+
+.csd-view-listings {
+  white-space: nowrap;
+}
+
+/* ── Poseidon console dock ────────────────────────────────────────────── */
+
+.csd-poseidon-dock {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  z-index: 50;
+}
+
+@media (max-width: 640px) {
+  .csd-poseidon-dock {
+    width: 100%;
+  }
+  .csd-tank-select {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .casual-species-detail * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
