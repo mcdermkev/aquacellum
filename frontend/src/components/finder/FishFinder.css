@@ -1,0 +1,138 @@
+/* FishFinder — Casual gallery surface (Fish Finder Rework, Task 5). Reuses
+   existing design tokens (glass-card, --text-*, --radius-*, --accent-*); no
+   new design system. */
+
+.fish-finder {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* ── Tank context bar ────────────────────────────────────────────────────── */
+
+.fish-finder__tank-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.25rem;
+}
+
+.fish-finder__tank-bar-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.fish-finder__tank-bar-icon {
+  font-size: 1.1rem;
+}
+
+.fish-finder__tank-bar-select select {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fish-finder__tank-bar-loading {
+  height: 2.2rem;
+  width: 220px;
+  border-radius: var(--radius-sm);
+}
+
+.fish-finder__tank-bar-empty {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.fish-finder__tank-bar-cta {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 20px;
+  color: var(--accent-blue, #38bdf8);
+  padding: 0.4rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* ── "Good matches" home ─────────────────────────────────────────────────── */
+
+.fish-finder__home-title,
+.fish-finder__browse-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 1.25rem;
+}
+
+.fish-finder__home-hint {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 1rem 0;
+  margin: 0;
+}
+
+.fish-finder__matches-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.fish-finder__match-card {
+  position: relative;
+}
+
+.fish-finder__verdict-chip {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 4;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  background: rgba(10, 12, 20, 0.65);
+  border: 1px solid;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+}
+
+/* ── Browse all species ──────────────────────────────────────────────────── */
+
+.fish-finder__browse {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 2rem;
+}
+
+@media (max-width: 640px) {
+  .fish-finder__matches-grid {
+    grid-template-columns: 1fr;
+  }
+  .fish-finder__tank-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fish-finder * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

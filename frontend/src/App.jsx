@@ -77,6 +77,9 @@ const MarketplaceBoard = lazy(() =>
 const BreedGallery = lazy(() =>
   import("./components/BreedGallery").then((m) => ({ default: m.BreedGallery }))
 );
+const FishFinder = lazy(() =>
+  import("./components/finder/FishFinder").then((m) => ({ default: m.FishFinder }))
+);
 const LocalBreederMap = lazy(() =>
   import("./components/LocalBreederMap").then((m) => ({ default: m.LocalBreederMap }))
 );
@@ -627,6 +630,18 @@ export default function App() {
     goToTab(tabName);
   };
 
+  // Lets deep-nested components (e.g. FishFinder's "no tanks" empty state)
+  // request a tab switch without threading handleTabChange through every
+  // prop chain. Casual Fish Finder T5.
+  useEffect(() => {
+    const onNavigateTab = (e) => {
+      const tab = e?.detail?.tab;
+      if (tab) handleTabChange(tab);
+    };
+    window.addEventListener("aquadex:navigate-tab", onNavigateTab);
+    return () => window.removeEventListener("aquadex:navigate-tab", onNavigateTab);
+  }, [handleTabChange]);
+
   const handleLineageSelect = (tokenId) => {
     setPreselectedLineageId(tokenId);
     setBreederToolsSection("lineage");
@@ -716,25 +731,27 @@ export default function App() {
             setActiveSellerFilter={setActiveSellerFilter}
           />
         );
-      case "gallery":
-        return (
-          <BreedGallery 
-            contractAddress={CONTRACT_ADDRESS} 
-            marketplaceAddress={MARKETPLACE_ADDRESS} 
-            walletAccount={account} 
-            onViewLineage={handleLineageSelect} 
-            preselectedBreedId={selectedBreedId}
-            onClearPreselectedBreed={() => setSelectedBreedId(null)}
-            onSelectSpecimen={setSelectedSpecimenId}
-            displayTank={displayTank}
-            setDisplayTank={setDisplayTank}
-            onSelectCheckoutOrder={handleSelectCheckoutOrder}
-            onCheckoutSuccessRedirect={handleCheckoutSuccessRedirect}
-            casualModeActive={casualModeActive}
-            initialSelectedBreed={gallerySelectedBreed}
-            onSelectedBreedChange={setGallerySelectedBreed}
-          />
-        );
+      case "gallery": {
+        const galleryProps = {
+          contractAddress: CONTRACT_ADDRESS,
+          marketplaceAddress: MARKETPLACE_ADDRESS,
+          walletAccount: account,
+          onViewLineage: handleLineageSelect,
+          preselectedBreedId: selectedBreedId,
+          onClearPreselectedBreed: () => setSelectedBreedId(null),
+          onSelectSpecimen: setSelectedSpecimenId,
+          displayTank: displayTank,
+          setDisplayTank: setDisplayTank,
+          onSelectCheckoutOrder: handleSelectCheckoutOrder,
+          onCheckoutSuccessRedirect: handleCheckoutSuccessRedirect,
+          casualModeActive: casualModeActive,
+          initialSelectedBreed: gallerySelectedBreed,
+          onSelectedBreedChange: setGallerySelectedBreed,
+        };
+        return casualModeActive
+          ? <FishFinder {...galleryProps} />
+          : <BreedGallery {...galleryProps} />;
+      }
       case "map":
         return (
           <LocalBreederMap 
