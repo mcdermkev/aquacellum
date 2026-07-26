@@ -5,28 +5,35 @@ import { LoadingSkeleton } from "../LoadingSkeleton";
 import { useContractSpecies, useSpeciesData } from "../../hooks/useSpeciesData";
 import { useUserTanks } from "../../hooks/useUserTanks";
 import { useSpeciesAvailability } from "../../hooks/useSpeciesAvailability";
+import { useSpeciesSearch } from "../../hooks/useSpeciesSearch";
 import { buildGlobalCatalog } from "../../services/speciesCatalog";
 import { tankFitInputs } from "../../services/compatibleTanks";
 import { summarizeAvailability } from "../../services/speciesAvailability";
 import { rankSpeciesMatches } from "./matchRanking";
+import { DISCOVERY_INTENTS, filterByIntent } from "./discoveryIntents";
 import "./FishFinder.css";
 
 /**
  * FishFinder — the Casual `gallery` tab surface (Fish Finder Rework, Task 5;
- * cards evolved to a compatibility-first, acquisition-aware design in Task 6).
+ * cards evolved to a compatibility-first, acquisition-aware design in Task 6;
+ * guided discovery added in Task 7).
  *
  * Renders, top to bottom:
  *   1. a tank context bar (pick which tank to match against)
- *   2. the "Good matches for [Tank]" home section
- *   3. the existing <BreedGallery casualModeActive /> unchanged, as the
+ *   2. "Find my next fish" — deterministic intent chips + name search (T7)
+ *   3. either the discovery "Results" grid (when a chip/search is active) or
+ *      the "Good matches for [Tank]" home (when inactive) — never both
+ *   4. the existing <BreedGallery casualModeActive /> unchanged, as the
  *      "Browse all species" continuation.
  *
  * Accepts and forwards every prop BreedGallery receives today. Does not fork
  * any fit/compatibility/availability logic — composes rankSpeciesMatches
- * (matchRanking.js, itself composing assessSpeciesFit) and
+ * (matchRanking.js, itself composing assessSpeciesFit), filterByIntent
+ * (discoveryIntents.js, a pure predicate engine — T7), and
  * useSpeciesAvailability/summarizeAvailability for the acquisition hook. The
  * card itself (SpeciesCardPremium) owns the verdict-chip presentation via
- * fitPresentationKind — no chip is rendered here to avoid a duplicate.
+ * fitPresentationKind — no chip is rendered here to avoid a duplicate. Both
+ * the home and Results grids render through the same renderMatchCard path.
  */
 export function FishFinder({
   contractAddress,
@@ -116,6 +123,68 @@ export function FishFinder({
     [candidates, tankContext, fishbaseData, residingSpeciesIds]
   );
 
+  // ── "Find my next fish" guided discovery (T7) ────────────────────────────
+  //
+  // Deterministic intent chips (discoveryIntents.js) + a plain name/family
+  // search (useSpeciesSearch — synchronous, offline-safe, no AI). See T7 spec
+  // §2 for why this is deliberately NOT AI-driven: useSpeciesSearch's facets
+  // can't express "peaceful"/"cleanup crew", and useNaturalSearch's parsed
+  // filter vocabulary doesn't match those facets. The chips + name search
+  // alone satisfy the goal, so no AI wiring is added here (escalation
+  // tripwire in the spec explicitly allows/expects this).
+  const [activeIntent, setActiveIntent] = useState(null);
+  const [searchText, setSearchText] = useState("");
+
+  const { results: nameSearchResults, setSearchTerm: setNameSearchTerm } = useSpeciesSearch(candidates);
+
+  useEffect(() => {
+    setNameSearchTerm(searchText);
+  }, [searchText, setNameSearchTerm]);
+
+  const discoveryActive = !!activeIntent || !!searchText.trim();
+
+  const discoveryResults = useMemo(() => {
+    if (!discoveryActive) return [];
+
+    let filtered = filterByIntent(candidates, activeIntent, { fishbaseData });
+
+    if (searchText.trim()) {
+      const nameMatchIds = new Set(nameSearchResults.map((r) => r.speciesId));
+      filtered = filtered.filter((entry) => nameMatchIds.has(entry.speciesId));
+    }
+
+    if (tankContext) {
+      return rankSpeciesMatches(filtered, tankContext, { fishbaseData, limit: 24, excludeSpeciesIds: residingSpeciesIds });
+    }
+
+    // No tank selected: rankSpeciesMatches' null-tank rule returns [], but
+    // discovery should still work before a tank is picked. Fall back to a
+    // stable, deterministic order (difficulty, then name) instead of the
+    // fit ranking, and wrap each as { entry, fit: null } so the render path
+    // below is uniform (SpeciesCardPremium already handles a missing `fit`).
+    const excluded = new Set(residingSpeciesIds.map((id) => Number(id)));
+    return filtered
+      .filter((entry) => !excluded.has(Number(entry.speciesId)))
+      .slice()
+      .sort((a, b) => {
+        const careA = Number.isFinite(Number(a.careLevel)) ? Number(a.careLevel) : 99;
+        const careB = Number.isFinite(Number(b.careLevel)) ? Number(b.careLevel) : 99;
+        if (careA !== careB) return careA - careB;
+        return (a.commonName || "").localeCompare(b.commonName || "");
+      })
+      .slice(0, 24)
+      .map((entry) => ({ entry, fit: null }));
+  }, [discoveryActive, candidates, activeIntent, searchText, nameSearchResults, tankContext, fishbaseData, residingSpeciesIds]);
+
+  const handleToggleIntent = (intentId) => {
+    setActiveIntent((prev) => (prev === intentId ? null : intentId));
+  };
+
+  const handleClearDiscovery = () => {
+    setActiveIntent(null);
+    setSearchText("");
+  };
+
   // Selection wiring into the inner BreedGallery's existing detail view.
   //
   // BreedGallery's `initialSelectedBreed` only seeds state on mount (its
@@ -154,6 +223,27 @@ export function FishFinder({
     // TODO(T4): filter marketplace to entry.speciesId
     window.dispatchEvent(new CustomEvent("aquadex:navigate-tab", { detail: { tab: "directory" } }));
   };
+
+  // Shared card-rendering path for both the "Good matches" home and the
+  // discovery Results grid — same fit/availability/onViewListings/onSelect
+  // wiring, no second card variant (T7 §4.2 step 4).
+  const renderMatchCard = ({ entry, fit }) => (
+    <div key={entry.speciesId} className="fish-finder__match-card">
+      <SpeciesCardPremium
+        breed={entry}
+        fishbaseData={fishbaseData}
+        casualModeActive={true}
+        isOwned={false}
+        ownedCount={0}
+        viewMode={usingContractCatalog ? "contract" : "global"}
+        searchTerm=""
+        onSelect={() => handleSelectMatch(entry)}
+        fit={fit}
+        availabilitySummary={summarizeAvailability(getAvailability(entry))}
+        onViewListings={handleViewListings}
+      />
+    </div>
+  );
 
   return (
     <div className="fish-finder">
@@ -194,44 +284,81 @@ export function FishFinder({
         )}
       </div>
 
-      {/* ── "Good matches" home ─────────────────────────────────────────── */}
-      <div className="fish-finder__home">
-        <h2 className="fish-finder__home-title">
-          {selectedTank ? `Good matches for ${selectedTank.name || "your tank"}` : "Good matches for your tank"}
-        </h2>
-
-        {!tankContext ? (
-          <p className="fish-finder__home-hint">
-            {tanks.length === 0
-              ? "Add an aquarium above to see fish picked for your water."
-              : "Choose a tank above to see personalized matches."}
-          </p>
-        ) : isLoadingCandidates ? (
-          <LoadingSkeleton variant="gallery" count={4} />
-        ) : matches.length === 0 ? (
-          <p className="fish-finder__home-hint">No matches to show yet.</p>
-        ) : (
-          <div className="fish-finder__matches-grid">
-            {matches.map(({ entry, fit }) => (
-              <div key={entry.speciesId} className="fish-finder__match-card">
-                <SpeciesCardPremium
-                  breed={entry}
-                  fishbaseData={fishbaseData}
-                  casualModeActive={true}
-                  isOwned={false}
-                  ownedCount={0}
-                  viewMode={Array.isArray(contractSpecies) && contractSpecies.length > 0 ? "contract" : "global"}
-                  searchTerm=""
-                  onSelect={() => handleSelectMatch(entry)}
-                  fit={fit}
-                  availabilitySummary={summarizeAvailability(getAvailability(entry))}
-                  onViewListings={handleViewListings}
-                />
-              </div>
-            ))}
-          </div>
-        )}
+      {/* ── "Find my next fish" — guided discovery (T7) ─────────────────── */}
+      <div className="fish-finder__discovery">
+        <h2 className="fish-finder__home-title">Find my next fish</h2>
+        <div className="fish-finder__intent-chips" role="group" aria-label="Discovery filters">
+          {DISCOVERY_INTENTS.map((intent) => (
+            <button
+              key={intent.id}
+              type="button"
+              className={`fish-finder__intent-chip${activeIntent === intent.id ? " fish-finder__intent-chip--active" : ""}`}
+              aria-pressed={activeIntent === intent.id}
+              onClick={() => handleToggleIntent(intent.id)}
+            >
+              <span aria-hidden="true">{intent.icon}</span> {intent.label}
+            </button>
+          ))}
+        </div>
+        <div className="fish-finder__search-row">
+          <input
+            type="text"
+            className="fish-finder__search-input"
+            placeholder="Search by name…"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            aria-label="Search species by name"
+          />
+          {discoveryActive && (
+            <button type="button" className="fish-finder__clear-discovery" onClick={handleClearDiscovery}>
+              Clear
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* ── Results (discovery active) or "Good matches" home ───────────── */}
+      {discoveryActive ? (
+        <div className="fish-finder__home">
+          <h2 className="fish-finder__home-title">Results</h2>
+          {isLoadingCandidates ? (
+            <LoadingSkeleton variant="gallery" count={4} />
+          ) : discoveryResults.length === 0 ? (
+            <p className="fish-finder__home-hint">
+              No matches for that — try another filter.{" "}
+              <button type="button" className="fish-finder__inline-clear" onClick={handleClearDiscovery}>
+                Clear filters
+              </button>
+            </p>
+          ) : (
+            <div className="fish-finder__matches-grid">
+              {discoveryResults.map(renderMatchCard)}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="fish-finder__home">
+          <h2 className="fish-finder__home-title">
+            {selectedTank ? `Good matches for ${selectedTank.name || "your tank"}` : "Good matches for your tank"}
+          </h2>
+
+          {!tankContext ? (
+            <p className="fish-finder__home-hint">
+              {tanks.length === 0
+                ? "Add an aquarium above to see fish picked for your water."
+                : "Choose a tank above to see personalized matches."}
+            </p>
+          ) : isLoadingCandidates ? (
+            <LoadingSkeleton variant="gallery" count={4} />
+          ) : matches.length === 0 ? (
+            <p className="fish-finder__home-hint">No matches to show yet.</p>
+          ) : (
+            <div className="fish-finder__matches-grid">
+              {matches.map(renderMatchCard)}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Browse all species — the existing gallery, unchanged ───────── */}
       <div className="fish-finder__browse" ref={browseSectionRef}>
