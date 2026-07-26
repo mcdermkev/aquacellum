@@ -38,14 +38,25 @@ describe("LocalBreederMap — My Pickups reveal goes through the order-scoped ga
   });
 });
 
-describe("LocalBreederMap — the fuzzed discovery radar is untouched by the new layer", () => {
-  it("My Pickups pins use real lat/lng converted to miles, the same technique as mockEvents (not the seller-hash fuzz offsets)", () => {
+describe("LocalBreederMap — no fabricated discovery data (Decision D3 / T15)", () => {
+  it("preserves the honest My Pickups layer: real lat/lng converted to miles", () => {
     expect(SOURCE).toContain("latOffset * 69");
     expect(SOURCE).toContain("lngOffset * 55");
-    // The existing fuzz-hash listing computation is untouched — same
-    // charCodeAt-based hash function still drives `listings`' fuzzedLocation.
-    expect(SOURCE).toContain("sellerAddr.charCodeAt(i)");
-    expect(SOURCE).toContain("fuzzedLocation");
+  });
+
+  it("does NOT fabricate seller locations from a wallet-hash fuzz offset", () => {
+    // D3: the old radar placed every seller at a charCodeAt-hash offset from
+    // the buyer — pure fiction. The fabrication is removed; the radar plots no
+    // seller dots until the real opt-in discovery feature (T15) lands.
+    expect(SOURCE).not.toContain("sellerAddr.charCodeAt(i)");
+    expect(SOURCE).not.toContain("fuzzedLocation");
+    expect(SOURCE).toContain("setListings([])");
+  });
+
+  it("does NOT ship hardcoded fake swap-meets / public drop points", () => {
+    expect(SOURCE).not.toContain("Silicon Valley Aqua Swap Meet");
+    expect(SOURCE).not.toContain("Downtown Guppy Public Drop Point");
+    expect(SOURCE).toContain("const mockEvents = []");
   });
 
   it("My Pickups pins render as a visually distinct marker, drawn independently from the fuzzed `listings` dots", () => {

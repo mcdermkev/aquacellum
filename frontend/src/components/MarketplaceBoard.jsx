@@ -120,8 +120,6 @@ export function MarketplaceBoard({
   const [fishbaseData, setFishbaseData] = useState([]);
   const [checkoutQuantityMap, setCheckoutQuantityMap] = useState({});
   const { addItem: addToCart } = useCart();
-  const [userLocation, setUserLocation] = useState({ lat: 37.7749, lng: -122.4194 }); // Default SF
-  const [locationRequested, setLocationRequested] = useState(false);
 
   // ── Task 8: unified catalog query state (search/filter/facets) ───────────
   const [searchQuery, setSearchQuery] = useState("");
@@ -187,24 +185,7 @@ export function MarketplaceBoard({
     }
   };
 
-  // Geolocation: only request when user interacts with proximity/map features.
-  const requestUserLocation = () => {
-    if (locationRequested) return;
-    setLocationRequested(true);
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (err) => {
-          console.warn("Geolocation blocked/failed, using default center.", err);
-        }
-      );
-    }
-  };
+  // (Removed dead geolocation code — no real proximity feature reads it.)
 
   const { data: cachedGlobalData } = useSpeciesData();
 
@@ -294,50 +275,10 @@ export function MarketplaceBoard({
     return evaluateTankFit(itemToSpeciesProfile(item), displayTank).score;
   };
 
-  const getZoneHash = (item) => {
-    let zoneHash = null;
-    if (!item.isBatch && item.tokenId) {
-      const metaStr = localStorage.getItem(`aquadex_specimen_metadata_${item.tokenId}`);
-      if (metaStr) {
-        try {
-          const meta = JSON.parse(metaStr);
-          zoneHash = meta.zoneHash || meta.ZoneHash;
-        } catch (e) {}
-      }
-    }
-    
-    if (!zoneHash) {
-      // Deterministic fallback using keccak256 hash of the breeder's address
-      try {
-        zoneHash = ethers.utils.id(item.seller);
-      } catch (e) {
-        // Fallback simple string hash offset
-        let hash = 0;
-        for (let i = 0; i < item.seller.length; i++) {
-          hash = item.seller.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        zoneHash = "0x" + Math.abs(hash).toString(16).padStart(8, "0");
-      }
-    }
-    return zoneHash;
-  };
-
-  const getDistanceForListing = (item) => {
-    const zHash = getZoneHash(item);
-    let cleanHash = zHash.replace("0x", "");
-    
-    let part1 = parseInt(cleanHash.substring(0, 8), 16) || 0;
-    let part2 = parseInt(cleanHash.substring(8, 16), 16) || 0;
-    
-    // Fuzz latitude and longitude offset within ~5-7 miles
-    const latOffset = ((part1 & 0xFF) / 255 - 0.5) * 0.08;
-    const lngOffset = ((part2 & 0xFF) / 255 - 0.5) * 0.08;
-    
-    const latMiles = latOffset * 69;
-    const lngMiles = lngOffset * 55;
-    const distance = Math.sqrt(latMiles * latMiles + lngMiles * lngMiles);
-    return distance;
-  };
+  // Removed the fabricated per-wallet "distance" (it hashed the seller address
+  // into a fake mileage) and its "Closest to Me" sort — the marketplace has no
+  // real seller location to sort by. Real location-based discovery is a
+  // separate, opt-in feature (see FISH_FINDER_REWORK_PLAN T15).
 
   // Legacy listing loading useEffect replaced by React Query useMarketplaceListings hook
 
@@ -475,22 +416,13 @@ export function MarketplaceBoard({
   const catalogSort =
     sortBy === "price-asc" ? SORT_OPTIONS.PRICE_ASC
     : sortBy === "price-desc" ? SORT_OPTIONS.PRICE_DESC
-    : sortBy === "closest" ? SORT_OPTIONS.DISTANCE
     : undefined;
-
-  // Attach a fuzzed distanceMiles field for the DISTANCE sort (catalogQuery
-  // reads item.distanceMiles directly; the fuzzing itself is existing,
-  // unrelated logic this module already had).
-  const listingsWithDistance = useMemo(() => {
-    if (catalogSort !== SORT_OPTIONS.DISTANCE) return listings;
-    return listings.map((item) => ({ ...item, distanceMiles: getDistanceForListing(item) }));
-  }, [listings, catalogSort]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const priceMinCents = priceMinInput.trim() !== "" ? Math.round(parseFloat(priceMinInput) * 100) : undefined;
   const priceMaxCents = priceMaxInput.trim() !== "" ? Math.round(parseFloat(priceMaxInput) * 100) : undefined;
 
   const { results: queriedListings, facets } = useMemo(() => {
-    return applyCatalogQuery(listingsWithDistance, {
+    return applyCatalogQuery(listings, {
       search: searchQuery,
       family: familyFilter !== "all" ? familyFilter : undefined,
       familyLookup,
@@ -502,7 +434,7 @@ export function MarketplaceBoard({
       displayTank,
       speciesLookup: fishbaseLookup,
     });
-  }, [listingsWithDistance, searchQuery, familyFilter, familyLookup, careLevelFilter, fulfillmentFilter, priceMinCents, priceMaxCents, catalogSort, displayTank, fishbaseLookup]);
+  }, [listings, searchQuery, familyFilter, familyLookup, careLevelFilter, fulfillmentFilter, priceMinCents, priceMaxCents, catalogSort, displayTank, fishbaseLookup]);
 
   const filteredAndSortedListings = queriedListings
     .filter((item) => {
@@ -1150,7 +1082,6 @@ export function MarketplaceBoard({
               <option value="tier-wild">Pedigree Tier: Wild Caught First</option>
             </>
           )}
-          <option value="closest">Closest to Me</option>
         </select>
 
         {/* Filters toggle — reveals the facet-driven filter panel below */}

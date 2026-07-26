@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { formatEther, parseEther } from "ethers";
+import { formatEther } from "ethers";
 import { HandshakeVerification } from "./HandshakeVerification";
 import { db } from "../db";
 import { haptic } from "../utils/haptics";
@@ -114,50 +114,14 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
   const fetchLocalListings = async () => {
     try {
       setLoading(true);
-      const local = await db.localListings.toArray();
-      const cached = await db.listings.toArray();
-      const merged = [...cached];
-      const cachedIds = new Set(cached.map((l) => Number(l.id)));
-      for (const l of local) {
-        if (!cachedIds.has(Number(l.id))) merged.push(l);
-      }
-
-      const activeListings = [];
-      for (const item of merged) {
-        const sellerAddr = item.seller || "";
-        let hash = 0;
-        for (let i = 0; i < sellerAddr.length; i++) {
-          hash = sellerAddr.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        // Fuzz offsets relative to USER location (not hardcoded SF)
-        const latOffsetVal = ((hash & 0xFF) / 255 - 0.5) * 0.08;
-        const lngOffsetVal = (((hash >> 8) & 0xFF) / 255 - 0.5) * 0.08;
-        const fuzzedLocation = {
-          lat: userLocation.lat + latOffsetVal,
-          lng: userLocation.lng + lngOffsetVal
-        };
-        const zoneHash = "0x" + Math.abs(hash).toString(16).padStart(8, "0");
-        const latOffset = fuzzedLocation.lat - userLocation.lat;
-        const lngOffset = fuzzedLocation.lng - userLocation.lng;
-        const latMiles = latOffset * 69;
-        const lngMiles = lngOffset * 55;
-        const distance = Math.sqrt(latMiles * latMiles + lngMiles * lngMiles);
-
-        activeListings.push({
-          listingId: item.isBatch ? Number(item.listingId) : Number(item.tokenId || item.id),
-          spawnId: item.spawnId ? Number(item.spawnId) : 0,
-          quantity: item.quantity ? Number(item.quantity) : 1,
-          pricePerFish: parseEther(item.price || "0").toString(),
-          seller: sellerAddr,
-          speciesId: Number(item.speciesId || 0),
-          speciesName: item.commonName || "Unknown Specimen",
-          latOffset, lngOffset, latMiles, lngMiles, distance,
-          fuzzedLocation, zoneHash,
-          isBatch: !!item.isBatch,
-          tokenId: item.tokenId
-        });
-      }
-      setListings(activeListings);
+      // No fabricated seller locations (Decision D3 / T15). The old radar
+      // placed every seller at a wallet-hash offset from the buyer — pure
+      // fiction. There is no real, public per-seller location today (pickup
+      // coordinates are order-scoped/private by design), so until the real
+      // opt-in zone-discovery feature (T15) lands, the discovery radar plots
+      // NO seller dots. Only the real "My Pickups" layer (order-scoped, actual
+      // pickup coordinates) is shown.
+      setListings([]);
     } catch (err) {
       console.error("Failed to fetch map listings from Dexie:", err);
     } finally {
@@ -277,10 +241,10 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
   }, [listings, rangeFilter]);
 
   // Mock events data
-  const mockEvents = [
-    { id: "evt-1", name: "Silicon Valley Aqua Swap Meet (Active)", type: "swap-meets", latMiles: 2.5, lngMiles: -3.0, description: "Officially active regional swap meet and expo. Special event Loyalty Rewards multiplier active inside bounding zone!", distance: 3.9 },
-    { id: "evt-2", name: "Downtown Guppy Public Drop Point", type: "public-drops", latMiles: -4.0, lngMiles: 5.0, description: "Public drop-off point for local pickup transfers.", distance: 6.4 }
-  ];
+  // Real community events only — no fabricated swap-meets / public drop points
+  // (Decision D3 / T15). There is no real events data source yet, so the radar
+  // plots no events until the real opt-in discovery feature (T15) lands.
+  const mockEvents = [];
 
   // Radar drawing loop
   useEffect(() => {
@@ -530,14 +494,9 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
       L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { subdomains: "abcd", maxZoom: 19 }).addTo(map);
       // User location marker
       L.circleMarker([userLocation.lat, userLocation.lng], { radius: 8, fillColor: "#60a5fa", fillOpacity: 1, color: "#fff", weight: 2 }).addTo(map).bindPopup("You are here");
-      // Listing markers
-      listings.filter(l => l.distance <= rangeFilter).forEach((item) => {
-        const marker = L.circleMarker([item.fuzzedLocation.lat, item.fuzzedLocation.lng], {
-          radius: 6, fillColor: isPro ? "#a855f7" : "#f59e0b", fillOpacity: 0.8, color: "rgba(255,255,255,0.3)", weight: 1
-        }).addTo(map);
-        marker.bindPopup(`<strong>${item.speciesName}</strong><br/>Qty: ${item.quantity}<br/>~${formatDistance(item.distance)} away`);
-        marker.on("click", () => { setSelectedListing(item); setMobileDrawerOpen(true); haptic("tap"); });
-      });
+      // No seller-dot markers: the discovery radar plots no fabricated seller
+      // locations (Decision D3 / T15). `listings` is intentionally empty until
+      // the real opt-in zone-discovery feature (T15) lands.
 
       // Task 25: My Pickups markers (real, un-fuzzed) — round-trip to the order.
       if (showMyPickups) {

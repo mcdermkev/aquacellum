@@ -38,7 +38,7 @@ const MODAL_SOURCE = stripComments(
 describe("MarketplaceBoard — catalog query wiring", () => {
   it("routes search/filter/sort through applyCatalogQuery (no forked filter logic)", () => {
     expect(BOARD_SOURCE).toContain('import { applyCatalogQuery, SORT_OPTIONS, FULFILLMENT_TYPES, getListingKey } from "../services/catalogQuery"');
-    expect(BOARD_SOURCE).toContain("applyCatalogQuery(listingsWithDistance");
+    expect(BOARD_SOURCE).toContain("applyCatalogQuery(listings");
   });
 
   it("keeps the existing compatibility glow sourced from evaluateTankFit", () => {

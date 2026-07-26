@@ -596,8 +596,8 @@ export async function relayCreateListing({
       packingProfile: packingProfile || null,
       isBatch: false,
       active: true,
-      fuzzedLocation: { lat: 37.7749, lng: -122.4194 },
-      zoneHash: "0x00000000",
+      // No fabricated location. A listing carries a real location only once a
+      // seller sets one (real pickup/zone data); we never invent coordinates.
       createdAt: Math.floor(Date.now() / 1000),
     };
 
