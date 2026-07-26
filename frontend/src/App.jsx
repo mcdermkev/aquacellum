@@ -814,28 +814,28 @@ export default function App() {
       case "tanks":
       default:
         return (
-          <div style={{ display: "flex", gap: "1.5rem", alignItems: "flex-start" }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <TankList 
-                contractAddress={CONTRACT_ADDRESS} 
-                walletAccount={account} 
-                onViewLineage={handleLineageSelect} 
-                onListOnMarketplace={handleListOnMarketplace}
-                casualModeActive={casualModeActive}
-                onSelectSpecimen={setSelectedSpecimenId}
-              />
-            </div>
-            <aside className="zone-leaderboard-sidebar" style={{ width: "280px", flexShrink: 0, position: "sticky", top: "2rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+            <TankList 
+              contractAddress={CONTRACT_ADDRESS} 
+              walletAccount={account} 
+              onViewLineage={handleLineageSelect} 
+              onListOnMarketplace={handleListOnMarketplace}
+              casualModeActive={casualModeActive}
+              onSelectSpecimen={setSelectedSpecimenId}
+            />
+            <div className="zone-leaderboard-sidebar" style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
               {casualModeActive && (
-                <div style={{ marginBottom: "1rem" }}>
+                <div style={{ flex: "1 1 260px", minWidth: 0 }}>
                   <EchoCompanionWidget casualModeActive={casualModeActive} compact />
                 </div>
               )}
-              <ZoneLeaderboardWidget casualModeActive={casualModeActive} compact />
-              <div style={{ marginTop: "1rem" }}>
+              <div style={{ flex: "1 1 260px", minWidth: 0 }}>
+                <ZoneLeaderboardWidget casualModeActive={casualModeActive} compact />
+              </div>
+              <div style={{ flex: "1 1 260px", minWidth: 0 }}>
                 <RewardCreditsCard casualModeActive={casualModeActive} compact />
               </div>
-            </aside>
+            </div>
           </div>
         );
     }
