@@ -3,6 +3,7 @@ import { LazyImage } from "./LazyImage";
 import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";
 import { getPersonality } from "../utils/personality";
 import { getEasterEggConfig } from "./BreedGallery";
+import { CARE_LABELS, CARE_BADGE_CLASS } from "../services/speciesCatalog";
 
 const isPlantEntry = (item) => {
   if (typeof item === "object" && item !== null) {
@@ -10,9 +11,6 @@ const isPlantEntry = (item) => {
   }
   return false;
 };
-
-const CARE_LABELS = ["Easy", "Medium", "Difficult", "Expert"];
-const CARE_BADGE_CLASS = ["easy", "medium", "hard", "expert"];
 
 export function SpeciesCardPremium({
   breed,

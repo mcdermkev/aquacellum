@@ -20,6 +20,18 @@ import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";
 import { getPersonality } from "../utils/personality";
 import { SpeciesInsights } from "./reef/SpeciesInsights";
 import { SpeciesCardPremium } from "./SpeciesCardPremium";
+import { buildGlobalCatalog, CARE_LABELS } from "../services/speciesCatalog";
+import { assessSpeciesFit } from "../services/speciesFit";
+
+// Compatibility ring/label hue per honest fit verdict (Fish Finder T2). Driven
+// by verdict rather than raw score so an unknown-data "caution" never shows a
+// green "perfect" ring.
+const VERDICT_COLOR = Object.freeze({
+  ok: "hsl(140, 70%, 45%)",       // green
+  caution: "hsl(42, 92%, 52%)",   // amber
+  blocked: "hsl(0, 78%, 55%)",    // red
+  no_tank: "hsl(210, 10%, 55%)",  // neutral
+});
 
 // Config configurations for Aquadex biological easter eggs
 export function getEasterEggConfig(key, evolved = false) {
@@ -250,52 +262,11 @@ export function BreedGallery({
     updateSuggestionStatus 
   } = useSuggestSpecies(walletAccount, fishbaseData);
 
-  const CARE_LEVEL_STRINGS = ["Easy", "Medium", "Difficult", "Expert"];
+  const CARE_LEVEL_STRINGS = CARE_LABELS;
 
-  const globalRefList = useMemo(() => {
-    if (!globalData || globalData.length === 0) return [];
-    const seenNames = new Set();
-    const seenCodes = new Set();
-    const catalog = [];
-    
-    const DIFFICULTY_MAP = {
-      "easy": 0,
-      "beginner": 0,
-      "intermediate": 1,
-      "medium": 1,
-      "difficult": 2,
-      "advanced": 2,
-      "expert": 3
-    };
-    
-    for (const item of globalData) {
-      const scientificNameLower = item.scientificName.toLowerCase();
-      if (seenNames.has(scientificNameLower) || seenCodes.has(item.specCode)) {
-        continue;
-      }
-      seenNames.add(scientificNameLower);
-      seenCodes.add(item.specCode);
-      
-      const diffStr = (item.tankMetrics?.difficulty || "easy").toLowerCase();
-      const careLevel = DIFFICULTY_MAP[diffStr] ?? 1;
-      
-      catalog.push({
-        speciesId: item.specCode,
-        allSpeciesIds: [item.specCode],
-        scientificName: item.scientificName,
-        commonName: item.commonName,
-        canonicalIpfsUri: "ipfs://placeholder",
-        careLevel: careLevel,
-        minTemp: item.tankMetrics?.tempRangeCelsius?.[0] ?? 22.0,
-        maxTemp: item.tankMetrics?.tempRangeCelsius?.[1] ?? 28.0,
-        minPh: item.tankMetrics?.phRange?.[0] ?? 6.5,
-        maxPh: item.tankMetrics?.phRange?.[1] ?? 7.5,
-        specimenCount: 0,
-        isGlobal: true,
-      });
-    }
-    return catalog;
-  }, [globalData]);
+  // Projected via the canonical species-catalog contract (Fish Finder T1) so the
+  // app and the public database.html interpret difficulty/ranges identically.
+  const globalRefList = useMemo(() => buildGlobalCatalog(globalData), [globalData]);
 
   const searchList = useMemo(() => {
     if (viewMode === "global") {
@@ -638,61 +609,35 @@ export function BreedGallery({
     }
   }, [preselectedBreedId, speciesList, onClearPreselectedBreed]);
 
-  // Compatibility calculation - must be at top level (Rules of Hooks)
+  // Compatibility calculation - must be at top level (Rules of Hooks).
+  // Composes the canonical fit engine (Fish Finder T2 → speciesFit.js) so this
+  // widget, the Marketplace, and the Logbook always give the same verdict.
+  // No bespoke scoring formula lives here anymore; unknown-range species now
+  // degrade to an honest "caution" instead of being scored against fabricated
+  // defaults.
   const compatibility = useMemo(() => {
-    if (!selectedBreed) return { score: 100, color: "hsl(120, 85%, 50%)", text: "", minVol: 30 };
-    const nameKey = selectedBreed.scientificName.toLowerCase();
-    const metrics = masterLookup[nameKey];
-    const minVol = metrics?.minVolumeGallons ?? 30;
-
-    // 1. Tank Volume Penalty
-    let pVol = 0;
-    if (simVolume < minVol) {
-      pVol = ((minVol - simVolume) / minVol) * 100;
+    if (!selectedBreed) {
+      return { score: 100, verdict: "ok", color: "hsl(120, 85%, 50%)", text: "", minVol: 30, reasons: [] };
     }
-
-    // 2. pH Penalty (1.5 pH units deviation = 100% penalty)
-    let pPh = 0;
-    if (simPh < selectedBreed.minPh) {
-      pPh = ((selectedBreed.minPh - simPh) / 1.5) * 100;
-    } else if (simPh > selectedBreed.maxPh) {
-      pPh = ((simPh - selectedBreed.maxPh) / 1.5) * 100;
-    }
-    pPh = Math.min(100, pPh);
-
-    // 3. Temp Penalty (5.0 C deviation = 100% penalty)
-    let pTemp = 0;
-    if (simTemp < selectedBreed.minTemp) {
-      pTemp = ((selectedBreed.minTemp - simTemp) / 5.0) * 100;
-    } else if (simTemp > selectedBreed.maxTemp) {
-      pTemp = ((simTemp - selectedBreed.maxTemp) / 5.0) * 100;
-    }
-    pTemp = Math.min(100, pTemp);
-
-    // Multiplicative scoring for realistic compatibility scaling
-    const sVol = Math.max(0, 100 - pVol);
-    const sPh = Math.max(0, 100 - pPh);
-    const sTemp = Math.max(0, 100 - pTemp);
-
-    const rawScore = (sVol / 100) * (sPh / 100) * (sTemp / 100) * 100;
-    const score = Math.round(rawScore);
-
-    // Transition from Green (100% = 120 hue) to Red (0% = 0 hue)
-    const color = `hsl(${score * 1.2}, 85%, 50%)`;
-
-    let text = "";
-    if (score === 100) {
-      text = "Perfect Match! Your parameters perfectly match the species' needs.";
-    } else if (score >= 80) {
-      text = "Good Compatibility. Minor parameters are slightly off but safe.";
-    } else if (score >= 50) {
-      text = "Caution! Some parameters deviate significantly from the baseline.";
-    } else {
-      text = "Warning: Dangerous environment! High risk of stress or failure.";
-    }
-
-    return { score, color, text, minVol };
-  }, [selectedBreed, simVolume, simPh, simTemp, masterLookup]);
+    const fit = assessSpeciesFit(
+      selectedBreed,
+      { volume: simVolume, ph: simPh, temp: simTemp },
+      { fishbaseData }
+    );
+    const score = fit.score;
+    // Color is driven by the honest VERDICT, not the raw score: an unknown-data
+    // species can score high on known axes yet still be "caution", so a
+    // score-based hue would contradict the verdict/headline. (Fish Finder T2.)
+    const color = VERDICT_COLOR[fit.verdict] || VERDICT_COLOR.caution;
+    return {
+      score,
+      verdict: fit.verdict,
+      color,
+      text: fit.headline,
+      reasons: fit.reasons,
+      minVol: fit.minVolumeGallons ?? 30,
+    };
+  }, [selectedBreed, simVolume, simPh, simTemp, fishbaseData]);
 
   if (loading) {
     return <LoadingSkeleton variant="gallery" count={8} />;
@@ -708,7 +653,7 @@ export function BreedGallery({
   }
 
   if (selectedBreed) {
-    const { score, color, text, minVol } = compatibility;
+    const { score, color, text, minVol, verdict, reasons } = compatibility;
     const fullProfile = fishbaseData.find(
       (f) => f.scientificName.toLowerCase() === selectedBreed.scientificName.toLowerCase()
     ) || {};
@@ -1287,9 +1232,13 @@ export function BreedGallery({
                     {casualModeActive ? "Tank Compatibility" : "Compatibility Score"}
                   </span>
                   <strong style={{ fontSize: "1rem", color: color, display: "block", marginTop: "0.15rem", transition: "color 0.3s ease" }}>
-                    {score === 100 ? (casualModeActive ? "✅ 100% Compatibility Match" : "Perfect Match") : score >= 80 ? (casualModeActive ? "👍 Good for your tank!" : "Good Match") : score >= 50 ? "Caution" : "Warning"}
+                    {verdict === "ok"
+                      ? (casualModeActive ? (score === 100 ? "✅ 100% Compatibility Match" : "👍 Good for your tank!") : "Good Match")
+                      : verdict === "blocked"
+                        ? (casualModeActive ? "🚫 Not a safe fit" : "Warning")
+                        : (casualModeActive ? "⚠️ Proceed with caution" : "Caution")}
                   </strong>
-                  {casualModeActive && score === 100 && (
+                  {casualModeActive && verdict === "ok" && score === 100 && (
                     <span style={{ display: "inline-block", marginTop: "0.4rem", fontSize: "0.6rem", padding: "0.2rem 0.6rem", borderRadius: "20px", background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.4)", color: "#4ade80", fontWeight: "700", letterSpacing: "0.03em" }}>
                       [ Perfect Aquarium Fit ]
                     </span>
@@ -1301,6 +1250,20 @@ export function BreedGallery({
               <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: 0, lineHeight: "1.4" }}>
                 {text}
               </p>
+
+              {/* Honest per-parameter reasons from the canonical fit engine
+                  (why the verdict is what it is — e.g. an unknown minimum tank
+                  size, or which water parameter is off). Fish Finder T2. */}
+              {Array.isArray(reasons) && reasons.length > 0 && (
+                <ul style={{ margin: "0.5rem 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                  {reasons.map((reason, i) => (
+                    <li key={i} style={{ fontSize: "0.7rem", color: "var(--text-muted)", lineHeight: "1.35", display: "flex", gap: "0.4rem" }}>
+                      <span aria-hidden="true" style={{ color, flexShrink: 0 }}>{verdict === "ok" ? "✓" : "•"}</span>
+                      <span>{reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
 
               {/* Sliders Container */}
               <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "1.25rem" }}>

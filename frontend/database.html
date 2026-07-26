@@ -1068,6 +1068,9 @@
   <!-- ========== FOOTER ========== -->
   <footer id="site-footer"></footer>
 
+  <!-- Canonical difficulty contract (shared with the in-app catalog) -->
+  <script src="/js/species-catalog.js"></script>
+
   <!-- ========== SCRIPT ========== -->
   <script>
     let allSpecies = [];
@@ -1100,29 +1103,19 @@
       return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     }
 
+    // Difficulty classification is delegated to the shared species-catalog
+    // contract (window.SpeciesCatalog, /js/species-catalog.js) so this page and
+    // the in-app Fish Finder always agree. A parity test pins the two together.
     function getDifficultyClass(diff) {
-      if (!diff) return 'badge-unknown';
-      return 'badge-' + diff.toLowerCase();
+      return window.SpeciesCatalog.normalizeDifficulty(diff).badgeClass;
     }
 
     function getTierClass(diff) {
-      if (!diff) return 'tier-beginner';
-      const d = diff.toLowerCase();
-      if (d === 'beginner') return 'tier-beginner';
-      if (d === 'intermediate') return 'tier-intermediate';
-      if (d === 'advanced') return 'tier-advanced';
-      if (d === 'difficult') return 'tier-difficult';
-      return 'tier-beginner';
+      return window.SpeciesCatalog.normalizeDifficulty(diff).tierClass;
     }
 
     function getDifficultyWeight(diff) {
-      if (!diff) return 0;
-      const d = diff.toLowerCase();
-      if (d === 'beginner') return 1;
-      if (d === 'intermediate') return 2;
-      if (d === 'advanced') return 3;
-      if (d === 'difficult') return 4;
-      return 0;
+      return window.SpeciesCatalog.normalizeDifficulty(diff).order;
     }
 
     // ---- View Mode ----
