@@ -14,6 +14,7 @@ import { summarizeAvailability } from "../../services/speciesAvailability";
 import { rankSpeciesMatches } from "./matchRanking";
 import { DISCOVERY_INTENTS, filterByIntent } from "./discoveryIntents";
 import { MyDexPanel } from "./MyDexPanel";
+import { FINDER_COPY } from "./finderCopy";
 import "./FishFinder.css";
 
 /**
@@ -85,8 +86,8 @@ export function FishFinder({
     const points = (XP_ACTIONS.ADD_SPECIES?.points || 0) * lastAdded.length;
     showToast(
       lastAdded.length === 1
-        ? `🎉 ${lastAdded[0].commonName} added to your Dex! +${points} pts`
-        : `🎉 ${lastAdded.length} new species added to your Dex! +${points} pts`
+        ? FINDER_COPY.toast.dexAddedOne(lastAdded[0].commonName, points)
+        : FINDER_COPY.toast.dexAddedMany(lastAdded.length, points)
     );
   }, [lastAdded]);
 
@@ -304,20 +305,24 @@ export function FishFinder({
       <div className="fish-finder__tank-bar glass-card">
         <div className="fish-finder__tank-bar-label">
           <span className="fish-finder__tank-bar-icon" aria-hidden="true">🐠</span>
-          <span>Matching against</span>
+          <span>{FINDER_COPY.contextBar.label}</span>
         </div>
 
         {tanksLoading ? (
-          <div className="fish-finder__tank-bar-loading shimmer-placeholder" />
+          <div
+            className="fish-finder__tank-bar-loading shimmer-placeholder"
+            role="status"
+            aria-label={FINDER_COPY.contextBar.loadingAria}
+          />
         ) : tanks.length === 0 ? (
           <div className="fish-finder__tank-bar-empty">
-            <span>Add an aquarium to get matches picked for your water.</span>
+            <span>{FINDER_COPY.contextBar.emptyText}</span>
             <button
               type="button"
               className="fish-finder__tank-bar-cta"
               onClick={() => window.dispatchEvent(new CustomEvent("aquadex:navigate-tab", { detail: { tab: "tanks" } }))}
             >
-              Add a tank →
+              {FINDER_COPY.contextBar.emptyCta}
             </button>
           </div>
         ) : (
@@ -325,11 +330,11 @@ export function FishFinder({
             <select
               value={selectedTankId ?? ""}
               onChange={(e) => handleSelectTank(e.target.value)}
-              aria-label="Choose a tank to match against"
+              aria-label={FINDER_COPY.contextBar.pickerAria}
             >
               {tanks.map((tank) => (
                 <option key={tank.id} value={tank.id}>
-                  {tank.name || "Unnamed Tank"}
+                  {tank.name || FINDER_COPY.contextBar.unnamed}
                 </option>
               ))}
             </select>
@@ -342,8 +347,8 @@ export function FishFinder({
 
       {/* ── "Find my next fish" — guided discovery (T7) ─────────────────── */}
       <div className="fish-finder__discovery">
-        <h2 className="fish-finder__home-title">Find my next fish</h2>
-        <div className="fish-finder__intent-chips" role="group" aria-label="Discovery filters">
+        <h2 className="fish-finder__home-title">{FINDER_COPY.discovery.title}</h2>
+        <div className="fish-finder__intent-chips" role="group" aria-label={FINDER_COPY.discovery.chipsAria}>
           {DISCOVERY_INTENTS.map((intent) => (
             <button
               key={intent.id}
@@ -360,14 +365,14 @@ export function FishFinder({
           <input
             type="text"
             className="fish-finder__search-input"
-            placeholder="Search by name…"
+            placeholder={FINDER_COPY.discovery.searchPlaceholder}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            aria-label="Search species by name"
+            aria-label={FINDER_COPY.discovery.searchAria}
           />
           {discoveryActive && (
             <button type="button" className="fish-finder__clear-discovery" onClick={handleClearDiscovery}>
-              Clear
+              {FINDER_COPY.discovery.clear}
             </button>
           )}
         </div>
@@ -376,14 +381,16 @@ export function FishFinder({
       {/* ── Results (discovery active) or "Good matches" home ───────────── */}
       {discoveryActive ? (
         <div className="fish-finder__home">
-          <h2 className="fish-finder__home-title">Results</h2>
+          <h2 className="fish-finder__home-title">{FINDER_COPY.results.title}</h2>
           {isLoadingCandidates ? (
-            <LoadingSkeleton variant="gallery" count={4} />
+            <div role="status" aria-label={FINDER_COPY.results.loadingAria}>
+              <LoadingSkeleton variant="gallery" count={4} />
+            </div>
           ) : discoveryResults.length === 0 ? (
             <p className="fish-finder__home-hint">
-              No matches for that — try another filter.{" "}
+              {FINDER_COPY.results.empty}{" "}
               <button type="button" className="fish-finder__inline-clear" onClick={handleClearDiscovery}>
-                Clear filters
+                {FINDER_COPY.discovery.clearFilters}
               </button>
             </p>
           ) : (
@@ -395,19 +402,21 @@ export function FishFinder({
       ) : (
         <div className="fish-finder__home">
           <h2 className="fish-finder__home-title">
-            {selectedTank ? `Good matches for ${selectedTank.name || "your tank"}` : "Good matches for your tank"}
+            {selectedTank
+              ? FINDER_COPY.home.title(selectedTank.name || FINDER_COPY.home.fallbackName)
+              : FINDER_COPY.home.titleFallback}
           </h2>
 
           {!tankContext ? (
             <p className="fish-finder__home-hint">
-              {tanks.length === 0
-                ? "Add an aquarium above to see fish picked for your water."
-                : "Choose a tank above to see personalized matches."}
+              {tanks.length === 0 ? FINDER_COPY.home.needAquarium : FINDER_COPY.home.chooseAquarium}
             </p>
           ) : isLoadingCandidates ? (
-            <LoadingSkeleton variant="gallery" count={4} />
+            <div role="status" aria-label={FINDER_COPY.home.loadingAria}>
+              <LoadingSkeleton variant="gallery" count={4} />
+            </div>
           ) : matches.length === 0 ? (
-            <p className="fish-finder__home-hint">No matches to show yet.</p>
+            <p className="fish-finder__home-hint">{FINDER_COPY.home.empty}</p>
           ) : (
             <div className="fish-finder__matches-grid">
               {matches.map(renderMatchCard)}
@@ -422,7 +431,7 @@ export function FishFinder({
           detail; when a detail is open, the sections above are hidden so it
           takes over full-page (detailOpen). ────────────────────────────── */}
       <div className="fish-finder__browse" ref={browseSectionRef}>
-        {!detailOpen && <h2 className="fish-finder__browse-title">Browse all species</h2>}
+        {!detailOpen && <h2 className="fish-finder__browse-title">{FINDER_COPY.browse.title}</h2>}
         <BreedGallery
           contractAddress={contractAddress}
           marketplaceAddress={marketplaceAddress}

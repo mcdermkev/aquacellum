@@ -26,7 +26,10 @@ import { normalizeDifficulty } from "../../services/speciesCatalog.js";
 export const DISCOVERY_INTENTS = Object.freeze([
   { id: "beginner", label: "Beginner-friendly", icon: "🌱" },
   { id: "peaceful", label: "Peaceful community", icon: "🕊️" },
-  { id: "nano", label: "Nano / small tanks", icon: "🫧" },
+  // "Nano-friendly" rather than "Nano / small tanks": keeps the Casual
+  // container noun consistent ("aquarium", per finderCopy.js) without the
+  // clumsier "Nano / small aquariums".
+  { id: "nano", label: "Nano-friendly", icon: "🫧" },
   { id: "centerpiece", label: "Centerpiece", icon: "⭐" },
   { id: "cleanup", label: "Cleanup crew", icon: "🧹" },
   { id: "coldwater", label: "Coldwater (no heater)", icon: "❄️" },

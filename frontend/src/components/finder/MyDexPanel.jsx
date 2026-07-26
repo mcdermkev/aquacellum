@@ -1,5 +1,6 @@
 import React from "react";
 import { computeDexCompletion } from "../../services/dexService.js";
+import { FINDER_COPY } from "./finderCopy";
 
 /**
  * MyDexPanel — the "My Dex" collection summary (Fish Finder Rework Task 9).
@@ -16,29 +17,35 @@ export function MyDexPanel({ dexEntries = [], candidates = [], wishlistCount = 0
     <div className="glass-card my-dex-panel">
       <div className="my-dex-panel__header">
         <h3 className="my-dex-panel__title">
-          <span aria-hidden="true">📖</span> My Dex
+          <span aria-hidden="true">📖</span> {FINDER_COPY.dex.title}
         </h3>
         {wishlistCount > 0 && (
           <span className="my-dex-panel__wishlist-count">
-            <span aria-hidden="true">♥</span> {wishlistCount} wishlisted
+            <span aria-hidden="true">♥</span> {FINDER_COPY.dex.wishlistCount(wishlistCount)}
           </span>
         )}
       </div>
 
       {keptCount === 0 ? (
-        <p className="my-dex-panel__hint">
-          Every species you keep gets logged here. Add a fish to start your Dex.
-        </p>
+        <p className="my-dex-panel__hint">{FINDER_COPY.dex.emptyHint}</p>
       ) : (
         <>
           <div className="my-dex-panel__stat-row">
             <span className="my-dex-panel__count">{keptCount}</span>
             <span className="my-dex-panel__count-label">
-              species kept{totalCount > 0 ? ` · ${percent}% of the catalog` : ""}
+              {FINDER_COPY.dex.keptLabel}
+              {totalCount > 0 ? ` · ${FINDER_COPY.dex.catalogShare(percent)}` : ""}
             </span>
           </div>
           {totalCount > 0 && (
-            <div className="my-dex-panel__bar" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
+            <div
+              className="my-dex-panel__bar"
+              role="progressbar"
+              aria-label={FINDER_COPY.dex.progressAria}
+              aria-valuenow={percent}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
               <div className="my-dex-panel__bar-fill" style={{ width: `${percent}%` }} />
             </div>
           )}

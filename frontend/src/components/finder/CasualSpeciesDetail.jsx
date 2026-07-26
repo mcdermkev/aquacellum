@@ -11,6 +11,7 @@ import { getPersonality } from "../../utils/personality";
 import { SpeciesInsights } from "../reef/SpeciesInsights";
 import { PoseidonChatConsole } from "../PoseidonChatConsole";
 import { VERDICT_CHIP } from "../SpeciesCardPremium";
+import { DETAIL_COPY } from "./finderCopy";
 import "./CasualSpeciesDetail.css";
 
 const isPlantEntry = (item) => !!item && item.type === "plant";
@@ -177,32 +178,33 @@ export function CasualSpeciesDetail({
         {flavorText && <p className="csd-flavor">"{flavorText}"</p>}
       </div>
 
-      {/* ── "Does it fit your tank?" (the hero panel) ───────────────────── */}
+      {/* ── "Does it fit your aquarium?" (the hero panel) ───────────────── */}
       <div className="glass-card csd-fit-panel">
-        <h3 className="csd-section-title">Does it fit your tank?</h3>
+        <h3 className="csd-section-title">{DETAIL_COPY.fitTitle}</h3>
 
         {tanks.length === 0 ? (
           <div className="csd-empty-tank">
-            <span>Add an aquarium to check whether {subjectWord} fits your water.</span>
+            <span>{DETAIL_COPY.emptyFit(subjectWord)}</span>
             <button
               type="button"
               onClick={() => window.dispatchEvent(new CustomEvent("aquadex:navigate-tab", { detail: { tab: "tanks" } }))}
             >
-              Add a tank →
+              {DETAIL_COPY.emptyFitCta}
             </button>
           </div>
         ) : (
           <>
             <div className="csd-tank-select">
-              <label htmlFor="csd-tank-picker">Matching against</label>
+              <label htmlFor="csd-tank-picker">{DETAIL_COPY.contextBar.pickerLabel}</label>
               <select
                 id="csd-tank-picker"
                 value={selectedTankId ?? ""}
                 onChange={(e) => handleSelectTank(e.target.value)}
+                aria-label={DETAIL_COPY.contextBar.pickerAria}
               >
                 {tanks.map((tank) => (
                   <option key={tank.id} value={tank.id}>
-                    {tank.name || "Unnamed Tank"}
+                    {tank.name || DETAIL_COPY.contextBar.unnamed}
                   </option>
                 ))}
               </select>
@@ -231,7 +233,7 @@ export function CasualSpeciesDetail({
       {/* ── Care needs (grounded) ───────────────────────────────────────── */}
       {care && (
         <div className="glass-card csd-care-panel">
-          <h3 className="csd-section-title">Care needs</h3>
+          <h3 className="csd-section-title">{DETAIL_COPY.careTitle}</h3>
           <div className="cg-chips">
             {care.tempMin != null && care.tempMax != null && (
               <span className="cg-chip">🌡️ {care.tempMin}–{care.tempMax}°C</span>
@@ -278,14 +280,18 @@ export function CasualSpeciesDetail({
       {/* ── Stocking impact ──────────────────────────────────────────────── */}
       {selectedTank && (
         <div className="glass-card csd-stocking-panel">
-          <h3 className="csd-section-title">Stocking impact</h3>
+          <h3 className="csd-section-title">{DETAIL_COPY.stockingTitle}</h3>
           {stocking?.canEstimate ? (
             <p>
-              Adding {subjectWord} would bring {selectedTank.name || "your tank"} to ~{stocking.afterPercent}%
-              of its stocking guideline (from ~{stocking.beforePercent}%).
+              {DETAIL_COPY.stockingImpact(
+                subjectWord,
+                selectedTank.name || DETAIL_COPY.fallbackName,
+                stocking.afterPercent,
+                stocking.beforePercent
+              )}
             </p>
           ) : (
-            <p className="csd-hint">We can't estimate the bioload — adult size unknown for this species.</p>
+            <p className="csd-hint">{DETAIL_COPY.stockingUnknown}</p>
           )}
         </div>
       )}
