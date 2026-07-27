@@ -80,9 +80,9 @@ const BreedGallery = lazy(() =>
 const FishFinder = lazy(() =>
   import("./components/finder/FishFinder").then((m) => ({ default: m.FishFinder }))
 );
-const LocalBreederMap = lazy(() =>
-  import("./components/LocalBreederMap").then((m) => ({ default: m.LocalBreederMap }))
-);
+// LocalBreederMap is intentionally NOT imported: its tab is retired (Fish
+// Finder T15), so the component is unmounted and no longer shipped in any
+// chunk. See the note at the retired nav entry below.
 const CheckoutSummary = lazy(() =>
   import("./components/CheckoutSummary").then((m) => ({ default: m.CheckoutSummary }))
 );
@@ -319,6 +319,13 @@ export default function App() {
       navigate(`/app/breeder-terminal${window.location.search}`, { replace: true });
       return;
     }
+    // Retired: the "Local Sellers"/"Local Map" tab (Fish Finder T15). Pickup
+    // coordination lives on the order that created it, so old links/bookmarks
+    // land on My Orders rather than the generic /app/tanks fallback.
+    if (hash === "map" || tabFromPath === "map") {
+      navigate(`/app/orders${window.location.search}`, { replace: true });
+      return;
+    }
     if (VALID_TABS.includes(hash)) {
       navigate(`/app/${hash}${window.location.search}`, { replace: true });
     } else if (!VALID_TABS.includes(tabFromPath)) {
@@ -327,11 +334,13 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Redirect any mid-session navigation to the retired "storefront" tab into
-  // the Breeder Terminal (covers stray links after the My Store consolidation).
+  // Redirect any mid-session navigation to a retired tab (covers stray links
+  // after the My Store consolidation and the Local Map retirement).
   useEffect(() => {
     if (tabFromPath === "storefront") {
       navigate(`/app/breeder-terminal${window.location.search}`, { replace: true });
+    } else if (tabFromPath === "map") {
+      navigate(`/app/orders${window.location.search}`, { replace: true });
     }
   }, [tabFromPath, navigate]);
 
@@ -798,15 +807,10 @@ export default function App() {
           ? <FishFinder {...galleryProps} />
           : <BreedGallery {...galleryProps} />;
       }
-      case "map":
-        return (
-          <LocalBreederMap 
-            contractAddress={CONTRACT_ADDRESS} 
-            marketplaceAddress={MARKETPLACE_ADDRESS} 
-            walletAccount={account} 
-            casualModeActive={casualModeActive}
-          />
-        );
+      // No `case "map"` — the Local Sellers/Local Map tab is retired
+      // (Fish Finder T15). "map" is no longer in VALID_TABS, and the redirect
+      // effect below sends /app/map to /app/orders, where pickup coordination
+      // actually lives.
       case "orders":
         return (
           <CheckoutSummary 
@@ -1204,7 +1208,14 @@ export default function App() {
             { id: "gallery",   icon: "🔍",  label: casualModeActive ? "Fish Finder"   : "Breed Gallery", alwaysShow: true  },
             { id: "breeder",   icon: "🧬",  label: "Breeder Tools",                                      alwaysShow: !casualModeActive },
             { id: "directory", icon: "🛒",  label: casualModeActive ? "Breeder Store" : "Marketplace",  alwaysShow: true  },
-            { id: "map",       icon: "🗺️", label: casualModeActive ? "Local Sellers" : "Local Map",     alwaysShow: true  },
+            /* The "Local Sellers"/"Local Map" tab was retired (Fish Finder T15).
+               Its two jobs already live where they belong: finding sellers is the
+               Marketplace's job, and a pickup meetup belongs to the order that
+               created it — My Orders' PickupPanel already shows the real pin,
+               address, directions, and handoff confirmation. The tab's own map
+               only ever plotted the user's own pickups, less well. Proximity
+               DISCOVERY was fabricated and removed (Decision D3); the real
+               opt-in version is T15b. /app/map redirects to /app/orders. */
             { id: "orders",    icon: "📦",  label: "My Orders",                                          alwaysShow: true  },
             ...(incomingCount > 0 ? [{ id: "incoming", icon: "🚚", label: casualModeActive ? "Incoming" : "In Transit", alwaysShow: true, incomingBadge: true }] : []),
             { id: "reef",      icon: "🪸",  label: casualModeActive ? "The Reef"      : "Social",        alwaysShow: true, badge: !postedFirstCurrent },

@@ -9,6 +9,31 @@ import { fetchPickupForOrder } from "../services/pickupCoordinationApi";
 import { FULFILLMENT_METHODS, ORDER_STATES } from "../services/marketplaceStateMachine";
 import { resolveMethod, resolveCanonicalState } from "../services/buyerOrderView";
 
+/**
+ * ⚠️ UNMOUNTED — this component is not reachable in the app (Fish Finder T15).
+ *
+ * The "Local Sellers" / "Local Map" tab was retired: it is not in `VALID_TABS`,
+ * App.jsx no longer imports or renders it, and `/app/map` redirects to
+ * `/app/orders`. Both of its jobs already have better homes:
+ *
+ *   - Finding sellers is the Marketplace's job. The proximity discovery this
+ *     map implied was fabricated (wallet-hash offsets from downtown SF) and was
+ *     removed under Decision D3; the real opt-in metro-zone version (T15b) is
+ *     unbuilt, so there is nothing to plot.
+ *   - A pickup meetup belongs to the order that created it. `PickupPanel` (My
+ *     Orders) already shows the real pin, address text, "Open in Maps"
+ *     directions, seller availability slots, and handoff confirmation — strictly
+ *     more than this map's mile-offset-from-geolocation pins.
+ *
+ * Kept on disk (rather than deleted) as the starting scaffolding for T15b: the
+ * radar canvas, Leaflet loader, clustering, and responsive detail/drawer layout
+ * are reusable once there is real zone data to show. If T15b is dropped, delete
+ * this file and `__tests__/localBreederMapPickups.catalog.test.js` with it.
+ *
+ * Do not re-mount it without real data — the guard test enforces the
+ * no-fabricated-data invariants that made retiring it necessary.
+ */
+
 // Terminal states where a pickup meet is no longer relevant to show on the map.
 const PICKUP_MAP_TERMINAL_STATES = new Set([
   ORDER_STATES.HANDOFF_CONFIRMED,

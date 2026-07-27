@@ -147,12 +147,18 @@ export function LandingHobbyist({ onEnter }) {
             </p>
           </div>
 
-          {/* Feature 3 */}
+          {/* Feature 3 — advertises local PICKUP, which is built (PickupPanel:
+              confirmed meetup spot, address + directions, seller availability
+              slots, verified handoff). The previous copy promised "Local Sellers
+              & Proximity Maps" / "discover local sellers", i.e. proximity
+              discovery, which does not exist — the fabricated version of it was
+              removed under Decision D3 and the real opt-in version (T15b) is
+              unbuilt. Don't market it until it ships. */}
           <div className="feature-card">
             <div style={{ fontSize: "2rem", marginBottom: "1rem" }}>📍</div>
-            <h3 style={{ fontSize: "1.2rem", fontWeight: "700", marginBottom: "0.5rem", color: "#38bdf8" }}>Local Sellers & Proximity Maps</h3>
+            <h3 style={{ fontSize: "1.2rem", fontWeight: "700", marginBottom: "0.5rem", color: "#38bdf8" }}>Local Pickup, Coordinated</h3>
             <p style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.6)", lineHeight: "1.5", margin: 0 }}>
-              Discover local sellers, trade specimens safely, and establish direct contact within your regional fishkeeper community.
+              Buying from a breeder you can drive to? Arrange the handoff in the app — pick a time that works, get the meetup spot and directions, and confirm the handoff in person.
             </p>
           </div>
         </div>

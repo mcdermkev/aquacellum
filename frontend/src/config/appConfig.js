@@ -38,10 +38,15 @@ export const STOREFRONT_BETA_WALLETS = [
 ];
 
 // ── Valid tab names for URL hash routing ──────────────────────────────────
-// Note: the legacy "storefront" ("My Store") tab was consolidated into
-// "breeder-terminal". App.jsx redirects any old /app/storefront links there.
+// Retired tabs are omitted here and redirected in App.jsx, so old links land
+// somewhere meaningful instead of the generic /app/tanks fallback:
+//   "storefront" ("My Store")        → "breeder-terminal" (owns storefront setup)
+//   "map" ("Local Sellers"/"Local Map") → "orders" (Fish Finder T15: a pickup
+//        meetup belongs to the order that created it, and finding sellers is
+//        the Marketplace's job; proximity discovery was fabricated and removed
+//        under Decision D3, with the real opt-in version still unbuilt)
 export const VALID_TABS = [
-  "tanks", "breeder", "directory", "gallery", "map",
+  "tanks", "breeder", "directory", "gallery",
   "orders", "incoming", "reef", "settings", "founders",
   "breeder-terminal",
 ];

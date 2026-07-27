@@ -104,6 +104,53 @@ describe("LocalBreederMap — a My Pickups pin round-trips into the order (My Or
   });
 });
 
+describe("the Local Sellers / Local Map tab is retired (Fish Finder T15)", () => {
+  const APP = stripComments(
+    readFileSync(fileURLToPath(new URL("../App.jsx", import.meta.url)), "utf8")
+  );
+  const APP_CONFIG = stripComments(
+    readFileSync(fileURLToPath(new URL("../config/appConfig.js", import.meta.url)), "utf8")
+  );
+
+  it("is not mounted or imported by App.jsx", () => {
+    expect(APP).not.toContain("LocalBreederMap");
+    expect(APP).not.toContain('case "map"');
+  });
+
+  it("has no nav entry", () => {
+    expect(APP).not.toContain('id: "map"');
+    expect(APP).not.toContain("Local Sellers");
+    expect(APP).not.toContain("Local Map");
+  });
+
+  it('is removed from VALID_TABS so "map" cannot route', () => {
+    const tabs = APP_CONFIG.slice(APP_CONFIG.indexOf("VALID_TABS"));
+    expect(tabs.slice(0, tabs.indexOf("]"))).not.toContain('"map"');
+  });
+
+  it("redirects /app/map to My Orders rather than the generic tanks fallback", () => {
+    // Pickup coordination lives on the order that created it, so an old
+    // bookmark should land somewhere meaningful.
+    expect(APP).toContain('tabFromPath === "map"');
+    expect(APP).toContain('navigate(`/app/orders${window.location.search}`, { replace: true })');
+  });
+
+  it("does not market proximity discovery on the landing page", () => {
+    // The landing page promised "Local Sellers & Proximity Maps"; that feature
+    // was fabricated (D3) and the real opt-in version (T15b) is unbuilt.
+    // Comments stripped: the replacement carries a note naming the old copy so
+    // nobody reinstates it, and that note is not user-facing text.
+    const landing = stripComments(
+      readFileSync(
+        fileURLToPath(new URL("../components/LandingHobbyist.jsx", import.meta.url)),
+        "utf8"
+      )
+    );
+    expect(landing).not.toContain("Proximity Maps");
+    expect(landing).not.toContain("Discover local sellers");
+  });
+});
+
 describe("LocalBreederMap — never entitlement-gated (REQUIRED capability, spec §0)", () => {
   it("contains no hasEntitlement gate on the My Pickups layer", () => {
     expect(SOURCE).not.toMatch(/hasEntitlement/);
