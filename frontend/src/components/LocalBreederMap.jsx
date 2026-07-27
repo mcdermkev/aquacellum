@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { formatEther } from "ethers";
 import { HandshakeVerification } from "./HandshakeVerification";
+import { normalizePriceCents, formatPriceCents } from "../services/catalogQuery";
 import { db } from "../db";
 import { haptic } from "../utils/haptics";
 import { relayGetOrders } from "../services/relayer";
@@ -27,7 +27,6 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
   const [selectedListing, setSelectedListing] = useState(null);
   const [hoveredDot, setHoveredDot] = useState(null);
   const [rangeFilter, setRangeFilter] = useState(10);
-  const [eventFilter, setEventFilter] = useState("all");
   const [userLocation, setUserLocation] = useState({ lat: 37.7749, lng: -122.4194 });
   const [geoStatus, setGeoStatus] = useState("pending");
   const [locationLabel, setLocationLabel] = useState("Locating...");
@@ -126,17 +125,12 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
       console.error("Failed to fetch map listings from Dexie:", err);
     } finally {
       setLoading(false);
-      // Trigger scanning → reveal transition
-      setTimeout(() => {
-        setScanningPhase(false);
-        let progress = 0;
-        const step = () => {
-          progress += 0.03;
-          setDotRevealProgress(Math.min(1, progress));
-          if (progress < 1) dotRevealTimerRef.current = requestAnimationFrame(step);
-        };
-        dotRevealTimerRef.current = requestAnimationFrame(step);
-      }, 1500);
+      // No "Scanning local zone..." phase (Decision D3 / T15). It held the map
+      // for 1.5s and swept the radar as if querying nearby sellers; nothing is
+      // queried, and it also delayed the user's real pickup pins. The map now
+      // renders what it has immediately.
+      setScanningPhase(false);
+      setDotRevealProgress(1);
     }
   };
 
@@ -235,16 +229,12 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
     return { clusters, singles };
   }, [listings, rangeFilter]);
 
-  // Count visible items for empty state detection
-  const visibleCount = useMemo(() => {
-    return listings.filter(l => l.distance <= rangeFilter).length;
-  }, [listings, rangeFilter]);
 
-  // Mock events data
-  // Real community events only — no fabricated swap-meets / public drop points
-  // (Decision D3 / T15). There is no real events data source yet, so the radar
-  // plots no events until the real opt-in discovery feature (T15) lands.
-  const mockEvents = [];
+  // No community-events layer at all (Decision D3 / T15). This used to be a
+  // hardcoded `mockEvents` array of invented swap-meets and "public drop
+  // points"; emptying it left an events pipeline that could never carry
+  // anything, so the layer (draw pass, filter control, and detail panel) is
+  // gone entirely. It returns when a real events source exists.
 
   // Radar drawing loop
   useEffect(() => {
@@ -322,20 +312,6 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
       pulseScale += 0.008 * pulseDirection;
       if (pulseScale > 1.15 || pulseScale < 0.95) pulseDirection *= -1;
 
-      // Scanning phase overlay
-      if (scanningPhase) {
-        const scanOp = 0.5 + 0.5 * Math.sin(Date.now() / 300);
-        ctx.fillStyle = isPro ? `rgba(168,85,247,${scanOp * 0.8})` : `rgba(251,191,36,${scanOp * 0.8})`;
-        ctx.font = "bold 13px 'Inter', sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("Scanning local zone...", centerX, centerY + maxRadius + 10);
-        ctx.textAlign = "start";
-        drawSweepAndCenter(centerX, centerY, maxRadius, angle);
-        angle = (angle + 0.02) % (Math.PI * 2);
-        animationRef.current = requestAnimationFrame(drawRadar);
-        return;
-      }
-
       const dotsCoords = [];
       const currentReveal = dotRevealProgress;
 
@@ -408,32 +384,10 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
         ctx.fill();
       });
 
-      // Events
-      mockEvents.forEach((evt) => {
-        if (eventFilter !== "all" && eventFilter !== evt.type) return;
-        if (evt.distance > rangeFilter) return;
-        const x = centerX + (evt.lngMiles / rangeFilter) * maxRadius;
-        const y = centerY - (evt.latMiles / rangeFilter) * maxRadius;
-        dotsCoords.push({ x, y, listing: { ...evt, isEvent: true } });
-        const isActive = selectedListing && selectedListing.id === evt.id;
-        const rgb = evt.type === "swap-meets" ? "34,197,94" : "56,189,248";
-        ctx.beginPath();
-        ctx.arc(x, y, 12 * (isActive ? pulseScale : 1), 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${rgb}, ${isActive ? 0.25 : 0.15})`;
-        ctx.fill();
-        ctx.strokeStyle = `rgba(${rgb}, 0.7)`;
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(x, y, 4, 0, Math.PI * 2);
-        ctx.fillStyle = "#fff";
-        ctx.fill();
-      });
-
-      // Task 25: "My Pickups" — the buyer's own real (un-fuzzed) pickup
-      // pins, same drawing technique as mockEvents above (real
-      // latMiles/lngMiles), just visually distinct (a pin marker) so a
-      // buyer never confuses their own confirmed meet spot with the fuzzed
-      // discovery dots or the swap-meet/drop event markers.
+      // Task 25: "My Pickups" — the buyer's own real (un-fuzzed) pickup pins,
+      // drawn from real latMiles/lngMiles offsets and visually distinct (a pin
+      // marker) so a buyer never confuses their own confirmed meet spot with
+      // any future discovery marker.
       if (showMyPickups) {
         myPickups.forEach((pickup) => {
           if (pickup.distance > rangeFilter) return;
@@ -462,7 +416,7 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
 
     drawRadar();
     return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
-  }, [listings, rangeFilter, selectedListing, hoveredDot, viewMode, scanningPhase, dotRevealProgress, clusteredListings, useMetric, eventFilter, myPickups, showMyPickups]);
+  }, [listings, rangeFilter, selectedListing, hoveredDot, viewMode, scanningPhase, dotRevealProgress, clusteredListings, useMetric, myPickups, showMyPickups]);
 
   // Leaflet map view effect
   useEffect(() => {
@@ -614,10 +568,15 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
           <div>
             <h3 style={{ fontSize: "1.25rem", fontWeight: "700", color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span>{viewMode === "radar" ? "\uD83E\uDDED" : "\uD83D\uDDFA\uFE0F"}</span> Local Proximity Field
+              <span>{viewMode === "radar" ? "\uD83E\uDDED" : "\uD83D\uDDFA\uFE0F"}</span> Pickup Map
             </h3>
             <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
-              Hobbyist boundaries fuzzed within 3-mile zones
+              {/* Honest subtitle (Decision D3 / T15). The old copy — "Hobbyist
+                  boundaries fuzzed within 3-mile zones" — described a seller
+                  fuzzing system that no longer exists (it was wallet-hash
+                  fiction). This map shows only real data: the pickup spots for
+                  your own confirmed orders. */}
+              Your confirmed pickup meetups. Breeder discovery isn&apos;t live yet.
             </span>
           </div>
 
@@ -641,14 +600,10 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
 
         {/* Controls row: filters + range + units */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
-          {/* Event Filter */}
-          <div style={{ display: "flex", gap: "0.25rem", background: "rgba(0,0,0,0.3)", padding: "2px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.04)" }}>
-            {["all", "swap-meets", "public-drops"].map((type) => (
-              <button key={type} onClick={() => { setEventFilter(type); setSelectedListing(null); }} style={{ padding: "0.25rem 0.6rem", fontSize: "0.7rem", fontWeight: "600", border: "none", borderRadius: "4px", cursor: "pointer", background: eventFilter === type ? (isPro ? "var(--accent-pro)" : "var(--accent-blue)") : "transparent", color: eventFilter === type ? (isPro ? "#fff" : "#0f172a") : "var(--text-muted)", transition: "all 0.2s" }}>
-                {type === "all" ? "All" : type === "swap-meets" ? "Swap Meets" : "Drops"}
-              </button>
-            ))}
-          </div>
+          {/* The "All / Swap Meets / Drops" event filter was removed (Decision
+              D3 / T15): the only events it could ever match were hardcoded fake
+              ones, so with those gone the control could never change anything.
+              It comes back with a real community-events source, not before. */}
 
           {/* Range Toggles */}
           <div style={{ display: "flex", gap: "0.25rem", background: "rgba(0,0,0,0.3)", padding: "2px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.04)" }}>
@@ -718,31 +673,41 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
               {locationLabel}
             </span>
           </div>
+          {/* Stats reflect the only real layer on this map. The old
+              "N nearby / N clusters" counters were always 0 (there are no
+              seller dots) and read as "nobody is near you" — Decision D3. */}
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", padding: "0.3rem 0.5rem", background: "rgba(0,0,0,0.2)", borderRadius: "10px" }}>
-              <strong style={{ color: themeAccentColor }}>{visibleCount}</strong> nearby
-            </span>
-            <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", padding: "0.3rem 0.5rem", background: "rgba(0,0,0,0.2)", borderRadius: "10px" }}>
-              <strong style={{ color: themeAccentColor }}>{clusteredListings.clusters.length}</strong> clusters
+              <strong style={{ color: themeAccentColor }}>{myPickups.length}</strong> {myPickups.length === 1 ? "pickup" : "pickups"}
             </span>
           </div>
         </div>
 
-        {/* No breeders in range empty state */}
-        {!scanningPhase && visibleCount === 0 && (
+        {/* Honest empty state (Decision D3 / T15).
+            The old copy said "No breeders found within N mi — try expanding
+            your range or check back later as more breeders list", which framed
+            an unbuilt feature as a completed search that found nobody, and
+            offered an "Expand range" button that could never change the result.
+            Local breeder discovery needs sellers to publish an approximate
+            location, and nothing in the product asks them to yet, so we say
+            that plainly and point at the surface that does work. */}
+        {!scanningPhase && myPickups.length === 0 && (
           <div style={{ textAlign: "center", padding: "1.5rem 1rem", background: "rgba(0,0,0,0.15)", borderRadius: "10px", border: "1px dashed rgba(255,255,255,0.06)" }}>
-            <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>{"\uD83D\uDD2D"}</div>
+            <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>{"\uD83D\uDCCD"}</div>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", margin: "0 0 0.5rem", fontWeight: "500" }}>
-              No breeders found within {useMetric ? `${Math.round(rangeFilter * 1.60934)} km` : `${rangeFilter} mi`}
+              Nothing on your map yet
             </p>
-            <p style={{ color: "var(--text-muted)", fontSize: "0.7rem", margin: 0 }}>
-              Try expanding your range or check back later as more breeders list.
+            <p style={{ color: "var(--text-muted)", fontSize: "0.7rem", margin: 0, lineHeight: 1.5 }}>
+              This map shows the meetup spot for orders you&apos;ve arranged as a local
+              pickup. Finding breeders near you isn&apos;t available yet — it needs sellers
+              to share an approximate area first, and we don&apos;t ask them to.
             </p>
-            {rangeFilter < 25 && (
-              <button onClick={() => setRangeFilter(25)} style={{ marginTop: "0.75rem", padding: "0.4rem 1rem", fontSize: "0.72rem", fontWeight: "600", background: isPro ? "rgba(168,85,247,0.15)" : "rgba(251,191,36,0.12)", border: `1px solid ${themeCardBorder}`, borderRadius: "6px", color: themeAccentColor, cursor: "pointer", transition: "all 0.2s" }}>
-                Expand to {useMetric ? `${Math.round(25 * 1.60934)} km` : "25 mi"}
-              </button>
-            )}
+            <button
+              onClick={() => navigate("/app/directory")}
+              style={{ marginTop: "0.75rem", padding: "0.4rem 1rem", fontSize: "0.72rem", fontWeight: "600", background: isPro ? "rgba(168,85,247,0.15)" : "rgba(251,191,36,0.12)", border: `1px solid ${themeCardBorder}`, borderRadius: "6px", color: themeAccentColor, cursor: "pointer", transition: "all 0.2s" }}
+            >
+              Browse the marketplace
+            </button>
           </div>
         )}
       </div>
@@ -790,15 +755,20 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
     return (
       <div className="glass-card" style={{ padding: "1.5rem", background: "rgba(15, 23, 42, 0.75)", border: `1px solid ${themeCardBorder}`, borderRadius: "var(--radius-md)", minHeight: "280px", display: "flex", flexDirection: "column", justifyContent: selectedListing ? "space-between" : "center", alignItems: selectedListing ? "stretch" : "center", textAlign: selectedListing ? "left" : "center", boxShadow: isPro ? "0 0 24px rgba(168,85,247,0.1)" : "0 12px 32px rgba(0,0,0,0.4)" }}>
         {selectedListing ? (
-          selectedListing.isEvent ? renderEventDetail() : renderBreederDetail()
+          renderBreederDetail()
         ) : (
+          /* Honest idle copy (Decision D3 / T15): the old text invited the user
+             to "click any glowing dot ... and initiate checkout", but the only
+             markers this map draws are their own pickup pins. */
           <div style={{ padding: "2rem" }}>
-            <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>{"\uD83D\uDCE1"}</div>
-            <h4 style={{ color: "#fff", fontSize: "0.95rem", fontWeight: "600", marginBottom: "0.25rem" }}>No Breeder Selected</h4>
+            <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>{"\uD83D\uDCCD"}</div>
+            <h4 style={{ color: "#fff", fontSize: "0.95rem", fontWeight: "600", marginBottom: "0.25rem" }}>
+              {myPickups.length > 0 ? "No pickup selected" : "Nothing selected"}
+            </h4>
             <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", margin: 0 }}>
-              {viewMode === "radar"
-                ? "Click on any glowing dot on the radar to view details and initiate checkout."
-                : "Tap any marker on the map to view breeder details."}
+              {myPickups.length > 0
+                ? `${viewMode === "radar" ? "Click" : "Tap"} one of your pickup pins to open that order.`
+                : "Your local-pickup orders show up here with their meetup spot."}
             </p>
           </div>
         )}
@@ -806,30 +776,10 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
     );
   }
 
-  function renderEventDetail() {
-    return (
-      <>
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          <div>
-            <span style={{ fontSize: "0.65rem", color: selectedListing.type === "swap-meets" ? "var(--accent-green)" : "var(--accent-blue)", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: "700" }}>
-              {"\uD83E\uDDED"} {selectedListing.type === "swap-meets" ? "Active Swap Meet Event" : "Public Drop Location"}
-            </span>
-            <h4 style={{ fontSize: "1.15rem", fontWeight: "700", color: "#fff", marginTop: "0.25rem" }}>{selectedListing.name}</h4>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.65rem", fontSize: "0.85rem" }}>
-            <p style={{ color: "var(--text-secondary)", margin: 0, lineHeight: "1.4" }}>{selectedListing.description}</p>
-            <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: "0.5rem", marginTop: "0.5rem" }}>
-              <span style={{ color: "var(--text-secondary)" }}>Distance</span>
-              <strong style={{ color: "#fff" }}>{formatDistance(selectedListing.distance)}</strong>
-            </div>
-          </div>
-        </div>
-        <div style={{ marginTop: "1.5rem", padding: "0.75rem", background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: "6px", fontSize: "0.78rem", color: "var(--accent-green)", textAlign: "center" }}>
-          {"\uD83C\uDF89"} Swap Meet Active! Orders claimed in this zone earn 2x Loyalty Rewards!
-        </div>
-      </>
-    );
-  }
+  // `renderEventDetail` was deleted along with the fabricated events layer
+  // (Decision D3 / T15). It rendered invented swap-meet copy plus an unbacked
+  // "Orders claimed in this zone earn 2x Loyalty Rewards!" promise — a reward
+  // multiplier that exists nowhere in the gamification rules.
 
   function renderBreederDetail() {
     return (
@@ -850,7 +800,20 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.04)", paddingBottom: "0.5rem" }}>
               <span style={{ color: "var(--text-secondary)" }}>Price / Fish</span>
-              <strong style={{ color: primaryThemeColor }}>${(parseFloat(formatEther(selectedListing.pricePerFish)) * 1000).toFixed(2)}</strong>
+              {/* Money goes through the canonical marketplace parser/formatter
+                  (catalogQuery.js), the same one the board, cart, and
+                  availability aggregate use. This previously read
+                  `formatEther(pricePerFish) * 1000`, which is meaningless for
+                  USD-cents listings and would have printed a wrong price the
+                  moment this panel got real data again. */}
+              <strong style={{ color: primaryThemeColor }}>
+                {(() => {
+                  const cents = normalizePriceCents(selectedListing);
+                  // formatPriceCents coerces a missing price to "$0.00", so an
+                  // unknown price is shown as unknown rather than as free.
+                  return Number.isFinite(cents) && cents > 0 ? formatPriceCents(cents) : "—";
+                })()}
+              </strong>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.04)", paddingBottom: "0.5rem" }}>
               <span style={{ color: "var(--text-secondary)" }}>Proximity</span>

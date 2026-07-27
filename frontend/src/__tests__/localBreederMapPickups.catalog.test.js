@@ -53,10 +53,42 @@ describe("LocalBreederMap — no fabricated discovery data (Decision D3 / T15)",
     expect(SOURCE).toContain("setListings([])");
   });
 
-  it("does NOT ship hardcoded fake swap-meets / public drop points", () => {
+  it("does NOT ship hardcoded fake swap-meets / public drop points, and has no events layer at all", () => {
     expect(SOURCE).not.toContain("Silicon Valley Aqua Swap Meet");
     expect(SOURCE).not.toContain("Downtown Guppy Public Drop Point");
-    expect(SOURCE).toContain("const mockEvents = []");
+    // The events pipeline itself is gone, not just emptied: an always-empty
+    // `mockEvents` left a filter control and a detail panel that could never
+    // show anything real (T15a).
+    expect(SOURCE).not.toContain("mockEvents");
+    expect(SOURCE).not.toContain("renderEventDetail");
+    expect(SOURCE).not.toContain("eventFilter");
+    // The unbacked reward promise that rode along with the fake swap meets.
+    expect(SOURCE).not.toContain("2x Loyalty Rewards");
+  });
+
+  it("does not describe a seller-fuzzing system that no longer exists", () => {
+    expect(SOURCE).not.toContain("fuzzed within 3-mile zones");
+  });
+
+  it("does not frame unbuilt breeder discovery as a completed search that found nobody", () => {
+    // The old empty state read "No breeders found within N mi — try expanding
+    // your range or check back later as more breeders list", plus an
+    // "Expand to 25 mi" button that could never change the result (T15a).
+    expect(SOURCE).not.toContain("No breeders found within");
+    expect(SOURCE).not.toContain("check back later as more breeders list");
+    expect(SOURCE).toContain("isn&apos;t available yet");
+  });
+
+  it("does not stage a fake 'Scanning local zone' sweep for a query it never makes", () => {
+    expect(SOURCE).not.toContain("Scanning local zone");
+  });
+
+  it("prices any listing detail through the canonical marketplace formatter, not a bogus ether conversion", () => {
+    expect(SOURCE).toContain(
+      'import { normalizePriceCents, formatPriceCents } from "../services/catalogQuery"'
+    );
+    expect(SOURCE).not.toContain("formatEther");
+    expect(SOURCE).not.toContain("* 1000).toFixed(2)");
   });
 
   it("My Pickups pins render as a visually distinct marker, drawn independently from the fuzzed `listings` dots", () => {
