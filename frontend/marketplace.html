@@ -613,6 +613,9 @@
   <!-- ========== FOOTER ========== -->
   <footer id="site-footer"></footer>
   <!-- ========== DATA LOGIC ========== -->
+  <!-- Loaded before the inline script below (not with the deferred /js bundle at
+       the bottom) so AquadexPublicListings is defined when init() runs. -->
+  <script src="/js/public-listings.js"></script>
   <script>
     // ── Configuration ──────────────────────────────────────────────────────
     const SUPABASE_URL = 'https://yahsdztnvsykzecjatsl.supabase.co';
@@ -796,19 +799,15 @@
     function ethToUSDRaw(priceEth) { return parseFloat(priceEth || 0); }
 
     // ── Cloud Listings ─────────────────────────────────────────────────────
+    // Reads the display-safe `aquadex_listings_public` view rather than the raw
+    // table, so this anonymous page only ever receives allowlisted listing
+    // fields (Fish Finder T14). See /js/public-listings.js.
     async function fetchCloudListings() {
-      try {
-        const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/aquadex_listings?is_active=eq.true&order=created_at.desc&limit=200`,
-          { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' } }
-        );
-        if (!res.ok) return [];
-        const rows = await res.json();
-        return rows.map(row => {
-          try { return typeof row.data === 'string' ? JSON.parse(row.data) : row.data; }
-          catch { return null; }
-        }).filter(Boolean);
-      } catch (e) { console.warn('Cloud listings fetch failed:', e); return []; }
+      return AquadexPublicListings.fetchListings({
+        supabaseUrl: SUPABASE_URL,
+        anonKey: SUPABASE_ANON_KEY,
+        query: 'is_active=eq.true&order=created_at.desc&limit=200',
+      });
     }
 
     // ── On-Chain Listings ──────────────────────────────────────────────────

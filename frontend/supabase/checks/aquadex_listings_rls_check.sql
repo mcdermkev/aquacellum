@@ -12,8 +12,14 @@
 -- key and returns aggregates only; the goal is that it is the ONLY public
 -- read path.
 --
--- NOTE: aquadex_listings is not created by any tracked migration in this repo,
--- so its RLS state lives only in the live database — hence this check.
+-- CORRECTION (T14): an earlier version of this note claimed aquadex_listings is
+-- "not created by any tracked migration". It is — supabase/migrations/
+-- 20260618_cloud_listings_table.sql creates the table and its original
+-- `anon full access listings` policy, and 20260619_tighten_cloud_sync_rls.sql
+-- replaces that with `listings_select_public` (anon, using (true)), which is the
+-- exposure this check confirms. 20260624110000_jwt_bridge_rls_upgrade.sql adds
+-- the `_jwt` (authenticated) counterparts. The expected policy set is therefore
+-- known from the repo; this check verifies the LIVE database matches it.
 --
 -- HOW TO RUN (any one):
 --   psql "<db-connection-string>" -f aquadex_listings_rls_check.sql
@@ -67,9 +73,17 @@ order  by grantee, privilege_type;
 -- ----------------------------------------------------------------------------
 
 -- ----------------------------------------------------------------------------
--- ALSO VERIFY (product decision, not SQL): is the in-app marketplace board
--- meant to be browsable while LOGGED OUT? The app's Supabase client falls back
--- to the anon role when unauthenticated (see src/services/supabaseClient.js),
--- so if the board is public-by-design, anon MUST read listings and locking it
--- would break logged-out browsing. Decide that before applying the fix.
+-- RESOLVED (T14) — this used to ask whether logged-out browsing was intended.
+-- It is: marketplace.html, species.html (3 call sites) and store.html all read
+-- listings anonymously. So a blunt anon revoke is NOT the fix; the fix is a
+-- display-safe projecting view plus a lockdown of the raw table:
+--     supabase/migrations/20260728_aquadex_listings_public_view.sql
+--     frontend/supabase/checks/aquadex_listings_rls_lockdown.sql   (staged)
+--
+-- Second finding worth re-checking here: the in-app client is not reliably
+-- `authenticated` either. src/services/supabaseClient.js falls back to the anon
+-- role + x-wallet-address header whenever the /api/mint-session JWT bridge
+-- fails, which is why the write policies are granted `to anon`. Confirm the
+-- bridge works in production BEFORE applying the lockdown — see its
+-- prerequisite 3.
 -- ----------------------------------------------------------------------------

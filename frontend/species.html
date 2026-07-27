@@ -461,6 +461,9 @@
   <!-- Footer -->
   <footer id="site-footer"></footer>
 
+  <!-- Loaded before the inline script below so AquadexPublicListings is defined
+       when the listing/breeder sections fetch (Fish Finder T14). -->
+  <script src="/js/public-listings.js"></script>
   <script>
     // Utility: generate slug from scientific name
     function toSlug(name) {
@@ -1335,19 +1338,20 @@
           if (cr && cr.includes('/')) tips = parseInt(cr.split('/')[1], 10) || 0;
         }
         // Shared tanks (currents tagged with this species) + breeders (active listings)
-        const [curRes, lisRes] = await Promise.all([
+        // Listings come from the display-safe projection, never the raw table
+        // (Fish Finder T14) — see /js/public-listings.js.
+        const [curRes, lisRows] = await Promise.all([
           fetch(`${SB_URL}/rest/v1/currents?visibility=eq.public&select=species_tags&limit=500`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }),
-          fetch(`${SB_URL}/rest/v1/aquadex_listings?is_active=eq.true&select=data,seller_address&limit=500`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } })
+          AquadexPublicListings.fetchRows({ supabaseUrl: SB_URL, anonKey: SB_KEY, query: 'is_active=eq.true&select=data,seller_address&limit=500' })
         ]);
         if (curRes.ok) {
           const rows = await curRes.json();
           tankPosts = rows.filter(r => JSON.stringify(r.species_tags || []).toLowerCase().includes(sci)).length;
         }
-        if (lisRes.ok) {
-          const rows = await lisRes.json();
+        {
           const sellers = new Set();
-          rows.forEach(r => {
-            let d = {}; try { d = typeof r.data === 'string' ? JSON.parse(r.data) : (r.data || {}); } catch {}
+          lisRows.forEach(r => {
+            const d = AquadexPublicListings.parseRow(r) || {};
             if ((d.scientificName || '').toLowerCase() === sci) sellers.add(r.seller_address);
           });
           breeders = sellers.size;
@@ -1462,15 +1466,13 @@
       let listings = [];
 
       try {
-        const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/aquadex_listings?is_active=eq.true&order=created_at.desc&limit=50`,
-          { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
-        );
-        if (res.ok) {
-          const rows = await res.json();
-          const all = rows.map(r => { try { return typeof r.data === 'string' ? JSON.parse(r.data) : r.data; } catch { return null; } }).filter(Boolean);
-          listings = all.filter(l => l.scientificName && l.scientificName.toLowerCase() === sp.scientificName.toLowerCase());
-        }
+        // Display-safe projection, not the raw listings table (Fish Finder T14).
+        const all = await AquadexPublicListings.fetchListings({
+          supabaseUrl: SUPABASE_URL,
+          anonKey: SUPABASE_ANON_KEY,
+          query: 'is_active=eq.true&order=created_at.desc&limit=50',
+        });
+        listings = all.filter(l => l.scientificName && l.scientificName.toLowerCase() === sp.scientificName.toLowerCase());
       } catch (e) { /* silent fail */ }
 
       // Build the section HTML
@@ -1574,15 +1576,16 @@
       // ─── 2. Master Breeders with this species ──────────────────────────
       try {
         // Get active listings for this species to find breeders
-        const lisRes = await fetch(
-          `${SB_URL}/rest/v1/aquadex_listings?is_active=eq.true&order=updated_at.desc&limit=200&select=seller_address,data,common_name`,
-          { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } }
-        );
-        if (lisRes.ok) {
-          const listings = await lisRes.json();
+        // Display-safe projection, not the raw listings table (Fish Finder T14).
+        const listings = await AquadexPublicListings.fetchRows({
+          supabaseUrl: SB_URL,
+          anonKey: SB_KEY,
+          query: 'is_active=eq.true&order=updated_at.desc&limit=200&select=seller_address,data,common_name',
+        });
+        {
           const breederWallets = new Set();
           listings.forEach(r => {
-            let d = {}; try { d = typeof r.data === 'string' ? JSON.parse(r.data) : (r.data || {}); } catch {}
+            const d = AquadexPublicListings.parseRow(r) || {};
             const listSci = (d.scientificName || '').toLowerCase();
             const listCommon = (d.commonName || r.common_name || '').toLowerCase();
             if (listSci === sci || listCommon === common) {

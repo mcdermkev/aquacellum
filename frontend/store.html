@@ -185,6 +185,9 @@
   <script src="/js/nav.js"></script>
   <script src="/js/footer.js"></script>
   <script src="/js/reveal.js"></script>
+  <!-- Display-safe listing reads (Fish Finder T14) — must precede the inline
+       script that calls AquadexPublicListings. -->
+  <script src="/js/public-listings.js"></script>
   <script>
     // ── Configuration ──────────────────────────────────────────────────────
     const SUPABASE_URL = 'https://yahsdztnvsykzecjatsl.supabase.co';
@@ -305,16 +308,13 @@
               let stats = {};
               if (statsRes.ok) { const s = await statsRes.json(); stats = s[0] || {}; }
               // Fetch listings
-              const listingsRes = await fetch(
-                `${SUPABASE_URL}/rest/v1/aquadex_listings?is_active=eq.true&order=created_at.desc&limit=50`,
-                { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
-              );
-              let listings = [];
-              if (listingsRes.ok) {
-                const rows = await listingsRes.json();
-                listings = rows.map(r => { try { return typeof r.data === 'string' ? JSON.parse(r.data) : r.data; } catch { return null; } }).filter(Boolean);
-                listings = listings.filter(l => l.seller?.toLowerCase() === p.wallet_address.toLowerCase());
-              }
+              // Display-safe projection, not the raw listings table (Fish Finder T14).
+              const all = await AquadexPublicListings.fetchListings({
+                supabaseUrl: SUPABASE_URL,
+                anonKey: SUPABASE_ANON_KEY,
+                query: 'is_active=eq.true&order=created_at.desc&limit=50',
+              });
+              let listings = all.filter(l => l.seller?.toLowerCase() === p.wallet_address.toLowerCase());
               renderStorefront({ profile: p, stats, listings, reviews: [] });
               return;
             }
