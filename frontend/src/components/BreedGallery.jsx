@@ -468,6 +468,10 @@ export function BreedGallery({
     if (selectedBreed) {
       const nameKey = selectedBreed.scientificName.toLowerCase();
       const metrics = masterLookup[nameKey];
+      // Slider START POSITION only — not a claim about the species. When the
+      // minimum volume is unknown we park the slider mid-range; the "Min ideal"
+      // label and the Parameter Check both render an explicit "not recorded"
+      // state rather than treating this seed as data (Decision D3).
       const minVol = metrics?.minVolumeGallons ?? 30;
       setSimVolume(minVol);
 
@@ -639,7 +643,7 @@ export function BreedGallery({
   // defaults.
   const compatibility = useMemo(() => {
     if (!selectedBreed) {
-      return { score: 100, verdict: "ok", color: "hsl(120, 85%, 50%)", text: "", minVol: 30, reasons: [] };
+      return { score: 100, verdict: "ok", color: "hsl(120, 85%, 50%)", text: "", minVol: null, reasons: [] };
     }
     const fit = assessSpeciesFit(
       selectedBreed,
@@ -657,7 +661,11 @@ export function BreedGallery({
       color,
       text: fit.headline,
       reasons: fit.reasons,
-      minVol: fit.minVolumeGallons ?? 30,
+      // Honest: null when the species has no recorded minimum volume. The old
+      // `?? 30` printed a fabricated "Min ideal: 30 gal" / "need >= 30 gal" as
+      // if it were the species' real requirement (Decision D3 — no fabricated
+      // data). Callers must render an explicit "not recorded" state instead.
+      minVol: fit.minVolumeGallons,
     };
   }, [selectedBreed, simVolume, simPh, simTemp, fishbaseData]);
 
@@ -750,7 +758,9 @@ export function BreedGallery({
             </div>
             <div>
               <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Min Tank</span>
-              <strong style={{ fontSize: "0.9rem", color: "var(--accent-amber)" }}>{minVol} Gal</strong>
+              <strong style={{ fontSize: "0.9rem", color: minVol != null ? "var(--accent-amber)" : "var(--text-muted)" }}>
+                {minVol != null ? `${minVol} Gal` : "Not recorded"}
+              </strong>
             </div>
           </div>
         </div>
@@ -1326,7 +1336,7 @@ export function BreedGallery({
                   />
                   <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "flex", justifyContent: "space-between" }}>
                     <span>5 gal</span>
-                    <span>Min ideal: {minVol} gal</span>
+                    {minVol != null && <span>Min ideal: {minVol} gal</span>}
                     <span>300 gal</span>
                   </div>
                 </div>
@@ -1394,10 +1404,14 @@ export function BreedGallery({
                 Parameter Check
               </h4>
               <ul style={{ listStyle: "none", fontSize: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem", padding: 0, margin: 0 }}>
+                {/* Volume check. With no recorded minimum we say so rather than
+                    scoring against a fabricated default (Decision D3). */}
                 <li style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <span>{simVolume >= minVol ? "🟢" : "🔴"}</span>
-                  <span style={{ color: simVolume >= minVol ? "var(--text-primary)" : "var(--text-muted)" }}>
-                    {simVolume >= minVol ? `Volume is sufficient (>= ${minVol} gal)` : `Volume too low (need >= ${minVol} gal)`}
+                  <span>{minVol == null ? "⚪" : (simVolume >= minVol ? "🟢" : "🔴")}</span>
+                  <span style={{ color: minVol != null && simVolume >= minVol ? "var(--text-primary)" : "var(--text-muted)" }}>
+                    {minVol == null
+                      ? "Minimum volume not recorded for this species"
+                      : (simVolume >= minVol ? `Volume is sufficient (>= ${minVol} gal)` : `Volume too low (need >= ${minVol} gal)`)}
                   </span>
                 </li>
                 <li style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
