@@ -50,7 +50,8 @@
 }
 .ti-select:focus { outline: none; border-color: rgba(56, 189, 248, 0.6); box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2); }
 .ti-select:disabled { opacity: 0.5; cursor: not-allowed; }
-.ti-select option { background: #0a1929; color: #fff; }
+/* Dropdown list colors come from the global `select option` rule in
+   styles/index.css (see the note there) — no local copy needed. */
 
 .ti-btn {
   padding: 0.3rem 0.65rem;

@@ -1,6 +1,23 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
 :root {
+  /*
+   * Tell the browser this is a dark UI. This is the ROOT FIX for the recurring
+   * "dropdown is white-on-white and unreadable" bug.
+   *
+   * Native form controls — the <select> popup list, scrollbars, date/time
+   * pickers, autofill, spinners — are painted by the OS/UA, NOT by our CSS. With
+   * no `color-scheme`, the UA assumes LIGHT and paints the <select> popup with a
+   * white background, while the option text inherits our near-white
+   * `--text-primary` from the select. White on white.
+   *
+   * That is why this kept getting fixed per-component and only after someone
+   * noticed: it is invisible until you actually open a dropdown, and it can't be
+   * seen in the closed state. `color-scheme: dark` fixes every current and
+   * future native control in one declaration.
+   */
+  color-scheme: dark;
+
   /* Color Palette */
   --bg-primary: #080c14;
   --bg-secondary: #0e1424;
@@ -969,6 +986,71 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   flex-direction: column;
   max-height: 90vh;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Native <select> baseline — readable by DEFAULT, no per-component CSS needed.
+ *
+ * Companion to `color-scheme: dark` on :root above. Two layers, because they
+ * cover different failure modes:
+ *
+ *   1. `color-scheme: dark` makes the UA paint the popup dark. Correct in
+ *      current Chrome/Edge/Firefox/Safari.
+ *   2. These explicit option/optgroup colors are the fallback for engines that
+ *      ignore color-scheme for the popup list (older Chromium on Windows was
+ *      the usual culprit) and make the intent legible to the next developer.
+ *
+ * Uses `background-color` rather than the `background` shorthand on purpose, so
+ * a component setting its own `background: rgba(...)` (many do) overrides the
+ * fill without also clobbering unrelated background properties.
+ *
+ * Because this lives here, a NEW <select> is readable with zero component CSS.
+ * Do not re-add per-component `option { background: ... }` rules — that is the
+ * duplication this replaces, and hardcoded hexes drift from the theme (the ones
+ * removed used #0a1929 while --bg-secondary is #0e1424). Enforced by
+ * src/__tests__/selectTheming.catalog.test.js.
+ * ─────────────────────────────────────────────────────────────────────────── */
+select {
+  background-color: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.05));
+  border-radius: var(--radius-sm, 8px);
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+select:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+select option,
+select optgroup {
+  /* The dropdown list surface. --bg-secondary (not a hardcoded hex) so the
+     high-contrast theme and any future palette change follow automatically. */
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Selected row in the popup: weight only, NO background.
+   Deliberate — an earlier attempt tinted it with the translucent
+   --accent-blue-glow, which computed to rgba(56,189,248,0.15) and dropped
+   option contrast to 2.05:1 (verified in a browser). A translucent fill composites
+   over whatever the UA paints underneath, so its contrast can't be guaranteed —
+   exactly the class of bug this whole block exists to kill. With
+   `color-scheme: dark` the UA already draws a correct dark-theme highlight, so
+   let it. */
+select option:checked {
+  font-weight: 600;
+}
+
+select optgroup {
+  font-weight: 700;
+  color: var(--text-secondary);
 }
 
 /* Touch Targets Polish for Mobile Devices */

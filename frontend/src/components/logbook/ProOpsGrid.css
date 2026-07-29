@@ -101,11 +101,9 @@
   box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2);
 }
 
-/* Dark the native dropdown list so it never flashes white */
-.ops-sort select option {
-  background: #0a1929;
-  color: #fff;
-}
+/* The native dropdown list is themed globally now — `color-scheme: dark` plus a
+   `select option` rule in styles/index.css. The local copy that used to live
+   here hardcoded #0a1929, which drifted from --bg-secondary. */
 
 /* Rows: CSS grid columns */
 .ops-row {
