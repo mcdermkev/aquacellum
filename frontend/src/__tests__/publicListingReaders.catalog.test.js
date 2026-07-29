@@ -69,6 +69,40 @@ describe("public-listings.js helper", () => {
   });
 });
 
+describe("staged purge of legacy fabricated location data (D3 follow-up)", () => {
+  const PURGE = readFrontendFile("supabase/checks/aquadex_listings_purge_legacy_location.sql");
+  const PURGE_CODE = PURGE.replace(/^\s*--.*$/gm, "");
+
+  it("stays out of migrations/ because it mutates data irreversibly", () => {
+    expect(PURGE).toContain("MUTATES DATA");
+    expect(PURGE).toContain("supabase/checks/");
+  });
+
+  it("strips only the two fabricated keys", () => {
+    expect(PURGE_CODE).toContain("data - 'fuzzedLocation' - 'zoneHash'");
+    // Must not rewrite the blob wholesale — every other field is preserved.
+    expect(PURGE_CODE).not.toMatch(/set\s+data\s*=\s*'\{/);
+  });
+
+  it("is idempotent: only touches rows that actually carry a stripped key", () => {
+    expect(PURGE_CODE).toContain("data ? 'fuzzedLocation' or data ? 'zoneHash'");
+  });
+
+  it("handles the string-scalar blob case that `-` would otherwise error on", () => {
+    expect(PURGE_CODE).toContain("jsonb_typeof(data) = 'string'");
+    expect(PURGE_CODE).toContain("(data #>> '{}')::jsonb");
+  });
+
+  it("does not bump updated_at, which would reorder the public marketplace", () => {
+    expect(PURGE_CODE).not.toMatch(/updated_at\s*=/);
+  });
+
+  it("is transactional", () => {
+    expect(PURGE_CODE).toContain("begin;");
+    expect(PURGE_CODE).toContain("commit;");
+  });
+});
+
 describe("staged RLS lockdown", () => {
   const LOCKDOWN = readFrontendFile("supabase/checks/aquadex_listings_rls_lockdown.sql");
   /** Executable statements only — the prose documents the rollback and the

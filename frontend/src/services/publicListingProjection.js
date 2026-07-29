@@ -101,6 +101,22 @@ export const PUBLIC_LISTING_DATA_FIELDS = Object.freeze([
  * scrape — not because they are secrets.
  */
 export const WITHHELD_LISTING_DATA_FIELDS = Object.freeze([
+  // ── Legacy fabricated location residue (Decision D3, verified live) ───────
+  // D3 removed every code path that WROTE these, but it did not clean the rows
+  // that already had them, so they stayed anonymously readable until the T14
+  // view landed. Confirmed against production: all sampled rows carry a
+  // `fuzzedLocation` pinned to exactly downtown SF (0.0 mi away) — the
+  // hardcoded default, i.e. fabricated, not real keeper coordinates — plus a
+  // matching `zoneHash`. Nothing reads either field any more.
+  //
+  // The fail-closed allowlist already suppresses them (they are simply not
+  // allowlisted, which is the whole point), but they are named here so the
+  // suppression is intentional and asserted rather than incidental. A staged
+  // cleanup that strips them from stored rows lives at
+  // frontend/supabase/checks/aquadex_listings_purge_legacy_location.sql.
+  "fuzzedLocation",
+  "zoneHash",
+  // ── Seller operational detail / commercial terms ──────────────────────────
   "packingProfile", // seller's box/bag operational config
   "description", // free text; unmoderated for anonymous display
   "healthStatus", // commercial claim, surfaced in the logged-in flow

@@ -105,6 +105,19 @@ describe("toPublicListing — strict allowlist (fail-closed)", () => {
     expect(toPublicListings([null, { price: "1.00" }, 7])).toEqual([{ price: "1.00" }]);
   });
 
+  it("suppresses the legacy fabricated location fields still present in live rows", () => {
+    // Decision D3 removed the code that wrote these but not the stored data, so
+    // production rows still carry a `fuzzedLocation` pinned to the hardcoded
+    // downtown-SF default plus a matching `zoneHash`. Verified live while
+    // checking the T14 view. This is the concrete case the allowlist exists for.
+    const out = toPublicListing({
+      commonName: "Neon Tetra",
+      fuzzedLocation: { lat: 37.7749, lng: -122.4194 },
+      zoneHash: "0xdeadbeef",
+    });
+    expect(out).toEqual({ commonName: "Neon Tetra" });
+  });
+
   it("keeps seller identity public on purpose (already public on-chain)", () => {
     // Documented deviation from the original T14 sketch: the wallet is readable
     // from AquadexMarketplace.listings(tokenId) by any RPC caller, and public
