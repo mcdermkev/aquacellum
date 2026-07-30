@@ -390,23 +390,30 @@ export function MarketplaceBoard({
     return savedItems.has(key);
   };
 
-  // Breeder reputation tiers derived from listing count
-  const breederReputation = useMemo(() => {
-    const counts = {};
-    listings.forEach(item => {
-      if (!item.seller) return;
-      const key = item.seller.toLowerCase();
-      counts[key] = (counts[key] || 0) + 1;
-    });
-    const rep = {};
-    Object.entries(counts).forEach(([wallet, count]) => {
-      if (count >= 10) rep[wallet] = { tier: 'master', label: 'Master Breeder', icon: '🏆' };
-      else if (count >= 5) rep[wallet] = { tier: 'established', label: 'Established', icon: '⭐' };
-      else if (count >= 3) rep[wallet] = { tier: 'trusted', label: 'Trusted', icon: '✓' };
-      else rep[wallet] = { tier: 'new', label: '', icon: '' };
-    });
-    return rep;
-  }, [listings]);
+  // REMOVED: `breederReputation` — trust tiers derived from ACTIVE LISTING COUNT
+  // (BREEDER_STATE_MODEL §9.28, §12.7).
+  //
+  // It awarded "🏆 Master Breeder" at 10 listings, "⭐ Established" at 5, and
+  // "✓ Trusted" at 3. Posting listings is free and self-serve, so all three were
+  // reputation claims backed by inventory volume and nothing else — no sales, no
+  // ratings, no verification. It is the same mistake as the old "Established
+  // Seller" badge that was earnable by typing 50 into a form (§9.11), and it was
+  // more expensive here: it sat on the marketplace board, which is exactly where a
+  // buyer decides whether a premium price is justified. The whole point of the
+  // pedigree work in §12 is to make "bred by this breeder" worth paying for, and a
+  // badge you get for uploading ten rows undercuts it.
+  //
+  // "Established" also collided with the real, verified-sales achievement of the
+  // same name, so the same word meant two different things depending on the screen.
+  //
+  // Not replaced with a listing-count label: listing volume is not reputation, and
+  // naming it honestly ("10+ listings") would be clutter with no signal. The real
+  // master-breeder signal is `breeder_profiles.is_master_breeder`, gated by
+  // `breederRegistry.checkMasterBreederEligibility` (tier 4 + 5 completed sales +
+  // ≥4.0 rating) and rendered on the storefront by `BreederHeader` — which is the
+  // right surface for it, because that is where the eligibility check runs. Putting
+  // it back on the board needs a per-seller profile read; that is a separate change
+  // with its own performance profile, not a drive-by.
 
   // Map the UI's sort select to catalogQuery's canonical SORT_OPTIONS where a
   // direct equivalent exists. "tier-purebred"/"tier-wild" are marketplace-
@@ -949,7 +956,12 @@ export function MarketplaceBoard({
               <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginLeft: "auto" }}>
                 <span style={{ fontSize: "0.7rem", padding: "0.25rem 0.65rem", borderRadius: "20px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", color: "#34d399", textShadow: "0 0 6px rgba(34,197,94,0.2)", whiteSpace: "nowrap" }}>🛡️ Escrow Health Guarantee</span>
                 <span style={{ fontSize: "0.7rem", padding: "0.25rem 0.65rem", borderRadius: "20px", background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.25)", color: "#7dd3fc", textShadow: "0 0 6px rgba(56,189,248,0.2)", whiteSpace: "nowrap" }}>📦 3-Day Safe Arrival</span>
-                <span style={{ fontSize: "0.7rem", padding: "0.25rem 0.65rem", borderRadius: "20px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.25)", color: "#fbbf24", textShadow: "0 0 6px rgba(251,191,36,0.2)", whiteSpace: "nowrap" }}>🤝 Verified Local Breeders</span>
+                {/* REMOVED: a "🤝 Verified Local Breeders" pill (§9.28). The other
+                    two pills describe real platform mechanisms — escrow and the
+                    arrival window both exist and are enforced. That one asserted
+                    something about the sellers that is neither verified nor local,
+                    sitting inside a banner headed "Guarantee", which is the worst
+                    possible place for an unbacked claim. */}
               </div>
             </div>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.75rem", margin: 0, lineHeight: 1.4 }}>
@@ -2129,27 +2141,20 @@ export function MarketplaceBoard({
                           {/* Seller info row — masked in Casual Mode */}
                           <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.25rem" }}>
                             <span>{casualModeActive ? "🧑‍🌾 Breeder:" : "🧑‍🌾 Listed by:"}</span>
+                            {/* The seller's name, in both modes. Casual mode used to
+                                replace it with a hardcoded "✅ Verified Local
+                                Breeder" on EVERY listing — a verification claim and
+                                a locality claim, neither of which was checked, shown
+                                to the readers least equipped to question it (§9.28).
+                                Fabricated proximity was already retired once from the
+                                Fish Finder (Decision D3); this was the same claim
+                                surviving in casual mode.
+
+                                `SellerName` is casual-safe on its own: it resolves a
+                                display name, then a local alias, then a generated
+                                alias, and never renders a raw address. */}
                             <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                              {casualModeActive ? (
-                                <span style={{ color: "#34d399", fontWeight: "600" }}>✅ Verified Local Breeder</span>
-                              ) : (
-                                <span style={{ color: "var(--text-secondary)", fontWeight: "600" }}><SellerName address={item.seller} /></span>
-                              )}
-                              {(() => {
-                                const rep = breederReputation[item.seller?.toLowerCase()];
-                                if (!rep || rep.tier === 'new') return null;
-                                const colors = {
-                                  trusted: { bg: "rgba(56,189,248,0.08)", border: "rgba(56,189,248,0.2)", text: "#7dd3fc" },
-                                  established: { bg: "rgba(251,191,36,0.08)", border: "rgba(251,191,36,0.2)", text: "#fbbf24" },
-                                  master: { bg: "rgba(52,211,153,0.08)", border: "rgba(52,211,153,0.2)", text: "#34d399" },
-                                };
-                                const c = colors[rep.tier];
-                                return (
-                                  <span style={{ fontSize: "0.55rem", fontWeight: "600", padding: "1px 5px", borderRadius: "6px", background: c.bg, border: `1px solid ${c.border}`, color: c.text, whiteSpace: "nowrap" }}>
-                                    {rep.icon} {rep.label}
-                                  </span>
-                                );
-                              })()}
+                              <span style={{ color: "var(--text-secondary)", fontWeight: "600" }}><SellerName address={item.seller} /></span>
                             </div>
                           </div>
                         </div>

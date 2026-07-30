@@ -3275,7 +3275,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             badgeColor = "#ffd700";
                             badgeBg = "rgba(255, 215, 0, 0.15)";
                             badgeBorder = "1px solid #ffd700";
-                            badgeLabel = "⭐ Verified Master Breeder";
+                            // Self-described, not platform-verified — see the role
+                            // chip in the composer below for why the wording changed
+                            // (§9.28). The stored role key is unchanged.
+                            badgeLabel = "⭐ Experienced Breeder";
                           } else if (comment.role === "hobbyist") {
                             badgeColor = "var(--text-secondary)";
                             badgeBg = "rgba(255, 255, 255, 0.05)";
@@ -3427,7 +3430,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               const auditText = `🔬 EXPERT LAB AUDIT: Verified water parameter chemistry. Parameters are stable. Spawning conditions optimized.`;
                               setCommentText(auditText);
                             } else {
-                              showToast("🔒 Lab Audit requires Master Breeder Rank!");
+                              // Named for the tag that actually gates it (§9.28).
+                              // "Master Breeder Rank" is a different thing, gated by
+                              // completed sales and ratings, not Companion XP.
+                              showToast("🔒 Lab Audit requires the Experienced Breeder tag");
                             }
                           }}
                         >
@@ -3596,20 +3602,46 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               </div>
                             )}
 
+                            {/* Self-described commenter role. It used to read
+                                "⭐ Verified Master Breeder" (BREEDER_STATE_MODEL
+                                §9.28), which was wrong on both words:
+
+                                  - NOT VERIFIED. The user picks this chip for their
+                                    own comment. Nothing checks it.
+                                  - NOT MASTER BREEDER. That title is gated by
+                                    `breederRegistry.checkMasterBreederEligibility`
+                                    (tier 4 + 5 completed sales + ≥4.0 rating). This
+                                    chip's gate is 10,000 Companion XP, which
+                                    measures app engagement — logging feedings,
+                                    posting — not breeding. You can reach it without
+                                    ever having bred a fish.
+
+                                Tagging a comment as coming from an experienced
+                                breeder is genuinely useful, so the chip stays; the
+                                claim it makes is what changed. The stored role key
+                                `master-breeder` is UNCHANGED on purpose — existing
+                                comments already carry it, and renaming it would
+                                orphan them (same reason `"Not Sure"` survives as a
+                                legacy sex value, §4.4).
+
+                                Open question, not decided here: whether a purely
+                                self-described tag should be XP-gated at all. The gate
+                                is left as it was. */}
                             {(!casualModeActive && (companionData?.currentTier === "Master" || companionData?.currentTier === "God-Tier")) ? (
                               <div
                                 className={`role-chip master ${commenterRole === "master-breeder" ? "active" : ""}`}
+                                title="You're describing yourself — this tag isn't checked by Aquadex"
                                 onClick={() => setCommenterRole("master-breeder")}
                               >
-                                ⭐ Verified Master Breeder
+                                ⭐ Experienced Breeder
                               </div>
                             ) : (
                               <div
                                 className="role-chip disabled"
-                                title="Requires Master Rank (10,000+ Companion XP)"
-                                onClick={() => showToast("🔒 Verified Master Breeder rank requires 10,000+ Companion XP!")}
+                                title="Unlocks at Master Rank (10,000+ Companion XP)"
+                                onClick={() => showToast("🔒 The Experienced Breeder tag unlocks at 10,000+ Companion XP")}
                               >
-                                🔒 Master Breeder
+                                🔒 Experienced Breeder
                               </div>
                             )}
                           </div>

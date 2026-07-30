@@ -4,6 +4,44 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [0.10.8] — 2026-07-30
+
+### 🏆 Trust Badges Now Mean Something
+
+Closes [`BREEDER_STATE_MODEL.md`](docs/BREEDER_STATE_MODEL.md) §9.28. Found while working through the pedigree decision in §12: that work exists so "bred by this breeder" is worth paying a premium for, and a badge saying "Master Breeder" or "Verified" with nothing behind it doesn't just mislead — it makes the verified version worthless, because a buyer can't tell them apart.
+
+**"Master Breeder" was granted four incompatible ways. Two were backed by nothing.**
+
+#### 🐛 Removed: reputation tiers derived from listing count
+`MarketplaceBoard` awarded 🏆 **"Master Breeder"** at 10 active listings, ⭐ "Established" at 5, and ✓ "Trusted" at 3. **Posting listings is free and self-serve**, so all three measured inventory volume and called it trustworthiness — no sales, no ratings, no verification — on the one screen where a buyer decides whether a premium price is justified. This is §9.11's mistake ("Established Seller" earnable by typing 50 into a form) applied to identity. "Established" also collided with the real, verified-sales achievement of the same name, so one word meant two different things depending on the screen.
+
+Not replaced with an honest listing-count label: listing volume is not reputation, and naming it accurately would be clutter carrying no signal. The real flag (`breeder_profiles.is_master_breeder`, gated by `checkMasterBreederEligibility` — tier 4 + 5 completed sales + ≥4.0 rating) belongs on the storefront, where the eligibility check actually runs.
+
+#### 🐛 Relabelled: a self-selected badge that said "Verified"
+The worse one, found while fixing the first. `TankList`'s commenter role chip read "⭐ **Verified** Master Breeder" — and **the user clicks it on their own comment.** Nothing checks it. Its gate is 10,000 Companion XP, which measures app engagement (logged feedings, posts) and is reachable without ever having bred a fish. It also unlocks the higher-authority "Lab Audit" comment type.
+
+Tagging a comment as coming from an experienced breeder is genuinely useful, so the chip stays — now "⭐ Experienced Breeder", with a tooltip saying it isn't checked. **The stored role key `master-breeder` is unchanged**, because existing comments carry it in Dexie and the cloud mirror; renaming it would orphan them, the same reason `"Not Sure"` survives as a legacy sex value.
+
+#### 🐛 Removed: "Verified Local Breeder", asserted about everyone
+Casual mode replaced the seller's name on **every** listing with a hardcoded "✅ Verified Local Breeder" — a verification claim *and* a locality claim, neither checked, shown to the readers least equipped to question it. A "🤝 Verified Local Breeders" pill made the same claim about all sellers at once from inside a banner headed "Guarantee". Both gone. The escrow and 3-Day Safe Arrival pills stayed, because those describe mechanisms that exist and are enforced.
+
+Fabricated proximity was already retired once from the Fish Finder (Decision D3). This was the same claim surviving in casual mode — worth recording as a pattern: **a fabrication removed from the pro surface can live on in the casual one.** `SellerName` was already casual-safe (display name → local alias → generated alias, never a raw address), so casual mode lost nothing real.
+
+#### 🧱 Internal
+- New `src/__tests__/breederTrustClaims.test.js` — 9 source guards, including a conditional one: if a "Master Breeder" badge ever returns to the marketplace board it must read `is_master_breeder` rather than deriving the title from data already in hand.
+- `isMasterBreeder: true` in `storefront/StorefrontPage.jsx` was checked and **cleared** — it's inside `DEMO_STOREFRONT_DATA` for `/store/demo` previews, not a production badge. Recorded so it isn't re-flagged.
+- Left open deliberately: whether a purely self-described tag should be XP-gated at all. The gate is unchanged; only the claim was.
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `frontend/src/components/MarketplaceBoard.jsx` | `breederReputation` tiers deleted; "Verified Local Breeder" and "Verified Local Breeders" removed; seller name now renders in both modes |
+| `frontend/src/components/TankList.jsx` | Role chip and comment badge relabelled "Experienced Breeder"; Lab Audit toast names the tag that gates it; stored role key untouched |
+| `frontend/src/__tests__/breederTrustClaims.test.js` | **New.** 9 guards |
+| `docs/BREEDER_STATE_MODEL.md` | §9.28 closed; §12.7 rewritten |
+
+---
+
 ## [0.10.7] — 2026-07-30
 
 ### 🥚 Spawn Status Now Means Something
