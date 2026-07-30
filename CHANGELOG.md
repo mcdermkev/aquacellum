@@ -4,6 +4,51 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [0.10.9] — 2026-07-30
+
+### 🧾 The Portable Pedigree: a Lineage Claim That Can Leave the Device
+
+Lands the core of [`BREEDER_STATE_MODEL.md`](docs/BREEDER_STATE_MODEL.md) §9.25, specified in [`BREEDER_TOOLS_T3_PEDIGREE_DOCUMENT_SPEC.md`](docs/BREEDER_TOOLS_T3_PEDIGREE_DOCUMENT_SPEC.md). **Nothing issues a document yet** — no behaviour has changed. That is deliberate: shipping an unattested document to users would teach them the badge means nothing (T3 §2.4).
+
+#### 🧩 The problem
+Lineage did not survive a sale. A batch listing copied the fry's `sireId`/`damId` off the spawn and carried them through the public projection; fulfillment dropped them. `db.specimens.add` appears nowhere in `frontend/src`, and the batch arrival branch writes only `db.marketOrders`.
+
+The obvious fix — mint on the buyer's side from the parents on the listing — **does not work.** Serials are assigned `local max + 1`, so they are device-scoped: a buyer-side certificate claiming `sireId: 7` points at whatever fish is #7 in *their* registry. It would resolve, render, and be wrong, which is the §3 failure across a device boundary. And the buyer cannot repair it, because the specimen pull is `.eq("owner_address", …)` and RLS scopes the table to the caller's wallet.
+
+> Lineage cannot cross an ownership boundary as a **reference**. It has to cross as a **document**.
+
+#### 🎯 The decision behind the design
+Settled by the scenario in §12.3: a master breeder sells 10 premium eggs, four hatch, and the buyer later charges a premium *because the lineage traces to that breeder*. **A pedigree is a document the buyer owns, and its trustworthiness comes from being tamper-evident and attributable — not from who holds it.** The person paying the premium is the *next* buyer, so a document the holder can edit proves nothing; and it has to still stand after the master breeder deletes their account.
+
+- **The hash is the portable identity.** A serial differs per device; a content hash is the same string in every wallet.
+- **Documents chain by hash.** A child's hash depends on its parents' hashes, so generation three reaches the original breeder without reading anyone's private registry. A plain snapshot would degrade into a snapshot of a snapshot.
+- **The body holds nothing mutable.** No `ownerAddress`, `status`, `archived`, or `currentTankId` — a body containing one stops verifying the first time the fish is moved, a failure that arrives months later and breaks every document at once. Guarded two ways: a forbidden-field scan, and a test that reseals after retiring, archiving, renaming, and moving the fish and asserts the hash is unchanged.
+- **Unknown ancestry is recorded, not omitted.** All six ancestor roles are always present; unresolvable ones are `null`. An unrecorded ancestor is unknown, not unrelated.
+- **The document states how much it proves.** `ancestorCoverage` reports 2-of-6 versus 6-of-6, so a premium can be judged rather than trusted.
+- **Nothing reads as verified until attested.** `pedigreeTrustLevel` returns `invalid` / `unattested` / `attested` / `anchored`, and the UI must read it rather than inferring trust from a document existing. This is §7.1's line applied to provenance and the reason §9.28 was cleared first.
+
+#### 🔍 Two decisions forced by keeping the module loadable
+- **SHA-256 via `globalThis.crypto.subtle`, not keccak.** keccak is the chain's native hash and was the first instinct — but the only route to it here is `utils/ethersCompat.js`, which reads `window.ethers` **at module load**, making any importer unloadable in the node test environment where every guarantee is checked. Web Crypto covers browser and node with zero new dependencies. Anchoring later is unaffected: a hash goes on-chain as `bytes32`, not recomputed in Solidity.
+- **`PEDIGREE_BODY_DEPTH` is duplicated from `services/pedigree.js` on purpose.** That module imports `db`; importing it would drag Dexie into the graph of a hashing primitive. A test asserts the two constants agree, so drift fails loudly instead of mislabelling a document's depth.
+
+#### 🐛 Guarded because JSON would hide it
+`canonicalize` **throws** on `NaN`, `Infinity`, functions, symbols, and bigints rather than letting `JSON.stringify` write `null` or drop them silently. A coerced `NaN` produces a document whose hash no longer describes its contents — a provenance record that fails its own verification, which is the worst failure available here. Errors name the path to the offending value.
+
+#### 🧱 Internal
+- 52 tests. The pinned SHA-256 was **confirmed against `node:crypto`** independently of the module's Web Crypto path, so it is a real digest rather than one back-filled from a failing assertion.
+- Tamper evidence is asserted by editing a sealed body, not by trusting that a hash was computed. The chain test seals three generations under three different wallets and identifies the *specific* broken link, and distinguishes a missing ancestor document ("incomplete") from a tampered one ("untrustworthy").
+- `PEDIGREE_TRUST_COPY` carries casual and pro variants with the `PROHIBITED_TERMS` invariant test, plus an assertion that the unattested wording is actively negative rather than merely omitting the claim.
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `frontend/src/services/pedigreeDocument.js` | **New.** `canonicalize`, `hashCanonical`, `sealPedigreeDocument`, `verifyPedigreeDocument`, `verifyPedigreeChain`, `pedigreeTrustLevel`, `ancestorCoverage`, `traceBreeders`, `PEDIGREE_TRUST_COPY` |
+| `frontend/src/__tests__/pedigreeDocument.test.js` | **New.** 52 tests |
+| `docs/BREEDER_TOOLS_T3_PEDIGREE_DOCUMENT_SPEC.md` | **New.** The T3 spec |
+| `docs/BREEDER_STATE_MODEL.md` | §9.25 core landed; §12.6 updated |
+
+---
+
 ## [0.10.8] — 2026-07-30
 
 ### 🏆 Trust Badges Now Mean Something
