@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../db";
 import {
+  deriveSpawnStatus,
   formatCertSerial,
   formatLocalRecordRef,
+  spawnDerivationText,
   spawnStatusLabel,
   spawnStatusTone,
   specimenStatusLabel,
@@ -106,6 +108,19 @@ export function SpawningDashboard({ walletAccount }) {
     const ms = timestamp > 1e12 ? timestamp : timestamp * 1000;
     return new Date(ms).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
   };
+
+  // Grow-out checkpoints indexed by spawn, so the derived status below is one
+  // pass over the rows rather than a full scan per log entry. `growoutData` was
+  // already being loaded and then never read — this is what it was for.
+  const checkpointsBySpawn = React.useMemo(() => {
+    const map = new Map();
+    for (const checkpoint of growoutData) {
+      const key = Number(checkpoint.spawnId);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(checkpoint);
+    }
+    return map;
+  }, [growoutData]);
 
   // ─── Hatchery Insights Calculations ────────────────────────────────────────
   const totalOffspring = spawns.reduce((sum, s) => sum + (s.offspringIds?.length || 0), 0);
@@ -363,7 +378,17 @@ export function SpawningDashboard({ walletAccount }) {
               {[...spawns]
                 .sort((a, b) => (b.timestamp || b.spawnId) - (a.timestamp || a.spawnId))
                 .map((spawn) => {
-                  const statusTone = spawnStatusTone(spawn.status);
+                  // §9.6: `relaySpawn` writes Fry and nothing ever moves it, so
+                  // the stored value alone made this badge decorative. Status is
+                  // derived from the grow-out checkpoints — the same rows the
+                  // funnel reads, so the badge can't disagree with the numbers.
+                  // The derivation only advances; with no evidence the stored
+                  // value stands.
+                  const derivation = deriveSpawnStatus({
+                    storedStatus: spawn.status,
+                    checkpoints: checkpointsBySpawn.get(Number(spawn.spawnId)) || [],
+                  });
+                  const statusTone = spawnStatusTone(derivation.status);
                   return (
                     <div
                       key={spawn.spawnId}
@@ -383,15 +408,29 @@ export function SpawningDashboard({ walletAccount }) {
                             {getSpeciesName(spawn.speciesId)}
                           </div>
                         </div>
-                        <div style={{
-                          fontSize: "0.65rem",
-                          padding: "2px 8px",
-                          borderRadius: "4px",
-                          background: statusTone.bg,
-                          color: statusTone.color,
-                          fontWeight: "500"
-                        }}>
-                          {spawnStatusLabel(spawn.status)}
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{
+                            display: "inline-block",
+                            fontSize: "0.65rem",
+                            padding: "2px 8px",
+                            borderRadius: "4px",
+                            background: statusTone.bg,
+                            color: statusTone.color,
+                            fontWeight: "500"
+                          }}>
+                            {spawnStatusLabel(derivation.status)}
+                          </div>
+                          {/* Say where the status came from. A badge that changed
+                              on its own with no explanation is worse than one
+                              that never moved. */}
+                          <div style={{
+                            fontSize: "0.6rem",
+                            color: "var(--text-muted)",
+                            marginTop: "3px",
+                            maxWidth: "180px",
+                          }}>
+                            {spawnDerivationText(derivation.reason)}
+                          </div>
                         </div>
                       </div>
 

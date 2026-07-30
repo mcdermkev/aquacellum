@@ -4,6 +4,46 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [0.10.7] — 2026-07-30
+
+### 🥚 Spawn Status Now Means Something
+
+Closes [`BREEDER_STATE_MODEL.md`](docs/BREEDER_STATE_MODEL.md) §9.6.
+
+#### 🐛 The bug
+`relaySpawn` writes `Fry` at creation and **nothing ever moved it**. Every spawn a breeder had ever logged read "Fry" forever — the ones that produced certificated adults two years ago and the ones where nothing survived the first week, side by side, identically labelled. The badge was decorative. `SpawningDashboard` was even loading the grow-out checkpoints already (`growoutData`) and then never reading them.
+
+#### 🎯 Resolved as derived, not stored
+`deriveSpawnStatus({ storedStatus, checkpoints })` is a pure function of the grow-out checkpoints, which already record what happened. Storing it on write would need a transition guard, a backfill, and a second copy of the truth that can fall out of date. Derived has none of those, cannot go stale, and reads the same rows through the same `summarizeGrowout` that prints the numbers under the badge — so the two can never disagree.
+
+**It only ever advances.** `promoted > 0` → `Raised`. A counted cohort with nothing alive, nothing promoted, and nothing sold → `Failed`. `fry > 0` → `Fry`, which advances a stored `Egg` and is otherwise a no-op. A stored `Raised`/`Failed` wins outright. With no evidence the stored value stands.
+
+Three of those are decisions, not mechanics:
+- **`Egg` is never derived.** `relaySpawn` mints offspring certificates immediately, so a spawn with no checkpoints genuinely has fry. Reading "no `fry_count` checkpoint" as "Egg" would mislabel every spawn a breeder hasn't logged against yet — a downgrade dressed as a fix.
+- **A `sold` count is not a `Raised` signal**, even though selling fry implies raising them. It is a self-reported number with nothing behind it — the same thing that was backing the "Established Seller" badge (§9.11) — and it fires too early: "sold 5" in week one would mark a spawn `Raised` while the rest of the cohort is still in the tank.
+- **`Failed` requires a fry count.** Without the cohort's size, "everything died" is indistinguishable from "nothing was logged". Unknown stays unknown, exactly as `survivalRate` returns `null` rather than `0`. A cohort that emptied through sales is also not a failure.
+
+#### 🖥️ It says where it came from
+Each result carries a `reason`, rendered as a line under the badge ("From grow-out: keepers were promoted to their own certificates"). A badge that changes on its own with no explanation is worse than one that never moved. `derived` is returned separately so a caller can distinguish "we worked this out" from "this is what the record says".
+
+#### 🧩 One `null` meaning, not two
+An unrecognized stored status is passed through **unchanged** rather than converted to `null`. `spawnStatusLabel` already renders an unrecognized ordinal as "Unknown", but it reads `null`/`undefined` as *absent* and defaults those to `Fry` — so returning `null` would have collided the two meanings and quietly relabelled a corrupt status as `Fry`. Caught by a test asserting the label, not the return value.
+
+#### 🧱 Internal
+- 38 new tests, including guards that `Egg` is never derived from any input, that a full promotion is reported as `Raised` rather than a total loss (fry 4, promoted 4 → alive 0), that a self-reported sale does not advance status, and that `SpawningDashboard` never passes `spawn.status` to the badge or writes a status of its own.
+- `SPAWN_DERIVATION_COPY` carries casual and pro variants with the `PROHIBITED_TERMS` invariant test.
+- `specimenIdentity.js` now imports `summarizeGrowout`, so there is one funnel implementation behind both the badge and the counts.
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `frontend/src/utils/specimenIdentity.js` | **New:** `deriveSpawnStatus`, `SPAWN_TERMINAL_STATUSES`, `SPAWN_DERIVATION_REASON`, `SPAWN_DERIVATION_COPY` |
+| `frontend/src/components/SpawningDashboard.jsx` | Badge reads the derived status; reason line beneath it; `checkpointsBySpawn` index over the `growoutData` it was already loading |
+| `frontend/src/__tests__/specimenIdentity.test.js` | 38 new tests incl. the copy invariant and dashboard source guards |
+| `docs/BREEDER_STATE_MODEL.md` | §9.6 closed; new §8.1 |
+
+---
+
 ## [0.10.6] — 2026-07-30
 
 ### 🏅 Cohort → Certificate Promotion
