@@ -213,3 +213,109 @@ describe("all four former copies now consume the shared module", () => {
     }
   });
 });
+
+/**
+ * `promoted` — cohort count → individual birth certificate
+ * (BREEDER_STATE_MODEL §9.16). Added after the extraction, which is the point:
+ * a new checkpoint type should be a one-place change.
+ */
+describe("promoted fry leave the cohort", () => {
+  it("is a counted departure, not commentary", () => {
+    expect(COUNTED_TYPES).toContain("promoted");
+    expect(DEPARTURE_TYPES).toContain("promoted");
+    expect(NON_COUNTING_TYPES).not.toContain("promoted");
+  });
+
+  it("decrements the cohort, so a promoted fish is never counted twice", () => {
+    // THE §9.16 DOUBLE-COUNT REGRESSION. A cohort of 15 that promotes 3 has 12
+    // heads left plus 3 certificates — 15 fish. If `promoted` were not a
+    // departure this reads 15 alive plus 3 certificates, which is 18 fish that
+    // do not exist, and it surfaces as inflated achievement and Founders totals
+    // rather than as a crash.
+    const s = summarizeGrowout([cp("fry_count", 15), cp("promoted", 3)]);
+    expect(s.promoted).toBe(3);
+    expect(s.departed).toBe(3);
+    expect(s.alive).toBe(12);
+  });
+
+  it("does not move the survival rate — a promoted fry is the success case", () => {
+    const s = summarizeGrowout([cp("fry_count", 15), cp("promoted", 3)]);
+    expect(s.survivalRate).toBe(100);
+
+    // And it still doesn't move it when real losses exist alongside it.
+    const mixed = summarizeGrowout([cp("fry_count", 100), cp("loss", 10), cp("promoted", 40)]);
+    expect(mixed.survivalRate).toBe(90);
+    expect(mixed.alive).toBe(50);
+  });
+
+  it("SUMS across checkpoints, unlike fry_count", () => {
+    // Promote 2, then 3, and 5 fish have been promoted. A `highest` reading here
+    // would silently forget the first batch.
+    const s = summarizeGrowout([cp("fry_count", 20), cp("promoted", 2, 1), cp("promoted", 3, 2)]);
+    expect(s.promoted).toBe(5);
+    expect(s.alive).toBe(15);
+  });
+
+  it("reports zero promoted for a cohort that has never promoted", () => {
+    expect(summarizeGrowout([cp("fry_count", 10)]).promoted).toBe(0);
+    expect(summarizeGrowout([]).promoted).toBe(0);
+  });
+
+  it("aggregates across spawns as a verifiable total", () => {
+    const agg = aggregateGrowout([
+      { checkpoints: [cp("fry_count", 40), cp("promoted", 4)] },
+      { checkpoints: [cp("fry_count", 10), cp("promoted", 1)] },
+    ]);
+    // Unlike totalSoldSelfReported, every one of these has certificate rows
+    // behind it — cohortPromotion.js counts successful mints before logging.
+    expect(agg.totalPromoted).toBe(5);
+    expect(agg.totalAlive).toBe(36 + 9);
+  });
+
+  it("keeps the timeline and the summary in agreement with a promotion in play", () => {
+    // The regression this catches: updating summarizeGrowout and forgetting
+    // buildGrowoutTimeline, or vice versa. Both now reduce over DEPARTURE_TYPES,
+    // so a new type reaches them together.
+    const checkpoints = [
+      cp("fry_count", 30, 100),
+      cp("loss", 4, 200),
+      cp("promoted", 6, 300),
+      cp("sold", 2, 400),
+    ];
+    const summary = summarizeGrowout(checkpoints, { eggCount: 40 });
+    const points = buildGrowoutTimeline(checkpoints, 40);
+    const last = points[points.length - 1];
+
+    expect(last.alive).toBe(summary.alive);
+    expect(last.survivalRate).toBe(summary.survivalRate);
+    expect(last.totalPromoted).toBe(6);
+    expect(summary.alive).toBe(18);
+  });
+});
+
+describe("the funnel reads DEPARTURE_TYPES rather than a hardcoded type list", () => {
+  function funnelSource() {
+    return readFileSync(fileURLToPath(new URL("../utils/growoutFunnel.js", import.meta.url)), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  }
+
+  it("computes departures by reducing over the array, in both functions", () => {
+    const src = funnelSource();
+    // This is what makes adding a type a one-place change. Before, DEPARTURE_TYPES
+    // was documentation that happened to be true: appending to it changed nothing,
+    // because summarizeGrowout hardcoded `lost + culled + sold` and the timeline
+    // walked an else-if chain.
+    expect(src).toMatch(/DEPARTURE_TYPES\.reduce/);
+    expect(src).toMatch(/DEPARTURE_TYPES\.includes\(cp\.type\)/);
+    expect(src).not.toMatch(/lost \+ culled \+ sold/);
+    expect(src).not.toMatch(/else if \(cp\.type === "sold"\)/);
+    expect(src).not.toMatch(/else if \(cp\.type === "cull"\)/);
+  });
+
+  it("still derives survival from `loss` alone", () => {
+    // The one place a type list must NOT be generalized: culls, sales, and
+    // promotions are deliberately not survival failures (§9.21 for culls).
+    expect(funnelSource()).toMatch(/fry - lost\) \/ fry|fry - byType\.loss\) \/ fry/);
+  });
+});

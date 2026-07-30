@@ -41,6 +41,7 @@ vi.mock("../db", () => ({
 const { syncGrowoutCheckpointToCloud, syncGrowoutCheckpointsToCloud } = await import(
   "../services/cloudSync"
 );
+const { COUNTED_TYPES, NON_COUNTING_TYPES } = await import("../utils/growoutFunnel");
 
 const OWNER = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const SPAWN_ID = 1731000123456;
@@ -168,6 +169,15 @@ describe("cloudSync + migration wiring", () => {
     fileURLToPath(new URL("../../supabase/migrations/20260729_spawn_growout_sync.sql", import.meta.url)),
     "utf8"
   );
+  // The `type` CHECK has been amended once since the table was created. The
+  // parent migration is APPLIED IN PRODUCTION, so widening the vocabulary means a
+  // new additive file rather than an edit — which means the constraint is now
+  // spread across two files and the type-coverage test below has to read both.
+  // Append future amendments here; do not edit an applied migration.
+  const TYPE_AMENDMENTS = [
+    "../../supabase/migrations/20260730_spawn_growout_promoted_type.sql",
+  ].map((rel) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), "utf8"));
+  const ALL_MIGRATIONS = [MIGRATION, ...TYPE_AMENDMENTS].join("\n");
 
   it("pulls grow-out checkpoints and reports the count", () => {
     expect(CLOUD_SYNC).toContain('.from("aquadex_spawn_growout")');
@@ -204,6 +214,9 @@ describe("cloudSync + migration wiring", () => {
 
   it("covers every grow-out checkpoint type the app writes", () => {
     // GROWOUT_TYPES in SpawnGrowoutTracker.jsx, plus spawnNarration's 'narration'.
+    // Checked against the CONCATENATION of the parent migration and every
+    // amendment, because a type added after the table shipped lives in a
+    // different file (see TYPE_AMENDMENTS above).
     const tracker = readFileSync(
       fileURLToPath(new URL("../components/SpawnGrowoutTracker.jsx", import.meta.url)),
       "utf8"
@@ -211,7 +224,43 @@ describe("cloudSync + migration wiring", () => {
     const declared = [...tracker.matchAll(/^\s{2}(\w+):\s*\{ emoji:/gm)].map((m) => m[1]);
     expect(declared.length).toBeGreaterThan(0);
     for (const type of [...declared, "narration"]) {
-      expect(MIGRATION).toContain(`'${type}'`);
+      expect(ALL_MIGRATIONS, type).toContain(`'${type}'`);
+    }
+  });
+
+  it("covers every counted type the funnel knows about", () => {
+    // The other direction. GROWOUT_TYPES drives the manual picker, so a type the
+    // app writes programmatically (like `promoted`, which is deliberately not in
+    // the picker) would slip past the scrape above.
+    for (const type of [...COUNTED_TYPES, ...NON_COUNTING_TYPES]) {
+      expect(ALL_MIGRATIONS, type).toContain(`'${type}'`);
+    }
+  });
+
+  it("amends the type vocabulary additively, without editing the applied migration", () => {
+    // Editing an applied migration means the file no longer describes any
+    // database that exists.
+    expect(MIGRATION).not.toContain("'promoted'");
+    for (const amendment of TYPE_AMENDMENTS) {
+      expect(amendment).not.toContain("CREATE TABLE");
+      // The original CHECK was inline, so Postgres auto-named it. Drop before add,
+      // and name the replacement so the next amendment doesn't have to guess.
+      expect(amendment).toContain("DROP CONSTRAINT IF EXISTS");
+      expect(amendment).toMatch(/ADD CONSTRAINT chk_growout_type CHECK/);
+    }
+  });
+
+  it("keeps 'promoted' out of the manually-loggable checkpoint types", () => {
+    // A hand-typed promotion would decrement the cohort with no certificates
+    // behind it — the exact double-count services/cohortPromotion.js prevents.
+    const tracker = readFileSync(
+      fileURLToPath(new URL("../components/SpawnGrowoutTracker.jsx", import.meta.url)),
+      "utf8"
+    );
+    const declared = [...tracker.matchAll(/^\s{2}(\w+):\s*\{ emoji:/gm)].map((m) => m[1]);
+    if (declared.includes("promoted")) {
+      // Present for labelling history rows, so it must be filtered out of the picker.
+      expect(tracker).toMatch(/MANUAL_TYPE_EXCLUSIONS|PROGRAMMATIC_TYPES/);
     }
   });
 });
