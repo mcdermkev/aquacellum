@@ -22,6 +22,8 @@ import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 import {
   ANCESTOR_ROLES,
+  ATTESTATION_METHOD,
+  ATTESTATION_PURPOSE,
   CANONICAL_FORM_VERSION,
   FORBIDDEN_BODY_FIELDS,
   PEDIGREE_BODY_DEPTH,
@@ -29,6 +31,8 @@ import {
   PEDIGREE_TRUST,
   PEDIGREE_TRUST_COPY,
   allPedigreeTrustCopy,
+  assertNotCredential,
+  attachAttestation,
   ancestorCoverage,
   buildPedigreeBody,
   canonicalize,
@@ -429,37 +433,194 @@ describe("the chain composes across ownership boundaries", () => {
 // ─── Trust level ────────────────────────────────────────────────────────────
 
 describe("nothing reads as verified until it is attested", () => {
-  it("reports a sealed but unsigned document as unattested", async () => {
+  const platform = (hash, extra = {}) => ({
+    method: ATTESTATION_METHOD.PLATFORM,
+    purpose: ATTESTATION_PURPOSE,
+    subjectHash: hash,
+    signature: "eyJ.platform.sig",
+    signedBy: MASTER.toLowerCase(),
+    signedAt: 1730000001,
+    ...extra,
+  });
+  const wallet = (hash, extra = {}) => ({
+    ...platform(hash),
+    method: ATTESTATION_METHOD.WALLET,
+    signature: "0xwalletsig",
+    ...extra,
+  });
+
+  it("reports a sealed but unattested document as unattested", async () => {
     const sealed = await seal();
     expect(sealed.attestation).toBeNull();
     expect(await pedigreeTrustLevel(sealed)).toBe(PEDIGREE_TRUST.UNATTESTED);
   });
 
   it("reports a tampered document as invalid, not merely unattested", async () => {
-    // Worse than absent, so it must not share a bucket with "not signed yet".
+    // Worse than absent, so it must not share a bucket with "not attested yet".
     const sealed = await seal();
     sealed.body.issuedAt += 1;
     expect(await pedigreeTrustLevel(sealed)).toBe(PEDIGREE_TRUST.INVALID);
   });
 
-  it("reports attested only with a signature, and anchored only with an anchor", async () => {
+  it("separates OUR word from the breeder's signature", async () => {
+    // The distinction the whole ladder exists for. A platform attestation reuses the
+    // Privy trust root — real, but it is Aquadex asserting the wallet was signed in.
+    // A wallet attestation needs no trust in Aquadex at all. Collapsing them into
+    // one "attested" would let the copy overclaim, which is §9.28's mistake.
     const sealed = await seal();
-    sealed.attestation = { signature: "0xsig" };
-    expect(await pedigreeTrustLevel(sealed)).toBe(PEDIGREE_TRUST.ATTESTED);
-    sealed.attestation = { signature: "0xsig", anchor: { txHash: "0xtx" } };
-    expect(await pedigreeTrustLevel(sealed)).toBe(PEDIGREE_TRUST.ANCHORED);
+    const viaPlatform = attachAttestation(sealed, platform(sealed.hash));
+    const viaWallet = attachAttestation(sealed, wallet(sealed.hash));
+
+    expect(await pedigreeTrustLevel(viaPlatform)).toBe(PEDIGREE_TRUST.PLATFORM_ATTESTED);
+    expect(await pedigreeTrustLevel(viaWallet)).toBe(PEDIGREE_TRUST.ATTESTED);
   });
 
-  it("does not accept an attestation object without a signature", async () => {
+  it("anchors only a breeder signature, never our own statement", async () => {
+    // Anchoring our word on-chain makes it permanent, not independent. The thing
+    // made permanent is still our word.
     const sealed = await seal();
-    sealed.attestation = { signedBy: MASTER };
-    expect(await pedigreeTrustLevel(sealed)).toBe(PEDIGREE_TRUST.UNATTESTED);
+    const anchor = { txHash: "0xtx" };
+    expect(await pedigreeTrustLevel(attachAttestation(sealed, wallet(sealed.hash, { anchor }))))
+      .toBe(PEDIGREE_TRUST.ANCHORED);
+    expect(await pedigreeTrustLevel(attachAttestation(sealed, platform(sealed.hash, { anchor }))))
+      .toBe(PEDIGREE_TRUST.PLATFORM_ATTESTED);
   });
 
-  it("does not treat an anchor alone as attested", async () => {
+  it("fails DOWNWARD on every ambiguity", async () => {
     const sealed = await seal();
-    sealed.attestation = { anchor: { txHash: "0xtx" } };
-    expect(await pedigreeTrustLevel(sealed)).toBe(PEDIGREE_TRUST.UNATTESTED);
+    const ambiguous = [
+      { signedBy: MASTER },                                            // no signature
+      { anchor: { txHash: "0xtx" } },                                  // anchor alone
+      { ...platform(sealed.hash), method: "something-new" },           // unknown method
+      { ...platform(sealed.hash), signature: "" },                     // empty signature
+    ];
+    for (const attestation of ambiguous) {
+      const doc = { ...sealed, attestation };
+      expect(await pedigreeTrustLevel(doc), JSON.stringify(attestation))
+        .toBe(PEDIGREE_TRUST.UNATTESTED);
+    }
+  });
+
+  it("ignores an attestation that covers a DIFFERENT document", async () => {
+    // The cheapest possible forgery: take a real attestation from any other pedigree
+    // and staple it on. Must not raise this document's level.
+    const sealed = await seal();
+    const other = await seal(parentsOnlyTree());
+    expect(other.hash).not.toBe(sealed.hash);
+
+    const doc = { ...sealed, attestation: wallet(other.hash) };
+    expect(await pedigreeTrustLevel(doc)).toBe(PEDIGREE_TRUST.UNATTESTED);
+
+    // And attaching it is refused outright rather than silently ignored.
+    expect(() => attachAttestation(sealed, wallet(other.hash))).toThrow(/does not cover/);
+  });
+});
+
+describe("an auth credential is never an attestation", () => {
+  /**
+   * THE SECURITY GUARD.
+   *
+   * The tempting one-line implementation of "reuse the existing wallet proof" is to
+   * drop the JWT from /api/mint-session into the document. That token carries
+   * `role: "authenticated"` and is a LIVE SESSION CREDENTIAL for the wallet — and
+   * pedigree documents are published to a public bucket at a guessable path (§4.3).
+   * So the shortcut publishes a working credential for the breeder's wallet.
+   */
+  const sessionTokenShape = {
+    method: ATTESTATION_METHOD.PLATFORM,
+    subjectHash: "unused",
+    signature: "eyJhbGciOiJIUzI1NiJ9.session",
+    // The giveaway claims from mint-session's payload.
+    role: "authenticated",
+    aud: "authenticated",
+  };
+
+  it("rejects anything carrying an authentication claim", () => {
+    for (const claim of ["role", "aud", "access_token", "token_type"]) {
+      expect(() => assertNotCredential({ signature: "x", [claim]: "authenticated" }), claim)
+        .toThrow(/session credential/);
+    }
+  });
+
+  it("refuses to attach a session token as an attestation", async () => {
+    const sealed = await seal();
+    expect(() => attachAttestation(sealed, { ...sessionTokenShape, subjectHash: sealed.hash }))
+      .toThrow(/session credential/);
+  });
+
+  it("reads a credential-shaped attestation as UNATTESTED rather than throwing", async () => {
+    // A document that arrived from elsewhere already carrying one must degrade, not
+    // crash a lineage chart.
+    const sealed = await seal();
+    const doc = { ...sealed, attestation: { ...sessionTokenShape, subjectHash: sealed.hash } };
+    expect(await pedigreeTrustLevel(doc)).toBe(PEDIGREE_TRUST.UNATTESTED);
+  });
+
+  it("rejects a signature reused from another purpose", () => {
+    expect(() => assertNotCredential({ signature: "x", purpose: "aquadex.login.v1" }))
+      .toThrow(/purpose/);
+  });
+
+  it("accepts a correctly purpose-bound attestation", () => {
+    expect(() => assertNotCredential({ signature: "x", purpose: ATTESTATION_PURPOSE }))
+      .not.toThrow();
+  });
+});
+
+describe("the attestation endpoint reuses the trust root without reusing the credential", () => {
+  // COMMENTS STRIPPED — trap 6.3 in the handoff, and this file walked straight into
+  // it: the endpoint's header explains at length why it does NOT use
+  // SUPABASE_JWT_SECRET, HS256, or a `role` claim, so an unstripped scan fails on
+  // the very prose documenting the guard.
+  const ENDPOINT = readFileSync(
+    fileURLToPath(new URL("../../api/attest-pedigree.js", import.meta.url)),
+    "utf8"
+  )
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+
+  it("verifies the Privy token, the same root as mint-session", () => {
+    expect(ENDPOINT).toContain("verifyPrivyToken");
+  });
+
+  it("never signs with the Supabase auth secret", () => {
+    // A signature reused across purposes proves the wrong thing, and a leak of one
+    // would compromise the other.
+    expect(ENDPOINT).not.toContain("SUPABASE_JWT_SECRET");
+    expect(ENDPOINT).toContain("PEDIGREE_ATTESTATION_PRIVATE_KEY");
+  });
+
+  it("issues no role claim, so the artifact cannot act as a session", () => {
+    expect(ENDPOINT).not.toMatch(/role:\s*["']authenticated["']/);
+  });
+
+  it("signs asymmetrically so a buyer can verify it without a shared secret", () => {
+    // HS256 would mean only Aquadex can check the attestation, which makes it
+    // unverifiable by the person paying the premium.
+    expect(ENDPOINT).toContain("ES256");
+    expect(ENDPOINT).toContain("importPKCS8");
+    expect(ENDPOINT).not.toContain("HS256");
+  });
+
+  it("sets no expiry, because a provenance record is about a past moment", () => {
+    expect(ENDPOINT).not.toContain("setExpirationTime");
+  });
+
+  it("agrees with the client on the purpose string and method name", () => {
+    expect(ENDPOINT).toContain(ATTESTATION_PURPOSE);
+    expect(ENDPOINT).toContain(`"${ATTESTATION_METHOD.PLATFORM}"`);
+  });
+
+  it("fails closed when unconfigured rather than returning a placeholder", () => {
+    // An unsigned "attestation" would surface as a trust level the document has not
+    // earned — the §9.28 failure, server-side.
+    expect(ENDPOINT).toMatch(/if \(!PRIVATE_KEY_PEM \|\| !KEY_ID\)/);
+    expect(ENDPOINT).toContain("503");
+  });
+
+  it("refuses when the body's wallet disagrees with the signed-in one", () => {
+    // Otherwise a caller could attest a pedigree as somebody else.
+    expect(ENDPOINT).toMatch(/tokenWallet && bodyWallet/);
   });
 });
 
@@ -481,22 +642,38 @@ describe("PEDIGREE_TRUST_COPY", () => {
   it("never describes an unattested pedigree as verified", () => {
     // The word is the whole problem — §9.28 was a badge that said "Verified" over
     // nothing. Both unattested variants must be plainly negative.
+    const NEGATION = /\bnot\b|\bcannot\b|\bhasn't\b|\bnobody\b|\bno one\b|\bnone\b/;
     for (const text of [PEDIGREE_TRUST_COPY.unattested.pro, PEDIGREE_TRUST_COPY.unattested.casual]) {
       expect(text.toLowerCase()).not.toMatch(/\bverified\b/);
-      // And it has to actively say it isn't established, not merely omit the claim.
-      expect(text.toLowerCase()).toMatch(/\bnot\b|\bcannot\b|\bhasn't\b/);
+      // And it has to actively state the absence, not merely omit the claim. A
+      // reader skimming should not be able to mistake it for reassurance.
+      expect(text.toLowerCase()).toMatch(NEGATION);
     }
   });
 
   it("reserves the positive wording for levels that have earned it", () => {
-    // "confirmed" may appear in the unattested copy only as a negation
-    // ("hasn't confirmed"). Asserted by position rather than by a lookahead regex,
-    // which is easy to get backwards.
+    // "confirmed" may appear in the unattested copy only inside a negation
+    // ("nobody has confirmed it yet"). Asserted by proximity rather than a lookahead,
+    // which is easy to get backwards — the first version of this test did.
     const casual = PEDIGREE_TRUST_COPY.unattested.casual.toLowerCase();
     if (casual.includes("confirmed")) {
-      expect(casual).toMatch(/(hasn't|has not|not)\s+confirmed/);
+      expect(casual).toMatch(/(hasn't|has not|not|nobody|no one)\s+(\w+\s+){0,2}confirmed/);
     }
     expect(PEDIGREE_TRUST_COPY.attested.casual.toLowerCase()).toContain("confirmed");
+  });
+
+  it("says whose word a platform attestation is", () => {
+    // The §9.28 lesson: a badge must not assert more than its backing. A platform
+    // attestation is Aquadex's word, and the copy has to say so rather than
+    // borrowing the credibility of a breeder signature.
+    const pro = PEDIGREE_TRUST_COPY.platformAttested.pro.toLowerCase();
+    expect(pro).toContain("our word");
+    expect(pro).not.toMatch(/\bverified\b/);
+    // Asserted POSITIVELY. An earlier version of this test banned the phrase
+    // "breeder's signature" and failed on copy reading "…not the breeder's
+    // signature" — honest copy routinely names the thing it is denying, so an
+    // absence check on a word is the wrong shape. Assert what must be SAID instead.
+    expect(pro).toMatch(/not the breeder(?:'s)? signature|not a breeder signature/);
   });
 
   it("says plainly that an unrecorded ancestor is unknown, not unrelated", () => {

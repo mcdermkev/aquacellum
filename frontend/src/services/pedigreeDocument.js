@@ -109,14 +109,39 @@ export const FORBIDDEN_BODY_FIELDS = Object.freeze([
   "arrivalStatus",
 ]);
 
+/**
+ * How an attestation was produced. This is a LADDER, not a flag, because "signed"
+ * conflates two claims with very different strength.
+ *
+ * `PLATFORM` reuses the trust root the app already has: Privy verifies that the
+ * user controls the wallet, `/api/attest-pedigree` verifies that Privy token, and
+ * the server signs a purpose-bound statement. A reader can verify the signature
+ * against the published public key, so they can prove *Aquadex said this* — but
+ * they are still trusting that Aquadex only attests authenticated wallets. That is
+ * provenance **hosting**, in the same sense §4.3 uses the word.
+ *
+ * `WALLET` is the breeder's own key over the same hash. That needs no trust in
+ * Aquadex at all. It is the target, and it is a separate task because the app is
+ * Web2-masked and a signing prompt is a product decision.
+ */
+export const ATTESTATION_METHOD = Object.freeze({
+  PLATFORM: "platform",
+  WALLET: "wallet",
+});
+
 export const PEDIGREE_TRUST = Object.freeze({
-  /** The hash does not match the body. Treat as no pedigree at all. */
+  /** The hash does not match the body. Worse than absent. */
   INVALID: "invalid",
-  /** Internally consistent, but nobody has signed it. NOT verified. */
+  /** Internally consistent, but nobody has attested it. NOT verified. */
   UNATTESTED: "unattested",
-  /** Signed by the issuing breeder — checkable without trusting this platform. */
+  /**
+   * Aquadex attests the issuing wallet was authenticated when the document was
+   * sealed. Verifiable against our published key — but it is our word.
+   */
+  PLATFORM_ATTESTED: "platformAttested",
+  /** Signed by the issuing breeder's own key — needs no trust in Aquadex. */
   ATTESTED: "attested",
-  /** Attested and anchored on-chain. */
+  /** Breeder-signed and anchored on-chain. */
   ANCHORED: "anchored",
 });
 
@@ -133,8 +158,14 @@ export const PEDIGREE_TRUST_COPY = Object.freeze({
     casual: "Something's wrong with this family tree, so we can't show it as real.",
   }),
   unattested: Object.freeze({
-    pro: "Recorded but not signed by the breeder, so it cannot be independently checked.",
-    casual: "Written down, but the breeder hasn't confirmed it.",
+    pro: "Recorded but not attested, so it cannot be independently checked.",
+    casual: "Written down, but nobody has confirmed it yet.",
+  }),
+  platformAttested: Object.freeze({
+    // Deliberately says whose word it is. Claiming "verified" here would be the
+    // §9.28 mistake with extra steps.
+    pro: "Aquadex confirms the breeder was signed in when this was recorded. That is our word, not the breeder's signature.",
+    casual: "We checked the breeder was signed in when they recorded this.",
   }),
   attested: Object.freeze({
     pro: "Signed by the breeder who issued it. Anyone can check it without trusting Aquadex.",
@@ -485,12 +516,112 @@ export async function verifyPedigreeChain(documents, rootHash) {
 
 // ─── Reading a document ─────────────────────────────────────────────────────
 
+// ─── Attestation ────────────────────────────────────────────────────────────
+//
+// ⚠️ WHY AN AUTH TOKEN IS NOT AN ATTESTATION ⚠️
+//
+// The obvious way to "reuse the existing wallet-proof" is to take the JWT that
+// `/api/mint-session` mints and drop it into the document. DO NOT. That token
+// carries `role: "authenticated"` and `wallet_address`, signed with
+// `SUPABASE_JWT_SECRET` — it IS a live session credential. Anyone holding it can
+// act as that wallet against Supabase until it expires.
+//
+// And pedigree documents are meant to be PUBLISHED — §4.3 puts them in a public
+// storage bucket at a deterministic path. So embedding a session token would
+// publish a working credential for the breeder's wallet at a guessable URL. That
+// is a credential leak, not a design wrinkle.
+//
+// What IS reused is the trust root, which is the valuable part and needs no new UX:
+// Privy proves the user controls the wallet, and the server verifies that Privy
+// token. `/api/attest-pedigree` does exactly that and then signs a **purpose-bound
+// statement about one pedigree hash** — no `role` claim, asymmetric key so a reader
+// can verify it without holding a secret, and long-lived, because a provenance
+// record should not expire in an hour.
+//
+// `assertNotCredential` below enforces the distinction mechanically rather than by
+// comment, because the tempting mistake is a one-line one.
+
+/** Claims that mark a token as an authentication credential rather than a statement. */
+const CREDENTIAL_CLAIMS = Object.freeze(["role", "aud", "access_token", "token_type"]);
+
+/** The `purpose` a pedigree attestation must declare. */
+export const ATTESTATION_PURPOSE = "aquadex.pedigree.attestation.v1";
+
+/**
+ * Throw if an attestation looks like an auth credential.
+ *
+ * @param {object} attestation
+ */
+export function assertNotCredential(attestation) {
+  if (!attestation || typeof attestation !== "object") return;
+  for (const claim of CREDENTIAL_CLAIMS) {
+    if (Object.prototype.hasOwnProperty.call(attestation, claim)) {
+      throw new Error(
+        `pedigreeDocument: attestation carries "${claim}", which makes it look like a ` +
+          `session credential. Pedigree documents are published publicly — see the ` +
+          `attestation notes in this module.`
+      );
+    }
+  }
+  if (attestation.purpose && attestation.purpose !== ATTESTATION_PURPOSE) {
+    throw new Error(
+      `pedigreeDocument: attestation purpose "${attestation.purpose}" is not ` +
+        `"${ATTESTATION_PURPOSE}". A signature reused across purposes proves the wrong thing.`
+    );
+  }
+}
+
+/**
+ * Attach an attestation to a sealed document.
+ *
+ * Refuses when the attestation does not cover **this** document's hash: a signature
+ * over some other pedigree would otherwise upgrade this one's trust level for free,
+ * which is the cheapest possible forgery.
+ *
+ * @param {object} document - a sealed document
+ * @param {object} attestation - `{ method, purpose, subjectHash, signature, signedBy, signedAt, anchor? }`
+ * @returns {object} a new document; the input is not mutated
+ */
+export function attachAttestation(document, attestation) {
+  if (!document?.hash) {
+    throw new TypeError("attachAttestation: document is not sealed");
+  }
+  if (!attestation || typeof attestation !== "object") {
+    throw new TypeError("attachAttestation: no attestation");
+  }
+  assertNotCredential(attestation);
+
+  if (attestation.subjectHash !== document.hash) {
+    throw new Error(
+      "attachAttestation: the attestation does not cover this document's hash. An " +
+        "attestation of a different pedigree must never raise this one's trust level."
+    );
+  }
+  const method = attestation.method;
+  if (method !== ATTESTATION_METHOD.PLATFORM && method !== ATTESTATION_METHOD.WALLET) {
+    throw new Error(
+      `attachAttestation: unknown method "${method}". An unrecognized method must not ` +
+        `default to the stronger reading.`
+    );
+  }
+  if (!attestation.signature) {
+    throw new Error("attachAttestation: attestation carries no signature");
+  }
+
+  return { ...document, attestation: { ...attestation } };
+}
+
 /**
  * How much trust this document earns. THE UI READS THIS, never the mere presence
- * of a document.
+ * of a document, and never `attestation` directly.
  *
  * Async because it verifies the hash — a document whose hash doesn't match its body
  * is worse than absent, so it can't be reported as merely unattested.
+ *
+ * Fails DOWNWARD at every ambiguity. An attestation that is malformed, covers a
+ * different hash, or declares a method we don't recognize reads as `unattested`,
+ * never as the stronger level. The whole point of this ladder is that a buyer paying
+ * a premium is told the truth, so the failure direction has to be conservative.
  *
  * @returns {Promise<string>} one of PEDIGREE_TRUST
  */
@@ -502,10 +633,32 @@ export async function pedigreeTrustLevel(document) {
   if (!attestation || typeof attestation !== "object" || !attestation.signature) {
     return PEDIGREE_TRUST.UNATTESTED;
   }
-  if (attestation.anchor && typeof attestation.anchor === "object" && attestation.anchor.txHash) {
-    return PEDIGREE_TRUST.ANCHORED;
+
+  // An auth credential masquerading as an attestation is not a stronger claim.
+  try {
+    assertNotCredential(attestation);
+  } catch {
+    return PEDIGREE_TRUST.UNATTESTED;
   }
-  return PEDIGREE_TRUST.ATTESTED;
+
+  // A signature over a different document proves nothing about this one.
+  if (attestation.subjectHash !== document.hash) return PEDIGREE_TRUST.UNATTESTED;
+
+  if (attestation.method === ATTESTATION_METHOD.WALLET) {
+    if (attestation.anchor && typeof attestation.anchor === "object" && attestation.anchor.txHash) {
+      return PEDIGREE_TRUST.ANCHORED;
+    }
+    return PEDIGREE_TRUST.ATTESTED;
+  }
+
+  if (attestation.method === ATTESTATION_METHOD.PLATFORM) {
+    // An anchor does NOT promote a platform attestation to `anchored`. Anchoring our
+    // own statement on-chain makes it permanent, not independent — the thing being
+    // made permanent is still our word.
+    return PEDIGREE_TRUST.PLATFORM_ATTESTED;
+  }
+
+  return PEDIGREE_TRUST.UNATTESTED;
 }
 
 /**

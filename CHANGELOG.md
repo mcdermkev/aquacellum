@@ -4,6 +4,46 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [0.10.10] — 2026-07-30
+
+### 🔐 Pedigree Attestation: Reusing the Trust Root, Not the Credential
+
+Lands T3 §2.4 ([`BREEDER_TOOLS_T3_PEDIGREE_DOCUMENT_SPEC.md`](docs/BREEDER_TOOLS_T3_PEDIGREE_DOCUMENT_SPEC.md)). Still nothing issues a document, so app behaviour is unchanged.
+
+The question was how a breeder attests a pedigree hash in an app that hides wallets from users. The answer was to reuse the wallet proof that already exists: Privy has authenticated the user, `/api/mint-session` already verifies that Privy token. New endpoint `/api/attest-pedigree` does the same verification and signs a statement. **No new user-facing step**, which is what made reuse the right call.
+
+#### ⚠️ Why it could not reuse the *token*
+The one-line version of this is to drop the JWT `mint-session` returns into the document. **That token is a live session credential** — `role: "authenticated"` plus `wallet_address`, signed with `SUPABASE_JWT_SECRET`. Anyone holding it can act as that wallet against Supabase until it expires.
+
+And pedigree documents are *meant to be published*: §4.3 puts them in a **public** Supabase Storage bucket at a deterministic, guessable path. So the shortcut would publish a working credential for the breeder's wallet at a URL anyone can construct.
+
+The attestation is a separate artifact: its own key (never `SUPABASE_JWT_SECRET`), no `role` or `aud`, **ES256 rather than HS256** (symmetric would mean only *we* could verify, so the buyer paying the premium couldn't check it at all), no `exp` (a provenance record is a claim about a past moment, not an authorization), and a `purpose` claim bound to this use.
+
+Enforced mechanically rather than by comment: `assertNotCredential` throws on `role`, `aud`, `access_token`, `token_type`, or a mismatched purpose, and `pedigreeTrustLevel` degrades a credential-shaped attestation to `unattested` rather than crashing a lineage chart.
+
+#### 🪜 The trust ladder gained a rung
+`attested` previously meant "has a signature", and its copy read *"Anyone can check it without trusting Aquadex."* **That would be false for a platform attestation.** So `platformAttested` now sits between `unattested` and `attested`, and its copy says whose word it is: *"Aquadex confirms the breeder was signed in when this was recorded. That is our word, not the breeder's signature."*
+
+An anchor does **not** promote a platform attestation to `anchored` — anchoring our own statement makes it permanent, not independent. And the level **fails downward** at every ambiguity: unknown method, missing signature, or an attestation covering a *different* document's hash all read as `unattested`. That last one is the cheapest possible forgery — take any real attestation and staple it on — and `attachAttestation` refuses it outright.
+
+#### 🐛 Known gap this creates
+**The public key isn't published yet (§9.29).** ES256 was chosen so anyone can verify without a shared secret, but with no published key that verification is currently possible only for us — the exact situation the asymmetric choice exists to avoid. Needs key generation, env vars, a public read endpoint, and a rotation story (`kid` is already in every signature header).
+
+#### 🧱 Internal
+- 15 new tests. Three of the endpoint's source guards failed on the first run **because the endpoint's own comments explain why it doesn't use `SUPABASE_JWT_SECRET`, `HS256`, or a `role` claim** — trap 6.3 in the handoff, walked into by the session that wrote it down. Guards now strip comments.
+- Two copy assertions also failed by banning words that honest copy legitimately names while denying them ("not the breeder's signature"). Recorded as trap 6.9: **assert positively on what copy must say, not on the absence of a word.**
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `frontend/api/attest-pedigree.js` | **New.** Privy-rooted, purpose-bound, ES256, non-expiring platform attestation |
+| `frontend/src/services/pedigreeDocument.js` | `ATTESTATION_METHOD`, `ATTESTATION_PURPOSE`, `assertNotCredential`, `attachAttestation`; five-rung trust ladder; `platformAttested` copy |
+| `frontend/src/__tests__/pedigreeDocument.test.js` | +15 tests incl. the credential guard and endpoint contract |
+| `docs/BREEDER_TOOLS_T3_PEDIGREE_DOCUMENT_SPEC.md` | §2.4 resolved |
+| `docs/BREEDER_STATE_MODEL.md` | §9.29 added; §12.3 records where attestation landed |
+
+---
+
 ## [0.10.9] — 2026-07-30
 
 ### 🧾 The Portable Pedigree: a Lineage Claim That Can Leave the Device
