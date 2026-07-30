@@ -31,6 +31,8 @@ const growoutRows = [];
 const cloudCalls = [];
 /** XP awards. */
 const xpCalls = [];
+/** Existing certificates, used for the local-first species-name fallback. */
+let siblingSpecimens = [];
 /**
  * Per-call mint outcome. `null` (default) → every call succeeds. An array is
  * consumed positionally: `false` makes that one call fail.
@@ -67,6 +69,13 @@ vi.mock("../db", () => ({
         return growoutRows.length;
       },
     },
+    specimens: {
+      where: () => ({
+        equals: (speciesId) => ({
+          first: async () => siblingSpecimens.find((s) => s.speciesId === Number(speciesId)),
+        }),
+      }),
+    },
   },
 }));
 
@@ -95,10 +104,15 @@ vi.mock("../utils/xp", () => ({
 const {
   promoteCohortToCertificates,
   promotableCount,
+  promotionText,
+  allPromotionCopy,
   PROMOTE_MAX_PER_ACTION,
   PROMOTED_TYPE,
+  PROMOTION_COPY,
+  PROMOTION_ERROR,
 } = await import("../services/cohortPromotion");
 const { summarizeGrowout } = await import("../utils/growoutFunnel");
+const { containsProhibitedTerm } = await import("../services/orderCopy");
 
 // ─── Fixture ────────────────────────────────────────────────────────────────
 
@@ -144,10 +158,42 @@ beforeEach(() => {
   cloudCalls.length = 0;
   xpCalls.length = 0;
   seededCheckpoints = [];
+  siblingSpecimens = [];
   mintScript = null;
   nextSerial = 100;
   seedSpawn();
   seedCohort(12);
+});
+
+describe("species names resolve local-first, without RPC", () => {
+  it("prefers a supplied catalog entry", async () => {
+    await promoteCohortToCertificates({ spawnId: SPAWN_ID, count: 1, speciesCatalog: CATALOG });
+    expect(mintCalls[0].scientificName).toBe("Paracheirodon innesi");
+  });
+
+  it("falls back to a sibling certificate of the same species", async () => {
+    // Nearly always present for a promotion: the spawn minted offspring when it
+    // was recorded, and their names came from the same catalog. This is what
+    // keeps the promote path off the RPC enumeration in §9.12.
+    siblingSpecimens = [
+      { id: 55, speciesId: 42, commonName: "Neon Tetra", scientificName: "Paracheirodon innesi" },
+    ];
+    await promoteCohortToCertificates({ spawnId: SPAWN_ID, count: 1 });
+    expect(mintCalls[0].commonName).toBe("Neon Tetra");
+    expect(mintCalls[0].scientificName).toBe("Paracheirodon innesi");
+  });
+
+  it("leaves the name blank rather than inventing one", async () => {
+    await promoteCohortToCertificates({ spawnId: SPAWN_ID, count: 1 });
+    expect(mintCalls[0].commonName).toBe("Specimen");
+    expect(mintCalls[0].scientificName).toBe("Unknown");
+  });
+
+  it("ignores a sibling of a different species", async () => {
+    siblingSpecimens = [{ id: 9, speciesId: 7, commonName: "Guppy", scientificName: "Poecilia reticulata" }];
+    await promoteCohortToCertificates({ spawnId: SPAWN_ID, count: 1 });
+    expect(mintCalls[0].commonName).toBe("Specimen");
+  });
 });
 
 // ─── Provenance comes from the spawn, never from the caller ─────────────────
@@ -221,7 +267,10 @@ describe("over-promotion is blocked, and blocked means nothing is written", () =
     const result = await promoteCohortToCertificates({ spawnId: SPAWN_ID, count: 6, speciesCatalog: CATALOG });
 
     expect(result.success).toBe(false);
-    expect(result.error).toContain("4");
+    expect(result.errorKey).toBe(PROMOTION_ERROR.NOT_ENOUGH_ALIVE);
+    // The count travels as data, not baked into a sentence, so the caller can
+    // render it in either mode and the copy invariant stays a plain scan.
+    expect(result.available).toBe(4);
     // The part that matters: no fabricated fish, and no phantom departure.
     expect(mintCalls).toHaveLength(0);
     expect(growoutRows).toHaveLength(0);
@@ -376,6 +425,42 @@ describe("promotableCount", () => {
   });
 });
 
+// ─── Copy ──────────────────────────────────────────────────────────────────
+
+describe("PROMOTION_COPY", () => {
+  it("is free of PROHIBITED_TERMS in both modes", () => {
+    // `token`, `mint`, and `gas` are prohibited SUBSTRINGS, so "minted" and
+    // "tokenised" fail too. The user-facing verbs are register and promote.
+    for (const text of allPromotionCopy()) {
+      expect(containsProhibitedTerm(text), `string: "${text}"`).toBe(false);
+    }
+  });
+
+  it("covers every error key the service can return", () => {
+    for (const key of Object.values(PROMOTION_ERROR)) {
+      expect(PROMOTION_COPY[key], key).toBeTruthy();
+      expect(PROMOTION_COPY[key].pro, key).toBeTruthy();
+      expect(PROMOTION_COPY[key].casual, key).toBeTruthy();
+    }
+    // Partial success is not in PROMOTION_ERROR but is a returned key.
+    expect(PROMOTION_COPY.partial).toBeTruthy();
+  });
+
+  it("resolves by mode and falls back rather than rendering a blank", () => {
+    expect(promotionText("cohortEmpty")).toBe(PROMOTION_COPY.cohortEmpty.pro);
+    expect(promotionText("cohortEmpty", { casual: true })).toBe(PROMOTION_COPY.cohortEmpty.casual);
+    expect(promotionText("no-such-key")).toBe(PROMOTION_COPY.unexpected.pro);
+  });
+
+  it("interpolates no counts, so the invariant scan stays exhaustive", () => {
+    // Numbers travel on the result object (`available`, `promoted`, `requested`).
+    // A template string here would be a string the scan above can never see.
+    for (const text of allPromotionCopy()) {
+      expect(text, text).not.toMatch(/\$\{|\bundefined\b|\bNaN\b/);
+    }
+  });
+});
+
 // ─── Source guards ────────────────────────────────────────────────────────
 
 describe("source guards", () => {
@@ -419,5 +504,68 @@ describe("source guards", () => {
     // hasEntitlement fails CLOSED for unknown keys, so a new key here would
     // silently disable the feature for everyone.
     expect(SRC).not.toContain("hasEntitlement");
+  });
+});
+
+describe("the tracker panel wires to the service rather than reimplementing it", () => {
+  function code(relativePath) {
+    return readFileSync(fileURLToPath(new URL(relativePath, import.meta.url)), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
+      .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  }
+  const TRACKER = code("../components/SpawnGrowoutTracker.jsx");
+
+  it("keeps 'promoted' out of the manual type picker", () => {
+    // Present in GROWOUT_TYPES so history rows get a label, but a hand-typed
+    // promotion would decrement the cohort with no certificates behind it.
+    expect(TRACKER).toMatch(/PROGRAMMATIC_TYPES\s*=\s*Object\.freeze\(\["promoted"\]\)/);
+    expect(TRACKER).toContain("MANUAL_GROWOUT_TYPES.map");
+    expect(TRACKER).not.toContain("Object.entries(GROWOUT_TYPES).map");
+  });
+
+  it("never writes a promoted checkpoint itself", () => {
+    // The only writer is the service, which counts certificates first.
+    expect(TRACKER).toContain("promoteCohortToCertificates");
+    expect(TRACKER).not.toMatch(/type:\s*["']promoted["']/);
+  });
+
+  it("caps the count input with promotableCount, not a literal", () => {
+    expect(TRACKER).toContain("promotableCount(funnel)");
+    expect(TRACKER).toContain("max={promotable}");
+    expect(TRACKER).not.toMatch(/max=\{?10\}?/);
+  });
+
+  it("resolves the spawn from Dexie instead of taking new props", () => {
+    expect(TRACKER).toContain("db.spawns.get(Number(spawnId))");
+    // The prop list is unchanged, so both mount sites keep working — HatcheryLogs
+    // passes only spawnId and eggCount.
+    expect(TRACKER).toMatch(
+      /function SpawnGrowoutTracker\(\{ spawnId, eggCount, speciesName, mode \}\)/
+    );
+  });
+
+  it("does not fold promoted fry into the loss figure", () => {
+    // A promoted fry is a departure but it is the SUCCESS case. It gets its own
+    // line; the funnel's `lost` prop stays culls + natural losses.
+    expect(TRACKER).toContain("lost={totalCulled + totalLoss}");
+    expect(TRACKER).not.toMatch(/lost=\{[^}]*totalPromoted/);
+  });
+
+  it("re-derives the funnel from the stored checkpoints after a promotion", () => {
+    // Rather than adjusting a local number, which is how a displayed count drifts
+    // away from what was actually written.
+    expect(TRACKER).toMatch(/if \(result\.success\) \{[\s\S]{0,400}loadCheckpoints\(\)/);
+  });
+
+  it("draws every user-facing string from PROMOTION_COPY", () => {
+    expect(TRACKER).toContain("promotionText");
+    // No inlined sentences in the panel — the copy invariant has to be able to
+    // see them.
+    expect(TRACKER).not.toContain("Promote keepers\"");
+  });
+
+  it("is still free of entitlement gating", () => {
+    expect(TRACKER).not.toContain("hasEntitlement");
   });
 });

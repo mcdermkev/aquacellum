@@ -63,6 +63,140 @@ export const PROMOTE_MAX_PER_ACTION = 10;
 /** The checkpoint type this module writes. Mirrors GROWOUT_TYPES / the migration. */
 export const PROMOTED_TYPE = "promoted";
 
+// ─── Copy ───────────────────────────────────────────────────────────────────
+//
+// Every user-facing string this flow produces lives here, in casual and pro
+// variants, guarded by the PROHIBITED_TERMS invariant test — the same pattern as
+// PAIRING_COPY in utils/specimenSex.js. The rule and its words stay together.
+//
+// The strings are deliberately STATIC: counts are interpolated by the caller from
+// the result object, not baked in. That keeps the invariant test a plain scan and
+// keeps the service mode-agnostic — it returns an `errorKey`, and the component
+// decides whether the reader wants "cohort" or "batch of babies".
+
+/** Keys `promoteCohortToCertificates` can return in `errorKey`. */
+export const PROMOTION_ERROR = Object.freeze({
+  SPAWN_MISSING: "spawnMissing",
+  SPAWN_UNATTRIBUTED: "spawnUnattributed",
+  COUNT_INVALID: "countInvalid",
+  OVER_CAP: "overCap",
+  COHORT_EMPTY: "cohortEmpty",
+  NOT_ENOUGH_ALIVE: "notEnoughAlive",
+  ALL_MINTS_FAILED: "allMintsFailed",
+  UNEXPECTED: "unexpected",
+});
+
+export const PROMOTION_COPY = Object.freeze({
+  // Errors, keyed by PROMOTION_ERROR.
+  spawnMissing: Object.freeze({
+    pro: "That spawn record can't be found, so there are no parents to record.",
+    casual: "We can't find that batch, so we don't know who the parents are.",
+  }),
+  spawnUnattributed: Object.freeze({
+    pro: "That spawn has no owner recorded, so a certificate can't be attributed.",
+    casual: "We don't know whose batch this is, so we can't fill out a certificate.",
+  }),
+  countInvalid: Object.freeze({
+    pro: "Enter how many fish to promote.",
+    casual: "Choose how many babies you're keeping.",
+  }),
+  overCap: Object.freeze({
+    pro: "That is more than one promotion can handle. Promote a batch, then repeat.",
+    casual: "That's too many at once. Do a few now and come back for the rest.",
+  }),
+  cohortEmpty: Object.freeze({
+    pro: "This cohort has no fish left to promote.",
+    casual: "There are no babies left in this batch.",
+  }),
+  notEnoughAlive: Object.freeze({
+    pro: "That is more fish than this cohort has left.",
+    casual: "That's more babies than this batch has left.",
+  }),
+  allMintsFailed: Object.freeze({
+    pro: "No certificates could be created, so the cohort is unchanged.",
+    casual: "We couldn't make any certificates, so nothing changed.",
+  }),
+  unexpected: Object.freeze({
+    pro: "Promotion failed.",
+    casual: "That didn't work.",
+  }),
+
+  // The panel.
+  action: Object.freeze({
+    pro: "Promote keepers",
+    casual: "Keep some babies",
+  }),
+  heading: Object.freeze({
+    pro: "Promote to individual certificates",
+    casual: "Give a baby its own certificate",
+  }),
+  intro: Object.freeze({
+    pro: "The fish you keep get their own certificate and leave the cohort count. Parents come from this spawn, so you don't re-enter them.",
+    casual: "The babies you keep get their own record. We already know their parents, so you don't have to type them in.",
+  }),
+  countLabel: Object.freeze({
+    pro: "How many",
+    casual: "How many are you keeping?",
+  }),
+  parentsLabel: Object.freeze({
+    pro: "Parents, from this spawn",
+    casual: "Their parents",
+  }),
+  sexHint: Object.freeze({
+    pro: "Sex is optional — leave it unset if you can't tell yet.",
+    casual: "You can leave this blank if you can't tell yet.",
+  }),
+  namePlaceholder: Object.freeze({
+    pro: "Name (optional)",
+    casual: "Give it a name (optional)",
+  }),
+  submit: Object.freeze({
+    pro: "Create certificates",
+    casual: "Save them",
+  }),
+  working: Object.freeze({
+    pro: "Creating certificates…",
+    casual: "Saving…",
+  }),
+  success: Object.freeze({
+    pro: "Certificates created. They've left the cohort count and are now tracked individually.",
+    casual: "Done. They have their own records now and left the batch count.",
+  }),
+  partial: Object.freeze({
+    pro: "Not all of them could be created. The cohort was reduced by the number that were.",
+    casual: "Some couldn't be saved. Only the ones that worked left the batch count.",
+  }),
+  exhausted: Object.freeze({
+    pro: "Every fish in this cohort has been accounted for.",
+    casual: "Every baby in this batch is accounted for.",
+  }),
+  promotedFunnelLabel: Object.freeze({
+    pro: "promoted to certificates",
+    casual: "kept with their own record",
+  }),
+});
+
+/** Every copy string, flattened — used by the language invariant test. */
+export function allPromotionCopy() {
+  const out = [];
+  for (const entry of Object.values(PROMOTION_COPY)) {
+    out.push(entry.pro, entry.casual);
+  }
+  return out;
+}
+
+/**
+ * Resolve a copy key for the reader's mode.
+ *
+ * @param {string} key - a PROMOTION_COPY key, e.g. a returned `errorKey`
+ * @param {{ casual?: boolean }} [options]
+ */
+export function promotionText(key, { casual = false } = {}) {
+  const entry = PROMOTION_COPY[key];
+  if (!entry) return PROMOTION_COPY.unexpected[casual ? "casual" : "pro"];
+  return entry[casual ? "casual" : "pro"];
+}
+
 /**
  * How many fish this cohort can promote right now.
  *
@@ -88,6 +222,46 @@ export function promotableCount(funnel) {
  * cohort keeps heads that are already certificates and the invariant above
  * breaks. Advancing by a second keeps each promotion one auditable event.
  */
+/**
+ * Species names for the new certificates, local-first.
+ *
+ * Precedence:
+ *   1. A caller-supplied catalog entry.
+ *   2. A SIBLING certificate of the same species already in Dexie — which for a
+ *      promotion is nearly always present, because the spawn minted offspring
+ *      when it was recorded. Their names came from the same catalog.
+ *   3. The relayer's own defaults ("Specimen" / "Unknown").
+ *
+ * Step 2 exists so this path needs no RPC. `SpawningWizard` reads the catalog by
+ * calling `contract.speciesCatalog(i)` for every species on mount, which is its
+ * own open item (§9.12); copying that here would spread the problem rather than
+ * solve it. Step 3 is an honest blank, not a guess.
+ */
+async function resolveSpeciesNames(spawn, speciesCatalog) {
+  const entry = speciesCatalog?.[spawn.speciesId];
+  if (entry?.commonName || entry?.scientificName) {
+    return {
+      commonName: entry.commonName || "Specimen",
+      scientificName: entry.scientificName || "Unknown",
+    };
+  }
+
+  try {
+    const sibling = await db.specimens.where("speciesId").equals(Number(spawn.speciesId)).first();
+    if (sibling?.commonName || sibling?.scientificName) {
+      return {
+        commonName: sibling.commonName || "Specimen",
+        scientificName: sibling.scientificName || "Unknown",
+      };
+    }
+  } catch {
+    // Fall through to the defaults. A missing name is a cosmetic gap; guessing
+    // one and writing it onto a certificate would not be.
+  }
+
+  return { commonName: "Specimen", scientificName: "Unknown" };
+}
+
 function nextFreeCheckpointTimestamp(existingCheckpoints, now) {
   const taken = new Set(
     (existingCheckpoints || [])
@@ -99,14 +273,25 @@ function nextFreeCheckpointTimestamp(existingCheckpoints, now) {
   return ts;
 }
 
-function fail(error, requested) {
+/**
+ * A failure result.
+ *
+ * Carries an `errorKey` rather than a sentence, so the caller renders it in the
+ * reader's mode (§2.5) — and so the numbers in the message come from `available`
+ * here rather than being baked into copy that then can't be scanned by the
+ * language invariant test.
+ */
+function fail(errorKey, requested, available = null) {
   return {
     success: false,
     promoted: 0,
     requested,
+    available,
     specimenIds: [],
     checkpointTimestamp: null,
-    error,
+    errorKey,
+    // Pro-mode text, for logs and for callers that don't care about mode.
+    error: promotionText(errorKey),
   };
 }
 
@@ -144,12 +329,12 @@ export async function promoteCohortToCertificates({
     // ── 1. The spawn is the source of truth for provenance ──────────────────
     const spawn = await db.spawns.get(Number(spawnId));
     if (!spawn) {
-      return fail("That spawn record could not be found, so there are no parents to record.", requested);
+      return fail(PROMOTION_ERROR.SPAWN_MISSING, requested);
     }
     if (!spawn.ownerAddress) {
       // No fallback to a connected wallet: guessing the owner of a birth
       // certificate is exactly the class of fabrication this stream removes.
-      return fail("That spawn has no owner recorded, so a certificate can't be attributed.", requested);
+      return fail(PROMOTION_ERROR.SPAWN_UNATTRIBUTED, requested);
     }
 
     // ── 2. What the cohort actually has ─────────────────────────────────────
@@ -159,28 +344,20 @@ export async function promoteCohortToCertificates({
 
     // ── 3. Hard block. Nothing is written past this point on failure. ───────
     if (!Number.isInteger(requested) || requested < 1) {
-      return fail("Choose how many fish to promote.", requested);
+      return fail(PROMOTION_ERROR.COUNT_INVALID, requested, available);
     }
     if (requested > PROMOTE_MAX_PER_ACTION) {
-      return fail(
-        `You can promote up to ${PROMOTE_MAX_PER_ACTION} at a time. Promote a batch, then repeat.`,
-        requested
-      );
+      return fail(PROMOTION_ERROR.OVER_CAP, requested, available);
     }
     if (funnel.alive < 1) {
-      return fail("This cohort has no fish left to promote.", requested);
+      return fail(PROMOTION_ERROR.COHORT_EMPTY, requested, available);
     }
     if (requested > available) {
-      return fail(
-        `This cohort only has ${funnel.alive} fish left, so ${requested} can't be promoted.`,
-        requested
-      );
+      return fail(PROMOTION_ERROR.NOT_ENOUGH_ALIVE, requested, available);
     }
 
     // ── 4. Mint. One certificate per fish, through the one mint path. ───────
-    const speciesEntry = speciesCatalog?.[spawn.speciesId] || null;
-    const commonName = speciesEntry?.commonName || "Specimen";
-    const scientificName = speciesEntry?.scientificName || "Unknown";
+    const { commonName, scientificName } = await resolveSpeciesNames(spawn, speciesCatalog);
     const specimenIds = [];
 
     for (let i = 0; i < requested; i += 1) {
@@ -236,7 +413,7 @@ export async function promoteCohortToCertificates({
 
     // ── 5. No certificates means no departure. ──────────────────────────────
     if (specimenIds.length === 0) {
-      return fail("No certificates could be created, so the cohort is unchanged.", requested);
+      return fail(PROMOTION_ERROR.ALL_MINTS_FAILED, requested, available);
     }
 
     // ── 6. Log the departure, for the count that actually exists ────────────
@@ -275,17 +452,16 @@ export async function promoteCohortToCertificates({
       success: true,
       promoted: specimenIds.length,
       requested,
+      available,
       specimenIds,
       checkpointTimestamp,
       partial,
-      ...(partial
-        ? {
-            error: `Only ${specimenIds.length} of ${requested} certificates could be created. The cohort was decremented by ${specimenIds.length}.`,
-          }
-        : {}),
+      // A partial result is a success that must not be rounded off to "done" —
+      // the caller has both numbers and the copy key to say so plainly.
+      ...(partial ? { errorKey: "partial", error: promotionText("partial") } : {}),
     };
   } catch (err) {
     console.error("[CohortPromotion] Promotion failed:", err);
-    return fail(err?.message || "Promotion failed.", requested);
+    return fail(PROMOTION_ERROR.UNEXPECTED, requested);
   }
 }

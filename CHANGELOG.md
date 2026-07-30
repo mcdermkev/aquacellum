@@ -6,9 +6,9 @@ All notable changes to AquaDex are documented here.
 
 ## [0.10.6] — 2026-07-30
 
-### 🏅 Cohort → Certificate Promotion: the Accounting Core
+### 🏅 Cohort → Certificate Promotion
 
-Lands the Tier A half of [`BREEDER_STATE_MODEL.md`](docs/BREEDER_STATE_MODEL.md) §9.16, specified in [`BREEDER_TOOLS_T2_PROMOTION_SPEC.md`](docs/BREEDER_TOOLS_T2_PROMOTION_SPEC.md). The promote panel on the grow-out tracker (T2 §2.4) is the remaining Tier B work, so nothing writes `promoted` yet — the changes below are inert until it lands, which is deliberate.
+Closes [`BREEDER_STATE_MODEL.md`](docs/BREEDER_STATE_MODEL.md) §9.16, specified in [`BREEDER_TOOLS_T2_PROMOTION_SPEC.md`](docs/BREEDER_TOOLS_T2_PROMOTION_SPEC.md). Retiered from B to A/B before building, because it creates birth certificates.
 
 #### 🧩 The gap
 The model says fish start life as a **count** on a grow-out cohort and become a **certificate** when the breeder decides to track one individually (§4.2). There was no path between those two states. A breeder pulling four keepers out of a grow-out tank had to go to the Register tab and retype the sire and dam serials by hand, per fish, from memory — and nothing decremented the cohort, so the same four fish were then counted twice. All of that data is one `db.spawns.get()` away.
@@ -31,22 +31,34 @@ Parents, species, tank, owner, and **hatch date** all come from the spawn record
 #### 🗄️ Migration
 `20260729_spawn_growout_sync.sql` is **applied in production**, so the `type` CHECK is widened by a new additive file rather than an edit — editing an applied migration means the file no longer describes any database that exists. The original constraint was declared inline, so Postgres auto-named it; the amendment drops both the auto name and its own, then names the replacement so the next amendment doesn't have to guess. The type-coverage test now reads **both** files, and gained a second assertion in the opposite direction — `GROWOUT_TYPES` drives the manual picker, so a type written only programmatically (like `promoted`) would otherwise slip past the scrape.
 
+#### 🖥️ The panel
+A "Promote keepers" action on the grow-out tracker, with the sire and dam shown read-only above the form — the visible payoff of doing this here rather than re-registering from scratch. Per-fish name and sex are optional. The count input's `max` is `promotableCount(funnel)`, the same expression the service's hard block uses, so the form and the boundary can't disagree. When there is nothing left to promote the action is **absent, not disabled** — a greyed button with no explanation is worse than no button.
+
+`promoted` is in `GROWOUT_TYPES` so history rows get a label, but `PROGRAMMATIC_TYPES` filters it out of the manual "Add Checkpoint" picker: a hand-typed promotion would decrement the cohort with no certificates behind it, which is the same double-count from the other direction. On success the funnel and chart **re-derive from the stored checkpoint** rather than adjusting a local number, which is how a displayed count drifts away from what was written. A partial result is reported with both numbers and never rounded off to "done".
+
+The tracker takes **no new props**. It resolves the spawn from Dexie, because it is mounted from two places that pass different prop sets (`GrowOutSection` four, `HatcheryLogs` two).
+
+#### 📇 Species names resolve local-first
+A supplied catalog entry, then a **sibling certificate of the same species** already in Dexie — nearly always present, since the spawn minted offspring when it was recorded — then the relayer's own blank defaults. The sibling step is what keeps this path off the per-species RPC enumeration `SpawningWizard` still does on mount (§9.12); copying that here would have spread the problem rather than solved it. A missing name stays blank; it is a cosmetic gap, and guessing one and writing it onto a certificate would not be.
+
 #### 🧱 Internal
-- 27 new tests in `cohortPromotion.test.js` plus 9 in `growoutFunnel.test.js`. The over-promote and partial-mint cases assert on the **stores**, not the return value: "it returned an error" is not the criterion when the failure mode is a fabricated fish.
+- 43 tests in `cohortPromotion.test.js` plus 9 in `growoutFunnel.test.js`. The over-promote and partial-mint cases assert on the **stores**, not the return value: "it returned an error" is not the criterion when the failure mode is a fabricated fish.
 - Two promotions in the same second get distinct checkpoint timestamps. The cloud mirror's natural key is `(owner, spawn, event_timestamp, type)` and collisions resolve by upsert — desirable for a double-submitted fry count, but for a promotion it would collapse two events into one row and *undercount* the departure, leaving the cohort holding heads that are already certificates.
+- `PROMOTION_COPY` carries casual and pro variants with the `PROHIBITED_TERMS` invariant test, and the service returns an **`errorKey`** rather than a sentence — so counts travel as data on the result (`available`, `promoted`, `requested`) instead of being interpolated into copy the invariant scan could never see. A test asserts no copy string contains a template placeholder.
 - No new entitlement key. Promotion reuses `breeder_register_certificate` + `breeder_growout_tracking`, both REQUIRED — `hasEntitlement` fails **closed**, so a new unregistered key would silently disable the feature for everyone.
 
 #### Modified Files
 | File | Change |
 |------|--------|
-| `frontend/src/services/cohortPromotion.js` | **New.** `promoteCohortToCertificates`, `promotableCount`, `PROMOTE_MAX_PER_ACTION` |
+| `frontend/src/services/cohortPromotion.js` | **New.** `promoteCohortToCertificates`, `promotableCount`, `PROMOTION_COPY`, `PROMOTION_ERROR` |
 | `frontend/src/utils/growoutFunnel.js` | Departures reduce over `DEPARTURE_TYPES` in both functions; `promoted` added; `promoted` / `totalPromoted` reported |
-| `frontend/supabase/migrations/20260730_spawn_growout_promoted_type.sql` | **New.** Additive `type` CHECK amendment |
-| `frontend/src/__tests__/cohortPromotion.test.js` | **New.** 27 tests |
+| `frontend/src/components/SpawnGrowoutTracker.jsx` | Promote panel; `PROGRAMMATIC_TYPES` / `MANUAL_GROWOUT_TYPES`; spawn lookup; promoted funnel line |
+| `frontend/supabase/migrations/20260730_spawn_growout_promoted_type.sql` | **New.** Additive `type` CHECK amendment. **Applied 2026-07-30** |
+| `frontend/src/__tests__/cohortPromotion.test.js` | **New.** 43 tests, incl. tracker source guards and the copy invariant |
 | `frontend/src/__tests__/growoutFunnel.test.js` | Double-count regression, summary/timeline agreement with a promotion, array-driven source guard |
 | `frontend/src/__tests__/growoutCloudSync.test.js` | Type coverage reads both migrations, both directions, plus additive-migration shape |
 | `docs/BREEDER_TOOLS_T2_PROMOTION_SPEC.md` | **New.** The T2 spec |
-| `docs/BREEDER_STATE_MODEL.md` | §9.16 core landed; §4.2 and §7.2 updated |
+| `docs/BREEDER_STATE_MODEL.md` | §9.16 closed; §4.2 and §7.2 updated |
 
 ---
 

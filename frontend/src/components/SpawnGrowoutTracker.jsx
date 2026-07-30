@@ -9,6 +9,13 @@ import { compressImage } from "../utils/imageCompression";
 import { AnimatedFunnel, ConfettiCelebration } from "./BreederUXPolish";
 import { ShareButton } from "./ShareButton";
 import { generateNarrationCard, generateSurvivalCard } from "../utils/shareCard";
+import {
+  promoteCohortToCertificates,
+  promotableCount,
+  promotionText,
+} from "../services/cohortPromotion";
+import { SEX_OPTIONS, sexOptionLabel, SEX } from "../utils/specimenSex";
+import { formatCertSerial } from "../utils/specimenIdentity";
 
 // Grow-out checkpoint types
 export const GROWOUT_TYPES = {
@@ -18,11 +25,30 @@ export const GROWOUT_TYPES = {
   loss: { emoji: "💀", label: "Natural Loss" },
   moved: { emoji: "🔄", label: "Moved to Grow-Out" },
   note: { emoji: "📝", label: "Observation" },
+  promoted: { emoji: "🏅", label: "Promoted to Certificate" },
 };
+
+/**
+ * Types that exist for LABELLING history rows but must never appear in the manual
+ * "Add Checkpoint" picker.
+ *
+ * `promoted` is here because a hand-typed promotion would decrement the cohort
+ * with no certificates behind it — the exact double-count
+ * `services/cohortPromotion.js` exists to prevent. It is written only by that
+ * service, after it has counted certificates that actually got created. The
+ * promote panel below is the only way in.
+ */
+export const PROGRAMMATIC_TYPES = Object.freeze(["promoted"]);
+
+/** The picker's options: everything a breeder may log by hand. */
+export const MANUAL_GROWOUT_TYPES = Object.freeze(
+  Object.entries(GROWOUT_TYPES).filter(([key]) => !PROGRAMMATIC_TYPES.includes(key))
+);
 
 // Inline grow-out tracker component for a single spawn
 export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
   const [checkpoints, setCheckpoints] = useState([]);
+  const [spawn, setSpawn] = useState(null);
   const [expanded, setExpanded] = useState(false);
   const [narrationLoading, setNarrationLoading] = useState(false);
   const [latestNarration, setLatestNarration] = useState(null);
@@ -34,6 +60,16 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
   const photoInputRef = React.useRef(null);
   const [confettiTrigger, setConfettiTrigger] = useState(0);
 
+  // Promote-to-certificate panel state.
+  const [showPromote, setShowPromote] = useState(false);
+  const [promoteCount, setPromoteCount] = useState("1");
+  const [promoteKeepers, setPromoteKeepers] = useState([]); // [{ name, sex }]
+  const [promoteBusy, setPromoteBusy] = useState(false);
+  const [promoteResult, setPromoteResult] = useState(null);
+
+  const casual = mode === "casual";
+  const copy = (key) => promotionText(key, { casual });
+
   const loadCheckpoints = async () => {
     try {
       const rows = await db.spawnGrowout.where("spawnId").equals(spawnId).toArray();
@@ -43,8 +79,21 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
     }
   };
 
+  // The spawn carries the parents, species, tank, and owner the promote flow
+  // needs. Read here rather than taken as props, because this component is
+  // mounted from two places that pass different prop sets (GrowOutSection passes
+  // four, HatcheryLogs passes two).
+  const loadSpawn = async () => {
+    try {
+      setSpawn((await db.spawns.get(Number(spawnId))) || null);
+    } catch (e) {
+      console.warn("Failed to load spawn record:", e);
+    }
+  };
+
   useEffect(() => {
     loadCheckpoints();
+    loadSpawn();
   }, [spawnId]);
 
   const handleAddCheckpoint = async () => {
@@ -101,7 +150,57 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
   // checkpoint type can't be counted here and missed in the chart, the batch
   // panel, or the achievements tab.
   const funnel = summarizeGrowout(checkpoints, { eggCount });
-  const { fry: totalFry, culled: totalCulled, sold: totalSold, lost: totalLoss, alive: survivors, survivalRate } = funnel;
+  const {
+    fry: totalFry,
+    culled: totalCulled,
+    sold: totalSold,
+    lost: totalLoss,
+    promoted: totalPromoted,
+    alive: survivors,
+    survivalRate,
+  } = funnel;
+
+  // How many this cohort can promote right now. Shared with the service's hard
+  // block, so the form's max and the boundary check are one expression.
+  const promotable = promotableCount(funnel);
+
+  /** Resize the per-fish name/sex rows to match the requested count. */
+  const setPromoteCountSafely = (value) => {
+    setPromoteCount(value);
+    const n = Math.max(0, Math.min(parseInt(value, 10) || 0, promotable));
+    setPromoteKeepers((prev) => {
+      const next = prev.slice(0, n);
+      while (next.length < n) next.push({ name: "", sex: SEX.UNSEXED });
+      return next;
+    });
+  };
+
+  const handlePromote = async () => {
+    setPromoteBusy(true);
+    setPromoteResult(null);
+    try {
+      const result = await promoteCohortToCertificates({
+        spawnId,
+        count: parseInt(promoteCount, 10),
+        names: promoteKeepers.map((k) => k.name),
+        sexes: promoteKeepers.map((k) => k.sex),
+      });
+      setPromoteResult(result);
+      if (result.success) {
+        // Re-derive the funnel and the chart from the new checkpoint rather than
+        // adjusting a local number, so the displayed count can't drift from what
+        // was actually written.
+        await loadCheckpoints();
+        await loadSpawn();
+        setConfettiTrigger((prev) => prev + 1);
+        setShowPromote(false);
+        setPromoteCount("1");
+        setPromoteKeepers([]);
+      }
+    } finally {
+      setPromoteBusy(false);
+    }
+  };
 
   if (!expanded) {
     return (
@@ -171,6 +270,21 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
         survivalRate={survivalRate}
       />
 
+      {/* Promoted fry are a departure from the cohort, but they are the SUCCESS
+          case — reported on their own line, never folded into the `lost` figure
+          passed above. */}
+      {totalPromoted > 0 && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: "0.4rem",
+          fontSize: "0.7rem", marginTop: "0.4rem",
+          color: "var(--accent-green)",
+        }}>
+          <span>🏅</span>
+          <strong style={{ color: "#fff" }}>{totalPromoted}</strong>
+          <span style={{ color: "var(--text-secondary)" }}>{copy("promotedFunnelLabel")}</span>
+        </div>
+      )}
+
       {/* Timeline Chart */}
       <GrowOutChart checkpoints={checkpoints} eggCount={eggCount} spawnId={spawnId} />
 
@@ -214,6 +328,160 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
         </div>
       )}
 
+      {/* ── Promote keepers to individual certificates (§9.16) ──────────────
+          Absent, not disabled, when there is nothing left to promote — a greyed
+          button with no explanation is worse than no button. */}
+      {promotable > 0 && spawn && !showPromote && (
+        <button
+          type="button"
+          onClick={() => { setShowPromote(true); setPromoteResult(null); setPromoteCountSafely("1"); }}
+          style={{
+            width: "100%",
+            padding: "0.4rem",
+            marginBottom: "0.5rem",
+            fontSize: "0.72rem",
+            fontWeight: "600",
+            background: "rgba(52, 211, 153, 0.08)",
+            border: "1px dashed rgba(52, 211, 153, 0.35)",
+            borderRadius: "4px",
+            color: "var(--accent-green)",
+            cursor: "pointer"
+          }}
+        >
+          🏅 {copy("action")}
+        </button>
+      )}
+
+      {promotable === 0 && totalPromoted > 0 && funnel.fry > 0 && (
+        <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginBottom: "0.5rem", fontStyle: "italic" }}>
+          {copy("exhausted")}
+        </div>
+      )}
+
+      {showPromote && spawn && (
+        <div style={{
+          display: "flex", flexDirection: "column", gap: "0.5rem",
+          padding: "0.6rem", marginBottom: "0.5rem",
+          background: "rgba(52, 211, 153, 0.04)",
+          border: "1px solid rgba(52, 211, 153, 0.2)",
+          borderRadius: "6px",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "#fff" }}>
+              🏅 {copy("heading")}
+            </span>
+            <button
+              type="button"
+              onClick={() => { setShowPromote(false); setPromoteResult(null); }}
+              style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "0.8rem" }}
+            >
+              ×
+            </button>
+          </div>
+
+          <p style={{ fontSize: "0.68rem", color: "var(--text-secondary)", lineHeight: 1.45, margin: 0 }}>
+            {copy("intro")}
+          </p>
+
+          {/* The pre-filled parents — the visible payoff of doing this here
+              instead of re-registering from scratch in the Register tab. */}
+          <div style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>
+            <span style={{ textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.6rem" }}>
+              {copy("parentsLabel")}
+            </span>
+            <div style={{ color: "#fff", marginTop: "2px" }}>
+              Cert. {formatCertSerial(spawn.sireId)} · Cert. {formatCertSerial(spawn.damId)}
+            </div>
+          </div>
+
+          <label style={{ fontSize: "0.68rem", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
+            {copy("countLabel")}
+            <input
+              type="number"
+              min="1"
+              max={promotable}
+              value={promoteCount}
+              onChange={(e) => setPromoteCountSafely(e.target.value)}
+              style={{ width: "64px", padding: "0.3rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.75rem" }}
+            />
+            <span style={{ color: "var(--text-muted)" }}>
+              of {survivors} left
+            </span>
+          </label>
+
+          {promoteKeepers.length > 0 && (
+            <>
+              <div style={{ fontSize: "0.63rem", color: "var(--text-muted)" }}>{copy("sexHint")}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem", maxHeight: "150px", overflowY: "auto" }}>
+                {promoteKeepers.map((keeper, i) => (
+                  <div key={i} style={{ display: "flex", gap: "0.3rem" }}>
+                    <input
+                      type="text"
+                      value={keeper.name}
+                      placeholder={copy("namePlaceholder")}
+                      onChange={(e) => setPromoteKeepers((prev) =>
+                        prev.map((k, j) => (j === i ? { ...k, name: e.target.value } : k))
+                      )}
+                      style={{ flex: 1, padding: "0.3rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.72rem" }}
+                    />
+                    <select
+                      value={keeper.sex}
+                      onChange={(e) => setPromoteKeepers((prev) =>
+                        prev.map((k, j) => (j === i ? { ...k, sex: e.target.value } : k))
+                      )}
+                      style={{ padding: "0.3rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.72rem" }}
+                    >
+                      {SEX_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {sexOptionLabel(option, { casual })}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          <button
+            type="button"
+            onClick={handlePromote}
+            disabled={promoteBusy || promoteKeepers.length === 0}
+            className="btn-primary"
+            style={{ padding: "0.4rem", fontSize: "0.72rem" }}
+          >
+            {promoteBusy ? copy("working") : copy("submit")}
+          </button>
+
+          {promoteResult && !promoteResult.success && (
+            <div style={{ fontSize: "0.68rem", color: "var(--accent-red)" }}>
+              {copy(promoteResult.errorKey)}
+              {promoteResult.available != null && promoteResult.errorKey === "notEnoughAlive" && (
+                <> ({promoteResult.available})</>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* A partial result is reported with both numbers rather than rounded off
+          to "done" — the cohort only moved by the number that actually exists. */}
+      {promoteResult?.success && (
+        <div style={{
+          fontSize: "0.68rem", marginBottom: "0.5rem",
+          color: promoteResult.partial ? "var(--accent-amber)" : "var(--accent-green)",
+        }}>
+          {promoteResult.partial
+            ? `${copy("partial")} ${promoteResult.promoted}/${promoteResult.requested}.`
+            : copy("success")}
+          {promoteResult.specimenIds.length > 0 && (
+            <span style={{ color: "var(--text-muted)" }}>
+              {" "}Cert. {promoteResult.specimenIds.map((id) => formatCertSerial(id)).join(", ")}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Add checkpoint form */}
       {!showAddForm ? (
         <button
@@ -236,7 +504,8 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", padding: "0.5rem", background: "rgba(0,0,0,0.2)", borderRadius: "4px" }}>
           <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
-            {Object.entries(GROWOUT_TYPES).map(([key, { emoji, label }]) => (
+            {/* MANUAL_GROWOUT_TYPES, not GROWOUT_TYPES — see PROGRAMMATIC_TYPES. */}
+            {MANUAL_GROWOUT_TYPES.map(([key, { emoji, label }]) => (
               <button
                 key={key}
                 type="button"
