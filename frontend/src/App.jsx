@@ -26,6 +26,7 @@ import { OnboardingWizard } from "./components/OnboardingWizard";
 import { useOnboardingGate } from "./hooks/useOnboardingGate";
 import { useAuth } from "./contexts/AuthContext";
 import { pullCloudDataForWallet, pushAllLocalDataToCloud } from "./services/cloudSync";
+import { retryPendingMetadataPublishes } from "./services/specimenMetadata";
 import { cleanupGarbledActionLogs } from "./utils/cleanupGarbledLogs";
 import { ZoneLeaderboardWidget } from "./components/ZoneLeaderboardWidget";
 import { RewardCreditsCard } from "./components/RewardCreditsCard";
@@ -175,6 +176,11 @@ export default function App() {
       await cleanupGarbledActionLogs(walletAddr);
       if (signal?.cancelled) return;
       await pushAllLocalDataToCloud(walletAddr);
+      if (signal?.cancelled) return;
+      // Re-publish any certificate metadata document whose upload didn't land.
+      // The URI is already on-chain and the storage path is deterministic, so a
+      // retry writes to exactly the same URL. Non-fatal.
+      await retryPendingMetadataPublishes(walletAddr).catch(() => {});
       if (!signal?.cancelled) {
         queryClient.invalidateQueries({ queryKey: ["tanks", walletAddr] });
         queryClient.invalidateQueries({ queryKey: ["reef", "profile", walletAddr] });
@@ -746,6 +752,10 @@ export default function App() {
             }}
             onSpawningComplete={() => handleTabChange("tanks")}
             initialSection={breederToolsSection}
+            onSwitchToPro={() => {
+              setCasualModeActive(false);
+              localStorage.setItem("aquadex_casual_mode", "false");
+            }}
           />
         );
       case "directory":

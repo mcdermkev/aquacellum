@@ -18,6 +18,13 @@ import { useSpeciesData } from "../hooks/useSpeciesData";
 import { useContractSpecies } from "../hooks/useSpeciesData";
 import { useQueryClient } from "@tanstack/react-query";
 import { relayMoveSpecimen, relayLogWaterParameters, relayMintSpecimen } from "../services/relayer";
+import { archiveSpecimens, retireSpecimens } from "../services/specimenLifecycle";
+import {
+  RETIREMENT_OUTCOMES,
+  SPECIMEN_STATUS,
+  retirementOutcomeLabel,
+} from "../utils/specimenIdentity";
+import { SEX, SEX_OPTIONS, isKnownSex, normalizeSex, sexOptionLabel, sexSymbol } from "../utils/specimenSex";
 import { createCurrent } from "../services/reefApi";
 import { isSupabaseConfigured } from "../services/supabaseClient";
 import { TankCamSetup } from "./tank-cam/TankCamSetup";
@@ -74,10 +81,16 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const [localActionLogs, setLocalActionLogs] = useState([]);
   const [residingSpecies, setResidingSpecies] = useState([]);
   // Themed confirm dialog — replaces window.confirm() for a consistent, on-brand UX
-  const [confirmDialog, setConfirmDialog] = useState(null); // { title, message, confirmLabel, danger, onConfirm }
+  // { title, message, confirmLabel, danger, onConfirm } for a yes/no confirm, or
+  // { title, message, danger, choices: [{ key, label, detail, icon, danger, onSelect }] }
+  // when the caller needs the user to PICK an outcome rather than just assent.
+  // The multi-choice form exists so an action with more than one correct
+  // resolution can't silently pick one — see FryNursery's retire flow, which has
+  // to distinguish "rehomed" from "deceased".
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
-  const requestConfirm = ({ title, message, confirmLabel = "Confirm", danger = false, onConfirm }) => {
-    setConfirmDialog({ title, message, confirmLabel, danger, onConfirm });
+  const requestConfirm = ({ title, message, confirmLabel = "Confirm", danger = false, onConfirm, choices = null }) => {
+    setConfirmDialog({ title, message, confirmLabel, danger, onConfirm, choices });
   };
 
   // Detailed Tank View State (must be declared before fetchLocalActionLogs which references it)
@@ -207,7 +220,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const [addFishSubmitting, setAddFishSubmitting] = useState(false);
   const [addFishError, setAddFishError] = useState(null);
   const [addFishQty, setAddFishQty] = useState(1);
-  const [addFishGender, setAddFishGender] = useState("Not Sure");
+  const [addFishGender, setAddFishGender] = useState(SEX.UNSEXED);
   const { data: contractSpecies = [] } = useContractSpecies(contractAddress);
   const [poseidonChatOpen, setPoseidonChatOpen] = useState(false);
   const [poseidonSeed, setPoseidonSeed] = useState(null); // grounded question seeded from a contextual "Ask Poseidon" tip
@@ -385,7 +398,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   // Pro Mode quick log population states
   const [proPopAction, setProPopAction] = useState("add"); // "add" | "remove"
   const [proPopSpeciesId, setProPopSpeciesId] = useState("");
-  const [proPopGender, setProPopGender] = useState("Not Sure");
+  const [proPopGender, setProPopGender] = useState(SEX.UNSEXED);
   const [proPopQty, setProPopQty] = useState(1);
   const [proPopSubmitting, setProPopSubmitting] = useState(false);
 
@@ -526,7 +539,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     setAddFishSpeciesId("");
     setAddFishSearch("");
     setAddFishQty(1);
-    setAddFishGender("Not Sure");
+    setAddFishGender(SEX.UNSEXED);
     setAddFishError(null);
     setAddFishOpen(true);
   };
@@ -2793,7 +2806,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                                 } else {
                                   setProPopSpeciesId("");
                                 }
-                                setProPopGender("Not Sure");
+                                setProPopGender(SEX.UNSEXED);
                                 setProPopQty(1);
                                 setTimeout(() => inlineDetailRef.current?.focus(), 100);
                                 setQuickActionsOpen(false);
@@ -3872,8 +3885,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
                     Gender
                   </label>
+                  {/* Options come from SEX_OPTIONS so this control writes the
+                      canonical stored value. It used to write the literal
+                      "Not Sure", which no other writer produced and which three
+                      readers then had to special-case alongside "Unsexed". */}
                   <div style={{ display: "flex", background: "rgba(0,0,0,0.2)", border: "1px solid var(--glass-border)", borderRadius: "6px", padding: "2px", height: "42px" }}>
-                    {["Male", "Female", "Not Sure"].map((g) => {
+                    {SEX_OPTIONS.map((option) => {
+                      const g = option.value;
                       const sel = addFishGender === g;
                       return (
                         <button
@@ -3882,10 +3900,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           onClick={() => setAddFishGender(g)}
                           style={{
                             flex: 1,
-                            background: sel ? (g === "Male" ? "rgba(56, 189, 248, 0.18)" : g === "Female" ? "rgba(244, 63, 94, 0.18)" : "rgba(255, 255, 255, 0.1)") : "none",
+                            background: sel ? (g === SEX.MALE ? "rgba(56, 189, 248, 0.18)" : g === SEX.FEMALE ? "rgba(244, 63, 94, 0.18)" : "rgba(255, 255, 255, 0.1)") : "none",
                             border: "none",
                             borderRadius: "4px",
-                            color: sel ? (g === "Male" ? "#38bdf8" : g === "Female" ? "#f43f5e" : "#fff") : "var(--text-secondary)",
+                            color: sel ? (g === SEX.MALE ? "#38bdf8" : g === SEX.FEMALE ? "#f43f5e" : "#fff") : "var(--text-secondary)",
                             fontSize: "0.72rem",
                             fontWeight: "600",
                             cursor: "pointer",
@@ -3896,8 +3914,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             gap: "0.2rem"
                           }}
                         >
-                          <span>{g === "Male" ? "♂" : g === "Female" ? "♀" : "⚪"}</span>
-                          <span>{g}</span>
+                          <span>{option.symbol || "⚪"}</span>
+                          <span>{sexOptionLabel(option, { casual: casualModeActive })}</span>
                         </button>
                       );
                     })}
@@ -4524,46 +4542,108 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             <p style={{ margin: 0, fontSize: "0.82rem", lineHeight: 1.5, color: "var(--text-muted, #94a3b8)" }}>
               {confirmDialog.message}
             </p>
-            <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.25rem" }}>
-              <button
-                type="button"
-                onClick={() => setConfirmDialog(null)}
-                style={{
-                  flex: 1,
-                  padding: "0.55rem 0.8rem",
-                  fontSize: "0.78rem",
-                  fontWeight: 600,
-                  borderRadius: "8px",
-                  border: "1px solid rgba(255, 255, 255, 0.12)",
-                  background: "rgba(255, 255, 255, 0.04)",
-                  color: "#e2e8f0",
-                  cursor: "pointer",
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const action = confirmDialog.onConfirm;
-                  setConfirmDialog(null);
-                  if (action) action();
-                }}
-                style={{
-                  flex: 1,
-                  padding: "0.55rem 0.8rem",
-                  fontSize: "0.78rem",
-                  fontWeight: 600,
-                  borderRadius: "8px",
-                  border: confirmDialog.danger ? "1px solid rgba(248, 113, 113, 0.4)" : "1px solid rgba(56, 189, 248, 0.4)",
-                  background: confirmDialog.danger ? "rgba(248, 113, 113, 0.15)" : "rgba(56, 189, 248, 0.15)",
-                  color: confirmDialog.danger ? "#f87171" : "#38bdf8",
-                  cursor: "pointer",
-                }}
-              >
-                {confirmDialog.confirmLabel}
-              </button>
-            </div>
+            {/* Multi-choice form: the user picks an outcome. Stacked so each
+                option can carry its own explanatory line. */}
+            {confirmDialog.choices?.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem", marginTop: "0.25rem" }}>
+                {confirmDialog.choices.map((choice) => (
+                  <button
+                    key={choice.key || choice.label}
+                    type="button"
+                    onClick={() => {
+                      const action = choice.onSelect;
+                      setConfirmDialog(null);
+                      if (action) action();
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.7rem",
+                      padding: "0.7rem 0.9rem",
+                      fontSize: "0.8rem",
+                      fontWeight: 600,
+                      borderRadius: "10px",
+                      border: choice.danger
+                        ? "1px solid rgba(248, 113, 113, 0.35)"
+                        : "1px solid rgba(56, 189, 248, 0.3)",
+                      background: choice.danger
+                        ? "rgba(248, 113, 113, 0.08)"
+                        : "rgba(56, 189, 248, 0.08)",
+                      color: "#fff",
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    {choice.icon && <span style={{ fontSize: "1.1rem" }}>{choice.icon}</span>}
+                    <span>
+                      <span style={{ display: "block" }}>{choice.label}</span>
+                      {choice.detail && (
+                        <span style={{ display: "block", fontSize: "0.68rem", fontWeight: 400, color: "var(--text-muted, #94a3b8)" }}>
+                          {choice.detail}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setConfirmDialog(null)}
+                  style={{
+                    padding: "0.55rem 0.8rem",
+                    fontSize: "0.78rem",
+                    fontWeight: 600,
+                    borderRadius: "8px",
+                    border: "1px solid rgba(255, 255, 255, 0.12)",
+                    background: "rgba(255, 255, 255, 0.04)",
+                    color: "#e2e8f0",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.25rem" }}>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDialog(null)}
+                  style={{
+                    flex: 1,
+                    padding: "0.55rem 0.8rem",
+                    fontSize: "0.78rem",
+                    fontWeight: 600,
+                    borderRadius: "8px",
+                    border: "1px solid rgba(255, 255, 255, 0.12)",
+                    background: "rgba(255, 255, 255, 0.04)",
+                    color: "#e2e8f0",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const action = confirmDialog.onConfirm;
+                    setConfirmDialog(null);
+                    if (action) action();
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: "0.55rem 0.8rem",
+                    fontSize: "0.78rem",
+                    fontWeight: 600,
+                    borderRadius: "8px",
+                    border: confirmDialog.danger ? "1px solid rgba(248, 113, 113, 0.4)" : "1px solid rgba(56, 189, 248, 0.4)",
+                    background: confirmDialog.danger ? "rgba(248, 113, 113, 0.15)" : "rgba(56, 189, 248, 0.15)",
+                    color: confirmDialog.danger ? "#f87171" : "#38bdf8",
+                    cursor: "pointer",
+                  }}
+                >
+                  {confirmDialog.confirmLabel}
+                </button>
+              </div>
+            )}
           </div>
           <style>{`
             @keyframes modalPopIn {
@@ -4647,17 +4727,20 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       >
                         <span style={{ color: "#fff", fontWeight: "500", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
                           🐠 {spec.commonName}
-                          {spec.gender && spec.gender !== "Not Sure" && (
+                          {/* isKnownSex, not `!== "Not Sure"`: that older check let a
+                              fish stored as "Unsexed" through and then fell to the
+                              female branch, so unsexed fish rendered as ♀. */}
+                          {isKnownSex(spec.gender) && (
                             <span style={{
                               fontSize: "0.6rem",
                               padding: "0.02rem 0.25rem",
                               borderRadius: "4px",
-                              background: spec.gender === "Male" ? "rgba(56, 189, 248, 0.15)" : "rgba(244, 63, 94, 0.15)",
-                              color: spec.gender === "Male" ? "#38bdf8" : "#f43f5e",
-                              border: spec.gender === "Male" ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid rgba(244, 63, 94, 0.25)",
+                              background: normalizeSex(spec.gender) === SEX.MALE ? "rgba(56, 189, 248, 0.15)" : "rgba(244, 63, 94, 0.15)",
+                              color: normalizeSex(spec.gender) === SEX.MALE ? "#38bdf8" : "#f43f5e",
+                              border: normalizeSex(spec.gender) === SEX.MALE ? "1px solid rgba(56, 189, 248, 0.25)" : "1px solid rgba(244, 63, 94, 0.25)",
                               fontWeight: "600",
                             }}>
-                              {spec.gender === "Male" ? "♂" : "♀"}
+                              {sexSymbol(spec.gender)}
                             </span>
                           )}
                         </span>
@@ -4808,26 +4891,29 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             Gender
                           </label>
                           <div style={{ display: "flex", background: "rgba(0,0,0,0.2)", border: "1px solid var(--glass-border)", borderRadius: "6px", padding: "2px", height: "36px" }}>
-                            {["Male", "Female", "Not Sure"].map((g) => {
+                            {SEX_OPTIONS.map((option) => {
+                              const g = option.value;
                               const sel = proPopGender === g;
                               return (
                                 <button
                                   type="button"
                                   key={g}
                                   onClick={() => setProPopGender(g)}
+                                  title={sexOptionLabel(option, { casual: casualModeActive })}
+                                  aria-label={sexOptionLabel(option, { casual: casualModeActive })}
                                   style={{
                                     flex: 1,
-                                    background: sel ? (g === "Male" ? "rgba(56, 189, 248, 0.18)" : g === "Female" ? "rgba(244, 63, 94, 0.18)" : "rgba(255, 255, 255, 0.1)") : "none",
+                                    background: sel ? (g === SEX.MALE ? "rgba(56, 189, 248, 0.18)" : g === SEX.FEMALE ? "rgba(244, 63, 94, 0.18)" : "rgba(255, 255, 255, 0.1)") : "none",
                                     border: "none",
                                     borderRadius: "4px",
-                                    color: sel ? (g === "Male" ? "#38bdf8" : g === "Female" ? "#f43f5e" : "#fff") : "var(--text-secondary)",
+                                    color: sel ? (g === SEX.MALE ? "#38bdf8" : g === SEX.FEMALE ? "#f43f5e" : "#fff") : "var(--text-secondary)",
                                     fontSize: "0.68rem",
                                     fontWeight: "600",
                                     cursor: "pointer",
                                     transition: "all 0.2s ease"
                                   }}
                                 >
-                                  {g === "Male" ? "♂" : g === "Female" ? "♀" : "⚪"}
+                                  {option.symbol || "⚪"}
                                 </button>
                               );
                             })}
@@ -4869,16 +4955,17 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             <span style={{ color: "#fff", fontWeight: "500", display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
                               🐠 {spec.commonName}
                               <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>#{spec.id}</span>
-                              {spec.gender && spec.gender !== "Not Sure" && (
+                              {/* Same fix as above: unsexed fish used to render ♀. */}
+                              {isKnownSex(spec.gender) && (
                                 <span style={{
                                   fontSize: "0.55rem",
                                   padding: "0 0.15rem",
                                   borderRadius: "3px",
-                                  background: spec.gender === "Male" ? "rgba(56, 189, 248, 0.12)" : "rgba(244, 63, 94, 0.12)",
-                                  color: spec.gender === "Male" ? "#38bdf8" : "#f43f5e",
-                                  border: spec.gender === "Male" ? "1px solid rgba(56, 189, 248, 0.2)" : "1px solid rgba(244, 63, 94, 0.2)"
+                                  background: normalizeSex(spec.gender) === SEX.MALE ? "rgba(56, 189, 248, 0.12)" : "rgba(244, 63, 94, 0.12)",
+                                  color: normalizeSex(spec.gender) === SEX.MALE ? "#38bdf8" : "#f43f5e",
+                                  border: normalizeSex(spec.gender) === SEX.MALE ? "1px solid rgba(56, 189, 248, 0.2)" : "1px solid rgba(244, 63, 94, 0.2)"
                                 }}>
-                                  {spec.gender === "Male" ? "♂" : "♀"}
+                                  {sexSymbol(spec.gender)}
                                 </span>
                               )}
                             </span>
@@ -4981,129 +5068,103 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               <h3 style={{ color: "#fff", fontSize: "1.2rem", margin: "0 0 0.25rem 0" }}>Say Farewell to {farewellSpecimen.commonName}</h3>
               <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", margin: 0 }}>
                 Choose how you would like to record the departure of this fish.
+                Its birth certificate is kept either way.
               </p>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "0.5rem" }}>
-              {/* Option 1: Rehomed */}
-              <button
-                type="button"
-                onClick={async () => {
-                  const spec = farewellSpecimen;
-                  await db.specimens.update(spec.id, { status: 2 });
-                  const updatedSpecimens = (activeTank.specimens || []).filter(s => s.id !== spec.id);
-                  await db.tanks.update(activeTank.id, { specimens: updatedSpecimens });
-                  setMockPopulationCounts(prev => ({
-                    ...prev,
-                    [activeTank.id]: updatedSpecimens.length
-                  }));
-                  showToast(`Rehomed ${spec.commonName} successfully.`);
-                  await fetchDashboardData();
-                  const fresh = await refetchTanks();
-                  const updated = fresh.data?.find(t => t.id === activeTank.id);
-                  if (updated) {
-                    setActiveTank(updated);
-                  }
-                  setFarewellSpecimen(null);
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                  gap: "0.75rem",
-                  padding: "0.85rem 1rem",
-                  background: "rgba(59, 130, 246, 0.06)",
-                  border: "1px solid rgba(59, 130, 246, 0.25)",
-                  borderRadius: "10px",
-                  color: "#fff",
-                  cursor: "pointer",
-                  fontSize: "0.85rem",
-                  fontWeight: "600",
-                  textAlign: "left",
-                  transition: "all 0.2s"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(59, 130, 246, 0.15)";
-                  e.currentTarget.style.borderColor = "rgba(59, 130, 246, 0.45)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(59, 130, 246, 0.06)";
-                  e.currentTarget.style.borderColor = "rgba(59, 130, 246, 0.25)";
-                }}
-              >
-                <span style={{ fontSize: "1.2rem" }}>🏠</span>
-                <div>
-                  <span style={{ display: "block" }}>Rehomed / Sold</span>
-                  <span style={{ display: "block", fontSize: "0.68rem", fontWeight: "normal", color: "var(--text-muted)" }}>Fish has been moved to a new home.</span>
-                </div>
-              </button>
+              {/* The two real outcomes come from RETIREMENT_OUTCOMES so this
+                  modal and FryNursery's retire flow can't drift apart on either
+                  the status value or the copy. See
+                  docs/BREEDER_STATE_MODEL.md §4. */}
+              {RETIREMENT_OUTCOMES.map((outcome) => {
+                const isDeceased = outcome.status === SPECIMEN_STATUS.DECEASED;
+                const rgb = isDeceased ? "239, 68, 68" : "59, 130, 246";
+                return (
+                  <button
+                    key={outcome.key}
+                    type="button"
+                    onClick={async () => {
+                      const spec = farewellSpecimen;
+                      // Single lifecycle writer: validates the status, detaches
+                      // from the tank, and mirrors to the cloud.
+                      await retireSpecimens(spec.id, outcome.status);
+                      const updatedSpecimens = (activeTank.specimens || []).filter(s => s.id !== spec.id);
+                      setMockPopulationCounts(prev => ({
+                        ...prev,
+                        [activeTank.id]: updatedSpecimens.length
+                      }));
+                      showToast(
+                        isDeceased
+                          ? `Recorded memorial for ${spec.commonName}. 🕊️`
+                          : `Rehomed ${spec.commonName} successfully.`
+                      );
+                      await fetchDashboardData();
+                      const fresh = await refetchTanks();
+                      const updated = fresh.data?.find(t => t.id === activeTank.id);
+                      if (updated) {
+                        setActiveTank(updated);
+                      }
+                      setFarewellSpecimen(null);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "flex-start",
+                      gap: "0.75rem",
+                      padding: "0.85rem 1rem",
+                      background: `rgba(${rgb}, 0.06)`,
+                      border: `1px solid rgba(${rgb}, 0.25)`,
+                      borderRadius: "10px",
+                      color: "#fff",
+                      cursor: "pointer",
+                      fontSize: "0.85rem",
+                      fontWeight: "600",
+                      textAlign: "left",
+                      transition: "all 0.2s"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = `rgba(${rgb}, 0.15)`;
+                      e.currentTarget.style.borderColor = `rgba(${rgb}, 0.45)`;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = `rgba(${rgb}, 0.06)`;
+                      e.currentTarget.style.borderColor = `rgba(${rgb}, 0.25)`;
+                    }}
+                  >
+                    <span style={{ fontSize: "1.2rem" }}>{outcome.icon}</span>
+                    <div>
+                      <span style={{ display: "block" }}>
+                        {retirementOutcomeLabel(outcome, { casual: casualModeActive })}
+                      </span>
+                      <span style={{ display: "block", fontSize: "0.68rem", fontWeight: "normal", color: "var(--text-muted)" }}>
+                        {outcome.detail}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
 
-              {/* Option 2: Deceased */}
+              {/* Option 3: Just remove it from view.
+                  This used to be "Released / Other — Completely delete from local
+                  registry", implemented as `db.specimens.delete`. That destroyed a
+                  birth certificate, orphaning the sire/dam reference of every
+                  descendant, and it didn't even hold: pullCloudDataForWallet
+                  re-inserts any cloud row the device is missing, so the record
+                  came back on next login. A certificate is never destroyed (see
+                  services/specimenLifecycle.js) — this archives it instead, which
+                  is what "remove from my tank" actually means. */}
               <button
                 type="button"
                 onClick={async () => {
                   const spec = farewellSpecimen;
-                  await db.specimens.update(spec.id, { status: 1 });
+                  await archiveSpecimens(spec.id);
                   const updatedSpecimens = (activeTank.specimens || []).filter(s => s.id !== spec.id);
-                  await db.tanks.update(activeTank.id, { specimens: updatedSpecimens });
                   setMockPopulationCounts(prev => ({
                     ...prev,
                     [activeTank.id]: updatedSpecimens.length
                   }));
-                  showToast(`Recorded memorial for ${spec.commonName}. 🕊️`);
-                  await fetchDashboardData();
-                  const fresh = await refetchTanks();
-                  const updated = fresh.data?.find(t => t.id === activeTank.id);
-                  if (updated) {
-                    setActiveTank(updated);
-                  }
-                  setFarewellSpecimen(null);
-                }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                  gap: "0.75rem",
-                  padding: "0.85rem 1rem",
-                  background: "rgba(239, 68, 68, 0.06)",
-                  border: "1px solid rgba(239, 68, 68, 0.25)",
-                  borderRadius: "10px",
-                  color: "#fff",
-                  cursor: "pointer",
-                  fontSize: "0.85rem",
-                  fontWeight: "600",
-                  textAlign: "left",
-                  transition: "all 0.2s"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(239, 68, 68, 0.15)";
-                  e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.45)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(239, 68, 68, 0.06)";
-                  e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.25)";
-                }}
-              >
-                <span style={{ fontSize: "1.2rem" }}>🕊️</span>
-                <div>
-                  <span style={{ display: "block" }}>Passed Away</span>
-                  <span style={{ display: "block", fontSize: "0.68rem", fontWeight: "normal", color: "var(--text-muted)" }}>Record as deceased to preserve history.</span>
-                </div>
-              </button>
-
-              {/* Option 3: Released / Other */}
-              <button
-                type="button"
-                onClick={async () => {
-                  const spec = farewellSpecimen;
-                  await db.specimens.delete(spec.id);
-                  const updatedSpecimens = (activeTank.specimens || []).filter(s => s.id !== spec.id);
-                  await db.tanks.update(activeTank.id, { specimens: updatedSpecimens });
-                  setMockPopulationCounts(prev => ({
-                    ...prev,
-                    [activeTank.id]: updatedSpecimens.length
-                  }));
-                  showToast(`Removed ${spec.commonName} from the tank.`);
+                  showToast(`Removed ${spec.commonName} from the tank. Its certificate is kept.`);
                   await fetchDashboardData();
                   const fresh = await refetchTanks();
                   const updated = fresh.data?.find(t => t.id === activeTank.id);
@@ -5137,10 +5198,14 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.12)";
                 }}
               >
-                <span style={{ fontSize: "1.2rem" }}>🌊</span>
+                <span style={{ fontSize: "1.2rem" }}>📦</span>
                 <div>
-                  <span style={{ display: "block" }}>Released / Other</span>
-                  <span style={{ display: "block", fontSize: "0.68rem", fontWeight: "normal", color: "var(--text-muted)" }}>Completely delete from local registry.</span>
+                  <span style={{ display: "block" }}>
+                    {casualModeActive ? "Just remove from this tank" : "Remove from view"}
+                  </span>
+                  <span style={{ display: "block", fontSize: "0.68rem", fontWeight: "normal", color: "var(--text-muted)" }}>
+                    Hides it without recording an outcome. The birth certificate and its lineage are kept.
+                  </span>
                 </div>
               </button>
             </div>

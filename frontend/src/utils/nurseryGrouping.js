@@ -5,6 +5,8 @@
  * in the relayer / ethers (which need a browser `window`).
  */
 
+import { normalizeSex } from "./specimenSex";
+
 /** Group unassigned specimens by species with counts + gender breakdown. */
 export function groupNurseryFish(fish) {
   const map = new Map();
@@ -22,8 +24,9 @@ export function groupNurseryFish(fish) {
     }
     const g = map.get(key);
     g.fish.push(f);
-    const gender = f.gender === "Male" ? "Male" : f.gender === "Female" ? "Female" : "Unsexed";
-    g.genders[gender] += 1;
+    // normalizeSex folds the legacy "Not Sure" value and any missing/unknown
+    // input into "Unsexed", so this no longer needs its own inline mapping.
+    g.genders[normalizeSex(f.gender)] += 1;
   }
   return [...map.values()]
     .map((g) => ({ ...g, count: g.fish.length }))

@@ -120,11 +120,13 @@ export function FoundersDashboard({ casualModeActive }) {
 
       {/* KPI Strip */}
       <div style={styles.kpiStrip}>
+        {/* No `trend` on these cards. The two that had one carried a hardcoded
+            "+18%" / "+15%" that was never computed from anything — a fabricated
+            growth figure on a founders dashboard. Removed rather than faked; a
+            real trend needs a prior-period comparison that isn't queried yet. */}
         <KPICard
           label="Total Users"
           value={formatNumber(kpis.totalUsers)}
-          trend="+18%"
-          trendUp={true}
           icon="👥"
         />
         <KPICard
@@ -147,13 +149,12 @@ export function FoundersDashboard({ casualModeActive }) {
         <KPICard
           label="Marketplace GMV"
           value={formatCurrency(kpis.marketplaceGMV)}
-          trend="+15%"
-          trendUp={true}
+          subtitle="settled orders"
           icon="🏪"
         />
         <KPICard
           label="Live Activity"
-          value={kpis.liveActivity.toString()}
+          value={formatNumber(kpis.liveActivity)}
           subtitle="cams + tides"
           icon="🔴"
         />
@@ -168,6 +169,9 @@ export function FoundersDashboard({ casualModeActive }) {
             <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
           </div>
           <div style={styles.chartBody}>
+            {!charts.userGrowth ? (
+              <NoDataPanel detail="Couldn't read sign-up history. Previously this drew a random walk." />
+            ) : (
             <ResponsiveContainer width="100%" height={240}>
               <AreaChart data={charts.userGrowth} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
@@ -194,6 +198,7 @@ export function FoundersDashboard({ casualModeActive }) {
                 />
               </AreaChart>
             </ResponsiveContainer>
+            )}
           </div>
         </div>
 
@@ -204,6 +209,11 @@ export function FoundersDashboard({ casualModeActive }) {
             <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
           </div>
           <div style={styles.chartBody}>
+            {!charts.protocolActivity ? (
+              <NoDataPanel detail="Couldn't read registration, spawn, or order history. Previously this drew random bars." />
+            ) : charts.protocolActivity.length === 0 ? (
+              <NoDataPanel label="No activity in this window" detail="This is a real reading, not a missing one." />
+            ) : (
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={charts.protocolActivity} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -223,6 +233,7 @@ export function FoundersDashboard({ casualModeActive }) {
                 <Bar dataKey="userOps" fill={CHART_COLORS.purple} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>
@@ -240,43 +251,55 @@ export function FoundersDashboard({ casualModeActive }) {
           </div>
         </div>
 
-        {/* AI Poseidon Queries */}
+        {/* AI Poseidon Queries.
+            `poseidon` is null when the metric has no source — there is no
+            `poseidon_queries` table and api/ai.js doesn't log intents. It used to
+            render a hardcoded 42/67/23/31 breakdown, so this panel showed a
+            convincing pie chart of numbers that were typed into the source code.
+            Now it says so. */}
         <div className="glass-card" style={styles.bottomCard}>
           <h3 style={styles.chartTitle}>AI Poseidon Queries</h3>
-          <div style={styles.poseidonContainer}>
-            <ResponsiveContainer width="100%" height={160}>
-              <PieChart>
-                <Pie
-                  data={[
-                    { name: "Identify", value: poseidon.identify },
-                    { name: "Husbandry", value: poseidon.husbandry },
-                    { name: "Diet", value: poseidon.diet },
-                    { name: "General", value: poseidon.general },
-                  ]}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={40}
-                  outerRadius={65}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  <Cell fill={CHART_COLORS.blue} />
-                  <Cell fill={CHART_COLORS.green} />
-                  <Cell fill={CHART_COLORS.amber} />
-                  <Cell fill={CHART_COLORS.purple} />
-                </Pie>
-                <Tooltip />
-                <Legend
-                  wrapperStyle={{ fontSize: "11px" }}
-                  iconType="circle"
-                  iconSize={8}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <p style={styles.poseidonTotal}>
-              {formatNumber(poseidon.total)} total queries
-            </p>
-          </div>
+          {poseidon ? (
+            <div style={styles.poseidonContainer}>
+              <ResponsiveContainer width="100%" height={160}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: "Identify", value: poseidon.identify },
+                      { name: "Husbandry", value: poseidon.husbandry },
+                      { name: "Diet", value: poseidon.diet },
+                      { name: "General", value: poseidon.general },
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={65}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    <Cell fill={CHART_COLORS.blue} />
+                    <Cell fill={CHART_COLORS.green} />
+                    <Cell fill={CHART_COLORS.amber} />
+                    <Cell fill={CHART_COLORS.purple} />
+                  </Pie>
+                  <Tooltip />
+                  <Legend
+                    wrapperStyle={{ fontSize: "11px" }}
+                    iconType="circle"
+                    iconSize={8}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <p style={styles.poseidonTotal}>
+                {formatNumber(poseidon.total)} total queries
+              </p>
+            </div>
+          ) : (
+            <NoDataPanel
+              height={190}
+              detail="Query intents aren't being recorded yet, so there's nothing to break down."
+            />
+          )}
         </div>
 
         {/* Operational Health */}
@@ -394,6 +417,40 @@ function CustomTooltip({ active, payload, label }) {
 // FORMATTERS
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Shown where a metric has no readable source.
+ *
+ * Exists so the dashboard can say "we don't know" — which the previous version
+ * could not do. Every gap was filled with a zero or a random number, so an
+ * unreadable table and a genuinely quiet week looked identical. See §9.22.
+ */
+function NoDataPanel({ height = 240, label = "No data", detail }) {
+  return (
+    <div
+      style={{
+        height,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "0.35rem",
+        textAlign: "center",
+        padding: "0 1.25rem",
+      }}
+    >
+      <span style={{ fontSize: "1.4rem", opacity: 0.5 }}>—</span>
+      <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-secondary)" }}>
+        {label}
+      </span>
+      {detail && (
+        <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", lineHeight: 1.5, maxWidth: "260px" }}>
+          {detail}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function formatNumber(n) {
   if (n === null || n === undefined) return "—";
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -402,7 +459,9 @@ function formatNumber(n) {
 }
 
 function formatCurrency(n) {
-  if (n === null || n === undefined) return "$0";
+  // "—", not "$0". A figure we couldn't read must not render as a figure of zero
+  // — on a revenue KPI those mean opposite things. See §9.22.
+  if (n === null || n === undefined) return "—";
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}k`;
   return `$${n.toFixed(2)}`;

@@ -23,6 +23,13 @@ import { db } from "../db";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { syncTankToCloud, syncSpecimenToCloud, syncListingToCloud, deactivateListingInCloud, syncSpawnToCloud } from "./cloudSync";
 import { trackEvent } from "./analytics";
+import { SERIAL_CEILING } from "../utils/specimenIdentity";
+import {
+  METADATA_STATUS,
+  normalizeMetadataUri,
+  publicMetadataUri,
+  publishSpecimenMetadata,
+} from "./specimenMetadata";
 import {
   submitUserOperation,
   buildRegisterTankCall,
@@ -260,21 +267,53 @@ export async function relayMintSpecimen({
   scientificName = "",
   gender = "Unsexed",
   breederStockTag = "",
+  /**
+   * Optional metadata document to publish for this certificate. When supplied
+   * (and no explicit `ipfsMetadataUri` is given), its deterministic hosted URL
+   * becomes the on-chain tokenURI and the upload happens fire-and-forget.
+   */
+  metadataDocument = null,
 } = {}) {
   try {
     // Sequential serial number (beta local-first). Human-friendly serials like
     // 1, 2, 3… so sire/dam references and the lineage lookup actually resolve,
-    // and the `.padStart(3, "0")` displays render as 001, 002, etc.
+    // and the display convention renders them as 001, 002, etc. — see
+    // utils/specimenIdentity.js `formatCertSerial`, which owns that formatting
+    // and the SERIAL_CEILING constant imported above.
     // Legacy records may carry Date.now() timestamp IDs (~1.7e12); we ignore any
     // ID at or above SERIAL_CEILING when computing the next serial so new
     // specimens still get clean, low numbers and never collide with old data.
-    const SERIAL_CEILING = 1_000_000_000;
     const existing = await db.specimens.toArray();
     const maxSerial = existing.reduce((max, s) => {
       const n = Number(s.id);
       return Number.isFinite(n) && n < SERIAL_CEILING && n > max ? n : max;
     }, 0);
     const specimenId = maxSerial + 1;
+
+    // ── Resolve the certificate's metadata URI ────────────────────────────────
+    // This is the one value that becomes the ERC-721 `tokenURI`, so it is
+    // resolved here — the only place that knows the assigned serial — and it is
+    // never fabricated (see services/specimenMetadata.js for what used to happen).
+    //
+    // Precedence:
+    //   1. A breeder-supplied URI wins, after validation. We don't host it.
+    //   2. Otherwise, if there's a document to publish and storage is available,
+    //      use its deterministic public URL. Safe to commit before the upload
+    //      because the path is derived, not discovered.
+    //   3. Otherwise empty — an honest "no document published".
+    const suppliedUri = normalizeMetadataUri(ipfsMetadataUri);
+    let resolvedMetadataUri = suppliedUri;
+    let metadataStatus = METADATA_STATUS.NONE;
+
+    if (suppliedUri) {
+      metadataStatus = METADATA_STATUS.EXTERNAL;
+    } else if (metadataDocument) {
+      const hostedUri = publicMetadataUri(ownerAddress, specimenId);
+      if (hostedUri) {
+        resolvedMetadataUri = hostedUri;
+        metadataStatus = METADATA_STATUS.PENDING;
+      }
+    }
 
     const specimen = {
       id: specimenId,
@@ -284,7 +323,6 @@ export async function relayMintSpecimen({
       currentTankId: Number(currentTankId),
       sireId: Number(sireId),
       damId: Number(damId),
-      ipfsMetadataUri,
       ownerAddress: normalizeAddress(ownerAddress),
       commonName,
       scientificName,
@@ -298,10 +336,27 @@ export async function relayMintSpecimen({
       onChainId: null,
       chainStatus: "pending", // an on-chain mint is always enqueued below
       txHash: null,
+      // Metadata document lifecycle (see services/specimenMetadata.js).
+      ipfsMetadataUri: resolvedMetadataUri,
+      metadataStatus,
     };
 
     // Store in standalone specimens table
     await db.specimens.put(specimen);
+
+    // Publish the metadata document to its (already-committed) URL.
+    // Fire-and-forget by design: the URL is deterministic, so it was safe to put
+    // on-chain before the upload — which keeps certificate creation local-first
+    // and non-blocking. A failure is recorded and retried by
+    // retryPendingMetadataPublishes on the next sync.
+    if (metadataStatus === METADATA_STATUS.PENDING) {
+      publishSpecimenMetadata({ ownerAddress, specimenId, document: metadataDocument })
+        .then((res) => db.specimens.update(specimenId, {
+          metadataStatus: res.success ? METADATA_STATUS.PUBLISHED : METADATA_STATUS.FAILED,
+        }))
+        .catch(() => db.specimens.update(specimenId, { metadataStatus: METADATA_STATUS.FAILED }))
+        .catch(() => {});
+    }
 
     // Fire-and-forget cloud sync (non-blocking)
     syncSpecimenToCloud(specimen).catch(() => {});
@@ -317,7 +372,10 @@ export async function relayMintSpecimen({
         currentTankId: Number(currentTankId),
         sireId: Number(sireId),
         damId: Number(damId),
-        ipfsMetadataUri: ipfsMetadataUri || ""
+        // This becomes the certificate's ERC-721 tokenURI verbatim. It is either
+        // empty, a breeder-supplied validated URI, or the deterministic URL the
+        // document is being published to right now — never a fabricated value.
+        ipfsMetadataUri: resolvedMetadataUri
       }),
       `mintSpecimen(species:${speciesId})`,
       { type: "mintSpecimen", localId: specimenId }
@@ -1189,6 +1247,8 @@ export async function relaySpawn({
         sireId,
         damId,
         ipfsMetadataUri,
+        // Each offspring gets its own hosted document at its own serial's URL.
+        metadataDocument: metadata,
         ownerAddress,
         commonName,
         scientificName,

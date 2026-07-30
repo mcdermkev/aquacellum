@@ -113,14 +113,19 @@ async function getSpawnAgeDays(spawnId) {
  */
 async function storeNarration(spawnId, triggerType, narrationText) {
   try {
-    await db.spawnGrowout.add({
+    const checkpoint = {
       spawnId,
       timestamp: Math.round(Date.now() / 1000),
       type: 'narration',
       count: 0,
       note: narrationText,
       meta: { source: 'poseidon', trigger: triggerType }
-    });
+    };
+    await db.spawnGrowout.add(checkpoint);
+    // Narration is part of the spawn's history, so it rides the same cloud
+    // mirror as the checkpoints it comments on (fire-and-forget).
+    const { syncGrowoutCheckpointToCloud } = await import('../services/cloudSync');
+    syncGrowoutCheckpointToCloud(checkpoint).catch(() => {});
   } catch (err) {
     console.warn('[Spawn Narration] Failed to store:', err);
   }

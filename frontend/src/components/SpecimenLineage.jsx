@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import { ethers, Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { getProvider } from "../utils/smartAccount";
-import { db } from "../db";
 import { PedigreeTree } from "./PedigreeTree";
+import { fetchPedigreeTree, PEDIGREE_DEPTH } from "../services/pedigree";
+import { formatCertSerial } from "../utils/specimenIdentity";
 import { downloadPedigreeCertificate, printPedigreeCertificate } from "../utils/pedigreeExport";
 import { loadOwnedSpecimens, specimenOptionLabel } from "../utils/ownedSpecimens";
 
@@ -14,94 +15,6 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [specimenOptions, setSpecimenOptions] = useState([]);
-
-  const fetchSpecimenNode = useCallback(async (contract, id) => {
-    if (!id || Number(id) === 0) return null;
-
-    // 1. Try local Dexie FIRST, keyed by local serial number.
-    // IMPORTANT: `id` here is always a local serial (typed by the breeder,
-    // selected from the picker, or read from a sire/dam reference on another
-    // local record) — never a raw ERC-721 token id. The contract assigns
-    // token ids from a global `++totalSpecimensMinted` counter that has no
-    // relationship to the local serial, so calling `contract.specimens(id)`
-    // directly with the serial can silently return a completely different
-    // specimen whose token id happens to match. Local Dexie is the
-    // source of truth for serial → specimen resolution in this local-first
-    // app; the contract is only consulted as a last resort below.
-    try {
-      let local = await db.specimens.get(Number(id));
-      if (!local) {
-        local = await db.specimens.get(id.toString());
-      }
-      if (!local) {
-        local = await db.specimens.filter(s => Number(s.id) === Number(id) || Number(s.specimenId) === Number(id)).first();
-      }
-      if (local) {
-        return {
-          id: Number(local.id || local.specimenId),
-          speciesId: local.speciesId,
-          speciesName: local.commonName || `Species ID ${local.speciesId}`,
-          scientificName: local.scientificName || "",
-          birthTimestamp: local.birthTimestamp || local.createdAt || 0,
-          breeder: local.breeder || "Local Breeder",
-          sireId: Number(local.sireId || 0),
-          damId: Number(local.damId || 0),
-          ipfsMetadataUri: local.ipfsMetadataUri || "",
-          status: local.status ?? 0,
-          breederStockTag: local.breederStockTag || "",
-          // On-chain reconciliation state. Traversal still follows local sire/dam
-          // refs (the authoritative on-chain parent refs only exist after the full
-          // on-chain cutover), but the node now carries its confirmed token id and
-          // sync status so the UI can surface it. Prefer onChainId when displaying.
-          onChainId: local.onChainId ?? null,
-          chainStatus: local.chainStatus || "local"
-        };
-      }
-    } catch (localErr) {
-      console.warn(`Local Dexie lookup failed for specimen ID ${id}:`, localErr);
-    }
-
-    // 2. No local record for this serial — it may be a raw on-chain token id
-    // for a specimen that isn't mirrored in this browser's local database
-    // (e.g. a cross-account lookup). Fall back to querying the contract
-    // directly using it as a token id.
-    try {
-      const data = await contract.specimens(id);
-      if (Number(data.specimenId) !== 0) {
-        // Fetch species name
-        const speciesId = Number(data.speciesId);
-        let speciesInfo = null;
-        try {
-          speciesInfo = await contract.speciesCatalog(speciesId);
-        } catch (err) {
-          console.warn("Failed fetching species catalog entry:", err);
-        }
-
-        return {
-          id: Number(data.specimenId),
-          speciesId,
-          speciesName: speciesInfo ? `${speciesInfo.commonName}` : `Species ID ${speciesId}`,
-          scientificName: speciesInfo ? speciesInfo.scientificName : "",
-          birthTimestamp: Number(data.birthTimestamp),
-          breeder: data.breeder,
-          sireId: Number(data.sireId),
-          damId: Number(data.damId),
-          ipfsMetadataUri: data.ipfsMetadataUri,
-          status: Number(data.status),
-          breederStockTag: "",
-          // A contract-read specimen is on-chain by definition, so its id IS the
-          // authoritative token id.
-          onChainId: Number(data.specimenId),
-          chainStatus: "synced"
-        };
-      }
-    } catch (e) {
-      console.warn(`Contract read failed for specimen node ID ${id}:`, e);
-    }
-
-    return null;
-  }, []);
-
 
   const fetchLineage = useCallback(async (targetId) => {
     if (!targetId || isNaN(targetId)) return;
@@ -114,41 +27,25 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
       const provider = getProvider();
       const contract = new Contract(contractAddress, aquadexAbi, provider);
 
-      // Target Specimen (Gen 0)
-      const targetNode = await fetchSpecimenNode(contract, Number(targetId));
-      if (!targetNode) {
-        setError(`Birth Certificate Serial No. ${targetId.toString().padStart(3, "0")} was not found in the secure registry.`);
+      // Ancestor resolution lives in services/pedigree.js — the same resolver
+      // COICalculator uses, so a family tree and an inbreeding coefficient can
+      // never be computed from different ancestry (they used to be: the COI copy
+      // asked the contract before Dexie). See BREEDER_STATE_MODEL §3.
+      const resolved = await fetchPedigreeTree(contract, Number(targetId));
+      if (!resolved) {
+        setError(`Birth Certificate Serial No. ${formatCertSerial(targetId)} was not found in the secure registry.`);
         setLoading(false);
         return;
       }
 
-      // Parents (Gen 1)
-      const sireNode = targetNode.sireId ? await fetchSpecimenNode(contract, targetNode.sireId) : null;
-      const damNode = targetNode.damId ? await fetchSpecimenNode(contract, targetNode.damId) : null;
-
-      // Grandparents (Gen 2)
-      const sireSireNode = sireNode && sireNode.sireId ? await fetchSpecimenNode(contract, sireNode.sireId) : null;
-      const sireDamNode = sireNode && sireNode.damId ? await fetchSpecimenNode(contract, sireNode.damId) : null;
-      const damSireNode = damNode && damNode.sireId ? await fetchSpecimenNode(contract, damNode.sireId) : null;
-      const damDamNode = damNode && damNode.damId ? await fetchSpecimenNode(contract, damNode.damId) : null;
-
-      setTree({
-        target: targetNode,
-        parents: { sire: sireNode, dam: damNode },
-        grandparents: {
-          sireSire: sireSireNode,
-          sireDam: sireDamNode,
-          damSire: damSireNode,
-          damDam: damDamNode
-        }
-      });
+      setTree(resolved);
     } catch (err) {
       console.error("Error reading pedigree tree:", err);
       setError("Failed to query registry. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
-  }, [contractAddress, fetchSpecimenNode]);
+  }, [contractAddress]);
 
   useEffect(() => {
     if (preselectedTokenId) {
@@ -238,7 +135,7 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
         <div className="glass-card" style={{ padding: "2rem", overflow: "hidden" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
             <h3 style={{ fontSize: "1.25rem", color: "var(--text-secondary)", margin: 0 }}>
-              Ancestry Family Tree for Cert. Serial No. {tree.target.id.toString().padStart(3, "0")} ({tree.target.speciesName})
+              Ancestry Family Tree for Cert. Serial No. {formatCertSerial(tree.target.id)} ({tree.target.speciesName})
             </h3>
             <div style={{ display: "flex", gap: "0.5rem" }}>
               <button
@@ -276,7 +173,7 @@ export function SpecimenLineage({ contractAddress, walletAccount, preselectedTok
                 color: "#34d399",
                 fontWeight: "600",
               }}>
-                3 Generations
+                {PEDIGREE_DEPTH} Generations
               </span>
             </div>
           </div>

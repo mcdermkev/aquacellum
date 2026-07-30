@@ -9,6 +9,7 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
+import { buildGrowoutTimeline } from "../utils/growoutFunnel";
 
 /**
  * GrowOutChart — Population timeline for grow-out data, built on recharts.
@@ -39,53 +40,13 @@ const CHECKPOINT_COLORS = {
 /**
  * Build timeline data points from checkpoints.
  * Each point tracks the running "alive" count at that moment.
+ *
+ * The accumulation itself lives in utils/growoutFunnel.js — the same module the
+ * tracker, the batch panel, and the achievements tab use — so the chart can never
+ * disagree with the funnel summary printed directly above it.
  */
 function buildTimelineData(checkpoints, initialEggs) {
-  if (!checkpoints || checkpoints.length === 0) return [];
-
-  // Sort chronologically
-  const sorted = [...checkpoints]
-    .filter((c) => c.type !== "narration" && c.type !== "note")
-    .sort((a, b) => a.timestamp - b.timestamp);
-
-  if (sorted.length === 0) return [];
-
-  let maxFry = initialEggs || 0;
-  let totalLost = 0;
-  let totalSold = 0;
-  let totalCulled = 0;
-
-  const points = [];
-
-  for (const cp of sorted) {
-    if (cp.type === "fry_count") {
-      maxFry = Math.max(maxFry, cp.count || 0);
-    } else if (cp.type === "loss") {
-      totalLost += cp.count || 0;
-    } else if (cp.type === "sold") {
-      totalSold += cp.count || 0;
-    } else if (cp.type === "cull") {
-      totalCulled += cp.count || 0;
-    }
-
-    const alive = Math.max(0, maxFry - totalLost - totalSold - totalCulled);
-    const survivalRate = maxFry > 0 ? Math.round(((maxFry - totalLost) / maxFry) * 100) : 100;
-
-    points.push({
-      timestamp: cp.timestamp,
-      alive,
-      maxFry,
-      totalLost,
-      totalSold,
-      totalCulled,
-      survivalRate,
-      type: cp.type,
-      count: cp.count,
-      note: cp.note,
-    });
-  }
-
-  return points;
+  return buildGrowoutTimeline(checkpoints, initialEggs);
 }
 
 // ─── Formatting helpers ──────────────────────────────────────────────────────

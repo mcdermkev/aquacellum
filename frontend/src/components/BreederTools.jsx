@@ -25,6 +25,7 @@ export function BreederTools({
   onSelectBreed,
   onSpawningComplete,
   initialSection,
+  onSwitchToPro,
 }) {
   const [activeSection, setActiveSection] = useState(initialSection || "register");
 
@@ -77,6 +78,40 @@ export function BreederTools({
 
   return (
     <div>
+      {/* Mode-mismatch notice.
+          Breeder Tools has no nav pill in Casual mode, but the route is still
+          reachable — deliberately, because deep links to it are documented (the
+          morph flow tells breeders to bookmark /app/breeder?section=morphs) and
+          silently redirecting would break them. Mode is a self-service display
+          preference, NOT an entitlement: nothing here is being withheld, so the
+          honest move is to explain the mismatch and offer the switch rather than
+          hide a working surface or pretend it's locked.
+          See docs/BREEDER_STATE_MODEL.md §10. */}
+      {casualModeActive && (
+        <div
+          className="glass-card"
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            gap: "1rem", flexWrap: "wrap", padding: "0.75rem 1.1rem", marginBottom: "1rem",
+            border: "1px solid rgba(168, 85, 247, 0.22)", background: "rgba(168, 85, 247, 0.04)",
+          }}
+        >
+          <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+            These are the <strong style={{ color: "#fff" }}>Pro</strong> breeding tools. They work
+            just fine here, but you won't see a tab for them while you're in the simpler view.
+          </span>
+          {onSwitchToPro && (
+            <button
+              className="btn-secondary"
+              onClick={onSwitchToPro}
+              style={{ fontSize: "0.75rem", padding: "0.4rem 0.9rem", whiteSpace: "nowrap" }}
+            >
+              Switch to Pro
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Internal sub-navigation pills */}
       <div
         className="breeder-sub-nav"

@@ -70,6 +70,33 @@ export const ENTITLEMENTS = Object.freeze({
   // Ownership / birth-certificate transfers
   ownership_transfer: { class: REQUIRED, label: "Ownership / certificate transfer" },
 
+  // ── Breeder Tools core (docs/BREEDER_STATE_MODEL.md §10) ─────────────────
+  //
+  // These are REQUIRED for the same reason `seller_listing` and `checkout` are:
+  // they are the job, not a convenience. A brand-new 0-XP breeder must be able to
+  // register a birth certificate, trace its lineage, log a spawn, and track the
+  // grow-out — those are the product. XP-gating any of them would mean a breeder
+  // could not record a fish they actually bred, and the record would be lost.
+  //
+  // They are listed explicitly rather than left absent so the safety-invariant
+  // test in entitlements.test.js covers them: `hasEntitlement` fails CLOSED for
+  // unknown keys, so an unregistered capability silently reads as denied, and
+  // nothing stopped someone later attaching a `minTier` to certificate
+  // registration. Now that cannot happen without failing the suite.
+  //
+  // NOTE ON PRO vs CASUAL: that split is a self-service display preference
+  // (`aquadex_casual_mode` in localStorage, flipped freely by the mode toggle) —
+  // it is NOT an entitlement and must never be modelled as one. Casual mode hides
+  // the Breeder Tools tab; it does not withhold a capability.
+  breeder_register_certificate: { class: REQUIRED, label: "Register a birth certificate" },
+  breeder_view_lineage: { class: REQUIRED, label: "View lineage and pedigree" },
+  breeder_export_pedigree: { class: REQUIRED, label: "Export or print a pedigree" },
+  breeder_log_spawn: { class: REQUIRED, label: "Log a spawn" },
+  breeder_growout_tracking: { class: REQUIRED, label: "Track grow-out checkpoints" },
+  breeder_relatedness_check: { class: REQUIRED, label: "Check relatedness before pairing" },
+  breeder_genetics_calculator: { class: REQUIRED, label: "Genetics / Punnett calculator" },
+  breeder_submit_morph: { class: REQUIRED, label: "Submit a morph for review" },
+
   // Receipts and order history
   receipts: { class: REQUIRED, label: "Receipts" },
   order_history: { class: REQUIRED, label: "Order history" },
@@ -114,6 +141,10 @@ export const ENTITLEMENTS = Object.freeze({
   // Abyssal (5,000)
   smart_reorder: { class: EARNED, minTier: "Abyssal", label: "Smart reorder" },
   auto_completion_rules: { class: EARNED, minTier: "Abyssal", label: "Auto-completion rules" },
+  // Also gates the Breeder Tools batch grow-out panel: logging a checkpoint on
+  // ONE spawn is required (breeder_growout_tracking), logging across many at once
+  // is a scale convenience — the same line the Breeder Terminal draws for bulk
+  // fulfillment.
   bulk_management: { class: EARNED, minTier: "Abyssal", label: "Bulk product/fulfillment management" },
   canGiveAudits: { class: EARNED, minTier: "Abyssal", label: "Give expert audits" },
   canMentor: { class: EARNED, minTier: "Abyssal", label: "Mentor" },

@@ -4,6 +4,12 @@ import aquadexAbi from "../abi/AquadexManager.json";
 import { addXp, XP_ACTIONS } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
 import { relaySpawn, relayRegisterTank } from "../services/relayer";
+import { putSpecimenPhoto } from "../services/tankMedia";
+import { assessPairing, pairingMetadataAttributes } from "../services/pairingAssessment";
+import { METADATA_URI_NONE, buildSpecimenMetadata } from "../services/specimenMetadata";
+import { COI_RISK_CONFIG } from "../utils/coiCalculator";
+import { PAIRING_COPY, pairingCandidateComparator, sexSymbol } from "../utils/specimenSex";
+import { formatCertSerial, formatLocalRecordRef } from "../utils/specimenIdentity";
 import { compressImage } from "../utils/imageCompression";
 import { db } from "../db";
 
@@ -174,6 +180,10 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
       try {
         const dexieSpecimens = await db.specimens.where("ownerAddress").equals((walletAccount || "").toLowerCase()).toArray();
         for (const spec of dexieSpecimens) {
+          // Archived certificates are hidden from the parent pickers (they're the
+          // mis-entries and unknown-fate fish the keeper asked to stop seeing).
+          // They still resolve in lineage — see BREEDER_STATE_MODEL §4.1.
+          if (spec.archived) continue;
           if (!localSpecimens.some(ls => ls.id === Number(spec.id)) && Number(spec.status || 0) === 0) {
             const loc = specimenToLocation[Number(spec.id)] || { tankId: 0, facility: "Unknown", parentUnitId: 0 };
             localSpecimens.push({
@@ -333,37 +343,84 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
 
   const getSpecimenLabel = (spec) => {
     const breedInfo = speciesCatalog[spec.speciesId] || { commonName: `Species ID ${spec.speciesId}` };
-    return `Cert. Serial No. ${spec.id.toString().padStart(3, "0")} - ${breedInfo.commonName} (Sire: ${spec.sireId || "None"}, Dam: ${spec.damId || "None"})`;
+    const symbol = sexSymbol(spec.gender);
+    return `Cert. Serial No. ${formatCertSerial(spec.id)}${symbol ? ` ${symbol}` : ""} - ${breedInfo.commonName} (Sire: ${spec.sireId || "None"}, Dam: ${spec.damId || "None"})`;
   };
 
-  // Inbreeding Coefficient Calculation
-  const calculateInbreeding = () => {
-    const sire = specimens.find(s => s.id === Number(selectedSireId));
-    const dam = specimens.find(s => s.id === Number(selectedDamId));
-
-    if (!sire || !dam) return { coefficient: 0, text: "Safe (0%)", type: "safe" };
-    if (sire.speciesId !== dam.speciesId) return { coefficient: 0, text: "Hybrid / Species Mismatch", type: "warning" };
-
-    // Sibling Pair (Shared father and mother)
-    const shareSire = sire.sireId > 0 && sire.sireId === dam.sireId;
-    const shareDam = sire.damId > 0 && sire.damId === dam.damId;
-
-    if (shareSire && shareDam) {
-      return { coefficient: 25, text: "Critical Sibling Pair (25% Inbreeding)", type: "critical" };
-    }
-    // Half Sibling Pair (Shared sire OR dam, but not both)
-    if (shareSire || shareDam) {
-      return { coefficient: 12.5, text: "High Half-Sibling Pair (12.5% Inbreeding)", type: "warning" };
-    }
-    // Parent-Offspring Pair
-    if (sire.id === dam.sireId || sire.id === dam.damId || dam.id === sire.sireId || dam.id === sire.damId) {
-      return { coefficient: 25, text: "Critical Parent-Offspring Pair (25% Inbreeding)", type: "critical" };
-    }
-
-    return { coefficient: 0, text: "Safe Lineage (0% Shared Parents)", type: "safe" };
+  /**
+   * Candidates for one side of the pair.
+   *
+   * ORDERS, NEVER FILTERS on sex (spec §1.2). Most aquarium species can't be
+   * reliably sexed by eye and nearly every existing record is unsexed, so
+   * removing same-sex or unsexed candidates would make this picker unusable on
+   * real data. Complementary sex sorts first; everything stays selectable, and a
+   * genuinely impossible pair is caught by the blocking signal below.
+   */
+  const candidatesFor = (counterpartId) => {
+    const counterpart = specimens.find(s => s.id === Number(counterpartId));
+    const pool = specimens.filter(s => {
+      if (!counterpart) return true;
+      if (s.id === counterpart.id) return false;
+      return s.speciesId === counterpart.speciesId;
+    });
+    return [...pool].sort(pairingCandidateComparator(counterpart?.gender ?? null));
   };
 
-  const inbreedingResult = calculateInbreeding();
+  // ─── Pairing assessment ───────────────────────────────────────────────────
+  //
+  // This replaces a hand-rolled `calculateInbreeding` that compared only the two
+  // candidates' IMMEDIATE parents, so cousins, half-cousins, and
+  // grandparent–grandchild pairings all reported a confident "0% Safe Lineage" —
+  // and that number was written onto every offspring's certificate. Relatedness
+  // now comes from Wright's path method over three generations via
+  // services/pairingAssessment.js. See BREEDER_TOOLS_T1_PAIRING_SPEC.md §2.4.
+  //
+  // It's async now (it walks the pedigree), so it lives in state rather than
+  // being recomputed during render.
+  const [assessment, setAssessment] = useState(null);
+  const [assessing, setAssessing] = useState(false);
+
+  const selectedSire = specimens.find(s => s.id === Number(selectedSireId));
+  const selectedDam = specimens.find(s => s.id === Number(selectedDamId));
+
+  useEffect(() => {
+    if (!selectedSire || !selectedDam) {
+      setAssessment(null);
+      setAssessing(false);
+      return;
+    }
+    // Stale-result guard: the breeder can change a selection while a pedigree
+    // walk is in flight, and applying the old answer would mislabel the new pair.
+    let active = true;
+    setAssessing(true);
+    (async () => {
+      let contract = null;
+      try {
+        contract = new Contract(contractAddress, aquadexAbi, getProvider());
+      } catch (e) {
+        // Local-only is fine — the resolver reads Dexie first regardless.
+      }
+      const result = await assessPairing({
+        contract,
+        sire: selectedSire,
+        dam: selectedDam,
+        casual: casualModeActive,
+      });
+      if (!active) return;
+      setAssessment(result);
+      setAssessing(false);
+    })();
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSireId, selectedDamId, contractAddress, casualModeActive]);
+
+  const sexSignal = assessment?.sex || null;
+  const coiSignal = assessment?.coi || null;
+  const coiRisk = coiSignal?.available ? COI_RISK_CONFIG[coiSignal.riskLevel] : null;
+  // A same-sex pair is the ONLY thing that blocks (spec §1.2). Unknown sex and a
+  // high COI both proceed — most records are unsexed, and line-breeding is
+  // deliberate practice.
+  const pairingBlocked = sexSignal ? !sexSignal.ok : false;
 
   // Snapshot water parameter triggers
   const handleTankSelect = (tankId) => {
@@ -404,24 +461,42 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
         .filter(k => k !== "custom" && geneticMarkers[k])
         .concat(geneticMarkers.custom ? [geneticMarkers.custom] : []);
 
-      const mockMetadata = {
-        name: `${speciesCatalog[speciesId]?.commonName || "Specimen"} Spawn Offspring`,
-        description: `Bred via Aquadex Spawning Wizard. Parent Sire: #${selectedSireId}, Parent Dam: #${selectedDamId}.`,
-        attributes: [
-          { trait_type: "Sire ID", value: selectedSireId },
-          { trait_type: "Dam ID", value: selectedDamId },
-          { trait_type: "Inbreeding Coefficient", value: `${inbreedingResult.coefficient}%` },
-          { trait_type: "Containment Tank ID", value: selectedTankId },
+      // NOT mock data despite its former name (`mockMetadata`): this object is
+      // written as the offspring's real, persisted metadata below and read back by
+      // SpecimenDetailModal. Built through the shared builder so the cohort and
+      // the Register form produce one document shape.
+      const commonNameForSpecies = speciesCatalog[speciesId]?.commonName || "Specimen";
+      const offspringMetadata = buildSpecimenMetadata({
+        commonName: commonNameForSpecies,
+        speciesId,
+        sireId: selectedSireId,
+        damId: selectedDamId,
+        tankId: selectedTankId,
+        name: `${commonNameForSpecies} Spawn Offspring`,
+        description: `Bred via the Aquadex Spawning Wizard. Sire Cert. ${formatCertSerial(selectedSireId)}, Dam Cert. ${formatCertSerial(selectedDamId)}.`,
+        extraAttributes: [
+          // Self-describing relatedness claim: the coefficient travels with the
+          // method and depth, and an unresolvable pedigree records an explicit
+          // unknown instead of a "0%" that would read as verified-outbred.
+          // See BREEDER_TOOLS_T1_PAIRING_SPEC.md §1.6 / §1.7.
+          ...pairingMetadataAttributes(assessment, selectedSire, selectedDam),
           { trait_type: "Genetic Markers", value: activeMarkers.join(", ") },
+          // The "Snapped " prefix is a contract with utils/pdfExport.js, which
+          // filters on it to build the water-parameters block.
           ...snappedParameters ? [
             { trait_type: "Snapped Temp", value: `${snappedParameters.temp}°C` },
             { trait_type: "Snapped pH", value: snappedParameters.ph },
             { trait_type: "Snapped Ammonia", value: `${snappedParameters.ammonia} ppm` }
           ] : []
-        ]
-      };
+        ],
+      });
 
-      const ipfsHash = "ipfs://bafkreispawnlogscompiledmetadata" + Math.random().toString(36).substring(2, 7);
+      // No metadata document is published for a spawn cohort, so the on-chain
+      // URI stays empty. This used to be
+      // `"ipfs://bafkreispawnlogscompiledmetadata" + Math.random()…` — an invented
+      // identifier that became each offspring's ERC-721 tokenURI and resolved to
+      // nothing. Empty is the honest answer; see services/specimenMetadata.js.
+      const ipfsHash = METADATA_URI_NONE;
 
       // Beta: register spawn + mint offspring locally (no MetaMask, no gas)
       setTxState({ status: "minting", message: `Registering ${offspringCount} offspring birth certificates...`, txHash: "" });
@@ -435,7 +510,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
         commonName: speciesCatalog[speciesId]?.commonName || "Specimen",
         scientificName: speciesCatalog[speciesId]?.scientificName || "Unknown",
         ipfsMetadataUri: ipfsHash,
-        metadata: mockMetadata,
+        metadata: offspringMetadata,
       });
 
       if (!result.success) {
@@ -444,17 +519,32 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
 
       const spawnId = result.spawnId;
 
-      // Persist offspring photos/metadata locally
+      // Persist offspring photos/metadata locally.
+      //
+      // The cohort photo goes to the durable Dexie `tankMedia` store rather than
+      // raw localStorage (BREEDER_STATE_MODEL §9.3). That matters more here than
+      // anywhere else in the app: a single spawn writes the SAME photo once per
+      // offspring, so a 10-fry cohort used to burn ten copies of one image
+      // through the ~5MB origin quota. `putSpecimenPhoto` mirrors to localStorage
+      // so existing readers keep working.
+      let photoFailed = false;
       for (const offspringId of result.offspringIds) {
-        try {
-          if (selectedCohortPhoto) {
-            localStorage.setItem(`aquadex_specimen_photo_${offspringId}`, selectedCohortPhoto);
+        if (selectedCohortPhoto) {
+          try {
+            await putSpecimenPhoto(offspringId, selectedCohortPhoto);
+          } catch (photoErr) {
+            console.warn("Cohort photo save failed:", photoErr);
+            photoFailed = true;
           }
-          localStorage.setItem(`aquadex_specimen_metadata_${offspringId}`, JSON.stringify(mockMetadata));
-        } catch (storageErr) {
-          console.error("Storage quota error:", storageErr);
-          showToast("⚠️ Storage Quota Exceeded! Offspring registered, but device is out of space for local photos/metadata.");
         }
+        try {
+          localStorage.setItem(`aquadex_specimen_metadata_${offspringId}`, JSON.stringify(offspringMetadata));
+        } catch (storageErr) {
+          console.warn("Offspring metadata save failed (quota?):", storageErr);
+        }
+      }
+      if (photoFailed) {
+        showToast("⚠️ Offspring registered, but the cohort photo could not be saved.");
       }
 
       // Add Breeder XP points
@@ -479,9 +569,6 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
       </div>
     );
   }
-
-  const selectedSire = specimens.find(s => s.id === Number(selectedSireId));
-  const selectedDam = specimens.find(s => s.id === Number(selectedDamId));
 
   return (
     <div className="glass-card spawning-wizard-card" style={{ maxWidth: "680px", margin: "0 auto", padding: "2.5rem" }}>
@@ -615,22 +702,21 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                     style={{ width: "100%", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.8rem", marginBottom: "0.5rem" }}
                   >
                     <option value="0">🐟 Select a Male Fish…</option>
-                    {specimens
-                      .filter(s => {
-                        if (selectedDamId === "0") return true;
-                        const dam = specimens.find(x => x.id === Number(selectedDamId));
-                        if (!dam) return true;
-                        if (s.id === dam.id) return false;
-                        return s.speciesId === dam.speciesId;
-                      })
-                      .map(s => (
-                        <option key={`sire-${s.id}`} value={s.id}>{getSpecimenLabel(s)}</option>
-                      ))}
+                    {candidatesFor(selectedDamId).map(s => (
+                      <option key={`sire-${s.id}`} value={s.id}>{getSpecimenLabel(s)}</option>
+                    ))}
                   </select>
                   
                   {selectedSireId !== "0" && selectedSire ? (
                     <div className="token-metadata">
-                      <span className="token-title">Cert. Serial No. {selectedSire.id.toString().padStart(3, "0")}</span>
+                      <span className="token-title">
+                        Cert. Serial No. {formatCertSerial(selectedSire.id)}
+                        {sexSymbol(selectedSire.gender) && (
+                          <span style={{ marginLeft: "0.35rem", color: selectedSire.gender === "Male" ? "#38bdf8" : "#f43f5e" }}>
+                            {sexSymbol(selectedSire.gender)}
+                          </span>
+                        )}
+                      </span>
                       <span className="token-subtitle">
                         {speciesCatalog[selectedSire.speciesId]?.commonName || `Species ID ${selectedSire.speciesId}`}
                       </span>
@@ -646,7 +732,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                         {selectedSire.sireId === 0 && selectedSire.damId === 0 ? "Wild Caught" : (selectedSire.sireId !== 0 && selectedSire.damId !== 0 ? "Purebred" : "Ancestral F1")}
                       </span>
                       <span className="token-pedigree-info">
-                        Parents: Sire Cert. Serial No. {selectedSire.sireId ? selectedSire.sireId.toString().padStart(3, "0") : "000"} | Dam Cert. Serial No. {selectedSire.damId ? selectedSire.damId.toString().padStart(3, "0") : "000"}
+                        Parents: Sire Cert. Serial No. {formatCertSerial(selectedSire.sireId, { none: "—" })} | Dam Cert. Serial No. {formatCertSerial(selectedSire.damId, { none: "—" })}
                       </span>
                     </div>
                   ) : (
@@ -656,16 +742,30 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                   )}
                 </div>
 
-                {/* INBREEDING CONNECTOR / BADGE OVERLAY */}
+                {/* RELATEDNESS CONNECTOR BADGE — real COI, or an honest "no
+                    pedigree data" state. Never a fabricated 0%. */}
                 {selectedSireId !== "0" && selectedDamId !== "0" && (
                   <div className="inbreeding-badge-connector">
-                    <span className={`badge ${
-                      inbreedingResult.type === "critical" ? "badge-red pulsate-red-badge" : 
-                      inbreedingResult.type === "warning" ? "badge-amber" : 
-                      "badge-green"
-                    }`} style={{ fontSize: "0.75rem", padding: "0.5rem 1rem", border: "1px solid currentColor", boxShadow: "0 4px 15px rgba(0,0,0,0.5)", whiteSpace: "nowrap" }}>
-                      {inbreedingResult.text}
-                    </span>
+                    {assessing ? (
+                      <span className="badge" style={{ fontSize: "0.72rem", padding: "0.5rem 1rem", border: "1px solid var(--glass-border)", background: "rgba(255,255,255,0.04)", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
+                        {casualModeActive ? PAIRING_COPY.coiChecking.casual : PAIRING_COPY.coiChecking.pro}
+                      </span>
+                    ) : coiSignal?.available && coiRisk ? (
+                      <span
+                        className={`badge ${coiSignal.riskLevel === "critical" ? "pulsate-red-badge" : ""}`}
+                        style={{
+                          fontSize: "0.75rem", padding: "0.5rem 1rem", whiteSpace: "nowrap",
+                          border: `1px solid ${coiRisk.color}55`, background: coiRisk.bg, color: coiRisk.color,
+                          boxShadow: "0 4px 15px rgba(0,0,0,0.5)",
+                        }}
+                      >
+                        {coiRisk.icon} {coiSignal.coi}% — {coiRisk.label}
+                      </span>
+                    ) : coiSignal ? (
+                      <span style={{ fontSize: "0.72rem", padding: "0.5rem 1rem", whiteSpace: "nowrap", borderRadius: "12px", border: "1px solid var(--glass-border)", background: "rgba(255,255,255,0.04)", color: "var(--text-muted)" }}>
+                        {casualModeActive ? PAIRING_COPY.coiUnavailable.casual : PAIRING_COPY.coiUnavailable.pro}
+                      </span>
+                    ) : null}
                   </div>
                 )}
 
@@ -683,22 +783,21 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                     style={{ width: "100%", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontSize: "0.8rem", marginBottom: "0.5rem" }}
                   >
                     <option value="0">🐟 Find a Compatible Match…</option>
-                    {specimens
-                      .filter(d => {
-                        if (selectedSireId === "0") return true;
-                        const sire = specimens.find(s => s.id === Number(selectedSireId));
-                        if (!sire) return true;
-                        if (d.id === sire.id) return false;
-                        return d.speciesId === sire.speciesId;
-                      })
-                      .map(d => (
-                        <option key={`dam-${d.id}`} value={d.id}>{getSpecimenLabel(d)}</option>
-                      ))}
+                    {candidatesFor(selectedSireId).map(d => (
+                      <option key={`dam-${d.id}`} value={d.id}>{getSpecimenLabel(d)}</option>
+                    ))}
                   </select>
                   
                   {selectedDamId !== "0" && selectedDam ? (
                     <div className="token-metadata">
-                      <span className="token-title">Cert. Serial No. {selectedDam.id.toString().padStart(3, "0")}</span>
+                      <span className="token-title">
+                        Cert. Serial No. {formatCertSerial(selectedDam.id)}
+                        {sexSymbol(selectedDam.gender) && (
+                          <span style={{ marginLeft: "0.35rem", color: selectedDam.gender === "Male" ? "#38bdf8" : "#f43f5e" }}>
+                            {sexSymbol(selectedDam.gender)}
+                          </span>
+                        )}
+                      </span>
                       <span className="token-subtitle">
                         {speciesCatalog[selectedDam.speciesId]?.commonName || `Species ID ${selectedDam.speciesId}`}
                       </span>
@@ -714,7 +813,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                         {selectedDam.sireId === 0 && selectedDam.damId === 0 ? "Wild Caught" : (selectedDam.sireId !== 0 && selectedDam.damId !== 0 ? "Purebred" : "Ancestral F1")}
                       </span>
                       <span className="token-pedigree-info">
-                        Parents: Sire Cert. Serial No. {selectedDam.sireId ? selectedDam.sireId.toString().padStart(3, "0") : "000"} | Dam Cert. Serial No. {selectedDam.damId ? selectedDam.damId.toString().padStart(3, "0") : "000"}
+                        Parents: Sire Cert. Serial No. {formatCertSerial(selectedDam.sireId, { none: "—" })} | Dam Cert. Serial No. {formatCertSerial(selectedDam.damId, { none: "—" })}
                       </span>
                     </div>
                   ) : (
@@ -725,38 +824,109 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                 </div>
               </div>
 
+              {/* PAIRING SIGNALS — three independent findings, reported
+                  separately rather than collapsed into one verdict (the old code
+                  reported a species mismatch AS an inbreeding result):
+                    1. sex        — the only one that can block
+                    2. relatedness — informational, never blocks (line-breeding)
+                    3. species     — informational; the Next button keeps its own
+                                     long-standing species guard */}
               {selectedSireId !== "0" && selectedDamId !== "0" && (
-                <div 
-                  className="glass-card" 
-                  style={{ 
-                    padding: "1.25rem", 
-                    display: "flex", 
-                    justifyContent: "space-between", 
-                    alignItems: "center",
-                    border: inbreedingResult.coefficient > 0 ? "1px solid rgba(251, 191, 36, 0.3)" : "1px solid rgba(52, 211, 153, 0.3)",
-                    background: inbreedingResult.coefficient > 0 ? "rgba(251, 191, 36, 0.02)" : "rgba(52, 211, 153, 0.02)"
-                  }}
-                >
-                  <div>
-                    <strong style={{ color: "#fff", fontSize: "0.9rem", display: "block" }}>Ancestry Safety Audit</strong>
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                      Analyzed parent genetic indices back to F0 ancestors.
-                    </span>
-                  </div>
+                <div className="glass-card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                  {/* Sex */}
+                  {sexSignal && (
+                    <div style={{
+                      display: "flex", gap: "0.6rem", alignItems: "flex-start",
+                      padding: "0.7rem 0.85rem", borderRadius: "8px",
+                      border: `1px solid ${sexSignal.severity === "error" ? "rgba(248,113,113,0.3)" : sexSignal.severity === "notice" ? "rgba(251,191,36,0.25)" : "rgba(52,211,153,0.25)"}`,
+                      background: sexSignal.severity === "error" ? "rgba(248,113,113,0.06)" : sexSignal.severity === "notice" ? "rgba(251,191,36,0.04)" : "rgba(52,211,153,0.04)",
+                    }}>
+                      <span style={{ fontSize: "0.95rem" }}>
+                        {sexSignal.severity === "error" ? "⛔" : sexSignal.severity === "notice" ? "⚠" : "✓"}
+                      </span>
+                      <span style={{ fontSize: "0.78rem", color: sexSignal.severity === "error" ? "var(--accent-red)" : "var(--text-secondary)", lineHeight: 1.5 }}>
+                        {sexSignal.reason}
+                      </span>
+                    </div>
+                  )}
 
-                  <span className={`badge ${
-                    inbreedingResult.type === "critical" ? "badge-red pulsate-red-badge" : 
-                    inbreedingResult.type === "warning" ? "badge-amber" : 
-                    "badge-green"
-                  }`} style={{ fontSize: "0.7rem", padding: "0.3rem 0.75rem" }}>
-                    {inbreedingResult.text}
-                  </span>
+                  {/* Species mismatch */}
+                  {assessment?.species && !assessment.species.ok && (
+                    <div style={{ display: "flex", gap: "0.6rem", alignItems: "flex-start", padding: "0.7rem 0.85rem", borderRadius: "8px", border: "1px solid rgba(251,191,36,0.25)", background: "rgba(251,191,36,0.04)" }}>
+                      <span style={{ fontSize: "0.95rem" }}>⚠</span>
+                      <span style={{ fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                        {assessment.species.reason}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Relatedness */}
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.35rem", gap: "0.75rem", flexWrap: "wrap" }}>
+                      <strong style={{ color: "#fff", fontSize: "0.88rem" }}>
+                        {casualModeActive ? "How closely related they are" : "Relatedness (Wright's COI)"}
+                      </strong>
+                      {coiSignal?.available && (
+                        <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
+                          {coiSignal.depth} generations
+                        </span>
+                      )}
+                    </div>
+
+                    {assessing ? (
+                      <div className="shimmer-placeholder" style={{ height: "14px", borderRadius: "4px", maxWidth: "220px" }} />
+                    ) : coiSignal?.available ? (
+                      <>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem" }}>
+                          <span style={{ fontSize: "1.35rem", fontWeight: 800, color: coiRisk?.color, fontFamily: "'JetBrains Mono', monospace" }}>
+                            {coiSignal.coi}%
+                          </span>
+                          {coiRisk && (
+                            <span style={{ fontSize: "0.7rem", fontWeight: 700, padding: "2px 8px", borderRadius: "10px", background: `${coiRisk.color}15`, border: `1px solid ${coiRisk.color}33`, color: coiRisk.color }}>
+                              {coiRisk.icon} {coiRisk.label}
+                            </span>
+                          )}
+                        </div>
+                        <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: "0.4rem 0 0", lineHeight: 1.55 }}>
+                          {coiSignal.recommendation}
+                        </p>
+                        {coiSignal.sharedAncestors?.length > 0 && (
+                          <div style={{ marginTop: "0.6rem", display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                            {coiSignal.paths.map((p, i) => (
+                              <span key={i} style={{ fontSize: "0.66rem", padding: "2px 8px", borderRadius: "6px", background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.15)", color: "#e0e0e0" }}>
+                                {p.ancestorName} <span style={{ color: "var(--text-muted)" }}>#{formatCertSerial(p.ancestorId)}</span>
+                                <span style={{ color: "#fbbf24", marginLeft: "4px", fontFamily: "'JetBrains Mono', monospace" }}>
+                                  +{(p.contribution * 100).toFixed(2)}%
+                                </span>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-muted)" }}>
+                          {casualModeActive ? PAIRING_COPY.coiUnavailable.casual : PAIRING_COPY.coiUnavailable.pro}
+                        </span>
+                        <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: "0.3rem 0 0", lineHeight: 1.55 }}>
+                          {coiSignal?.unavailableReason
+                            || (casualModeActive ? PAIRING_COPY.coiUnavailableDetail.casual : PAIRING_COPY.coiUnavailableDetail.pro)}
+                        </p>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
 
               <button 
                 className="btn-primary" 
-                disabled={selectedSireId === "0" || selectedDamId === "0" || (selectedSire && selectedDam && selectedSire.speciesId !== selectedDam.speciesId)} 
+                disabled={
+                  selectedSireId === "0" ||
+                  selectedDamId === "0" ||
+                  (selectedSire && selectedDam && selectedSire.speciesId !== selectedDam.speciesId) ||
+                  // A known same-sex pair is the only new block (spec §1.2).
+                  pairingBlocked
+                }
                 onClick={() => setStep(2)}
                 style={{ marginLeft: "auto", marginTop: "1rem" }}
               >
@@ -995,19 +1165,27 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
 
               <div className="glass-card" style={{ padding: "1.25rem", background: "rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.85rem" }}>
                 <strong style={{ color: "#fff", fontSize: "0.95rem" }}>Breeding Registry Summary</strong>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem" }}>
                   <span>Breeding Pair:</span>
-                  <strong>Sire Cert. Serial No. {selectedSireId.padStart(3, "0")} & Dam Cert. Serial No. {selectedDamId.padStart(3, "0")}</strong>
+                  <strong style={{ textAlign: "right" }}>
+                    Sire Cert. Serial No. {formatCertSerial(selectedSireId)}{sexSymbol(selectedSire?.gender) ? ` ${sexSymbol(selectedSire.gender)}` : ""}
+                    {" & "}
+                    Dam Cert. Serial No. {formatCertSerial(selectedDamId)}{sexSymbol(selectedDam?.gender) ? ` ${sexSymbol(selectedDam.gender)}` : ""}
+                  </strong>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span>Inbreeding Risk:</span>
-                  <span style={{ color: inbreedingResult.coefficient > 0 ? "var(--accent-amber)" : "var(--accent-green)" }}>
-                    {inbreedingResult.text}
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "0.75rem" }}>
+                  <span>{casualModeActive ? "How related:" : "Relatedness (COI):"}</span>
+                  {/* Mirrors exactly what gets recorded on the certificates — an
+                      unresolvable pedigree reads as unknown, never as 0%. */}
+                  <span style={{ textAlign: "right", color: coiSignal?.available ? (coiRisk?.color || "var(--text-secondary)") : "var(--text-muted)" }}>
+                    {coiSignal?.available
+                      ? `${coiSignal.coi}% — ${coiRisk?.label || ""}`
+                      : (casualModeActive ? PAIRING_COPY.coiUnavailable.casual : PAIRING_COPY.coiUnavailable.pro)}
                   </span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>Target Unit:</span>
-                  <strong>Tank Serial No. {selectedTankId.padStart(3, "0")}</strong>
+                  <strong>Tank Serial No. {formatLocalRecordRef(selectedTankId)}</strong>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>Offspring Yield:</span>

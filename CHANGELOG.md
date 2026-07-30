@@ -4,6 +4,315 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [0.10.5] — 2026-07-29
+
+### 📊 Founders Dashboard: Stop Reporting Fabricated Metrics
+
+Closes [`BREEDER_STATE_MODEL.md`](docs/BREEDER_STATE_MODEL.md) §9.22, found during the §9.5 schema audit.
+
+#### 🐛 Fixes
+- **Two charts were plotting random numbers.** `getUserGrowth` and `getProtocolActivity` fell back to `generateMockTimeSeries` / `generateMockActivitySeries` — literally `Math.random() * 80 + 10` — whenever a query failed. Because three of the tables being queried **did not exist**, that fallback was the *normal* path. The User Growth and Protocol Activity charts were random walks relabelled as platform metrics. Both generators are now deleted, not just unused.
+- **$0 revenue was being reported as a measurement.** `getMarketplaceGMV` queried `market_orders` (no such table) for an `amount` column (no such column); `getProtocolFees` queried a `protocol_fees` table that has never existed — the fee is a *column*, `orders.platform_fee_cents`. Both sat behind `return 0`, so the dashboard confidently displayed **$0 GMV and $0 protocol fees**, indistinguishable from "we earned nothing". Now read from `orders` using the same settled-status filter as the project's own `buyer_order_analytics` view, so revenue agrees across surfaces.
+- **"Specimens Minted" was counting something else.** It queried a bare `specimens` table, then silently fell back to summing `profiles.species_count` — a count of distinct *species* per user, not specimens. Now reads `aquadex_specimens`.
+- **A hardcoded Poseidon breakdown was rendered as a pie chart.** `getPoseidonStats` returned `{ identify: 42, husbandry: 67, diet: 23, general: 31 }` whenever Supabase was unconfigured. There is no `poseidon_queries` table and `api/ai.js` doesn't log intents, so the metric has no source at all — the panel now says so (§9.23).
+- **Two KPI cards showed invented growth.** `trend="+18%"` on Total Users and `trend="+15%"` on Marketplace GMV were hardcoded, never computed. Removed rather than faked (§9.24).
+- **Wrong column types in the time series.** `aquadex_specimens` has no `created_at` (registration time lives in the synced blob), and `aquadex_spawns.event_timestamp` is unix **seconds**, not a timestamptz — the old code compared it to an ISO string. Both now read correctly.
+- Removed a duplicated query in `getTotalUsers`, which ran the same count twice and discarded the first result.
+
+#### 🎯 The rule now enforced
+**`null` means unknown and is never 0.** Every metric returns `null` when its source can't be read, and the dashboard renders that as "—" via a new `NoDataPanel`. An *empty* result is a real finding and returned as such — a flat line at zero is an answer. Previously an unreadable table and a genuinely quiet week were indistinguishable, which is what let this survive. `formatCurrency(null)` returned `"$0"`; it now returns `"—"`, because on a revenue KPI those mean opposite things.
+
+This is the same call the project already made when it removed fabricated proximity discovery from the Local Sellers map (Decision D3).
+
+#### 🧱 Internal
+- 21 new tests, including a fixture harness that marks tables as nonexistent so the "missing source" path is actually exercised, plus guards that the mock generators, the hardcoded Poseidon numbers, the fake trends, and all four bad table names are gone.
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `frontend/src/services/foundersAnalytics.js` | Real tables/columns; `null` for unknown; mock generators deleted; `safeCount`/`sumCents` helpers; exported `SETTLED_ORDER_STATUSES` |
+| `frontend/src/components/FoundersDashboard.jsx` | New `NoDataPanel`; `formatCurrency(null)` → "—"; no-data states for both charts and the Poseidon panel; fabricated trends removed |
+| `frontend/src/__tests__/foundersAnalytics.test.js` | **New.** 21 tests |
+| `docs/BREEDER_STATE_MODEL.md` | §9.22 closed; added §9.23, §9.24 |
+
+---
+
+## [0.10.4] — 2026-07-29
+
+### 🔍 Schema & RLS Audit — Including a Correction
+
+Closes [`BREEDER_STATE_MODEL.md`](docs/BREEDER_STATE_MODEL.md) §9.5. Documentation and one recovered schema; no behavior change.
+
+#### ⚠️ Correction to a previous finding
+§9.5 claimed there was **no migration in-repo** for `morph_submissions`, `aquadex_specimens`, `aquadex_spawns`, `aquadex_tanks`, `aquadex_action_logs`, or the `aquadex_listings` RLS lockdown. **That was wrong — all of them exist.**
+
+This project has **two** migration directories and the earlier search only covered `frontend/supabase/migrations/`. Everything reported missing lives in the repo-root `supabase/migrations/`, which holds the Reef/social, cloud-sync, listings, XP-authority, and morph-submission migrations.
+
+The two-directory split is itself worth fixing, and it's why the mistake was possible: date prefixes overlap across both directories, so "apply migrations in filename order" is ambiguous, and neither directory's name hints that the other exists.
+
+#### 🐛 Fixes
+- **`user_xp_profiles` had no DDL in the repo** — a genuine gap, now captured in `20260729_user_xp_profiles.sql` from the schema already documented in `cloudSync.js`. It exists live (cross-device XP restore is a shipped feature), but `total_xp` drives `current_tier`, which drives every EARNED entitlement — an undocumented schema behind an authorization input is worth having on paper. **DDL-only, no policy changes**: the live policies on this table haven't been inspected, and guessing could either lock out XP sync for every user or silently widen access.
+
+#### 📋 Found, flagged, not fixed
+- **The Founders dashboard reports zeros as though they were measurements** (§9.22). `services/foundersAnalytics.js` queries `specimens`, `spawns`, `market_orders`, and `protocol_fees` — none of which exist. The real tables are `aquadex_specimens`, `aquadex_spawns`, and `orders`/`canonical_orders`. Every call has a silent `return 0` fallback, so **marketplace GMV and protocol fees both read 0**. Outside Breeder Tools, but a business-metrics bug worth its own fix.
+- **§9.20 reframed.** The spoofable `x-wallet-address` header fallback is **stage 3 of a documented, deliberate cutover**, not an oversight: `20260613` opened anon access with a "tighten later" note, `20260619` scoped it by header while explicitly acknowledging it's spoofable, and `20260624110000` added dual-mode JWT policies alongside it so clients could migrate without breaking. The two migrations added by this work follow that same convention correctly. Completing the transition is genuinely blocked on reading the **live** policy set, which a repo-only audit cannot do — a recommended sequence is written up in §11.3.
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `supabase/migrations/20260729_user_xp_profiles.sql` | **New.** Captures the existing live schema; idempotent, DDL-only |
+| `docs/BREEDER_STATE_MODEL.md` | New §11 (schema/RLS audit) incl. the correction, the genuinely-missing list, the real three-stage RLS model, and the audit's own limits; §9.5 closed; §9.20 reframed; added §9.22 |
+
+---
+
+## [0.10.3] — 2026-07-29
+
+### 🧬 Breeder Tools: Verified vs Self-Reported, and One Survival Funnel
+
+Closes [`BREEDER_STATE_MODEL.md`](docs/BREEDER_STATE_MODEL.md) §9.11, and completes the prerequisite for the cohort → certificate promotion path (§9.16).
+
+#### 🐛 Fixes
+- **"Established Seller" was earnable by typing a number into a form.** The `first_sale` and `sales_50` badges derived from grow-out `sold` **checkpoints** — a value the breeder enters in a text field — rather than from completed orders. Every badge carries a `ShareButton`, so that self-assessment was one tap from being published as a claim about someone's commercial history. Both now read `verifiedSales`, counted from settled `marketOrders` where the account was the seller (`certificate_transferred` / `seller_paid` / `completed` — never refunded, cancelled, or in-flight).
+
+  The self-reported count is **not** discarded: it still removes fish from the living population in the funnel, and it's shown as its own "Rehomed" tile next to "Sales", because a fish rehomed at a club or given to a friend is a real event that never touches an order. It's an assertion, not a record — so it's labelled as one. The field is named `frySoldSelfReported` and there is deliberately no bare `totalSold` on the stats object, so no future badge can reach for it by accident.
+
+- **The grow-out chart inflated the living population.** Found while extracting the funnel math: the timeline seeded from the *egg* count and let it override a later fry count (`Math.max(eggs, fryCount)`), so the chart's "alive" line disagreed with the funnel summary printed directly above it — and it was wrong in the *normal* case, where fewer fry hatch than eggs were laid. Eggs now seed the line and the first real fry count replaces the estimate. Caught by a test asserting the two functions agree at the final point, which is precisely why they now share a module.
+
+#### 🧱 Internal
+- New `utils/growoutFunnel.js` owns the survival math, replacing **four** near-duplicate implementations (`SpawnGrowoutTracker`, `BatchGrowOutPanel`, `BreederAchievements`, `GrowOutChart`). Worse failure mode than the usual duplication: adding a checkpoint type meant editing four places, and missing one produced a *silent accounting error* rather than a crash. This is the prerequisite §9.16 needed — a `promoted` type is now a one-place change.
+- New `services/breederStats.js` assembles achievement stats with each number's provenance in its name.
+- 40 new tests. Documented, not silently changed: `survivalRate` remains `(fry − lost) / fry`, so an intentional cull doesn't count against survival. Every displayed number and achievement threshold is calibrated to that, so the tests pin it and the question is logged as §9.21 rather than quietly adjusted.
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `frontend/src/utils/growoutFunnel.js` | **New.** The single survival-funnel implementation |
+| `frontend/src/services/breederStats.js` | **New.** Verified (orders) vs self-reported (checkpoints) stats |
+| `frontend/src/components/BreederAchievements.jsx` | Sales badges read `verifiedSales`; separate "Sales" and "Rehomed" tiles; inline Dexie scan removed |
+| `frontend/src/components/SpawnGrowoutTracker.jsx` | Funnel via the shared module |
+| `frontend/src/components/BatchGrowOutPanel.jsx` | Funnel via the shared module |
+| `frontend/src/components/GrowOutChart.jsx` | Timeline via the shared module; egg-count seeding fixed |
+| `frontend/src/__tests__/growoutFunnel.test.js` | **New.** 23 tests |
+| `frontend/src/__tests__/breederStats.test.js` | **New.** 17 tests |
+| `docs/BREEDER_STATE_MODEL.md` | New §7.1 (verified vs self-reported) and §7.2 (the funnel); §9.11 closed; added §9.21 |
+
+---
+
+## [0.10.2] — 2026-07-29
+
+### 🧬 Breeder Tools: Entitlement Classification
+
+Closes [`BREEDER_STATE_MODEL.md`](docs/BREEDER_STATE_MODEL.md) §9.10. Also confirms both storage migrations from 0.10.0/0.10.1 are **applied in production** — grow-out history now survives a device change, and `tokenURI` resolves to a real document for certificates registered from here on.
+
+#### 🐛 Fixes
+- **The entire Breeder Tools surface was absent from the entitlement map.** `hasEntitlement` fails **closed** for unknown keys, so every breeder capability silently read as *denied* — and, more consequentially, nothing stopped someone later attaching a `minTier` to certificate registration. Eight core capabilities are now registered as **REQUIRED**, which the existing safety-invariant test enforces: none may carry a `minTier`, and all must resolve true for a brand-new 0-XP account.
+
+  The line drawn matches how the Breeder Terminal already treats bulk fulfillment: **doing the job on one thing is required; doing it across many at once may be earned.** `breeder_relatedness_check` is deliberately REQUIRED — the COI result is a *warning*, and withholding an inbreeding warning from a low-XP breeder would be the worst possible thing to gate.
+
+- **Batch grow-out is now gated where it belongs.** Multi-spawn batch logging sits behind the same `bulk_management` (Abyssal) key the Breeder Terminal uses; logging a checkpoint on any single spawn stays unconditional. The guard is on the submit handler, not just the button — the entitlement is the rule, not the rendering. The table, metrics, sorting, and every per-spawn tracker remain fully usable either way, and the notice says what unlocks it *and* what already works.
+
+- **`/app/breeder` was reachable in Casual mode with its nav pill hidden.** Left reachable on purpose: Pro vs Casual is a self-service `localStorage` preference, not a permission, and the morph flow explicitly tells breeders to bookmark `/app/breeder?section=morphs`, so redirecting would break a documented deep link. Nothing there is being withheld, so the surface now explains the mismatch and offers a one-click switch to Pro instead of hiding a working page or pretending it's locked.
+
+#### 🧱 Internal
+- 21 new tests in `breederEntitlements.test.js`, including a guard that the four core write surfaces (`MintSpecimen`, `SpawningWizard`, `SpecimenLineage`, `SpawnGrowoutTracker`) contain **no** `hasEntitlement` call at all, and that no entitlement key encodes display mode.
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `frontend/src/services/entitlements.js` | Eight breeder capabilities registered as REQUIRED; documented that `bulk_management` also covers batch grow-out |
+| `frontend/src/components/BatchGrowOutPanel.jsx` | Multi-spawn actions gated on `bulk_management`; guard on the submit handler; explanatory notice |
+| `frontend/src/components/BreederTools.jsx` | Casual-mode notice with a switch-to-Pro action |
+| `frontend/src/App.jsx` | Wires `onSwitchToPro`, persisting mode the same way the toggle does |
+| `frontend/src/__tests__/breederEntitlements.test.js` | **New.** 21 tests |
+| `docs/BREEDER_STATE_MODEL.md` | New §10 (entitlements and mode); §9.10 closed; migration status recorded |
+
+---
+
+## [0.10.1] — 2026-07-29
+
+### 🧬 Breeder Tools: Real Certificate Metadata (No More Fabricated `tokenURI`)
+
+Closes [`BREEDER_STATE_MODEL.md`](docs/BREEDER_STATE_MODEL.md) §9.9.
+
+#### 🐛 Fixes
+- **Every birth certificate published a fake, permanent, on-chain metadata pointer.** `AquadexManager.tokenURI(tokenId)` returns `specimens[tokenId].ipfsMetadataUri` **verbatim** — that field *is* the ERC-721 metadata claim any external wallet, explorer, or marketplace reads, and it's also emitted in the `SpecimenRegistered` event. Two invented values were being written into it:
+
+  | Surface | Wrote | Problem |
+  |---|---|---|
+  | Register | `ipfs://bafybeidflm24zspeciemensample/meta.json` | A hardcoded form default — **identical on every specimen ever registered** |
+  | Spawning wizard | `ipfs://bafkreispawnlogscompiledmetadata` + `Math.random()` | Invented per offspring at submit time |
+
+  Neither is a real content identifier — both are far short of a CIDv1's 59 characters — nothing was ever pinned, and both resolved to nothing, while still costing gas for the bytes. An empty `tokenURI` is a well-understood "no metadata published" signal. A dead `ipfs://` link is an assertion that turns out to be false, permanently, on-chain.
+
+- **The Advanced section was gated on the wrong mode.** The Metadata URI field only rendered when `casualModeActive` was true, so Pro — the one mode where a breeder might actually have a pinned document — couldn't reach it. Now shown in Pro, where it belongs, and no longer `required`.
+
+#### 🧱 Internal
+- New `services/specimenMetadata.js` is the single gate on what reaches the chain. `validateMetadataUri` accepts a plausible `ipfs://` CID or an `https://` URL, treats blank as a valid deliberate answer, and **fails to empty** for anything else — never writing an invalid value through. Both fabricated strings are on an explicit denylist so they can't return via stale form state or a copied value. `isPlausibleCid` is a shape + length check (v0: `Qm` + 44; v1: `b` + 58+), which is enough to reject hand-written placeholders.
+- `buildSpecimenMetadata` replaces the two hand-rolled document shapes (the Register form's and the wizard's former `mockMetadata`) with one builder. It preserves the trait names `SpecimenDetailModal` skips by name and the `"Snapped "` prefix `utils/pdfExport.js` filters on — both were undocumented contracts between files.
+- 40 new tests, including guards that neither write site contains either fabricated identifier or generates a URI at random, that the object path carries no timestamp, and that the migration's bucket name and policies match what the client actually does.
+
+#### 📄 `tokenURI` now resolves to a real document (§9.19, resolved as option c)
+Rather than stopping at "publish nothing," the metadata document is now **hosted in the existing public Supabase Storage project** (new `specimen-metadata` bucket) — chosen over IPFS because it needs no new provider, reuses the storage already serving specimen photos, and makes `tokenURI` resolve today. Stated plainly: it's centralized and mutable, so it's provenance *hosting*, not provenance *proof*. Switching to IPFS later changes only which URI `publicMetadataUri` returns.
+
+**The publish stays off the critical path, without guessing.** Because the bucket is public and the object path is deterministic — `<owner_wallet>/<serial>.json`, no timestamp or nonce — `getPublicUrl` is a pure string operation. The final URL is knowable *before* the upload, so the correct URI can be committed on-chain while the certificate write stays local-first and fire-and-forget. That same property makes a failed upload retryable to the exact same URL, so the on-chain value never has to change. `metadataStatus` (`none` / `pending` / `published` / `failed` / `external`) tracks it, and `retryPendingMetadataPublishes` re-publishes on the next login sync.
+
+The guard worth naming: `publicMetadataUri` returns empty when storage isn't configured. Without it, `supabaseClient`'s `placeholder.supabase.co` fallback would be written on-chain — recreating the exact bug being fixed.
+
+Storage policies are **deliberately stricter than the sibling `specimen-photos` bucket**, which matches only the first 10 characters of the caller's address. A metadata document is the content behind an on-chain provenance claim, so a prefix collision must not be enough to overwrite someone else's; writes compare the full wallet folder. No DELETE policy exists — removing a document would turn a resolving `tokenURI` into a dead one, which is the failure this work set out to fix.
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `frontend/src/services/specimenMetadata.js` | **New.** URI validation gate, the one metadata document builder, and the deterministic-path hosting + retry |
+| `frontend/supabase/migrations/20260729_specimen_metadata_storage.sql` | **New.** Public JSON-only `specimen-metadata` bucket; full-wallet-scoped write/update policies; no delete |
+| `frontend/src/services/relayer.js` | Resolves the certificate's URI where the serial is assigned (supplied → validated, else the hosted URL, else empty) and publishes fire-and-forget |
+| `frontend/src/components/MintSpecimen.jsx` | Defaults to no URI; validates before publishing; Advanced section moved to Pro; builds the document once and passes it to the relayer |
+| `frontend/src/components/SpawningWizard.jsx` | Removed the `Math.random()` identifier; each offspring gets its own hosted document |
+| `frontend/src/App.jsx` | Runs the metadata retry pass after the login cloud sync |
+| `frontend/src/__tests__/specimenMetadata.test.js` | **New.** 40 tests incl. the fabricated-identifier guards, path determinism, and migration/client agreement |
+| `docs/BREEDER_STATE_MODEL.md` | New §4.3 (metadata URI + hosting); §9.9 and §9.19 closed; added §9.20 |
+
+---
+
+## [0.10.0] — 2026-07-29
+
+### 🧬 Breeder Tools T1 — Pairing Integrity: Sex on the Certificate, One Inbreeding Engine
+
+Implements [`docs/BREEDER_TOOLS_T1_PAIRING_SPEC.md`](docs/BREEDER_TOOLS_T1_PAIRING_SPEC.md), closing [`BREEDER_STATE_MODEL.md`](docs/BREEDER_STATE_MODEL.md) §9.7 and §9.8. The Spawning wizard previously couldn't validate what it was told: it accepted pairings it had no basis to accept, then recorded a genetic claim computed with the weaker of two engines it already had available.
+
+#### 🐛 Fixes
+- **Cousin pairings were recorded as "0% Safe" on the offspring's certificates** — `SpawningWizard.calculateInbreeding` compared only the two candidates' *immediate* parents. Full siblings and parent–offspring were caught, but cousins, half-cousins, and grandparent–grandchild all fell through to `0% "Safe Lineage"` — and that number was written into each offspring's metadata as the `"Inbreeding Coefficient"` attribute, which `SpecimenDetailModal` reads back. A cousin spawn permanently stamped a false genetic claim on up to ten birth certificates. Relatedness now comes from Wright's path method over three generations (`utils/coiCalculator.js`, already used by the Genetics tab and reachable since the pedigree resolver landed in 0.9.9). The heuristic is deleted, not wrapped.
+- **A `0%` that meant "we didn't look" now says so** — the old engine returned a confident zero for every case it couldn't see. A zero is only reported when there was ancestry on **both** sides to search; otherwise the result is an explicit "no pedigree data". Positive detection is always reported, so a parent–offspring pairing still shows 25% even when the parent itself is wild-caught. The recorded attribute is `"Unknown — no pedigree data"`, never `"0%"`.
+- **The recorded claim is now self-describing** — `"COI Method": "Wright, 3 generations"` travels with the coefficient, so a future reader can tell a real Wright value from the old heuristic's output. Sire and dam sex are recorded too, which is what makes a pairing auditable after the fact.
+- **Two males could be paired** — the Sire/Dam pickers filtered on species alone, so the wizard would register offspring from a same-sex pair. That's now the one blocking validation.
+- **The Register form was the only add-a-fish surface that didn't collect sex** — so every birth certificate created there defaulted to `"Unsexed"` and the pairing tools had nothing to check against. It now has a Sex control.
+- **`"Not Sure"` vs `"Unsexed"` vocabulary fork** — `TankList`'s two sex pickers wrote the literal `"Not Sure"`, a value no other writer produced, so `nurseryGrouping`, `TankInhabitants`, and `FryNursery` each special-cased both spellings. One stored vocabulary now, normalized on read — no data migration needed.
+- **A species mismatch was reported *as* an inbreeding result** (`"Hybrid / Species Mismatch"` with coefficient 0). Relatedness and species compatibility are independent findings and are now reported separately.
+- **Unsexed fish were displayed as female** — two specimen rows in `TankList` gated their sex chip on `spec.gender !== "Not Sure"`, which let a fish stored as `"Unsexed"` through and then fell to the `else` branch, rendering a pink **♀**. So any fish added via Register, the Spawning wizard, `FacilityTreeView`, or the E2E seeder showed a confident female marker regardless of its actual sex. Found by the source guard written for acceptance criterion 2 — neither the earlier greps nor a reading of the file had turned it up, which is a decent argument for the guard existing.
+
+#### 🎯 The rule that shaped the design
+**Unknown sex never blocks a pairing.** The obvious implementation is to filter the pickers to male × female, and it would have been wrong: most aquarium species can't be reliably sexed by eye and the overwhelming majority of existing records are `"Unsexed"`, so filtering would leave a breeder unable to record a spawn that actually happened. Candidates are **ordered, never removed** — complementary sex first, unsexed next, same-sex last but still selectable. A high COI doesn't block either; line-breeding is deliberate practice and the coefficient is information, not a gate. Both rules are pinned by test.
+
+#### 🧱 Internal
+- New `utils/specimenSex.js` — canonical vocabulary (`SEX`, `normalizeSex`, `sexLabel`, `sexSymbol`, `isKnownSex`, `SEX_OPTIONS`), the single `canPair` rule, `pairingCandidateComparator`, and `PAIRING_COPY`.
+- New `services/pairingAssessment.js` — `assessPairing` composes the pedigree resolver and the COI engine into three independent signals (sex / species / relatedness) plus one `canProceed`; `pairingMetadataAttributes` builds the recorded claim.
+- All new copy lives in `PAIRING_COPY` with the house `PROHIBITED_TERMS` invariant test, matching `orderCopy.test.js` / `listingFlowCopy.test.js`.
+- The wizard's assessment is async now (it walks pedigrees), with a stale-result guard so changing a selection mid-flight can't apply the previous pair's answer.
+- 41 new tests. The load-bearing ones are a **cousin fixture** (asserts 6.25%, the case the old engine called "Safe"), a **wild-caught × wild-caught fixture** (asserts unavailable, not `0%`), and an explicit assertion that an **unsexed pairing is not blocked**.
+
+#### 📋 Found, logged, not fixed
+`coiCalculator.getRiskLevel` bands `<= 25` as `"high"`, so a full-sibling pairing at exactly 25% is labelled "high" with a recommendation reading "equivalent to half-sibling mating". The coefficient is correct; the band edge and that one string are off by a tier. Changing the bands was out of T1's scope, so the tests assert actual behavior and it's logged as §9.18 rather than quietly adjusted.
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `frontend/src/utils/specimenSex.js` | **New.** Vocabulary, `canPair`, candidate ordering, `PAIRING_COPY` |
+| `frontend/src/services/pairingAssessment.js` | **New.** `assessPairing` + `pairingMetadataAttributes` |
+| `frontend/src/components/SpawningWizard.jsx` | Deleted the heuristic; async assessment with stale guard; real COI display; self-describing metadata; sex-aware pickers and summary |
+| `frontend/src/components/MintSpecimen.jsx` | Sex control on the Register form |
+| `frontend/src/components/TankList.jsx` | Both sex pickers render from `SEX_OPTIONS` and stop writing `"Not Sure"`; fixed two specimen rows that rendered unsexed fish as ♀ |
+| `frontend/src/components/COICalculator.jsx` | Same "no pedigree data" honesty rule and shared copy |
+| `frontend/src/utils/ownedSpecimens.js` | Returns normalized `gender`; sex symbol in the picker label |
+| `frontend/src/utils/nurseryGrouping.js` | Uses `normalizeSex` |
+| `frontend/src/components/logbook/TankInhabitants.jsx` | Uses `isKnownSex` / `sexSymbol` |
+| `frontend/src/components/FryNursery.jsx` | Uses `isKnownSex` / `sexSymbol` |
+| `frontend/src/__tests__/specimenSex.test.js` | **New.** 21 tests incl. the not-blocked-when-unsexed guard and the copy invariant |
+| `frontend/src/__tests__/pairingAssessment.test.js` | **New.** 20 tests incl. cousin / half-cousin / sibling / wild-caught fixtures |
+| `docs/BREEDER_STATE_MODEL.md` | New sex section (§4.4); §9.7 and §9.8 closed; added §9.18 |
+
+---
+
+## [0.9.9] — 2026-07-29
+
+### 🧬 Breeder Tools: Grow-Out Durability, Retirement Outcomes, and One Pedigree Resolver
+
+Second pass of the Breeder Tools review (continues 0.9.8). Closes the surface's largest data-loss gap, stops a bulk action from recording deaths that didn't happen, and collapses two disagreeing pedigree walkers into one. Gap tracking lives in [`docs/BREEDER_STATE_MODEL.md`](docs/BREEDER_STATE_MODEL.md) §9.
+
+#### 🐛 Fixes
+- **Grow-out history was device-local and silently lost** (§9.2) — `spawnGrowout` was the one load-bearing breeder table with no Supabase mirror. Every fry count, cull, loss, sale, and survival rate — plus the Poseidon overdue nudges and every stat and badge on the Achievements tab, all of which are *derived* from it — existed only in one browser's IndexedDB. A cache clear or a new device erased a breeder's entire production history while leaving their spawns and certificates intact, so the data looked fine and the numbers were wrong. Added the `aquadex_spawn_growout` mirror with a write path, a pull path, and a **backfill** so existing local history isn't stranded. Two design notes: the Dexie `++id` is device-scoped and therefore never used as a cloud identity (rows key on `owner_address + spawn_id + event_timestamp + type`), and base64 checkpoint photos are excluded from the payload rather than bloating every row — `has_photo` records that one existed.
+- **"Retire" in the Fish Nursery recorded a death** (§9.1) — `retireFish` hard-wrote status `1` (Deceased) under copy that said "marks it inactive", so rehoming a group of fry recorded a group of deaths. Not cosmetic: those fish then read "Deceased" in every pedigree tree and skewed the grow-out survivor math. Retiring now requires picking an outcome. There is no "inactive" status in the model — the three states are Active/Deceased/Rehomed.
+- **The inbreeding calculator could analyse the wrong fish** (§9.4) — `sireId`/`damId` hold *local serials*, but `COICalculator` resolved ancestors by calling `contract.specimens(serial)` **before** checking Dexie. Token ids come from a global `++totalSpecimensMinted` counter unrelated to the serial, so that call returns a real specimen — just the wrong one — with no error. `SpecimenLineage` had the correct Dexie-first order and a comment explaining exactly this hazard. The same pairing could therefore produce a correct family tree and a COI computed against unrelated ancestry.
+- **Specimen photos went straight to localStorage** (§9.3) — Register and the Spawning wizard wrote raw `aquadex_specimen_photo_*` keys, sharing one ~5MB origin quota with no sync and no durability. Worst case was a spawn cohort: the same photo was written once *per offspring*, so 10 fry burned 10 copies of one image. Both now write through `putSpecimenPhoto` (durable Dexie `tankMedia`, still mirrored to localStorage so existing readers keep working), and a quota failure no longer loses the photo.
+- **Farewell status changes never reached the cloud** — `TankList`'s Farewell modal wrote the new status to Dexie only, so a rehoming or memorial recorded on one device stayed there. Now mirrored, matching the nursery's behavior.
+
+#### 🧱 Internal
+- New `services/pedigree.js` is the single ancestor resolver (`fetchSpecimenNode` / `fetchPedigreeTree` / `PEDIGREE_DEPTH`), consumed by both `SpecimenLineage` and `COICalculator`. The "3 generations" badge and copy now read `PEDIGREE_DEPTH` instead of a hardcoded 3.
+- `RETIREMENT_OUTCOMES` in `utils/specimenIdentity.js` is the one definition of how a fish leaves your care. `TankList`'s Farewell modal and `FryNursery`'s retire flow both render from it, so they can't drift on status value or copy.
+- The shared confirm dialog gained an optional `choices` array for actions with more than one correct resolution. Additive — existing yes/no callers are untouched.
+- `SpawningWizard`'s `mockMetadata` renamed to `offspringMetadata`. It was never mock data: it is written as the offspring's real persisted metadata and read back by `SpecimenDetailModal`.
+- 34 new tests across `growoutCloudSync.test.js` (row shape, photo stripping, orphan handling, migration/client key agreement) and `pedigreeResolution.test.js` (which uses a contract whose token-id space deliberately collides with the local serial space, so a precedence regression fails loudly).
+
+#### 🗑️ Removed the only path that could destroy a birth certificate (§9.15)
+`TankList`'s Farewell modal offered "Released / Other — Completely delete from local registry", implemented as `db.specimens.delete`. Resolved by product decision as **a certificate is never destroyed** — this is a lineage tracker, and a certificate is referenced by `sireId`/`damId` on every descendant, by listings, by orders, and by exported pedigrees. Deleting one doesn't remove a fish from the world, it silently orphans everything downstream. It also never actually held: `pullCloudDataForWallet` re-inserts any cloud row the device is missing, so the "deleted" record came back on next login.
+
+That option is now **"Remove from view"**, which archives. Archiving is a *visibility* concern, not a lifecycle one — for a mis-entry, a duplicate, or a fish whose fate you genuinely don't know, where recording "deceased" or "rehomed" would be a lie. It sets `archived` and detaches from the tank but **leaves `status` untouched**, and it's reversible. Archived certificates disappear from tank views, the nursery tray, and the sire/dam pickers while staying **fully resolvable by serial**, so lineage, COI, and pedigree exports all still see them and every descendant keeps a valid parent reference.
+
+New `services/specimenLifecycle.js` is now the only writer of specimen lifecycle state (`retireSpecimens` / `archiveSpecimens` / `unarchiveSpecimens`) and deliberately exposes **no delete**. A test asserts no exported name contains delete/purge/destroy, that no lifecycle action ever calls `db.specimens.delete`, and that the pedigree resolver does *not* filter on `archived` — descendants must keep resolving.
+
+Documented alongside it: **certificates are for individually tracked fish, cohorts are counts** (§4.2). Fish spawn in the hundreds, so eggs and fry en masse live as grow-out counts (`fry_count` / `loss` / `cull` / `sold`), not as individual records. A fry that doesn't make it is a `loss` count — there was never a certificate to retire or archive. This is why the Spawning wizard caps a spawn at 10 offspring certificates. The missing piece is a promotion path from cohort count → certificate for the keepers pulled out of a grow-out tank (§9.16, not built).
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `frontend/supabase/migrations/20260729_spawn_growout_sync.sql` | **New.** `aquadex_spawn_growout` table, natural-key unique index, wallet-scoped RLS (JWT claim with header fallback), append-only (no client DELETE) |
+| `frontend/src/services/pedigree.js` | **New.** The single Dexie-first ancestor resolver |
+| `frontend/src/services/cloudSync.js` | Grow-out write/batch/pull/backfill; drops device-scoped ids and base64 photos from the payload |
+| `frontend/src/utils/specimenIdentity.js` | Added `RETIREMENT_OUTCOMES` + `retirementOutcomeLabel` |
+| `frontend/src/services/specimenLifecycle.js` | **New.** The only writer of specimen lifecycle state; retire/archive/unarchive, no delete |
+| `frontend/src/components/FryNursery.jsx` | Retire requires an explicit outcome; added a "just hide it" choice; excludes archived; serials via `formatCertSerial` |
+| `frontend/src/components/TankList.jsx` | Confirm dialog supports `choices`; Farewell modal maps `RETIREMENT_OUTCOMES`; the delete option now archives |
+| `frontend/src/utils/ownedSpecimens.js` | Excludes archived certificates from the sire/dam pickers |
+| `frontend/src/__tests__/specimenLifecycle.test.js` | **New.** 21 tests, including the never-destroy invariant |
+| `frontend/src/components/COICalculator.jsx` | Uses the shared resolver; dropped its contract-first copy |
+| `frontend/src/components/SpecimenLineage.jsx` | Uses the shared resolver; dropped its hand-rolled tree walk |
+| `frontend/src/components/SpawnGrowoutTracker.jsx` | Mirrors each checkpoint to the cloud |
+| `frontend/src/components/BatchGrowOutPanel.jsx` | Mirrors batch checkpoints to the cloud |
+| `frontend/src/utils/spawnNarration.js` | Poseidon narration rides the same mirror |
+| `frontend/src/components/MintSpecimen.jsx` | Photo via `putSpecimenPhoto`; photo and metadata failures reported separately |
+| `frontend/src/components/SpawningWizard.jsx` | Cohort photo via `putSpecimenPhoto`; `mockMetadata` → `offspringMetadata` |
+| `frontend/src/__tests__/growoutCloudSync.test.js` | **New.** 17 tests |
+| `frontend/src/__tests__/pedigreeResolution.test.js` | **New.** 17 tests |
+| `docs/BREEDER_STATE_MODEL.md` | §7 grow-out mirror specifics; §9 statuses updated; added §9.14, §9.15 |
+
+---
+
+## [0.9.8] — 2026-07-29
+
+### 🧬 Breeder Tools: Certificate Identity, Status, and Attribution
+
+First pass of the Breeder Tools review. This surface predates the spec-driven rework of the Logbook, Marketplace, and Fish Finder, and it is the surface that *creates* the birth certificate every other surface reads — so it had drifted with no state model to hold it. Added [`docs/BREEDER_STATE_MODEL.md`](docs/BREEDER_STATE_MODEL.md) as the authoritative model and fixed the correctness bugs it exposed. The remaining gaps are enumerated in §9 of that document rather than left to be rediscovered.
+
+#### 🐛 Fixes
+- **A deceased fish displayed as "Transferred"** — `contracts/AquadexStorage.sol` declares `SpecimenStatus { Active, Deceased, Rehomed }`, and `PedigreeTree`, `BreedGallery`, and `SpecimenDetailModal` each inlined that mapping correctly. `SpawningDashboard` inlined it *wrong*, rendering `1` as "Transferred" and `2` as "Inactive" — so a fish you recorded as dead in My Aquariums read as transferred in your Breeder Tools certificate list. All four copies now come from one module.
+- **Certificate serials were truncated into other real certificates** — `SpawningDashboard` formatted serials with `.toString().slice(-3)`. Since `relayMintSpecimen` assigns sequential serials, cert 1042 rendered as "042" and its sire #1007 as "007" — both of which are *different real certificates*. Serials are identity, so `formatCertSerial()` only ever pads, never truncates. Same fix applied to the spawn/tank reference ids in the Spawning Logs, Grow-Out overdue banner, and batch panel.
+- **The Spawning Logs badge claimed a lifecycle that didn't exist** — It rendered Fry/**Juvenile**/**Adult**, but the model is `SpawnStatus { Egg, Fry, Raised, Failed }` and nothing ever advances the field past `Fry` anyway. Labels now name only real states. (Advancing the status from grow-out checkpoints is tracked as §9.6.)
+- **Another account's fish could be claimed as parents** — `loadOwnedSpecimens()` and the Register form's tank dropdown both ended with a "beta single-device fallback" that returned *every* record in IndexedDB when nothing matched the signed-in account. On a shared browser profile, or after an account switch, one account could see and select another account's fish as a sire/dam, or file a certificate into another account's tank. Ownership is now a hard filter with no fallback — an empty picker is the correct answer, and the empty states already existed.
+- **The "Breeder Account Username" Edit button could only produce an error** — In Pro mode any edit threw `"you do not have permission"` (the validation added in 0.9.x, see below), so the Edit affordance was a pure trap; in Casual mode the check was skipped entirely and the value was written to the certificate unvalidated. The Pro default also wrote the *display name* into `specimen.breeder`, which `services/relayer.js` defines as a canonical lowercase EOA. Attribution is now a derived, read-only row showing the signed-in account's display name and truncated address. Registering on behalf of another breeder needs a real permission model, not a text box.
+- **Redundant metadata refetch** — The Register form re-ran its full on-chain species-catalog and tank load whenever the Reef profile name resolved or the mode toggled, neither of which affects that data.
+
+#### 🧱 Internal
+- New `utils/specimenIdentity.js` is the single source for specimen status, spawn status, certificate serial formatting, and local-record references. `services/relayer.js` now imports `SERIAL_CEILING` from it instead of redeclaring it.
+- `src/__tests__/specimenIdentity.test.js` parses the Solidity enums out of `AquadexStorage.sol` and asserts the JS mirrors them ordinal-for-ordinal, so a contract change that reorders a state fails the suite. It also source-guards `SpawningDashboard` against re-inlining the mapping.
+- `src/__tests__/breederOwnershipScope.test.js` pins the ownership filter, including the shared-device case, and guards the Register form against the fallback and the permission trap returning.
+
+> Supersedes the **Breeder Ownership Validation** entry below (`"you do not have permission"`), which is removed rather than fixed: the check validated a field that should never have been editable.
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `docs/BREEDER_STATE_MODEL.md` | **New.** Authoritative model for specimen identity, status, spawn records, attribution, ownership scoping, and storage tiers; §9 enumerates the remaining gaps with tiers |
+| `frontend/src/utils/specimenIdentity.js` | **New.** Canonical status enums, labels, tones, and non-truncating serial/reference formatters |
+| `frontend/src/components/SpawningDashboard.jsx` | Fixed status labels and serial truncation; consumes the shared helpers |
+| `frontend/src/utils/ownedSpecimens.js` | Ownership is a hard filter; removed the all-device fallback; empty account returns `[]` |
+| `frontend/src/components/MintSpecimen.jsx` | Removed the tank-list fallback, the editable breeder field, and the permission trap; attribution derived from the session; trimmed the metadata-refetch deps |
+| `frontend/src/components/GrowOutSection.jsx` | Spawn refs via `formatLocalRecordRef` |
+| `frontend/src/components/BatchGrowOutPanel.jsx` | Spawn refs via `formatLocalRecordRef` |
+| `frontend/src/services/relayer.js` | Imports `SERIAL_CEILING` from the shared module |
+| `frontend/src/__tests__/specimenIdentity.test.js` | **New.** Enum-parity, formatting, and source guards (20 tests) |
+| `frontend/src/__tests__/breederOwnershipScope.test.js` | **New.** Ownership scoping and Register-form guards (11 tests) |
+
+---
+
 ## [0.9.7] — 2026-07-10
 
 ### 🛠️ Marketplace & XP Bug Fixes

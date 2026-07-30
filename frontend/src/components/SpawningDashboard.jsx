@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../db";
+import {
+  formatCertSerial,
+  formatLocalRecordRef,
+  spawnStatusLabel,
+  spawnStatusTone,
+  specimenStatusLabel,
+  specimenStatusTone,
+} from "../utils/specimenIdentity";
 
 /**
  * SpawningDashboard — Displays three sections under the Spawning tab:
@@ -227,12 +235,12 @@ export function SpawningDashboard({ walletAccount }) {
                       </span>
                       <div>
                         <div style={{ color: "#fff", fontSize: "0.85rem", fontWeight: "500" }}>
-                          Cert. Serial No. {cert.id.toString().slice(-3).padStart(3, "0")}
+                          Cert. Serial No. {formatCertSerial(cert.id)}
                         </div>
                         <div style={{ color: "var(--text-muted)", fontSize: "0.72rem", marginTop: "2px" }}>
                           {getSpeciesName(cert.speciesId)}
-                          {cert.sireId ? ` · Sire: #${cert.sireId.toString().slice(-3)}` : ""}
-                          {cert.damId ? ` · Dam: #${cert.damId.toString().slice(-3)}` : ""}
+                          {cert.sireId ? ` · Sire: #${formatCertSerial(cert.sireId)}` : ""}
+                          {cert.damId ? ` · Dam: #${formatCertSerial(cert.damId)}` : ""}
                         </div>
                       </div>
                     </div>
@@ -245,10 +253,10 @@ export function SpawningDashboard({ walletAccount }) {
                         marginTop: "2px",
                         padding: "2px 6px",
                         borderRadius: "4px",
-                        background: cert.status === 0 ? "rgba(16, 185, 129, 0.15)" : "rgba(251, 191, 36, 0.15)",
-                        color: cert.status === 0 ? "var(--accent-green)" : "#fbbf24",
+                        background: specimenStatusTone(cert.status).bg,
+                        color: specimenStatusTone(cert.status).color,
                       }}>
-                        {cert.status === 0 ? "Active" : cert.status === 1 ? "Transferred" : "Inactive"}
+                        {specimenStatusLabel(cert.status)}
                       </div>
                     </div>
                   </div>
@@ -316,7 +324,7 @@ export function SpawningDashboard({ walletAccount }) {
             <div style={{ marginTop: "1.25rem", padding: "0.75rem 1rem", background: "rgba(168, 85, 247, 0.05)", border: "1px solid rgba(168, 85, 247, 0.12)", borderRadius: "8px" }}>
               <div style={{ color: "var(--text-muted)", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "0.3rem" }}>Last Spawn Event</div>
               <div style={{ color: "#fff", fontSize: "0.85rem" }}>
-                {getSpeciesName(lastSpawn.speciesId)} — Sire #{lastSpawn.sireId.toString().slice(-3)} × Dam #{lastSpawn.damId.toString().slice(-3)}
+                {getSpeciesName(lastSpawn.speciesId)} — Sire #{formatCertSerial(lastSpawn.sireId)} × Dam #{formatCertSerial(lastSpawn.damId)}
               </div>
               <div style={{ color: "var(--text-muted)", fontSize: "0.72rem", marginTop: "0.2rem" }}>
                 {formatDate(lastSpawn.timestamp)} at {formatTime(lastSpawn.timestamp)} · {lastSpawn.offspringIds?.length || 0} offspring
@@ -355,8 +363,7 @@ export function SpawningDashboard({ walletAccount }) {
               {[...spawns]
                 .sort((a, b) => (b.timestamp || b.spawnId) - (a.timestamp || a.spawnId))
                 .map((spawn) => {
-                  const statusLabel = spawn.status === 1 ? "Fry" : spawn.status === 2 ? "Juvenile" : spawn.status === 3 ? "Adult" : "Active";
-                  const statusColor = spawn.status === 1 ? "#fbbf24" : spawn.status === 2 ? "#3b82f6" : "var(--accent-green)";
+                  const statusTone = spawnStatusTone(spawn.status);
                   return (
                     <div
                       key={spawn.spawnId}
@@ -370,7 +377,7 @@ export function SpawningDashboard({ walletAccount }) {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                         <div>
                           <div style={{ color: "#fff", fontSize: "0.85rem", fontWeight: "500" }}>
-                            Spawn #{spawn.spawnId.toString().slice(-6)}
+                            Spawn #{formatLocalRecordRef(spawn.spawnId)}
                           </div>
                           <div style={{ color: "var(--text-muted)", fontSize: "0.72rem", marginTop: "3px" }}>
                             {getSpeciesName(spawn.speciesId)}
@@ -380,22 +387,22 @@ export function SpawningDashboard({ walletAccount }) {
                           fontSize: "0.65rem",
                           padding: "2px 8px",
                           borderRadius: "4px",
-                          background: `rgba(${spawn.status === 1 ? "251, 191, 36" : spawn.status === 2 ? "59, 130, 246" : "16, 185, 129"}, 0.15)`,
-                          color: statusColor,
+                          background: statusTone.bg,
+                          color: statusTone.color,
                           fontWeight: "500"
                         }}>
-                          {statusLabel}
+                          {spawnStatusLabel(spawn.status)}
                         </div>
                       </div>
 
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.6rem" }}>
                         <div>
                           <div style={{ color: "var(--text-muted)", fontSize: "0.65rem" }}>Sire</div>
-                          <div style={{ color: "var(--text-secondary)", fontSize: "0.75rem" }}>#{spawn.sireId.toString().slice(-3)}</div>
+                          <div style={{ color: "var(--text-secondary)", fontSize: "0.75rem" }}>#{formatCertSerial(spawn.sireId)}</div>
                         </div>
                         <div>
                           <div style={{ color: "var(--text-muted)", fontSize: "0.65rem" }}>Dam</div>
-                          <div style={{ color: "var(--text-secondary)", fontSize: "0.75rem" }}>#{spawn.damId.toString().slice(-3)}</div>
+                          <div style={{ color: "var(--text-secondary)", fontSize: "0.75rem" }}>#{formatCertSerial(spawn.damId)}</div>
                         </div>
                         <div>
                           <div style={{ color: "var(--text-muted)", fontSize: "0.65rem" }}>Offspring</div>
@@ -405,7 +412,7 @@ export function SpawningDashboard({ walletAccount }) {
 
                       <div style={{ marginTop: "0.5rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ color: "var(--text-muted)", fontSize: "0.68rem" }}>
-                          Tank #{spawn.tankId?.toString().slice(-3) || "—"}
+                          Tank #{formatLocalRecordRef(spawn.tankId)}
                         </span>
                         <span style={{ color: "var(--text-muted)", fontSize: "0.68rem" }}>
                           {formatDate(spawn.timestamp)} {formatTime(spawn.timestamp)}

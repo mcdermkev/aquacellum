@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../db";
 import { addXp } from "../utils/xp";
+import { syncGrowoutCheckpointsToCloud } from "../services/cloudSync";
+import { formatLocalRecordRef } from "../utils/specimenIdentity";
+import { summarizeGrowout } from "../utils/growoutFunnel";
+import { hasEntitlement, getRequiredTierFor } from "../services/entitlements";
+import { getXp } from "../utils/xp";
 
 /**
  * BatchGrowOutPanel — Table/grid view for managing multiple spawns at once.
@@ -35,6 +40,11 @@ export function BatchGrowOutPanel({ walletAccount, casualModeActive }) {
   const [batchNote, setBatchNote] = useState("");
   const [batchBusy, setBatchBusy] = useState(false);
   const [filterOverdue, setFilterOverdue] = useState(false);
+
+  // Multi-spawn actions only. Per-spawn checkpoint logging is REQUIRED and lives
+  // on each spawn's own tracker, never gated.
+  const canBulkManage = hasEntitlement("bulk_management", { xp: getXp() });
+  const bulkRequiredTier = getRequiredTierFor("bulk_management");
 
   useEffect(() => {
     if (!walletAccount) { setLoading(false); return; }
@@ -74,20 +84,25 @@ export function BatchGrowOutPanel({ walletAccount, casualModeActive }) {
     }
   };
 
-  // Calculate spawn metrics
+  // Calculate spawn metrics via the shared funnel (utils/growoutFunnel.js).
   const getSpawnMetrics = (spawn) => {
-    const cps = (checkpointData[spawn.spawnId] || []).filter(c => c.type !== "narration");
-    const maxFry = cps.filter(c => c.type === "fry_count").reduce((max, c) => Math.max(max, c.count || 0), 0);
-    const losses = cps.filter(c => c.type === "loss").reduce((sum, c) => sum + (c.count || 0), 0);
-    const culled = cps.filter(c => c.type === "cull").reduce((sum, c) => sum + (c.count || 0), 0);
-    const sold = cps.filter(c => c.type === "sold").reduce((sum, c) => sum + (c.count || 0), 0);
-    const alive = Math.max(0, maxFry - losses - culled - sold);
-    const survival = maxFry > 0 ? Math.round(((maxFry - losses) / maxFry) * 100) : null;
-    const lastCp = cps.length > 0 ? Math.max(...cps.map(c => c.timestamp)) : spawn.timestamp || 0;
-    const daysSince = Math.floor((Date.now() / 1000 - lastCp) / 86400);
     const eggCount = (spawn.offspringIds || []).length || Number(spawn.offspringCount || 0);
+    const funnel = summarizeGrowout(checkpointData[spawn.spawnId], { eggCount });
+    const lastCp = funnel.lastCheckpointAt || spawn.timestamp || 0;
 
-    return { maxFry, alive, sold, losses: losses + culled, survival, lastCp, daysSince, eggCount, checkpointCount: cps.length };
+    return {
+      maxFry: funnel.fry,
+      alive: funnel.alive,
+      sold: funnel.sold,
+      // This column is labelled "lost" in the table and has always meant
+      // "removed by loss or cull", as distinct from sold.
+      losses: funnel.lost + funnel.culled,
+      survival: funnel.survivalRate,
+      lastCp,
+      daysSince: Math.floor((Date.now() / 1000 - lastCp) / 86400),
+      eggCount,
+      checkpointCount: funnel.checkpointCount,
+    };
   };
 
   // Sort and filter spawns
@@ -119,6 +134,9 @@ export function BatchGrowOutPanel({ walletAccount, casualModeActive }) {
 
   const handleBatchSubmit = async () => {
     if (selected.size === 0) return;
+    // Guard the action itself, not just its button — the UI can be stale and the
+    // entitlement is the rule, not the rendering.
+    if (!canBulkManage) return;
     const action = BATCH_ACTIONS.find(a => a.id === batchAction);
     if (!action) return;
 
@@ -141,6 +159,9 @@ export function BatchGrowOutPanel({ walletAccount, casualModeActive }) {
       }
 
       await db.spawnGrowout.bulkAdd(entries);
+      // Fire-and-forget cloud mirror. walletAccount is passed explicitly so the
+      // batch skips a per-checkpoint spawn-owner lookup.
+      syncGrowoutCheckpointsToCloud(entries, walletAccount).catch(() => {});
       addXp(5 * selected.size, `Batch logged ${action.label} × ${selected.size} spawns`);
 
       // Reset
@@ -206,8 +227,27 @@ export function BatchGrowOutPanel({ walletAccount, casualModeActive }) {
         </div>
       </div>
 
-      {/* Batch action bar (visible when items selected) */}
-      {selected.size > 0 && (
+      {/* Batch action bar (visible when items selected).
+          Logging a checkpoint on ONE spawn is never gated — that's
+          `breeder_growout_tracking`, a REQUIRED capability, and it's available
+          on every spawn card above. Applying one across MANY spawns at once is a
+          scale convenience, gated on the same `bulk_management` tier the Breeder
+          Terminal uses for bulk fulfillment. The table, the metrics, and the
+          per-spawn trackers all stay fully usable either way. */}
+      {selected.size > 0 && !canBulkManage && (
+        <div style={{
+          padding: "0.6rem 0.8rem", marginBottom: "0.6rem", borderRadius: "8px",
+          background: "rgba(255,255,255,0.02)", border: "1px dashed var(--glass-border)",
+          display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap",
+        }}>
+          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
+            {selected.size} selected — applying one action across several spawns at once unlocks at{" "}
+            <strong style={{ color: "#a78bfa" }}>{bulkRequiredTier}</strong>. You can log a checkpoint on
+            any single spawn now, from its own tracker.
+          </span>
+        </div>
+      )}
+      {selected.size > 0 && canBulkManage && (
         <div style={{
           padding: "0.6rem 0.8rem", marginBottom: "0.6rem", borderRadius: "8px",
           background: "rgba(139, 92, 246, 0.06)", border: "1px solid rgba(139, 92, 246, 0.2)",
@@ -316,7 +356,7 @@ export function BatchGrowOutPanel({ walletAccount, casualModeActive }) {
                     {speciesName}
                   </div>
                   <div style={{ fontSize: "0.6rem", color: "var(--text-muted)" }}>
-                    #{String(spawn.spawnId).slice(-6)}
+                    #{formatLocalRecordRef(spawn.spawnId)}
                   </div>
                 </div>
                 <div style={{ textAlign: "center", fontSize: "0.72rem", color: "var(--text-secondary)", alignSelf: "center" }}>

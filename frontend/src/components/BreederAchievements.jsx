@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { db } from "../db";
+import { loadBreederStats } from "../services/breederStats";
 import { getXp, getLevelInfo } from "../utils/xp";
 import { ShareButton } from "./ShareButton";
 import { generateAchievementCard, generateSpawnMilestoneCard } from "../utils/shareCard";
@@ -41,9 +41,16 @@ const ACHIEVEMENTS = [
   { id: "survival_90", icon: "💪", label: "Strong Lines", description: "Achieved 90%+ survival on any spawn", check: (d) => d.bestSurvivalRate >= 90, tier: "silver" },
   { id: "survival_95", icon: "⚡", label: "Elite Genetics", description: "Achieved 95%+ survival rate", check: (d) => d.bestSurvivalRate >= 95, tier: "gold" },
 
-  // Sales milestones
-  { id: "first_sale", icon: "💰", label: "First Sale", description: "Sold your first bred specimen", check: (d) => d.totalSold >= 1, tier: "bronze" },
-  { id: "sales_50", icon: "🏪", label: "Established Seller", description: "Sold 50+ bred fish", check: (d) => d.totalSold >= 50, tier: "silver" },
+  // Sales milestones.
+  // These read `verifiedSales` — COMPLETED ORDERS where this account was the
+  // seller — not the grow-out `sold` checkpoint count. They used to read the
+  // checkpoint count, which is a number the breeder types into a text field, so
+  // "Established Seller — Sold 50+ bred fish" was earnable by typing 50. Every
+  // badge has a share button, which made that self-assessment one tap from being
+  // published as a claim about someone's commercial history.
+  // See docs/BREEDER_STATE_MODEL.md §9.11.
+  { id: "first_sale", icon: "💰", label: "First Sale", description: "Completed your first sale on the marketplace", check: (d) => d.verifiedSales >= 1, tier: "bronze" },
+  { id: "sales_50", icon: "🏪", label: "Established Seller", description: "Completed 50+ marketplace sales", check: (d) => d.verifiedSales >= 50, tier: "silver" },
 ];
 
 const TIER_STYLES = {
@@ -58,57 +65,16 @@ export function BreederAchievements({ walletAccount }) {
 
   useEffect(() => {
     if (!walletAccount) { setLoading(false); return; }
-    loadBreederStats();
+    refreshStats();
   }, [walletAccount]);
 
-  const loadBreederStats = async () => {
+  // Stats come from services/breederStats.js, which keeps the funnel math in the
+  // one shared module and — critically — separates VERIFIED figures (completed
+  // orders) from SELF-REPORTED ones (grow-out checkpoints the breeder typed).
+  const refreshStats = async () => {
     try {
       setLoading(true);
-      const walletLower = walletAccount.toLowerCase();
-
-      // Load spawns
-      const allSpawns = await db.spawns.toArray();
-      const mySpawns = allSpawns.filter(s => (s.ownerAddress || "").toLowerCase() === walletLower);
-
-      // Load checkpoints
-      const allCheckpoints = await db.spawnGrowout.toArray();
-      const mySpawnIds = new Set(mySpawns.map(s => s.spawnId));
-      const myCheckpoints = allCheckpoints.filter(cp => mySpawnIds.has(cp.spawnId) && cp.type !== "narration");
-
-      // Calculate stats
-      const totalSpawns = mySpawns.length;
-      const uniqueSpeciesBred = new Set(mySpawns.map(s => s.speciesId)).size;
-      const totalOffspring = mySpawns.reduce((sum, s) => sum + ((s.offspringIds || []).length || Number(s.offspringCount || 0)), 0);
-      const totalCheckpoints = myCheckpoints.length;
-
-      // Calculate survival per spawn
-      let totalFrySurvived = 0;
-      let totalSold = 0;
-      let bestSurvivalRate = 0;
-
-      const spawnCheckpointMap = {};
-      for (const cp of myCheckpoints) {
-        if (!spawnCheckpointMap[cp.spawnId]) spawnCheckpointMap[cp.spawnId] = [];
-        spawnCheckpointMap[cp.spawnId].push(cp);
-      }
-
-      for (const [spawnId, cps] of Object.entries(spawnCheckpointMap)) {
-        const maxFry = cps.filter(c => c.type === "fry_count").reduce((max, c) => Math.max(max, c.count || 0), 0);
-        const losses = cps.filter(c => c.type === "loss").reduce((sum, c) => sum + (c.count || 0), 0);
-        const culls = cps.filter(c => c.type === "cull").reduce((sum, c) => sum + (c.count || 0), 0);
-        const sold = cps.filter(c => c.type === "sold").reduce((sum, c) => sum + (c.count || 0), 0);
-        const alive = Math.max(0, maxFry - losses - culls - sold);
-
-        totalFrySurvived += alive;
-        totalSold += sold;
-
-        if (maxFry > 0) {
-          const rate = Math.round(((maxFry - losses) / maxFry) * 100);
-          bestSurvivalRate = Math.max(bestSurvivalRate, rate);
-        }
-      }
-
-      setStats({ totalSpawns, uniqueSpeciesBred, totalOffspring, totalCheckpoints, totalFrySurvived, totalSold, bestSurvivalRate });
+      setStats(await loadBreederStats(walletAccount));
     } catch (err) {
       console.error("[Achievements] Failed to load stats:", err);
     } finally {
@@ -138,9 +104,15 @@ export function BreederAchievements({ walletAccount }) {
           { label: "Species", value: stats.uniqueSpeciesBred, icon: "🧬" },
           { label: "Checkpoints", value: stats.totalCheckpoints, icon: "📊" },
           { label: "Best Survival", value: `${stats.bestSurvivalRate}%`, icon: "💪" },
-          { label: "Sold", value: stats.totalSold, icon: "💰" },
-        ].map(({ label, value, icon }) => (
-          <div key={label} style={{
+          // Two separate tiles on purpose. "Sales" is verified (completed orders);
+          // "Rehomed" is the breeder's own tally, which legitimately includes fish
+          // given away or sold at a club and never touched an order. Collapsing
+          // them into one "Sold" number is what let a typed figure read as
+          // commercial history.
+          { label: "Sales", value: stats.verifiedSales, icon: "💰", title: "Completed marketplace sales" },
+          { label: "Rehomed", value: stats.frySoldSelfReported, icon: "🏠", title: "From your own grow-out logs — includes fish rehomed off the marketplace" },
+        ].map(({ label, value, icon, title }) => (
+          <div key={label} title={title} style={{
             padding: "0.65rem", borderRadius: "8px", textAlign: "center",
             background: "rgba(139, 92, 246, 0.04)", border: "1px solid rgba(139, 92, 246, 0.1)",
           }}>

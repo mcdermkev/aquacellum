@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../db";
 import { addXp } from "../utils/xp";
+import { syncGrowoutCheckpointToCloud } from "../services/cloudSync";
+import { summarizeGrowout } from "../utils/growoutFunnel";
 import { generateSpawnNarration } from "../utils/spawnNarration";
 import { GrowOutChart } from "./GrowOutChart";
 import { compressImage } from "../utils/imageCompression";
@@ -49,14 +51,18 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
     const count = parseInt(formCount, 10);
     if (isNaN(count) && formType !== "note") return;
 
-    await db.spawnGrowout.add({
+    const checkpoint = {
       spawnId,
       timestamp: Math.round(Date.now() / 1000),
       type: formType,
       count: formType === "note" ? 0 : count,
       note: formNote.trim() || GROWOUT_TYPES[formType].label,
       photo: formPhoto?.preview || null,
-    });
+    };
+    await db.spawnGrowout.add(checkpoint);
+    // Fire-and-forget cloud mirror so grow-out history survives a cache clear or
+    // a device change (the photo is stripped server-side — see cloudSync.js).
+    syncGrowoutCheckpointToCloud(checkpoint).catch(() => {});
 
     addXp(5, "Logged Grow-Out Checkpoint");
     setFormCount("");
@@ -91,13 +97,11 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
     }).finally(() => setNarrationLoading(false));
   };
 
-  // Calculate yield summary
-  const totalFry = checkpoints.filter(c => c.type === "fry_count").reduce((max, c) => Math.max(max, c.count || 0), 0);
-  const totalCulled = checkpoints.filter(c => c.type === "cull").reduce((sum, c) => sum + (c.count || 0), 0);
-  const totalSold = checkpoints.filter(c => c.type === "sold").reduce((sum, c) => sum + (c.count || 0), 0);
-  const totalLoss = checkpoints.filter(c => c.type === "loss").reduce((sum, c) => sum + (c.count || 0), 0);
-  const survivors = Math.max(0, totalFry - totalCulled - totalSold - totalLoss);
-  const survivalRate = totalFry > 0 ? Math.round(((totalFry - totalLoss) / totalFry) * 100) : null;
+  // Yield summary — one shared implementation (utils/growoutFunnel.js) so a new
+  // checkpoint type can't be counted here and missed in the chart, the batch
+  // panel, or the achievements tab.
+  const funnel = summarizeGrowout(checkpoints, { eggCount });
+  const { fry: totalFry, culled: totalCulled, sold: totalSold, lost: totalLoss, alive: survivors, survivalRate } = funnel;
 
   if (!expanded) {
     return (

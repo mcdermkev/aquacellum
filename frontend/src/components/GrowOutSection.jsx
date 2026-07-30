@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { db } from "../db";
 import { SpawnGrowoutTracker } from "./SpawnGrowoutTracker";
 import { getOverdueSpawns } from "../utils/growoutReminders";
+import { formatLocalRecordRef } from "../utils/specimenIdentity";
 import { BatchGrowOutPanel } from "./BatchGrowOutPanel";
 import { EmptyStateIllustration, BreederSkeleton } from "./BreederUXPolish";
 
@@ -143,7 +144,7 @@ export function GrowOutSection({ walletAccount, casualModeActive }) {
               Poseidon nudge — {overdueSpawns.length} spawn{overdueSpawns.length > 1 ? "s" : ""} overdue
             </div>
             <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", lineHeight: "1.4" }}>
-              {overdueSpawns.slice(0, 3).map(s => `${s.speciesName} (#${String(s.spawnId).slice(-4)}) — ${s.daysSince}d`).join(" · ")}
+              {overdueSpawns.slice(0, 3).map(s => `${s.speciesName} (#${formatLocalRecordRef(s.spawnId)}) — ${s.daysSince}d`).join(" · ")}
               {overdueSpawns.length > 3 && ` +${overdueSpawns.length - 3} more`}
             </div>
           </div>

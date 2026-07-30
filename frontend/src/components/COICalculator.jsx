@@ -1,8 +1,10 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import { Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { getProvider } from "../utils/smartAccount";
-import { db } from "../db";
+import { fetchPedigreeTree, PEDIGREE_DEPTH } from "../services/pedigree";
+import { formatCertSerial } from "../utils/specimenIdentity";
+import { PAIRING_COPY } from "../utils/specimenSex";
 import {
   buildAncestorMapFromTree,
   calculateCOIFromMaps,
@@ -15,6 +17,13 @@ import {
  * Allows breeders to select a proposed sire and dam, fetches their
  * pedigrees (3 generations deep), then calculates and visualizes
  * the inbreeding coefficient with risk badges and recommendations.
+ *
+ * Ancestor resolution goes through services/pedigree.js, the SAME resolver
+ * SpecimenLineage uses. This component previously had its own copy that asked the
+ * contract BEFORE Dexie — inverting the precedence rule in
+ * docs/BREEDER_STATE_MODEL.md §3 — so `contract.specimens(localSerial)` could
+ * return a real but unrelated specimen and the COI would be computed against the
+ * wrong ancestry, with no error to show for it.
  */
 export function COICalculator({ contractAddress, walletAccount }) {
   const [sireId, setSireId] = useState("");
@@ -22,61 +31,6 @@ export function COICalculator({ contractAddress, walletAccount }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-
-  const fetchSpecimenNode = useCallback(async (contract, id) => {
-    if (!id || Number(id) === 0) return null;
-    try {
-      const data = await contract.specimens(id);
-      if (Number(data.specimenId) !== 0) {
-        const speciesId = Number(data.speciesId);
-        let speciesInfo = null;
-        try { speciesInfo = await contract.speciesCatalog(speciesId); } catch (e) {}
-        return {
-          id: Number(data.specimenId),
-          speciesId,
-          speciesName: speciesInfo ? speciesInfo.commonName : `Species #${speciesId}`,
-          sireId: Number(data.sireId),
-          damId: Number(data.damId),
-          status: Number(data.status),
-        };
-      }
-    } catch (e) {}
-    // Fallback to local DB
-    try {
-      let local = await db.specimens.get(Number(id));
-      if (!local) local = await db.specimens.filter(s => Number(s.id) === Number(id)).first();
-      if (local) {
-        return {
-          id: Number(local.id || local.specimenId),
-          speciesId: local.speciesId,
-          speciesName: local.commonName || `Species #${local.speciesId}`,
-          sireId: Number(local.sireId || 0),
-          damId: Number(local.damId || 0),
-          status: local.status ?? 0,
-        };
-      }
-    } catch (e) {}
-    return null;
-  }, []);
-
-  const fetchPedigreeTree = useCallback(async (contract, rootId) => {
-    const target = await fetchSpecimenNode(contract, rootId);
-    if (!target) return null;
-
-    const sire = target.sireId ? await fetchSpecimenNode(contract, target.sireId) : null;
-    const dam = target.damId ? await fetchSpecimenNode(contract, target.damId) : null;
-
-    const sireSire = sire?.sireId ? await fetchSpecimenNode(contract, sire.sireId) : null;
-    const sireDam = sire?.damId ? await fetchSpecimenNode(contract, sire.damId) : null;
-    const damSire = dam?.sireId ? await fetchSpecimenNode(contract, dam.sireId) : null;
-    const damDam = dam?.damId ? await fetchSpecimenNode(contract, dam.damId) : null;
-
-    return {
-      target,
-      parents: { sire, dam },
-      grandparents: { sireSire, sireDam, damSire, damDam },
-    };
-  }, [fetchSpecimenNode]);
 
   const handleCalculate = async () => {
     if (!sireId || !damId) return;
@@ -96,17 +50,29 @@ export function COICalculator({ contractAddress, walletAccount }) {
         return;
       }
       if (!sireTree) {
-        setError(`Sire (Cert #${sireId}) not found in registry.`);
+        setError(`Sire (Cert #${formatCertSerial(sireId)}) not found in registry.`);
         return;
       }
       if (!damTree) {
-        setError(`Dam (Cert #${damId}) not found in registry.`);
+        setError(`Dam (Cert #${formatCertSerial(damId)}) not found in registry.`);
         return;
       }
+
+      // Same honesty rule as the Spawning wizard (BREEDER_TOOLS_T1 §1.7): a 0%
+      // only means "outbred" when there was ancestry on both sides to search.
+      // With no recorded parents there is nothing to compare, so say so rather
+      // than reporting a confident zero.
+      const sireHasAncestry = !!(sireTree.parents?.sire || sireTree.parents?.dam);
+      const damHasAncestry = !!(damTree.parents?.sire || damTree.parents?.dam);
 
       const sireMap = buildAncestorMapFromTree(sireTree, "sire");
       const damMap = buildAncestorMapFromTree(damTree, "dam");
       const coiResult = calculateCOIFromMaps(sireMap, damMap);
+
+      if (coiResult.sharedAncestors.length === 0 && !(sireHasAncestry && damHasAncestry)) {
+        setError(PAIRING_COPY.coiUnavailableDetail.pro);
+        return;
+      }
 
       setResult({
         ...coiResult,
@@ -132,7 +98,7 @@ export function COICalculator({ contractAddress, walletAccount }) {
           <span>🧮</span> Inbreeding Coefficient (COI) Calculator
         </h3>
         <p style={{ fontSize: "0.8rem", color: "var(--text-muted, #6b7280)", margin: 0, lineHeight: "1.5" }}>
-          Evaluate a proposed pairing for genetic diversity. Walks 3 generations of ancestry to detect shared ancestors and calculate Wright's COI.
+          Evaluate a proposed pairing for genetic diversity. Walks {PEDIGREE_DEPTH} generations of ancestry to detect shared ancestors and calculate Wright's COI.
         </p>
       </div>
 

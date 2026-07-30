@@ -6,6 +6,13 @@ import { getProvider } from "../utils/smartAccount";
 import { compressImage } from "../utils/imageCompression";
 import { mapContractError } from "../utils/errorHandler";
 import { relayMintSpecimen } from "../services/relayer";
+import { putSpecimenPhoto } from "../services/tankMedia";
+import { SEX, SEX_OPTIONS, normalizeSex, sexOptionLabel } from "../utils/specimenSex";
+import {
+  METADATA_URI_NONE,
+  buildSpecimenMetadata,
+  validateMetadataUri,
+} from "../services/specimenMetadata";
 import { db } from "../db";
 import { loadOwnedSpecimens, specimenOptionLabel } from "../utils/ownedSpecimens";
 import { useProfile } from "../hooks/useReefProfile";
@@ -73,23 +80,26 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
   const [formData, setFormData] = useState({
     speciesId: "",
     birthDate: "",
-    breeder: "",
     currentTankId: "0",
     sireId: "0",
     damId: "0",
+    gender: SEX.UNSEXED,
     breederStockTag: "",
-    ipfsMetadataUri: "ipfs://bafybeidflm24zspeciemensample/meta.json"
+    // Empty by default. This value becomes the certificate's on-chain
+    // `tokenURI` verbatim, so a placeholder here would publish a permanent
+    // pointer to a document that doesn't exist. It used to default to a
+    // hardcoded fake CID, identical on every specimen ever registered.
+    // See services/specimenMetadata.js.
+    ipfsMetadataUri: METADATA_URI_NONE
   });
-  const [breederEditable, setBreederEditable] = useState(false);
+  const [metadataUriError, setMetadataUriError] = useState(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     if (walletAccount) {
-      const defaultBreeder = (!casualModeActive && displayNameResolved) ? displayNameResolved : walletAccount;
-      setFormData((prev) => ({ ...prev, breeder: defaultBreeder }));
       loadMetadata();
     }
-  }, [walletAccount, contractAddress, displayNameResolved, casualModeActive]);
+  }, [walletAccount, contractAddress]);
 
   const loadMetadata = async () => {
     try {
@@ -137,22 +147,24 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
         }
       }
 
-      // Local Dexie tanks (beta mode) — match owner case-insensitively
+      // Local Dexie tanks (beta mode) — match owner case-insensitively.
+      //
+      // OWNERSHIP IS A HARD FILTER here for the same reason it is in
+      // utils/ownedSpecimens.js: the selected tank is written onto the birth
+      // certificate as its containment unit. The old "beta single-device
+      // fallback" listed every tank on the device when none matched the current
+      // account, so on a shared browser profile a certificate could be filed
+      // into someone else's tank. An empty tank dropdown ("None (Unassigned)")
+      // is the correct answer; tanks are created over in My Aquariums.
       try {
         const acct = (walletAccount || "").toLowerCase();
-        const allLocalTanks = await db.tanks.toArray();
-        let localTanks = allLocalTanks.filter(t => {
+        const allLocalTanks = acct ? await db.tanks.toArray() : [];
+        const localTanks = allLocalTanks.filter(t => {
           if (t.active === false) return false;
           const owner = (t.ownerAddress || "").toLowerCase();
           // Match this user, or include legacy tanks with no owner recorded
           return owner === acct || owner === "";
         });
-
-        // Beta single-device fallback: if nothing matched the current account but
-        // local tanks exist, surface them anyway so the user's tank is selectable.
-        if (localTanks.length === 0 && allLocalTanks.length > 0) {
-          localTanks = allLocalTanks.filter(t => t.active !== false);
-        }
 
         for (const lt of localTanks) {
           if (!tempTanks.some(t => Number(t.id) === Number(lt.id))) {
@@ -191,10 +203,6 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
     setSubmitting(true);
 
     try {
-      if (!casualModeActive && displayNameResolved && formData.breeder.toLowerCase().trim() !== displayNameResolved.toLowerCase().trim()) {
-        throw new Error("you do not have permission");
-      }
-
       const birthTimestamp = formData.birthDate 
         ? Math.round(new Date(formData.birthDate).getTime() / 1000) 
         : 0;
@@ -203,18 +211,49 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
       const commonName = speciesMatch?.commonName || "Unknown";
       const scientificName = speciesMatch?.scientificName || "Unknown";
 
+      // Gate the on-chain metadata URI. Refuse to publish an invalid pointer
+      // rather than silently writing it to tokenURI.
+      const uriCheck = validateMetadataUri(formData.ipfsMetadataUri);
+      if (!uriCheck.ok) {
+        setMetadataUriError(uriCheck.error);
+        throw new Error(uriCheck.error);
+      }
+      setMetadataUriError(null);
+
+      // Built once and used twice: published to the certificate's hosted URL by
+      // the relayer, and mirrored locally for the offline detail view.
+      const certificateMetadata = buildSpecimenMetadata({
+        commonName,
+        speciesId: formData.speciesId,
+        sireId: formData.sireId,
+        damId: formData.damId,
+        tankId: formData.currentTankId,
+        registrationDate: formData.birthDate,
+        sex: normalizeSex(formData.gender),
+        breederStockTag: formData.breederStockTag,
+      });
+
       // Beta: store locally via relayer (no MetaMask, no gas)
       const result = await relayMintSpecimen({
         speciesId: Number(formData.speciesId),
         birthTimestamp,
-        breeder: formData.breeder || walletAccount,
+        // Breeder attribution is the signed-in account, always. It is a
+        // canonical lowercase EOA per the address rule in services/relayer.js —
+        // never a display name and never user-supplied. The display name below
+        // is presentation only, resolved from the profile at render time.
+        breeder: walletAccount,
         currentTankId: Number(formData.currentTankId),
         sireId: Number(formData.sireId),
         damId: Number(formData.damId),
-        ipfsMetadataUri: formData.ipfsMetadataUri,
+        ipfsMetadataUri: uriCheck.uri,
+        // When the breeder hasn't supplied their own URI, the relayer publishes
+        // this document to a deterministic hosted URL and uses that as the
+        // certificate's tokenURI.
+        metadataDocument: uriCheck.uri ? null : certificateMetadata,
         ownerAddress: walletAccount,
         commonName,
         scientificName,
+        gender: normalizeSex(formData.gender),
         breederStockTag: formData.breederStockTag,
       });
 
@@ -233,26 +272,29 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
       }
 
       if (mintedTokenId) {
-        try {
-          if (selectedPhoto) {
-            localStorage.setItem(`aquadex_specimen_photo_${mintedTokenId}`, selectedPhoto);
+        // Photo → the durable Dexie `tankMedia` store (BREEDER_STATE_MODEL §9.3).
+        // This used to be a raw localStorage.setItem, which meant a breeder's
+        // specimen photos shared one ~5MB origin quota, weren't synced, and
+        // vanished on a cache clear. `putSpecimenPhoto` writes Dexie and mirrors
+        // to localStorage, so the readers still on the old key keep working and a
+        // quota failure no longer loses the photo.
+        if (selectedPhoto) {
+          try {
+            await putSpecimenPhoto(mintedTokenId, selectedPhoto);
+          } catch (photoErr) {
+            console.warn("Specimen photo save failed:", photoErr);
+            showToast("⚠️ Specimen registered, but its photo could not be saved.");
           }
-          
-          const speciesName = commonName;
-          const metadata = {
-            name: `${speciesName} Specimen`,
-            description: `Registered Birth Certificate. Species ID: ${formData.speciesId}.`,
-            attributes: [
-              { trait_type: "Sire ID", value: formData.sireId !== "0" ? formData.sireId : "None" },
-              { trait_type: "Dam ID", value: formData.damId !== "0" ? formData.damId : "None" },
-              { trait_type: "Containment Tank ID", value: formData.currentTankId !== "0" ? formData.currentTankId : "None" },
-              { trait_type: "Registration Date", value: formData.birthDate || new Date().toLocaleDateString() }
-            ]
-          };
-          localStorage.setItem(`aquadex_specimen_metadata_${mintedTokenId}`, JSON.stringify(metadata));
+        }
+
+        // Metadata is still a localStorage blob. It's small text (not the quota
+        // problem the photo was) and is read back by SpecimenDetailModal and
+        // counted by the onboarding tour, so relocating it needs those readers
+        // moved too — tracked in BREEDER_STATE_MODEL §9.14.
+        try {
+          localStorage.setItem(`aquadex_specimen_metadata_${mintedTokenId}`, JSON.stringify(certificateMetadata));
         } catch (storageErr) {
-          console.error("Storage quota error:", storageErr);
-          showToast("⚠️ Storage Quota Exceeded! Specimen registered, but device is out of space for local photos.");
+          console.warn("Specimen metadata save failed (quota?):", storageErr);
         }
       }
 
@@ -270,11 +312,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
       await loadMetadata();
     } catch (err) {
       console.error("Specimen minting transaction failed:", err);
-      if (err.message === "you do not have permission") {
-        setError("you do not have permission");
-      } else {
-        setError(mapContractError(err, false));
-      }
+      setError(mapContractError(err, false));
     } finally {
       setSubmitting(false);
     }
@@ -326,7 +364,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
           marginBottom: "1.5rem", 
           fontSize: "0.85rem" 
         }}>
-          {error === "you do not have permission" ? error : <><strong>Registration Error:</strong> {error}</>}
+          <strong>Registration Error:</strong> {error}
         </div>
       )}
 
@@ -436,6 +474,50 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
           </div>
         </div>
 
+        {/* Sex — the certificate form was the ONLY add-a-fish surface that didn't
+            collect it, so every registered specimen defaulted to Unsexed and the
+            Spawning wizard's pair pickers had nothing to validate against.
+            Unknown stays a first-class answer: most species can't be sexed by eye
+            and it never blocks a pairing. See BREEDER_TOOLS_T1_PAIRING_SPEC §2.3. */}
+        <div>
+          <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+            Sex
+          </label>
+          <div style={{ display: "flex", background: "rgba(0,0,0,0.2)", border: casualModeActive ? "1px solid var(--glass-border)" : "1px solid rgba(168, 85, 247, 0.3)", borderRadius: "6px", padding: "2px" }}>
+            {SEX_OPTIONS.map((option) => {
+              const selected = formData.gender === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, gender: option.value })}
+                  aria-pressed={selected}
+                  style={{
+                    flex: 1,
+                    padding: "0.55rem 0.5rem",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    fontSize: "0.8rem",
+                    fontWeight: selected ? 600 : 400,
+                    color: selected ? "#fff" : "var(--text-muted)",
+                    background: selected
+                      ? (casualModeActive ? "rgba(56, 189, 248, 0.18)" : "rgba(168, 85, 247, 0.22)")
+                      : "transparent",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  {option.symbol ? `${option.symbol} ` : ""}
+                  {sexOptionLabel(option, { casual: casualModeActive })}
+                </button>
+              );
+            })}
+          </div>
+          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>
+            Optional. Recording it lets the Spawning tools check a pairing before you breed.
+          </span>
+        </div>
+
         <div className="form-grid-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
           <div>
             <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
@@ -501,44 +583,44 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
           </span>
         </div>
 
+        {/* Breeder attribution — derived, not entered.
+            This used to be an editable field with an Edit button, but in Pro
+            mode any edit threw "you do not have permission" (so the button
+            could only ever produce an error), while in Casual mode the check
+            was skipped entirely and the value was written to the certificate
+            unvalidated. Worse, the Pro default wrote the *display name* into
+            specimen.breeder, which the relayer defines as a canonical lowercase
+            EOA. Attribution is now simply the signed-in account. Registering on
+            behalf of another breeder needs a real permission model, not a
+            free-text box. */}
         <div>
           <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-            {!casualModeActive ? "Breeder Account Username" : "Breeder Account Address"}
+            Breeder Attribution
           </label>
-          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-            <input 
-              type="text"
-              value={formData.breeder}
-              onChange={(e) => setFormData({ ...formData, breeder: e.target.value })}
-              placeholder={!casualModeActive ? "Username" : "0x..."}
-              readOnly={!breederEditable}
-              style={{ 
-                ...inputStyle,
-                flex: 1, 
-                background: breederEditable ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.015)", 
-                color: breederEditable ? "#fff" : "var(--text-secondary)", 
-                fontFamily: !casualModeActive ? "inherit" : "monospace",
-                opacity: breederEditable ? 1 : 0.8,
-              }}
-              onFocus={handleInputFocus}
-              onBlur={handleInputBlur}
-            />
-            <button
-              type="button"
-              onClick={() => setBreederEditable(!breederEditable)}
-              className="btn-secondary"
-              style={{ 
-                padding: "0.5rem 0.75rem", 
-                fontSize: "0.7rem", 
-                whiteSpace: "nowrap",
-                border: !casualModeActive ? "1px solid rgba(168, 85, 247, 0.3)" : "1px solid var(--glass-border)",
-                background: !casualModeActive ? "rgba(168, 85, 247, 0.05)" : "rgba(255, 255, 255, 0.05)",
-                color: "#fff"
-              }}
+          <div
+            style={{
+              ...inputStyle,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "0.75rem",
+              background: "rgba(255,255,255,0.015)",
+              cursor: "default",
+            }}
+          >
+            <span style={{ color: "#fff", fontSize: "0.85rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {displayNameResolved || "—"}
+            </span>
+            <span
+              title={walletAccount || ""}
+              style={{ fontFamily: "monospace", fontSize: "0.7rem", color: "var(--text-muted)", flexShrink: 0 }}
             >
-              {breederEditable ? "Lock" : "Edit"}
-            </button>
+              {walletAccount ? `${walletAccount.slice(0, 6)}…${walletAccount.slice(-4)}` : ""}
+            </span>
           </div>
+          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>
+            This certificate is credited to your account. Change your display name in Settings.
+          </span>
         </div>
 
         <div>
@@ -582,8 +664,12 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
           </div>
         </div>
 
-        {/* Advanced section — hidden in Pro mode */}
-        {casualModeActive && (
+        {/* Advanced section.
+            Previously gated on `casualModeActive`, which had it backwards: the
+            metadata URI is a Pro concern (a breeder who has actually pinned a
+            document), and Pro was the one mode that couldn't reach the field.
+            Now shown in Pro, where it belongs. */}
+        {!casualModeActive && (
           <div>
             <button
               type="button"
@@ -610,18 +696,35 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
             {showAdvanced && (
               <div style={{ marginTop: "0.75rem" }}>
                 <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-                  Metadata URI
+                  Metadata URI <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: "400" }}>(optional)</span>
                 </label>
                 <input 
                   type="text" 
                   value={formData.ipfsMetadataUri}
-                  onChange={(e) => setFormData({ ...formData, ipfsMetadataUri: e.target.value })}
-                  required
-                  style={{ width: "100%", padding: "0.75rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px", fontFamily: "monospace", fontSize: "0.8rem" }}
+                  onChange={(e) => {
+                    setFormData({ ...formData, ipfsMetadataUri: e.target.value });
+                    if (metadataUriError) setMetadataUriError(null);
+                  }}
+                  onBlur={(e) => {
+                    const check = validateMetadataUri(e.target.value);
+                    setMetadataUriError(check.ok ? null : check.error);
+                  }}
+                  placeholder="ipfs://… or https://… — leave blank if none"
+                  style={{
+                    width: "100%", padding: "0.75rem", background: "rgba(255,255,255,0.03)",
+                    border: metadataUriError ? "1px solid var(--accent-red)" : "1px solid var(--glass-border)",
+                    color: "#fff", borderRadius: "4px", fontFamily: "monospace", fontSize: "0.8rem",
+                  }}
                 />
-                <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>
-                  Auto-generated. Only edit if you have a custom IPFS metadata file.
-                </span>
+                {metadataUriError ? (
+                  <span style={{ fontSize: "0.7rem", color: "var(--accent-red)", marginTop: "0.25rem", display: "block" }}>
+                    {metadataUriError}
+                  </span>
+                ) : (
+                  <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>
+                    Only set this if you have already published a metadata file for this specimen. Left blank, the certificate simply publishes no external document — which is accurate.
+                  </span>
+                )}
               </div>
             )}
           </div>

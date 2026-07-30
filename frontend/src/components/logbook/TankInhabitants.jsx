@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { groupNurseryFish } from "../../utils/nurseryGrouping";
+import { SEX, isKnownSex, normalizeSex, sexSymbol } from "../../utils/specimenSex";
 import "./TankInhabitants.css";
 
 /**
@@ -254,9 +255,9 @@ export function TankInhabitants({
                             <span className="ti-ind-text">
                               <span className="ti-ind-name">
                                 {spec.commonName}
-                                {spec.gender && spec.gender !== "Not Sure" && spec.gender !== "Unsexed" && (
-                                  <span className={`ti-gender ${spec.gender === "Male" ? "male" : "female"}`}>
-                                    {spec.gender === "Male" ? "♂" : "♀"}
+                                {isKnownSex(spec.gender) && (
+                                  <span className={`ti-gender ${normalizeSex(spec.gender) === SEX.MALE ? "male" : "female"}`}>
+                                    {sexSymbol(spec.gender)}
                                   </span>
                                 )}
                               </span>

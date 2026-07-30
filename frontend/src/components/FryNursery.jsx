@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../db";
 import { relayMoveSpecimen } from "../services/relayer";
-import { syncSpecimenToCloud } from "../services/cloudSync";
+import { archiveSpecimens, isArchived, retireSpecimens } from "../services/specimenLifecycle";
 import { groupNurseryFish } from "../utils/nurseryGrouping";
+import { isKnownSex, sexSymbol } from "../utils/specimenSex";
+import {
+  RETIREMENT_OUTCOMES,
+  SPECIMEN_STATUS,
+  formatCertSerial,
+  retirementOutcomeLabel,
+} from "../utils/specimenIdentity";
 import { deriveSpeciesProfile, rankCompatibleTanks, profileHasCareData } from "../services/compatibleTanks";
 import "./logbook/FryNursery.css";
 
@@ -48,6 +55,10 @@ export function FryNursery({
       );
       const unassigned = all.filter((s) => {
         if (Number(s.status ?? 0) !== 0) return false;
+        // Archived certificates are intentionally hidden from the triage tray —
+        // that's the entire point of archiving. They remain fully resolvable in
+        // lineage, pedigree exports, and COI.
+        if (isArchived(s)) return false;
         const specOwner = (s.ownerAddress || "").toLowerCase();
         if (specOwner !== owner && specOwner !== "") return false;
         const tankId = Number(s.currentTankId || 0);
@@ -90,33 +101,70 @@ export function FryNursery({
     }
   };
 
-  const retireFish = async (ids) => {
-    for (const id of ids) {
-      await db.specimens.update(id, { status: 1 });
-      const updated = await db.specimens.get(id);
-      if (updated) syncSpecimenToCloud(updated).catch(() => {});
-    }
+  /**
+   * Retire specimens with an EXPLICIT outcome.
+   *
+   * This used to hard-write status 1 (Deceased) under copy that said "marks it
+   * inactive" — so rehoming a batch of fry recorded a batch of deaths. That is
+   * not cosmetic: the fish then reads "Deceased" in every pedigree tree, and it
+   * skews the grow-out survivor math. There is no "inactive" status in the model
+   * (see docs/BREEDER_STATE_MODEL.md §4), so the caller must say which of the two
+   * real outcomes happened. The status guard lives in the service.
+   */
+  const retireFish = async (ids, status) => {
+    await retireSpecimens(ids, status);
     await fetchNursery();
     onRefresh && onRefresh();
   };
 
+  /** Hide a certificate without claiming an outcome (§4.1 — never destroyed). */
+  const archiveFish = async (ids) => {
+    await archiveSpecimens(ids);
+    await fetchNursery();
+    onRefresh && onRefresh();
+  };
+
+  const retirementChoices = (ids) => [
+    ...RETIREMENT_OUTCOMES.map((outcome) => ({
+      key: outcome.key,
+      icon: outcome.icon,
+      label: retirementOutcomeLabel(outcome, { casual: casualModeActive }),
+      detail: outcome.detail,
+      danger: outcome.status === SPECIMEN_STATUS.DECEASED,
+      onSelect: () => retireFish(ids, outcome.status),
+    })),
+    // "I don't want to say" — for a mis-entry, a duplicate, or an unknown fate.
+    // Records no outcome and destroys nothing; the certificate stays resolvable
+    // so descendants keep a valid parent reference.
+    {
+      key: "archive",
+      icon: "📦",
+      label: casualModeActive ? "Just hide it" : "Remove from view",
+      detail: "Hides it without recording an outcome. The birth certificate is kept.",
+      onSelect: () => archiveFish(ids),
+    },
+  ];
+
   const retireGroup = (group) => {
+    const noun = group.count === 1 ? "it" : "them";
     confirm({
-      title: casualModeActive ? "Say goodbye?" : "Retire specimens?",
-      message: `Retire ${group.count} ${group.commonName}? This marks ${group.count === 1 ? "it" : "them"} inactive and removes ${group.count === 1 ? "it" : "them"} from your inventory.`,
-      confirmLabel: `Retire ${group.count}`,
+      title: casualModeActive
+        ? `Say goodbye to ${group.count} ${group.commonName}?`
+        : `Retire ${group.count} ${group.commonName}?`,
+      message: `How did ${noun} leave your care? Birth certificates are always kept — this only records what happened and removes ${noun} from your inventory.`,
       danger: true,
-      onConfirm: () => retireFish(group.fish.map((f) => f.id)),
+      choices: retirementChoices(group.fish.map((f) => f.id)),
     });
   };
 
   const retireOne = (fish) => {
     confirm({
-      title: casualModeActive ? "Say goodbye?" : "Retire specimen?",
-      message: `Retire ${fish.commonName || "this fish"} (Cert. ${serialOf(fish)})? This marks it inactive.`,
-      confirmLabel: "Retire",
+      title: casualModeActive
+        ? `Say goodbye to ${fish.commonName || "this fish"}?`
+        : `Retire ${fish.commonName || "this specimen"}?`,
+      message: `How did it leave your care? Cert. ${serialOf(fish)} is kept either way — this only records what happened.`,
       danger: true,
-      onConfirm: () => retireFish([fish.id]),
+      choices: retirementChoices([fish.id]),
     });
   };
 
@@ -216,8 +264,8 @@ export function FryNursery({
                     {group.fish.map((fish) => (
                       <div key={fish.id} className="fn-individual">
                         <span className="fn-cert">Cert. {serialOf(fish)}</span>
-                        {fish.gender && fish.gender !== "Unsexed" && fish.gender !== "Not Sure" && (
-                          <span className="fn-gender-chip">{fish.gender === "Male" ? "♂" : "♀"}</span>
+                        {isKnownSex(fish.gender) && (
+                          <span className="fn-gender-chip">{sexSymbol(fish.gender)}</span>
                         )}
                         <span className="fn-spacer" />
                         {onListOnMarketplace && (
@@ -246,7 +294,7 @@ function genderSummary(g) {
 }
 
 function serialOf(fish) {
-  return String(fish.id).padStart(3, "0");
+  return formatCertSerial(fish.id);
 }
 
 function speciesThumb(group, fishbaseData) {

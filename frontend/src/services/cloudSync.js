@@ -59,6 +59,53 @@ function actionLogToRow(log, ownerAddress) {
   };
 }
 
+/**
+ * Serialise a grow-out checkpoint for Supabase.
+ *
+ * Two shape notes that matter:
+ *
+ *  1. The local `id` is DROPPED. `spawnGrowout` uses Dexie's `++id`
+ *     auto-increment, so ids are device-scoped — two devices both produce 1, 2,
+ *     3… Rows are therefore keyed on the natural tuple
+ *     (owner_address, spawn_id, event_timestamp, type), which is what the unique
+ *     index and the pull-side dedup both use.
+ *
+ *  2. The base64 `photo` is STRIPPED. Checkpoint photos are full data URLs
+ *     (hundreds of KB each) and an active breeder accumulates hundreds of
+ *     checkpoints; pushing those through a jsonb column would bloat every row
+ *     and every pull. `has_photo` records that one existed so the UI can say so.
+ *     Photos stay device-local until the tankMedia/CDN pipeline covers them —
+ *     see docs/BREEDER_STATE_MODEL.md §9.3.
+ */
+function growoutCheckpointToRow(checkpoint, ownerAddress) {
+  const { photo, id: _localId, ...rest } = checkpoint;
+  return {
+    owner_address: (ownerAddress || "").toLowerCase(),
+    spawn_id: String(checkpoint.spawnId),
+    event_timestamp: Number(checkpoint.timestamp || 0),
+    type: checkpoint.type || "note",
+    count: Number(checkpoint.count || 0),
+    note: checkpoint.note || null,
+    has_photo: !!photo,
+    updated_at: new Date().toISOString(),
+    data: JSON.stringify(rest),
+  };
+}
+
+/**
+ * Grow-out checkpoints carry no owner of their own — they hang off a spawn.
+ * Resolve the owning wallet from the spawn record so the row can be scoped.
+ */
+async function resolveSpawnOwner(spawnId) {
+  try {
+    const spawn = (await db.spawns.get(Number(spawnId))) || (await db.spawns.get(spawnId));
+    const owner = (spawn?.ownerAddress || "").toLowerCase();
+    return owner || null;
+  } catch {
+    return null;
+  }
+}
+
 function spawnToRow(spawn) {
   return {
     spawn_id: String(spawn.spawnId),
@@ -145,6 +192,59 @@ export async function syncSpawnToCloud(spawn) {
 }
 
 /**
+ * Upsert a single grow-out checkpoint to Supabase. Non-blocking.
+ *
+ * Without this, `spawnGrowout` was the one load-bearing breeder table with no
+ * cloud mirror: every fry count, cull, loss, sale, survival rate, Poseidon
+ * nudge, and every stat and badge on the Achievements tab is derived from it, so
+ * all of it was device-local and lost on a cache clear or a device change.
+ *
+ * @param {object} checkpoint - Dexie spawnGrowout row
+ * @param {string|null} [ownerAddress] - skips the spawn lookup when known
+ */
+export async function syncGrowoutCheckpointToCloud(checkpoint, ownerAddress = null) {
+  if (!isSupabaseConfigured() || !checkpoint) return;
+  try {
+    const owner = (ownerAddress || (await resolveSpawnOwner(checkpoint.spawnId)) || "").toLowerCase();
+    // An orphan checkpoint (no resolvable spawn) has nothing to scope it to.
+    // Keep it local rather than pushing an unattributable row.
+    if (!owner) return;
+    const { error } = await supabase
+      .from("aquadex_spawn_growout")
+      .upsert(growoutCheckpointToRow(checkpoint, owner), {
+        onConflict: "owner_address,spawn_id,event_timestamp,type",
+      });
+    if (error) console.warn("[CloudSync] Grow-out checkpoint upsert failed:", error.message);
+  } catch (e) {
+    console.warn("[CloudSync] Grow-out checkpoint upsert error:", e.message);
+  }
+}
+
+/**
+ * Upsert many grow-out checkpoints at once (batch logging). Non-blocking.
+ * @param {Array<object>} checkpoints
+ * @param {string|null} [ownerAddress]
+ */
+export async function syncGrowoutCheckpointsToCloud(checkpoints, ownerAddress = null) {
+  if (!isSupabaseConfigured() || !Array.isArray(checkpoints) || checkpoints.length === 0) return;
+  try {
+    const rows = [];
+    for (const checkpoint of checkpoints) {
+      const owner = (ownerAddress || (await resolveSpawnOwner(checkpoint.spawnId)) || "").toLowerCase();
+      if (!owner) continue;
+      rows.push(growoutCheckpointToRow(checkpoint, owner));
+    }
+    if (rows.length === 0) return;
+    const { error } = await supabase
+      .from("aquadex_spawn_growout")
+      .upsert(rows, { onConflict: "owner_address,spawn_id,event_timestamp,type" });
+    if (error) console.warn("[CloudSync] Grow-out batch upsert failed:", error.message);
+  } catch (e) {
+    console.warn("[CloudSync] Grow-out batch upsert error:", e.message);
+  }
+}
+
+/**
  * Mark a tank as deleted in Supabase (soft delete).
  * @param {string|number} tankId
  */
@@ -174,11 +274,11 @@ import { db } from "../db";
  */
 export async function pullCloudDataForWallet(walletAddress) {
   if (!isSupabaseConfigured() || !walletAddress) {
-    return { tanks: 0, specimens: 0, logs: 0, spawns: 0 };
+    return { tanks: 0, specimens: 0, logs: 0, spawns: 0, growout: 0 };
   }
 
   const addr = walletAddress.toLowerCase();
-  let tanks = 0, specimens = 0, logs = 0, spawns = 0;
+  let tanks = 0, specimens = 0, logs = 0, spawns = 0, growout = 0;
 
   try {
     // ── Tanks ──────────────────────────────────────────────
@@ -279,12 +379,47 @@ export async function pullCloudDataForWallet(walletAddress) {
       }
     }
 
+    // ── Grow-out checkpoints ───────────────────────────────
+    // Pulled AFTER spawns so the spawn rows they hang off already exist locally.
+    const { data: cloudGrowout, error: gErr } = await supabase
+      .from("aquadex_spawn_growout")
+      .select("data, spawn_id, event_timestamp, type")
+      .eq("owner_address", addr);
+
+    if (gErr) {
+      console.warn("[CloudSync] Pull grow-out checkpoints failed:", gErr.message);
+    } else if (cloudGrowout && cloudGrowout.length > 0) {
+      for (const row of cloudGrowout) {
+        try {
+          const checkpoint = typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+          // Dedup on the natural key, NOT on id: `spawnGrowout` uses Dexie's
+          // device-scoped `++id`, so a cloud row's original id is meaningless
+          // here and reusing it would collide with unrelated local rows.
+          const spawnId = Number(row.spawn_id);
+          const eventTimestamp = Number(row.event_timestamp);
+          const type = row.type || "note";
+          const existing = await db.spawnGrowout
+            .where("spawnId")
+            .equals(spawnId)
+            .filter((c) => Number(c.timestamp) === eventTimestamp && (c.type || "note") === type)
+            .first();
+          if (!existing) {
+            const { id: _ignored, ...withoutId } = checkpoint;
+            await db.spawnGrowout.add({ ...withoutId, spawnId, timestamp: eventTimestamp, type });
+            growout++;
+          }
+        } catch (parseErr) {
+          console.warn("[CloudSync] Bad grow-out checkpoint row:", parseErr);
+        }
+      }
+    }
+
   } catch (e) {
     console.warn("[CloudSync] Pull failed:", e.message);
   }
 
-  if (tanks || specimens || logs || spawns) {
-    console.info(`[CloudSync] Pulled from cloud — tanks: ${tanks}, specimens: ${specimens}, logs: ${logs}, spawns: ${spawns}`);
+  if (tanks || specimens || logs || spawns || growout) {
+    console.info(`[CloudSync] Pulled from cloud — tanks: ${tanks}, specimens: ${specimens}, logs: ${logs}, spawns: ${spawns}, grow-out: ${growout}`);
   }
 
   // ── XP Profile (cross-device sync) ──────────────────────
@@ -296,7 +431,7 @@ export async function pullCloudDataForWallet(walletAddress) {
     }));
   }
 
-  return { tanks, specimens, logs, spawns };
+  return { tanks, specimens, logs, spawns, growout };
 }
 
 /**
@@ -340,6 +475,24 @@ export async function pushAllLocalDataToCloud(walletAddress) {
       const { error } = await supabase.from("aquadex_spawns").upsert(rows, { onConflict: "spawn_id" });
       if (error) console.warn("[CloudSync] Batch spawn push failed:", error.message);
       else console.info(`[CloudSync] Pushed ${localSpawns.length} spawns to cloud.`);
+    }
+
+    // Batch upsert grow-out checkpoints. This is the backfill that rescues every
+    // checkpoint logged before the mirror existed — without it, an existing
+    // breeder's entire grow-out history stays stranded on one device.
+    // Checkpoints carry no owner, so scope them by the user's own spawn ids.
+    if (localSpawns.length > 0) {
+      const mySpawnIds = new Set(localSpawns.map((s) => Number(s.spawnId)));
+      const allCheckpoints = await db.spawnGrowout.toArray();
+      const myCheckpoints = allCheckpoints.filter((cp) => mySpawnIds.has(Number(cp.spawnId)));
+      if (myCheckpoints.length > 0) {
+        const rows = myCheckpoints.map((cp) => growoutCheckpointToRow(cp, addr));
+        const { error } = await supabase
+          .from("aquadex_spawn_growout")
+          .upsert(rows, { onConflict: "owner_address,spawn_id,event_timestamp,type" });
+        if (error) console.warn("[CloudSync] Batch grow-out push failed:", error.message);
+        else console.info(`[CloudSync] Pushed ${myCheckpoints.length} grow-out checkpoints to cloud.`);
+      }
     }
 
     // Push action logs (up to 500 most recent per user)
@@ -622,11 +775,23 @@ export async function deactivateListingInCloud(listingId) {
  * @param {number|null} speciesId - optional filter by species
  * @returns {Promise<Array>} array of listing objects (same shape as Dexie localListings)
  */
+/** Full-blob source. Readable by `authenticated` and `service_role` only, since
+ *  supabase/migrations/20260729_aquadex_listings_rls_lockdown.sql. */
+const LISTINGS_TABLE = "aquadex_listings";
+/** Display-safe allowlisted projection, readable by anon. */
+const LISTINGS_PUBLIC_VIEW = "aquadex_listings_public";
+
+/** Log the fallback once per session rather than on every refetch. */
+let _warnedListingsFallback = false;
+
 export async function pullCloudListings(speciesId = null) {
   if (!isSupabaseConfigured()) return [];
-  try {
+
+  /** Same shape of query against either relation — the view carries is_active,
+   *  species_id and created_at as real columns specifically so this works. */
+  function buildQuery(relation) {
     let query = supabase
-      .from("aquadex_listings")
+      .from(relation)
       .select("data")
       .eq("is_active", true);
 
@@ -634,19 +799,63 @@ export async function pullCloudListings(speciesId = null) {
       query = query.eq("species_id", Number(speciesId));
     }
 
-    const { data, error } = await query.order("created_at", { ascending: false }).limit(200);
-    if (error) {
-      console.warn("[CloudSync] Pull listings failed:", error.message);
-      return [];
-    }
+    return query.order("created_at", { ascending: false }).limit(200);
+  }
 
-    return (data || []).map(row => {
+  function parseRows(rows) {
+    return (rows || []).map(row => {
       try {
         return typeof row.data === "string" ? JSON.parse(row.data) : row.data;
       } catch {
         return null;
       }
     }).filter(Boolean);
+  }
+
+  try {
+    // Preferred path: the raw table, which carries the FULL blob the in-app
+    // board needs (packing profile, DOA terms, care notes, description).
+    const { data, error } = await buildQuery(LISTINGS_TABLE);
+    if (error) {
+      console.warn("[CloudSync] Pull listings failed:", error.message);
+    }
+
+    const parsed = error ? [] : parseRows(data);
+    if (parsed.length > 0) return parsed;
+
+    // Zero rows here is AMBIGUOUS, and that ambiguity is why this fallback
+    // exists. Since the lockdown, an anon-role client gets back `[]` with NO
+    // error — RLS simply filters every row — so "there are no listings" and
+    // "this session never reached the `authenticated` role" are
+    // indistinguishable at this call site. The JWT bridge
+    // (/api/mint-session → setSession) is best-effort by design: on any failure
+    // supabaseClient.js falls back to the anon role, and before the lockdown
+    // that fallback was invisible because anon could read everything.
+    //
+    // Retrying against the view keeps the board populated in that degraded
+    // state instead of rendering an empty "No Entries Found". Fallback rows
+    // carry only the allowlisted display fields, so detail-level values may be
+    // missing — acceptable, because it is strictly better than a blank board
+    // and no money decision is made from these values (stripe.js re-validates
+    // price server-side with the service key).
+    const { data: viewData, error: viewError } = await buildQuery(LISTINGS_PUBLIC_VIEW);
+    if (viewError) {
+      console.warn("[CloudSync] Pull listings fallback failed:", viewError.message);
+      return [];
+    }
+
+    const viewParsed = parseRows(viewData);
+    if (viewParsed.length > 0 && !_warnedListingsFallback) {
+      _warnedListingsFallback = true;
+      console.warn(
+        "[CloudSync] " + LISTINGS_TABLE + " returned no rows but " +
+        LISTINGS_PUBLIC_VIEW + " returned " + viewParsed.length +
+        ". This session is almost certainly on the anon role — the /api/mint-session " +
+        "JWT bridge did not attach an authenticated session. Listings are showing " +
+        "display-safe fields only."
+      );
+    }
+    return viewParsed;
   } catch (e) {
     console.warn("[CloudSync] Pull listings error:", e.message);
     return [];
