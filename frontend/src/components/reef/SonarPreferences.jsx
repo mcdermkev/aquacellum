@@ -612,6 +612,7 @@ function PushStatusBanner({ status, diverged, casualModeActive }) {
 function PushDiagnostics({ status }) {
   const rows = [
     ["Browser permission", status.permission],
+    ["Running as", status.displayMode],
     ["Signed in (verified session)", status.bridgeActive ? "yes" : "no"],
     ["Service worker", status.swState],
     ["This browser subscribed", status.subscribedHere ? "yes" : "no"],

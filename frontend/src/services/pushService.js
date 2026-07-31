@@ -55,6 +55,7 @@ export const PUSH_REASON = {
   NOT_SIGNED_IN: "not_signed_in",
   PERMISSION_DENIED: "permission_denied",
   PERMISSION_DISMISSED: "permission_dismissed",
+  OS_PERMISSION_NEEDED: "os_permission_needed",
   NO_PROFILE: "no_profile",
   NOT_AUTHORIZED: "not_authorized",
   STORAGE_FAILED: "storage_failed",
@@ -84,6 +85,11 @@ export const PUSH_REASON_MESSAGE = {
   // tapping the button again would loop forever without this hint.
   [PUSH_REASON.PERMISSION_DISMISSED]:
     "No answer was given to the permission request. Tap Turn on notifications again and choose Allow — or if no prompt appears, tap the bell or lock icon in your browser's address bar and allow notifications there.",
+  // Installed PWA: there is no address bar to fall back on, so the
+  // PERMISSION_DISMISSED advice above is unfollowable. This reason exists purely
+  // to give instructions that can actually be carried out.
+  [PUSH_REASON.OS_PERMISSION_NEEDED]:
+    "No permission prompt appeared. Since the app is installed, notifications also have to be allowed for it at the device level: open your phone's Settings → Apps → Aquacellum → Notifications and turn them on, then come back and try again. Worth checking Do Not Disturb is off too.",
   [PUSH_REASON.NO_PROFILE]:
     "Finish setting up your profile first, then enable notifications.",
   [PUSH_REASON.NOT_AUTHORIZED]:
@@ -121,12 +127,17 @@ function isIos() {
 }
 
 /** Whether the app is running as an installed PWA. */
-function isStandalone() {
+export function isStandalone() {
   if (typeof window === "undefined") return false;
   return (
     window.matchMedia?.("(display-mode: standalone)").matches === true ||
     window.navigator.standalone === true
   );
+}
+
+/** Rough platform tag, used only to pick the right recovery instructions. */
+function isAndroid() {
+  return typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
 }
 
 /**
@@ -195,7 +206,10 @@ function withTimeout(promise, ms, label) {
 }
 
 const SW_READY_TIMEOUT_MS = 10_000;
-const PERMISSION_TIMEOUT_MS = 60_000;
+// 30s, down from 60s. If a prompt is on screen this is ample time to read and
+// answer it; if no prompt appeared, a full minute of "Working…" is just a
+// slower way of telling the user nothing.
+const PERMISSION_TIMEOUT_MS = 30_000;
 
 /**
  * Register the service worker and wait for an active one.
@@ -355,7 +369,17 @@ export async function subscribeToPush() {
       // Still "default": the prompt was dismissed without a choice, or the
       // browser declined to show it. Distinct from "denied" because it is
       // recoverable by asking again, whereas denied is not.
-      return { success: false, reason: PUSH_REASON.PERMISSION_DISMISSED };
+      //
+      // In an installed PWA the recovery differs: there is no address bar, and
+      // on Android the installed app also needs OS-level notification
+      // permission, which web code can neither read nor request. Route to
+      // instructions the user can actually follow.
+      return {
+        success: false,
+        reason: isStandalone()
+          ? PUSH_REASON.OS_PERMISSION_NEEDED
+          : PUSH_REASON.PERMISSION_DISMISSED,
+      };
     }
 
     // ── 3. Register / await the service worker ─────────────────────────────
@@ -398,11 +422,22 @@ export async function subscribeToPush() {
   } catch (err) {
     console.error("[Push] Subscribe failed:", err);
     if (subscription) await rollbackSubscription(subscription);
+    // A timeout gets its own reason: "try again" is wrong advice for a prompt
+    // that never appeared. And when we are installed, a timeout waiting on the
+    // permission prompt is the OS-permission case in practice — Android will not
+    // surface Chrome's prompt at all if the WebAPK lacks notification
+    // permission, so the generic "reopen the app" line sends the user in circles.
+    let reason = PUSH_REASON.SUBSCRIBE_FAILED;
+    if (err?.isTimeout) {
+      reason =
+        isStandalone() && Notification.permission !== "granted"
+          ? PUSH_REASON.OS_PERMISSION_NEEDED
+          : PUSH_REASON.TIMED_OUT;
+    }
+
     return {
       success: false,
-      // A timeout gets its own reason: "try again" is wrong advice for a
-      // suppressed permission prompt, which needs the app reopened.
-      reason: err?.isTimeout ? PUSH_REASON.TIMED_OUT : PUSH_REASON.SUBSCRIBE_FAILED,
+      reason,
       error: err?.message,
     };
   }
@@ -526,6 +561,10 @@ export async function getPushStatus() {
     blocked: permission === "denied",
     active: false,
     swState: "unknown",
+    // "installed" vs "browser tab" materially changes what a permission failure
+    // means and how it is recovered, so it belongs in the diagnostics.
+    displayMode: isStandalone() ? "installed app" : "browser tab",
+    platform: isAndroid() ? "android" : isIos() ? "ios" : "other",
   };
 
   if (!supported) return status;
