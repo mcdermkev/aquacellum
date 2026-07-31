@@ -154,6 +154,13 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
         seller: listing.seller || "",
         pricePerFishEth: listing.price || "0",
         commonName: listing.commonName || "Juvenile Fry Batch",
+        // Capture the seller's sealed pedigree while the listing is in hand. This is
+        // the only moment the buyer can (§9.25, T3 §2.6) — see relayPurchaseBatch.
+        pedigreeDocument: listing.pedigreeDocument || null,
+        pedigreeHash: listing.pedigreeHash || null,
+        lifeStage: listing.lifeStage || null,
+        speciesId: listing.speciesId ?? null,
+        scientificName: listing.scientificName || "",
       });
       if (!result.success) throw new Error(result.error || "Purchase failed");
 

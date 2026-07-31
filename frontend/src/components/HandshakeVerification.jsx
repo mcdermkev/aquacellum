@@ -206,6 +206,13 @@ export function HandshakeVerification({
         pricePerFishEth: listing.price || "0",
         commonName: listing.commonName || "Juvenile Fry Batch",
         fulfillmentType: 1, // in-person handshake
+        // Capture the seller's sealed pedigree while the listing is in hand. This is
+        // the only moment the buyer can (§9.25, T3 §2.6) — see relayPurchaseBatch.
+        pedigreeDocument: listing.pedigreeDocument || null,
+        pedigreeHash: listing.pedigreeHash || null,
+        lifeStage: listing.lifeStage || null,
+        speciesId: listing.speciesId ?? null,
+        scientificName: listing.scientificName || "",
       });
       if (!result.success) {
         throw new Error(result.error || "Could not lock holding deposit.");

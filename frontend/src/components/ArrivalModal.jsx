@@ -6,6 +6,9 @@ import { useUserTanks } from "../hooks/useUserTanks";
 import { relayMoveSpecimen, relayUpdateShippingOrder } from "../services/relayer";
 import { releaseFiatOrder, disputeFiatOrder, openDoaClaim } from "../services/stripePayments";
 import { addXp, XP_ACTIONS } from "../utils/xp";
+import { receivePurchasedLot, resolvePurchasePedigree } from "../services/lotIntake";
+import { receiveTransferredCertificate } from "../services/certificateTransfer";
+import { lotStage } from "../services/listingPedigree";
 import { db } from "../db";
 
 /**
@@ -101,10 +104,11 @@ function ArrivalModal({
 
     try {
       // Guard: check if already arrived (prevent double assignment)
+      let localSpecimen = null;
       if (itemType === "specimen" && item?.id) {
-        const current = await db.specimens.get(Number(item.id));
-        if (current && current.arrivalStatus === "arrived") {
-          const tankName = tanks.find(t => Number(t.id) === Number(current.currentTankId))?.name || "a tank";
+        localSpecimen = await db.specimens.get(Number(item.id));
+        if (localSpecimen && localSpecimen.arrivalStatus === "arrived") {
+          const tankName = tanks.find(t => Number(t.id) === Number(localSpecimen.currentTankId))?.name || "a tank";
           setError(`Already assigned to ${tankName}.`);
           setSubmitting(false);
           return;
@@ -127,10 +131,42 @@ function ArrivalModal({
         }
       }
 
+      // Step 1b: A certificate arriving from ANOTHER wallet has no record on this
+      // device — the normal cross-device case, and BREEDER_STATE_MODEL §9.25. Before
+      // this, `relayMoveSpecimen` simply returned "Specimen not found" and the
+      // arrival failed outright.
+      //
+      // The seller's serial (`item.id`) is theirs, not ours, so receiving assigns a
+      // NEW local serial and everything below uses that. Ancestry comes from the
+      // attached pedigree document, never from the seller's sireId/damId — those name
+      // different fish here (§12.2). `receiveTransferredCertificate` is idempotent on
+      // the document hash, so a retry cannot produce a second certificate for one
+      // fish, which matters because §4.1 means it could never be deleted.
+      //
+      // With no document to consume this is INERT and the flow behaves exactly as
+      // before — the same pattern as the canonical DOA attempt below, and it
+      // self-activates as sellers publish pedigrees.
+      let specimenId = item?.id != null ? Number(item.id) : null;
+      if (itemType === "specimen" && !localSpecimen && walletAccount) {
+        const document = await resolvePurchasePedigree(shippingOrder || item);
+        if (document) {
+          const received = await receiveTransferredCertificate({
+            document,
+            buyerAddress: walletAccount,
+            tankId: selectedTankId ? Number(selectedTankId) : 0,
+          });
+          if (received.ok) {
+            specimenId = received.specimenId;
+          } else {
+            console.warn("[ArrivalModal] Could not record the incoming certificate:", received.reason);
+          }
+        }
+      }
+
       // Step 2: Move specimen to tank (if tank selected)
-      if (itemType === "specimen" && selectedTankId && item?.id) {
+      if (itemType === "specimen" && selectedTankId && specimenId != null) {
         const moveResult = await relayMoveSpecimen({
-          specimenId: Number(item.id),
+          specimenId: Number(specimenId),
           targetTankId: Number(selectedTankId),
         });
         if (!moveResult.success) {
@@ -138,7 +174,7 @@ function ArrivalModal({
         }
 
         // Write arrival metadata
-        await db.specimens.update(Number(item.id), {
+        await db.specimens.update(Number(specimenId), {
           arrivalStatus: "arrived",
           arrivedAt: Math.floor(Date.now() / 1000),
           acclimationNotes: acclimationNotes || null,
@@ -155,6 +191,39 @@ function ArrivalModal({
           arrivedAt: Math.floor(Date.now() / 1000),
           acclimationNotes: acclimationNotes || null,
         });
+
+        // ── Step 2c: open the cohort (§9.25 / §9.26, T3 §2.6) ────────────────
+        //
+        // Until now a batch arrival wrote an order row and nothing else: the buyer
+        // got some fish and no way to track them, no way to promote keepers, and no
+        // lineage — which is the gap that undercut the whole point of the pedigree.
+        //
+        // A purchased lot is a COHORT THAT CHANGED HANDS (§12.4), so it becomes a
+        // spawn-shaped row and `spawnGrowout` plus
+        // `cohortPromotion.promoteCohortToCertificates` then work on it unchanged.
+        // Certificates appear when the buyer promotes keepers out of it — which is
+        // also what makes a sale decrement a cohort (§9.26).
+        //
+        // Non-blocking on the arrival itself: a failure here must not leave the
+        // buyer unable to confirm their fish turned up. It is logged and the lot can
+        // be re-taken-in, because intake is idempotent on the document hash.
+        try {
+          const lot = await receivePurchasedLot({
+            buyerAddress: walletAccount,
+            quantity: Number(item.quantity) || 0,
+            document: await resolvePurchasePedigree(item),
+            lifeStage: lotStage(item),
+            tankId: selectedTankId ? Number(selectedTankId) : 0,
+            purchaseOrderKey: item.key,
+            speciesId: item.speciesId ?? null,
+            scientificName: item.scientificName || "",
+          });
+          if (!lot.ok) {
+            console.warn("[ArrivalModal] Could not open the purchased cohort:", lot.reason);
+          }
+        } catch (lotErr) {
+          console.warn("[ArrivalModal] Purchased cohort intake failed:", lotErr);
+        }
 
         // Award batch XP
         addXp(XP_ACTIONS.BATCH_ARRIVAL_CONFIRMED.points, XP_ACTIONS.BATCH_ARRIVAL_CONFIRMED.label);

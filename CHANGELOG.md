@@ -4,6 +4,65 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [0.10.14] — 2026-07-31
+
+### 🥚 Buy Ten Eggs, Raise Four, Keep the Lineage
+
+Closes [`BREEDER_STATE_MODEL.md`](docs/BREEDER_STATE_MODEL.md) **§9.26** and **§9.27**, and closes **§9.25 for a lot sale** — which is the exact case the §12.3 decision was made on. T3 §2.6.
+
+Before this, a batch arrival wrote an order row and nothing else. `db.specimens.add` appeared nowhere in `frontend/src`. A buyer got some fish, no cohort to track them in, no way to promote keepers, and **no lineage** — which is the gap that undercut the point of the whole pedigree stream.
+
+#### 🧬 A lot is a cohort that changed hands
+`services/lotIntake.js` writes a purchased lot as a **spawn-shaped row** on the buyer's device (§12.4). After that, `spawnGrowout` checkpoints and `cohortPromotion.promoteCohortToCertificates` work on it unchanged, and certificates come into existence when the buyer promotes the keepers they raised.
+
+That is also why **§9.26 closes as a consequence rather than a fix**: `promoted` was already a departure type, so a lot decrements by itself. No new checkpoint writer, nothing to unwind.
+
+#### ⚠️ The one line that must never be written
+A batch listing carries the seller's `sireId`/`damId`. They are **never** copied onto the buyer's lot. They are device-scoped local serials, so the seller's `sireId: 7` names whatever fish is #7 in the *buyer's* registry — a real fish, the wrong one, resolving with no error. Promotion would then issue certificates with a false pedigree, silently, and §4.1 means they could never be deleted.
+
+The lot's serials are `0`; ancestry travels in the attached document. Guarded by a source test that reads every `sireId:`/`damId:` **assignment's value** rather than the absence of a pattern, so `sireId: order.sireId` fails loudly the day somebody adds it.
+
+#### 🎯 Two model decisions the build forced (§12.8)
+
+**A fish raised from a purchased lot names the SELLER'S breeder.** Promotion took `breeder` from `spawn.ownerAddress`, right for a cohort bred here and inverted for a bought one — somebody else's pair produced the eggs. §12.3's scenario is a buyer charging a premium *because the lineage traces to that master breeder*; recording the promoter would have erased that on the **first generation**, permanently. `lotProvenance` now reads the breeder off the lot document's `subject.breeder`, sealed on the seller's own device. `ownerAddress` stays the buyer — both facts, separately.
+
+**An egg lot is not counted alive.** Writing the purchased count as a living headcount would let ten eggs become **ten certificates out of a clutch where four hatched** — six fish that don't exist, uncorrectable, each carrying a real breeder's name. So an egg lot gets no headcount checkpoint, its size is recorded as `offspringCount`, the stored status seeds `Egg` rather than defaulting to `Fry`, and the cohort reads 0 alive until the buyer logs a real `fry_count` at hatch.
+
+#### 📦 The pedigree is captured at PURCHASE, not at arrival
+This was the constraint §9.30 hadn't recorded. The document reaches the buyer on the listing, but it is **not there later** — `useMarketplaceListings` clears and refills `db.listings` from on-chain data, which carries no document, and the seller's `localListings` row never existed on the buyer's device. Re-fetching from the cloud at arrival was rejected: a live network call must not sit between a buyer and confirming their fish turned up.
+
+All three batch paths now capture it. The card path needed a non-obvious extra step — it redirects to Stripe and the settled `batch` order comes back from the cloud matched on `on_chain_purchase_id`, a *different row* from the `fiat_pending` one checkout wrote — so `resolvePurchasePedigree` also checks a sibling pending row on the same listing.
+
+The document is stashed **locally only**, via a third argument that never reaches the request body. A payment request has no business carrying a provenance document, and the server does nothing with it. Guarded.
+
+#### 🩹 And a plain bug, fixed on the way past
+An individual certificate arriving from another wallet has no local record, so `relayMoveSpecimen` returned **"Specimen not found"** and the arrival failed outright. `ArrivalModal` now receives the certificate first and moves the *new* local serial. With no document attached this is inert and the flow behaves exactly as before — the same self-activating pattern as the canonical DOA attempt in that component.
+
+#### 🧱 Internal
+- `lotIntake.test.js`, 31 tests. `cohortPromotion.test.js` gained 7 for the lot path and its mock now observes the post-mint provenance write.
+- Intake is **idempotent** on the document hash, falling back to the purchase order key. §4.1 means a duplicate cohort is uncorrectable once anything is promoted out of it.
+- An absent pedigree is recorded with `pedigreeDocument: null` **explicit** — the buyer bought real fish, and refusing the lot would lose them to protect a claim nobody made. A document that fails `verifyPedigreeDocument` is refused outright: that one somebody edited.
+
+#### 🔍 Known gap, filed as §9.31
+A chain doesn't travel with the fish. A resale document carries the lot's hash but not the lot *document*, so a third-generation reader gets `brokenAt: <lotHash>` — reported as a **gap, not a forgery**, which is what `verifyPedigreeChain` was designed to do. Decision 1 blunts it: the master breeder is named inside the resale document itself.
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `frontend/src/services/lotIntake.js` | **New.** `receivePurchasedLot`, `resolvePurchasePedigree`, `LOT_INTAKE_COPY` |
+| `frontend/src/services/cohortPromotion.js` | `lotProvenance` + `applyPromotionProvenance`; breeder from the pedigree; life stage on every certificate |
+| `frontend/src/services/relayer.js` | `relayPurchaseBatch` records the pedigree, stage, and species on the order |
+| `frontend/src/services/stripePayments.js` | `purchaseBatch` takes local-only pedigree fields; `_createCheckout` keeps them off the request |
+| `frontend/src/components/ArrivalModal.jsx` | Batch arrival opens the cohort; specimen arrival receives the certificate |
+| `frontend/src/components/CheckoutSummary.jsx` | Card batch checkout captures the listing's pedigree |
+| `frontend/src/components/HatcheryLogs.jsx` · `HandshakeVerification.jsx` | Same, for the local and in-person paths |
+| `frontend/src/__tests__/lotIntake.test.js` | **New.** 31 tests |
+| `frontend/src/__tests__/cohortPromotion.test.js` | 7 new tests for the lot path |
+| `docs/BREEDER_STATE_MODEL.md` | §9.26 · §9.27 closed; §9.25 closed for a lot; §9.31 filed; **§12.8 added** |
+| `docs/BREEDER_TOOLS_T3_PEDIGREE_DOCUMENT_SPEC.md` | §2.6 and §2.7 written up as done |
+
+---
+
 ## [0.10.13] — 2026-07-31
 
 ### 🧬 A Full-Sibling Pairing Now Says So

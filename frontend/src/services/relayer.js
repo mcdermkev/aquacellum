@@ -923,6 +923,26 @@ export async function relayPurchaseBatch({
   pricePerFishEth = "0",
   commonName = "Juvenile Fry Batch",
   fulfillmentType = 0,
+  /**
+   * The pedigree the seller sealed at listing time (services/listingPedigree.js),
+   * copied straight off the listing object the caller is already holding.
+   *
+   * THIS IS THE TRANSPORT, and it has to happen here (§9.25, T3 §2.6). The document
+   * rides on `aquadex_listings.data`, so the buyer receives it while browsing — but
+   * `useMarketplaceListings` clears and refills `db.listings` from on-chain data,
+   * which carries no document, and the seller's `localListings` row does not exist on
+   * this device at all. So the ONLY moment the buyer can capture it is the purchase,
+   * with the listing in hand. Stashing it on the order is what makes it still be
+   * there days later when the fish actually arrive.
+   *
+   * Life stage travels with it for the same reason: it decides whether the arriving
+   * lot has anything alive to count yet (utils/lifeStage.js).
+   */
+  pedigreeDocument = null,
+  pedigreeHash = null,
+  lifeStage = null,
+  speciesId = null,
+  scientificName = "",
 } = {}) {
   try {
     listingId = Number(listingId);
@@ -953,6 +973,13 @@ export async function relayPurchaseBatch({
       state: 0, // 0 = pending
       fulfillmentType: Number(fulfillmentType),
       commonName,
+      // Recorded as null when the seller published none, rather than left undefined,
+      // so a reader can tell an unpublished pedigree from a row that predates this.
+      pedigreeDocument: pedigreeDocument || null,
+      pedigreeHash: pedigreeHash || pedigreeDocument?.hash || null,
+      lifeStage: lifeStage || null,
+      speciesId: speciesId == null ? null : Number(speciesId),
+      scientificName: scientificName || "",
       createdAt: Math.floor(Date.now() / 1000),
     };
     await db.marketOrders.put(order);

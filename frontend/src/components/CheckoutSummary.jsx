@@ -376,6 +376,12 @@ export function CheckoutSummary({
         buyerWallet: walletAccount,
         sellerWallet: listing.seller,
         promoCode: batchPromo?.code,
+        // Capture the seller's sealed pedigree while the listing is in hand — the
+        // last moment the buyer holds it (§9.25, T3 §2.6). Stashed locally only;
+        // `services/lotIntake.js` reads it back when the fry arrive.
+        pedigreeDocument: listing.pedigreeDocument || null,
+        pedigreeHash: listing.pedigreeHash || null,
+        lifeStage: listing.lifeStage || null,
       });
       // On success this redirects to Stripe; we only reach here on failure.
       if (!result.success) throw new Error(result.error || "Checkout failed");

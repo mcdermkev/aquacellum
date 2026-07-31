@@ -41,12 +41,22 @@
  *
  * Sex defaults to Unsexed. Promoted fry are usually too young to sex and the app
  * has no business inferring it.
+ *
+ * ── A PURCHASED LOT PROMOTES THE SAME WAY ───────────────────────────────────
+ *
+ * §12.4: a lot is a cohort that changed hands, so `services/lotIntake.js` writes it
+ * as a spawn-shaped row and everything above applies to it verbatim — which is what
+ * closes §9.26 (a sale never decremented the cohort; now it does, because promotion
+ * decrements). Two facts differ and only two, both in `lotProvenance` below: the
+ * BREEDER is the one named in the lot's pedigree rather than the promoter, and
+ * ancestry travels as a document hash rather than as local parent serials.
  */
 
 import { db } from "../db";
 import { summarizeGrowout } from "../utils/growoutFunnel";
 import { SEX, normalizeSex } from "../utils/specimenSex";
 import { formatCertSerial } from "../utils/specimenIdentity";
+import { promotedLifeStage } from "../utils/lifeStage";
 import { addXp, XP_ACTIONS } from "../utils/xp";
 import { relayMintSpecimen } from "./relayer";
 import { buildSpecimenMetadata } from "./specimenMetadata";
@@ -141,6 +151,12 @@ export const PROMOTION_COPY = Object.freeze({
   parentsLabel: Object.freeze({
     pro: "Parents, from this spawn",
     casual: "Their parents",
+  }),
+  parentsFromLot: Object.freeze({
+    // A purchased lot has no parent records on this device, and saying "from this
+    // spawn" there would point at nothing. §9.25 / T3 §2.6.
+    pro: "Ancestry comes from the pedigree that arrived with this lot, not from records on this device.",
+    casual: "Their family tree came with them when you bought them.",
   }),
   sexHint: Object.freeze({
     pro: "Sex is optional — leave it unset if you can't tell yet.",
@@ -262,6 +278,64 @@ async function resolveSpeciesNames(spawn, speciesCatalog) {
   return { commonName: "Specimen", scientificName: "Unknown" };
 }
 
+/**
+ * What a PURCHASED lot contributes to the certificates promoted out of it
+ * (docs/BREEDER_STATE_MODEL.md §9.25, T3 §2.6). Empty object for a cohort the
+ * breeder bred themselves, so that path is byte-for-byte unchanged.
+ *
+ * ── WHY THE BREEDER IS NOT THE PROMOTER ─────────────────────────────────────
+ *
+ * A cohort bred here takes `breeder` from `spawn.ownerAddress`, which is right: the
+ * owner of the spawning pair bred the fry. A PURCHASED lot inverts that. Somebody
+ * else's pair produced these eggs; the buyer hatched them. §5 makes `breeder` a
+ * provenance fact about who bred the fish, and §12.3's deciding scenario is precisely
+ * that the lineage still traces to the master breeder when the buyer resells — so
+ * recording the buyer here would erase the one fact the premium rests on, on the
+ * first generation, permanently.
+ *
+ * The lot document's `subject.breeder` is that breeder, sealed on their own device
+ * from their own registry. It is the only trustworthy source for this, which is why
+ * it is read off the document rather than off the listing.
+ *
+ * ── AND WHY THE CHAIN POINTER, NOT SERIALS ──────────────────────────────────
+ *
+ * `sireId`/`damId` stay 0. A purchased lot's parents live on the seller's device and
+ * their serials name different fish here (§3, §12.2). `pedigreeParentDocuments.sire`
+ * carries the lot's hash instead, so when this fish is sold on,
+ * `issueTransferDocument` seals a document that CHAINS to the lot rather than
+ * restating it — the same mechanism `receiveTransferredCertificate` uses for an
+ * individual resale.
+ */
+function lotProvenance(spawn) {
+  const hash = spawn?.lotDocumentHash;
+  if (typeof hash !== "string" || !hash) return null;
+  return {
+    hash,
+    breeder: spawn?.pedigreeDocument?.body?.subject?.breeder || null,
+  };
+}
+
+/**
+ * The fields `relayMintSpecimen` has no parameters for, written straight after it.
+ *
+ * A failure here is logged, not thrown. The certificate already exists and §4.1 says
+ * it can never be destroyed, so aborting would leave a certificate with no life stage
+ * and no chain and no way to correct it — strictly worse than a loud warning next to
+ * a row that can still be re-linked.
+ */
+async function applyPromotionProvenance(specimenId, lot) {
+  const updates = { lifeStage: promotedLifeStage() };
+  if (lot) {
+    updates.lotDocumentHash = lot.hash;
+    updates.pedigreeParentDocuments = { sire: lot.hash, dam: null };
+  }
+  try {
+    await db.specimens.update(Number(specimenId), updates);
+  } catch (err) {
+    console.error("[CohortPromotion] Could not record promotion provenance:", specimenId, err);
+  }
+}
+
 function nextFreeCheckpointTimestamp(existingCheckpoints, now) {
   const taken = new Set(
     (existingCheckpoints || [])
@@ -358,6 +432,10 @@ export async function promoteCohortToCertificates({
 
     // ── 4. Mint. One certificate per fish, through the one mint path. ───────
     const { commonName, scientificName } = await resolveSpeciesNames(spawn, speciesCatalog);
+    // Non-null only for a cohort that was BOUGHT. See `lotProvenance`.
+    const lot = lotProvenance(spawn);
+    // The buyer owns the fish; somebody else bred it. Both facts are recorded.
+    const breeder = lot?.breeder || spawn.ownerAddress;
     const specimenIds = [];
 
     for (let i = 0; i < requested; i += 1) {
@@ -378,13 +456,23 @@ export async function promoteCohortToCertificates({
         tankId: spawn.tankId,
         sex: gender === SEX.UNSEXED ? null : gender,
         name: fishName || `${commonName} Keeper`,
-        description:
-          `Promoted from the grow-out cohort of Spawn ${spawn.spawnId}. ` +
-          `Sire Cert. ${formatCertSerial(spawn.sireId)}, Dam Cert. ${formatCertSerial(spawn.damId)}.`,
-        extraAttributes: [
-          { trait_type: "Origin", value: "Promoted from grow-out cohort" },
-          { trait_type: "Source Spawn", value: String(spawn.spawnId) },
-        ],
+        // A purchased lot has no local parent serials to cite — they name different
+        // fish here — so it cites the pedigree hash, which is the same string in
+        // every wallet. Printing "Sire Cert. —" would read as missing rather than as
+        // recorded somewhere a serial cannot reach.
+        description: lot
+          ? `Raised from a purchased lot. Ancestry is recorded in pedigree ${lot.hash}.`
+          : `Promoted from the grow-out cohort of Spawn ${spawn.spawnId}. ` +
+            `Sire Cert. ${formatCertSerial(spawn.sireId)}, Dam Cert. ${formatCertSerial(spawn.damId)}.`,
+        extraAttributes: lot
+          ? [
+              { trait_type: "Origin", value: "Raised from a purchased lot" },
+              { trait_type: "Pedigree", value: lot.hash },
+            ]
+          : [
+              { trait_type: "Origin", value: "Promoted from grow-out cohort" },
+              { trait_type: "Source Spawn", value: String(spawn.spawnId) },
+            ],
       });
 
       const res = await relayMintSpecimen({
@@ -392,7 +480,7 @@ export async function promoteCohortToCertificates({
         // The fish was born when the spawn happened. `Date.now()` here would put
         // a false hatch date on a certificate that outlives this app.
         birthTimestamp: Number(spawn.timestamp) || 0,
-        breeder: spawn.ownerAddress,
+        breeder,
         currentTankId: spawn.tankId,
         // Local serials, straight off the spawn — never an on-chain token id, and
         // never resolved through contract.specimens() (§3).
@@ -408,7 +496,11 @@ export async function promoteCohortToCertificates({
         metadataDocument: document,
       });
 
-      if (res?.success) specimenIds.push(res.specimenId);
+      if (res?.success) {
+        specimenIds.push(res.specimenId);
+        // Life stage always, chain pointer only for a purchased lot.
+        await applyPromotionProvenance(res.specimenId, lot);
+      }
     }
 
     // ── 5. No certificates means no departure. ──────────────────────────────

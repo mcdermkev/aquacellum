@@ -33,6 +33,8 @@ const cloudCalls = [];
 const xpCalls = [];
 /** Existing certificates, used for the local-first species-name fallback. */
 let siblingSpecimens = [];
+/** Post-mint `specimens.update` calls — life stage and the pedigree chain pointer. */
+const specimenPatches = [];
 /**
  * Per-call mint outcome. `null` (default) → every call succeeds. An array is
  * consumed positionally: `false` makes that one call fail.
@@ -75,6 +77,10 @@ vi.mock("../db", () => ({
           first: async () => siblingSpecimens.find((s) => s.speciesId === Number(speciesId)),
         }),
       }),
+      update: async (id, patch) => {
+        specimenPatches.push({ id: Number(id), patch });
+        return 1;
+      },
     },
   },
 }));
@@ -113,6 +119,7 @@ const {
 } = await import("../services/cohortPromotion");
 const { summarizeGrowout } = await import("../utils/growoutFunnel");
 const { containsProhibitedTerm } = await import("../services/orderCopy");
+const { canBeCertificated, promotedLifeStage } = await import("../utils/lifeStage");
 
 // ─── Fixture ────────────────────────────────────────────────────────────────
 
@@ -159,6 +166,7 @@ beforeEach(() => {
   xpCalls.length = 0;
   seededCheckpoints = [];
   siblingSpecimens = [];
+  specimenPatches.length = 0;
   mintScript = null;
   nextSerial = 100;
   seedSpawn();
@@ -422,6 +430,109 @@ describe("promotableCount", () => {
     expect(promotableCount(undefined)).toBe(0);
     expect(promotableCount({})).toBe(0);
     expect(promotableCount({ alive: -5 })).toBe(0);
+  });
+});
+
+// ─── A purchased lot promotes the same way, with two facts different ────────
+//
+// docs/BREEDER_STATE_MODEL.md §9.25 / §12.4, T3 §2.6. A lot is a cohort that changed
+// hands, so everything above applies verbatim. What must NOT be lost is the fact the
+// premium rests on: the lineage still traces to the breeder who bred the fish.
+
+describe("promoting out of a purchased lot", () => {
+  const MASTER = "0xcccccccccccccccccccccccccccccccccccccccc";
+  const LOT_HASH = "d".repeat(64);
+
+  function seedPurchasedLot(overrides = {}) {
+    seedSpawn({
+      // Intake writes these as 0 — the seller's serials name different fish here.
+      sireId: 0,
+      damId: 0,
+      offspringIds: [],
+      offspringCount: 10,
+      origin: "purchasedLot",
+      lotDocumentHash: LOT_HASH,
+      pedigreeDocument: { hash: LOT_HASH, body: { subject: { breeder: MASTER } } },
+      ...overrides,
+    });
+  }
+
+  it("records the BREEDER from the pedigree, not the promoter", async () => {
+    // The deciding scenario in §12.3: a master breeder sells premium eggs, the buyer
+    // raises them and resells. Naming the buyer as breeder here would erase the one
+    // fact that premium rests on, on the first generation, permanently.
+    seedPurchasedLot();
+    await promoteCohortToCertificates({ spawnId: SPAWN_ID, count: 2 });
+    expect(mintCalls).toHaveLength(2);
+    for (const call of mintCalls) {
+      expect(call.breeder).toBe(MASTER);
+      // Owned by the buyer, bred by someone else. Both facts, separately.
+      expect(call.ownerAddress).toBe(OWNER);
+    }
+  });
+
+  it("chains each certificate to the lot document so a resale reaches back", async () => {
+    seedPurchasedLot();
+    const result = await promoteCohortToCertificates({ spawnId: SPAWN_ID, count: 2 });
+    expect(result.promoted).toBe(2);
+    for (const id of result.specimenIds) {
+      const patch = specimenPatches.find((p) => p.id === id)?.patch;
+      expect(patch.lotDocumentHash).toBe(LOT_HASH);
+      // What `issueTransferDocument` reads when this fish is sold on.
+      expect(patch.pedigreeParentDocuments).toEqual({ sire: LOT_HASH, dam: null });
+    }
+  });
+
+  it("never mints the lot's zeroed parent serials as a pedigree", async () => {
+    seedPurchasedLot();
+    await promoteCohortToCertificates({ spawnId: SPAWN_ID, count: 1 });
+    expect(mintCalls[0].sireId).toBe(0);
+    expect(mintCalls[0].damId).toBe(0);
+    // And it does not print them as if they were a record — see formatCertSerial(0).
+    expect(mintCalls[0].metadataDocument.description).toContain(LOT_HASH);
+    expect(mintCalls[0].metadataDocument.description).not.toContain("Sire Cert.");
+  });
+
+  it("records the promoted stage, so a certificate never sits at a cohort-only one", async () => {
+    seedPurchasedLot();
+    const result = await promoteCohortToCertificates({ spawnId: SPAWN_ID, count: 1 });
+    const patch = specimenPatches.find((p) => p.id === result.specimenIds[0]).patch;
+    expect(patch.lifeStage).toBe(promotedLifeStage());
+    expect(canBeCertificated(patch.lifeStage)).toBe(true);
+  });
+
+  it("still decrements the cohort — which is what closes §9.26", async () => {
+    // A sale never decremented a cohort because a sale produced no cohort. Now it
+    // does, and promotion is a departure type, so the count comes down by itself.
+    seedPurchasedLot();
+    seedCohort(10);
+    await promoteCohortToCertificates({ spawnId: SPAWN_ID, count: 4 });
+    const checkpoint = growoutRows.find((r) => r.type === PROMOTED_TYPE);
+    expect(checkpoint.count).toBe(4);
+    expect(summarizeGrowout(checkpointsFor(SPAWN_ID)).alive).toBe(6);
+  });
+
+  it("leaves a bred cohort's provenance exactly as it was", async () => {
+    // The lot path must be additive. A spawn with no lot document takes the original
+    // route, serials and all.
+    await promoteCohortToCertificates({ spawnId: SPAWN_ID, count: 1 });
+    expect(mintCalls[0].breeder).toBe(OWNER);
+    expect(mintCalls[0].sireId).toBe(7);
+    expect(mintCalls[0].damId).toBe(12);
+    expect(mintCalls[0].metadataDocument.description).toContain("Sire Cert.");
+    const patch = specimenPatches[0].patch;
+    expect(patch.lifeStage).toBe(promotedLifeStage());
+    expect(patch.lotDocumentHash).toBeUndefined();
+    expect(patch.pedigreeParentDocuments).toBeUndefined();
+  });
+
+  it("falls back to the lot owner when the document names no breeder", async () => {
+    // An honest fallback, not a guess: the row is still attributed to somebody who
+    // demonstrably held the cohort, rather than to nobody.
+    seedPurchasedLot({ pedigreeDocument: { hash: LOT_HASH, body: { subject: {} } } });
+    await promoteCohortToCertificates({ spawnId: SPAWN_ID, count: 1 });
+    expect(mintCalls[0].breeder).toBe(OWNER);
+    expect(specimenPatches[0].patch.lotDocumentHash).toBe(LOT_HASH);
   });
 });
 

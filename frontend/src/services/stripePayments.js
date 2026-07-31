@@ -207,20 +207,49 @@ export async function purchaseBatch({
   buyerWallet,
   sellerWallet,
   promoCode,
+  /**
+   * The pedigree the seller sealed at listing time, plus the life stage
+   * (services/listingPedigree.js, BREEDER_STATE_MODEL §9.25, T3 §2.6).
+   *
+   * ⚠️ LOCAL ONLY. These are NOT sent to Stripe or to the checkout endpoint — a
+   * payment request has no business carrying a provenance document, and the server
+   * does nothing with it. They are stashed on the local pending-purchase row so the
+   * document is still on this device days later when the fry actually arrive, which
+   * is when `lotIntake.receivePurchasedLot` needs it.
+   *
+   * Why it has to be captured HERE: the buyer receives the document by browsing
+   * (`aquadex_listings.data`), but `useMarketplaceListings` clears and refills
+   * `db.listings` from on-chain data, which carries none, and the seller's
+   * `localListings` row does not exist on this device. Checkout is the last moment
+   * the buyer holds it.
+   */
+  pedigreeDocument = null,
+  pedigreeHash = null,
+  lifeStage = null,
 }) {
-  return _createCheckout({
-    purchaseType: "batch",
-    buyerWallet,
-    sellerWallet,
-    ...(promoCode ? { promoCode } : {}),
-    items: [{
-      listingId,
-      commonName,
-      pricePerFishCents,
-      quantity,
-      imageUrl,
-    }],
-  });
+  return _createCheckout(
+    {
+      purchaseType: "batch",
+      buyerWallet,
+      sellerWallet,
+      ...(promoCode ? { promoCode } : {}),
+      items: [{
+        listingId,
+        commonName,
+        pricePerFishCents,
+        quantity,
+        imageUrl,
+      }],
+    },
+    true,
+    {
+      listingId: Number(listingId),
+      quantity: Number(quantity) || 0,
+      pedigreeDocument: pedigreeDocument || null,
+      pedigreeHash: pedigreeHash || pedigreeDocument?.hash || null,
+      lifeStage: lifeStage || null,
+    }
+  );
 }
 
 /**
@@ -569,9 +598,11 @@ export async function confirmCashPickup({ token } = {}) {
  *
  * @param {Object} payload - The request body for /api/stripe?action=create-checkout
  * @param {boolean} [autoRedirect=true] - If true, redirects the browser to Stripe
+ * @param {Object|null} [localOnly=null] - fields recorded on the LOCAL pending row and
+ *   deliberately never sent to the server. See `purchaseBatch`.
  * @returns {Promise<Object>} Response from the checkout endpoint
  */
-async function _createCheckout(payload, autoRedirect = true) {
+async function _createCheckout(payload, autoRedirect = true, localOnly = null) {
   try {
     // Attach the logged-in session token so the backend can stamp the buyer's
     // verified identity onto the order — this is what enables popup-free release
@@ -597,7 +628,7 @@ async function _createCheckout(payload, autoRedirect = true) {
     }
 
     // Record pending purchase locally for optimistic UI
-    await _recordPendingPurchase(payload, data.sessionId);
+    await _recordPendingPurchase(payload, data.sessionId, localOnly);
 
     // Redirect to Stripe Checkout
     if (autoRedirect && data.checkoutUrl) {
@@ -625,7 +656,7 @@ async function _createCheckout(payload, autoRedirect = true) {
  * Record a pending purchase locally so the UI can show "Payment Processing..."
  * until the webhook confirms settlement.
  */
-async function _recordPendingPurchase(payload, sessionId) {
+async function _recordPendingPurchase(payload, sessionId, localOnly = null) {
   try {
     const order = {
       orderType: "fiat_pending",
@@ -635,6 +666,10 @@ async function _recordPendingPurchase(payload, sessionId) {
       seller: payload.sellerWallet,
       items: JSON.stringify(payload.items),
       status: "pending", // pending → settled | failed
+      // Local-only extras (never sent to the server). Currently the sealed pedigree
+      // a batch purchase must not lose between checkout and arrival — see
+      // `purchaseBatch` and `services/lotIntake.js`.
+      ...(localOnly || {}),
       createdAt: Math.floor(Date.now() / 1000),
     };
     await db.marketOrders.put(order);
