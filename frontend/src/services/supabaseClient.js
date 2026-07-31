@@ -158,6 +158,40 @@ let _isAuthenticated = false;
 let _currentWallet = null;
 
 /**
+ * Event name fired whenever the Reef session state changes (bridge minted,
+ * re-minted, downgraded to header mode, or cleared).
+ *
+ * WHY THIS EXISTS. `_isAuthenticated` and `_mintedToken` are module-level, and
+ * `AuthContext` kicks `authenticateWithWallet()` off inside an async effect
+ * without publishing anything to React when it completes. So a component that
+ * reads `isFullyAuthenticated()` on mount can latch a "not signed in" answer
+ * that is already stale by the time it renders — and never learn otherwise.
+ *
+ * That was a real, visible bug: on mobile, where `getAccessToken()` plus the
+ * `/api/mint-session` round trip is slower than on desktop, the Settings
+ * notification panel mounted before the bridge landed and showed "Sign in to
+ * enable notifications" permanently, even while signed in. Logging out and back
+ * in did not help, because the panel still only read the value once.
+ *
+ * Emitting an event is deliberately additive: no auth behaviour changes, and
+ * consumers opt in. Anything deriving UI from bridge state should listen.
+ */
+export const REEF_SESSION_EVENT = "aquadex:reef-session";
+
+function publishSessionState() {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(
+      new CustomEvent(REEF_SESSION_EVENT, {
+        detail: { wallet: _currentWallet, authenticated: _isAuthenticated },
+      })
+    );
+  } catch {
+    // CustomEvent unavailable (non-browser test env) — nothing to publish to.
+  }
+}
+
+/**
  * Check if the Supabase client has been configured with real credentials.
  */
 export function isSupabaseConfigured() {
@@ -241,6 +275,7 @@ export async function authenticateWithWallet(walletAddress, privyToken = null) {
   setWalletHeader(walletAddress);
 
   if (!isSupabaseConfigured()) {
+    publishSessionState();
     return { success: false, authenticated: false, error: "Supabase not configured" };
   }
 
@@ -266,6 +301,9 @@ export async function authenticateWithWallet(walletAddress, privyToken = null) {
           _mintedToken = access_token;
           _isAuthenticated = true;
           _sessionExpiresAt = expires_at;
+          // Tell listeners the bridge is live. Without this, anything that read
+          // isFullyAuthenticated() before now stays wrong forever.
+          publishSessionState();
           return { success: true, authenticated: true };
         }
       } else if (response.status === 503) {
@@ -295,6 +333,9 @@ export async function authenticateWithWallet(walletAddress, privyToken = null) {
     // ignore — no session to clear
   }
 
+  // Publish the downgrade too: "signed in but in header mode" is a distinct
+  // state from "bridge live", and push enrolment depends on the difference.
+  publishSessionState();
   return { success: true, authenticated: false };
 }
 
@@ -326,6 +367,7 @@ export async function refreshSession(privyToken) {
         _mintedToken = access_token;
         _isAuthenticated = true;
         _sessionExpiresAt = expires_at;
+        publishSessionState();
         return true;
       }
     }
@@ -362,6 +404,7 @@ export async function clearReefSession() {
   } catch (err) {
     // Ignore sign-out errors
   }
+  publishSessionState();
 }
 
 /**

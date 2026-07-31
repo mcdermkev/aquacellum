@@ -42,7 +42,12 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { supabase, getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
+import {
+  supabase,
+  getCurrentWallet,
+  isSupabaseConfigured,
+  REEF_SESSION_EVENT,
+} from "../../services/supabaseClient";
 import {
   getPushStatus,
   subscribeToPush,
@@ -118,8 +123,19 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
     }
   }, []);
 
+  // Read once on mount, then AGAIN whenever the Reef session changes.
+  //
+  // The mount read alone was a bug with a very specific symptom: the JWT bridge
+  // is minted in an async effect in AuthContext, and on mobile that round trip
+  // finishes after this panel has already rendered. So the panel latched
+  // "Sign in to enable notifications" while the user was signed in the whole
+  // time, and logging out and back in did not clear it, because nothing ever
+  // re-read the value. supabaseClient now publishes REEF_SESSION_EVENT.
   useEffect(() => {
     refreshPushStatus();
+    if (typeof window === "undefined") return;
+    window.addEventListener(REEF_SESSION_EVENT, refreshPushStatus);
+    return () => window.removeEventListener(REEF_SESSION_EVENT, refreshPushStatus);
   }, [refreshPushStatus]);
 
   // Load preferences from the Supabase profile
@@ -292,17 +308,24 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
         />
 
         {pushStatus && pushStatus.supported && !pushStatus.blocked && (
-          <div className="sonar-prefs__device-actions" style={deviceActionsStyle}>
+          <div className="sonar-prefs__device-actions">
             {pushActive ? (
-              <button className="btn btn--ghost" onClick={handleDisablePush} disabled={pushBusy}>
+              <button className="btn-secondary" onClick={handleDisablePush} disabled={pushBusy}>
                 {pushBusy ? "Working…" : "Turn off on this device"}
               </button>
             ) : (
               <button
-                className="btn"
+                className="btn-primary"
                 onClick={handleEnablePush}
-                disabled={pushBusy || pushStatus.iosNeedsInstall}
-                style={primaryBtnStyle}
+                // Previously disabled only for iOS. When the bridge is inactive
+                // or push isn't configured, this button can ONLY fail — offering
+                // it invites the user to discover that the hard way.
+                disabled={
+                  pushBusy ||
+                  pushStatus.iosNeedsInstall ||
+                  !pushStatus.bridgeActive ||
+                  !pushStatus.configured
+                }
               >
                 {pushBusy ? "Working…" : pushDiverged ? "Re-register this device" : "Turn on notifications"}
               </button>
@@ -312,7 +335,7 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
                 only when THIS one is active — "I get nothing on my phone" is
                 usually asked from a laptop. */}
             {(pushActive || (pushStatus.deviceCount || 0) > 0) && (
-              <button className="btn btn--ghost" onClick={handleTestPush} disabled={pushBusy}>
+              <button className="btn-secondary" onClick={handleTestPush} disabled={pushBusy}>
                 {pushBusy ? "Sending…" : "Send test notification"}
               </button>
             )}
@@ -320,9 +343,13 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
         )}
 
         {pushMessage && (
-          <p role="status" style={messageStyle(pushMessage.type)}>
+          <p role="status" className={`sonar-prefs__note sonar-prefs__note--${pushMessage.type}`}>
             {pushMessage.text}
           </p>
+        )}
+
+        {pushStatus?.supported && (
+          <PushDiagnostics status={pushStatus} />
         )}
       </div>
 
@@ -447,7 +474,7 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
           {saving ? "Saving…" : saved ? "✓ Saved" : "Save Preferences"}
         </button>
         {saveError && (
-          <p role="alert" style={messageStyle("error")}>{saveError}</p>
+          <p role="alert" className="sonar-prefs__note sonar-prefs__note--error">{saveError}</p>
         )}
       </div>
     </section>
@@ -468,7 +495,7 @@ function PushStatusBanner({ status, diverged, casualModeActive }) {
 
   if (!status.supported) {
     return (
-      <p style={messageStyle("info")}>
+      <p className="sonar-prefs__note sonar-prefs__note--info">
         This browser doesn't support push notifications. In-app notifications still work.
       </p>
     );
@@ -476,7 +503,7 @@ function PushStatusBanner({ status, diverged, casualModeActive }) {
 
   if (status.iosNeedsInstall) {
     return (
-      <p style={messageStyle("warning")}>
+      <p className="sonar-prefs__note sonar-prefs__note--warning">
         On iPhone and iPad, notifications only work after you install the app to your
         Home Screen. Use <strong>Install App</strong> in Settings first, then come back
         here and turn them on.
@@ -489,7 +516,7 @@ function PushStatusBanner({ status, diverged, casualModeActive }) {
     // that caused this whole investigation. Say so plainly rather than showing a
     // toggle that cannot work.
     return (
-      <p style={messageStyle("error")}>
+      <p className="sonar-prefs__note sonar-prefs__note--error">
         Push notifications aren't configured on this deployment, so they can't be
         switched on yet.
       </p>
@@ -498,7 +525,7 @@ function PushStatusBanner({ status, diverged, casualModeActive }) {
 
   if (status.blocked) {
     return (
-      <p style={messageStyle("error")}>
+      <p className="sonar-prefs__note sonar-prefs__note--error">
         Notifications are <strong>blocked</strong> for this site. The app can't ask again
         once blocked — you'll need to allow notifications in your browser's site settings
         (the icon next to the address bar), then reload.
@@ -508,7 +535,7 @@ function PushStatusBanner({ status, diverged, casualModeActive }) {
 
   if (!status.bridgeActive) {
     return (
-      <p style={messageStyle("warning")}>
+      <p className="sonar-prefs__note sonar-prefs__note--warning">
         Sign in to enable notifications — we need a verified session to register this
         device to your account.
       </p>
@@ -517,7 +544,7 @@ function PushStatusBanner({ status, diverged, casualModeActive }) {
 
   if (diverged) {
     return (
-      <p style={messageStyle("warning")}>
+      <p className="sonar-prefs__note sonar-prefs__note--warning">
         This browser has a notification subscription that isn't registered to your
         account, so nothing will reach you. Re-register to fix it.
       </p>
@@ -527,7 +554,7 @@ function PushStatusBanner({ status, diverged, casualModeActive }) {
   if (status.active) {
     const others = Math.max(0, (status.deviceCount || 1) - 1);
     return (
-      <p style={messageStyle("success")}>
+      <p className="sonar-prefs__note sonar-prefs__note--success">
         <strong>Active on this device.</strong>{" "}
         {others > 0
           ? `Also registered on ${others} other device${others === 1 ? "" : "s"}.`
@@ -541,7 +568,7 @@ function PushStatusBanner({ status, diverged, casualModeActive }) {
 
   if ((status.deviceCount || 0) > 0) {
     return (
-      <p style={messageStyle("info")}>
+      <p className="sonar-prefs__note sonar-prefs__note--info">
         Notifications are on for {status.deviceCount} other device
         {status.deviceCount === 1 ? "" : "s"}, but not this one.
       </p>
@@ -549,51 +576,46 @@ function PushStatusBanner({ status, diverged, casualModeActive }) {
   }
 
   return (
-    <p style={messageStyle("info")}>
+    <p className="sonar-prefs__note sonar-prefs__note--info">
       Notifications are off. Turn them on to get alerts on this device
       {casualModeActive ? "" : " (browser permission required)"}.
     </p>
   );
 }
 
-// ── Styles ───────────────────────────────────────────────────────────────────
-// Inline because sonar-prefs.css has no equivalents for these new states and
-// adding a stylesheet pass here would widen a bug fix into a styling change.
+/**
+ * A collapsed, plain-language readout of the four values that determine whether
+ * a notification can arrive.
+ *
+ * This exists because the failure we were chasing was only diagnosable from a
+ * device we could not inspect. "Stuck on Working…" is not actionable; "signed
+ * in: no, service worker: waiting, permission: default" is. It stays collapsed
+ * so it costs nothing when things work.
+ */
+function PushDiagnostics({ status }) {
+  const rows = [
+    ["Browser permission", status.permission],
+    ["Signed in (verified session)", status.bridgeActive ? "yes" : "no"],
+    ["Service worker", status.swState],
+    ["This browser subscribed", status.subscribedHere ? "yes" : "no"],
+    ["Registered to your account", status.registeredOnServer ? "yes" : "no"],
+    ["Devices on your account", String(status.deviceCount ?? 0)],
+    ["Push configured in this build", status.configured ? "yes" : "no"],
+  ];
 
-const deviceActionsStyle = {
-  display: "flex",
-  gap: "0.75rem",
-  flexWrap: "wrap",
-  marginTop: "0.75rem",
-};
-
-const primaryBtnStyle = {
-  background: "linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%)",
-  color: "#04121f",
-  fontWeight: 700,
-  border: "none",
-};
-
-const MESSAGE_COLORS = {
-  success: { fg: "#4ade80", bg: "rgba(52, 211, 153, 0.08)", border: "rgba(52, 211, 153, 0.25)" },
-  error: { fg: "#f87171", bg: "rgba(248, 113, 113, 0.08)", border: "rgba(248, 113, 113, 0.25)" },
-  warning: { fg: "#fbbf24", bg: "rgba(251, 191, 36, 0.08)", border: "rgba(251, 191, 36, 0.25)" },
-  info: { fg: "#93c5fd", bg: "rgba(56, 189, 248, 0.06)", border: "rgba(56, 189, 248, 0.2)" },
-};
-
-function messageStyle(type) {
-  const c = MESSAGE_COLORS[type] || MESSAGE_COLORS.info;
-  return {
-    marginTop: "0.75rem",
-    marginBottom: 0,
-    padding: "0.65rem 0.9rem",
-    borderRadius: "8px",
-    background: c.bg,
-    border: `1px solid ${c.border}`,
-    color: c.fg,
-    fontSize: "0.8rem",
-    lineHeight: 1.5,
-  };
+  return (
+    <details className="sonar-prefs__diag">
+      <summary>Notification diagnostics</summary>
+      <dl className="sonar-prefs__diag-list">
+        {rows.map(([label, value]) => (
+          <div key={label} className="sonar-prefs__diag-row">
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </details>
+  );
 }
 
 export default SonarPreferences;

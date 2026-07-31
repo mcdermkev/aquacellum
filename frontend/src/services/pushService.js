@@ -58,6 +58,7 @@ export const PUSH_REASON = {
   NOT_AUTHORIZED: "not_authorized",
   STORAGE_FAILED: "storage_failed",
   SUBSCRIBE_FAILED: "subscribe_failed",
+  TIMED_OUT: "timed_out",
 };
 
 /**
@@ -84,6 +85,8 @@ export const PUSH_REASON_MESSAGE = {
     "We couldn't register this device for notifications. Please try again.",
   [PUSH_REASON.SUBSCRIBE_FAILED]:
     "Your browser couldn't create a push subscription. Please try again.",
+  [PUSH_REASON.TIMED_OUT]:
+    "This took too long and was stopped. If you didn't see a permission prompt, your browser may be suppressing it — close and reopen the app, then try once more.",
 };
 
 /** Copy for a reason code, with a safe fallback for anything unmapped. */
@@ -153,19 +156,67 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 /**
- * Register the service worker if not already registered.
+ * Race a promise against a timeout.
+ *
+ * WHY EVERY BROWSER CALL BELOW IS WRAPPED. Three of the promises in this file
+ * can legitimately never settle, and an unsettled promise here means the
+ * Settings button sits on "Working…" forever with no way out but a reload —
+ * which is exactly what happened on mobile:
+ *
+ *   - `navigator.serviceWorker.ready` resolves only when an ACTIVE registration
+ *     exists for the scope. This project uses `registerType: 'prompt'` with no
+ *     `skipWaiting()`, so on a device that already has a worker the newly
+ *     deployed one sits in `waiting` until the user accepts the update prompt.
+ *     Any state where nothing reaches `activated` leaves this pending.
+ *   - `register()` can hang on a slow or flaky connection.
+ *   - `Notification.requestPermission()` does not settle until the user answers,
+ *     and mobile Chrome may suppress the prompt entirely after prior dismissals
+ *     (its abusive-prompt protection), in which case the answer never comes.
+ *
+ * A timeout converts all of that into a reported failure the user can act on.
+ * Failing loudly on a timer is the whole point of this module.
+ */
+function withTimeout(promise, ms, label) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(
+      () => reject(Object.assign(new Error(`${label} timed out after ${ms}ms`), { isTimeout: true })),
+      ms
+    );
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+const SW_READY_TIMEOUT_MS = 10_000;
+const PERMISSION_TIMEOUT_MS = 60_000;
+
+/**
+ * Register the service worker and wait for an active one.
+ *
+ * Falls back to the existing registration if `ready` times out but a
+ * registration object exists: a worker in `waiting` can still receive push
+ * events once it activates, so a timeout here is not automatically fatal — but
+ * it must not block.
  */
 async function ensureServiceWorker() {
   if (!("serviceWorker" in navigator)) {
     throw new Error("Service workers not supported");
   }
 
-  const registration = await navigator.serviceWorker.register("/sw.js", {
-    scope: "/",
-  });
+  const registration = await withTimeout(
+    navigator.serviceWorker.register("/sw.js", { scope: "/" }),
+    SW_READY_TIMEOUT_MS,
+    "Service worker registration"
+  );
 
-  // Wait for the SW to be ready
-  await navigator.serviceWorker.ready;
+  try {
+    await withTimeout(navigator.serviceWorker.ready, SW_READY_TIMEOUT_MS, "Service worker activation");
+  } catch (err) {
+    // Proceed with the registration we already hold. pushManager lives on the
+    // registration, not on the active worker, so subscribing still works.
+    console.warn("[Push] serviceWorker.ready did not settle; using the registration directly:", err.message);
+  }
+
   return registration;
 }
 
@@ -266,7 +317,16 @@ export async function subscribeToPush() {
     const registration = await ensureServiceWorker();
 
     // ── 3. Request permission ──────────────────────────────────────────────
-    const permission = await Notification.requestPermission();
+    // Skip the prompt when it is already granted: re-requesting is a no-op in
+    // most browsers but can hang in the suppressed-prompt case for no benefit.
+    let permission = Notification.permission;
+    if (permission !== "granted") {
+      permission = await withTimeout(
+        Notification.requestPermission(),
+        PERMISSION_TIMEOUT_MS,
+        "Notification permission prompt"
+      );
+    }
     if (permission !== "granted") {
       return { success: false, reason: PUSH_REASON.PERMISSION_DENIED };
     }
@@ -310,7 +370,9 @@ export async function subscribeToPush() {
     if (subscription) await rollbackSubscription(subscription);
     return {
       success: false,
-      reason: PUSH_REASON.SUBSCRIBE_FAILED,
+      // A timeout gets its own reason: "try again" is wrong advice for a
+      // suppressed permission prompt, which needs the app reopened.
+      reason: err?.isTimeout ? PUSH_REASON.TIMED_OUT : PUSH_REASON.SUBSCRIBE_FAILED,
       error: err?.message,
     };
   }
@@ -326,7 +388,11 @@ export async function unsubscribeFromPush() {
   }
 
   try {
-    const registration = await navigator.serviceWorker.ready;
+    const registration = await withTimeout(
+      navigator.serviceWorker.ready,
+      SW_READY_TIMEOUT_MS,
+      "Service worker activation"
+    );
     const subscription = await registration.pushManager.getSubscription();
 
     if (!subscription) return { success: true };
@@ -375,7 +441,13 @@ export async function getActiveSubscription() {
   if (!isPushSupported()) return null;
 
   try {
-    const registration = await navigator.serviceWorker.ready;
+    // Timed out rather than bare: getPushStatus() awaits this on mount, and an
+    // unsettled `ready` there is what left the whole panel wedged.
+    const registration = await withTimeout(
+      navigator.serviceWorker.ready,
+      SW_READY_TIMEOUT_MS,
+      "Service worker activation"
+    );
     return await registration.pushManager.getSubscription();
   } catch {
     return null;
@@ -403,6 +475,7 @@ export async function getActiveSubscription() {
  *   deviceCount: number,
  *   blocked: boolean,
  *   active: boolean,
+ *   swState: 'none'|'installing'|'waiting'|'active'|'unknown',
  * }>}
  */
 export async function getPushStatus() {
@@ -422,9 +495,28 @@ export async function getPushStatus() {
     deviceCount: 0,
     blocked: permission === "denied",
     active: false,
+    swState: "unknown",
   };
 
   if (!supported) return status;
+
+  // Service worker state, for diagnostics. `waiting` is the interesting one:
+  // with registerType 'prompt' a freshly deployed worker sits there until the
+  // update prompt is accepted, and that is the state in which `ready` can stall.
+  try {
+    const reg = await navigator.serviceWorker.getRegistration("/");
+    status.swState = !reg
+      ? "none"
+      : reg.active
+        ? "active"
+        : reg.waiting
+          ? "waiting"
+          : reg.installing
+            ? "installing"
+            : "unknown";
+  } catch {
+    status.swState = "unknown";
+  }
 
   const subscription = await getActiveSubscription();
   status.subscribedHere = !!subscription;
