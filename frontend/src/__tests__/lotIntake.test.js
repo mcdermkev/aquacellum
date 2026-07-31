@@ -391,6 +391,37 @@ describe("resolvePurchasePedigree", () => {
     expect(await resolvePurchasePedigree({ key: 2, listingId: 5 })).toBeNull();
   });
 
+  it("matches an INDIVIDUAL purchase on tokenId, not just listingId", async () => {
+    // A batch order carries `listingId`; a shipping/pickup order carries `tokenId`, and
+    // for an individual listing they are the same number. One rule, not one per type.
+    const document = await lotDocument();
+    orderRows = [
+      { key: 1, orderType: "fiat_pending", listingId: 77, tokenId: 77, pedigreeDocument: document },
+      { key: 2, orderType: "shipping", tokenId: 77 },
+    ];
+    expect(await resolvePurchasePedigree(orderRows[1])).toBe(document);
+  });
+
+  it("picks the RIGHT fish out of a multi-specimen cart", async () => {
+    // A flat field on a cart row would hand every fish the first one's ancestry, which
+    // is a fabrication rather than a gap. The map is keyed by token id.
+    const first = await lotDocument({ issuedAt: 1730000111 });
+    const second = await lotDocument({ issuedAt: 1730000222 });
+    expect(first.hash).not.toBe(second.hash);
+    orderRows = [
+      { key: 1, orderType: "fiat_pending", pedigreeDocuments: { 41: first, 42: second } },
+      { key: 2, orderType: "shipping", tokenId: 42 },
+    ];
+    expect(await resolvePurchasePedigree(orderRows[1])).toBe(second);
+    expect(await resolvePurchasePedigree({ key: 3, orderType: "shipping", tokenId: 41 })).toBe(first);
+  });
+
+  it("returns null for a token the cart's map does not cover", async () => {
+    const first = await lotDocument();
+    orderRows = [{ key: 1, orderType: "fiat_pending", pedigreeDocuments: { 41: first } }];
+    expect(await resolvePurchasePedigree({ key: 2, orderType: "shipping", tokenId: 99 })).toBeNull();
+  });
+
   it("falls back to a local listing row, for the same-device case", async () => {
     const document = await lotDocument();
     localListingRows = [{ id: 5, listingId: 5, pedigreeDocument: document }];
@@ -494,6 +525,22 @@ describe("source guards", () => {
   it("captures the pedigree onto the order at purchase, which is the only moment it can", () => {
     expect(RELAYER).toMatch(/pedigreeDocument:\s*pedigreeDocument\s*\|\|\s*null/);
     expect(STRIPE).toMatch(/pedigreeDocument:\s*pedigreeDocument\s*\|\|\s*null/);
+  });
+
+  it("captures it on every individual checkout path too, not just the batch one", () => {
+    // §9.25's other half. All four go through `_createCheckout`'s third argument, so a
+    // new purchase function that forgets it is visible here as a missing name.
+    for (const fn of [
+      "purchaseSpecimen",
+      "purchaseShippingSpecimen",
+      "purchasePickupSpecimen",
+    ]) {
+      const block = STRIPE.slice(STRIPE.indexOf(`export async function ${fn}(`));
+      expect(block.slice(0, 1600), fn).toContain("_localPedigree(");
+    }
+    // The cart takes a per-token map instead, for the reason asserted above.
+    const multi = STRIPE.slice(STRIPE.indexOf("export async function purchaseMultiple("));
+    expect(multi.slice(0, 900)).toContain("pedigreeDocuments");
   });
 
   it("keeps the pedigree OUT of the payment request", () => {

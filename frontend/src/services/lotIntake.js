@@ -129,6 +129,34 @@ function looksLikeDocument(value) {
 }
 
 /**
+ * The id a row is "about", for matching a purchase to its pedigree.
+ *
+ * A batch order carries `listingId`; an individual one carries `tokenId`, and for an
+ * individual listing those are the same number. Reduced to one rule here so the
+ * resolver does not grow a branch per purchase type.
+ */
+function subjectIdOf(row) {
+  return row?.listingId ?? row?.tokenId ?? row?.id ?? null;
+}
+
+/**
+ * Pull a document off a row, whichever shape it stored.
+ *
+ * A single-item purchase writes a flat `pedigreeDocument`. A multi-specimen cart
+ * writes `pedigreeDocuments` keyed by token id, because one flat field would hand
+ * every fish in the cart the first one's ancestry — a fabrication, not a gap.
+ */
+function documentFromRow(row, subjectId) {
+  if (looksLikeDocument(row?.pedigreeDocument)) return row.pedigreeDocument;
+  const map = row?.pedigreeDocuments;
+  if (map && typeof map === "object" && subjectId != null) {
+    const perToken = map[subjectId] ?? map[String(subjectId)] ?? map[Number(subjectId)];
+    if (looksLikeDocument(perToken)) return perToken;
+  }
+  return null;
+}
+
+/**
  * Find the pedigree document that came with a purchase.
  *
  * Precedence, and the order matters:
@@ -155,41 +183,108 @@ function looksLikeDocument(value) {
 export async function resolvePurchasePedigree(order) {
   if (!order || typeof order !== "object") return null;
 
-  if (looksLikeDocument(order.pedigreeDocument)) return order.pedigreeDocument;
+  const subjectId = subjectIdOf(order);
 
-  const listingId = order.listingId ?? order.tokenId ?? order.id;
-  if (listingId == null) return null;
+  const onOrder = documentFromRow(order, subjectId);
+  if (onOrder) return onOrder;
+
+  if (subjectId == null) return null;
 
   try {
     const pending = await db.marketOrders
-      .filter(
-        (o) =>
-          o?.pedigreeDocument &&
-          Number(o.listingId) === Number(listingId) &&
-          // Not this same row, and not another buyer's.
-          (order.key == null || o.key !== order.key)
-      )
+      .filter((o) => {
+        // Not this same row.
+        if (order.key != null && o?.key === order.key) return false;
+        // A single-item stash is matched by the id the row is about. A multi-specimen
+        // cart's row is about no single token, so it is matched by the map HAVING an
+        // entry for this one — which is also what stops it handing over a sibling's
+        // pedigree.
+        return !!documentFromRow(o, subjectId) && (
+          Number(subjectIdOf(o)) === Number(subjectId) ||
+          !!o?.pedigreeDocuments
+        );
+      })
       .first();
-    if (looksLikeDocument(pending?.pedigreeDocument)) return pending.pedigreeDocument;
+    const onPending = documentFromRow(pending, subjectId);
+    if (onPending) return onPending;
   } catch {
     // No table or no rows — "not found" is a valid answer here.
   }
 
   try {
-    const byListingId = await db.localListings.where("listingId").equals(Number(listingId)).first();
+    const byListingId = await db.localListings.where("listingId").equals(Number(subjectId)).first();
     if (looksLikeDocument(byListingId?.pedigreeDocument)) return byListingId.pedigreeDocument;
   } catch {
     // No index, no rows, or no table — all mean "not found", which is a valid answer.
   }
 
   try {
-    const byId = await db.localListings.get(Number(listingId));
+    const byId = await db.localListings.get(Number(subjectId));
     if (looksLikeDocument(byId?.pedigreeDocument)) return byId.pedigreeDocument;
   } catch {
     // Same.
   }
 
   return null;
+}
+
+/**
+ * The ancestor documents that came with a purchase (§9.31).
+ *
+ * Separate from `resolvePurchasePedigree` rather than folded into it because the two
+ * fail independently and mean different things: no root document is "no pedigree
+ * published", while a root with no chain is "one generation, verifiable" — which is a
+ * real and common state, not a degraded one. Collapsing them would make a
+ * single-generation pedigree look broken.
+ *
+ * @param {object} order - a `marketOrders` row
+ * @returns {Promise<Array<object>>}
+ */
+export async function resolvePurchaseChain(order) {
+  if (!order || typeof order !== "object") return [];
+
+  const subjectId = subjectIdOf(order);
+  const fromRow = chainFromRow(order, subjectId);
+  if (fromRow.length > 0) return fromRow;
+  if (subjectId == null) return [];
+
+  try {
+    const pending = await db.marketOrders
+      .filter((o) => {
+        if (order.key != null && o?.key === order.key) return false;
+        return (
+          chainFromRow(o, subjectId).length > 0 &&
+          (Number(subjectIdOf(o)) === Number(subjectId) || !!o?.pedigreeChains)
+        );
+      })
+      .first();
+    const onPending = chainFromRow(pending, subjectId);
+    if (onPending.length > 0) return onPending;
+  } catch {
+    // Not found is a valid answer; the root document still verifies on its own.
+  }
+
+  try {
+    const byListingId = await db.localListings.where("listingId").equals(Number(subjectId)).first();
+    if (Array.isArray(byListingId?.pedigreeChain)) return byListingId.pedigreeChain;
+    const byId = await db.localListings.get(Number(subjectId));
+    if (Array.isArray(byId?.pedigreeChain)) return byId.pedigreeChain;
+  } catch {
+    // Same.
+  }
+
+  return [];
+}
+
+/** Chain off a row, flat field or per-token map — mirrors `documentFromRow`. */
+function chainFromRow(row, subjectId) {
+  if (Array.isArray(row?.pedigreeChain)) return row.pedigreeChain;
+  const map = row?.pedigreeChains;
+  if (map && typeof map === "object" && subjectId != null) {
+    const perToken = map[subjectId] ?? map[String(subjectId)] ?? map[Number(subjectId)];
+    if (Array.isArray(perToken)) return perToken;
+  }
+  return [];
 }
 
 /** A local spawn id no existing row is using. Matches `relaySpawn`'s `Date.now()`. */
@@ -257,6 +352,12 @@ export async function receivePurchasedLot({
   purchaseOrderKey = null,
   speciesId = null,
   scientificName = "",
+  /**
+   * The ancestor documents that rode along with the lot (§9.31). Stored on the cohort
+   * so `cohortPromotion` can copy them onto every keeper promoted out of it — which is
+   * what lets the chain survive the NEXT sale rather than dying on this device.
+   */
+  chain = [],
 } = {}) {
   const buyer = normalizeAddress(buyerAddress);
   const count = Number(quantity);
@@ -334,6 +435,9 @@ export async function receivePurchasedLot({
     // tell "this seller published none" from "this row predates the feature".
     lotDocumentHash: documentHash,
     pedigreeDocument: carried,
+    // The generations above the lot document. Only meaningful with a document to hang
+    // off, so an unaccompanied chain is dropped rather than stored as a loose claim.
+    pedigreeChain: carried && Array.isArray(chain) ? chain : [],
     metadata: null,
   };
 

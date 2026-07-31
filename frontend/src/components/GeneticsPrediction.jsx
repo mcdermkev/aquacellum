@@ -14,48 +14,15 @@ import React, { useState, useMemo } from "react";
  */
 
 // ─── Trait Genetics Database ────────────────────────────────────────────────
-export const TRAIT_GENETICS = [
-  {
-    id: "albino",
-    label: "Albino (Amelanistic)",
-    symbol: "a",
-    inheritance: "recessive",
-    description: "Amelanistic mutation. Both parents must carry the gene to produce albino offspring.",
-    color: "#fbbf24",
-  },
-  {
-    id: "longfin",
-    label: "Longfin",
-    symbol: "Lf",
-    inheritance: "dominant",
-    description: "Dominant fin extension. One copy produces longfin phenotype. Homozygous (Lf/Lf) can be lethal in some species.",
-    color: "#60a5fa",
-  },
-  {
-    id: "veil",
-    label: "Veiltail",
-    symbol: "Vt",
-    inheritance: "dominant",
-    description: "Dominant veil mutation affecting caudal fin elongation.",
-    color: "#c084fc",
-  },
-  {
-    id: "melanistic",
-    label: "Melanistic (Dark)",
-    symbol: "m",
-    inheritance: "recessive",
-    description: "Excessive melanin production. Recessive — both parents must carry the allele.",
-    color: "#6b7280",
-  },
-  {
-    id: "metallic",
-    label: "Metallic / Iridescent",
-    symbol: "Mt",
-    inheritance: "codominant",
-    description: "Codominant iridophore expression. Heterozygotes show partial metallic sheen; homozygotes show full metallic.",
-    color: "#34d399",
-  },
-];
+//
+// Now one list, in utils/traitVocabulary.js (§9.13). It was written out four times
+// across this file and SpawningWizard, and a trait added to one copy but not another
+// failed SILENTLY — see that module's header for the specific failure.
+//
+// Re-exported under the original name because this is where the calculator's readers
+// expect it, and renaming it would touch call sites for no gain.
+export { HERITABLE_TRAITS as TRAIT_GENETICS } from "../utils/traitVocabulary";
+import { HERITABLE_TRAITS as TRAIT_GENETICS } from "../utils/traitVocabulary";
 
 // Genotype options per parent
 const GENOTYPE_OPTIONS = {

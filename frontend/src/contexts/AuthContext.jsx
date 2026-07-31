@@ -30,6 +30,10 @@ import { setSessionTokenGetter as setReviewsSessionTokenGetter } from "../servic
 import { setSessionTokenGetter as setMerchandisingSessionTokenGetter } from "../services/storeMerchandisingApi";
 import { setSessionTokenGetter as setPromotionsSessionTokenGetter } from "../services/promotionsApi";
 import { setSessionTokenGetter as setPickupCoordinationSessionTokenGetter } from "../services/pickupCoordinationApi";
+// Pedigree attestation (T3 §2.4). Not a data fetch like the others — this one lets a
+// sealed pedigree be attested at listing time, which is the whole reason listing time
+// was chosen as the sealing moment. Without it every document is `unattested`.
+import { setSessionTokenGetter as setListingPedigreeSessionTokenGetter } from "../services/listingPedigree";
 import { ensureProfile, updateProfile } from "../services/reefApi";
 import { identifyUser, resetAnalyticsIdentity, trackEvent } from "../services/analytics";
 import { isE2EMode, E2E_STUB_ACCOUNT } from "../utils/e2eMode";
@@ -440,6 +444,7 @@ function PrivyAuthProvider({ children }) {
       setMerchandisingSessionTokenGetter(getAccessToken);
       setPromotionsSessionTokenGetter(getAccessToken);
       setPickupCoordinationSessionTokenGetter(getAccessToken);
+      setListingPedigreeSessionTokenGetter(getAccessToken);
     } else {
       setSessionTokenGetter(null);
       setShippingSessionTokenGetter(null);
@@ -448,6 +453,7 @@ function PrivyAuthProvider({ children }) {
       setMerchandisingSessionTokenGetter(null);
       setPromotionsSessionTokenGetter(null);
       setPickupCoordinationSessionTokenGetter(null);
+      setListingPedigreeSessionTokenGetter(null);
     }
     return () => {
       setSessionTokenGetter(null);
@@ -457,6 +463,7 @@ function PrivyAuthProvider({ children }) {
       setMerchandisingSessionTokenGetter(null);
       setPromotionsSessionTokenGetter(null);
       setPickupCoordinationSessionTokenGetter(null);
+      setListingPedigreeSessionTokenGetter(null);
     };
   }, [privyAuthenticated, getAccessToken]);
 

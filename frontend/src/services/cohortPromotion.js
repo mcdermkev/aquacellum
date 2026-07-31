@@ -309,9 +309,17 @@ async function resolveSpeciesNames(spawn, speciesCatalog) {
 function lotProvenance(spawn) {
   const hash = spawn?.lotDocumentHash;
   if (typeof hash !== "string" || !hash) return null;
+  const lotDocument = spawn?.pedigreeDocument || null;
+  const inherited = Array.isArray(spawn?.pedigreeChain) ? spawn.pedigreeChain : [];
   return {
     hash,
-    breeder: spawn?.pedigreeDocument?.body?.subject?.breeder || null,
+    breeder: lotDocument?.body?.subject?.breeder || null,
+    // Everything a future reader needs to VERIFY this fish's ancestry, not merely read
+    // it (§9.31). The lot document goes FIRST because it is the link this certificate
+    // points at directly; the rest are the generations above it, inherited from the
+    // purchase. Without this the chain would die on this device — the buyer cannot
+    // reconstruct ancestors that were never theirs to begin with.
+    chain: lotDocument ? [lotDocument, ...inherited] : inherited,
   };
 }
 
@@ -328,6 +336,7 @@ async function applyPromotionProvenance(specimenId, lot) {
   if (lot) {
     updates.lotDocumentHash = lot.hash;
     updates.pedigreeParentDocuments = { sire: lot.hash, dam: null };
+    updates.pedigreeChain = lot.chain;
   }
   try {
     await db.specimens.update(Number(specimenId), updates);

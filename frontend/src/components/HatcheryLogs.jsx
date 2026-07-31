@@ -158,6 +158,7 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
         // the only moment the buyer can (§9.25, T3 §2.6) — see relayPurchaseBatch.
         pedigreeDocument: listing.pedigreeDocument || null,
         pedigreeHash: listing.pedigreeHash || null,
+        pedigreeChain: listing.pedigreeChain || [],
         lifeStage: listing.lifeStage || null,
         speciesId: listing.speciesId ?? null,
         scientificName: listing.scientificName || "",

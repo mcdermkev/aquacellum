@@ -439,10 +439,26 @@ export function CheckoutSummary({
           return;
         }
         // Local pickup → held until the in-person handshake (Stripe Checkout).
-        result = await purchasePickupSpecimen({ ...base, promoCode: consolidatedPromo?.code });
+        result = await purchasePickupSpecimen({
+          ...base,
+          promoCode: consolidatedPromo?.code,
+          // Capture the seller's sealed pedigree while the listing is in hand (§9.25),
+          // ancestors included so the buyer can verify the chain (§9.31).
+          pedigreeDocument: l.pedigreeDocument || null,
+          pedigreeHash: l.pedigreeHash || null,
+          pedigreeChain: l.pedigreeChain || [],
+        });
       } else {
+        // One pedigree PER token, keyed by token id. A single field here would give
+        // every fish in the cart the first one's ancestry (§9.25).
+        const pedigreeDocuments = {};
+        const pedigreeChains = {};
         const items = pendingTokenIds.map((tid) => {
           const l = allActiveListings.find((x) => Number(x.tokenId) === tid);
+          if (l.pedigreeDocument) {
+            pedigreeDocuments[Number(l.tokenId)] = l.pedigreeDocument;
+            pedigreeChains[Number(l.tokenId)] = l.pedigreeChain || [];
+          }
           return {
             tokenId: Number(l.tokenId),
             commonName: l.commonName,
@@ -451,7 +467,14 @@ export function CheckoutSummary({
             shippingFeeCents: toShipCents(l),
           };
         });
-        result = await stripePurchaseMultiple({ items, buyerWallet: walletAccount, sellerWallet: seller, promoCode: consolidatedPromo?.code });
+        result = await stripePurchaseMultiple({
+          items,
+          buyerWallet: walletAccount,
+          sellerWallet: seller,
+          promoCode: consolidatedPromo?.code,
+          pedigreeDocuments,
+          pedigreeChains,
+        });
       }
 
       // On success, stripePayments redirects the browser to Stripe's hosted
@@ -488,6 +511,10 @@ export function CheckoutSummary({
         shipCarrierId: rate.carrierId,
         shipTo,
         promoCode: consolidatedPromo?.code,
+        // Carried through `shipRateModal.listing`, which spreads the whole listing (§9.25).
+        pedigreeDocument: listing.pedigreeDocument || null,
+        pedigreeHash: listing.pedigreeHash || null,
+        pedigreeChain: listing.pedigreeChain || [],
       });
       // On success this redirects to Stripe; we only reach here on failure.
       if (!result.success) throw new Error(result.error || "Checkout failed");

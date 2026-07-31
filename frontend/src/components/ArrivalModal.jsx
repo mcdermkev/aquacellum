@@ -6,7 +6,7 @@ import { useUserTanks } from "../hooks/useUserTanks";
 import { relayMoveSpecimen, relayUpdateShippingOrder } from "../services/relayer";
 import { releaseFiatOrder, disputeFiatOrder, openDoaClaim } from "../services/stripePayments";
 import { addXp, XP_ACTIONS } from "../utils/xp";
-import { receivePurchasedLot, resolvePurchasePedigree } from "../services/lotIntake";
+import { receivePurchasedLot, resolvePurchaseChain, resolvePurchasePedigree } from "../services/lotIntake";
 import { receiveTransferredCertificate } from "../services/certificateTransfer";
 import { lotStage } from "../services/listingPedigree";
 import { db } from "../db";
@@ -148,12 +148,16 @@ function ArrivalModal({
       // self-activates as sellers publish pedigrees.
       let specimenId = item?.id != null ? Number(item.id) : null;
       if (itemType === "specimen" && !localSpecimen && walletAccount) {
-        const document = await resolvePurchasePedigree(shippingOrder || item);
+        const source = shippingOrder || item;
+        const document = await resolvePurchasePedigree(source);
         if (document) {
           const received = await receiveTransferredCertificate({
             document,
             buyerAddress: walletAccount,
             tankId: selectedTankId ? Number(selectedTankId) : 0,
+            // The generations above, kept so this buyer can republish them on resale.
+            // Dropping them would break the chain one boundary later (§9.31).
+            chain: await resolvePurchaseChain(source),
           });
           if (received.ok) {
             specimenId = received.specimenId;
@@ -212,6 +216,7 @@ function ArrivalModal({
             buyerAddress: walletAccount,
             quantity: Number(item.quantity) || 0,
             document: await resolvePurchasePedigree(item),
+            chain: await resolvePurchaseChain(item),
             lifeStage: lotStage(item),
             tankId: selectedTankId ? Number(selectedTankId) : 0,
             purchaseOrderKey: item.key,

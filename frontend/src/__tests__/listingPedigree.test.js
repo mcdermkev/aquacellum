@@ -52,12 +52,16 @@ const {
   attachPedigreeToListing,
   lotStage,
   sealLotPedigree,
+  setSessionTokenGetter,
 } = await import("../services/listingPedigree");
+const { ATTESTATION_METHOD, ATTESTATION_PURPOSE, PEDIGREE_TRUST, pedigreeTrustLevel } =
+  await import("../services/pedigreeDocument");
 const { ancestorCoverage, traceBreeders, verifyPedigreeDocument } =
   await import("../services/pedigreeDocument");
 const { LIFE_STAGE } = await import("../utils/lifeStage");
 
 beforeEach(() => {
+  setSessionTokenGetter(null);
   // Grandparents 1,2,3,4 → parents 10,11 → spawn 900.
   specimenRows = [
     { id: 1, breeder: BREEDER }, { id: 2, breeder: BREEDER },
@@ -171,13 +175,14 @@ describe("lotStage", () => {
   });
 });
 
-describe("the listing wizard seals without blocking the sale", () => {
-  const code = (path) =>
-    require("node:fs").readFileSync(require("node:url").fileURLToPath(new URL(path, import.meta.url)), "utf8")
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
-      .replace(/(^|[^:])\/\/.*$/gm, "$1");
+/** Comment-stripped source, for the guards below and in the bridge suite (trap 6.3). */
+const code = (path) =>
+  require("node:fs").readFileSync(require("node:url").fileURLToPath(new URL(path, import.meta.url)), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
+    .replace(/(^|[^:])\/\/.*$/gm, "$1");
 
+describe("the listing wizard seals without blocking the sale", () => {
   it("attaches a pedigree to the listing it actually saves and syncs", () => {
     const src = code("../components/BatchListingWizard.jsx");
     expect(src).toContain("sealLotPedigree");
@@ -192,5 +197,90 @@ describe("the listing wizard seals without blocking the sale", () => {
     expect(src).toMatch(/try \{[\s\S]{0,400}sealLotPedigree[\s\S]{0,400}\} catch/);
     // The fallback still records the absence explicitly.
     expect(src).toMatch(/attachPedigreeToListing\(listing, null\)/);
+  });
+
+  it("seals an INDIVIDUAL listing too, in the one place that writes them", () => {
+    // §9.25's other half. `relayCreateListing` is the single individual-listing writer
+    // (ListSpecimenModal is its only caller), so sealing there covers the path without
+    // adding a second write route.
+    const src = code("../services/relayer.js");
+    expect(src).toContain("sealSpecimenPedigree");
+    expect(src).toContain("db.localListings.put(listingWithPedigree)");
+    expect(src).toContain("syncListingToCloud(listingWithPedigree)");
+    // Same non-blocking bias as the batch wizard.
+    expect(src).toMatch(/try \{[\s\S]{0,600}sealSpecimenPedigree[\s\S]{0,600}\} catch/);
+  });
+});
+
+// ─── Attestation actually gets asked for ───────────────────────────────────
+
+describe("the session-token bridge", () => {
+  // THE BUG THIS CLOSES: both seal functions took an optional `authToken` and every
+  // caller omitted it, so `requestPlatformAttestation` returned null and EVERY document
+  // this app issued was unattested — not because the keypair is unset, but because
+  // nothing ever asked. `unattested` is a legitimate state the ladder reports honestly,
+  // so it would have stayed invisible after the keypair landed.
+  const attestation = (hash) => ({
+    method: ATTESTATION_METHOD.PLATFORM,
+    purpose: ATTESTATION_PURPOSE,
+    subjectHash: hash,
+    signature: "eyJ.sig",
+    signedBy: SELLER,
+  });
+
+  function fetchImplFor() {
+    return async (_url, init) => {
+      const body = JSON.parse(init.body);
+      return { ok: true, json: async () => ({ attestation: attestation(body.pedigreeHash) }) };
+    };
+  }
+
+  it("resolves the token from the registered session when none is passed", async () => {
+    setSessionTokenGetter(async () => "privy-token");
+    const result = await sealLotPedigree({ spawnId: 900, issuer: SELLER, fetchImpl: fetchImplFor() });
+    expect(result.attested).toBe(true);
+    expect(await pedigreeTrustLevel(result.document, { attestationVerified: true }))
+      .toBe(PEDIGREE_TRUST.PLATFORM_ATTESTED);
+  });
+
+  it("seals unattested with no session, rather than failing the listing", async () => {
+    let called = false;
+    setSessionTokenGetter(null);
+    const result = await sealLotPedigree({
+      spawnId: 900, issuer: SELLER, fetchImpl: async () => { called = true; },
+    });
+    expect(result.ok).toBe(true);
+    expect(result.attested).toBe(false);
+    // No doomed request either — `requestPlatformAttestation` skips without a token.
+    expect(called).toBe(false);
+    expect(await pedigreeTrustLevel(result.document)).toBe(PEDIGREE_TRUST.UNATTESTED);
+  });
+
+  it("still honours an EXPLICIT null as do-not-attest", async () => {
+    // `undefined` means "resolve from the session"; `null` keeps the old opt-out, which
+    // offline paths and tests rely on.
+    setSessionTokenGetter(async () => "privy-token");
+    let called = false;
+    const result = await sealLotPedigree({
+      spawnId: 900, issuer: SELLER, authToken: null, fetchImpl: async () => { called = true; },
+    });
+    expect(called).toBe(false);
+    expect(result.attested).toBe(false);
+  });
+
+  it("survives a token getter that throws", async () => {
+    setSessionTokenGetter(async () => { throw new Error("session expired"); });
+    const result = await sealLotPedigree({ spawnId: 900, issuer: SELLER, fetchImpl: fetchImplFor() });
+    expect(result.ok).toBe(true);
+    expect(result.attested).toBe(false);
+  });
+
+  it("is registered from AuthContext alongside the other bridges", () => {
+    const src = code("../contexts/AuthContext.jsx");
+    expect(src).toContain('setSessionTokenGetter as setListingPedigreeSessionTokenGetter');
+    expect(src).toContain("setListingPedigreeSessionTokenGetter(getAccessToken)");
+    // And cleared when the user is not Privy-authenticated, so an unauthenticated
+    // seller gets an honestly unattested document rather than a stale token.
+    expect(src).toContain("setListingPedigreeSessionTokenGetter(null)");
   });
 });

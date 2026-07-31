@@ -11,16 +11,61 @@ import { COI_RISK_CONFIG } from "../utils/coiCalculator";
 import { PAIRING_COPY, pairingCandidateComparator, sexSymbol } from "../utils/specimenSex";
 import { formatCertSerial, formatLocalRecordRef } from "../utils/specimenIdentity";
 import { compressImage } from "../utils/imageCompression";
+import {
+  TRAIT_PICKER_OPTIONS,
+  hasNonStandardTrait,
+  initialTraitMarkers,
+  selectedTraitLabels,
+} from "../utils/traitVocabulary";
+import {
+  enrichSpeciesCatalogFromSpecimens,
+  loadLocalBreedingTanks,
+  loadLocalSpeciesCatalog,
+} from "../services/spawningWizardData";
 import { db } from "../db";
 
-const PHENOTYPES = [
-  { id: "standard", label: "Standard Wildtype" },
-  { id: "albino", label: "Albino (Amelanistic)" },
-  { id: "longfin", label: "Longfin Gene" },
-  { id: "veil", label: "Veiltail Mutation" },
-  { id: "melanistic", label: "Melanistic (Dark)" },
-  { id: "metallic", label: "Metallic / Iridescent Scale" }
-];
+/**
+ * A water parameter the local record does not carry renders as an em dash.
+ *
+ * `null` means unknown. It must not become 0 on the way to the screen: 0.00 ppm
+ * ammonia reads as a clean tank, and a snapshot can legitimately carry only some
+ * of the five (a Logbook reading backfilled from a historical water test often
+ * has temp and pH and nothing else).
+ */
+const readingText = (value, unit = "") => (value === null || value === undefined ? "—" : `${value}${unit}`);
+
+/** True only when the parameter was actually measured AND is over the threshold. */
+const readingOver = (value, threshold) =>
+  value !== null && value !== undefined && Number(value) > threshold;
+
+/**
+ * The "Snapped " water traits, for the parameters that were actually measured.
+ *
+ * An unmeasured one is OMITTED rather than written as "null°C": these strings go
+ * onto the offspring's certificate and utils/pdfExport.js prints them verbatim
+ * (it filters on the "Snapped " prefix to build the water-parameters block).
+ */
+function snappedTraits(snapped) {
+  if (!snapped) return [];
+  const traits = [];
+  if (snapped.temp !== null && snapped.temp !== undefined) {
+    traits.push({ trait_type: "Snapped Temp", value: `${snapped.temp}°C` });
+  }
+  if (snapped.ph !== null && snapped.ph !== undefined) {
+    traits.push({ trait_type: "Snapped pH", value: snapped.ph });
+  }
+  if (snapped.ammonia !== null && snapped.ammonia !== undefined) {
+    traits.push({ trait_type: "Snapped Ammonia", value: `${snapped.ammonia} ppm` });
+  }
+  return traits;
+}
+
+// The picker options, the marker state, and the novel-morph prompt list below all
+// derive from utils/traitVocabulary.js now (§9.13). They used to be three separate
+// literals in this file plus a fourth in GeneticsPrediction, and a trait added to one
+// but not another failed silently — a checkbox with no state entry ticks, looks
+// selected, and is then dropped from `activeMarkers` onto a certificate.
+const PHENOTYPES = TRAIT_PICKER_OPTIONS;
 
 export function SpawningWizard({ contractAddress, walletAccount, onComplete, casualModeActive = false }) {
   const [step, setStep] = useState(1);
@@ -41,15 +86,9 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
   const [selectedDamId, setSelectedDamId] = useState("0");
   const [selectedTankId, setSelectedTankId] = useState("0");
   const [snappedParameters, setSnappedParameters] = useState(null);
-  const [geneticMarkers, setGeneticMarkers] = useState({
-    standard: true,
-    albino: false,
-    longfin: false,
-    veil: false,
-    melanistic: false,
-    metallic: false,
-    custom: ""
-  });
+  // A function, not a shared object: this is state and a module-level literal would
+  // be mutated across mounts.
+  const [geneticMarkers, setGeneticMarkers] = useState(initialTraitMarkers);
   const [offspringCount, setOffspringCount] = useState(1);
   const [selectedCohortPhoto, setSelectedCohortPhoto] = useState("");
 
@@ -65,7 +104,8 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
     try {
       const res = await relayRegisterTank({ name, ownerAddress: walletAccount });
       if (!res.success) throw new Error(res.error || "Failed to create tank");
-      const newTank = { id: Number(res.tankId), name, volumeLiters: 75, latestLog: null };
+      // A brand-new tank has no water test yet, and null says exactly that.
+      const newTank = { id: Number(res.tankId), name, volumeLiters: 75, latestReading: null };
       setTanks(prev => [...prev, newTank]);
       setSelectedTankId(String(res.tankId));
       setSnappedParameters(null);
@@ -104,45 +144,19 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
     try {
       setLoading(true);
       setError(null);
-      const provider = getProvider();
-      const contract = new Contract(contractAddress, aquadexAbi, provider);
 
-      // 1. Load Species Catalog (on-chain, with local Dexie fallback)
-      const catalog = {};
-      try {
-        const nextId = await contract.nextSpeciesId();
-        const totalSpeciesCount = Number(nextId) - 1;
-        const catalogPromises = [];
-        for (let i = 1; i <= totalSpeciesCount; i++) {
-          catalogPromises.push(
-            contract.speciesCatalog(i)
-              .then(spec => spec.active ? { id: i, scientificName: spec.scientificName, commonName: spec.commonName } : null)
-              .catch(() => null)
-          );
-        }
-        const catalogResults = await Promise.all(catalogPromises);
-        for (const item of catalogResults) {
-          if (item) catalog[item.id] = { scientificName: item.scientificName, commonName: item.commonName };
-        }
-      } catch (catalogErr) {
-        console.warn("On-chain species catalog query failed:", catalogErr.message);
-      }
-
-      // Enrich catalog from local Dexie species data
-      try {
-        const localSpeciesRecords = await db.table("species").toArray();
-        for (const sp of localSpeciesRecords) {
-          const spId = Number(sp.speciesId || sp.id);
-          if (spId && !catalog[spId]) {
-            catalog[spId] = { scientificName: sp.scientificName || "", commonName: sp.commonName || "" };
-          }
-        }
-      } catch (e) {
-        // species table may not exist — that's fine
-      }
+      // 1. Species catalog, from Dexie only.
+      //
+      // This used to walk `nextSpeciesId` and fire one registry read per species
+      // on every mount, for names the device already holds — the open item
+      // services/cohortPromotion.js declined to copy (§9.12). The two tables read
+      // here are the same two SpawningDashboard resolves names from, in the same
+      // order. A species with no name recorded gets no entry at all, so the
+      // `Species ID N` fallback below shows through instead of a blank.
+      let catalog = await loadLocalSpeciesCatalog();
       setSpeciesCatalog(catalog);
 
-      // 2. Load all specimens to choose Sire/Dam (local-first, then on-chain fallback)
+      // 2. Load all specimens to choose Sire/Dam (Dexie is authoritative)
       let specimenToLocation = {};
       let localSpecimens = [];
       try {
@@ -205,130 +219,33 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
         // specimens table may not exist in all DB versions
       }
 
-      // Try on-chain as well, merge with local data
-      let onChainSpecimens = [];
-      try {
-        const totalSpecimens = Number(await contract.totalSpecimensMinted());
-        const BATCH_SIZE = 10;
-        for (let batchStart = 1; batchStart <= totalSpecimens; batchStart += BATCH_SIZE) {
-          const batchEnd = Math.min(batchStart + BATCH_SIZE - 1, totalSpecimens);
-          const batchPromises = [];
-          for (let i = batchStart; i <= batchEnd; i++) {
-            batchPromises.push(
-              contract.ownerOf(i)
-                .then(async (owner) => {
-                  if (owner.toLowerCase() === walletAccount.toLowerCase()) {
-                    const spec = await contract.specimens(i);
-                    if (Number(spec.status) === 0) {
-                      const loc = specimenToLocation[i] || { tankId: 0, facility: "Unknown", parentUnitId: 0 };
-                      return {
-                        id: i,
-                        speciesId: Number(spec.speciesId),
-                        sireId: Number(spec.sireId),
-                        damId: Number(spec.damId),
-                        breeder: spec.breeder,
-                        status: Number(spec.status),
-                        tankId: loc.tankId,
-                        facility: loc.facility,
-                        parentUnitId: loc.parentUnitId
-                      };
-                    }
-                  }
-                  return null;
-                })
-                .catch(() => null)
-            );
-          }
-          const batchResults = await Promise.all(batchPromises);
-          onChainSpecimens.push(...batchResults.filter(Boolean));
-        }
-      } catch (chainErr) {
-        console.warn("On-chain specimen query failed (expected for Privy-only users):", chainErr.message);
-      }
-
-      // Merge: local specimens + on-chain specimens (deduplicate by id)
-      const allSpecimens = [...localSpecimens];
-      for (const ocs of onChainSpecimens) {
-        if (!allSpecimens.some(s => s.id === ocs.id)) {
-          allSpecimens.push(ocs);
-        }
-      }
+      // The registry sweep that used to run here is gone. It read the global
+      // mint counter and then asked the chain who owned every token ever minted
+      // just to keep this account's handful — and it indexed those reads by TOKEN
+      // ID while `sireId`/`damId` hold LOCAL SERIALS, so a merged row could name a
+      // real but entirely different fish as a parent. services/pedigree.js has the
+      // long version: Dexie is authoritative for serial → specimen, and the two
+      // reads above are that same store.
+      //
       // Filter to only active (status 0) specimens
-      const activeSpecimens = allSpecimens.filter(s => s.status === 0);
+      const activeSpecimens = localSpecimens.filter(s => s.status === 0);
       setSpecimens(activeSpecimens);
 
-      // Enrich species catalog from local specimen names (fallback when on-chain catalog is empty)
-      for (const spec of activeSpecimens) {
-        if (spec.speciesId && !catalog[spec.speciesId] && (spec.commonName || spec.scientificName)) {
-          catalog[spec.speciesId] = { 
-            commonName: spec.commonName || `Species ID ${spec.speciesId}`, 
-            scientificName: spec.scientificName || "" 
-          };
-        }
-      }
-      setSpeciesCatalog({ ...catalog });
+      // Last catalog source: the names carried on the keeper's own certificates.
+      // Species with no named certificate stay absent rather than gaining a
+      // placeholder entry, so the label falls back to `Species ID N`.
+      catalog = enrichSpeciesCatalogFromSpecimens(catalog, activeSpecimens);
+      setSpeciesCatalog(catalog);
 
-      // 3. Load user tanks (local-first from Dexie, then on-chain fallback)
-      let localTanks = [];
-      try {
-        const dexieTanks = await db.tanks.where("ownerAddress").equals((walletAccount || "").toLowerCase()).toArray();
-        localTanks = dexieTanks.filter(t => t.active !== false).map(t => ({
-          id: Number(t.id),
-          name: t.name,
-          volumeLiters: Number(t.volumeLiters || 0),
-          latestLog: t.latestLog || (t.logs && t.logs.length > 0 ? t.logs[t.logs.length - 1] : null)
-        }));
-      } catch (e) {
-        console.warn("Failed to load local tanks for spawning:", e);
-      }
-
-      // Also try on-chain for historical tanks
-      let onChainTanks = [];
-      try {
-        let idx = 0;
-        while (true) {
-          try {
-            const id = await contract.ownerTanks(walletAccount, idx);
-            const t = await contract.tanks(id);
-            if (t.active) {
-              let latestLog = null;
-              try {
-                let logIndex = 0;
-                while (true) {
-                  try {
-                    const log = await contract.tankParameterLogs(id, logIndex);
-                    latestLog = log;
-                    logIndex++;
-                  } catch (e) {
-                    break;
-                  }
-                }
-              } catch (e) {}
-
-              onChainTanks.push({
-                id: Number(id),
-                name: t.name,
-                volumeLiters: Number(t.volumeLiters),
-                latestLog
-              });
-            }
-            idx++;
-          } catch (err) {
-            break;
-          }
-        }
-      } catch (chainErr) {
-        console.warn("On-chain tank query failed:", chainErr.message);
-      }
-
-      // Merge local + on-chain tanks (deduplicate by id)
-      const mergedTanks = [...localTanks];
-      for (const oct of onChainTanks) {
-        if (!mergedTanks.some(t => t.id === oct.id)) {
-          mergedTanks.push(oct);
-        }
-      }
-      setTanks(mergedTanks);
+      // 3. Load user tanks, each with its newest LOCAL water snapshot.
+      //
+      // The pair of unbounded registry walks that used to follow — one probing
+      // `ownerTanks` until it threw, one probing every parameter log index until
+      // it threw — read back exactly what `relayLogWaterParameters` had already
+      // written to Dexie before enqueueing the same call on-chain. The service
+      // reconciles the two local shapes once and reports an unrecorded parameter
+      // as null, so the tiles below can render "—" instead of dividing undefined.
+      setTanks(await loadLocalBreedingTanks(walletAccount));
     } catch (err) {
       console.error("Error loading wizard metadata:", err);
       setError("Failed to resolve registry data for spawning setup.");
@@ -342,9 +259,11 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
   }, [contractAddress, walletAccount]);
 
   const getSpecimenLabel = (spec) => {
-    const breedInfo = speciesCatalog[spec.speciesId] || { commonName: `Species ID ${spec.speciesId}` };
+    // An unnamed species reads as its id rather than as an empty gap in the
+    // option text — the same fallback the cards below use.
+    const speciesName = speciesCatalog[spec.speciesId]?.commonName || `Species ID ${spec.speciesId}`;
     const symbol = sexSymbol(spec.gender);
-    return `Cert. Serial No. ${formatCertSerial(spec.id)}${symbol ? ` ${symbol}` : ""} - ${breedInfo.commonName} (Sire: ${spec.sireId || "None"}, Dam: ${spec.damId || "None"})`;
+    return `Cert. Serial No. ${formatCertSerial(spec.id)}${symbol ? ` ${symbol}` : ""} - ${speciesName} (Sire: ${spec.sireId || "None"}, Dam: ${spec.damId || "None"})`;
   };
 
   /**
@@ -422,23 +341,17 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
   // deliberate practice.
   const pairingBlocked = sexSignal ? !sexSignal.ok : false;
 
-  // Snapshot water parameter triggers
+  // Snapshot water parameter triggers.
+  //
+  // The unit conversion that used to live here moved into
+  // services/spawningWizardData.parameterSnapshotFromLog, because there are two
+  // local log shapes (the tank row's fixed-point log and a decimal paramReadings
+  // row) and reconciling them at the point of display is how `undefined / 100`
+  // became "NaN ppm". `latestReading` is already normalized, or null.
   const handleTankSelect = (tankId) => {
     setSelectedTankId(tankId);
     const selectedTank = tanks.find(t => t.id === Number(tankId));
-    if (selectedTank && selectedTank.latestLog) {
-      const log = selectedTank.latestLog;
-      setSnappedParameters({
-        temp: (Number(log.tempCelsiusX10) / 10).toFixed(1),
-        ph: (Number(log.phX10) / 10).toFixed(1),
-        ammonia: (Number(log.ammoniaPpmX100) / 100).toFixed(2),
-        nitrite: (Number(log.nitritePpmX100) / 100).toFixed(2),
-        nitrate: (Number(log.nitratePpmX100) / 100).toFixed(1),
-        timestamp: Number(log.timestamp)
-      });
-    } else {
-      setSnappedParameters(null);
-    }
+    setSnappedParameters(selectedTank?.latestReading || null);
   };
 
   const handleCheckboxChange = (marker) => {
@@ -483,11 +396,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
           { trait_type: "Genetic Markers", value: activeMarkers.join(", ") },
           // The "Snapped " prefix is a contract with utils/pdfExport.js, which
           // filters on it to build the water-parameters block.
-          ...snappedParameters ? [
-            { trait_type: "Snapped Temp", value: `${snappedParameters.temp}°C` },
-            { trait_type: "Snapped pH", value: snappedParameters.ph },
-            { trait_type: "Snapped Ammonia", value: `${snappedParameters.ammonia} ppm` }
-          ] : []
+          ...snappedTraits(snappedParameters)
         ],
       });
 
@@ -612,7 +521,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
           <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", margin: "0.75rem 0" }}>{txState.message}</p>
 
           {/* Morph Registration Prompt — shown when non-standard traits were selected */}
-          {(geneticMarkers.albino || geneticMarkers.longfin || geneticMarkers.veil || geneticMarkers.melanistic || geneticMarkers.metallic || geneticMarkers.custom) && (
+          {hasNonStandardTrait(geneticMarkers) && (
             <div style={{
               margin: "1rem 0", padding: "0.85rem 1rem", borderRadius: "10px",
               background: "rgba(232, 121, 249, 0.06)", border: "1px solid rgba(232, 121, 249, 0.2)",
@@ -623,14 +532,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                 <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "#e879f9" }}>Novel Traits Detected!</span>
               </div>
               <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", margin: "0 0 0.6rem", lineHeight: "1.5" }}>
-                You selected non-standard phenotypes for this spawn ({[
-                  geneticMarkers.albino && "Albino",
-                  geneticMarkers.longfin && "Longfin",
-                  geneticMarkers.veil && "Veiltail",
-                  geneticMarkers.melanistic && "Melanistic",
-                  geneticMarkers.metallic && "Metallic",
-                  geneticMarkers.custom,
-                ].filter(Boolean).join(", ")}). If this is a new morph or strain, consider registering it for verification.
+                You selected non-standard phenotypes for this spawn ({selectedTraitLabels(geneticMarkers).join(", ")}). If this is a new morph or strain, consider registering it for verification.
               </p>
               <button
                 onClick={() => {
@@ -998,7 +900,11 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Environmental Chemistry Snapshot:</span>
                     <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                      {snappedParameters ? `Last Water Test: ${new Date(snappedParameters.timestamp * 1000).toLocaleString()}` : "No telemetry logs found"}
+                      {!snappedParameters
+                        ? "No telemetry logs found"
+                        : snappedParameters.timestamp
+                          ? `Last Water Test: ${new Date(snappedParameters.timestamp * 1000).toLocaleString()}`
+                          : "Last Water Test: —"}
                     </span>
                   </div>
 
@@ -1007,30 +913,30 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
                         <div className="telemetry-tile-premium">
                           <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Temp</span>
-                          <strong style={{ fontSize: "1.2rem", color: "#fff" }}>{snappedParameters.temp}°C</strong>
+                          <strong style={{ fontSize: "1.2rem", color: "#fff" }}>{readingText(snappedParameters.temp, "°C")}</strong>
                         </div>
                         <div className="telemetry-tile-premium">
                           <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>pH</span>
-                          <strong style={{ fontSize: "1.2rem", color: "#fff" }}>{snappedParameters.ph}</strong>
+                          <strong style={{ fontSize: "1.2rem", color: "#fff" }}>{readingText(snappedParameters.ph)}</strong>
                         </div>
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
                         <div className="telemetry-tile-premium">
                           <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Ammonia</span>
-                          <strong style={{ fontSize: "1.2rem", color: Number(snappedParameters.ammonia) > 0.05 ? "var(--accent-red)" : "#fff" }}>
-                            {snappedParameters.ammonia} ppm
+                          <strong style={{ fontSize: "1.2rem", color: readingOver(snappedParameters.ammonia, 0.05) ? "var(--accent-red)" : "#fff" }}>
+                            {readingText(snappedParameters.ammonia, " ppm")}
                           </strong>
                         </div>
                         <div className="telemetry-tile-premium">
                           <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Nitrite</span>
-                          <strong style={{ fontSize: "1.2rem", color: Number(snappedParameters.nitrite) > 0.05 ? "var(--accent-red)" : "#fff" }}>
-                            {snappedParameters.nitrite} ppm
+                          <strong style={{ fontSize: "1.2rem", color: readingOver(snappedParameters.nitrite, 0.05) ? "var(--accent-red)" : "#fff" }}>
+                            {readingText(snappedParameters.nitrite, " ppm")}
                           </strong>
                         </div>
                         <div className="telemetry-tile-premium">
                           <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Nitrate</span>
-                          <strong style={{ fontSize: "1.2rem", color: Number(snappedParameters.nitrate) > 20.0 ? "var(--accent-amber)" : "#fff" }}>
-                            {snappedParameters.nitrate} ppm
+                          <strong style={{ fontSize: "1.2rem", color: readingOver(snappedParameters.nitrate, 20.0) ? "var(--accent-amber)" : "#fff" }}>
+                            {readingText(snappedParameters.nitrate, " ppm")}
                           </strong>
                         </div>
                       </div>

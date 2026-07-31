@@ -187,6 +187,9 @@ async function nextLocalSerial() {
  * @param {string} args.buyerAddress
  * @param {number} [args.tankId] - 0 until the buyer assigns one on arrival
  * @param {string|null} [args.lifeStage]
+ * @param {Array<object>} [args.chain] - the ancestor documents that rode along with it
+ *   (§9.31). Stored so this buyer can republish them when they sell the fish on;
+ *   without that the chain dies at each ownership boundary it crosses.
  * @returns {Promise<{ok: boolean, specimenId: number|null, duplicate: boolean, reason: string|null}>}
  */
 export async function receiveTransferredCertificate({
@@ -194,6 +197,7 @@ export async function receiveTransferredCertificate({
   buyerAddress,
   tankId = 0,
   lifeStage = LIFE_STAGE.ADULT,
+  chain = [],
 } = {}) {
   const buyer = normalizeAddress(buyerAddress);
   if (!buyer) {
@@ -264,6 +268,11 @@ export async function receiveTransferredCertificate({
     // The pedigree, and the portable identity that makes it checkable.
     pedigreeHash: document.hash,
     pedigreeDocument: document,
+    // The generations ABOVE this document, kept so they can be republished on resale
+    // (§9.31). A hash is only worth anything to a reader who can obtain the document
+    // it names, so dropping these would break the chain one boundary later — and the
+    // seller would have no way to repair it, since those ancestors were never theirs.
+    pedigreeChain: Array.isArray(chain) ? chain : [],
     // So a certificate bred FROM this fish chains to its parents' documents.
     pedigreeParentDocuments: { sire: document.hash, dam: null },
     receivedAt: Math.floor(Date.now() / 1000),

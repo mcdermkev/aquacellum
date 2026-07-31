@@ -4,6 +4,81 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [0.10.15] — 2026-07-31
+
+### 🧬 The Line Holds Three Generations Deep
+
+Closes [`BREEDER_STATE_MODEL.md`](docs/BREEDER_STATE_MODEL.md) **§9.25** (fully, both shapes), **§9.31**, **§9.32**, **§9.12**, **§9.13**, and **§9.33**. After this the register has **nothing left that is blocked on code** — every open item waits on an env var, a migration, a policy read, or a product decision.
+
+#### 🔗 A pedigree hash is worthless if you can't get the document
+§9.31. A document names its parents by hash, which is what lets generation three reach the original breeder. But only the **root** rode on the listing, so `verifyPedigreeChain` reported `brokenAt: <parentHash>` for every resale of a fish that came from somewhere else — honestly, as a gap rather than a forgery, and still a gap.
+
+`collectPedigreeChain` now walks `parentDocuments` and resolves each hash from the stores that actually hold documents locally, **including each row's inherited chain** — which is what makes it compose: a raiser republishes a lot document they could never have reconstructed, because it was sealed on somebody else's device.
+
+**Carried as an array alongside the listing, not fetched from a public bucket. That was a privacy call, not a convenience one:** a bucket needs a publicly readable pedigree store, and a pedigree names *ancestor* breeders' wallet addresses — so it would expose other breeders' stock relationships and force a decision this stream deliberately reserved. An array inherits whatever visibility the listing already has.
+
+Never inside the hashed body: §4.1 applies there, and a body that grew each time an ancestor was added would change its own hash and break every child at once.
+
+Tested by walking §12.3's scenario one generation further than it used to reach — eggs → lot → promoted keeper → resale → second buyer, across **two** ownership boundaries. The regression guard verifies with the root alone and asserts it still fails, so the chain is provably load-bearing.
+
+#### 🏷️ Individual sales carry a pedigree now too
+§9.25's other half. `relayCreateListing` seals via `sealSpecimenPedigree` — it is the *single* individual-listing writer, so no second write path — and all four checkout functions capture the document at purchase. A cart carries a **map keyed by token id**, because one flat field would give every fish in the cart the first one's ancestry.
+
+Also fixes a plain bug: a certificate arriving from another wallet has no local record, so `relayMoveSpecimen` returned **"Specimen not found"** and the arrival failed outright.
+
+The handoff named `relayListSpecimen` as the writer. **No such function exists.**
+
+#### 🔓 Nobody was ever asking for an attestation
+§9.32, and it was not on any list. Both seal functions took an optional `authToken` and **every caller omitted it**, so `requestPlatformAttestation` returned `null` on its first line and every document this app has ever issued was `unattested` — regardless of the keypair.
+
+This would have survived the keypair landing **invisibly**, because `unattested` is a legitimate rung the trust ladder reports honestly. Someone would have set three env vars, watched documents keep coming out unattested, and gone looking in the endpoint, which was fine all along.
+
+Same shape as §9.29 one level up: that was a trust level claimed without checking a signature, this is a signature never requested. Both say the same thing — **a trust level that degrades silently needs a test that the upgrade path is wired, not just that the downgrade is honest.**
+
+Fixed with the `setSessionTokenGetter` bridge already used seven times here. Listing time was chosen as the sealing moment *partly because* the seller is authenticated there; the session was always available.
+
+#### ⚡ The Spawning wizard stops reading the chain on mount
+§9.12, and it was a **correctness** fix, not only a speed one. The sweep asked who owned every token ever minted, and indexed those reads by **token id** while `sireId`/`damId` hold **local serials** — so a merged row could name a real but entirely different fish as a parent, inside the wizard that picks breeding pairs.
+
+Three RPC loops gone. Two honesty improvements came with it: an unmeasured water parameter is **omitted** from the offspring's certificate rather than divided from `undefined` and written as `NaN`, and an unnamed species gets no catalog entry so the `Species ID N` fallback shows through.
+
+#### 🎨 One trait list instead of four
+§9.13. The vocabulary was written out four times across two components — not three. All now derive from `utils/traitVocabulary.js`; the genetics table is the source because it alone carries `inheritance` and `symbol`.
+
+The failure this prevents is silent: a trait in the picker with no marker-state entry renders `checked={undefined}`, looks unchecked, ticks when clicked, and is then dropped from `activeMarkers` — the breeder's selection vanishes onto a certificate.
+
+**The "connect it to the morph pipeline" half is rejected, with reasoning.** `morphSubmissionsApi` stores `trait_type` as free text; a breeder registering "Blue Diamond Longfin" is making a naming claim, not declaring Mendelian behaviour. Feeding those to the calculator means guessing an inheritance mode — the exact fabrication this stream exists to remove. The free-text `custom` field is the correct seam and already exists.
+
+#### 🗂️ Two migration directories, reconciled without moving anything
+§9.33. `supabase/migration-order.json` gives both directories one apply order, and a test **fails the build** when a migration exists on disk and is not listed — so trap 6.1 is closed mechanically rather than by memory.
+
+**Not merged, deliberately.** Neither directory is a CLI root (no `config.toml` in either), so merging was safe from a tooling standpoint and still wrong: the filename is the identity of an applied migration, all of these are applied in production, and moving them would make the repo disagree with the record of what was applied. 27 renames, zero functional gain.
+
+#### 🧱 Internal
+- 143 test files pass. New: `pedigreeChainTransport.test.js`, `traitVocabulary.test.js`, `migrationOrder.test.js`, `spawningWizardData.test.js`.
+- §9.17 **deferred deliberately and re-scoped** as one bundled index migration (`archived`, `pedigreeHash`, `lotDocumentHash`, `purchaseOrderKey`) behind a named trigger: the next time a schema change happens anyway. A Dexie version bump runs against every user's local database, so four separate bumps for four unmeasured lookups is four times the risk for none of the benefit.
+- §9.21, §9.23 and §9.24 restated as **decisions**, each with its specific tradeoff, rather than left as open work.
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `frontend/src/services/listingPedigree.js` | `collectPedigreeChain`; the session-token bridge; both seal fns return `chain` |
+| `frontend/src/services/lotIntake.js` | `resolvePurchaseChain`; stores the chain on the lot |
+| `frontend/src/services/certificateTransfer.js` · `cohortPromotion.js` | Store and hand down `pedigreeChain` |
+| `frontend/src/services/relayer.js` | `relayCreateListing` seals an individual pedigree; `relayPurchaseBatch` carries the chain |
+| `frontend/src/services/stripePayments.js` | All four checkouts capture the pedigree, local-only |
+| `frontend/src/services/spawningWizardData.js` | **New.** Dexie-only wizard reads |
+| `frontend/src/utils/traitVocabulary.js` | **New.** The one trait list |
+| `frontend/src/contexts/AuthContext.jsx` | Registers the pedigree attestation token getter |
+| `frontend/src/components/SpawningWizard.jsx` · `GeneticsPrediction.jsx` | Read the shared vocabulary; wizard is local-first |
+| `frontend/src/components/ArrivalModal.jsx` · `CheckoutSummary.jsx` · `BatchListingWizard.jsx` · `HatcheryLogs.jsx` · `HandshakeVerification.jsx` | Chain wired through arrival and every purchase path |
+| `supabase/migration-order.json` | **New.** Both directories in one apply order |
+| `frontend/src/__tests__/` | Four new suites; `listingPedigree` and `lotIntake` extended |
+| `docs/BREEDER_STATE_MODEL.md` | §9.12 · §9.13 · §9.25 · §9.31 · §9.32 · §9.33 closed; §9.17 deferred; **§12.9 added** |
+| `docs/BREEDER_TOOLS_T3_PEDIGREE_DOCUMENT_SPEC.md` | §2.5 done, **§2.8 added** |
+
+---
+
 ## [0.10.14] — 2026-07-31
 
 ### 🥚 Buy Ten Eggs, Raise Four, Keep the Lineage

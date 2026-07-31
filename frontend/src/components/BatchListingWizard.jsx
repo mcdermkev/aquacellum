@@ -225,7 +225,13 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
           spawnId: selectedSpawn.spawnId,
           issuer: walletAccount,
         });
-        listingWithPedigree = attachPedigreeToListing(listing, sealed.ok ? sealed.document : null);
+        // The ancestor documents ride along too, so a buyer can VERIFY the chain
+        // rather than only read the root's claims (§9.31).
+        listingWithPedigree = attachPedigreeToListing(
+          listing,
+          sealed.ok ? sealed.document : null,
+          sealed.ok ? sealed.chain : []
+        );
       } catch (pedigreeErr) {
         console.warn("Pedigree sealing failed; listing without one:", pedigreeErr);
         listingWithPedigree = attachPedigreeToListing(listing, null);

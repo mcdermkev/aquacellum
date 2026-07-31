@@ -119,19 +119,48 @@ export async function purchaseSpecimen({
   imageUrl,
   buyerWallet,
   sellerWallet,
+  /** Local-only. See `purchaseBatch` for why this is captured at checkout. */
+  pedigreeDocument = null,
+  pedigreeHash = null,
+  pedigreeChain = [],
 }) {
-  return _createCheckout({
-    purchaseType: "specimen",
-    buyerWallet,
-    sellerWallet,
-    items: [{
-      tokenId,
-      commonName,
-      scientificName,
-      priceCentsUSD,
-      imageUrl,
-    }],
-  });
+  return _createCheckout(
+    {
+      purchaseType: "specimen",
+      buyerWallet,
+      sellerWallet,
+      items: [{
+        tokenId,
+        commonName,
+        scientificName,
+        priceCentsUSD,
+        imageUrl,
+      }],
+    },
+    true,
+    _localPedigree({ tokenId, pedigreeDocument, pedigreeHash, pedigreeChain })
+  );
+}
+
+/**
+ * Shape the local-only pedigree stash for a single-specimen checkout.
+ *
+ * `tokenId` is recorded as `listingId` too, because that is the id
+ * `lotIntake.resolvePurchasePedigree` matches a sibling row on — an individual
+ * listing's `id` and `tokenId` are the same number, and keeping one field name for
+ * the match means the resolver needs one lookup rule rather than one per purchase type.
+ */
+function _localPedigree({ tokenId, pedigreeDocument, pedigreeHash, pedigreeChain }) {
+  if (!pedigreeDocument && !pedigreeHash) return null;
+  return {
+    listingId: Number(tokenId),
+    tokenId: Number(tokenId),
+    pedigreeDocument: pedigreeDocument || null,
+    pedigreeHash: pedigreeHash || pedigreeDocument?.hash || null,
+    // The generations above, so the buyer can verify the chain rather than just read
+    // the root, and republish it if they sell the fish on (§9.31).
+    pedigreeChain: Array.isArray(pedigreeChain) ? pedigreeChain : [],
+  };
 }
 
 /**
@@ -162,27 +191,35 @@ export async function purchaseShippingSpecimen({
   shipCarrierId,
   shipTo,
   promoCode,
+  /** Local-only. See `purchaseBatch`. */
+  pedigreeDocument = null,
+  pedigreeHash = null,
+  pedigreeChain = [],
 }) {
-  return _createCheckout({
-    purchaseType: "shipping",
-    buyerWallet,
-    sellerWallet,
-    // Buyer destination — stamped into order metadata for the seller's label buy.
-    ...(shipTo ? { shipTo } : {}),
-    // Optional promotion code — the server re-validates + applies it (Task 21B).
-    ...(promoCode ? { promoCode } : {}),
-    items: [{
-      tokenId,
-      commonName,
-      scientificName,
-      priceCentsUSD,
-      shippingFeeCents,
-      imageUrl,
-      // The service the buyer picked, so the seller re-rates the same one.
-      ...(shipServiceCode ? { shipServiceCode } : {}),
-      ...(shipCarrierId ? { shipCarrierId } : {}),
-    }],
-  });
+  return _createCheckout(
+    {
+      purchaseType: "shipping",
+      buyerWallet,
+      sellerWallet,
+      // Buyer destination — stamped into order metadata for the seller's label buy.
+      ...(shipTo ? { shipTo } : {}),
+      // Optional promotion code — the server re-validates + applies it (Task 21B).
+      ...(promoCode ? { promoCode } : {}),
+      items: [{
+        tokenId,
+        commonName,
+        scientificName,
+        priceCentsUSD,
+        shippingFeeCents,
+        imageUrl,
+        // The service the buyer picked, so the seller re-rates the same one.
+        ...(shipServiceCode ? { shipServiceCode } : {}),
+        ...(shipCarrierId ? { shipCarrierId } : {}),
+      }],
+    },
+    true,
+    _localPedigree({ tokenId, pedigreeDocument, pedigreeHash, pedigreeChain })
+  );
 }
 
 /**
@@ -225,6 +262,7 @@ export async function purchaseBatch({
    */
   pedigreeDocument = null,
   pedigreeHash = null,
+  pedigreeChain = [],
   lifeStage = null,
 }) {
   return _createCheckout(
@@ -247,6 +285,8 @@ export async function purchaseBatch({
       quantity: Number(quantity) || 0,
       pedigreeDocument: pedigreeDocument || null,
       pedigreeHash: pedigreeHash || pedigreeDocument?.hash || null,
+      // The generations above the lot document (§9.31).
+      pedigreeChain: Array.isArray(pedigreeChain) ? pedigreeChain : [],
       lifeStage: lifeStage || null,
     }
   );
@@ -261,14 +301,32 @@ export async function purchaseBatch({
  * @param {string} params.sellerWallet - Seller's wallet (all items must be same seller)
  * @returns {Promise<{success: boolean, checkoutUrl?: string, error?: string}>}
  */
-export async function purchaseMultiple({ items, buyerWallet, sellerWallet, promoCode }) {
-  return _createCheckout({
-    purchaseType: "multi",
-    buyerWallet,
-    sellerWallet,
-    ...(promoCode ? { promoCode } : {}),
-    items,
-  });
+export async function purchaseMultiple({
+  items,
+  buyerWallet,
+  sellerWallet,
+  promoCode,
+  pedigreeDocuments = null,
+  pedigreeChains = null,
+}) {
+  return _createCheckout(
+    {
+      purchaseType: "multi",
+      buyerWallet,
+      sellerWallet,
+      ...(promoCode ? { promoCode } : {}),
+      items,
+    },
+    true,
+    // A cart of several specimens needs one document PER token, so this row carries a
+    // map rather than a single field. `resolvePurchasePedigree` reads both shapes; a
+    // flat field would silently give every fish in the cart the first one's pedigree,
+    // which is a fabrication rather than a missing value. `pedigreeChains` is the same
+    // map shape for the ancestor documents (§9.31).
+    pedigreeDocuments && Object.keys(pedigreeDocuments).length > 0
+      ? { pedigreeDocuments, ...(pedigreeChains ? { pedigreeChains } : {}) }
+      : null
+  );
 }
 
 /**
@@ -284,14 +342,22 @@ export async function purchasePickupSpecimen({
   buyerWallet,
   sellerWallet,
   promoCode,
+  /** Local-only. See `purchaseBatch`. */
+  pedigreeDocument = null,
+  pedigreeHash = null,
+  pedigreeChain = [],
 }) {
-  return _createCheckout({
-    purchaseType: "pickup",
-    buyerWallet,
-    sellerWallet,
-    ...(promoCode ? { promoCode } : {}),
-    items: [{ tokenId, commonName, scientificName, priceCentsUSD, imageUrl }],
-  });
+  return _createCheckout(
+    {
+      purchaseType: "pickup",
+      buyerWallet,
+      sellerWallet,
+      ...(promoCode ? { promoCode } : {}),
+      items: [{ tokenId, commonName, scientificName, priceCentsUSD, imageUrl }],
+    },
+    true,
+    _localPedigree({ tokenId, pedigreeDocument, pedigreeHash, pedigreeChain })
+  );
 }
 
 /**

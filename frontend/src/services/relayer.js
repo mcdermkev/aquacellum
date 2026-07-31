@@ -659,12 +659,46 @@ export async function relayCreateListing({
       createdAt: Math.floor(Date.now() / 1000),
     };
 
-    await db.localListings.put(listing);
+    // ── Seal the pedigree, here, on the seller's device ──────────────────────
+    // The individual-certificate counterpart to what BatchListingWizard does for a
+    // cohort (BREEDER_STATE_MODEL §9.25, T3 §2.5/§2.6). Listing time is the only
+    // moment the full pedigree is readable: settlement runs server-side in the Stripe
+    // webhook and the ancestors live in this browser's Dexie (§3).
+    //
+    // Dynamically imported so this module — which everything imports — does not gain
+    // the pedigree graph as a static dependency.
+    //
+    // Non-blocking on purpose. A listing that fails to seal is a listing without a
+    // published pedigree, which the trust ladder reports honestly, and that is far
+    // better than refusing to let somebody sell their fish.
+    let listingWithPedigree = listing;
+    try {
+      const { sealSpecimenPedigree, attachPedigreeToListing } = await import("./listingPedigree");
+      const sealed = await sealSpecimenPedigree({
+        specimenId: Number(tokenId),
+        issuer: seller,
+      });
+      // The ancestor documents ride along too, so a buyer can VERIFY the chain rather
+      // than only read the root's claims (§9.31).
+      listingWithPedigree = attachPedigreeToListing(
+        listing,
+        sealed.ok ? sealed.document : null,
+        sealed.ok ? sealed.chain : []
+      );
+    } catch (pedigreeErr) {
+      console.warn("[Relayer] Pedigree sealing failed; listing without one:", pedigreeErr);
+      try {
+        const { attachPedigreeToListing } = await import("./listingPedigree");
+        listingWithPedigree = attachPedigreeToListing(listing, null);
+      } catch { /* leave the listing as-is */ }
+    }
+
+    await db.localListings.put(listingWithPedigree);
     // Also write to the listings cache so it shows immediately
-    try { await db.listings.put(listing); } catch (e) {}
+    try { await db.listings.put(listingWithPedigree); } catch (e) {}
 
     // Sync to Supabase so other users can see this listing (fire-and-forget)
-    syncListingToCloud(listing).catch(() => {});
+    syncListingToCloud(listingWithPedigree).catch(() => {});
 
     // On-chain: approve marketplace + list specimen (batched in one UserOp).
     // The on-chain "price" is USD cents, recorded for provenance only — money
@@ -940,6 +974,8 @@ export async function relayPurchaseBatch({
    */
   pedigreeDocument = null,
   pedigreeHash = null,
+  /** The ancestor documents, so the buyer can verify the chain and republish it (§9.31). */
+  pedigreeChain = [],
   lifeStage = null,
   speciesId = null,
   scientificName = "",
@@ -977,6 +1013,7 @@ export async function relayPurchaseBatch({
       // so a reader can tell an unpublished pedigree from a row that predates this.
       pedigreeDocument: pedigreeDocument || null,
       pedigreeHash: pedigreeHash || pedigreeDocument?.hash || null,
+      pedigreeChain: Array.isArray(pedigreeChain) ? pedigreeChain : [],
       lifeStage: lifeStage || null,
       speciesId: speciesId == null ? null : Number(speciesId),
       scientificName: scientificName || "",
