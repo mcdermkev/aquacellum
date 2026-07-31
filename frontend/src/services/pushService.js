@@ -89,8 +89,14 @@ export const PUSH_REASON_MESSAGE = {
   // Installed PWA: there is no address bar to fall back on, so the
   // PERMISSION_DISMISSED advice above is unfollowable. This reason exists purely
   // to give instructions that can actually be carried out.
+  // The prompt never appeared and never will on this device. Rather than keep
+  // asking for it, point at the route that bypasses it entirely: granting the
+  // permission in the browser's own site settings sets Notification.permission
+  // to "granted", after which subscribeToPush() skips the prompt altogether
+  // (see the early return in requestNotificationPermission). That is a reliable
+  // fix regardless of why the prompt is being withheld.
   [PUSH_REASON.OS_PERMISSION_NEEDED]:
-    "No permission prompt appeared. Since the app is installed, notifications also have to be allowed for it at the device level: open your phone's Settings → Apps → Aquacellum → Notifications and turn them on, then come back and try again. Worth checking Do Not Disturb is off too.",
+    "The permission prompt never appeared, so it can't be granted from here. Grant it directly instead: open Chrome → ⋮ menu → Settings → Site settings → Notifications → aquacellum.com → Allow. Then return here and tap Turn on notifications — it will skip the prompt and finish. Also confirm Settings → Apps → Aquacellum → Notifications is on, and that Do Not Disturb is off.",
   // The one failure where retrying is guaranteed not to work, so the copy must
   // not suggest it. Only destroying the page context clears a stuck request.
   [PUSH_REASON.PERMISSION_REQUEST_STUCK]:
@@ -336,6 +342,25 @@ async function requestNotificationPermission() {
   const alreadyOutstanding = hasStuckPermissionRequest();
   const watcher = watchPermissionGrant();
 
+  // Chrome defers a permission prompt when the document does not have focus,
+  // and never surfaces it if focus is not regained — which presents exactly as
+  // "the promise never settles". Logged rather than acted on because it is a
+  // hypothesis, not an established cause, and a wrong guess acted on has cost
+  // enough already on this bug. If `hasFocus:false` shows up here, that is the
+  // answer; if it is true, focus is ruled out.
+  console.info(
+    "[Push] requesting permission —",
+    JSON.stringify({
+      permission: Notification.permission,
+      hasFocus: typeof document !== "undefined" ? document.hasFocus() : null,
+      visibility: typeof document !== "undefined" ? document.visibilityState : null,
+      standalone: isStandalone(),
+      alreadyOutstanding,
+      activeElement:
+        typeof document !== "undefined" ? document.activeElement?.tagName || null : null,
+    })
+  );
+
   try {
     return await withTimeout(
       Promise.race([requestPermissionOnce(), watcher.promise]),
@@ -343,7 +368,12 @@ async function requestNotificationPermission() {
       "Notification permission prompt"
     );
   } catch (err) {
-    if (err?.isTimeout && (alreadyOutstanding || hasStuckPermissionRequest())) {
+    // ONLY when a request was already outstanding *before* this attempt.
+    // Previously this also checked hasStuckPermissionRequest() afterwards, which
+    // is true by definition whenever we time out — so a clean first attempt was
+    // mislabelled "stuck, force stop the app", sending the user off to do
+    // something that could not help.
+    if (err?.isTimeout && alreadyOutstanding) {
       err.isStuck = true;
     }
     throw err;
@@ -585,7 +615,13 @@ export async function subscribeToPush() {
       // Name plus message: a DOMException like NotAllowedError or
       // AbortError from pushManager.subscribe() points somewhere completely
       // different from a timeout, and the friendly copy erases that difference.
-      detail: `${err?.name || "Error"}: ${err?.message || "unknown"}`,
+      // Focus state rides along because a deferred-prompt-due-to-lost-focus
+      // failure is indistinguishable from any other stall without it.
+      detail:
+        `${err?.name || "Error"}: ${err?.message || "unknown"}` +
+        (err?.isTimeout && typeof document !== "undefined"
+          ? ` [focus=${document.hasFocus()} vis=${document.visibilityState}]`
+          : ""),
     };
   }
 }
