@@ -54,6 +54,7 @@ export const PUSH_REASON = {
   SUPABASE_NOT_CONFIGURED: "supabase_not_configured",
   NOT_SIGNED_IN: "not_signed_in",
   PERMISSION_DENIED: "permission_denied",
+  PERMISSION_DISMISSED: "permission_dismissed",
   NO_PROFILE: "no_profile",
   NOT_AUTHORIZED: "not_authorized",
   STORAGE_FAILED: "storage_failed",
@@ -77,6 +78,12 @@ export const PUSH_REASON_MESSAGE = {
     "Sign in to enable notifications — we need a verified session to register this device.",
   [PUSH_REASON.PERMISSION_DENIED]:
     "Notifications are blocked. You'll need to allow them in your browser's site settings, since the app can't re-ask once they're blocked.",
+  // Covers both "dismissed without choosing" and Chrome's quieter permission
+  // UI, where no modal appears and the request resolves straight to "default".
+  // In that mode the only way to accept is the bell icon in the address bar, so
+  // tapping the button again would loop forever without this hint.
+  [PUSH_REASON.PERMISSION_DISMISSED]:
+    "No answer was given to the permission request. Tap Turn on notifications again and choose Allow — or if no prompt appears, tap the bell or lock icon in your browser's address bar and allow notifications there.",
   [PUSH_REASON.NO_PROFILE]:
     "Finish setting up your profile first, then enable notifications.",
   [PUSH_REASON.NOT_AUTHORIZED]:
@@ -265,11 +272,28 @@ async function rollbackSubscription(subscription) {
  * Subscribe the user to push notifications.
  *
  * Flow:
- *   1. Preflight: support, iOS install gate, VAPID key, Supabase, signed-in
- *   2. Register service worker
- *   3. Request permission
+ *   1. Preflight — all SYNCHRONOUS (see the gesture note below)
+ *   2. Request permission, before anything is awaited
+ *   3. Register / await the service worker
  *   4. Create push subscription with the VAPID key
  *   5. Store the subscription in Supabase — and roll back step 4 if that fails
+ *
+ * ⚠️ STEP ORDER IS LOAD-BEARING — DO NOT AWAIT BEFORE STEP 2.
+ *
+ * `Notification.requestPermission()` must be called while the user activation
+ * from the click is still live. Awaiting anything first consumes it, and Chrome
+ * on Android then refuses to show the prompt at all: permission stays "default"
+ * and the promise never settles.
+ *
+ * This is exactly how mobile enrolment failed while desktop worked. The old
+ * order awaited `ensureServiceWorker()` first, which is fine on desktop Chrome
+ * (lenient about activation for this API) and fatal on Android. The device
+ * diagnostics showed it precisely — signed in: yes, service worker: active,
+ * browser permission: **default** — i.e. every prerequisite met and the prompt
+ * simply never happened.
+ *
+ * Everything in step 1 is therefore synchronous on purpose. If you add a check
+ * that needs `await`, it belongs after step 2, not before it.
  *
  * @returns {Promise<{ success: boolean, reason?: string, error?: string }>}
  */
@@ -313,12 +337,8 @@ export async function subscribeToPush() {
   let subscription = null;
 
   try {
-    // ── 2. Register service worker ─────────────────────────────────────────
-    const registration = await ensureServiceWorker();
-
-    // ── 3. Request permission ──────────────────────────────────────────────
-    // Skip the prompt when it is already granted: re-requesting is a no-op in
-    // most browsers but can hang in the suppressed-prompt case for no benefit.
+    // ── 2. Request permission — FIRST, while the click's user activation is
+    //       still live. See the gesture warning in the docblock above. ───────
     let permission = Notification.permission;
     if (permission !== "granted") {
       permission = await withTimeout(
@@ -327,9 +347,19 @@ export async function subscribeToPush() {
         "Notification permission prompt"
       );
     }
-    if (permission !== "granted") {
+
+    if (permission === "denied") {
       return { success: false, reason: PUSH_REASON.PERMISSION_DENIED };
     }
+    if (permission !== "granted") {
+      // Still "default": the prompt was dismissed without a choice, or the
+      // browser declined to show it. Distinct from "denied" because it is
+      // recoverable by asking again, whereas denied is not.
+      return { success: false, reason: PUSH_REASON.PERMISSION_DISMISSED };
+    }
+
+    // ── 3. Register / await the service worker ─────────────────────────────
+    const registration = await ensureServiceWorker();
 
     // ── 4. Subscribe ───────────────────────────────────────────────────────
     // Reuse an existing browser subscription when there is one: calling

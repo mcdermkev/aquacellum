@@ -278,6 +278,17 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
   const pushActive = pushStatus?.active === true;
   const pushDiverged = !!pushStatus?.subscribedHere && !pushStatus?.registeredOnServer;
 
+  // Whether the per-category push switches should be operable.
+  //
+  // These are ACCOUNT-level preferences — they live in
+  // profiles.notification_preferences and govern every device on the account.
+  // Gating them on whether THIS browser is enrolled was a design error: with
+  // push working on a desktop and not on a phone, the phone could not change
+  // which categories push, which is a setting that has nothing to do with the
+  // phone. They unlock as soon as the account has at least one registered
+  // device.
+  const pushConfigurable = pushActive || (pushStatus?.deviceCount || 0) > 0;
+
   return (
     <section className="sonar-prefs" aria-label="Notification Preferences">
       <header className="sonar-prefs__header">
@@ -356,10 +367,16 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
       {/* Category toggles */}
       <div className="sonar-prefs__categories">
         <h3>Categories</h3>
-        {!pushActive && (
+        {!pushConfigurable && (
           <p className="text-muted text-sm" style={{ marginTop: 0 }}>
-            Push switches unlock once notifications are on for this device. In-app
-            notifications work regardless.
+            Push switches unlock once notifications are on for at least one of your
+            devices. In-app notifications work regardless.
+          </p>
+        )}
+        {pushConfigurable && !pushActive && (
+          <p className="text-muted text-sm" style={{ marginTop: 0 }}>
+            These apply to every device on your account. This one isn't receiving
+            push yet — turn it on above.
           </p>
         )}
         {CATEGORIES.map((cat) => (
@@ -391,8 +408,8 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
                     // Was: enabled whenever push was "supported", and its
                     // onChange kicked off a permission request whose failure was
                     // swallowed. Enrolment is now one explicit action above, and
-                    // this switch only records a preference.
-                    disabled={!pushActive || !prefs.categories[cat.key]?.enabled}
+                    // this switch only records an account-level preference.
+                    disabled={!pushConfigurable || !prefs.categories[cat.key]?.enabled}
                     aria-label={`Enable ${cat.label} push notifications`}
                   />
                   <span className="toggle-switch__track"><span className="toggle-switch__thumb" /></span>
