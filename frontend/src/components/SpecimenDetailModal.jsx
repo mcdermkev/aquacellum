@@ -7,6 +7,8 @@ import { Modal } from "./Modal";
 import { db } from "../db";
 import { generatePedigreeCertificate } from "../utils/pdfExport";
 import { getProfile } from "../services/reefApi";
+import { METADATA_SOURCE, resolveSpecimenMetadata } from "../services/specimenMetadata";
+import { resolveSpecimenPhoto } from "../services/tankMedia";
 
 
 // Helper: detect if a fishbase record or specCode is a plant entry
@@ -32,12 +34,37 @@ export function SpecimenDetailModal({
   const [speciesInfo, setSpeciesInfo] = useState(null);
   const [tankInfo, setTankInfo] = useState(null);
   const [metadata, setMetadata] = useState(null);
+  // Which copy of the document we got, and the URI when there is one (§9.14). Kept
+  // separate from `metadata` so an unfetched external document can be offered as a
+  // link without pretending we read it.
+  const [metadataSource, setMetadataSource] = useState("none");
+  const [metadataUri, setMetadataUri] = useState(null);
   const [error, setError] = useState(null);
   const [fishbaseData, setFishbaseData] = useState([]);
   const [lineageTree, setLineageTree] = useState(null);
   const [activeUserTank, setActiveUserTank] = useState(null);
   const [ownerDisplayName, setOwnerDisplayName] = useState("");
   const [showPedigreeTree, setShowPedigreeTree] = useState(false);
+
+  // The specimen's own photo (§9.3). This used to be a raw `localStorage.getItem` in
+  // the render body — device-local, lost on a cache clear, and blank for a buyer who
+  // received the certificate on another device. resolveSpecimenPhoto is the one
+  // precedence order (hosted → Dexie tankMedia → legacy localStorage → none); the read
+  // is async so it lands in state, and while it resolves — or when no photo exists
+  // anywhere — the existing master species image / silhouette fallback renders. No
+  // stand-in image is ever substituted for an absent photo.
+  const [customPhoto, setCustomPhoto] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!activeId) {
+      setCustomPhoto(null);
+    } else {
+      resolveSpecimenPhoto(activeId)
+        .then(({ url }) => { if (!cancelled) setCustomPhoto(url); })
+        .catch(() => { /* absent is a real result — the fallback renders */ });
+    }
+    return () => { cancelled = true; };
+  }, [activeId]);
 
 
   // (Escape key handling is now provided by the Modal component)
@@ -169,6 +196,9 @@ export function SpecimenDetailModal({
           sireId: localSpec.sireId || 0,
           damId: localSpec.damId || 0,
           ipfsMetadataUri: localSpec.ipfsMetadataUri || "",
+          // Carried so the metadata read below knows whether the URI is one we host
+          // (safe to fetch) or breeder-supplied (reported, never followed) — §9.14.
+          metadataStatus: localSpec.metadataStatus || "none",
           status: localSpec.status ?? 0,
           owner: localSpec.ownerAddress || walletAccount || ZeroAddress,
           commonName: localSpec.commonName,
@@ -429,17 +459,26 @@ export function SpecimenDetailModal({
         setOwnerDisplayName("Unknown Breeder");
       }
 
-      // 4. Resolve cached spawning metadata
-      const cached = localStorage.getItem(`aquadex_specimen_metadata_${activeId}`);
-      if (cached) {
-        try {
-          setMetadata(JSON.parse(cached));
-        } catch (e) {
-          console.warn("Failed to parse cached local metadata:", e);
-        }
-      } else {
-        setMetadata(null);
-      }
+      // 4. Resolve the certificate's metadata document (§9.14).
+      //
+      // This used to read `localStorage` directly — a raw key, device-local, lost on a
+      // cache clear, and invisible to a buyer who received the certificate on another
+      // device. The document already has a durable home in the `specimen-metadata`
+      // bucket (§4.3/§9.19), so the hosted copy is now the source and the local one is
+      // the fallback for certificates registered before that existed.
+      //
+      // A breeder-supplied (`external`) URI is reported and NOT fetched — following it
+      // would send this viewer's IP to a server the seller controls, on the very
+      // surface where somebody decides whether to trust them. `metadataSource` lets
+      // the UI say which copy it got instead of implying they are equivalent.
+      const resolvedMetadata = await resolveSpecimenMetadata({
+        specimenId: activeId,
+        metadataUri: resolvedSpec.ipfsMetadataUri,
+        metadataStatus: resolvedSpec.metadataStatus,
+      });
+      setMetadata(resolvedMetadata.document);
+      setMetadataSource(resolvedMetadata.source);
+      setMetadataUri(resolvedMetadata.uri);
 
 
     } catch (err) {
@@ -517,7 +556,7 @@ export function SpecimenDetailModal({
     { text: "#3b82f6", bg: "rgba(59, 130, 246, 0.1)", border: "rgba(59, 130, 246, 0.2)" }  // Rehomed
   ];
 
-  const customPhoto = localStorage.getItem(`aquadex_specimen_photo_${activeId}`);
+  // `customPhoto` is resolved in the effect near the state declarations above (§9.3).
   const matchedSpecies = speciesInfo && fishbaseData.find(
     (f) => f.scientificName.toLowerCase() === speciesInfo.scientificName.toLowerCase()
   );
@@ -1018,12 +1057,42 @@ export function SpecimenDetailModal({
               )}
 
 
+              {/* A breeder-hosted document is OFFERED, not fetched (§9.14). Following
+                  it would hand this viewer's IP to the seller on the surface where
+                  they're being judged, so the reader chooses. */}
+              {!metadata && metadataSource === METADATA_SOURCE.EXTERNAL && metadataUri && (
+                <div className="glass-card" style={{ padding: "1rem", background: "rgba(0,0,0,0.15)" }}>
+                  <h4 style={{ fontSize: "0.85rem", color: "var(--text-secondary)", margin: "0 0 0.5rem 0" }}>
+                    <span>🔗</span> Breeder-hosted document
+                  </h4>
+                  <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "0 0 0.5rem 0", lineHeight: 1.5 }}>
+                    This certificate points at a document the breeder hosts themselves. We
+                    don&apos;t load it for you, so opening it is your call.
+                  </p>
+                  <a
+                    href={metadataUri}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                    style={{ fontSize: "0.75rem", color: "var(--accent-cyan)", wordBreak: "break-all" }}
+                  >
+                    {metadataUri}
+                  </a>
+                </div>
+              )}
+
               {/* Environmental Chemistry / Genetic Attributes */}
               {metadata && (
                 <div className="glass-card" style={{ padding: "1.25rem", background: "rgba(0,0,0,0.15)" }}>
                   <h4 style={{ fontSize: "0.85rem", color: "var(--accent-green)", margin: "0 0 0.75rem 0", display: "flex", alignItems: "center", gap: "0.25rem" }}>
                     <span>📊</span> Telemetry & Genetics Log
                   </h4>
+                  {metadataSource === METADATA_SOURCE.LOCAL_CACHE && (
+                    // Says which copy this is rather than implying the two are
+                    // equivalent — a device-local copy won't be there for a buyer.
+                    <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", margin: "0 0 0.6rem 0" }}>
+                      From this device&apos;s local copy — recorded before documents were published.
+                    </p>
+                  )}
                   
                   {/* Attributes Grid */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", fontSize: "0.8rem" }}>

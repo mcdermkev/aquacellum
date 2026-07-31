@@ -23,6 +23,7 @@ import { db } from "../db";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { syncTankToCloud, syncSpecimenToCloud, syncListingToCloud, deactivateListingInCloud, syncSpawnToCloud } from "./cloudSync";
 import { trackEvent } from "./analytics";
+import { putSpecimenPhoto } from "./tankMedia";
 import { SERIAL_CEILING } from "../utils/specimenIdentity";
 import {
   METADATA_STATUS,
@@ -599,13 +600,12 @@ export async function relayCreateListing({
   packingProfile = null,
 } = {}) {
   try {
-    // Store photo in localStorage for cross-session persistence
+    // Store the photo durably (§9.3). This was a raw localStorage write, which shares
+    // one ~5MB origin quota with every other photo and dies on a cache clear;
+    // putSpecimenPhoto writes the Dexie `tankMedia` row (and still mirrors to
+    // localStorage) so the listing's photo survives and resolves on other surfaces.
     if (photoDataUrl) {
-      try {
-        localStorage.setItem(`aquadex_specimen_photo_${Number(tokenId)}`, photoDataUrl);
-      } catch (e) {
-        console.warn("[Relayer] Photo storage failed (quota?):", e);
-      }
+      await putSpecimenPhoto(Number(tokenId), photoDataUrl);
     }
 
     // USD is canonical (Web2-masked marketplace). *Cents fields drive Stripe;

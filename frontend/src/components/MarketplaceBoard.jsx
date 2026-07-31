@@ -28,6 +28,7 @@ import { applyCatalogQuery, SORT_OPTIONS, FULFILLMENT_TYPES, getListingKey } fro
 import { hasEntitlement } from "../services/entitlements";
 import { ProductDetailModal } from "./ProductDetailModal";
 import { useCart } from "../contexts/CartContext";
+import { resolveSpecimenPhoto } from "../services/tankMedia";
 
 // Helper: detect if a fishbase record or specCode is a plant entry
 const isPlantEntry = (specCodeOrItem) => {
@@ -480,6 +481,40 @@ export function MarketplaceBoard({
   const rowItems = useMemo(() => {
     return chunkArray(pagedListings, columnsCount);
   }, [pagedListings, columnsCount, chunkArray]);
+
+  // Card photos for the listings currently paged in, resolved through the one §9.3
+  // precedence order (hosted → Dexie tankMedia → legacy localStorage → none). The card
+  // body renders synchronously, so this resolves into state; a card with no entry yet
+  // shows the master species image / silhouette, exactly as it did before when a
+  // specimen had no photo. Nothing is substituted for an absent photo.
+  const [resolvedCardPhotos, setResolvedCardPhotos] = useState({}); // tokenId -> url
+  // `pagedListings` is rebuilt on every render (filteredAndSortedListings is not
+  // memoised), so the effect keys off the ids + recorded URLs instead of the array
+  // identity — depending on the array would re-resolve and re-setState forever.
+  const cardPhotoKey = (pagedListings || [])
+    .filter((l) => !l.isBatch && l.tokenId != null)
+    .map((l) => `${l.tokenId}|${l.photoUrl || ""}`)
+    .join(",");
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const singles = (pagedListings || []).filter((l) => !l.isBatch && l.tokenId != null);
+      const entries = await Promise.all(
+        singles.map(async (l) => {
+          // A cloud-synced listing carries its own recorded copy in `photoUrl` — that is
+          // the hosted step's input, which is what makes a photo visible to a buyer who
+          // has never had this fish on their device.
+          const { url } = await resolveSpecimenPhoto(l.tokenId, { hostedUrl: l.photoUrl || "" });
+          return [l.tokenId, url];
+        })
+      );
+      if (!cancelled) {
+        setResolvedCardPhotos(Object.fromEntries(entries.filter(([, url]) => url)));
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cardPhotoKey]);
 
   const rowVirtualizer = useVirtualizer({
     count: rowItems.length,
@@ -1424,7 +1459,7 @@ export function MarketplaceBoard({
                         }
                       }
 
-                      const customPhoto = !item.isBatch ? localStorage.getItem(`aquadex_specimen_photo_${item.tokenId}`) : null;
+                      const customPhoto = !item.isBatch ? (resolvedCardPhotos[item.tokenId] || null) : null;
                       let additionalPhotos = [];
                       if (!item.isBatch) {
                         try {
@@ -1436,9 +1471,10 @@ export function MarketplaceBoard({
                           console.warn("Error parsing additional photos:", e);
                         }
                       }
-                      // Cloud-synced photo from other sellers' listings (cross-device visibility)
-                      const cloudPhoto = item.photoUrl || null;
-                      const allPhotos = [customPhoto, cloudPhoto, ...additionalPhotos].filter(Boolean);
+                      // `item.photoUrl` (the cloud-synced copy) is no longer a separate
+                      // carousel entry: it is now the hosted input to the resolver above, so
+                      // the same image no longer appears twice when a seller has both copies.
+                      const allPhotos = [customPhoto, ...additionalPhotos].filter(Boolean);
                       const activePhotoIdx = cardImageIndexMap[identifier] || 0;
 
                       const matchedSpecies = fishbaseData.find(

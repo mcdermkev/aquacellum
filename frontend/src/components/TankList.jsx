@@ -58,7 +58,7 @@ import { ScheduleEditor } from "./logbook/ScheduleEditor";
 import { LivingTank } from "./logbook/LivingTank";
 import { deriveTankHealth } from "../utils/tankHealth";
 import { getOrInitTankSchedules } from "../services/tankSchedules";
-import { getTankPhoto, putTankPhoto, getSpecimenPhoto as loadSpecimenPhoto, putSpecimenPhoto } from "../services/tankMedia";
+import { getTankPhoto, putTankPhoto, putSpecimenPhoto, resolveSpecimenPhoto } from "../services/tankMedia";
 import { getSupabaseImageUrl, isInsideEnvelope, getTrackBackground, CONTAINMENT_TYPES, getWaterEnvelope, tankTypeLabel } from "../utils/tankUtils";
 export function TankList({ contractAddress, walletAccount, onViewLineage, onListOnMarketplace, onSelectSpecimen, casualModeActive = false }) {
   const queryClient = useQueryClient();
@@ -225,10 +225,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const [poseidonChatOpen, setPoseidonChatOpen] = useState(false);
   const [poseidonSeed, setPoseidonSeed] = useState(null); // grounded question seeded from a contextual "Ask Poseidon" tip
   const [activeTankSchedules, setActiveTankSchedules] = useState([]); // schedules for the open tank, so the hero ambient reflects overdue maintenance
-  // Photos for the open tank, read durable-first from tankMedia (Dexie) with a
-  // localStorage fallback for photos other surfaces (mint/marketplace) still
-  // write only to localStorage. Logbook writes go through tankMedia (which
-  // mirrors to localStorage) so its photos survive a cache clear.
+  // Photos for the open tank. Specimen photos come from resolveSpecimenPhoto, the
+  // single precedence order (hosted → Dexie → legacy localStorage → none). Writes go
+  // through tankMedia, so they survive a cache clear.
   const [activeTankPhoto, setActiveTankPhoto] = useState(null);
   const [specimenPhotos, setSpecimenPhotos] = useState({}); // specimenId -> dataUrl
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
@@ -446,8 +445,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     return () => { cancelled = true; };
   }, [activeTank?.id]);
 
-  // Load the open tank's photo + its specimens' photos, durable-first from
-  // tankMedia with a localStorage fallback (see the state declaration note).
+  // Load the open tank's photo + its specimens' photos (see the state declaration note).
   const specimenIdsKey = (activeTank?.specimens || []).map((s) => s.id).join(",");
   useEffect(() => {
     let cancelled = false;
@@ -459,8 +457,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       const specimens = (activeTank.specimens || []).filter((s) => !s.isBatchPlaceholder);
       const entries = await Promise.all(
         specimens.map(async (s) => {
-          const url = (await loadSpecimenPhoto(s.id)) || localStorage.getItem(`aquadex_specimen_photo_${s.id}`) || "";
-          return [s.id, url];
+          // One resolver, one precedence order (§9.3) — this used to be an ad-hoc
+          // Dexie-then-localStorage chain, which is exactly the drift resolveSpecimenPhoto
+          // exists to prevent. `url` is "" when nothing resolves, so the silhouette shows.
+          const { url } = await resolveSpecimenPhoto(s.id);
+          return [s.id, url || ""];
         })
       );
       if (!cancelled) setSpecimenPhotos(Object.fromEntries(entries));

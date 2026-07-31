@@ -4,6 +4,13 @@ import { compressImage } from "../utils/imageCompression";
 import { relayUpdateListing } from "../services/relayer";
 import { syncListingToCloud } from "../services/cloudSync";
 import { uploadSpecimenPhoto } from "../services/photoUpload";
+import {
+  clearHostedSpecimenPhotoUrl,
+  deleteSpecimenPhoto,
+  putSpecimenPhoto,
+  recordHostedSpecimenPhotoUrl,
+  resolveSpecimenPhoto,
+} from "../services/tankMedia";
 
 const getSpecimenPhotoUrl = (commonName) => {
   if (!commonName) return "";
@@ -22,6 +29,7 @@ export function EditListingModal({ isOpen, onClose, item, onSuccess }) {
 
   // Initialize form fields when the modal opens or item changes
   useEffect(() => {
+    let cancelled = false;
     if (isOpen && item) {
       setError(null);
       
@@ -37,9 +45,13 @@ export function EditListingModal({ isOpen, onClose, item, onSuccess }) {
       const shippingActive = !!item.isShipping;
       setIsShipping(shippingActive);
 
-      // Load photos from localStorage into local temp state (so changes don't persist unless saved)
+      // Load photos into local temp state (so changes don't persist unless saved).
+      // The primary photo comes from resolveSpecimenPhoto — the one §9.3 precedence
+      // order (hosted → Dexie tankMedia → legacy localStorage → none). This matters
+      // here beyond durability: on a device with no local copy the old read returned
+      // nothing, so opening Edit and saving DELETED the seller's photo. Resolving the
+      // hosted copy first means a save preserves it.
       if (!item.isBatch) {
-        const primaryPhoto = localStorage.getItem(`aquadex_specimen_photo_${item.tokenId}`);
         let additional = [];
         try {
           const stored = localStorage.getItem(`aquadex_specimen_photos_${item.tokenId}`);
@@ -49,7 +61,15 @@ export function EditListingModal({ isOpen, onClose, item, onSuccess }) {
         } catch (e) {
           console.warn("Error parsing additional photos:", e);
         }
-        setTempPhotos([primaryPhoto, ...additional].filter(Boolean));
+        setTempPhotos(additional.filter(Boolean));
+        resolveSpecimenPhoto(item.tokenId, { hostedUrl: item.photoUrl || "" })
+          .then(({ url }) => {
+            // Absent stays absent: with no photo anywhere the list keeps only the
+            // additional shots and the species fallback renders below.
+            if (cancelled || !url) return;
+            setTempPhotos([url, ...additional].filter(Boolean));
+          })
+          .catch(() => { /* leave the additional photos as loaded */ });
       } else {
         setTempPhotos([]);
       }
@@ -60,6 +80,7 @@ export function EditListingModal({ isOpen, onClose, item, onSuccess }) {
       setTempPhotos([]);
       setError(null);
     }
+    return () => { cancelled = true; };
   }, [isOpen, item]);
 
   if (!isOpen || !item) return null;
@@ -111,25 +132,33 @@ export function EditListingModal({ isOpen, onClose, item, onSuccess }) {
         throw new Error(result.error || "Update failed");
       }
 
-      // Persist photos to localStorage for single specimens
+      // Persist photos for single specimens. The primary photo goes through
+      // putSpecimenPhoto (Dexie `tankMedia`, which still mirrors to localStorage) so it
+      // survives a cache clear; the additional shots keep their existing key.
       if (!item.isBatch) {
         const tokenId = item.tokenId;
         if (tempPhotos.length === 0) {
-          localStorage.removeItem(`aquadex_specimen_photo_${tokenId}`);
+          // Deleting means deleting everywhere, including the recorded hosted URL —
+          // otherwise the hosted step would keep resolving a photo the seller removed.
+          await deleteSpecimenPhoto(tokenId);
+          clearHostedSpecimenPhotoUrl(tokenId);
           localStorage.removeItem(`aquadex_specimen_photos_${tokenId}`);
         } else {
-          localStorage.setItem(`aquadex_specimen_photo_${tokenId}`, tempPhotos[0]);
+          await putSpecimenPhoto(tokenId, tempPhotos[0]);
           localStorage.setItem(`aquadex_specimen_photos_${tokenId}`, JSON.stringify(tempPhotos.slice(1)));
 
-          // Upload primary photo to cloud storage (non-blocking)
+          // Upload primary photo to cloud storage (non-blocking). A non-`data:` primary
+          // (i.e. one that already resolved to a hosted URL) is rejected by the uploader
+          // as invalid image data, which is correct — there is nothing new to upload and
+          // the existing recorded URL stands.
           uploadSpecimenPhoto(tempPhotos[0], item.seller || "", tokenId)
             .then((result) => {
               if (result.success && result.url) {
-                // Store cloud URL for cross-device access
-                localStorage.setItem(`aquadex_specimen_photo_url_${tokenId}`, result.url);
+                // Record the cloud URL so other devices resolve it first.
+                recordHostedSpecimenPhotoUrl(tokenId, result.url);
               }
             })
-            .catch(() => { /* localStorage fallback is fine */ });
+            .catch(() => { /* the durable Dexie copy still resolves locally */ });
         }
       }
 

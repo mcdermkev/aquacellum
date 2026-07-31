@@ -14,6 +14,7 @@ import { draftListingDescription } from "../services/poseidonListingDraft";
 import { listParcelPresets } from "../services/parcelPresets";
 import { normalizeParcelPreset, computeUsage, boxesRequired } from "../services/packingEngine";
 import { useMarketplaceListings } from "../hooks/useMarketplaceListings";
+import { resolveSpecimenPhoto } from "../services/tankMedia";
 
 // normalizeSpeciesProfile's temperament classification -> this form's free-text
 // Temperament <select> options. "predatory" has no dedicated option here (this
@@ -356,11 +357,12 @@ export function ListSpecimenModal({
       setGroundingFacts(draft.groundingFacts);
       setPackingProfile(draft.packingProfile);
 
-      // Prefill the specimen's own photo if one was saved locally at mint/list.
-      try {
-        const saved = localStorage.getItem(`aquadex_specimen_photo_${Number(specimenInfo.id)}`);
-        if (saved) setPhotoPreview((p) => p || saved);
-      } catch (e) { /* ignore */ }
+      // Prefill the specimen's own photo, resolved through the one precedence order
+      // (§9.3): hosted CDN copy, then the durable Dexie row, then the legacy
+      // localStorage blob. Nothing resolving leaves the preview empty — the picker's
+      // own empty state — rather than prefilling a stand-in image.
+      const { url: savedPhoto } = await resolveSpecimenPhoto(specimenInfo.id);
+      if (savedPhoto && !cancelled) setPhotoPreview((p) => p || savedPhoto);
       if (filledAny && !cancelled) setCarePrefilled(true);
     })();
     return () => { cancelled = true; };

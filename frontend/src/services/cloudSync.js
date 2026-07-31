@@ -15,6 +15,7 @@
  */
 
 import { supabase, isSupabaseConfigured } from "./supabaseClient";
+import { resolveSpecimenPhoto } from "./tankMedia";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -706,18 +707,21 @@ export async function pullXpProfileFromCloud(walletAddress) {
 /**
  * Serialize a local listing object for the aquadex_listings Supabase table.
  */
-function listingToRow(listing) {
-  // Attach local specimen photo to the listing data for cross-user visibility
+async function listingToRow(listing) {
+  // Attach the specimen photo to the listing data for cross-user visibility, resolved
+  // through the one §9.3 precedence order (hosted → Dexie tankMedia → legacy
+  // localStorage → none) instead of reading the raw localStorage key. Async because the
+  // durable copy lives in Dexie; the only caller already awaits.
+  //
+  // Precedence pays off here: once a photo has a recorded bucket URL, that short URL is
+  // what gets published rather than a base64 blob inflating every listing row. If no
+  // copy resolves, `photoUrl` is left absent — never set to a placeholder.
   let enrichedListing = { ...listing };
   if (!listing.isBatch && listing.tokenId) {
-    try {
-      const photo = typeof localStorage !== 'undefined' 
-        ? localStorage.getItem(`aquadex_specimen_photo_${listing.tokenId}`) 
-        : null;
-      if (photo) {
-        enrichedListing.photoUrl = photo;
-      }
-    } catch (e) { /* localStorage not available */ }
+    const { url } = await resolveSpecimenPhoto(listing.tokenId, { hostedUrl: listing.photoUrl || "" });
+    if (url) {
+      enrichedListing.photoUrl = url;
+    }
   }
 
   return {
@@ -743,7 +747,7 @@ export async function syncListingToCloud(listing) {
   try {
     const { error } = await supabase
       .from("aquadex_listings")
-      .upsert(listingToRow(listing), { onConflict: "id" });
+      .upsert(await listingToRow(listing), { onConflict: "id" });
     if (error) console.warn("[CloudSync] Listing upsert failed:", error.message);
   } catch (e) {
     console.warn("[CloudSync] Listing upsert error:", e.message);

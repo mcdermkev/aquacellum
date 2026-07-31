@@ -354,6 +354,126 @@ export async function retryPendingMetadataPublishes(ownerAddress) {
   return { attempted, published };
 }
 
+// ─── Reading a certificate's document back (§9.14) ──────────────────────────
+//
+// `SpecimenDetailModal` read `localStorage.getItem('aquadex_specimen_metadata_<id>')`
+// directly — a raw key, device-local, lost on a cache clear, and invisible to a buyer
+// who received the certificate on another device. Meanwhile the document already has
+// a durable home: this module publishes it to the `specimen-metadata` bucket and
+// records the URL on `specimens.ipfsMetadataUri`.
+//
+// So this is the read side of what §9.9/§9.19 built, and the localStorage copy becomes
+// a fallback for certificates registered before it existed rather than the source.
+//
+// ── WHY AN EXTERNAL URI IS NOT FETCHED ──────────────────────────────────────
+//
+// `METADATA_STATUS.EXTERNAL` means the breeder supplied their own URI and we neither
+// host nor manage it. Fetching it here would send the VIEWER's IP and headers to a
+// server the *seller* controls, every time a buyer opened the certificate — a
+// tracking side-channel handed to the counterparty, on the surface where somebody
+// decides whether to trust them. It is also unbounded content of unknown type.
+//
+// So an external URI is reported, never followed: the caller gets
+// `{ source: "external", uri }` and can render a link the reader chooses to click.
+// A `null` document with a URI is a real state, not a failure.
+
+/** Where a resolved metadata document came from. Never guessed. */
+export const METADATA_SOURCE = Object.freeze({
+  /** Fetched from our own bucket at the URI recorded on the certificate. */
+  HOSTED: "hosted",
+  /** The local pre-§9.9 copy. Honest, but device-scoped. */
+  LOCAL_CACHE: "localCache",
+  /** A breeder-supplied URI. Reported, deliberately NOT fetched. */
+  EXTERNAL: "external",
+  /** No document anywhere. */
+  NONE: "none",
+});
+
+/** The legacy localStorage key. Exported so the migration and tests agree on it. */
+export function localMetadataKey(specimenId) {
+  return `aquadex_specimen_metadata_${Number(specimenId)}`;
+}
+
+/** Is this a URL in the bucket we publish to? Only these are safe to auto-fetch. */
+function isOwnHostedUri(uri) {
+  if (typeof uri !== "string" || !uri) return false;
+  // Deliberately a path check against our own bucket rather than a host allowlist:
+  // the project URL varies by environment, but the bucket segment does not.
+  return uri.includes(`/storage/v1/object/public/${METADATA_BUCKET}/`);
+}
+
+function readLocalCache(specimenId) {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(localMetadataKey(specimenId));
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    // A corrupt cache entry is not a document. Fall through rather than throwing
+    // inside a detail overlay.
+    return null;
+  }
+}
+
+/**
+ * Resolve a certificate's metadata document.
+ *
+ * Precedence, and each step is reported so the UI can say which it got:
+ *
+ *   1. **Hosted** — fetched from our bucket, when the certificate records a URI we
+ *      published. This is the one that works on a device that never minted the fish.
+ *   2. **Local cache** — the pre-§9.9 localStorage copy.
+ *   3. **External** — reported with its URI, never fetched. See the note above.
+ *   4. **None**.
+ *
+ * Nothing is fabricated: an unreachable hosted document falls through to the local
+ * copy, and if that is absent too the result is `{ document: null, source: "none" }` —
+ * which the caller must render as absent, not as an empty certificate.
+ *
+ * @param {object} args
+ * @param {number|string} args.specimenId
+ * @param {string} [args.metadataUri] - `specimens.ipfsMetadataUri`
+ * @param {string} [args.metadataStatus] - a METADATA_STATUS value
+ * @param {Function} [args.fetchImpl] - injectable for tests
+ * @returns {Promise<{document: object|null, source: string, uri: string|null}>}
+ */
+export async function resolveSpecimenMetadata({
+  specimenId,
+  metadataUri = "",
+  metadataStatus = METADATA_STATUS.NONE,
+  fetchImpl,
+} = {}) {
+  const uri = normalizeMetadataUri(metadataUri) || null;
+
+  if (uri && metadataStatus === METADATA_STATUS.EXTERNAL) {
+    // Reported, not followed.
+    return { document: null, source: METADATA_SOURCE.EXTERNAL, uri };
+  }
+
+  if (uri && isOwnHostedUri(uri)) {
+    const doFetch = fetchImpl || (typeof fetch === "function" ? fetch : null);
+    if (doFetch) {
+      try {
+        const response = await doFetch(uri, { headers: { Accept: "application/json" } });
+        if (response?.ok) {
+          const document = await response.json();
+          if (document && typeof document === "object") {
+            return { document, source: METADATA_SOURCE.HOSTED, uri };
+          }
+        }
+      } catch {
+        // Offline, still uploading (`PENDING`), or a failed publish. The local copy
+        // below is the honest next-best, not an error.
+      }
+    }
+  }
+
+  const cached = readLocalCache(specimenId);
+  if (cached) return { document: cached, source: METADATA_SOURCE.LOCAL_CACHE, uri };
+
+  return { document: null, source: METADATA_SOURCE.NONE, uri };
+}
+
 /** Lifecycle of a certificate's metadata document. */
 export const METADATA_STATUS = Object.freeze({
   /** No document — `tokenURI` is intentionally empty. */

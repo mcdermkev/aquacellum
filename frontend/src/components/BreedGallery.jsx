@@ -23,6 +23,7 @@ import { SpeciesCardPremium } from "./SpeciesCardPremium";
 import { buildGlobalCatalog, CARE_LABELS } from "../services/speciesCatalog";
 import { assessSpeciesFit } from "../services/speciesFit";
 import { CasualSpeciesDetail } from "./finder/CasualSpeciesDetail";
+import { resolveSpecimenPhoto } from "../services/tankMedia";
 
 // Compatibility ring/label hue per honest fit verdict (Fish Finder T2). Driven
 // by verdict rather than raw score so an unknown-data "caution" never shows a
@@ -196,6 +197,28 @@ export function BreedGallery({
   const [notification, setNotification] = useState(null);
   const [galleryDropPhoto, setGalleryDropPhoto] = useState(null); // { preview }
   const galleryPhotoInputRef = useRef(null);
+
+  // Certificate card photos, resolved through the one §9.3 precedence order
+  // (hosted → Dexie tankMedia → legacy localStorage → none). The card body renders
+  // synchronously, so the read happens in an effect and lands here; a card with no
+  // entry yet falls back to the master species image, exactly as it did when a
+  // specimen had no photo at all. Absent stays absent — no stand-in URL.
+  const [specimenPhotos, setSpecimenPhotos] = useState({}); // specimenId -> url
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(
+        (selectedBreedSpecs || []).map(async (s) => {
+          const { url } = await resolveSpecimenPhoto(s.specimenId);
+          return [s.specimenId, url];
+        })
+      );
+      if (!cancelled) {
+        setSpecimenPhotos(Object.fromEntries(entries.filter(([, url]) => url)));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedBreedSpecs]);
 
   // Breeder Stock Tag inline editing state
   const [editingTagId, setEditingTagId] = useState(null); // specimenId being edited
@@ -906,7 +929,7 @@ export function BreedGallery({
                       ? new Date(spec.birthTimestamp * 1000).toLocaleDateString()
                       : "Wild-Caught / Unknown";
 
-                    const customPhoto = localStorage.getItem(`aquadex_specimen_photo_${spec.specimenId}`);
+                    const customPhoto = specimenPhotos[spec.specimenId] || null;
                     const specBreedData = fishbaseData.find(
                       (item) => item.scientificName.toLowerCase() === selectedBreed.scientificName.toLowerCase()
                     );
