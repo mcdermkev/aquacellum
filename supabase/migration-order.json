@@ -92,6 +92,7 @@
     "supabase/migrations/20260729_user_xp_profiles.sql",
     "frontend/supabase/migrations/20260729_spawn_growout_sync.sql",
     "frontend/supabase/migrations/20260729_specimen_metadata_storage.sql",
-    "frontend/supabase/migrations/20260730_spawn_growout_promoted_type.sql"
+    "frontend/supabase/migrations/20260730_spawn_growout_promoted_type.sql",
+    "supabase/migrations/20260731_drop_dev_rls_bypass.sql"
   ]
 }
