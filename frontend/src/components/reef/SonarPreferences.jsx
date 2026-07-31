@@ -54,6 +54,7 @@ import {
   unsubscribeFromPush,
   sendTestPush,
   pushReasonMessage,
+  onPermissionChange,
 } from "../../services/pushService";
 import { trackEvent } from "../../services/analytics";
 
@@ -143,6 +144,20 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
     if (typeof window === "undefined") return;
     window.addEventListener(REEF_SESSION_EVENT, refreshPushStatus);
     return () => window.removeEventListener(REEF_SESSION_EVENT, refreshPushStatus);
+  }, [refreshPushStatus]);
+
+  // Several of the recovery paths send the user to browser or OS settings to
+  // allow notifications. Watch for that so the panel reflects it when they come
+  // back, instead of still claiming notifications are off.
+  useEffect(() => {
+    return onPermissionChange((state) => {
+      setPushMessage(
+        state === "granted"
+          ? { type: "info", text: "Permission granted. Tap Turn on notifications to finish registering this device." }
+          : null
+      );
+      refreshPushStatus();
+    });
   }, [refreshPushStatus]);
 
   // Load preferences from the Supabase profile

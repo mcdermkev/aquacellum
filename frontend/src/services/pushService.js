@@ -56,6 +56,7 @@ export const PUSH_REASON = {
   PERMISSION_DENIED: "permission_denied",
   PERMISSION_DISMISSED: "permission_dismissed",
   OS_PERMISSION_NEEDED: "os_permission_needed",
+  PERMISSION_REQUEST_STUCK: "permission_request_stuck",
   NO_PROFILE: "no_profile",
   NOT_AUTHORIZED: "not_authorized",
   STORAGE_FAILED: "storage_failed",
@@ -90,6 +91,10 @@ export const PUSH_REASON_MESSAGE = {
   // to give instructions that can actually be carried out.
   [PUSH_REASON.OS_PERMISSION_NEEDED]:
     "No permission prompt appeared. Since the app is installed, notifications also have to be allowed for it at the device level: open your phone's Settings → Apps → Aquacellum → Notifications and turn them on, then come back and try again. Worth checking Do Not Disturb is off too.",
+  // The one failure where retrying is guaranteed not to work, so the copy must
+  // not suggest it. Only destroying the page context clears a stuck request.
+  [PUSH_REASON.PERMISSION_REQUEST_STUCK]:
+    "The permission request never got an answer, and the browser won't open a second one until the app is fully restarted. Tapping again won't help. On Android: Settings → Apps → Aquacellum → Force stop, then reopen the app and tap Turn on notifications once. Alternatively, allow notifications for the site in your browser settings and this screen will pick it up on its own.",
   [PUSH_REASON.NO_PROFILE]:
     "Finish setting up your profile first, then enable notifications.",
   [PUSH_REASON.NOT_AUTHORIZED]:
@@ -237,6 +242,117 @@ const SW_READY_TIMEOUT_MS = 10_000;
 const PERMISSION_TIMEOUT_MS = 30_000;
 
 /**
+ * The in-flight `Notification.requestPermission()` promise, if any.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * THIS EXISTS BECAUSE OUR OWN TIMEOUT CREATED A TRAP.
+ *
+ * A device reported: Chrome 150, installed WebAPK, OS notifications Allowed,
+ * service worker active, signed in — and
+ *
+ *     Last attempt: Notification permission prompt timed out after 30000ms
+ *
+ * So the promise never settled at all. That matters, because `withTimeout` only
+ * abandons OUR wait; it cannot cancel the underlying request, which stays open
+ * in the page. Chrome coalesces notification permission requests per page, so
+ * once one is outstanding, every subsequent `requestPermission()` call returns a
+ * promise that also never settles — no second prompt is shown.
+ *
+ * The result was a self-perpetuating failure. One stuck request — originally
+ * caused by the gesture-ordering bug fixed earlier — poisoned every retry for
+ * the entire lifetime of the page context. Retrying could not possibly work, and
+ * "try again" was the one instruction guaranteed to fail. Escaping needed the JS
+ * context destroyed, which on Android means force-stopping the app, not merely
+ * closing and reopening it (that usually resumes from memory).
+ *
+ * Reusing the same promise means a retry attaches to the existing request rather
+ * than issuing a doomed second one, and the permission watcher below gives a
+ * second chance to observe the answer even if it arrives after our timeout.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+let _pendingPermissionRequest = null;
+
+/** Whether a permission request from an earlier attempt is still unanswered. */
+export function hasStuckPermissionRequest() {
+  return _pendingPermissionRequest !== null;
+}
+
+/**
+ * Issue at most ONE outstanding permission request per page context.
+ */
+function requestPermissionOnce() {
+  if (!_pendingPermissionRequest) {
+    _pendingPermissionRequest = Promise.resolve(Notification.requestPermission()).finally(
+      () => {
+        _pendingPermissionRequest = null;
+      }
+    );
+  }
+  return _pendingPermissionRequest;
+}
+
+/**
+ * Watch the notification permission via the Permissions API.
+ *
+ * `requestPermission()` gives exactly one chance to observe the answer. This
+ * gives a second, independent one: it fires if the user answers a prompt after
+ * our timeout has already given up, and — the case that actually matters here —
+ * if they grant permission in the OS/browser settings instead of in a prompt.
+ * Without it, someone who fixes the permission outside the app would come back
+ * to a screen still insisting notifications are off.
+ *
+ * @returns {{ promise: Promise<string>, cancel: () => void }}
+ */
+function watchPermissionGrant() {
+  let cancel = () => {};
+  const promise = new Promise((resolve) => {
+    if (!navigator.permissions?.query) return; // never resolves; harmless in a race
+    navigator.permissions
+      .query({ name: "notifications" })
+      .then((statusHandle) => {
+        const onChange = () => {
+          if (statusHandle.state !== "prompt") resolve(statusHandle.state);
+        };
+        statusHandle.addEventListener?.("change", onChange);
+        cancel = () => statusHandle.removeEventListener?.("change", onChange);
+      })
+      .catch(() => {
+        /* Permissions API unavailable or 'notifications' unsupported — fine. */
+      });
+  });
+  return { promise, cancel };
+}
+
+/**
+ * Ask for notification permission, tolerating every way it can fail to answer.
+ *
+ * @returns {Promise<string>} the permission state
+ * @throws  {Error} with `.isTimeout`, and `.isStuck` when the request that
+ *          timed out was left over from an earlier attempt.
+ */
+async function requestNotificationPermission() {
+  if (Notification.permission !== "default") return Notification.permission;
+
+  const alreadyOutstanding = hasStuckPermissionRequest();
+  const watcher = watchPermissionGrant();
+
+  try {
+    return await withTimeout(
+      Promise.race([requestPermissionOnce(), watcher.promise]),
+      PERMISSION_TIMEOUT_MS,
+      "Notification permission prompt"
+    );
+  } catch (err) {
+    if (err?.isTimeout && (alreadyOutstanding || hasStuckPermissionRequest())) {
+      err.isStuck = true;
+    }
+    throw err;
+  } finally {
+    watcher.cancel();
+  }
+}
+
+/**
  * Register the service worker and wait for an active one.
  *
  * Falls back to the existing registration if `ready` times out but a
@@ -378,14 +494,7 @@ export async function subscribeToPush() {
   try {
     // ── 2. Request permission — FIRST, while the click's user activation is
     //       still live. See the gesture warning in the docblock above. ───────
-    let permission = Notification.permission;
-    if (permission !== "granted") {
-      permission = await withTimeout(
-        Notification.requestPermission(),
-        PERMISSION_TIMEOUT_MS,
-        "Notification permission prompt"
-      );
-    }
+    const permission = await requestNotificationPermission();
 
     if (permission === "denied") {
       return { success: false, reason: PUSH_REASON.PERMISSION_DENIED, detail: "requestPermission → denied" };
@@ -459,8 +568,12 @@ export async function subscribeToPush() {
     // permission, so the generic "reopen the app" line sends the user in circles.
     let reason = PUSH_REASON.SUBSCRIBE_FAILED;
     if (err?.isTimeout) {
-      reason =
-        isStandalone() && Notification.permission !== "granted"
+      // A request left open by an earlier attempt is the specific case where
+      // every retry is doomed, so it gets copy that says so rather than the
+      // generic "try again".
+      reason = err?.isStuck
+        ? PUSH_REASON.PERMISSION_REQUEST_STUCK
+        : isStandalone() && Notification.permission !== "granted"
           ? PUSH_REASON.OS_PERMISSION_NEEDED
           : PUSH_REASON.TIMED_OUT;
     }
@@ -709,4 +822,41 @@ export async function sendTestPush() {
   } catch (err) {
     return { success: false, message: `Test send failed: ${err.message}` };
   }
+}
+
+/**
+ * Call `cb` whenever the notification permission changes outside our own flow.
+ *
+ * The recovery instructions for several of the failure reasons above send the
+ * user to browser or OS settings. Without this, they would fix the permission
+ * there, come back, and find a screen still telling them notifications are off —
+ * so the last honest thing the panel does would become the wrong thing.
+ *
+ * @param {(state: string) => void} cb
+ * @returns {() => void} unsubscribe
+ */
+export function onPermissionChange(cb) {
+  if (typeof navigator === "undefined" || !navigator.permissions?.query) {
+    return () => {};
+  }
+
+  let detach = () => {};
+  let cancelled = false;
+
+  navigator.permissions
+    .query({ name: "notifications" })
+    .then((statusHandle) => {
+      if (cancelled) return;
+      const onChange = () => cb(statusHandle.state);
+      statusHandle.addEventListener?.("change", onChange);
+      detach = () => statusHandle.removeEventListener?.("change", onChange);
+    })
+    .catch(() => {
+      /* Permissions API or the 'notifications' name unsupported — no watcher. */
+    });
+
+  return () => {
+    cancelled = true;
+    detach();
+  };
 }
