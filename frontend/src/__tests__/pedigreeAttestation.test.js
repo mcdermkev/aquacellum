@@ -34,7 +34,10 @@ import {
   sealPedigreeDocument,
 } from "../services/pedigreeDocument";
 
-const MASTER = "0xmasterbreeder000000000000000000000000aaaa";
+// Real hex, not a mnemonic placeholder — `/^0x[a-f0-9]{40}$/` is enforced at the
+// endpoint boundary, so a fake that isn't valid hex only passes tests that don't
+// check.
+const MASTER = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const KID = "pedigree-test-key-1";
 
 const node = (id, breeder = MASTER) => ({
