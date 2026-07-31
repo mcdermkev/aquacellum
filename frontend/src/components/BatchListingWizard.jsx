@@ -11,6 +11,7 @@ import {
   lifeStageOptionLabel,
   requiresCohort,
 } from "../utils/lifeStage";
+import { attachPedigreeToListing, sealLotPedigree } from "../services/listingPedigree";
 
 /**
  * BatchListingWizard — Guided form for sellers to list fry batches for sale.
@@ -206,12 +207,36 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
         createdAt: Math.floor(Date.now() / 1000),
       };
 
+      // ── Seal the pedigree, here, on the seller's device ────────────────────
+      // This is the moment it CAN be sealed. Settlement happens later in a
+      // server-side Stripe webhook, and the pedigree lives in this browser's Dexie
+      // (§3), so there is no later point where it is readable (§9.30). Listing time
+      // is when the spawn, its parents, and its grandparents are all resolvable.
+      //
+      // It rides on the listing: `aquadex_listings.data` is a jsonb blob of the whole
+      // listing object, so this reaches buyers with no migration.
+      //
+      // Non-blocking on purpose. A listing that fails to seal is a listing without a
+      // published pedigree — which the trust ladder reports honestly — and that is far
+      // better than refusing to let a breeder sell.
+      let listingWithPedigree = listing;
+      try {
+        const sealed = await sealLotPedigree({
+          spawnId: selectedSpawn.spawnId,
+          issuer: walletAccount,
+        });
+        listingWithPedigree = attachPedigreeToListing(listing, sealed.ok ? sealed.document : null);
+      } catch (pedigreeErr) {
+        console.warn("Pedigree sealing failed; listing without one:", pedigreeErr);
+        listingWithPedigree = attachPedigreeToListing(listing, null);
+      }
+
       // Save locally
-      await db.localListings.put(listing);
-      try { await db.listings.put(listing); } catch (e) { /* non-critical */ }
+      await db.localListings.put(listingWithPedigree);
+      try { await db.listings.put(listingWithPedigree); } catch (e) { /* non-critical */ }
 
       // Sync to cloud for cross-user visibility
-      syncListingToCloud(listing).catch(() => {});
+      syncListingToCloud(listingWithPedigree).catch(() => {});
 
       // XP
       addXp(XP_ACTIONS.LIST_DIRECTORY?.points || 50, "Listed Batch Fry for Sale");
