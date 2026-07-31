@@ -462,28 +462,61 @@ describe("nothing reads as verified until it is attested", () => {
     expect(await pedigreeTrustLevel(sealed)).toBe(PEDIGREE_TRUST.INVALID);
   });
 
-  it("separates OUR word from the breeder's signature", async () => {
+  it("NEVER returns a verified level from shape alone", async () => {
+    // The correction that added `attestationUnverified`. This function inspects the
+    // shape of an attestation; it does not check the signature, so on its own it
+    // must not claim anything was checked. Anyone can paste a string into
+    // `signature` — see services/pedigreeAttestation.js for the real check.
+    const sealed = await seal();
+    for (const attestation of [platform(sealed.hash), wallet(sealed.hash)]) {
+      const doc = attachAttestation(sealed, attestation);
+      expect(await pedigreeTrustLevel(doc)).toBe(PEDIGREE_TRUST.ATTESTATION_UNVERIFIED);
+    }
+  });
+
+  it("separates OUR word from the breeder's signature once verified", async () => {
     // The distinction the whole ladder exists for. A platform attestation reuses the
     // Privy trust root — real, but it is Aquadex asserting the wallet was signed in.
     // A wallet attestation needs no trust in Aquadex at all. Collapsing them into
     // one "attested" would let the copy overclaim, which is §9.28's mistake.
     const sealed = await seal();
+    const verified = { attestationVerified: true };
     const viaPlatform = attachAttestation(sealed, platform(sealed.hash));
     const viaWallet = attachAttestation(sealed, wallet(sealed.hash));
 
-    expect(await pedigreeTrustLevel(viaPlatform)).toBe(PEDIGREE_TRUST.PLATFORM_ATTESTED);
-    expect(await pedigreeTrustLevel(viaWallet)).toBe(PEDIGREE_TRUST.ATTESTED);
+    expect(await pedigreeTrustLevel(viaPlatform, verified)).toBe(PEDIGREE_TRUST.PLATFORM_ATTESTED);
+    expect(await pedigreeTrustLevel(viaWallet, verified)).toBe(PEDIGREE_TRUST.ATTESTED);
   });
 
   it("anchors only a breeder signature, never our own statement", async () => {
     // Anchoring our word on-chain makes it permanent, not independent. The thing
     // made permanent is still our word.
     const sealed = await seal();
+    const verified = { attestationVerified: true };
     const anchor = { txHash: "0xtx" };
-    expect(await pedigreeTrustLevel(attachAttestation(sealed, wallet(sealed.hash, { anchor }))))
+    expect(await pedigreeTrustLevel(attachAttestation(sealed, wallet(sealed.hash, { anchor })), verified))
       .toBe(PEDIGREE_TRUST.ANCHORED);
-    expect(await pedigreeTrustLevel(attachAttestation(sealed, platform(sealed.hash, { anchor }))))
+    expect(await pedigreeTrustLevel(attachAttestation(sealed, platform(sealed.hash, { anchor })), verified))
       .toBe(PEDIGREE_TRUST.PLATFORM_ATTESTED);
+  });
+
+  it("reports a signature that was checked and FAILED as invalid", async () => {
+    // Not "unattested". A forged attestation is a signal about the document; an
+    // honest gap and a forgery must not look the same.
+    const sealed = await seal();
+    const doc = attachAttestation(sealed, platform(sealed.hash));
+    expect(await pedigreeTrustLevel(doc, { attestationVerified: false }))
+      .toBe(PEDIGREE_TRUST.INVALID);
+  });
+
+  it("does not promote a malformed attestation even when told it verified", async () => {
+    // The shape checks run first, so a caller passing `attestationVerified: true`
+    // cannot bypass them.
+    const sealed = await seal();
+    const other = await seal(parentsOnlyTree());
+    const wrongSubject = { ...sealed, attestation: wallet(other.hash) };
+    expect(await pedigreeTrustLevel(wrongSubject, { attestationVerified: true }))
+      .toBe(PEDIGREE_TRUST.UNATTESTED);
   });
 
   it("fails DOWNWARD on every ambiguity", async () => {

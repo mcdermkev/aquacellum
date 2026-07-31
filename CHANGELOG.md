@@ -4,6 +4,51 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [0.10.11] — 2026-07-30
+
+### 🔎 Attestations Are Now Actually Verified
+
+Closes [`BREEDER_STATE_MODEL.md`](docs/BREEDER_STATE_MODEL.md) §9.29. Publishing the key turned out to be the smaller half of the job.
+
+#### 🐛 The overclaim this exposed
+`pedigreeTrustLevel` returned `platformAttested` after inspecting the **shape** of an attestation — method, purpose, subject hash. **It never checked the signature.** Anyone could paste an arbitrary string into `signature` and reach a level that reads as "we checked this". That is §9.28's mistake — a badge asserting more than its backing — sitting inside the machinery built to prevent it, added one commit earlier by the session that wrote the rule.
+
+The ladder gained **`attestationUnverified`**, and the split is now explicit:
+
+| Function | Answers |
+|---|---|
+| `pedigreeTrustLevel(doc)` | Shape + hash only. **Caps at `attestationUnverified`.** Pure, offline, no network |
+| `resolvePedigreeTrust(doc)` | Fetches keys, verifies the signature, then promotes or fails |
+
+#### 🔑 The key is published, which is what made ES256 worth choosing
+`/api/pedigree-keys` serves the public half as a JWKS. Without it, an algorithm picked *specifically so a buyer needn't trust us* was checkable only by us — the exact position HS256 would have left us in. Serves an array and every signature carries `kid`, so keys rotate without invalidating old documents; a malformed rotation list is skipped rather than taking the current key offline with it.
+
+#### 🛡️ What the verifier refuses
+`services/pedigreeAttestation.js` pins `algorithms: ["ES256"]` — without that a caller could present a token signed with anything, including `none` — requires `iss: "aquadex"`, and **re-checks every signed claim against the document**. So a *genuine* signature lifted from another pedigree cannot be transplanted by rewriting the envelope's `subjectHash`; the signed `subject_hash` catches it.
+
+#### 🧭 "Couldn't check" is not "checked and failed"
+No keys, offline, or a wallet-method attestation (whose path isn't built yet) all yield `attestationUnverified`. Only a signature that was checked and did not hold yields `invalid`. Offline is the normal state for a PWA, so crying forgery on a plane would be as wrong as hiding a real one — and a forged attestation must not be indistinguishable from a fish with no paperwork.
+
+#### 🧱 Internal
+- 28 new tests, and they are **real crypto**: each generates an ES256 keypair, signs a genuine attestation, and verifies against the exported JWKS — the same path production takes. A forgery test built on string matching would pass against an implementation that never verifies anything, which is the bug being fixed.
+- Two older assertions in `pedigreeDocument.test.js` failed on this change and were **correct to fail**: they claimed a verified level from shape alone.
+- The documented key-generation recipe was executed and round-tripped through both endpoints' import paths (`importPKCS8` / `importSPKI`) before being written down, rather than offered untested.
+
+#### ⚙️ Requires configuration
+Both endpoints **fail closed with 503** until `PEDIGREE_ATTESTATION_PRIVATE_KEY` (PKCS#8), `PEDIGREE_ATTESTATION_PUBLIC_KEY` (SPKI), and `PEDIGREE_ATTESTATION_KEY_ID` are set — never a placeholder, which would surface as a trust level no document has earned. **Do not reuse `SUPABASE_JWT_SECRET`.**
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `frontend/api/pedigree-keys.js` | **New.** JWKS endpoint with rotation support |
+| `frontend/src/services/pedigreeAttestation.js` | **New.** Signature verification, key fetch/cache, `resolvePedigreeTrust` |
+| `frontend/src/services/pedigreeDocument.js` | `attestationUnverified` rung; `pedigreeTrustLevel` no longer promotes without verification |
+| `frontend/src/__tests__/pedigreeAttestation.test.js` | **New.** 28 tests with generated keypairs |
+| `frontend/src/__tests__/pedigreeDocument.test.js` | Updated for the corrected ladder |
+| `docs/BREEDER_STATE_MODEL.md` | §9.29 closed |
+
+---
+
 ## [0.10.10] — 2026-07-30
 
 ### 🔐 Pedigree Attestation: Reusing the Trust Root, Not the Credential

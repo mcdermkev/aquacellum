@@ -130,13 +130,29 @@ export const ATTESTATION_METHOD = Object.freeze({
 });
 
 export const PEDIGREE_TRUST = Object.freeze({
-  /** The hash does not match the body. Worse than absent. */
+  /**
+   * The hash does not match the body, OR an attestation's signature failed
+   * verification. Worse than absent — something is actively wrong.
+   */
   INVALID: "invalid",
   /** Internally consistent, but nobody has attested it. NOT verified. */
   UNATTESTED: "unattested",
   /**
+   * An attestation is present and well-formed, but ITS SIGNATURE HAS NOT BEEN
+   * CHECKED — no key was available, or the check hasn't run.
+   *
+   * This rung exists because the first version of this ladder didn't have it, and
+   * that was an overclaim: `pedigreeTrustLevel` inspected the *shape* of an
+   * attestation and returned `platformAttested`, which reads as "we checked this"
+   * when nothing had been checked. Anyone could have pasted an arbitrary string
+   * into `signature`. Verifying is asynchronous and needs a public key, so the
+   * honest resting state is its own level rather than a silent promotion.
+   */
+  ATTESTATION_UNVERIFIED: "attestationUnverified",
+  /**
+   * A platform attestation whose signature VERIFIED against the published key.
    * Aquadex attests the issuing wallet was authenticated when the document was
-   * sealed. Verifiable against our published key — but it is our word.
+   * sealed — proof that we said it, not proof that it is true.
    */
   PLATFORM_ATTESTED: "platformAttested",
   /** Signed by the issuing breeder's own key — needs no trust in Aquadex. */
@@ -160,6 +176,12 @@ export const PEDIGREE_TRUST_COPY = Object.freeze({
   unattested: Object.freeze({
     pro: "Recorded but not attested, so it cannot be independently checked.",
     casual: "Written down, but nobody has confirmed it yet.",
+  }),
+  attestationUnverified: Object.freeze({
+    // Must not read as reassurance. "Not checked yet" is closer to unattested than
+    // to attested, and the wording has to put it there.
+    pro: "Carries an attestation that has not been checked yet. Treat it as unconfirmed until it is.",
+    casual: "There's a confirmation attached, but we haven't been able to check it yet.",
   }),
   platformAttested: Object.freeze({
     // Deliberately says whose word it is. Claiming "verified" here would be the
@@ -615,17 +637,29 @@ export function attachAttestation(document, attestation) {
  * How much trust this document earns. THE UI READS THIS, never the mere presence
  * of a document, and never `attestation` directly.
  *
- * Async because it verifies the hash — a document whose hash doesn't match its body
- * is worse than absent, so it can't be reported as merely unattested.
+ * ⚠️ THIS FUNCTION NEVER CHECKS A SIGNATURE. It verifies the hash and inspects the
+ * *shape* of the attestation, so on its own it can return at best
+ * `attestationUnverified`. Signature verification needs a public key and a network
+ * fetch, which belongs in `services/pedigreeAttestation.js` — pass its result in as
+ * `attestationVerified` to reach a verified level.
  *
- * Fails DOWNWARD at every ambiguity. An attestation that is malformed, covers a
- * different hash, or declares a method we don't recognize reads as `unattested`,
- * never as the stronger level. The whole point of this ladder is that a buyer paying
- * a premium is told the truth, so the failure direction has to be conservative.
+ * That split is deliberate and it is a correction: an earlier version returned
+ * `platformAttested` from shape alone, which reads as "we checked this" when nothing
+ * had been. Anyone could paste an arbitrary string into `signature`.
  *
+ * Fails DOWNWARD at every ambiguity. Malformed, wrong-hash, unknown-method, and
+ * credential-shaped attestations all read as `unattested`; a signature that was
+ * checked and FAILED reads as `invalid`, because a forged attestation is a signal
+ * about the document, not merely a missing one. A buyer paying a premium has to be
+ * told the truth, so the failure direction is always conservative.
+ *
+ * @param {object} document
+ * @param {{ attestationVerified?: boolean|null }} [options]
+ *   `null`/omitted — not checked. `true` — signature verified. `false` — verified
+ *   and failed.
  * @returns {Promise<string>} one of PEDIGREE_TRUST
  */
-export async function pedigreeTrustLevel(document) {
+export async function pedigreeTrustLevel(document, { attestationVerified = null } = {}) {
   const { ok } = await verifyPedigreeDocument(document);
   if (!ok) return PEDIGREE_TRUST.INVALID;
 
@@ -644,21 +678,30 @@ export async function pedigreeTrustLevel(document) {
   // A signature over a different document proves nothing about this one.
   if (attestation.subjectHash !== document.hash) return PEDIGREE_TRUST.UNATTESTED;
 
-  if (attestation.method === ATTESTATION_METHOD.WALLET) {
+  const method = attestation.method;
+  if (method !== ATTESTATION_METHOD.PLATFORM && method !== ATTESTATION_METHOD.WALLET) {
+    return PEDIGREE_TRUST.UNATTESTED;
+  }
+
+  // A signature that was checked and did not hold is worse than none: somebody
+  // attached it. Report that rather than quietly downgrading to "unattested",
+  // which would make a forgery indistinguishable from an honest gap.
+  if (attestationVerified === false) return PEDIGREE_TRUST.INVALID;
+
+  // Not checked. The honest resting state, and the common one offline.
+  if (attestationVerified !== true) return PEDIGREE_TRUST.ATTESTATION_UNVERIFIED;
+
+  if (method === ATTESTATION_METHOD.WALLET) {
     if (attestation.anchor && typeof attestation.anchor === "object" && attestation.anchor.txHash) {
       return PEDIGREE_TRUST.ANCHORED;
     }
     return PEDIGREE_TRUST.ATTESTED;
   }
 
-  if (attestation.method === ATTESTATION_METHOD.PLATFORM) {
-    // An anchor does NOT promote a platform attestation to `anchored`. Anchoring our
-    // own statement on-chain makes it permanent, not independent — the thing being
-    // made permanent is still our word.
-    return PEDIGREE_TRUST.PLATFORM_ATTESTED;
-  }
-
-  return PEDIGREE_TRUST.UNATTESTED;
+  // An anchor does NOT promote a platform attestation to `anchored`. Anchoring our
+  // own statement on-chain makes it permanent, not independent — the thing being
+  // made permanent is still our word.
+  return PEDIGREE_TRUST.PLATFORM_ATTESTED;
 }
 
 /**
