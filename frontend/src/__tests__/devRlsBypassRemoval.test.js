@@ -152,6 +152,48 @@ describe("the remediation itself", () => {
     }
   });
 
+  it("does not drop a policy the CLIENT depends on writing", () => {
+    // The whole reason this remediation is split in two. `service_role` bypasses RLS,
+    // so a "Service write X" policy is droppable ONLY when the client never writes X.
+    // These three are written from the browser today, so dropping them breaks the app
+    // and the fix is architectural. Verified against the call sites.
+    const serviceWrites = read("supabase/migrations/20260731_close_service_write_bypasses.sql");
+    const statements = serviceWrites.replace(/^\s*--.*$/gm, "");
+    expect(statements).not.toMatch(/DROP POLICY[^;]*ON user_xp_profiles/);
+    expect(statements).not.toMatch(/DROP POLICY[^;]*ON zones/);
+    expect(statements).not.toContain('"Service write xp_events"');
+    // And each is named with its reason instead.
+    const sectionC = serviceWrites.slice(serviceWrites.indexOf("SECTION C"));
+    for (const name of ["user_xp_profiles", "zones", "Service write xp_events"]) {
+      expect(sectionC, name).toContain(name);
+    }
+  });
+
+  it("records that xp_server_authority's own comment is contradicted by what shipped", () => {
+    // `20260624120000_xp_server_authority.sql` says "No INSERT policy for anon or
+    // authenticated — only service_role can insert." A `WITH CHECK (true)` INSERT
+    // policy is live AND the client inserts directly. That gap is the finding; losing
+    // it would make the deferral look like laziness rather than a real conflict.
+    const authority = read("supabase/migrations/20260624120000_xp_server_authority.sql");
+    expect(authority).toMatch(/only service_role can insert/i);
+    const serviceWrites = read("supabase/migrations/20260731_close_service_write_bypasses.sql");
+    expect(serviceWrites).toContain("zoneLeaderboardApi.js:257");
+    expect(serviceWrites).toMatch(/disagree/i);
+  });
+
+  it("keeps deliberately public reads public — no crying wolf", () => {
+    // A `USING (true)` SELECT on genuinely shared data is correct, not a hole. Marking
+    // those as findings is how the real ones get ignored.
+    const serviceWrites = read("supabase/migrations/20260731_close_service_write_bypasses.sql");
+    const statements = serviceWrites.replace(/^\s*--.*$/gm, "");
+    expect(statements).not.toContain('"Public read pool_ledger"');
+    expect(statements).not.toContain('"Anyone can read profiles"');
+    expect(statements).not.toContain('"Public read zones"');
+    // The one public read that IS dropped is dropped because scoped siblings exist.
+    expect(statements).toContain('DROP POLICY IF EXISTS "Public read xp_events"');
+    expect(serviceWrites).toContain("xp_events_select_own_jwt");
+  });
+
   it("leaves the §9.20 header/JWT cutover alone — a different, smaller problem", () => {
     // A spoofable identity is not an absent check. Mixing the two would make this
     // migration un-reviewable and could break every session where the bridge fails.
