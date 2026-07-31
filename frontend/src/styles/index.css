@@ -4199,7 +4199,12 @@ textarea:focus:not(:focus-visible) {
   color: #e2e8f0;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.72rem;
-  white-space: nowrap;
+  text-align: right;
+  /* Values are mostly short ("granted", "active"), but the "Last attempt" row
+     carries a raw exception string. Allow it to wrap rather than overflow the
+     card — an unreadable diagnostic is not a diagnostic. */
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .sonar-prefs__category {
   position: relative;

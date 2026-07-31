@@ -111,8 +111,15 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
   // Device-level push state. `null` while the first read is in flight so the UI
   // can say "checking" instead of briefly claiming push is off.
   const [pushStatus, setPushStatus] = useState(null);
-  const [pushBusy, setPushBusy] = useState(false);
+  // Which action is in flight, not just "something is". Both buttons previously
+  // shared one boolean, so enabling made the test button say "Sending…" at the
+  // same time — two actions appearing to run at once, neither of which was.
+  const [pushBusy, setPushBusy] = useState(null); // null | "enable" | "disable" | "test"
   const [pushMessage, setPushMessage] = useState(null); // { type, text }
+  // Raw outcome of the last attempt, shown in diagnostics. The friendly message
+  // is for the user; this is what tells us which of several identical-looking
+  // failures actually occurred.
+  const [lastDetail, setLastDetail] = useState(null);
 
   const refreshPushStatus = useCallback(async () => {
     try {
@@ -221,10 +228,12 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
   // ── Device push enrolment ──────────────────────────────────────────────────
 
   const handleEnablePush = async () => {
-    setPushBusy(true);
+    setPushBusy("enable");
     setPushMessage(null);
+    setLastDetail(null);
 
     const result = await subscribeToPush();
+    setLastDetail(result.detail || (result.success ? "subscribed ok" : result.reason || null));
 
     if (result.success) {
       trackEvent("notification_opt_in", { channel: "push" });
@@ -236,11 +245,11 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
     }
 
     await refreshPushStatus();
-    setPushBusy(false);
+    setPushBusy(null);
   };
 
   const handleDisablePush = async () => {
-    setPushBusy(true);
+    setPushBusy("disable");
     setPushMessage(null);
 
     const result = await unsubscribeFromPush();
@@ -251,11 +260,11 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
     );
 
     await refreshPushStatus();
-    setPushBusy(false);
+    setPushBusy(null);
   };
 
   const handleTestPush = async () => {
-    setPushBusy(true);
+    setPushBusy("test");
     setPushMessage(null);
 
     const result = await sendTestPush();
@@ -272,7 +281,7 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
       setPushMessage({ type: "warning", text: result.message });
     }
 
-    setPushBusy(false);
+    setPushBusy(null);
   };
 
   const pushActive = pushStatus?.active === true;
@@ -321,8 +330,8 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
         {pushStatus && pushStatus.supported && !pushStatus.blocked && (
           <div className="sonar-prefs__device-actions">
             {pushActive ? (
-              <button className="btn-secondary" onClick={handleDisablePush} disabled={pushBusy}>
-                {pushBusy ? "Working…" : "Turn off on this device"}
+              <button className="btn-secondary" onClick={handleDisablePush} disabled={!!pushBusy}>
+                {pushBusy === "disable" ? "Working…" : "Turn off on this device"}
               </button>
             ) : (
               <button
@@ -332,13 +341,17 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
                 // or push isn't configured, this button can ONLY fail — offering
                 // it invites the user to discover that the hard way.
                 disabled={
-                  pushBusy ||
+                  !!pushBusy ||
                   pushStatus.iosNeedsInstall ||
                   !pushStatus.bridgeActive ||
                   !pushStatus.configured
                 }
               >
-                {pushBusy ? "Working…" : pushDiverged ? "Re-register this device" : "Turn on notifications"}
+                {pushBusy === "enable"
+                  ? "Working…"
+                  : pushDiverged
+                    ? "Re-register this device"
+                    : "Turn on notifications"}
               </button>
             )}
 
@@ -346,8 +359,8 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
                 only when THIS one is active — "I get nothing on my phone" is
                 usually asked from a laptop. */}
             {(pushActive || (pushStatus.deviceCount || 0) > 0) && (
-              <button className="btn-secondary" onClick={handleTestPush} disabled={pushBusy}>
-                {pushBusy ? "Sending…" : "Send test notification"}
+              <button className="btn-secondary" onClick={handleTestPush} disabled={!!pushBusy}>
+                {pushBusy === "test" ? "Sending…" : "Send test notification"}
               </button>
             )}
           </div>
@@ -360,7 +373,7 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
         )}
 
         {pushStatus?.supported && (
-          <PushDiagnostics status={pushStatus} />
+          <PushDiagnostics status={pushStatus} lastDetail={lastDetail} />
         )}
       </div>
 
@@ -609,16 +622,20 @@ function PushStatusBanner({ status, diverged, casualModeActive }) {
  * in: no, service worker: waiting, permission: default" is. It stays collapsed
  * so it costs nothing when things work.
  */
-function PushDiagnostics({ status }) {
+function PushDiagnostics({ status, lastDetail }) {
   const rows = [
     ["Browser permission", status.permission],
     ["Running as", status.displayMode],
+    ["Browser engine", status.engine],
     ["Signed in (verified session)", status.bridgeActive ? "yes" : "no"],
     ["Service worker", status.swState],
     ["This browser subscribed", status.subscribedHere ? "yes" : "no"],
     ["Registered to your account", status.registeredOnServer ? "yes" : "no"],
     ["Devices on your account", String(status.deviceCount ?? 0)],
     ["Push configured in this build", status.configured ? "yes" : "no"],
+    // Only present after an attempt. This is the row that distinguishes
+    // failures the friendly copy renders identically.
+    ...(lastDetail ? [["Last attempt", lastDetail]] : []),
   ];
 
   return (

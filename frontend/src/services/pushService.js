@@ -141,6 +141,31 @@ function isAndroid() {
 }
 
 /**
+ * Which browser engine is actually hosting us.
+ *
+ * Reported in diagnostics because it materially changes Web Push behaviour and
+ * is invisible from inside an installed PWA. On Android the app is a WebAPK
+ * backed by whichever browser installed it — Samsung Internet on a Samsung
+ * device is entirely plausible, and its notification permission handling is not
+ * Chrome's. Diagnosing a permission request that never resolves without knowing
+ * which engine is refusing it is guesswork, and this removes the guess.
+ *
+ * Order matters: Samsung Internet and Edge both include "Chrome" in their UA.
+ */
+function browserEngine() {
+  if (typeof navigator === "undefined") return "unknown";
+  const ua = navigator.userAgent;
+  if (/SamsungBrowser\/(\d+)/.test(ua)) return `Samsung Internet ${RegExp.$1}`;
+  if (/EdgA?\/(\d+)/.test(ua)) return `Edge ${RegExp.$1}`;
+  if (/OPR\/(\d+)/.test(ua)) return `Opera ${RegExp.$1}`;
+  if (/FxiOS|Firefox\/(\d+)/.test(ua)) return `Firefox ${RegExp.$1 || ""}`.trim();
+  if (/CriOS\/(\d+)/.test(ua)) return `Chrome iOS ${RegExp.$1}`;
+  if (/Chrome\/(\d+)/.test(ua)) return `Chrome ${RegExp.$1}`;
+  if (/Safari\//.test(ua)) return "Safari";
+  return "unknown";
+}
+
+/**
  * iOS Safari in a browser tab can register a service worker and will happily
  * report `PushManager` in window, but `pushManager.subscribe()` rejects until
  * the app is installed to the Home Screen. Detecting it up front turns a
@@ -363,7 +388,7 @@ export async function subscribeToPush() {
     }
 
     if (permission === "denied") {
-      return { success: false, reason: PUSH_REASON.PERMISSION_DENIED };
+      return { success: false, reason: PUSH_REASON.PERMISSION_DENIED, detail: "requestPermission → denied" };
     }
     if (permission !== "granted") {
       // Still "default": the prompt was dismissed without a choice, or the
@@ -379,6 +404,11 @@ export async function subscribeToPush() {
         reason: isStandalone()
           ? PUSH_REASON.OS_PERMISSION_NEEDED
           : PUSH_REASON.PERMISSION_DISMISSED,
+        // The literal value the API handed back. `undefined` here would mean the
+        // browser only supports the legacy callback form of requestPermission,
+        // which Promise.race resolves instantly — a completely different fault
+        // from a prompt that was dismissed, and indistinguishable without this.
+        detail: `requestPermission → ${String(permission)}`,
       };
     }
 
@@ -439,6 +469,10 @@ export async function subscribeToPush() {
       success: false,
       reason,
       error: err?.message,
+      // Name plus message: a DOMException like NotAllowedError or
+      // AbortError from pushManager.subscribe() points somewhere completely
+      // different from a timeout, and the friendly copy erases that difference.
+      detail: `${err?.name || "Error"}: ${err?.message || "unknown"}`,
     };
   }
 }
@@ -565,6 +599,7 @@ export async function getPushStatus() {
     // means and how it is recovered, so it belongs in the diagnostics.
     displayMode: isStandalone() ? "installed app" : "browser tab",
     platform: isAndroid() ? "android" : isIos() ? "ios" : "other",
+    engine: browserEngine(),
   };
 
   if (!supported) return status;
