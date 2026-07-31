@@ -2766,6 +2766,29 @@ export default async function handler(req, res) {
       return handleParcelPreset(req, res);
     case "parcel-presets":
       return handleParcelPresets(req, res);
+
+    // ── Pedigree attestation (T3 §2.4, BREEDER_STATE_MODEL §9.35) ──
+    //
+    // These have nothing to do with payments, and they live here for exactly the
+    // reason `parcel-preset` does — see this file's header: **Vercel Hobby allows
+    // 12 serverless functions and every file in `api/` counts as one.** Shipping
+    // them as `api/attest-pedigree.js` + `api/pedigree-keys.js` took the count to
+    // 14 and the production deploy failed with "No more than 12 Serverless
+    // Functions can be added to a Deployment on the Hobby plan". The build itself
+    // was fine, which is why local verification never caught it.
+    //
+    // The handlers are UNCHANGED. They moved to `api/_lib/`, which Vercel does not
+    // route or count (leading underscore), and are dispatched from here. Imported
+    // dynamically so an ordinary webhook request does not pay `jose`'s cold start.
+    case "attest-pedigree": {
+      const { default: attestPedigree } = await import("./_lib/attestPedigree.js");
+      return attestPedigree(req, res);
+    }
+    case "pedigree-keys": {
+      const { default: pedigreeKeys } = await import("./_lib/pedigreeKeys.js");
+      return pedigreeKeys(req, res);
+    }
+
     // ── Cash pickup handoff (in-person, no money movement) ──
     case "handoff-issue":
       return handleHandoffIssue(req, res);

@@ -52,8 +52,8 @@
  */
 
 import { SignJWT, importPKCS8 } from "jose";
-import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
-import { handleCorsPreFlight } from "./_lib/cors.js";
+import { verifyPrivyToken } from "./verifyPrivyToken.js";
+import { handleCorsPreFlight } from "./cors.js";
 
 /** Must match ATTESTATION_PURPOSE in src/services/pedigreeDocument.js. */
 const ATTESTATION_PURPOSE = "aquadex.pedigree.attestation.v1";

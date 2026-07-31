@@ -48,7 +48,15 @@ import {
 } from "./pedigreeDocument";
 
 /** Where a platform attestation is requested (T3 §2.4). */
-export const ATTEST_URL = "/api/attest-pedigree";
+/**
+ * Where a platform attestation is requested (T3 §2.4).
+ *
+ * An action on `/api/stripe`, not its own route, because **Vercel Hobby allows 12
+ * serverless functions and every file in `api/` is one** — see §9.35. It was
+ * `/api/attest-pedigree` until the deploy failed at 14 functions. The handler itself
+ * is unchanged and lives in `api/_lib/attestPedigree.js`.
+ */
+export const ATTEST_URL = "/api/stripe?action=attest-pedigree";
 
 export const TRANSFER_FAILURE = Object.freeze({
   NO_SPECIMEN: "noSpecimen",

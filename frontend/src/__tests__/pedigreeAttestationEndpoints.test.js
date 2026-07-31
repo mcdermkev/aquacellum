@@ -64,16 +64,16 @@ beforeAll(async () => {
   delete process.env.PEDIGREE_ATTESTATION_PRIVATE_KEY;
   delete process.env.PEDIGREE_ATTESTATION_PUBLIC_KEY;
   delete process.env.PEDIGREE_ATTESTATION_KEY_ID;
-  unconfiguredAttest = (await import("../../api/attest-pedigree.js?unconfigured")).default;
-  unconfiguredKeys = (await import("../../api/pedigree-keys.js?unconfigured")).default;
+  unconfiguredAttest = (await import("../../api/_lib/attestPedigree.js?unconfigured")).default;
+  unconfiguredKeys = (await import("../../api/_lib/pedigreeKeys.js?unconfigured")).default;
 
   const { privateKey, publicKey } = await generateKeyPair("ES256", { extractable: true });
   process.env.PEDIGREE_ATTESTATION_PRIVATE_KEY = await exportPKCS8(privateKey);
   process.env.PEDIGREE_ATTESTATION_PUBLIC_KEY = await exportSPKI(publicKey);
   process.env.PEDIGREE_ATTESTATION_KEY_ID = KID;
 
-  attestHandler = (await import("../../api/attest-pedigree.js?configured")).default;
-  keysHandler = (await import("../../api/pedigree-keys.js?configured")).default;
+  attestHandler = (await import("../../api/_lib/attestPedigree.js?configured")).default;
+  keysHandler = (await import("../../api/_lib/pedigreeKeys.js?configured")).default;
   client = await import("../services/pedigreeAttestation");
 });
 

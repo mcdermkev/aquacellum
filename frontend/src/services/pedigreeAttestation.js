@@ -42,8 +42,20 @@ import {
   pedigreeTrustLevel,
 } from "./pedigreeDocument";
 
-/** Where the public verification keys live (§9.29). */
-export const PEDIGREE_KEYS_URL = "/api/pedigree-keys";
+/**
+ * Where the public verification keys live (§9.29).
+ *
+ * An action on `/api/stripe` rather than its own route, because **Vercel Hobby allows
+ * 12 serverless functions and every file in `api/` is one** (§9.35). It was
+ * `/api/pedigree-keys` until the deploy failed at 14. The handler is unchanged, in
+ * `api/_lib/pedigreeKeys.js`.
+ *
+ * Safe to move because **nothing has ever been attested**: both routes returned 404
+ * in production until now, so no issued document references the old path. A published
+ * JWKS URL is otherwise a contract — if attestations exist, do not move this, add a
+ * rewrite.
+ */
+export const PEDIGREE_KEYS_URL = "/api/stripe?action=pedigree-keys";
 
 /** The only algorithm accepted. Pinned, so a document cannot propose a weaker one. */
 export const ATTESTATION_ALG = "ES256";

@@ -606,7 +606,7 @@ describe("the attestation endpoint reuses the trust root without reusing the cre
   // SUPABASE_JWT_SECRET, HS256, or a `role` claim, so an unstripped scan fails on
   // the very prose documenting the guard.
   const ENDPOINT = readFileSync(
-    fileURLToPath(new URL("../../api/attest-pedigree.js", import.meta.url)),
+    fileURLToPath(new URL("../../api/_lib/attestPedigree.js", import.meta.url)),
     "utf8"
   )
     .replace(/\/\*[\s\S]*?\*\//g, "")

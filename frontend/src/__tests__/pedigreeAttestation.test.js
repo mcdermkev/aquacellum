@@ -376,7 +376,7 @@ describe("fetchAttestationKeys", () => {
 describe("the key endpoint publishes what the verifier needs", () => {
   // Comments stripped — trap 6.3, which this work stream has now tripped twice.
   const ENDPOINT = readFileSync(
-    fileURLToPath(new URL("../../api/pedigree-keys.js", import.meta.url)),
+    fileURLToPath(new URL("../../api/_lib/pedigreeKeys.js", import.meta.url)),
     "utf8"
   )
     .replace(/\/\*[\s\S]*?\*\//g, "")

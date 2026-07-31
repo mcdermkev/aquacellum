@@ -37,7 +37,7 @@
  */
 
 import { importSPKI, exportJWK } from "jose";
-import { setCorsHeaders } from "./_lib/cors.js";
+import { setCorsHeaders } from "./cors.js";
 
 const ATTESTATION_ALG = "ES256";
 
