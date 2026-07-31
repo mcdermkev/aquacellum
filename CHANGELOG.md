@@ -4,6 +4,48 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [0.10.12] — 2026-07-31
+
+### 🥚 Life Stages, Certificate Transfer, and a Spec That Turned Out To Be Wrong
+
+T3 §2.7 and the §2.5 service layer. **No behaviour change yet** — nothing issues a pedigree document, for the reason in the last section.
+
+#### 🥚 "Eggs" is now representable (§2.7)
+A listing carried free-text `age` ("4 weeks") and `size` ("0.75 inches") plus an `isBatch` boolean, so **nothing in the app could tell an egg from a juvenile.** That blocked the whole sold-lot model, because §4.2's rule — eggs and fry are counts, individually tracked fish are certificates — had nothing to read.
+
+New `utils/lifeStage.js`: `Egg` / `Fry` / `Juvenile` / `Adult`, with `null` for unrecorded (following `survivalRate`'s convention, not sex's stored `"Unsexed"` — there's no legacy default here to match). The batch listing wizard gains the control, plus the cohort rule stated where a seller meets it and an explicit hatch-risk warning on eggs, because selling eggs is a materially different transaction and that belongs in the copy rather than in a support conversation.
+
+**The two rules fail in opposite directions, on purpose.** `canBeCertificated` fails **closed** on unknown — it's only asked before issuing a certificate, and §4.1 means one issued for something that turns out to be an egg can never be withdrawn. `requiresCohort` fails **open** — it gates a restriction on the seller, and every listing that predates this field has no stage, so failing closed would break all of them. Absence of a stage is not evidence of an egg. Asserted explicitly, because that asymmetry is the thing most likely to get "simplified" into a bug.
+
+#### 📜 Certificate transfer service (§2.5)
+`services/certificateTransfer.js` — seals and best-effort attests a pedigree, then creates the buyer's record from it. Three decisions worth keeping:
+
+- **It does not use `relayMintSpecimen`.** That enqueues an on-chain mint (receiving an existing certificate is not a birth — minting again creates a second token for one fish) and sets `breeder` from the owner, destroying the provenance fact the premium rests on. A buyer is not the breeder.
+- **The seller's `sireId`/`damId` are dropped to 0, not copied.** Looks like data loss; it's the opposite. Those serials name *different fish* on the buyer's device, so copying them manufactures a false pedigree that resolves silently. Ancestry moves into the document; `serialAtIssue` preserves the numbers.
+- **Attestation is best-effort.** Unavailable attestation yields an *unattested* document, never a failed sale — losing the pedigree would be strictly worse than recording one nobody signed.
+
+Idempotent on the document hash, because a webhook firing twice would otherwise create a duplicate certificate that §4.1 says could never be deleted.
+
+#### ⛔ The spec was wrong: fulfillment is the wrong moment (§9.30)
+"Seal a document at fulfillment" **cannot work.** Settlement runs in the Stripe webhook (`api/stripe.js`), server-side. The pedigree lives in the **seller's browser** — §3 makes Dexie authoritative for serial → specimen resolution precisely because the contract can't be trusted for it. A Vercel function cannot read that IndexedDB.
+
+Also found: `relayPurchaseSpecimen`, the function whose "if it exists" no-op prompted §9.25 in the first place, is **exported but called from no component.** The Stripe flow superseded it, so fixing it would have fixed nothing.
+
+The document has to be sealed client-side by the seller *before* the sale — realistically at listing time, where the listing already copies `sireId`/`damId` and already syncs with a public projection. Filed as **§9.30** with both candidate transports. Blocked on a decision, not on effort, and the recommended option touches `publicListingProjection.js`, which is uncommitted as part of the in-flight listings RLS work.
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `frontend/src/utils/lifeStage.js` | **New.** Stage vocabulary + the §4.2 rules |
+| `frontend/src/services/certificateTransfer.js` | **New.** Issue, receive, transfer |
+| `frontend/src/components/BatchListingWizard.jsx` | Life-stage control, cohort notice, hatch-risk warning |
+| `frontend/src/__tests__/lifeStage.test.js` | **New.** 19 tests |
+| `frontend/src/__tests__/certificateTransfer.test.js` | **New.** 21 tests |
+| `docs/BREEDER_TOOLS_T3_PEDIGREE_DOCUMENT_SPEC.md` | §2.5 corrected; §2.7 done |
+| `docs/BREEDER_STATE_MODEL.md` | §9.30 added |
+
+---
+
 ## [0.10.11] — 2026-07-30
 
 ### 🔎 Attestations Are Now Actually Verified

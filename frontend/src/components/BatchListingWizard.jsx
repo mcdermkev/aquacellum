@@ -4,6 +4,13 @@ import { db } from "../db";
 import { addXp, XP_ACTIONS } from "../utils/xp";
 import { syncListingToCloud } from "../services/cloudSync";
 import { loadSpeciesCareLookup, deriveCareFields } from "../utils/speciesCarePrefill";
+import {
+  LIFE_STAGE,
+  LIFE_STAGE_COPY,
+  LIFE_STAGE_OPTIONS,
+  lifeStageOptionLabel,
+  requiresCohort,
+} from "../utils/lifeStage";
 
 /**
  * BatchListingWizard — Guided form for sellers to list fry batches for sale.
@@ -35,6 +42,11 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
   const [carePrefilled, setCarePrefilled] = useState(false);
 
   // Enhanced batch listing fields
+  // Life stage is the structured field that `age`/`size` never were: those are free
+  // text ("4 weeks", "0.75 inches"), so nothing could tell an egg from a juvenile —
+  // which is what §4.2's certificate-vs-cohort rule needs to read. Defaults to Fry
+  // because this wizard sells fry batches; a seller listing eggs must say so.
+  const [lifeStage, setLifeStage] = useState(LIFE_STAGE.FRY);
   const [fryAge, setFryAge] = useState("");
   const [fryAgeUnit, setFryAgeUnit] = useState("weeks");
   const [frySize, setFrySize] = useState("");
@@ -60,6 +72,7 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
       setError(null);
       setCarePrefilled(false);
       // Reset enhanced fields
+      setLifeStage(LIFE_STAGE.FRY);
       setFryAge("");
       setFryAgeUnit("weeks");
       setFrySize("");
@@ -176,7 +189,9 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
         isBatch: true,
         active: true,
         description: description || "",
-        // Enhanced batch fields
+        // Structured stage, plus the free-text detail it does NOT replace. `age` and
+        // `size` remain useful to a buyer; they just can't be reasoned about.
+        lifeStage,
         age: fryAge ? `${fryAge} ${fryAgeUnit}` : "",
         size: frySize ? `${frySize} inches` : "",
         diet: diet || "",
@@ -447,6 +462,40 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
               <div style={{ fontSize: "0.65rem", color: "#34d399", marginTop: "0.35rem" }}>
                 ✨ Prefilled from {selectedSpawn.commonName} care data — edit anything.
               </div>
+            )}
+          </div>
+
+          {/* Life stage — the structured field. `age` and `size` below stay as
+              free-text detail, but they cannot answer "is this an egg?", and §4.2's
+              rule (eggs and fry are counts, not certificates) needs an answer. */}
+          <div>
+            <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+              {LIFE_STAGE_COPY.stageLabel.pro}
+            </label>
+            <select
+              value={lifeStage}
+              onChange={(e) => setLifeStage(e.target.value)}
+              style={{ width: "100%", padding: "0.65rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "6px", outline: "none" }}
+            >
+              {LIFE_STAGE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {lifeStageOptionLabel(option)}
+                </option>
+              ))}
+            </select>
+
+            {requiresCohort(lifeStage) && (
+              <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", margin: "0.4rem 0 0", lineHeight: 1.45 }}>
+                {LIFE_STAGE_COPY.cohortOnly.pro}
+              </p>
+            )}
+
+            {/* Selling eggs is a materially different transaction, and the risk
+                belongs here rather than in a support conversation afterwards. */}
+            {lifeStage === LIFE_STAGE.EGG && (
+              <p style={{ fontSize: "0.68rem", color: "var(--accent-amber)", margin: "0.35rem 0 0", lineHeight: 1.45 }}>
+                ⚠️ {LIFE_STAGE_COPY.hatchRisk.pro}
+              </p>
             )}
           </div>
 
