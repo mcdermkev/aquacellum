@@ -771,7 +771,7 @@ export function DataPortabilityWidget({ casualModeActive, onToggleMode }) {
         margin: "0 auto 3rem auto",
       }}
     >
-      <SonarPreferences />
+      <SonarPreferences casualModeActive={casualModeActive} />
     </div>
 
     {/* ─── Install App ─── */}

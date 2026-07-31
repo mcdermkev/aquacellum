@@ -17,9 +17,16 @@
  * sends push to users with an active push_subscriptions row. Both channels
  * are best-effort and independent — a failure in one doesn't block the other.
  *
- * Route: GET|POST /api/retention  (Vercel Cron sends GET with a Bearer
- * CRON_SECRET header automatically when CRON_SECRET is configured — same
- * pattern as ?action=auto-release in stripe.js).
+ * Routes:
+ *   GET|POST /api/retention                   → the daily cron job below.
+ *     (Vercel Cron sends GET with a Bearer CRON_SECRET header automatically when
+ *     CRON_SECRET is configured — same pattern as ?action=auto-release in
+ *     stripe.js.)
+ *   POST     /api/retention?action=test-push  → _lib/testPush.js. User-facing
+ *     "send me a test notification", authorized by the caller's own minted
+ *     Supabase JWT rather than CRON_SECRET. Folded onto this function because
+ *     api/ is at Vercel Hobby's 12-function limit (see
+ *     src/__tests__/serverlessFunctionBudget.test.js).
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -81,6 +88,22 @@ function emailOptedIn(prefs) {
 }
 
 export default async function handler(req, res) {
+  // ── Action dispatcher ─────────────────────────────────────────────────────
+  // `?action=test-push` is a USER-facing route and must be handled before the
+  // cron gate below, which would otherwise 401 it. It carries its own
+  // authorization (a verified minted Supabase JWT, so a caller can only target
+  // their own wallet) — see _lib/testPush.js.
+  //
+  // It hangs off this function rather than getting its own `api/*.js` file
+  // because `api/` is at Vercel Hobby's 12-function ceiling; a 13th file fails
+  // the deploy. `src/__tests__/serverlessFunctionBudget.test.js` pins that, and
+  // `api/stripe.js` established this dispatch pattern. Imported dynamically so
+  // the daily cron run does not pay `jose`'s cold start.
+  if (req.query?.action === "test-push") {
+    const { default: handleTestPush } = await import("./_lib/testPush.js");
+    return handleTestPush(req, res);
+  }
+
   if (!isCronRequest(req)) {
     return res.status(401).json({ error: "Unauthorized" });
   }

@@ -5,8 +5,9 @@
  * 
  * Architecture:
  * - Privy handles authentication (email/Google → embedded wallet)
- * - We bridge the authenticated wallet address into a Supabase session
- *   using a custom JWT minted by the /api/mint-session Vercel function
+ * - We bridge the authenticated wallet address into Supabase requests using a
+ *   custom JWT minted by the /api/mint-session Vercel function, attached as the
+ *   Authorization header (NOT as a GoTrue session — see _mintedToken below)
  * - The mint-session endpoint verifies the Privy token via JWKS, then
  *   signs a Supabase-compatible JWT with the wallet_address claim
  * - RLS policies on Supabase use `auth.jwt()->>'wallet_address'` to
@@ -36,8 +37,28 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 let _walletForHeader = null;
 
 /**
+ * The Supabase-compatible JWT minted by /api/mint-session, attached directly to
+ * outgoing REST requests.
+ *
+ * WHY NOT supabase.auth.setSession(): GoTrue validates its own tokens. It
+ * requires `sub` to be a UUID and then looks that UUID up in `auth.users`.
+ * These are wallet-identified users minted from a Privy DID — there is no
+ * `auth.users` row and `sub` is not a UUID — so setSession failed with
+ * "invalid claim: sub claim must be a UUID" (and a 400 on /auth/v1/user),
+ * dropping every session into the anon fallback. Making `sub` a UUID alone
+ * would not fix it; the user lookup would still miss.
+ *
+ * PostgREST does not care: it verifies the HS256 signature against the project
+ * JWT secret and reads `role` and `wallet_address` straight from the claims.
+ * Attaching the token here therefore reaches the `authenticated` role and the
+ * listings_*_jwt policies without involving GoTrue at all.
+ */
+let _mintedToken = null;
+
+/**
  * Custom fetch wrapper that injects the x-wallet-address header
- * into every Supabase request for RLS enforcement.
+ * into every Supabase request for RLS enforcement, plus the minted JWT when the
+ * bridge is active.
  *
  * IMPORTANT: supabase-js passes `options.headers` as a `Headers` instance.
  * Spreading it with `{...options.headers}` yields an empty object and silently
@@ -49,6 +70,12 @@ function supabaseFetchWithWallet(url, options = {}) {
   const headers = new Headers(options.headers || {});
   if (_walletForHeader) {
     headers.set("x-wallet-address", _walletForHeader);
+  }
+  // Never send the minted token to GoTrue — it would reject it and these are
+  // exactly the /auth/v1/* 400s this approach exists to avoid. `apikey` stays
+  // the anon key either way; Supabase requires it on every request.
+  if (_mintedToken && !String(url).includes("/auth/v1/")) {
+    headers.set("Authorization", "Bearer " + _mintedToken);
   }
   return fetch(url, { ...options, headers });
 }
@@ -66,9 +93,11 @@ export const supabase = createClient(
   SUPABASE_ANON_KEY || "placeholder-key",
   {
     auth: {
-      // Enable session persistence now that we have a proper JWT bridge.
-      // The minted token (1hr lifetime) is stored in localStorage and the
-      // client will use it as the Authorization header on every request.
+      // The minted JWT is NOT stored as a GoTrue session — it is attached per
+      // request by supabaseFetchWithWallet (see _mintedToken). These settings
+      // are therefore inert for the bridge; they only govern any legacy stored
+      // session, which the cleanup block below clears. Re-minting happens on
+      // mount via AuthContext and every 5 min via refreshSession.
       autoRefreshToken: false, // We handle refresh via re-minting from Privy token
       persistSession: true,
       storageKey: "aquacellum-reef-auth",
@@ -206,6 +235,9 @@ export async function resolveProfileWallet(walletAddress) {
 export async function authenticateWithWallet(walletAddress, privyToken = null) {
   _currentWallet = walletAddress ? walletAddress.toLowerCase() : walletAddress;
   _isAuthenticated = false;
+  // Drop any previous token up front so a failed re-auth cannot keep using a
+  // stale one for a different wallet.
+  _mintedToken = null;
   setWalletHeader(walletAddress);
 
   if (!isSupabaseConfigured()) {
@@ -228,21 +260,13 @@ export async function authenticateWithWallet(walletAddress, privyToken = null) {
         const { access_token, expires_at } = await response.json();
 
         if (access_token) {
-          // Set the real Supabase session with the minted JWT.
-          // We use a dummy refresh token since we handle re-minting ourselves
-          // when the Privy token refreshes.
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token,
-            refresh_token: access_token, // No refresh token — we re-mint from Privy
-          });
-
-          if (!sessionError) {
-            _isAuthenticated = true;
-            _sessionExpiresAt = expires_at;
-            return { success: true, authenticated: true };
-          } else {
-            console.warn("[Reef] setSession failed, falling back to header mode:", sessionError.message);
-          }
+          // Attach the minted JWT directly rather than handing it to GoTrue via
+          // supabase.auth.setSession() — see the _mintedToken note above for why
+          // that path cannot work for wallet-identified users.
+          _mintedToken = access_token;
+          _isAuthenticated = true;
+          _sessionExpiresAt = expires_at;
+          return { success: true, authenticated: true };
         }
       } else if (response.status === 503) {
         // JWT bridge not configured (SUPABASE_JWT_SECRET missing) — expected in some envs
@@ -257,7 +281,13 @@ export async function authenticateWithWallet(walletAddress, privyToken = null) {
     }
   }
 
-  // Fallback: anon mode with x-wallet-address header
+  // Fallback: anon mode with x-wallet-address header.
+  // NOTE: since the RLS lockdown (20260729) this fallback can no longer READ
+  // aquadex_listings — anon has no SELECT policy on it, and the read comes back
+  // as an empty array with no error. cloudSync.pullCloudListings retries against
+  // the aquadex_listings_public view so the in-app board degrades instead of
+  // rendering empty. Writes still work here via the x-wallet-address policies.
+  _mintedToken = null;
   // Clear any lingering session so requests use the anon key + header
   try {
     await supabase.auth.signOut({ scope: "local" });
@@ -291,15 +321,12 @@ export async function refreshSession(privyToken) {
     if (response.ok) {
       const { access_token, expires_at } = await response.json();
       if (access_token) {
-        const { error } = await supabase.auth.setSession({
-          access_token,
-          refresh_token: access_token,
-        });
-        if (!error) {
-          _isAuthenticated = true;
-          _sessionExpiresAt = expires_at;
-          return true;
-        }
+        // Swap the attached token in place — same reasoning as
+        // authenticateWithWallet: GoTrue is not involved.
+        _mintedToken = access_token;
+        _isAuthenticated = true;
+        _sessionExpiresAt = expires_at;
+        return true;
       }
     }
   } catch (err) {
@@ -327,6 +354,8 @@ export function sessionNeedsRefresh() {
 export async function clearReefSession() {
   _currentWallet = null;
   _isAuthenticated = false;
+  _mintedToken = null;
+  _sessionExpiresAt = null;
   setWalletHeader(null);
   try {
     await supabase.auth.signOut();
@@ -341,6 +370,23 @@ export async function clearReefSession() {
  */
 export function getCurrentWallet() {
   return _currentWallet;
+}
+
+/**
+ * The minted Supabase JWT, for calling our OWN authenticated API routes.
+ *
+ * Exposed so a server route can establish the caller's wallet from a signature
+ * it can verify (HS256 over SUPABASE_JWT_SECRET) instead of trusting a wallet
+ * passed in the request body. `/api/retention?action=test-push` uses this: a
+ * body parameter would let anyone send a push to any wallet, whereas this token
+ * can only have been obtained by passing Privy verification at
+ * `/api/mint-session`, and it carries the wallet as a signed claim.
+ *
+ * Returns null in anon/header fallback mode, which callers should treat as
+ * "not signed in" rather than retrying.
+ */
+export function getMintedToken() {
+  return _mintedToken;
 }
 
 /**

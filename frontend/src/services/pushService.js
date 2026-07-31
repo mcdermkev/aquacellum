@@ -1,29 +1,137 @@
 /**
  * pushService.js
- * 
+ *
  * Client-side Web Push subscription management.
- * Handles: service worker registration, push subscription, 
- * and syncing subscription to Supabase.
+ * Handles: service worker registration, push subscription, and syncing the
+ * subscription to Supabase.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * WHY THIS FILE WAS REWRITTEN (2026-07-31)
+ *
+ * Web Push had never delivered a single notification, and the reason it stayed
+ * invisible for so long was in here: `subscribeToPush()` `console.warn`ed a
+ * failed Supabase insert and then returned `{ success: true }`. So the UI lit
+ * the toggle up over a write that never landed. `push_subscriptions` read 0 rows
+ * in production while its unique index had already served 11 scans — attempts
+ * were arriving and being rejected, and nothing said so.
+ *
+ * Three rules now hold:
+ *
+ *   1. NEVER report success unless a row actually landed. Every failure path
+ *      returns `{ success: false, reason }` with a machine-readable reason.
+ *   2. NEVER leave the browser and the server disagreeing. If the DB write
+ *      fails after `pushManager.subscribe()` succeeded, the browser-side
+ *      subscription is rolled back — otherwise the browser holds a live
+ *      subscription the server cannot target, `getSubscription()` reports
+ *      "subscribed", and the user is stuck in a state no retry escapes.
+ *   3. Require the JWT bridge, and say so. The RLS policy on
+ *      `push_subscriptions` is `wallet_address = auth.jwt()->>'wallet_address'`
+ *      with no `x-wallet-address` fallback (deliberately — see the baseline
+ *      migration). Without a minted token the insert is silently denied, so we
+ *      check up front and return `not_signed_in` rather than discovering it as
+ *      an opaque 42501.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { supabase, getCurrentWallet, isSupabaseConfigured } from "./supabaseClient";
+import {
+  supabase,
+  getCurrentWallet,
+  isSupabaseConfigured,
+  isFullyAuthenticated,
+  getMintedToken,
+} from "./supabaseClient";
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+
+/**
+ * Machine-readable failure reasons. The UI maps these to copy; keep them stable
+ * because SonarPreferences switches on them and the tests assert them.
+ */
+export const PUSH_REASON = {
+  UNSUPPORTED: "unsupported",
+  IOS_NEEDS_INSTALL: "ios_needs_install",
+  NOT_CONFIGURED: "not_configured",
+  SUPABASE_NOT_CONFIGURED: "supabase_not_configured",
+  NOT_SIGNED_IN: "not_signed_in",
+  PERMISSION_DENIED: "permission_denied",
+  NO_PROFILE: "no_profile",
+  NOT_AUTHORIZED: "not_authorized",
+  STORAGE_FAILED: "storage_failed",
+  SUBSCRIBE_FAILED: "subscribe_failed",
+};
+
+/**
+ * Human-readable copy for each reason. Kept beside the codes so a new reason
+ * cannot be added without someone deciding what the user is told.
+ */
+export const PUSH_REASON_MESSAGE = {
+  [PUSH_REASON.UNSUPPORTED]: "This browser doesn't support push notifications.",
+  [PUSH_REASON.IOS_NEEDS_INSTALL]:
+    "On iPhone and iPad, notifications only work once the app is installed to your Home Screen. Use the Install App option in Settings first.",
+  [PUSH_REASON.NOT_CONFIGURED]:
+    "Push notifications aren't configured on this deployment yet.",
+  [PUSH_REASON.SUPABASE_NOT_CONFIGURED]:
+    "Notifications need the cloud connection, which isn't configured here.",
+  [PUSH_REASON.NOT_SIGNED_IN]:
+    "Sign in to enable notifications — we need a verified session to register this device.",
+  [PUSH_REASON.PERMISSION_DENIED]:
+    "Notifications are blocked. You'll need to allow them in your browser's site settings, since the app can't re-ask once they're blocked.",
+  [PUSH_REASON.NO_PROFILE]:
+    "Finish setting up your profile first, then enable notifications.",
+  [PUSH_REASON.NOT_AUTHORIZED]:
+    "Your session wasn't accepted. Try signing out and back in.",
+  [PUSH_REASON.STORAGE_FAILED]:
+    "We couldn't register this device for notifications. Please try again.",
+  [PUSH_REASON.SUBSCRIBE_FAILED]:
+    "Your browser couldn't create a push subscription. Please try again.",
+};
+
+/** Copy for a reason code, with a safe fallback for anything unmapped. */
+export function pushReasonMessage(reason) {
+  return PUSH_REASON_MESSAGE[reason] || "Couldn't enable notifications.";
+}
 
 /**
  * Check if Web Push is supported in this browser.
  */
 export function isPushSupported() {
   return (
+    typeof navigator !== "undefined" &&
     "serviceWorker" in navigator &&
+    typeof window !== "undefined" &&
     "PushManager" in window &&
     "Notification" in window
   );
 }
 
+/** iOS/iPadOS, which gates Web Push on the PWA being installed (16.4+). */
+function isIos() {
+  if (typeof navigator === "undefined") return false;
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+}
+
+/** Whether the app is running as an installed PWA. */
+function isStandalone() {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia?.("(display-mode: standalone)").matches === true ||
+    window.navigator.standalone === true
+  );
+}
+
+/**
+ * iOS Safari in a browser tab can register a service worker and will happily
+ * report `PushManager` in window, but `pushManager.subscribe()` rejects until
+ * the app is installed to the Home Screen. Detecting it up front turns a
+ * confusing generic failure into an actionable instruction.
+ */
+export function iosNeedsInstall() {
+  return isIos() && !isStandalone();
+}
+
 /**
  * Get the current push permission state.
- * Returns: 'granted' | 'denied' | 'default' (not asked yet)
+ * Returns: 'granted' | 'denied' | 'default' (not asked yet) | 'unsupported'
  */
 export function getPushPermission() {
   if (!isPushSupported()) return "unsupported";
@@ -62,110 +170,347 @@ async function ensureServiceWorker() {
 }
 
 /**
+ * Map a PostgREST/Postgres error to a reason code.
+ *
+ * These three are the ones this table can realistically produce, and each needs
+ * different user-facing copy — which is the whole argument against the old
+ * `console.warn` and carry on:
+ *   42501 — RLS rejected the row. The JWT had no usable `wallet_address` claim.
+ *   23503 — FK violation: no `profiles` row for this wallet yet.
+ *   42P10 — no unique constraint matching the ON CONFLICT target. Should be
+ *           impossible now that the constraint is in a migration, but if the
+ *           table is ever recreated by hand this is the symptom, and a generic
+ *           "try again" would send someone hunting in the wrong place.
+ */
+function reasonForDbError(error) {
+  switch (error?.code) {
+    case "42501":
+      return PUSH_REASON.NOT_AUTHORIZED;
+    case "23503":
+      return PUSH_REASON.NO_PROFILE;
+    default:
+      return PUSH_REASON.STORAGE_FAILED;
+  }
+}
+
+/**
+ * Roll back a browser-side subscription after a failed server write.
+ *
+ * Without this the browser keeps a subscription the server has no record of.
+ * `getActiveSubscription()` then reports "subscribed", the UI shows push as on,
+ * and re-subscribing returns the SAME endpoint from the browser cache — so the
+ * user cannot retry their way out. Best-effort: if the rollback itself fails
+ * there is nothing further to do, and the reported result is still a failure.
+ */
+async function rollbackSubscription(subscription) {
+  try {
+    await subscription?.unsubscribe();
+  } catch (err) {
+    console.warn("[Push] Rollback of browser subscription failed:", err?.message);
+  }
+}
+
+/**
  * Subscribe the user to push notifications.
- * 
+ *
  * Flow:
- * 1. Register service worker
- * 2. Request notification permission
- * 3. Create push subscription with VAPID key
- * 4. Store subscription in Supabase
- * 
- * @returns {{ success: boolean, error?: string }}
+ *   1. Preflight: support, iOS install gate, VAPID key, Supabase, signed-in
+ *   2. Register service worker
+ *   3. Request permission
+ *   4. Create push subscription with the VAPID key
+ *   5. Store the subscription in Supabase — and roll back step 4 if that fails
+ *
+ * @returns {Promise<{ success: boolean, reason?: string, error?: string }>}
  */
 export async function subscribeToPush() {
+  // ── 1. Preflight ─────────────────────────────────────────────────────────
+  // Every one of these used to be either a bare `false` with a prose string or
+  // (worse) not checked at all. Checking them here means the caller gets a
+  // reason it can act on before we start mutating browser state.
   if (!isPushSupported()) {
-    return { success: false, error: "Push notifications not supported in this browser" };
+    return { success: false, reason: PUSH_REASON.UNSUPPORTED };
+  }
+
+  if (iosNeedsInstall()) {
+    return { success: false, reason: PUSH_REASON.IOS_NEEDS_INSTALL };
   }
 
   if (!VAPID_PUBLIC_KEY) {
-    return { success: false, error: "VAPID public key not configured" };
+    // This was the production failure: VITE_VAPID_PUBLIC_KEY was never set in
+    // Vercel, and Vite inlines VITE_* at build time, so the shipped bundle had
+    // `undefined` here. Logged loudly because it is a deployment fault, not a
+    // user one, and nothing in the UI can resolve it.
+    console.error(
+      "[Push] VITE_VAPID_PUBLIC_KEY is not set in this build — push cannot work. " +
+        "Set it in the Vercel project env and redeploy."
+    );
+    return { success: false, reason: PUSH_REASON.NOT_CONFIGURED };
   }
 
+  if (!isSupabaseConfigured()) {
+    return { success: false, reason: PUSH_REASON.SUPABASE_NOT_CONFIGURED };
+  }
+
+  const walletAddress = getCurrentWallet();
+
+  // The RLS policy is JWT-only. In header/anon fallback mode the insert is
+  // denied, so there is no point subscribing the browser first.
+  if (!walletAddress || !isFullyAuthenticated()) {
+    return { success: false, reason: PUSH_REASON.NOT_SIGNED_IN };
+  }
+
+  let subscription = null;
+
   try {
-    // Step 1: Register service worker
+    // ── 2. Register service worker ─────────────────────────────────────────
     const registration = await ensureServiceWorker();
 
-    // Step 2: Request permission
+    // ── 3. Request permission ──────────────────────────────────────────────
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
-      return { success: false, error: "Notification permission denied" };
+      return { success: false, reason: PUSH_REASON.PERMISSION_DENIED };
     }
 
-    // Step 3: Subscribe to push
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-    });
+    // ── 4. Subscribe ───────────────────────────────────────────────────────
+    // Reuse an existing browser subscription when there is one: calling
+    // subscribe() again with the same applicationServerKey returns the same
+    // endpoint anyway, and reusing it keeps the upsert idempotent.
+    subscription =
+      (await registration.pushManager.getSubscription()) ||
+      (await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      }));
 
-    // Step 4: Store in Supabase
-    const walletAddress = getCurrentWallet();
-    if (walletAddress && isSupabaseConfigured()) {
-      const { error } = await supabase
-        .from("push_subscriptions")
-        .upsert(
-          {
-            wallet_address: walletAddress,
-            subscription: subscription.toJSON(),
-            user_agent: navigator.userAgent,
-          },
-          { onConflict: "wallet_address,subscription" }
-        );
+    // ── 5. Store in Supabase ───────────────────────────────────────────────
+    const { error } = await supabase.from("push_subscriptions").upsert(
+      {
+        wallet_address: walletAddress,
+        subscription: subscription.toJSON(),
+        user_agent: navigator.userAgent,
+      },
+      { onConflict: "wallet_address,subscription" }
+    );
 
-      if (error) {
-        console.warn("[Push] Failed to store subscription:", error);
-      }
+    if (error) {
+      // THE BUG THIS REWRITE EXISTS FOR: this used to console.warn and fall
+      // through to `return { success: true }`.
+      console.error("[Push] Failed to store subscription:", error);
+      await rollbackSubscription(subscription);
+      return {
+        success: false,
+        reason: reasonForDbError(error),
+        error: error.message,
+      };
     }
 
     return { success: true };
   } catch (err) {
     console.error("[Push] Subscribe failed:", err);
-    return { success: false, error: err.message };
+    if (subscription) await rollbackSubscription(subscription);
+    return {
+      success: false,
+      reason: PUSH_REASON.SUBSCRIBE_FAILED,
+      error: err?.message,
+    };
   }
 }
 
 /**
  * Unsubscribe from push notifications.
- * Removes the subscription from the browser and Supabase.
+ * Removes the subscription from the browser and from Supabase.
  */
 export async function unsubscribeFromPush() {
-  if (!isPushSupported()) return { success: false, error: "Not supported" };
+  if (!isPushSupported()) {
+    return { success: false, reason: PUSH_REASON.UNSUPPORTED };
+  }
 
   try {
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.getSubscription();
 
-    if (subscription) {
-      // Unsubscribe from browser
-      await subscription.unsubscribe();
+    if (!subscription) return { success: true };
 
-      // Remove from Supabase
-      const walletAddress = getCurrentWallet();
-      if (walletAddress && isSupabaseConfigured()) {
-        await supabase
-          .from("push_subscriptions")
-          .delete()
-          .eq("wallet_address", walletAddress)
-          .eq("subscription", subscription.toJSON());
+    const endpoint = subscription.endpoint;
+
+    // Delete the server row FIRST. If the browser unsubscribe succeeded but the
+    // delete failed, the server would keep pushing to a dead endpoint until
+    // send-push's 410 cleanup happened to reap it. This order fails safe: a
+    // failed delete leaves a still-valid subscription rather than an orphan.
+    const walletAddress = getCurrentWallet();
+    if (walletAddress && isSupabaseConfigured()) {
+      // Match on the endpoint inside the JSON rather than passing the whole
+      // object to `.eq("subscription", ...)`. Whole-jsonb equality depends on
+      // key order and exact serialization, so the old filter could match
+      // nothing and silently leave the row behind. The endpoint is the stable
+      // identity of a subscription.
+      const { error } = await supabase
+        .from("push_subscriptions")
+        .delete()
+        .eq("wallet_address", walletAddress)
+        .eq("subscription->>endpoint", endpoint);
+
+      if (error) {
+        console.error("[Push] Failed to remove stored subscription:", error);
+        return {
+          success: false,
+          reason: reasonForDbError(error),
+          error: error.message,
+        };
       }
     }
 
+    await subscription.unsubscribe();
     return { success: true };
   } catch (err) {
-    return { success: false, error: err.message };
+    console.error("[Push] Unsubscribe failed:", err);
+    return { success: false, reason: PUSH_REASON.STORAGE_FAILED, error: err?.message };
   }
 }
 
 /**
- * Check if the user currently has an active push subscription.
+ * Check if the user currently has an active push subscription in this browser.
  */
 export async function getActiveSubscription() {
   if (!isPushSupported()) return null;
 
   try {
     const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
-    return subscription;
+    return await registration.pushManager.getSubscription();
   } catch {
     return null;
+  }
+}
+
+/**
+ * The full, honest push state for this device.
+ *
+ * Settings previously offered a push toggle with no way to see whether push was
+ * actually armed — which is why a total outage looked like a working feature.
+ * This is the query behind that display, and it deliberately reports the
+ * browser and the server SEPARATELY: `subscribedHere && !registeredOnServer` is
+ * the exact divergence the old code could produce, and naming it is what makes
+ * it fixable instead of mysterious.
+ *
+ * @returns {Promise<{
+ *   supported: boolean,
+ *   configured: boolean,
+ *   permission: string,
+ *   bridgeActive: boolean,
+ *   iosNeedsInstall: boolean,
+ *   subscribedHere: boolean,
+ *   registeredOnServer: boolean,
+ *   deviceCount: number,
+ *   blocked: boolean,
+ *   active: boolean,
+ * }>}
+ */
+export async function getPushStatus() {
+  const supported = isPushSupported();
+  const permission = getPushPermission();
+  const walletAddress = getCurrentWallet();
+  const bridgeActive = !!walletAddress && isFullyAuthenticated();
+
+  const status = {
+    supported,
+    configured: !!VAPID_PUBLIC_KEY,
+    permission,
+    bridgeActive,
+    iosNeedsInstall: iosNeedsInstall(),
+    subscribedHere: false,
+    registeredOnServer: false,
+    deviceCount: 0,
+    blocked: permission === "denied",
+    active: false,
+  };
+
+  if (!supported) return status;
+
+  const subscription = await getActiveSubscription();
+  status.subscribedHere = !!subscription;
+
+  // Only the server can answer "will a notification actually reach me", so the
+  // check goes to the table rather than trusting the browser.
+  if (bridgeActive && isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabase
+        .from("push_subscriptions")
+        .select("subscription")
+        .eq("wallet_address", walletAddress);
+
+      if (!error && Array.isArray(data)) {
+        status.deviceCount = data.length;
+        status.registeredOnServer =
+          !!subscription &&
+          data.some((row) => row?.subscription?.endpoint === subscription.endpoint);
+      }
+    } catch (err) {
+      console.warn("[Push] Could not read stored subscriptions:", err?.message);
+    }
+  }
+
+  status.active =
+    permission === "granted" && status.subscribedHere && status.registeredOnServer;
+
+  return status;
+}
+
+/**
+ * Ask the server to send a test notification to this account's devices.
+ *
+ * This is the one action that answers "do notifications actually work" without
+ * anyone having to read a log, and it exercises the real delivery path end to
+ * end: our API route → the send-push Edge Function → VAPID-signed, encrypted
+ * push → the push service → the service worker's `push` handler. Nothing is
+ * stubbed, so a success here means a real notification was accepted for
+ * delivery.
+ *
+ * The interesting result is `delivered: false, reason: "no_devices"`: the send
+ * succeeded but the account has no rows in `push_subscriptions`. That was the
+ * state of every single user in production, and it is the answer the old UI had
+ * no way to show.
+ *
+ * @returns {Promise<{ success: boolean, delivered?: boolean, reason?: string, message?: string }>}
+ */
+export async function sendTestPush() {
+  const token = getMintedToken();
+
+  // The route authorizes off this token's signed wallet claim, so without it
+  // there is nothing to send and no point making the request.
+  if (!token) {
+    return {
+      success: false,
+      reason: PUSH_REASON.NOT_SIGNED_IN,
+      message: pushReasonMessage(PUSH_REASON.NOT_SIGNED_IN),
+    };
+  }
+
+  try {
+    const response = await fetch("/api/retention?action=test-push", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const body = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: body.error || `Test send failed (HTTP ${response.status})`,
+        reason: body.reason,
+      };
+    }
+
+    return {
+      success: true,
+      delivered: !!body.delivered,
+      reason: body.reason,
+      message: body.message,
+    };
+  } catch (err) {
+    return { success: false, message: `Test send failed: ${err.message}` };
   }
 }
