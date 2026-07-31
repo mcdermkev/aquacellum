@@ -27,13 +27,36 @@
  *   alive    = fry − (every departure type), floored at 0
  *
  * SURVIVAL RATE IS `(fry − lost) / fry` — culls, sales, and promotions are
- * deliberately NOT counted against it. For culls and sales this is the
- * pre-existing product definition, preserved rather than corrected because every
- * displayed number and every achievement threshold is calibrated to it (whether
- * an intentional cull is a survival failure is BREEDER_STATE_MODEL §9.21). For
- * promotions it is the only defensible reading: a promoted fry is the *success*
- * case, and a rate that dropped when a breeder pulled their best keepers out
- * would be actively misleading.
+ * deliberately NOT counted against it. For promotions it is the only defensible
+ * reading: a promoted fry is the *success* case, and a rate that dropped when a
+ * breeder pulled their best keepers out would be actively misleading.
+ *
+ * ── §9.21 IS DECIDED: CULLS STAY OUT. (2026-07-31) ──────────────────────────
+ *
+ * This was carried as an open product question for the whole stream. Resolved as
+ * KEEP, and the reasoning is recorded here rather than only in the register because
+ * this is the line somebody would "fix":
+ *
+ *   1. A cull is an INTENTIONAL removal, not a failure to survive. The two are
+ *      different events and the rate is named for one of them. `loss` already
+ *      carries the fish that died.
+ *   2. **Culls are already counted where it matters.** `cull` is in
+ *      `DEPARTURE_TYPES`, so it reduces `alive` — and therefore `totalFrySurvived`,
+ *      which is what the Century Club / Five Hundred Strong / Thousand Keeper
+ *      achievements read. So a heavy culler already shows fewer fish. What they do
+ *      not show is a *worse survival rate*, which is correct: they did not lose
+ *      those fish, they chose against them.
+ *   3. Changing it would RETRACT badges, not recalibrate them. `survival_90`
+ *      ("Strong Lines") and `survival_95` ("Elite Genetics") gate on
+ *      `bestSurvivalRate`, and both are shareable through
+ *      `generateSpawnMilestoneCard` — so cards are already in the wild. Counting
+ *      culls would take earned badges away from breeders who did nothing wrong and
+ *      make a previously-shared card disagree with the app.
+ *
+ * If this is ever revisited, the honest version is a SECOND, separately-named
+ * metric ("retention including culls") rather than redefining this one — for the
+ * same reason §9.11 shows verified sales and self-reported "Rehomed" side by side
+ * instead of merging them.
  *
  * `narration` and `note` rows carry no counts and are excluded from the math.
  *

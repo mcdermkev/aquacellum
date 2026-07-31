@@ -93,7 +93,23 @@ export function FoundersDashboard({ casualModeActive }) {
     );
   }
 
-  const { kpis, charts, social, poseidon, health } = data;
+  const { kpis, charts, social, trends, health } = data;
+
+  /**
+   * Trend props for a card, or nothing at all.
+   *
+   * `undefined` rather than `null` when unmeasurable, so `KPICard` renders no arrow
+   * instead of an empty one. Only three KPIs get a trend — see `getKpiTrends` for why
+   * the other three deliberately do not (§9.24).
+   */
+  const trendFor = (key) => {
+    const t = trends?.[key];
+    if (!t) return {};
+    return {
+      trend: `${t.changePercent >= 0 ? "+" : ""}${t.changePercent}%`,
+      trendUp: t.up,
+    };
+  };
 
   return (
     <div style={styles.container}>
@@ -120,20 +136,29 @@ export function FoundersDashboard({ casualModeActive }) {
 
       {/* KPI Strip */}
       <div style={styles.kpiStrip}>
-        {/* No `trend` on these cards. The two that had one carried a hardcoded
-            "+18%" / "+15%" that was never computed from anything — a fabricated
-            growth figure on a founders dashboard. Removed rather than faked; a
-            real trend needs a prior-period comparison that isn't queried yet. */}
+        {/* THREE cards carry a trend, not six (§9.24). The two that used to carry
+            one had a hardcoded "+18%" / "+15%" computed from nothing; §9.22 removed
+            those. These are real prior-period comparisons, and each is absent rather
+            than zero when it cannot be measured.
+
+            The other three are trend-free on purpose: Specimens Minted is a
+            cumulative counter (its rate of change answers nothing GMV doesn't),
+            Protocol Fees is a fixed fraction of GMV (trending both prints the same
+            number twice), and Live Activity is a point-in-time gauge with no
+            meaningful prior period. See getKpiTrends. */}
         <KPICard
           label="Total Users"
           value={formatNumber(kpis.totalUsers)}
+          subtitle={trends?.newUsers ? `new signups vs prior ${trends.windowDays}d` : undefined}
           icon="👥"
+          {...trendFor("newUsers")}
         />
         <KPICard
           label="DAU"
           value={formatNumber(kpis.dau)}
-          subtitle="today"
+          subtitle={trends?.dau ? `today · active vs prior ${trends.windowDays}d` : "today"}
           icon="📈"
+          {...trendFor("dau")}
         />
         <KPICard
           label="Specimens Minted"
@@ -149,8 +174,9 @@ export function FoundersDashboard({ casualModeActive }) {
         <KPICard
           label="Marketplace GMV"
           value={formatCurrency(kpis.marketplaceGMV)}
-          subtitle="settled orders"
+          subtitle={trends?.marketplaceGMV ? `settled · vs prior ${trends.windowDays}d` : "settled orders"}
           icon="🏪"
+          {...trendFor("marketplaceGMV")}
         />
         <KPICard
           label="Live Activity"
@@ -251,56 +277,15 @@ export function FoundersDashboard({ casualModeActive }) {
           </div>
         </div>
 
-        {/* AI Poseidon Queries.
-            `poseidon` is null when the metric has no source — there is no
-            `poseidon_queries` table and api/ai.js doesn't log intents. It used to
-            render a hardcoded 42/67/23/31 breakdown, so this panel showed a
-            convincing pie chart of numbers that were typed into the source code.
-            Now it says so. */}
-        <div className="glass-card" style={styles.bottomCard}>
-          <h3 style={styles.chartTitle}>AI Poseidon Queries</h3>
-          {poseidon ? (
-            <div style={styles.poseidonContainer}>
-              <ResponsiveContainer width="100%" height={160}>
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: "Identify", value: poseidon.identify },
-                      { name: "Husbandry", value: poseidon.husbandry },
-                      { name: "Diet", value: poseidon.diet },
-                      { name: "General", value: poseidon.general },
-                    ]}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={40}
-                    outerRadius={65}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    <Cell fill={CHART_COLORS.blue} />
-                    <Cell fill={CHART_COLORS.green} />
-                    <Cell fill={CHART_COLORS.amber} />
-                    <Cell fill={CHART_COLORS.purple} />
-                  </Pie>
-                  <Tooltip />
-                  <Legend
-                    wrapperStyle={{ fontSize: "11px" }}
-                    iconType="circle"
-                    iconSize={8}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <p style={styles.poseidonTotal}>
-                {formatNumber(poseidon.total)} total queries
-              </p>
-            </div>
-          ) : (
-            <NoDataPanel
-              height={190}
-              detail="Query intents aren't being recorded yet, so there's nothing to break down."
-            />
-          )}
-        </div>
+        {/* The "AI Poseidon Queries" panel was HERE and is gone (§9.23, decided
+            2026-07-31). It had no source — no `poseidon_queries` table, and
+            `api/ai.js` logs no intents — so after §9.22 stripped its invented
+            42/67/23/31 breakdown it read "not tracked" permanently.
+            Removed rather than instrumented: the four intent buckets it wanted do
+            not exist anywhere, so instrumenting meant building a classifier first,
+            and it would log what users ask about their animals. A panel that says
+            "not tracked" forever is clutter, not honesty. See getPoseidonStats's
+            replacement note in services/foundersAnalytics.js. */}
 
         {/* Operational Health */}
         <div className="glass-card" style={styles.bottomCard}>
@@ -681,20 +666,6 @@ const styles = {
     color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.03em",
-  },
-
-  // Poseidon
-  poseidonContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    marginTop: "0.5rem",
-  },
-  poseidonTotal: {
-    fontSize: "0.8rem",
-    color: "var(--text-secondary)",
-    marginTop: "0.5rem",
-    fontWeight: 500,
   },
 
   // Health

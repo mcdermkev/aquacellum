@@ -47,6 +47,10 @@ function thenable(result) {
   const chain = {
     eq: () => chain,
     gte: () => chain,
+    // `lt` is what the §9.24 trend windows use to make a half-open range
+    // `[from, to)`, so the two periods can't double-count a row on the boundary.
+    lt: () => chain,
+    lte: () => chain,
     in: () => chain,
     order: () => chain,
     limit: () => chain,
@@ -177,9 +181,69 @@ describe("nothing is fabricated", () => {
     expect(series[0].userOps).toBe(1);
   });
 
-  it("poseidon stats are null — the metric has no source at all", async () => {
-    tables["poseidon_queries"] = null;
-    expect(await analytics.getPoseidonStats()).toBeNull();
+  it("the Poseidon metric is GONE, not merely null (§9.23)", () => {
+    // Decided 2026-07-31: removed rather than instrumented. The four intent buckets
+    // it wanted don't exist anywhere, so instrumenting meant building a classifier
+    // first — and a guessed intent is the §12.1 fabrication. A panel reading
+    // "not tracked" forever is clutter, not honesty.
+    expect(analytics.getPoseidonStats).toBeUndefined();
+  });
+});
+
+// ─── KPI trends (§9.24) ─────────────────────────────────────────────────────
+//
+// Three KPIs get a trend, not six. The point of these tests is the SAME point the
+// rest of this file makes: a trend that cannot be measured must be absent, never 0%.
+
+describe("describeTrend", () => {
+  it("computes a rounded percentage and a direction", () => {
+    expect(analytics.describeTrend(120, 100)).toMatchObject({ changePercent: 20, up: true });
+    expect(analytics.describeTrend(80, 100)).toMatchObject({ changePercent: -20, up: false });
+  });
+
+  it("returns null for an unreadable side rather than assuming zero", () => {
+    expect(analytics.describeTrend(null, 100)).toBeNull();
+    expect(analytics.describeTrend(100, null)).toBeNull();
+    expect(analytics.describeTrend(null, null)).toBeNull();
+  });
+
+  it("returns null for a ZERO baseline — there is no percentage from nothing", () => {
+    // The tempting answers are both wrong: 0% understates a real start, and
+    // Infinity/100% is invented. Absent is the truth.
+    expect(analytics.describeTrend(50, 0)).toBeNull();
+    expect(analytics.describeTrend(0, 0)).toBeNull();
+  });
+
+  it("treats a flat period as up, so it renders as +0% not a fall", () => {
+    expect(analytics.describeTrend(100, 100)).toMatchObject({ changePercent: 0, up: true });
+  });
+
+  it("rejects non-finite input instead of printing NaN%", () => {
+    expect(analytics.describeTrend(Number.NaN, 100)).toBeNull();
+    expect(analytics.describeTrend(Number.POSITIVE_INFINITY, 100)).toBeNull();
+  });
+});
+
+describe("getKpiTrends", () => {
+  it("returns exactly the three trended KPIs, and the window it used", async () => {
+    const trends = await analytics.getKpiTrends(30);
+    expect(trends.windowDays).toBe(30);
+    // The §9.24 decision, asserted: three, not six. `totalSpecimens` is cumulative,
+    // `protocolFees` is a fixed fraction of GMV, `liveActivity` is a point-in-time
+    // gauge — none of them get an arrow.
+    expect(Object.keys(trends).sort()).toEqual(["dau", "marketplaceGMV", "newUsers", "windowDays"]);
+    expect(trends).not.toHaveProperty("totalSpecimens");
+    expect(trends).not.toHaveProperty("protocolFees");
+    expect(trends).not.toHaveProperty("liveActivity");
+  });
+
+  it("reports null per-metric when a source cannot be read", async () => {
+    tables["profiles"] = null;
+    tables["orders"] = null;
+    const trends = await analytics.getKpiTrends(30);
+    expect(trends.newUsers).toBeNull();
+    expect(trends.dau).toBeNull();
+    expect(trends.marketplaceGMV).toBeNull();
   });
 });
 
@@ -201,9 +265,16 @@ describe("source guards — the fabrication paths are gone", () => {
     expect(SERVICE).not.toContain("Math.random");
   });
 
-  it("no hardcoded Poseidon breakdown remains", () => {
+  it("no hardcoded Poseidon breakdown remains, and nor does the panel", () => {
     expect(SERVICE).not.toMatch(/identify:\s*42/);
     expect(SERVICE).not.toMatch(/husbandry:\s*67/);
+    // §9.23: the whole panel and its query are gone.
+    expect(SERVICE).not.toContain('from("poseidon_queries")');
+    expect(SERVICE).not.toContain("getPoseidonStats");
+    expect(DASHBOARD).not.toContain("AI Poseidon Queries");
+    expect(DASHBOARD).not.toContain("poseidonContainer");
+    // The endpoint HEALTH check is a different thing and stays.
+    expect(SERVICE).toContain("Poseidon AI");
   });
 
   it("no query targets a nonexistent table", () => {
@@ -220,15 +291,32 @@ describe("source guards — the fabrication paths are gone", () => {
     expect(body).not.toContain('return "$0"');
   });
 
-  it("the fabricated trend badges are removed", () => {
+  it("the fabricated trend badges are removed, and the real ones are computed", () => {
     expect(DASHBOARD).not.toContain('trend="+18%"');
     expect(DASHBOARD).not.toContain('trend="+15%"');
+    // §9.24: a trend now comes from `trends`, never a literal.
+    expect(DASHBOARD).toContain("trendFor(");
+    expect(DASHBOARD).not.toMatch(/trend="\+\d+%"/);
   });
 
-  it("charts and the Poseidon panel have an explicit no-data state", () => {
+  it("renders NO trend props at all when a trend is unmeasurable", () => {
+    // `undefined` rather than `null`, so KPICard shows no arrow instead of an empty
+    // one — the same "absent, not zero" rule the currency formatter follows.
+    const idx = DASHBOARD.indexOf("const trendFor");
+    expect(idx).toBeGreaterThan(-1);
+    const body = DASHBOARD.slice(idx, idx + 320);
+    expect(body).toContain("return {}");
+  });
+
+  it("only the three decided KPIs get a trend", () => {
+    const strip = DASHBOARD.slice(DASHBOARD.indexOf("styles.kpiStrip"), DASHBOARD.indexOf("Charts Row"));
+    const trended = (strip.match(/trendFor\("(\w+)"\)/g) || []).map((m) => m.match(/"(\w+)"/)[1]);
+    expect(trended.sort()).toEqual(["dau", "marketplaceGMV", "newUsers"]);
+  });
+
+  it("charts still have an explicit no-data state", () => {
     expect(DASHBOARD).toContain("NoDataPanel");
     expect(DASHBOARD).toContain("!charts.userGrowth");
     expect(DASHBOARD).toContain("!charts.protocolActivity");
-    expect(DASHBOARD).toContain("{poseidon ? (");
   });
 });

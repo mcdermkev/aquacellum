@@ -291,28 +291,131 @@ export async function getSocialEngagement() {
   };
 }
 
-/**
- * AI Poseidon query breakdown — counts by intent type.
- */
-export async function getPoseidonStats() {
-  // NOT TRACKED. There is no `poseidon_queries` table anywhere in the schema, and
-  // `api/ai.js` does not log query intents, so this metric has no source at all.
-  //
-  // This used to return a hardcoded `{ identify: 42, husbandry: 67, diet: 23,
-  // general: 31, total: 163 }` whenever Supabase was unconfigured, and zeros
-  // otherwise — invented figures on a founders dashboard. Returning null makes the
-  // absence visible so it either gets instrumented or gets removed from the UI,
-  // rather than quietly reading as data.
-  const rows = await safeQuery(() => supabase.from("poseidon_queries").select("intent"));
-  if (!rows) return null;
+// ─── The Poseidon query breakdown is GONE (§9.23, decided 2026-07-31) ───────
+//
+// `getPoseidonStats` used to live here. It had no source: there is no
+// `poseidon_queries` table anywhere in the schema and `api/ai.js` does not log
+// query intents. §9.22 had already stripped its invented fallback (a hardcoded
+// `{ identify: 42, husbandry: 67, … }`) so the panel honestly read "not tracked".
+//
+// Resolved by REMOVING it rather than instrumenting it, for two reasons:
+//
+//   1. The four buckets the panel wanted — identify / husbandry / diet / general —
+//      do not exist anywhere. Nothing classifies a query's intent, so instrumenting
+//      meant building a classifier first, and a guessed intent label is exactly the
+//      fabrication §12.1 forbids.
+//   2. It logs what users ask an assistant about their animals. That needs a
+//      retention policy and a disclosure, which is a real cost to carry for a metric
+//      nobody had asked a decision of.
+//
+// A panel that says "not tracked" forever is clutter, not honesty. If this comes
+// back, the intent classifier and the retention decision come first.
+//
+// NOTE: "Poseidon AI" remains in `getOperationalHealth` below. That is an endpoint
+// reachability check, not query analytics, and it is unaffected.
 
-  const counts = { identify: 0, husbandry: 0, diet: 0, general: 0 };
-  for (const row of rows) {
-    const intent = String(row.intent || "general").toLowerCase();
-    if (counts[intent] !== undefined) counts[intent] += 1;
-    else counts.general += 1;
-  }
-  return { ...counts, total: rows.length };
+// ─────────────────────────────────────────────────────────────────────────────
+// KPI TRENDS (§9.24)
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// THREE KPIs GET A TREND, NOT SIX. The cards that carried `+18%` / `+15%` had them
+// hardcoded, and §9.22 removed those rather than replacing them with a guess. This is
+// the real version, and it is deliberately partial:
+//
+//   dau            → is engagement growing? The reason to look at this dashboard.
+//   newUsers       → is acquisition working? A DELTA, not a percentage of the
+//                    cumulative total — "total users is up 2% " tells you nothing,
+//                    because a cumulative counter can only ever go up.
+//   marketplaceGMV → is the marketplace growing?
+//
+// Deliberately NOT trended, and this is the substance of the §9.24 decision:
+//
+//   totalSpecimens → cumulative, same objection as total users, and no decision
+//                    hangs on its rate of change that GMV does not answer better.
+//   protocolFees   → a fixed fraction of GMV. Trending both prints the same
+//                    percentage twice and implies two independent signals.
+//   liveActivity   → a point-in-time gauge. "How many cams are live right now" has
+//                    no meaningful prior period; a trend on it is noise with an arrow.
+//
+// Every trend is `null` when either side of the comparison is unreadable. A missing
+// trend renders as nothing at all, never as 0%.
+
+/** Default comparison window. 30 days against the 30 before it. */
+export const TREND_WINDOW_DAYS = 30;
+
+/**
+ * Compare two consecutive windows and describe the change.
+ *
+ * `null` for any of: an unreadable side, or a zero baseline. A zero baseline is not
+ * a 0% or an infinite rise — there is no percentage from nothing, and printing one
+ * would be the same class of confident-wrong number this dashboard was fixed for.
+ * The caller renders nothing in that case.
+ *
+ * @param {number|null} current
+ * @param {number|null} previous
+ * @returns {{changePercent: number, up: boolean, current: number, previous: number}|null}
+ */
+export function describeTrend(current, previous) {
+  if (current == null || previous == null) return null;
+  if (!Number.isFinite(current) || !Number.isFinite(previous)) return null;
+  if (previous === 0) return null;
+  const changePercent = Math.round(((current - previous) / previous) * 100);
+  return { changePercent, up: changePercent >= 0, current, previous };
+}
+
+/** Rows in `table.column` inside `[from, to)`. `null` when unreadable. */
+async function countInWindow(table, column, from, to) {
+  const { count } = await safeCount(table, (q) => q.gte(column, from).lt(column, to));
+  return count;
+}
+
+/** Settled cents in `orders` inside `[from, to)`. `null` when unreadable. */
+async function gmvInWindow(from, to) {
+  const rows = await safeQuery(() =>
+    supabase
+      .from("orders")
+      .select("total_paid_cents")
+      .in("status", SETTLED_ORDER_STATUSES)
+      .gte("created_at", from)
+      .lt("created_at", to)
+  );
+  if (!rows) return null;
+  return rows.reduce((sum, r) => sum + (Number(r.total_paid_cents) || 0), 0);
+}
+
+/**
+ * The three trends, each `null` when it cannot be measured.
+ *
+ * Six queries — two windows for each of three KPIs. That cost was the whole §9.24
+ * question, which is why it is three and not six.
+ *
+ * @param {number} [days]
+ */
+export async function getKpiTrends(days = TREND_WINDOW_DAYS) {
+  const now = new Date().toISOString();
+  const windowStart = daysAgo(days);
+  const priorStart = daysAgo(days * 2);
+
+  const [
+    usersNow, usersPrior,
+    dauNow, dauPrior,
+    gmvNow, gmvPrior,
+  ] = await Promise.all([
+    countInWindow("profiles", "created_at", windowStart, now),
+    countInWindow("profiles", "created_at", priorStart, windowStart),
+    // Active-in-window, by last activity. Same column `getDAU` uses.
+    countInWindow("profiles", "updated_at", windowStart, now),
+    countInWindow("profiles", "updated_at", priorStart, windowStart),
+    gmvInWindow(windowStart, now),
+    gmvInWindow(priorStart, windowStart),
+  ]);
+
+  return {
+    windowDays: days,
+    newUsers: describeTrend(usersNow, usersPrior),
+    dau: describeTrend(dauNow, dauPrior),
+    marketplaceGMV: describeTrend(gmvNow, gmvPrior),
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -405,8 +508,8 @@ export async function fetchAllDashboardData() {
     userGrowth,
     protocolActivity,
     socialEngagement,
-    poseidonStats,
     operationalHealth,
+    trends,
   ] = await Promise.all([
     getTotalUsers(),
     getDAU(),
@@ -417,8 +520,8 @@ export async function fetchAllDashboardData() {
     getUserGrowth(30),
     getProtocolActivity(30),
     getSocialEngagement(),
-    getPoseidonStats(),
     getOperationalHealth(),
+    getKpiTrends(),
   ]);
 
   return {
@@ -435,7 +538,8 @@ export async function fetchAllDashboardData() {
       protocolActivity,
     },
     social: socialEngagement,
-    poseidon: poseidonStats,
+    // `poseidon` is gone — see the note where getPoseidonStats used to be (§9.23).
+    trends,
     health: operationalHealth,
   };
 }
