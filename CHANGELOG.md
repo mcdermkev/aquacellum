@@ -4,6 +4,46 @@ All notable changes to AquaDex are documented here.
 
 ---
 
+## [0.10.13] — 2026-07-31
+
+### 🧬 A Full-Sibling Pairing Now Says So
+
+Closes [`BREEDER_STATE_MODEL.md`](docs/BREEDER_STATE_MODEL.md) §9.18, and it was worse than the register described.
+
+#### 🐛 Every band edge was off by a tier, not one
+`getRiskLevel` used `<=` at each threshold, so a COI landed in the tier **below** the relationship it actually represents:
+
+| COI | Relationship | Old tier | Old copy said | Now |
+|---|---|---|---|---|
+| 6.25% | first cousins | `low` | "generally acceptable" | `moderate` |
+| 12.5% | half siblings | `moderate` | "equivalent to first-cousin mating" | `high` |
+| **25%** | **full siblings / parent × offspring** | `high` | **"equivalent to half-sibling mating"** | `critical` |
+
+The 25% row is the one that mattered. A **full-sibling pairing** — the single most important warning this feature produces — was labelled one tier low *and* described to the breeder as a less severe relationship. The number was right and the words were wrong, which is worse than either alone, because the number is what a breeder trusts least and the sentence is what they read.
+
+§10.1 makes the relatedness check a REQUIRED capability precisely so an inbreeding warning is never withheld from anyone. Understating one is that same failure with extra steps.
+
+#### 🔧 The fix
+Thresholds are now inclusive at the bottom of each tier, exported as `COI_BANDS` with each value documented as the Wright coefficient it is (`FIRST_COUSIN: 6.25`, `HALF_SIBLING: 12.5`, `FULL_SIBLING: 25`). Every recommendation string names the relationship it actually covers.
+
+Comparisons stay exact rather than epsilon-guarded, because `coiPercent` arrives already rounded to two decimals — noted in the code, since removing that rounding would silently require tolerances.
+
+**A critical pairing is still not blocked.** Line-breeding is legitimate and deliberate (T1 §1.3); the COI is information the breeder acts on, not a gate. Asserted, because raising the severity must not turn a warning into a block.
+
+#### 🧱 Internal
+- New `coiRiskBands.test.js`, 14 tests pinning **every** edge — the original defect was that no test covered them.
+- The two T1 tests that asserted the old behaviour carried comments saying they were pinning current behaviour and citing §9.18 as the known issue. Both updated; they were written to change with this fix.
+
+#### Modified Files
+| File | Change |
+|------|--------|
+| `frontend/src/utils/coiCalculator.js` | `COI_BANDS` exported; bands inclusive at tier floor; recommendations re-aligned |
+| `frontend/src/__tests__/coiRiskBands.test.js` | **New.** 14 tests |
+| `frontend/src/__tests__/pairingAssessment.test.js` | Two assertions updated from `high` to `critical` |
+| `docs/BREEDER_STATE_MODEL.md` | §9.18 closed |
+
+---
+
 ## [0.10.12] — 2026-07-31
 
 ### 🥚 Life Stages, Certificate Transfer, and a Spec That Turned Out To Be Wrong

@@ -64,11 +64,12 @@ describe("relatedness — the cases the old engine got wrong", () => {
     });
     expect(res.coi.available).toBe(true);
     expect(res.coi.coi).toBeCloseTo(25, 5);
-    // coiCalculator's band is `<= 25 → "high"`, so exactly 25% lands in "high"
-    // and "critical" is reserved for >25%. Asserting actual engine behavior
-    // rather than changing its boundaries, which spec §4 puts out of scope.
-    // The band edge is logged as BREEDER_STATE_MODEL §9.18.
-    expect(res.coi.riskLevel).toBe("high");
+    // §9.18 CLOSED: 25% IS the full-sibling coefficient, so it now lands in
+    // "critical". The old band was `<= 25 → "high"`, which labelled the single most
+    // important warning this feature produces one tier too low and described it to
+    // the breeder as "equivalent to half-sibling mating".
+    expect(res.coi.riskLevel).toBe("critical");
+    expect(res.coi.recommendation.toLowerCase()).toContain("full-sibling");
   });
 
   it("FIRST COUSINS report a non-zero COI — the old engine said 0% 'Safe'", async () => {
@@ -215,7 +216,10 @@ describe("canProceed blocks ONLY a known same-sex pair (spec §1.2)", () => {
     ];
     const res = await assessPairing({ sire: byId(10), dam: byId(11) });
     expect(res.coi.coi).toBeCloseTo(25, 5);
-    expect(res.coi.riskLevel).toBe("high");
+    // Critical since §9.18 — and still not blocked. Line-breeding is a legitimate,
+    // deliberate practice; the COI is information the breeder acts on, not a gate
+    // (T1 §1.3). The severity going UP must not turn the warning into a block.
+    expect(res.coi.riskLevel).toBe("critical");
     expect(res.canProceed).toBe(true);
   });
 

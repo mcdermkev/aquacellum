@@ -181,28 +181,74 @@ export function calculateCOIFromMaps(sireMap, damMap) {
   return { coi: coiPercent, riskLevel, sharedAncestors, paths, recommendation };
 }
 
+/**
+ * Wright coefficients for the canonical relationships, as PERCENTAGES.
+ *
+ * These are the band edges, and each one is the exact COI of the relationship it is
+ * named for — which is the whole point of naming them (BREEDER_STATE_MODEL §9.18).
+ */
+export const COI_BANDS = Object.freeze({
+  /** First cousins share two grandparents: 2 × (1/2)^5 = 6.25% */
+  FIRST_COUSIN: 6.25,
+  /** Half siblings share one parent: (1/2)^3 = 12.5% */
+  HALF_SIBLING: 12.5,
+  /** Full siblings, and parent × offspring: 25% */
+  FULL_SIBLING: 25,
+});
+
+/**
+ * Risk tier for a COI percentage.
+ *
+ * **Fixed (§9.18): every band edge was off by a tier.** The old code used `<=` at each
+ * threshold, so a value landed in the tier BELOW the relationship it actually
+ * represents:
+ *
+ *   | COI | Relationship | Old tier | Old copy said | Now |
+ *   |-----|--------------|----------|---------------|-----|
+ *   | 6.25 | first cousins | low | "generally acceptable" | moderate |
+ *   | 12.5 | half siblings | moderate | "first-cousin mating" | high |
+ *   | 25 | FULL siblings / parent×offspring | high | "half-sibling mating" | critical |
+ *
+ * The 25% case is the one that mattered: a **full-sibling pairing** — the single most
+ * important warning this feature produces — was labelled `high` rather than
+ * `critical`, and described to the breeder as "equivalent to half-sibling mating".
+ * The number was right and the words were wrong, which is worse than either, because
+ * the number is what a breeder trusts least and the sentence is what they read.
+ *
+ * §10.1 makes the relatedness check a REQUIRED capability specifically so an
+ * inbreeding warning is never withheld. Understating one is the same failure with
+ * extra steps.
+ *
+ * Comparisons are exact rather than epsilon-guarded because `coiPercent` arrives
+ * already rounded to two decimals (`Math.round(coi * 10000) / 100`), so 6.25, 12.5,
+ * and 25 are hit exactly. Remove that rounding and these need tolerances.
+ */
 function getRiskLevel(coiPercent) {
   if (coiPercent === 0) return "none";
-  if (coiPercent <= 6.25) return "low";
-  if (coiPercent <= 12.5) return "moderate";
-  if (coiPercent <= 25) return "high";
+  if (coiPercent < COI_BANDS.FIRST_COUSIN) return "low";
+  if (coiPercent < COI_BANDS.HALF_SIBLING) return "moderate";
+  if (coiPercent < COI_BANDS.FULL_SIBLING) return "high";
   return "critical";
 }
 
+/**
+ * Plain-language guidance. Each tier now names the relationship it actually covers —
+ * see `getRiskLevel` for what these used to claim.
+ */
 function getRecommendation(coiPercent, sharedAncestors) {
   if (coiPercent === 0) {
     return "No shared ancestors detected within 3 generations. This is an outbred pairing with no inbreeding concerns.";
   }
-  if (coiPercent <= 6.25) {
-    return "Low inbreeding detected. This is generally acceptable for most species, especially if selecting for a specific trait. Monitor offspring vigor.";
+  if (coiPercent < COI_BANDS.FIRST_COUSIN) {
+    return "Low inbreeding — more distant than first cousins. Generally acceptable for most species, especially when selecting for a specific trait. Monitor offspring vigor.";
   }
-  if (coiPercent <= 12.5) {
-    return "Moderate inbreeding — equivalent to first-cousin mating. Consider whether the trait benefits outweigh potential vigor loss. Watch for reduced clutch sizes and increased fry mortality.";
+  if (coiPercent < COI_BANDS.HALF_SIBLING) {
+    return "Moderate inbreeding — at or above first-cousin level. Consider whether the trait benefits outweigh potential vigor loss. Watch for reduced clutch sizes and increased fry mortality.";
   }
-  if (coiPercent <= 25) {
-    return "High inbreeding — equivalent to half-sibling mating. Significant risk of inbreeding depression: reduced fertility, weakened immune response, and congenital defects. Outcross recommended unless line-breeding for a specific goal.";
+  if (coiPercent < COI_BANDS.FULL_SIBLING) {
+    return "High inbreeding — at or above half-sibling level. Significant risk of inbreeding depression: reduced fertility, weakened immune response, and congenital defects. Outcross recommended unless line-breeding for a specific goal.";
   }
-  return "Critical inbreeding level — equivalent to full-sibling or parent-child mating. Very high risk of inbreeding depression. Strongly recommend outcrossing with unrelated stock.";
+  return "Critical inbreeding — at or above full-sibling or parent-offspring level. Very high risk of inbreeding depression. Strongly recommend outcrossing with unrelated stock.";
 }
 
 /**
