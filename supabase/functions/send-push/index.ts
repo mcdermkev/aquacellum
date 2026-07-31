@@ -74,7 +74,11 @@ serve(async (req) => {
       JSON.stringify({
         title,
         body: body || "",
-        icon: icon || "/favicon.svg",
+        // PNG, not SVG: Android Chrome cannot render SVG notification icons and
+        // silently falls back to the browser's own logo when the asset fails to
+        // load. This defaulted to /favicon.svg, which is why every notification
+        // from this app arrived branded as Chrome.
+        icon: icon || "/icons/icon-192.png",
         url: url || "/",
         category: category || "activity",
         tag: tag || `sonar-${Date.now()}`,

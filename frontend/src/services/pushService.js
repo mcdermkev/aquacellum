@@ -162,6 +162,14 @@ function isAndroid() {
  * which engine is refusing it is guesswork, and this removes the guess.
  *
  * Order matters: Samsung Internet and Edge both include "Chrome" in their UA.
+ *
+ * ⚠️ BRAVE IS NOT DETECTABLE HERE, BY DESIGN. Brave ships Chrome's exact user
+ * agent as an anti-fingerprinting measure, so this function reports it as
+ * "Chrome". That was not academic: a device whose installed PWA was backed by
+ * Brave reported "Chrome 150" in the diagnostics while Brave was the thing
+ * silently refusing to surface the notification permission prompt. The
+ * diagnostics row was actively pointing away from the cause. `detectBrave()`
+ * below closes that gap using the `navigator.brave` handle Brave does expose.
  */
 function browserEngine() {
   if (typeof navigator === "undefined") return "unknown";
@@ -174,6 +182,23 @@ function browserEngine() {
   if (/Chrome\/(\d+)/.test(ua)) return `Chrome ${RegExp.$1}`;
   if (/Safari\//.test(ua)) return "Safari";
   return "unknown";
+}
+
+/**
+ * Whether we are actually running in Brave, which the user agent hides.
+ *
+ * Brave exposes `navigator.brave.isBrave()` (a promise) precisely because its UA
+ * is indistinguishable from Chrome's. Worth surfacing: Brave blocks notification
+ * permission prompts far more aggressively than Chrome, and on a device where
+ * the installed PWA was Brave-backed this was the whole reason push could not be
+ * enabled — while the diagnostics confidently displayed "Chrome 150".
+ */
+async function detectBrave() {
+  try {
+    return (await navigator.brave?.isBrave?.()) === true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -750,6 +775,13 @@ export async function getPushStatus() {
     platform: isAndroid() ? "android" : isIos() ? "ios" : "other",
     engine: browserEngine(),
   };
+
+  // Brave masquerades as Chrome in the UA, so ask it directly. Reported as
+  // "Brave (reports as Chrome N)" to make the discrepancy explicit rather than
+  // quietly overwriting it.
+  if (await detectBrave()) {
+    status.engine = `Brave (reports as ${status.engine})`;
+  }
 
   if (!supported) return status;
 

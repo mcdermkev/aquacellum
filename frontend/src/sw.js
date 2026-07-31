@@ -101,6 +101,45 @@ self.addEventListener("message", (event) => {
 // Web Push — preserved verbatim from the original push service worker
 // ════════════════════════════════════════════════════════════════════════════
 
+// ── Notification artwork ────────────────────────────────────────────────────
+// Both of these MUST be PNG. Android Chrome does not render SVG for notification
+// icons or badges, and when the asset fails to load it silently substitutes the
+// BROWSER's own icon — which is why every push notification from this app
+// displayed a Chrome logo. Every default here used to be `/favicon.svg`.
+//
+//   NOTIFICATION_ICON — the large artwork. Full colour, opaque background fine.
+//   NOTIFICATION_BADGE — the small status-bar glyph. Android uses only the ALPHA
+//     channel and tints the result, so this has to be white-on-transparent.
+//     icon-192.png cannot serve here: its background is fully opaque, so the mask
+//     would be a solid square. See frontend/scripts/generate-notification-badge.mjs.
+const NOTIFICATION_ICON = "/icons/icon-192.png";
+const NOTIFICATION_BADGE = "/icons/badge-96.png";
+
+/**
+ * Accept a sender-supplied icon only when it can actually be fetched and
+ * rendered; otherwise fall back to the app icon.
+ *
+ * Senders in this project have passed two kinds of unusable value, and both
+ * produced the same wrong result — the browser's logo:
+ *   - emoji, e.g. reef-digest sends "🐙" and echo-nudge "⭐". Those are intended
+ *     for the in-app notification list, not as an image URL.
+ *   - paths to icons that were never added to the build, e.g.
+ *     order-notifications' "/icons/order-new.png".
+ *
+ * Normalising here means the displayed icon is correct regardless of which
+ * sender produced the payload, without needing every Edge Function redeployed in
+ * lockstep to get it right.
+ */
+function resolveNotificationIcon(value) {
+  if (typeof value !== "string") return NOTIFICATION_ICON;
+  // Must be an absolute URL or a root-relative path — this is what rejects emoji.
+  if (!/^(https?:\/\/|\/)/.test(value)) return NOTIFICATION_ICON;
+  // SVG is accepted by desktop browsers and ignored by Android; prefer the PNG
+  // over a platform-dependent result.
+  if (/\.svg(\?|$)/i.test(value)) return NOTIFICATION_ICON;
+  return value;
+}
+
 // Listen for push events from the server
 self.addEventListener("push", (event) => {
   if (!event.data) return;
@@ -110,16 +149,15 @@ self.addEventListener("push", (event) => {
     payload = event.data.json();
   } catch {
     payload = {
-      title: "Aquacellum",
+      title: "Aquadex",
       body: event.data.text(),
-      icon: "/favicon.svg",
     };
   }
 
   const options = {
     body: payload.body || "",
-    icon: payload.icon || "/favicon.svg",
-    badge: "/favicon.svg",
+    icon: resolveNotificationIcon(payload.icon),
+    badge: NOTIFICATION_BADGE,
     tag: payload.tag || "sonar-" + Date.now(),
     data: {
       url: payload.url || "/",
@@ -130,7 +168,7 @@ self.addEventListener("push", (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(payload.title || "🌊 Aquacellum", options)
+    self.registration.showNotification(payload.title || "Aquadex", options)
   );
 });
 

@@ -40,6 +40,24 @@ function sonarIconForTag(tag?: string): string {
   return "🔔";
 }
 
+/**
+ * The PNG used for the large artwork on every order push notification.
+ *
+ * These payloads used to point at per-type icons — /icons/order-new.png,
+ * order-shipped.png, order-complete.png, order-alert.png, order-refund.png —
+ * none of which were ever added to the build. Android fails to load a missing
+ * icon and silently substitutes the BROWSER's own logo, so every order
+ * notification arrived branded as Chrome rather than as this app.
+ *
+ * Pointing at the real app icon is correct today. Per-type artwork would be nicer
+ * for a marketplace, but it needs the five icons to actually exist first.
+ *
+ * NOTE: this is the PUSH icon only. The in-app `sonar_notifications` row keeps
+ * using sonarIconForTag()'s emoji, which is the right thing for a list item and
+ * would be broken artwork here.
+ */
+const ORDER_PUSH_ICON = "/icons/icon-192.png";
+
 interface OrderRecord {
   id: string;
   order_type: string;
@@ -89,7 +107,7 @@ serve(async (req) => {
         wallet_address: order.seller_wallet,
         title: "New Order Received",
         body: `Someone purchased ${orderLabel}! Check your orders to fulfill.`,
-        icon: "/icons/order-new.png",
+        icon: ORDER_PUSH_ICON,
         url: "/app/orders",
         category: "order",
         tag: `order-new-${order.id}`,
@@ -115,7 +133,7 @@ serve(async (req) => {
             body: order.tracking_number
               ? `${orderLabel} is on its way! Tracking: ${order.tracking_number}`
               : `${orderLabel} has been dispatched by the breeder.`,
-            icon: "/icons/order-shipped.png",
+            icon: ORDER_PUSH_ICON,
             url: "/app/orders",
             category: "order",
             tag: `order-dispatched-${order.id}`,
@@ -130,7 +148,7 @@ serve(async (req) => {
             wallet_address: order.seller_wallet,
             title: "Funds Released!",
             body: `Payment for ${orderLabel} has been released to you. ($${(order.total_paid_cents / 100).toFixed(2)})`,
-            icon: "/icons/order-complete.png",
+            icon: ORDER_PUSH_ICON,
             url: "/app/orders",
             category: "order",
             tag: `order-released-${order.id}`,
@@ -140,7 +158,7 @@ serve(async (req) => {
             wallet_address: order.buyer_wallet,
             title: "Order Complete",
             body: `Your order for ${orderLabel} is confirmed complete. Enjoy your new fish!`,
-            icon: "/icons/order-complete.png",
+            icon: ORDER_PUSH_ICON,
             url: "/app/orders",
             category: "order",
             tag: `order-complete-${order.id}`,
@@ -153,7 +171,7 @@ serve(async (req) => {
             wallet_address: order.seller_wallet,
             title: "Order Disputed",
             body: `A buyer has opened a dispute on ${orderLabel}. A curator will review.`,
-            icon: "/icons/order-alert.png",
+            icon: ORDER_PUSH_ICON,
             url: "/app/orders",
             category: "order",
             tag: `order-disputed-${order.id}`,
@@ -166,7 +184,7 @@ serve(async (req) => {
             wallet_address: order.seller_wallet,
             title: "Dispute Resolved — Funds Released",
             body: `The dispute on ${orderLabel} was resolved in your favor. Funds released.`,
-            icon: "/icons/order-complete.png",
+            icon: ORDER_PUSH_ICON,
             url: "/app/orders",
             category: "order",
             tag: `order-resolved-${order.id}`,
@@ -175,7 +193,7 @@ serve(async (req) => {
             wallet_address: order.buyer_wallet,
             title: "Dispute Resolved",
             body: `The dispute on ${orderLabel} was reviewed. Funds released to seller.`,
-            icon: "/icons/order-alert.png",
+            icon: ORDER_PUSH_ICON,
             url: "/app/orders",
             category: "order",
             tag: `order-resolved-${order.id}`,
@@ -188,7 +206,7 @@ serve(async (req) => {
             wallet_address: order.buyer_wallet,
             title: "Order Refunded",
             body: `Your order for ${orderLabel} has been refunded. ($${(order.total_paid_cents / 100).toFixed(2)})`,
-            icon: "/icons/order-refund.png",
+            icon: ORDER_PUSH_ICON,
             url: "/app/orders",
             category: "order",
             tag: `order-refunded-${order.id}`,
@@ -198,7 +216,7 @@ serve(async (req) => {
             wallet_address: order.seller_wallet,
             title: "Order Refunded",
             body: `Your order for ${orderLabel} has been refunded to the buyer.`,
-            icon: "/icons/order-refund.png",
+            icon: ORDER_PUSH_ICON,
             url: "/app/orders",
             category: "order",
             tag: `order-refunded-seller-${order.id}`,

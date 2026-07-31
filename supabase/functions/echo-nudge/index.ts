@@ -283,7 +283,11 @@ async function sendEchoNotification(
       body: JSON.stringify({
         wallet_address: walletAddress,
         ...payload,
-        icon: "/echo-icon.svg",
+        // PNG, and one that exists. This pointed at "/echo-icon.svg", which is
+        // absent from the build AND an SVG — Android Chrome renders neither, and
+        // substitutes the browser's own logo when the icon fails to load, so
+        // Echo's nudges arrived branded as Chrome.
+        icon: "/icons/icon-192.png",
       }),
     });
   } catch (err) {
