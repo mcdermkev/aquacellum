@@ -9,7 +9,8 @@ import React, { useState, useRef } from "react";
 import { useUpdateProfile } from "../../hooks/useReefProfile";
 import { uploadImage, createPreviewUrl, revokePreviewUrl } from "../../services/mediaUpload";
 import { getCurrentWallet } from "../../services/supabaseClient";
-import { DataPrivacySettings } from "./DataPrivacySettings";
+// DataPrivacySettings is intentionally NOT imported here any more — Settings →
+// Privacy & Data is its single home (docs/SETTINGS_SPEC.md D-S-1).
 
 export function ProfileEdit({ profile, onSave, onCancel, casualModeActive = false }) {
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
@@ -264,9 +265,49 @@ export function ProfileEdit({ profile, onSave, onCancel, casualModeActive = fals
         </button>
       </div>
 
-      {/* Data & Privacy Section */}
+      {/*
+        Data & Privacy MOVED to Settings → Privacy & Data (docs/SETTINGS_SPEC.md
+        D-S-1). This used to render `DataPrivacySettings` inline, which made Reef →
+        ProfileEdit the only route to account deletion — the highest-stakes control
+        in the product — while Settings offered "Reset Local Data", which merely
+        clears this browser. A user intending to delete their account found the
+        wrong button in the more obvious place.
+
+        Settings is now the single entry point. This is a link, not a second copy:
+        two live renders of a deletion flow means two places to keep a
+        confirmation gate correct.
+      */}
       <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid rgba(255, 255, 255, 0.05)" }}>
-        <DataPrivacySettings casualModeActive={casualModeActive} />
+        <h4 style={{ margin: "0 0 0.25rem", fontSize: "0.8rem", color: "var(--text-primary)" }}>
+          {casualModeActive ? "🔒 Your Data" : "Data & Privacy"}
+        </h4>
+        <p style={{ margin: "0 0 0.75rem", fontSize: "0.7rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
+          Data export and account deletion now live in Settings, alongside the rest of your
+          account controls.
+        </p>
+        <button
+          type="button"
+          onClick={() =>
+            window.dispatchEvent(
+              new CustomEvent("aquadex:navigate-tab", {
+                detail: { tab: "settings", section: "privacy" },
+              })
+            )
+          }
+          style={{
+            padding: "0.45rem 1rem",
+            minHeight: 36,
+            borderRadius: "8px",
+            border: "1px solid rgba(56, 189, 248, 0.2)",
+            background: "rgba(56, 189, 248, 0.08)",
+            color: "var(--accent-blue)",
+            fontSize: "0.75rem",
+            fontWeight: 500,
+            cursor: "pointer",
+          }}
+        >
+          Open Settings → {casualModeActive ? "Your Data" : "Data & Privacy"}
+        </button>
       </div>
     </div>
   );

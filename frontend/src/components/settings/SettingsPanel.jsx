@@ -8,11 +8,13 @@ import { CompanionsSection } from "./sections/CompanionsSection";
 import { UnitsSection } from "./sections/UnitsSection";
 import { AquariumsSection } from "./sections/AquariumsSection";
 import { DiscoverySection } from "./sections/DiscoverySection";
+import { SellerSection } from "./sections/SellerSection";
 import { ZoneSection } from "./sections/ZoneSection";
 import { BackupSection } from "./sections/BackupSection";
 import { AppSupportSection } from "./sections/AppSupportSection";
 import { SmartWalletSection } from "./sections/SmartWalletSection";
 import { ResetSection } from "./sections/ResetSection";
+import { PrivacySection } from "./sections/PrivacySection";
 
 /**
  * SettingsPanel — the single child of `App.jsx`'s `case "settings"`
@@ -83,6 +85,7 @@ export function SettingsPanel({ casualModeActive, onToggleMode, displayTank, set
         setDisplayTank={setDisplayTank}
       />
       <DiscoverySection casualModeActive={casualModeActive} />
+      <SellerSection casualModeActive={casualModeActive} />
       <ZoneSection casualModeActive={casualModeActive} />
 
       <div className="settings-panel__group-heading">App</div>
@@ -90,6 +93,13 @@ export function SettingsPanel({ casualModeActive, onToggleMode, displayTank, set
       <AppSupportSection casualModeActive={casualModeActive} />
       <SmartWalletSection casualModeActive={casualModeActive} />
       <ResetSection casualModeActive={casualModeActive} />
+      {/*
+        Privacy & Data renders LAST, after Reset (docs/SETTINGS_SPEC.md D-S-1 and
+        §6's ordering principle: the irreversible things last). Account deletion is
+        the most consequential control in the product, and Reset now points down to
+        it for anyone who mistook one for the other.
+      */}
+      <PrivacySection casualModeActive={casualModeActive} />
     </div>
   );
 }

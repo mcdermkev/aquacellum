@@ -3,21 +3,24 @@ import { SettingsSection } from "../SettingsSection";
 import { db } from "../../../db";
 
 /**
- * ResetSection — Settings → Reset Local Data ("Purge Local Database" in Pro).
+ * ResetSection — Settings → Clear this device ("Purge local database" in Pro).
  *
- * Split out of the old DataPortabilityWidget.jsx unchanged.
+ * ⚠️ RENAMED AND RE-SCOPED IN PHASE 4B (docs/SETTINGS_SPEC.md D-S-1). This section
+ * is the reason account deletion had to move into Settings, and the two are only
+ * safely distinguishable together.
  *
- * D-S-1's rename ("Clear this device" / "Purge local database") and the
- * inline link to Privacy & Data are explicitly Phase 4b work
- * (docs/SETTINGS_SPEC.md §9 — gated ⛔ for Opus review because it's
- * account-deletion/ownership-adjacent), because that copy only makes sense
- * once Privacy & Data actually exists as a Settings section to link to.
- * Renaming the button now, with nowhere for the link to point, would create
- * a new dead-end control — precisely what AC-3 exists to prevent. Section
- * order is already correct for D-S-1's other requirement ("Privacy & Data
- * renders below Reset") since Privacy & Data isn't in `SettingsPanel` yet;
- * `SettingsPanel` places this section last for now, and Phase 4b's job is to
- * insert Privacy & Data after it, not reorder anything here.
+ * The problem it caused: this was the ONLY destructive-looking control in
+ * Settings, it was called "Reset Local Data" / "Reset Everything", and account
+ * deletion lived somewhere else entirely (Reef → ProfileEdit). A user who came to
+ * Settings intending to delete their account found the button that looked right
+ * and got something completely different — a Dexie + `aquadex_*` wipe that leaves
+ * the account, the cloud data, and the profile fully intact.
+ *
+ * So the copy now leads with what this does NOT do. "Clear this device" says the
+ * scope in the label, the callout states that the account is untouched, and the
+ * footer points at Privacy & Data for the thing a user looking for deletion
+ * actually wants. Behaviour is unchanged — only the framing, which was the
+ * dangerous part.
  */
 export function ResetSection({ casualModeActive }) {
   const [showConfirm, setShowConfirm] = useState(false);
@@ -47,12 +50,12 @@ export function ResetSection({ casualModeActive }) {
     <SettingsSection
       id="reset"
       icon="🗑️"
-      title={{ casual: "Reset Local Data", pro: "Purge Local Database" }}
+      title={{ casual: "Clear this device", pro: "Purge local database" }}
       description={{
         casual:
-          "If the app is stuck, loading incorrectly, or you want a completely fresh start, you can wipe all locally stored data. This cannot be undone — back up first!",
+          "Wipes the copy of your data stored in this browser, for when the app is stuck or loading incorrectly. This does NOT delete your account — anything already synced comes back when you sign in again.",
         pro:
-          "Nuclear option: deletes IndexedDB (Dexie) and all Aquadex localStorage entries. Use when schema migrations fail or local state is corrupted. Ensure you have exported data first.",
+          "Deletes IndexedDB (Dexie) and all Aquadex localStorage entries on this device. Use when schema migrations fail or local state is corrupted. Account, profile and cloud records are unaffected.",
       }}
       casualModeActive={casualModeActive}
       tone="danger"
@@ -71,8 +74,9 @@ export function ResetSection({ casualModeActive }) {
       >
         <span style={{ color: "var(--accent-red)", fontSize: "0.9rem" }}>⚠️</span>
         <span style={{ fontSize: "0.75rem", color: "rgba(248, 113, 113, 0.9)", lineHeight: "1.4" }}>
-          This will delete all tanks, specimens, logs, XP, and preferences stored on this device.
-          Data that has been synced to the cloud will still be available on next login.
+          This clears tanks, specimens, logs, XP, and preferences stored in <strong>this browser
+          only</strong>. Your account stays open and anything already synced to the cloud returns on
+          your next sign-in.
         </span>
       </div>
 
@@ -88,7 +92,7 @@ export function ResetSection({ casualModeActive }) {
             color: "var(--accent-red)",
           }}
         >
-          {casualModeActive ? "Reset Everything" : "Purge Local State"}
+          {casualModeActive ? "Clear this device" : "Purge local state"}
         </button>
       ) : (
         <div
@@ -101,7 +105,7 @@ export function ResetSection({ casualModeActive }) {
         >
           <p style={{ fontSize: "0.8rem", color: "var(--accent-red)", marginBottom: "0.75rem" }}>
             {casualModeActive
-              ? "Are you sure? All your local data (tanks, fish, logs, XP) will be permanently deleted from this device."
+              ? "Are you sure? Your local data (tanks, fish, logs, XP) will be erased from this browser. Your account is not affected, and synced data returns when you sign in again."
               : "Confirm: DELETE IndexedDB + all aquadex_* localStorage keys. Page will reload with a fresh state."}
           </p>
           <div style={{ display: "flex", gap: "0.75rem" }}>
@@ -124,6 +128,36 @@ export function ResetSection({ casualModeActive }) {
           </div>
         </div>
       )}
+
+      {/*
+        The redirect that closes D-S-1. Anyone who arrived here looking to delete
+        their account gets told where that actually lives, rather than clearing
+        their browser and assuming it worked.
+      */}
+      <p
+        style={{
+          margin: "1.25rem 0 0",
+          paddingTop: "1rem",
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          fontSize: "0.75rem",
+          color: "var(--text-muted)",
+          lineHeight: 1.5,
+        }}
+      >
+        Looking to delete your account instead?{" "}
+        <a
+          href="#settings/privacy"
+          onClick={(e) => {
+            e.preventDefault();
+            const target = document.getElementById("settings-privacy");
+            if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+          style={{ color: "var(--accent-blue)", fontWeight: 600 }}
+        >
+          {casualModeActive ? "Your Data" : "Data & Privacy"}
+        </a>{" "}
+        handles that, including a 30-day grace period you can cancel within.
+      </p>
     </SettingsSection>
   );
 }

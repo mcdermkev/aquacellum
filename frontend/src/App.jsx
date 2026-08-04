@@ -312,8 +312,13 @@ export default function App() {
   // Navigate to a tab while preserving any query string (e.g. ?view=breeder).
   // Reads window.location.search at call time so it stays correct even when
   // invoked from event handlers registered once on mount.
-  const goToTab = (tab) => {
-    navigate(`/app/${tab}${window.location.search}`);
+  // `anchor` is an optional in-page target appended as a hash, used to deep-link
+  // a specific Settings section (`SettingsPanel` reads `#settings/<id>` on mount).
+  // It has to travel with the navigate() call rather than being assigned to
+  // window.location.hash afterwards, because react-router replaces the whole URL
+  // and would drop a separately-set hash.
+  const goToTab = (tab, anchor) => {
+    navigate(`/app/${tab}${window.location.search}${anchor ? `#${anchor}` : ""}`);
   };
 
   // Backward-compat: redirect legacy hash deep links (/app#directory) and bare
@@ -434,6 +439,10 @@ export default function App() {
     }
     return null;
   });
+  // Which Breeder Terminal section an incoming deep link asked for (Settings →
+  // Seller). Mirrors the existing `breederToolsSection` pattern for the Breeder
+  // Tools tab rather than inventing a second mechanism.
+  const [breederTerminalSection, setBreederTerminalSection] = useState(null);
   const [selectedSpecimenId, setSelectedSpecimenId] = useState(null);
   const [preselectedOrderForCheckout, setPreselectedOrderForCheckout] = useState(null);
   const [activeSellerFilter, setActiveSellerFilter] = useState(null);
@@ -666,7 +675,7 @@ export default function App() {
     // Account is now managed by AuthContext
   };
 
-  const handleTabChange = (tabName) => {
+  const handleTabChange = (tabName, anchor) => {
     if (tabName !== "breeder") {
       setPreselectedLineageId(null);
     }
@@ -677,7 +686,7 @@ export default function App() {
       setActiveSellerFilter(null);
       setActiveSpeciesFilter(null);
     }
-    goToTab(tabName);
+    goToTab(tabName, anchor);
   };
 
   // Lets deep-nested components (e.g. FishFinder's "no tanks" empty state)
@@ -696,7 +705,18 @@ export default function App() {
           speciesId != null ? { id: Number(speciesId), name: speciesName || null } : null
         );
       }
-      handleTabChange(tab);
+      // `section` means different things per destination, so it is resolved here
+      // rather than by the caller:
+      //   settings         → a URL anchor; SettingsPanel reads `#settings/<id>`.
+      //   breeder-terminal → a prop; BreederTerminal owns its own section state.
+      // Reef → ProfileEdit uses the first to reach Privacy & Data (D-S-1), and
+      // Settings → Seller uses the second to reach Store / Shipping / Payouts.
+      const section = e?.detail?.section;
+      if (tab === "breeder-terminal") {
+        setBreederTerminalSection(section || null);
+      }
+      const anchor = tab === "settings" && section ? `settings/${section}` : undefined;
+      handleTabChange(tab, anchor);
     };
     window.addEventListener("aquadex:navigate-tab", onNavigateTab);
     return () => window.removeEventListener("aquadex:navigate-tab", onNavigateTab);
@@ -902,6 +922,7 @@ export default function App() {
             <BreederTerminal
               walletAccount={smartWalletForFounderCheck || account}
               casualModeActive={casualModeActive}
+              initialSection={breederTerminalSection}
             />
           </Suspense>
         );

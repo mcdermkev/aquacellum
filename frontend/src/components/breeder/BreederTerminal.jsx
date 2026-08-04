@@ -125,8 +125,32 @@ function writeLastVisit(ms) {
   }
 }
 
-export function BreederTerminal({ walletAccount, casualModeActive = false }) {
-  const [activeSection, setActiveSection] = useState(SECTIONS.HOME);
+/**
+ * @param {object} props
+ * @param {string} props.walletAccount
+ * @param {boolean} [props.casualModeActive]
+ * @param {string|null} [props.initialSection] - optional `SECTIONS` id to open on
+ *   arrival, so other surfaces can deep-link a specific seller section. Settings →
+ *   Seller uses it to send sellers straight to Store / Shipping / Payouts rather
+ *   than dumping them on Home to hunt (docs/SETTINGS_SPEC.md §6 #9). Ignored when
+ *   it is not a known section id, so a bad link degrades to Home rather than
+ *   rendering nothing.
+ */
+export function BreederTerminal({ walletAccount, casualModeActive = false, initialSection = null }) {
+  const isKnownSection = (id) => Object.values(SECTIONS).includes(id);
+
+  const [activeSection, setActiveSection] = useState(
+    isKnownSection(initialSection) ? initialSection : SECTIONS.HOME
+  );
+
+  // The initializer above only covers a cold mount. This tab is lazy-loaded and
+  // stays mounted once visited, so a second deep-link from Settings while it is
+  // already alive has to move the section too — otherwise the first link works and
+  // every later one silently does nothing.
+  useEffect(() => {
+    if (isKnownSection(initialSection)) setActiveSection(initialSection);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSection]);
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [sellerStatus, setSellerStatus] = useState(null);
