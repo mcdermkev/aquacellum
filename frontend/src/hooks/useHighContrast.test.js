@@ -106,12 +106,24 @@ describe("App.jsx — applies high contrast app-wide on load (root-level call, n
 
   it("imports and calls useHighContrast at the App component root, alongside useFontSettings", () => {
     expect(SOURCE).toContain('import { useHighContrast } from "./hooks/useHighContrast";');
-    expect(SOURCE).toContain("const highContrast = useHighContrast();");
+    expect(SOURCE).toContain("useHighContrast();");
   });
 
-  it("mounts HighContrastToggle in the Settings tab, wired to the root-level hook state", () => {
-    expect(SOURCE).toContain('import { HighContrastToggle } from "./components/HighContrastToggle";');
-    expect(SOURCE).toContain("<HighContrastToggle enabled={highContrast.enabled} onToggle={highContrast.toggle} />");
+  // Settings Phase 3 (docs/SETTINGS_SPEC.md §5) split the old inline
+  // FontSizeSettings/HighContrastToggle pair out of App.jsx's "settings" case
+  // and into SettingsPanel -> AccessibilitySection, behind the SettingsSection
+  // primitive. App.jsx's own useHighContrast() call above still applies the
+  // preference app-wide on every load; AccessibilitySection binds its own
+  // independent useHighContrast() to render the actual toggle.
+  it("mounts HighContrastToggle inside the Settings panel's Accessibility section, not directly in App.jsx", () => {
+    expect(SOURCE).not.toContain('import { HighContrastToggle } from "./components/HighContrastToggle";');
+
+    const accessibilitySource = readFileSync(
+      fileURLToPath(new URL("../components/settings/sections/AccessibilitySection.jsx", import.meta.url)),
+      "utf8"
+    );
+    expect(accessibilitySource).toContain('import { HighContrastToggle } from "../../HighContrastToggle";');
+    expect(accessibilitySource).toContain("<HighContrastToggle enabled={highContrast.enabled} onToggle={highContrast.toggle} />");
   });
 });
 

@@ -9,6 +9,20 @@ import { useVoiceProfiles } from "./hooks/useVoiceProfiles";
  * - Adjust pitch, rate, and volume sliders
  * - Preview each voice with a sample line
  * - Reset to auto-detected defaults
+ *
+ * One home, on purpose: the floating HUD panel inside the Immersive Reef.
+ *
+ * ⚠️ Do not surface this in the Settings tab (docs/SETTINGS_SPEC.md D-S-7).
+ * Handoff §3.5 listed it as an "orphaned preference" that belonged beside AI
+ * Companion Preferences, and Phase 3 briefly moved it there. That reading was
+ * wrong. These profiles are consumed only by `useNarration` →
+ * `NarrationLayer`/`VoicePanel`, which mount only inside `ImmersiveReef` on
+ * `/reef-xr.html` — a page that is intentionally unlinked. Tuning Poseidon's
+ * pitch from Settings would therefore change nothing the user can hear. The
+ * panel belongs next to the only feature it affects, so it stays here.
+ *
+ * @param {object} props
+ * @param {Function} [props.onClose] - renders the close (✕) button when given.
  */
 export function VoiceSettings({ onClose }) {
   const {
@@ -59,7 +73,6 @@ export function VoiceSettings({ onClose }) {
 
   return (
     <div style={panelStyle}>
-      {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h3 style={{ margin: 0, fontSize: 15, color: "#38bdf8" }}>
           🎙️ Voice Profiles

@@ -7771,3 +7771,117 @@ input:checked + .broadcast-slider:before {
   padding: 0 2px;
   margin: 0 -2px;
 }
+
+/* =========================================================================
+   SETTINGS SECTION PRIMITIVE (docs/SETTINGS_SPEC.md §5, Phase 3)
+   One card treatment for the entire Settings panel, replacing nine inline
+   ternary-styled `glass-card` copies plus the separate navy/system-ui
+   language FontSizeSettings and HighContrastToggle used to use. AC-2 pins
+   this: `maxWidth: "600px"` / `maxWidth: 640` must not appear inline under
+   components/settings/ — the values live here instead.
+   ========================================================================= */
+
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0.5rem 0 3rem;
+}
+
+.settings-panel__group-heading {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin: 1.5rem 0 -0.5rem;
+  padding-left: 0.25rem;
+}
+
+.settings-panel__group-heading:first-child {
+  margin-top: 0;
+}
+
+.settings-section {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--glass-shadow);
+  overflow: hidden;
+}
+
+.settings-section--info {
+  border-color: rgba(56, 189, 248, 0.18);
+}
+
+.settings-section--danger {
+  border-color: rgba(248, 113, 113, 0.2);
+}
+
+.settings-section__header {
+  padding: 0;
+}
+
+.settings-section__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 1.25rem 1.5rem;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings-section__icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.settings-section__title {
+  flex: 1;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.settings-section--danger .settings-section__title {
+  color: var(--accent-red);
+}
+
+.settings-section__chevron {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.settings-section__chevron--collapsed {
+  transform: rotate(-90deg);
+}
+
+.settings-section__body {
+  padding: 0 1.5rem 1.5rem;
+}
+
+.settings-section__description {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: -0.5rem 0 1.25rem;
+}
+
+.settings-section__toggle:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: -2px;
+}

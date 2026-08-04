@@ -1,16 +1,24 @@
 import React, { useState } from "react";
 import { useFontSettings } from "../hooks/useFontSettings";
+import { announce } from "../utils/a11y";
 
 /**
- * FontSizeSettings — Panel for configuring application-wide font size settings.
+ * FontSizeSettings — Font scale controls for the Settings → Accessibility
+ * section.
  *
  * Lets users:
  * - Select font scale (small, medium, large, extra large)
  * - Preview font sizes before applying
  * - Reset to default settings
  * - See sample text at different scales
+ *
+ * Renders as plain content inside a `SettingsSection` card (docs/
+ * SETTINGS_SPEC.md §5, AC-2) — it no longer draws its own navy/`system-ui`
+ * panel or duplicate heading; the section primitive already provides both.
+ * `onClose` is now unused, kept only so any lingering caller passing it
+ * doesn't crash; there is nothing to close once this is inline content.
  */
-export function FontSizeSettings({ onClose }) {
+export function FontSizeSettings() {
   const {
     currentScale,
     availableScales,
@@ -41,41 +49,24 @@ export function FontSizeSettings({ onClose }) {
     updateFontScale(scale);
     setPreviewMode(false);
     setTempScale(scale);
+    // The visual result (text resizing) is not announced by screen readers, so say
+    // it — same reason HighContrastToggle announces its state change.
+    announce(`Font size set to ${availableScales[scale]?.label || scale}`);
   };
 
   const handleReset = () => {
     resetSettings();
     setPreviewMode(false);
     setTempScale('medium');
+    announce("Font size reset to default");
   };
 
   if (!ready) {
-    return (
-      <div style={panelStyle}>
-        <p style={{ color: "#94a3b8", fontSize: 13 }}>Loading font settings…</p>
-      </div>
-    );
+    return <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Loading font settings…</p>;
   }
 
   return (
-    <div style={panelStyle}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h3 style={{ margin: 0, fontSize: 15, color: "#38bdf8" }}>
-          🔤 Font Size Settings
-        </h3>
-        {onClose && (
-          <button onClick={onClose} style={closeBtnStyle} aria-label="Close font settings">
-            ✕
-          </button>
-        )}
-      </div>
-
-      <p style={{ fontSize: 11, color: "#64748b", marginBottom: 16, lineHeight: 1.4 }}>
-        Adjust the application font size for better readability. Changes apply to all text 
-        throughout the interface.
-      </p>
-
+    <div>
       {/* Preview banner */}
       {previewMode && (
         <div style={{
@@ -93,22 +84,24 @@ export function FontSizeSettings({ onClose }) {
 
       {/* Font scale options */}
       <div style={cardStyle}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", marginBottom: 12 }}>
+        <div id="font-scale-label" style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", marginBottom: 12 }}>
           Font Scale
         </div>
-        
-        {Object.entries(availableScales).map(([scale, config]) => (
-          <FontScaleOption
-            key={scale}
-            scale={scale}
-            config={config}
-            isActive={currentScale === scale && !previewMode}
-            isPreviewing={previewMode && tempScale === scale}
-            onPreview={() => handlePreviewStart(scale)}
-            onApply={() => handleApplyScale(scale)}
-            onPreviewEnd={handlePreviewEnd}
-          />
-        ))}
+
+        <div role="radiogroup" aria-labelledby="font-scale-label">
+          {Object.entries(availableScales).map(([scale, config]) => (
+            <FontScaleOption
+              key={scale}
+              config={config}
+              isActive={currentScale === scale && !previewMode}
+              isPreviewing={previewMode && tempScale === scale}
+              isSelected={currentScale === scale}
+              onPreview={() => handlePreviewStart(scale)}
+              onApply={() => handleApplyScale(scale)}
+              onPreviewEnd={handlePreviewEnd}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Sample text */}
@@ -117,7 +110,7 @@ export function FontSizeSettings({ onClose }) {
           Sample Text
         </div>
         <div style={{ fontSize: "var(--font-size-lg)", fontWeight: 600, color: "#38bdf8", marginBottom: 4 }}>
-          Aquacellum Tank Manager
+          Aquadex
         </div>
         <div style={{ fontSize: "var(--font-size-base)", color: "#e2e8f0", marginBottom: 4 }}>
           Your freshwater aquarium companion for species tracking and care logging.
@@ -148,15 +141,27 @@ export function FontSizeSettings({ onClose }) {
   );
 }
 
-/** Individual font scale option */
-function FontScaleOption({ 
-  scale, 
-  config, 
-  isActive, 
-  isPreviewing, 
-  onPreview, 
-  onApply, 
-  onPreviewEnd 
+/**
+ * Individual font scale option.
+ *
+ * A real `<button role="radio">`, not a `<div onClick>`. This used to be an
+ * accessibility defect inside the accessibility panel: no `role`, no `tabIndex`,
+ * no key handler, and a preview that only fired on `onMouseEnter` — so the whole
+ * control was mouse-only, and the sighted keyboard users most likely to want a
+ * larger font could not reach it. `HighContrastToggle` immediately below already
+ * did this correctly; this now matches it.
+ *
+ * The preview fires on focus as well as hover, so tabbing through the options
+ * previews each one — the keyboard equivalent of sweeping the mouse down the list.
+ */
+function FontScaleOption({
+  config,
+  isActive,
+  isPreviewing,
+  isSelected,
+  onPreview,
+  onApply,
+  onPreviewEnd
 }) {
   const borderColor = isActive 
     ? "#38bdf8" 
@@ -171,68 +176,62 @@ function FontScaleOption({
     : "rgba(255, 255, 255, 0.02)";
 
   return (
-    <div style={{
-      border: `1px solid ${borderColor}`,
-      borderRadius: 8,
-      padding: "10px 12px",
-      marginBottom: 8,
-      background: backgroundColor,
-      cursor: "pointer",
-      transition: "all 0.2s ease"
-    }}
-    onMouseEnter={!isActive ? onPreview : undefined}
-    onMouseLeave={!isActive ? onPreviewEnd : undefined}
-    onClick={() => !isActive && onApply()}
+    <button
+      type="button"
+      role="radio"
+      aria-checked={isSelected}
+      aria-label={`${config.label} — ${config.description}`}
+      onMouseEnter={!isActive ? onPreview : undefined}
+      onMouseLeave={!isActive ? onPreviewEnd : undefined}
+      onFocus={!isActive ? onPreview : undefined}
+      onBlur={!isActive ? onPreviewEnd : undefined}
+      onClick={() => !isActive && onApply()}
+      style={{
+        display: "block",
+        width: "100%",
+        minHeight: 44,
+        textAlign: "left",
+        font: "inherit",
+        color: "inherit",
+        border: `1px solid ${borderColor}`,
+        borderRadius: 8,
+        padding: "10px 12px",
+        marginBottom: 8,
+        background: backgroundColor,
+        cursor: isActive ? "default" : "pointer",
+        transition: "all 0.2s ease"
+      }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <div style={{ 
-            fontSize: 12, 
-            fontWeight: 600, 
-            color: isActive ? "#38bdf8" : isPreviewing ? "#fbbf24" : "#e2e8f0" 
+      <span style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span>
+          <span style={{
+            display: "block",
+            fontSize: 12,
+            fontWeight: 600,
+            color: isActive ? "#38bdf8" : isPreviewing ? "#fbbf24" : "#e2e8f0"
           }}>
             {config.label}
-            {isActive && <span style={{ marginLeft: 6 }}>✓</span>}
-          </div>
-          <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>
+            {isActive && <span aria-hidden="true" style={{ marginLeft: 6 }}>✓</span>}
+          </span>
+          <span style={{ display: "block", fontSize: 10, color: "#64748b", marginTop: 2 }}>
             {config.description}
-          </div>
-        </div>
-        <div style={{ 
-          fontSize: 11, 
-          color: "#64748b", 
-          fontFamily: "monospace" 
+          </span>
+        </span>
+        <span aria-hidden="true" style={{
+          fontSize: 11,
+          color: "#64748b",
+          fontFamily: "monospace"
         }}>
           {config.value}×
-        </div>
-      </div>
-    </div>
+        </span>
+      </span>
+    </button>
   );
 }
 
 // --- Styles ---
-
-const panelStyle = {
-  position: "relative",
-  width: "100%",
-  maxWidth: 640,
-  margin: "0 auto",
-  background: "rgba(10, 22, 40, 0.95)",
-  border: "1px solid rgba(56, 189, 248, 0.2)",
-  borderRadius: 14,
-  padding: "16px 18px",
-  color: "#e2e8f0",
-  fontFamily: "system-ui, sans-serif",
-  backdropFilter: "blur(14px)",
-};
-
-const closeBtnStyle = {
-  background: "none",
-  border: "none",
-  color: "#94a3b8",
-  fontSize: 16,
-  cursor: "pointer",
-};
+// No outer panel/close-button styles here anymore — the enclosing
+// SettingsSection card owns that chrome now (AC-2).
 
 const cardStyle = {
   background: "rgba(15, 23, 42, 0.6)",

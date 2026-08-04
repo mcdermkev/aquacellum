@@ -22,6 +22,8 @@ import React, { useState, useCallback } from "react";
 import { detectUserZone, calculateZoneHash } from "../utils/zoneHash";
 import { assignUserToZone, registerZone } from "../services/zoneLeaderboardApi";
 import { useAssignZone } from "../hooks/useZoneLeaderboard";
+import { useUnitPrefs } from "../hooks/useUnitPrefs";
+import { formatDistance } from "../utils/units";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // States
@@ -46,6 +48,7 @@ export function ZoneAssignmentFlow({
   isTransfer = false,
   casualModeActive = true,
 }) {
+  const { distanceUnit } = useUnitPrefs();
   const [step, setStep] = useState(STEP.INTRO);
   const [zoneData, setZoneData] = useState(null);
   const [error, setError] = useState(null);
@@ -262,7 +265,11 @@ export function ZoneAssignmentFlow({
                   {zoneData.displayName}
                 </div>
                 <div style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>
-                  {zoneData.zoneHash.slice(0, 10)}... · {zoneData.radiusMiles}mi radius · {zoneData.populationTier}
+                  {/* Radius honours Settings → Units & Formatting. This line is
+                      what gives `aquadex_distance_unit` its first reachable
+                      reader — it previously hardcoded "mi" while the only other
+                      consumer, LocalBreederMap, is retired and never imported. */}
+                  {zoneData.zoneHash.slice(0, 10)}... · {formatDistance(zoneData.radiusMiles, distanceUnit, { precision: 0 })} radius · {zoneData.populationTier}
                 </div>
               </div>
             </div>

@@ -64,10 +64,57 @@ DROP POLICY IF EXISTS "Service write distributions" ON reward_distributions;
 DROP POLICY IF EXISTS "Users read own distributions" ON reward_distributions;
 DROP POLICY IF EXISTS "Service write pool_ledger" ON reward_pool_ledger;
 
-CREATE POLICY "distributions_select_own"
-  ON reward_distributions FOR SELECT
+-- ⚠️ REVISED BEFORE FIRST APPLY (2026-07-31, Tier A review). The original draft
+-- of this file created a single policy:
+--
+--   CREATE POLICY "distributions_select_own" ON reward_distributions FOR SELECT
+--     USING (wallet_address = ((current_setting('request.jwt.claims', true))::json ->> 'wallet_address'));
+--
+-- That had three defects, all of which fail CLOSED and SILENTLY on a money
+-- surface — the worst possible failure mode, and one that would not have been
+-- noticed until the first real payout run:
+--
+--   1. IT COVERED ONLY ONE OF THE TWO AUTH PATHS. `services/supabaseClient.js`
+--      mints a Supabase JWT from the Privy token, but on ANY failure (endpoint
+--      not deployed, missing SUPABASE_JWT_SECRET, network error) it deliberately
+--      falls back to the **anon** role plus an `x-wallet-address` header. With a
+--      JWT-only policy, every user in that fallback reads zero payout rows and
+--      the UI shows "no payouts" rather than an error. This is the same trap
+--      20260729_aquadex_listings_rls_lockdown.sql was careful to avoid, and it
+--      is why 20260624110000_jwt_bridge_rls_upgrade.sql establishes a PAIR of
+--      policies per table — `_jwt` for `authenticated`, `_anon` for the header
+--      fallback. Note this very migration's xp_events reasoning DEPENDS on that
+--      pair existing; applying a single-path policy here would have been
+--      internally inconsistent with the paragraph above.
+--   2. NO `lower()`. `wallet_address` is bare `text` with no default and no
+--      lowercasing constraint, and wallet-case mismatch is a known live hazard
+--      in this codebase (`supabaseClient.js` carries a `_walletCaseCache` and an
+--      exact-then-ilike lookup precisely because of it). A case difference
+--      between the claim and the stored row silently returns nothing.
+--   3. It was granted to `{public}` rather than scoped per role, unlike every
+--      other policy in the jwt-bridge family.
+--
+-- Corrected below to the canonical shape already live on `xp_events`
+-- (`xp_events_select_own_jwt` / `xp_events_select_own_anon`), with `lower()` on
+-- both sides rather than only the claim, since the column's casing is not
+-- guaranteed. Safe to change now: `reward_distributions` is EMPTY (0 rows,
+-- verified 2026-07-31), so this is the cheapest moment to get it right — after
+-- the first distribution run it would be a live money bug.
+--
+-- Verify with:  select policyname from pg_policies
+--                 where policyname like 'distributions_select_own%';
+--               -- expect exactly two rows
+
+CREATE POLICY "distributions_select_own_jwt"
+  ON reward_distributions FOR SELECT TO authenticated
   USING (
-    wallet_address = ((current_setting('request.jwt.claims', true))::json ->> 'wallet_address')
+    lower(wallet_address) = lower(auth.jwt() ->> 'wallet_address')
+  );
+
+CREATE POLICY "distributions_select_own_anon"
+  ON reward_distributions FOR SELECT TO anon
+  USING (
+    lower(wallet_address) = lower((current_setting('request.headers', true))::json ->> 'x-wallet-address')
   );
 
 -- `reward_pool_ledger."Public read pool_ledger"` is INTENTIONALLY kept: the pool

@@ -143,6 +143,68 @@ describe("the manifest is an ORDER, not just a set", () => {
   });
 });
 
+describe("version prefixes stay representable in the Supabase CLI ledger", () => {
+  // WHY THIS EXISTS. The Supabase CLI derives a migration's ledger `version` from the
+  // leading digits of the filename, and `supabase_migrations.schema_migrations.version`
+  // is unique. So two files sharing a prefix CANNOT both be recorded — the ledger
+  // physically cannot represent them.
+  //
+  // That is the real reason `supabase migration list` shows applied migrations as
+  // pending here, and the reason the standing instruction is to apply files
+  // individually (scripts/sb-query.ps1) rather than with `supabase db push`.
+  //
+  // It is also why the drift was NOT "fixed" by inserting a synthetic ledger row:
+  // recording version `20260731` once, to stand for three files, would make any
+  // FUTURE `20260731_*.sql` silently count as already applied. Trading a noisy,
+  // honest ledger for a quiet, wrong one is the worse deal — an unapplied migration
+  // that everything reports as applied is exactly the failure this suite exists to
+  // prevent.
+  //
+  // So the collisions are grandfathered and frozen, and new ones fail here.
+  //
+  // Only the repo-root `supabase/migrations` matters: that is the CLI project.
+  // `frontend/supabase/migrations` is a folder of hand-applied SQL and is never
+  // pushed, so its prefixes never reach a ledger.
+  const GRANDFATHERED_COLLISIONS = {
+    // Both applied 2026-07-29. Only `aquadex_listings_rls_lockdown` is in the ledger.
+    20260729: 2,
+    // All three applied 2026-07-31. None are in the ledger.
+    20260731: 3,
+  };
+
+  function prefixCounts() {
+    const counts = {};
+    for (const name of readdirSync(repoPath("supabase/migrations"))) {
+      if (!name.endsWith(".sql")) continue;
+      const match = name.match(/^(\d+)_/);
+      if (!match) continue;
+      counts[match[1]] = (counts[match[1]] || 0) + 1;
+    }
+    return counts;
+  }
+
+  it("adds no NEW colliding version prefix", () => {
+    // A new migration must carry a prefix no existing file uses — in practice a full
+    // 14-digit `YYYYMMDDHHMMSS` stamp, which is what the CLI generates and what the
+    // pre-20260728 files in this directory already use. Date-only prefixes are how
+    // the collisions above happened.
+    const collisions = Object.fromEntries(
+      Object.entries(prefixCounts()).filter(([, count]) => count > 1)
+    );
+    expect(
+      collisions,
+      "a new migration shares a version prefix with an existing one — give it a full " +
+        "YYYYMMDDHHMMSS stamp so the CLI ledger can record it"
+    ).toEqual(GRANDFATHERED_COLLISIONS);
+  });
+
+  it("does not let the grandfathered list grow", () => {
+    // The exception list is a record of past mistakes, not an allowance. Adding to it
+    // should require editing this assertion and justifying why.
+    expect(Object.keys(GRANDFATHERED_COLLISIONS).length).toBe(2);
+  });
+});
+
 describe("the reasoning survives in the file", () => {
   it("records why there are two directories and why they were not merged", () => {
     // This is a rejected request, not an unbuilt one, so the reason has to outlive

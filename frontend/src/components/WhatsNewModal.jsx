@@ -8,8 +8,10 @@ import { Modal } from "./Modal";
  */
 
 // Bump this when deploying meaningful beta updates.
-// The modal will show once per version bump.
-const CURRENT_VERSION = "0.9.1";
+// The modal will show once per version bump. Exported so Settings → App &
+// Support can display the running version (docs/SETTINGS_SPEC.md §6 #12 —
+// "version is never shown") without a second, driftable copy of the string.
+export const CURRENT_VERSION = "0.9.1";
 const VERSION_KEY = "aquadex_last_seen_version";
 
 // User-facing changelog entries (most recent first).

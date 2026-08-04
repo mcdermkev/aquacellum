@@ -16,9 +16,13 @@ export function ModeSegmentedControl({ casualModeActive, onToggle }) {
     
     if (!hasSeenHint) {
       localStorage.setItem("aquadex_mode_hint_seen", "true");
+      // Keep this honest: casual hides exactly one tab (Breeder Tools), and the
+      // old copy named Register / Lineage / Spawning as tabs — they stopped being
+      // tabs when Breeder Tools was consolidated. Nothing is locked either way;
+      // mode is a display preference, not an entitlement (entitlements.js).
       const text = newCasualVal
-        ? "Casual mode: simplified labels, fewer tabs. Perfect for hobbyists."
-        : "Pro mode: full breeder tools including Register, Lineage, and Spawning.";
+        ? "Casual mode: friendlier wording and gamified progress. Nothing is locked."
+        : "Pro mode: operational wording, lineage detail, and the Breeder Tools tab.";
       setHintText(text);
       setShowHint(true);
       setTimeout(() => setShowHint(false), 4500);

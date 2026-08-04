@@ -2,13 +2,18 @@ import React from "react";
 import { announce } from "../utils/a11y";
 
 /**
- * HighContrastToggle — Settings-tab control for app-wide high-contrast mode
- * (Task 21D). Sits in the same accessibility cluster as FontSizeSettings.
+ * HighContrastToggle — Settings → Accessibility control for app-wide
+ * high-contrast mode (Task 21D). Sits in the same accessibility cluster as
+ * FontSizeSettings.
  *
  * A real `<button>` with `role="switch"`/`aria-checked` (keyboard-operable
  * by default — Enter/Space activate a button natively), labeled, and
  * `announce()`s the new state so the change is perceivable to screen-reader
  * users even though the visual change (contrast) is not.
+ *
+ * Renders as plain content inside a `SettingsSection` card (docs/
+ * SETTINGS_SPEC.md §5, AC-2) — no own panel or heading; the accessibility
+ * section already provides both.
  *
  * Props:
  *   - enabled (boolean) — current state, from useHighContrast()
@@ -21,14 +26,8 @@ export function HighContrastToggle({ enabled, onToggle }) {
   };
 
   return (
-    <div style={panelStyle}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-        <h3 style={{ margin: 0, fontSize: 15, color: "#38bdf8" }}>
-          ◐ High Contrast Mode
-        </h3>
-      </div>
-
-      <p style={{ fontSize: 11, color: "#64748b", marginBottom: 14, lineHeight: 1.4 }}>
+    <div>
+      <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.4 }}>
         Increases text, border, and surface contrast throughout the app for better readability.
       </p>
 
@@ -85,16 +84,3 @@ export function HighContrastToggle({ enabled, onToggle }) {
   );
 }
 
-const panelStyle = {
-  position: "relative",
-  width: "100%",
-  maxWidth: 640,
-  margin: "0 auto",
-  background: "rgba(10, 22, 40, 0.95)",
-  border: "1px solid rgba(56, 189, 248, 0.2)",
-  borderRadius: 14,
-  padding: "16px 18px",
-  color: "#e2e8f0",
-  fontFamily: "system-ui, sans-serif",
-  backdropFilter: "blur(14px)",
-};

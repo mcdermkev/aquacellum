@@ -6,8 +6,15 @@
  * Returns the active moment (if any) for the overlay to render.
  *
  * Usage in App.jsx:
- *   const { activeMoment, dismissMoment } = useEchoRareMoments(echoState);
+ *   const { activeMoment, dismissMoment } = useEchoRareMoments(echoState, echoEnabled);
  *   {activeMoment && <EchoRareMomentOverlay moment={activeMoment} onComplete={dismissMoment} />}
+ *
+ * ⚠️ `enabled` must be gated at the HOOK, not just at the overlay's render.
+ * `performCheck` calls `recordRareMoment(...)` the instant it selects a moment —
+ * which permanently consumes it. If the check ran while Echo was switched off
+ * (docs/SETTINGS_SPEC.md D-S-4), the moment would be marked as seen and the user
+ * would silently lose a rare animation they were never shown. Suppressing Echo's
+ * presence must not spend Echo's content.
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -20,10 +27,14 @@ import { getMoodFromNeeds, NEED_KEYS } from "../utils/echoNeeds";
 
 const CHECK_INTERVAL_MS = 30 * 60 * 1000; // Every 30 minutes
 
-export function useEchoRareMoments(echoState) {
+export function useEchoRareMoments(echoState, enabled = true) {
   const [activeMoment, setActiveMoment] = useState(null);
   const checkInterval = useRef(null);
   const hasCheckedOnMount = useRef(false);
+
+  // Treat "has an Echo" and "Echo is switched on" as the same precondition for
+  // every effect below, so there is one flag to reason about.
+  const active = !!enabled && !!echoState?.hasEcho;
 
   // Build context from echoState
   const buildContext = useCallback(() => {
@@ -95,7 +106,7 @@ export function useEchoRareMoments(echoState) {
 
   // Check on mount (with small delay to avoid immediate popup)
   useEffect(() => {
-    if (!echoState?.hasEcho || hasCheckedOnMount.current) return;
+    if (!active || hasCheckedOnMount.current) return;
     hasCheckedOnMount.current = true;
 
     const timer = setTimeout(() => {
@@ -103,17 +114,23 @@ export function useEchoRareMoments(echoState) {
     }, 5000); // 5 second delay after app loads
 
     return () => clearTimeout(timer);
-  }, [echoState?.hasEcho, performCheck]);
+  }, [active, performCheck]);
 
   // Periodic checks
   useEffect(() => {
-    if (!echoState?.hasEcho) return;
+    if (!active) return;
 
     checkInterval.current = setInterval(performCheck, CHECK_INTERVAL_MS);
     return () => {
       if (checkInterval.current) clearInterval(checkInterval.current);
     };
-  }, [echoState?.hasEcho, performCheck]);
+  }, [active, performCheck]);
+
+  // Turning Echo off mid-session dismisses any moment already on screen, so the
+  // overlay can't outlive the companion it belongs to.
+  useEffect(() => {
+    if (!enabled) setActiveMoment(null);
+  }, [enabled]);
 
   // Listen for actions that might enable rare moments (water change tracking)
   useEffect(() => {

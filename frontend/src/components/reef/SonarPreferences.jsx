@@ -103,7 +103,7 @@ const DEFAULT_PREFS = {
   emailDigest: "off", // off | daily | weekly
 };
 
-export function SonarPreferences({ onClose, casualModeActive = false }) {
+export function SonarPreferences({ onClose, casualModeActive = false, poseidonAiDisabled = false, embedded = false }) {
   const [prefs, setPrefs] = useState(DEFAULT_PREFS);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -315,19 +315,25 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
 
   return (
     <section className="sonar-prefs" aria-label="Notification Preferences">
-      <header className="sonar-prefs__header">
-        <div>
-          <h2>🔔 Notification Preferences</h2>
-          <p className="sonar-prefs__subtitle">
-            {casualModeActive
-              ? "Choose what Aquacellum tells you about, and how."
-              : "Configure notification categories, delivery channels, and quiet hours."}
-          </p>
-        </div>
-        {onClose && (
-          <button className="btn btn--ghost" onClick={onClose} aria-label="Close">✕</button>
-        )}
-      </header>
+      {/* `embedded` (Settings → Notifications, docs/SETTINGS_SPEC.md §6 #3)
+          skips this heading — the enclosing SettingsSection already renders
+          "Notifications" / "Sonar & Alerts". The Reef inbox call site keeps
+          it, since it has no other heading. */}
+      {!embedded && (
+        <header className="sonar-prefs__header">
+          <div>
+            <h2>🔔 Notification Preferences</h2>
+            <p className="sonar-prefs__subtitle">
+              {casualModeActive
+                ? "Choose what Aquacellum tells you about, and how."
+                : "Configure notification categories, delivery channels, and quiet hours."}
+            </p>
+          </div>
+          {onClose && (
+            <button className="btn btn--ghost" onClick={onClose} aria-label="Close">✕</button>
+          )}
+        </header>
+      )}
 
       {/* ── Push on this device ──────────────────────────────────────────────
           Deliberately the FIRST thing in the panel. The category matrix below
@@ -407,46 +413,64 @@ export function SonarPreferences({ onClose, casualModeActive = false }) {
             push yet — turn it on above.
           </p>
         )}
-        {CATEGORIES.map((cat) => (
-          <div key={cat.key} className="sonar-prefs__category">
-            <div className="sonar-prefs__category-info">
-              <span className="sonar-prefs__category-icon">{cat.icon}</span>
-              <div>
-                <strong>{cat.label}</strong>
-                <p className="text-muted text-sm">{cat.desc}</p>
+        {CATEGORIES.map((cat) => {
+          // Coupling (docs/SETTINGS_SPEC.md §6 #3): the Poseidon category here
+          // used to sit directly below the AI Companions card that disables
+          // Poseidon with zero relationship between them — a category you
+          // could "enable" for a companion that was off and would never send
+          // anything. `poseidonAiDisabled` is the AI Companions toggle from
+          // Settings → AI Companions (useAiPrefs), passed down by the caller;
+          // this component still owns nothing about that preference, it only
+          // reflects it.
+          const coupledOff = cat.key === "poseidon" && poseidonAiDisabled;
+          return (
+            <div key={cat.key} className="sonar-prefs__category">
+              <div className="sonar-prefs__category-info">
+                <span className="sonar-prefs__category-icon">{cat.icon}</span>
+                <div>
+                  <strong>{cat.label}</strong>
+                  <p className="text-muted text-sm">{cat.desc}</p>
+                  {coupledOff && (
+                    <p className="sonar-prefs__note sonar-prefs__note--info" style={{ marginTop: "0.35rem" }}>
+                      Poseidon is turned off in AI Companions, so this category won't send anything
+                      until you turn it back on there.
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-            <div className="sonar-prefs__category-controls">
-              <label className="toggle-switch">
-                <input
-                  type="checkbox"
-                  checked={prefs.categories[cat.key]?.enabled ?? true}
-                  onChange={(e) => updateCategory(cat.key, "enabled", e.target.checked)}
-                  aria-label={`Enable ${cat.label} notifications`}
-                />
-                <span className="toggle-switch__track"><span className="toggle-switch__thumb" /></span>
-                <span className="toggle-switch__label">In-app</span>
-              </label>
-              {pushStatus?.supported && (
+              <div className="sonar-prefs__category-controls">
                 <label className="toggle-switch">
                   <input
                     type="checkbox"
-                    checked={prefs.categories[cat.key]?.push ?? false}
-                    onChange={(e) => updateCategory(cat.key, "push", e.target.checked)}
-                    // Was: enabled whenever push was "supported", and its
-                    // onChange kicked off a permission request whose failure was
-                    // swallowed. Enrolment is now one explicit action above, and
-                    // this switch only records an account-level preference.
-                    disabled={!pushConfigurable || !prefs.categories[cat.key]?.enabled}
-                    aria-label={`Enable ${cat.label} push notifications`}
+                    checked={prefs.categories[cat.key]?.enabled ?? true}
+                    onChange={(e) => updateCategory(cat.key, "enabled", e.target.checked)}
+                    disabled={coupledOff}
+                    aria-label={`Enable ${cat.label} notifications`}
                   />
                   <span className="toggle-switch__track"><span className="toggle-switch__thumb" /></span>
-                  <span className="toggle-switch__label">Push</span>
+                  <span className="toggle-switch__label">In-app</span>
                 </label>
-              )}
+                {pushStatus?.supported && (
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={prefs.categories[cat.key]?.push ?? false}
+                      onChange={(e) => updateCategory(cat.key, "push", e.target.checked)}
+                      // Was: enabled whenever push was "supported", and its
+                      // onChange kicked off a permission request whose failure was
+                      // swallowed. Enrolment is now one explicit action above, and
+                      // this switch only records an account-level preference.
+                      disabled={!pushConfigurable || !prefs.categories[cat.key]?.enabled || coupledOff}
+                      aria-label={`Enable ${cat.label} push notifications`}
+                    />
+                    <span className="toggle-switch__track"><span className="toggle-switch__thumb" /></span>
+                    <span className="toggle-switch__label">Push</span>
+                  </label>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Quiet Hours */}

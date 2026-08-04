@@ -1,4 +1,6 @@
 import React from "react";
+import { useUnitPrefs } from "../hooks/useUnitPrefs";
+import { formatTemperature } from "../utils/units";
 
 const ACTION_COLORS = {
   "Water Change": "#38bdf8",
@@ -10,6 +12,8 @@ const ACTION_COLORS = {
 };
 
 export function ActivityLog({ onChainLogs, actionLogs, casualModeActive }) {
+  const { tempUnit } = useUnitPrefs();
+
   // Safely extract primitive values from ethers.js Result objects (never spread them)
   const safeOnChain = Array.isArray(onChainLogs) ? onChainLogs : [];
   const safeAction  = Array.isArray(actionLogs)  ? actionLogs  : [];
@@ -71,7 +75,12 @@ export function ActivityLog({ onChainLogs, actionLogs, casualModeActive }) {
               <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>{new Date(log._ts).toLocaleString()}</span>
             </div>
             <span style={{ color: "var(--accent-blue)" }}>
-              Temp: {(log.tempRaw / 10).toFixed(1)}°C ({((log.tempRaw / 10) * 9 / 5 + 32).toFixed(1)}°F) | pH: {(log.phRaw / 10).toFixed(1)}
+              {/*
+                Honours Settings → Units & Formatting. `tempUnit` defaults to
+                "both", which formats as `24.5°C (76.1°F)` — byte-identical to the
+                hardcoded output this replaced, so the default path is unchanged.
+              */}
+              Temp: {formatTemperature(log.tempRaw / 10, tempUnit, { parenthesizeSecond: true })} | pH: {(log.phRaw / 10).toFixed(1)}
             </span>
             {log.notesStr ? <p style={{ color: "var(--text-secondary)", marginTop: "0.25rem", margin: 0 }}>"{log.notesStr}"</p> : null}
           </div>

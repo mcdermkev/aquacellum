@@ -25,6 +25,8 @@ import {
   retirementOutcomeLabel,
 } from "../utils/specimenIdentity";
 import { SEX, SEX_OPTIONS, isKnownSex, normalizeSex, sexOptionLabel, sexSymbol } from "../utils/specimenSex";
+import { useUnitPrefs } from "../hooks/useUnitPrefs";
+import { celsiusToFahrenheit, formatTemperature, showCelsius, showFahrenheit } from "../utils/units";
 import { createCurrent } from "../services/reefApi";
 import { isSupabaseConfigured } from "../services/supabaseClient";
 import { TankCamSetup } from "./tank-cam/TankCamSetup";
@@ -62,6 +64,10 @@ import { getTankPhoto, putTankPhoto, putSpecimenPhoto, resolveSpecimenPhoto } fr
 import { getSupabaseImageUrl, isInsideEnvelope, getTrackBackground, CONTAINMENT_TYPES, getWaterEnvelope, tankTypeLabel } from "../utils/tankUtils";
 export function TankList({ contractAddress, walletAccount, onViewLineage, onListOnMarketplace, onSelectSpecimen, casualModeActive = false }) {
   const queryClient = useQueryClient();
+  // Settings → Units & Formatting. `primaryTempUnit` collapses "both" to the
+  // leading scale, for lines (like the ideal range) that show one value only.
+  const { tempUnit } = useUnitPrefs();
+  const primaryTempUnit = showCelsius(tempUnit) ? "c" : "f";
   const { data: fishbaseData = [] } = useSpeciesData();
   const { data: fetchedTanks = [], isLoading: tanksLoading, error: tanksError, refetch: refetchTanks } = useUserTanks(contractAddress, walletAccount);
   const tanks = fetchedTanks;
@@ -2981,17 +2987,38 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               </span>
                             )}
                           </div>
+                          {/*
+                            Honours Settings → Units & Formatting. The primary
+                            reading keeps the large treatment and the secondary the
+                            small muted one, so `tempUnit === "both"` (the default)
+                            renders exactly what this tile rendered before the
+                            preference existed. Picking a single unit drops the
+                            secondary rather than restyling the tile.
+                          */}
                           <strong style={{ fontSize: "1.25rem", color: "#fff" }}>
-                            {activeTank.latestLog ? (
-                              <>
-                                {(activeTank.latestLog.tempCelsiusX10 / 10).toFixed(1)}°C
-                                <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginLeft: "0.4rem" }}>
-                                  / {((activeTank.latestLog.tempCelsiusX10 / 10) * 9 / 5 + 32).toFixed(1)}°F
-                                </span>
-                              </>
-                            ) : "N/A"}
+                            {activeTank.latestLog ? (() => {
+                              const celsius = activeTank.latestLog.tempCelsiusX10 / 10;
+                              const primary = showCelsius(tempUnit)
+                                ? `${celsius.toFixed(1)}°C`
+                                : `${celsiusToFahrenheit(celsius).toFixed(1)}°F`;
+                              const showSecondary = showCelsius(tempUnit) && showFahrenheit(tempUnit);
+                              return (
+                                <>
+                                  {primary}
+                                  {showSecondary && (
+                                    <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginLeft: "0.4rem" }}>
+                                      / {celsiusToFahrenheit(celsius).toFixed(1)}°F
+                                    </span>
+                                  )}
+                                </>
+                              );
+                            })() : "N/A"}
                           </strong>
-                          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Ideal range: {minSafeTemp.toFixed(1)}°C - {maxSafeTemp.toFixed(1)}°C</span>
+                          {/* The range follows the primary unit only — rendering
+                              both bounds in both scales makes this line unreadable. */}
+                          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>
+                            Ideal range: {formatTemperature(minSafeTemp, primaryTempUnit)} - {formatTemperature(maxSafeTemp, primaryTempUnit)}
+                          </span>
                         </div>
 
                         {/* pH */}

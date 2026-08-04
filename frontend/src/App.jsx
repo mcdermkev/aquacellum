@@ -6,9 +6,7 @@ import { GlobeHemisphereWest } from "@phosphor-icons/react";
 import { ConnectWallet } from "./components/ConnectWallet";
 import { CartButton } from "./components/cart/CartButton";
 import { CartDrawer } from "./components/cart/CartDrawer";
-import { FontSizeSettings } from "./components/FontSizeSettings";
 import { useFontSettings } from "./hooks/useFontSettings";
-import { HighContrastToggle } from "./components/HighContrastToggle";
 import { useHighContrast } from "./hooks/useHighContrast";
 import { SpecimenDetailModal } from "./components/SpecimenDetailModal";
 import { getLevelInfo, getXp } from "./utils/xp";
@@ -35,6 +33,7 @@ import { EchoWhispers } from "./components/EchoWhispers";
 import { EchoAmbient } from "./components/EchoAmbient";
 import { useEchoState } from "./hooks/useEchoState";
 import { useEchoRareMoments } from "./hooks/useEchoRareMoments";
+import { useAiPrefs } from "./hooks/useAiPrefs";
 import { BetaBanner } from "./components/BetaBanner";
 import { db } from "./db";
 import { TabErrorBoundary } from "./components/TabErrorBoundary";
@@ -90,8 +89,8 @@ const CheckoutSummary = lazy(() =>
 const IncomingSpecimens = lazy(() =>
   import("./components/IncomingSpecimens").then((m) => ({ default: m.IncomingSpecimens }))
 );
-const DataPortabilityWidget = lazy(() =>
-  import("./components/DataPortabilityWidget").then((m) => ({ default: m.DataPortabilityWidget }))
+const SettingsPanel = lazy(() =>
+  import("./components/settings/SettingsPanel").then((m) => ({ default: m.SettingsPanel }))
 );
 const FoundersDashboard = lazy(() =>
   import("./components/FoundersDashboard").then((m) => ({ default: m.FoundersDashboard }))
@@ -122,13 +121,15 @@ export default function App() {
   const { account, ready, authenticated, getAccessToken } = useAuth();
   const queryClient = useQueryClient();
   // Apply the user's saved font-size preference app-wide on every load. The
-  // Settings tab's FontSizeSettings panel lets them change it; this call keeps
-  // the choice applied globally, not just while that panel is mounted.
+  // Settings tab's Accessibility section lets them change it; this call keeps
+  // the choice applied globally, not just while that section is mounted.
   useFontSettings();
   // Task 21D: same pattern for high-contrast mode — apply the persisted
   // preference app-wide on every load, not just while the Settings tab's
-  // HighContrastToggle happens to be mounted.
-  const highContrast = useHighContrast();
+  // Accessibility section happens to be mounted. `SettingsPanel` binds its
+  // own independent `useHighContrast()` for the toggle itself; both share
+  // the same underlying persisted value.
+  useHighContrast();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
@@ -446,12 +447,27 @@ export default function App() {
   const [echoUserState, setEchoUserState] = useState({ totalXp: 0, streakDays: 0, lastActiveDate: null, currentTier: "Shallow" });
   const [echoTankData, setEchoTankData] = useState({});
 
+  // AI companion preferences (Settings → AI Companions). `echoEnabled` gates every
+  // Echo surface below; see docs/SETTINGS_SPEC.md D-S-4. Deliberately does NOT gate
+  // `useEchoState` itself: off means quiet, not reset. Echo's needs keep being
+  // replenished by XP events while hidden, so switching it back on returns the
+  // companion as you left it rather than a starved one.
+  const { echoEnabled } = useAiPrefs();
+
   // Echo Living Companion — unified state hook for the new Tamagotchi system
   const echoState = useEchoState(account);
   const [echoFullScreenOpen, setEchoFullScreenOpen] = useState(false);
 
-  // Echo Rare Moments — time-gated special animations
-  const { activeMoment, dismissMoment } = useEchoRareMoments(echoState);
+  // Echo Rare Moments — time-gated special animations. Gated at the hook, not the
+  // overlay: the check consumes the moment it picks (see the hook's docblock).
+  const { activeMoment, dismissMoment } = useEchoRareMoments(echoState, echoEnabled);
+
+  // Switching Echo off while the full-screen companion is open closes it, rather
+  // than leaving `echoFullScreenOpen` latched — otherwise re-enabling Echo later
+  // would drop the user straight back into a full-screen overlay they never reopened.
+  useEffect(() => {
+    if (!echoEnabled) setEchoFullScreenOpen(false);
+  }, [echoEnabled]);
 
   const [marketplaceContract, setMarketplaceContract] = useState(null);
 
@@ -859,17 +875,18 @@ export default function App() {
         );
       case "settings":
         return (
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            <FontSizeSettings />
-            <HighContrastToggle enabled={highContrast.enabled} onToggle={highContrast.toggle} />
-            <DataPortabilityWidget 
-              casualModeActive={casualModeActive} 
-              onToggleMode={(newCasualVal) => {
-                setCasualModeActive(newCasualVal);
-                localStorage.setItem("aquadex_casual_mode", newCasualVal.toString());
-              }}
-            />
-          </div>
+          <SettingsPanel
+            casualModeActive={casualModeActive}
+            onToggleMode={(newCasualVal) => {
+              setCasualModeActive(newCasualVal);
+              localStorage.setItem("aquadex_casual_mode", newCasualVal.toString());
+            }}
+            // Threaded rather than read from localStorage inside the section, so
+            // picking an active tank in Settings updates the same state the cart
+            // drawer and specimen compatibility already read (App.jsx persists it).
+            displayTank={displayTank}
+            setDisplayTank={setDisplayTank}
+          />
         );
       case "founders":
         return (
@@ -901,7 +918,7 @@ export default function App() {
               onSelectSpecimen={setSelectedSpecimenId}
             />
             <div className="zone-leaderboard-sidebar" style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-              {casualModeActive && (
+              {casualModeActive && echoEnabled && (
                 <div style={{ flex: "1 1 260px", minWidth: 0 }}>
                   <EchoCompanionWidget casualModeActive={casualModeActive} compact />
                 </div>
@@ -1313,7 +1330,7 @@ export default function App() {
       </main>
 
       {/* Echo Whispers — proactive companion nudges (casual mode only) */}
-      {casualModeActive && (
+      {casualModeActive && echoEnabled && (
         <EchoWhispers
           casualModeActive={casualModeActive}
           userState={echoUserState}
@@ -1322,7 +1339,7 @@ export default function App() {
       )}
 
       {/* Echo Ambient Presence — persistent floating companion (casual mode only) */}
-      {casualModeActive && echoState.hasEcho && !echoFullScreenOpen && (
+      {casualModeActive && echoEnabled && echoState.hasEcho && !echoFullScreenOpen && (
         <EchoAmbient
           dna={echoState.dna}
           stage={echoState.stage}
@@ -1336,7 +1353,7 @@ export default function App() {
       )}
 
       {/* Echo Living Companion — full-screen interactive experience */}
-      {echoFullScreenOpen && echoState.hasEcho && (
+      {echoFullScreenOpen && echoEnabled && echoState.hasEcho && (
         <Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#0a0f1e", zIndex: 9500 }} />}>
           <EchoLivingCompanion
             dna={echoState.dna}
@@ -1354,7 +1371,7 @@ export default function App() {
       )}
 
       {/* Echo Rare Moment Overlay — special time-gated animations */}
-      {activeMoment && casualModeActive && (
+      {activeMoment && casualModeActive && echoEnabled && (
         <Suspense fallback={null}>
           <EchoRareMomentOverlay
             moment={activeMoment}

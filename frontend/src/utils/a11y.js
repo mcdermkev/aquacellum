@@ -118,9 +118,59 @@ export const SKIP_TO_FEED = "reef-feed-main";
 export const SKIP_TO_SEARCH = "reef-search-input";
 
 /**
- * Prefersreduced motion check.
+ * Reduced-motion override (Settings → Accessibility).
+ *
+ * `prefersReducedMotion()` across the app reads only the OS-level
+ * `prefers-reduced-motion: reduce` media query. That means someone on a
+ * device/browser combo that doesn't expose the OS setting (or who just wants
+ * less motion inside this app without changing it system-wide) has no lever.
+ *
+ * `aquadex_reduced_motion_override` in localStorage adds one, three-valued:
+ *   - "on"  — force reduced motion regardless of the OS query
+ *   - "off" — force full motion regardless of the OS query
+ *   - unset / anything else — defer to the OS query (today's behavior)
+ *
+ * Every existing call site of `prefersReducedMotion()` picks this up for
+ * free, since the override is checked first inside that same function.
+ */
+const REDUCED_MOTION_OVERRIDE_KEY = "aquadex_reduced_motion_override";
+
+/**
+ * @returns {"auto"|"on"|"off"}
+ */
+export function getReducedMotionOverride() {
+  try {
+    const raw = localStorage.getItem(REDUCED_MOTION_OVERRIDE_KEY);
+    return raw === "on" || raw === "off" ? raw : "auto";
+  } catch {
+    return "auto";
+  }
+}
+
+/**
+ * @param {"auto"|"on"|"off"} value
+ */
+export function setReducedMotionOverride(value) {
+  try {
+    if (value === "auto") {
+      localStorage.removeItem(REDUCED_MOTION_OVERRIDE_KEY);
+    } else {
+      localStorage.setItem(REDUCED_MOTION_OVERRIDE_KEY, value);
+    }
+  } catch {
+    // non-fatal — localStorage may be unavailable
+  }
+}
+
+/**
+ * Prefers reduced motion check. Consults the manual override first (see
+ * above), then falls back to the OS-level `prefers-reduced-motion: reduce`
+ * media query — unchanged default behavior when no override is set.
  */
 export function prefersReducedMotion() {
+  const override = getReducedMotionOverride();
+  if (override === "on") return true;
+  if (override === "off") return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 

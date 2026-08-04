@@ -36,23 +36,38 @@ const PATTERNS = {
 };
 
 /**
+ * The user's stored preference alone, ignoring device support and reduced
+ * motion. This is what a Settings toggle should read as its checked state —
+ * `hapticsEnabled()` folds in "does this device even support vibration" and
+ * "does the OS/app want reduced motion", either of which would otherwise make
+ * the switch silently render "off" for a preference the user actually left on.
+ */
+export function isHapticsPreferenceEnabled() {
+  try {
+    return localStorage.getItem(SETTING_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
+
+/**
  * Whether haptics are currently allowed to fire.
  */
 export function hapticsEnabled() {
   if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") {
     return false;
   }
-  try {
-    if (localStorage.getItem(SETTING_KEY) === "off") return false;
-  } catch {
-    // localStorage may be unavailable (private mode / SSR) — fall through.
-  }
+  if (!isHapticsPreferenceEnabled()) return false;
   if (prefersReducedMotion()) return false;
   return true;
 }
 
 /**
  * Persist the user's haptics preference. Pass `false` to disable.
+ *
+ * Previously exported with zero callers (docs/SETTINGS_REWORK_HANDOFF.md
+ * §3.5) — `hapticsEnabled()` had a reader, but nothing in the app could ever
+ * turn it off. `HapticsToggle` (Settings → Accessibility) is that caller.
  */
 export function setHapticsEnabled(enabled) {
   try {
