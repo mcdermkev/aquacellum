@@ -51,8 +51,36 @@ import { exportUserData } from "../services/gdprService";
 const TEST_WALLET = "0xTEST_INTEGRATION_" + Date.now().toString(36);
 const TEST_WALLET_2 = "0xTEST_INTEGRATION_2_" + Date.now().toString(36);
 
+/**
+ * ⚠️ THESE TESTS WRITE TO WHATEVER SUPABASE PROJECT IS CONFIGURED, SO THEY ARE
+ * OPT-IN.
+ *
+ * They used to run whenever `isSupabaseConfigured()` was true — which is true for
+ * any developer with a populated `frontend/.env`. Since each run mints a fresh
+ * `0xTEST_INTEGRATION_<timestamp>` wallet, every `npm test` on a normal dev machine
+ * inserted a new profile row into the PRODUCTION database. By 2026-08-04 that was
+ * 287 of 298 profiles (96%), accumulated since 2026-06-07.
+ *
+ * The `afterAll` cleanup below looked like it prevented exactly this. It did not,
+ * and the way it failed is worth remembering: there is **no DELETE policy on
+ * `profiles`**, so with RLS enabled the anon client cannot delete a profile — and
+ * PostgREST answers a delete whose rows are filtered out by RLS with *success and
+ * zero rows affected*, not an error. So nothing threw, the `catch` never ran, and
+ * the cleanup reported success 287 times while deleting nothing. Same shape as the
+ * push-subscription bug: an unchecked write that looks like it worked.
+ *
+ * Note the fix is NOT to add a DELETE policy for anon — that would let anyone
+ * delete anyone's profile. The fix is to not create the rows in a real project in
+ * the first place, and to make cleanup prove it worked when it does run.
+ *
+ * To run them deliberately, against a project you are willing to write to:
+ *   RUN_REEF_INTEGRATION=1 npx vitest --run src/__tests__/reef-integration.test.js
+ */
+const OPTED_IN = process.env.RUN_REEF_INTEGRATION === "1";
+
 describe("Reef Integration Tests", () => {
-  const configured = isSupabaseConfigured();
+  // Both conditions required: opted in AND actually configured.
+  const configured = OPTED_IN && isSupabaseConfigured();
 
   describe("Rate Limiter (client-side)", () => {
     beforeAll(() => {
@@ -233,10 +261,16 @@ describe("Reef Integration Tests", () => {
   });
 
   // Cleanup
+  //
+  // ⚠️ This MUST verify, not just attempt. The previous version swallowed all
+  // errors as "non-critical" — but the failure mode here is not an exception, it is
+  // a delete that RLS silently reduces to zero rows. Attempting without checking is
+  // how 287 profiles accumulated while this block reported success every time.
   afterAll(async () => {
     if (!configured) return;
 
-    // Clean up test data
+    const leaked = [];
+
     try {
       await supabase.from("comments").delete().eq("author_wallet", TEST_WALLET);
       await supabase.from("reactions").delete().eq("user_wallet", TEST_WALLET);
@@ -244,10 +278,30 @@ describe("Reef Integration Tests", () => {
       await supabase.from("connection_requests").delete().eq("from_wallet", TEST_WALLET);
       await supabase.from("profiles").delete().eq("wallet_address", TEST_WALLET);
       await supabase.from("profiles").delete().eq("wallet_address", TEST_WALLET_2);
-    } catch {
-      // Cleanup failures are non-critical
+    } catch (err) {
+      leaked.push(`delete threw: ${err?.message || err}`);
+    }
+
+    // Read back. A row still present means the delete was filtered, not applied.
+    for (const wallet of [TEST_WALLET, TEST_WALLET_2]) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("wallet_address")
+        .eq("wallet_address", wallet);
+      if (data && data.length > 0) leaked.push(wallet);
     }
 
     resetRateLimits();
+
+    if (leaked.length > 0) {
+      // Loud on purpose. Silent accumulation in a real project is the bug this
+      // whole block exists to prevent, so a leak has to be impossible to miss.
+      throw new Error(
+        `[reef-integration] CLEANUP FAILED — test rows are still in the database: ` +
+          `${leaked.join(", ")}. There is no DELETE policy on \`profiles\`, so the ` +
+          `anon client cannot remove them and PostgREST reports success anyway. ` +
+          `Remove them with a service-role connection before running again.`
+      );
+    }
   });
 });
