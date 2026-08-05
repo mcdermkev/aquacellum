@@ -6,10 +6,18 @@
  *   1. Every REQUIRED entitlement is true for a 0-XP, no-role context, and no
  *      REQUIRED entry ever carries a minTier.
  *   2. Tier gating is correct tier-by-tier for every EARNED entitlement.
+ *  2b. ACTIVITY gating opens on demonstrated activity and NEVER on XP.
  *   3. Explicit non-gating assertions for named commerce/safety capabilities.
  *   4. Administrative entitlements gate on role, not XP.
  *   5. The tier discount is a perk, not a checkout precondition.
  *   6. Migrated Reef privileges resolve to their pre-existing required tiers.
+ *
+ * NOTE ON THE XP REWORK: XP is now a score and a cosmetic engine, so the tools it
+ * used to gate moved to REQUIRED (core, never gated) or ACTIVITY (opens when the
+ * tool becomes useful). Several assertions here previously pinned the OLD policy —
+ * "order_analytics is EARNED", "canPostInsights requires Coastal", "one EARNED
+ * entitlement per tier" — and were rewritten rather than deleted, so the new
+ * taxonomy is asserted just as tightly as the old one was.
  *
  * Run with: npx vitest --run src/__tests__/entitlements.test.js
  */
@@ -19,14 +27,17 @@ import {
   ENTITLEMENT_CLASS,
   ENTITLEMENTS,
   REQUIRED_ENTITLEMENTS,
+  ACTIVITY_ENTITLEMENTS,
+  ACTIVITY_FACTS,
   TIER_ORDER,
   tierAtLeast,
   resolveTier,
   hasEntitlement,
   getRequiredTierFor,
+  getUnlockRequirement,
 } from "../services/entitlements.js";
 
-const { REQUIRED, EARNED, ADMIN } = ENTITLEMENT_CLASS;
+const { REQUIRED, ACTIVITY, EARNED, ADMIN } = ENTITLEMENT_CLASS;
 
 describe("TIER_ORDER", () => {
   it("matches the canonical XP tier ladder order", () => {
@@ -63,9 +74,32 @@ describe("1. Safety invariant — REQUIRED entitlements", () => {
 describe("2. Tier gating — EARNED entitlements", () => {
   const earnedKeys = Object.keys(ENTITLEMENTS).filter((k) => ENTITLEMENTS[k].class === EARNED);
 
-  it("has at least one EARNED entitlement per gated tier (Coastal/Pelagic/Abyssal/Hadal)", () => {
+  it("tier-gates ONLY the loyalty perk and social authority — never a tool", () => {
+    // XP is now a score and a cosmetic engine, not a gate. What legitimately
+    // remains tier-gated is (a) the loyalty discount, which is a reward rather
+    // than a capability, and (b) the privileges that decide who may judge, teach,
+    // or moderate other keepers — held back pending a policy decision, because
+    // converting them to ungranted roles would make them permanently unreachable.
+    //
+    // Every other former EARNED entry became REQUIRED or ACTIVITY. If a new tool
+    // shows up in this list, someone has put a convenience back behind a grind.
+    expect(new Set(earnedKeys)).toEqual(
+      new Set([
+        "tier_discount",
+        "canCreateSchools",
+        "canGiveAudits",
+        "canMentor",
+        "canHostVirtualTides",
+        "canHostExpoTides",
+        "canModerate",
+        "priority_curator_queue",
+      ])
+    );
+  });
+
+  it("has no Pelagic rung left, because nothing useful lives there any more", () => {
     const tiers = new Set(earnedKeys.map((k) => ENTITLEMENTS[k].minTier));
-    expect(tiers).toEqual(new Set(["Coastal", "Pelagic", "Abyssal", "Hadal"]));
+    expect(tiers.has("Pelagic")).toBe(false);
   });
 
   it("returns false below minTier and true at/above it, across all five tiers", () => {
@@ -85,16 +119,79 @@ describe("2. Tier gating — EARNED entitlements", () => {
   });
 
   it("derives tier from xp when tier is absent", () => {
-    // Pelagic entitlement, just under and just at the 2,500 XP threshold.
-    expect(hasEntitlement("order_analytics", { xp: 2499 })).toBe(false);
-    expect(hasEntitlement("order_analytics", { xp: 2500 })).toBe(true);
+    // Abyssal social-authority privilege, just under and just at 5,000 XP.
+    expect(hasEntitlement("canGiveAudits", { xp: 4999 })).toBe(false);
+    expect(hasEntitlement("canGiveAudits", { xp: 5000 })).toBe(true);
   });
 
   it("uses the higher of xp and tier so a stale DB tier never locks out earned XP", () => {
     // Local XP profile already at Abyssal, but a stale server tier says Shallow.
-    expect(hasEntitlement("bulk_management", { xp: 5000, tier: "Shallow" })).toBe(true);
+    expect(hasEntitlement("canMentor", { xp: 5000, tier: "Shallow" })).toBe(true);
     // Conversely, a fresher server tier ahead of stale local XP should also count.
-    expect(hasEntitlement("bulk_management", { xp: 0, tier: "Abyssal" })).toBe(true);
+    expect(hasEntitlement("canMentor", { xp: 0, tier: "Abyssal" })).toBe(true);
+  });
+});
+
+describe("2b. ACTIVITY gating — opens on demonstrated activity, not XP", () => {
+  const activityKeys = [...ACTIVITY_ENTITLEMENTS];
+
+  it("covers every scale tool that used to be tier-gated", () => {
+    expect(new Set(activityKeys)).toEqual(
+      new Set([
+        "order_analytics",
+        "csv_export",
+        "smart_reorder",
+        "bulk_management",
+        "auto_completion_rules",
+        "full_analytics_dashboard",
+        "deep_reputation_insights",
+        "promotion_automation",
+        "customer_segmentation",
+        "carrier_api_integration",
+      ])
+    );
+  });
+
+  it("declares a fact from the closed ACTIVITY_FACTS set, with a min and a hint", () => {
+    // A typo in `fact` would otherwise read undefined and gate on nothing — the
+    // silent name-mismatch defect the seam inventory exists to catch.
+    for (const key of activityKeys) {
+      const entry = ENTITLEMENTS[key];
+      expect(ACTIVITY_FACTS, `${key} declares an unknown fact`).toContain(entry.requires.fact);
+      expect(entry.requires.min, `${key} needs a positive min`).toBeGreaterThan(0);
+      expect(entry.unlockHint, `${key} needs copy the UI can show`).toBeTruthy();
+    }
+  });
+
+  it("is NOT unlocked by any amount of XP", () => {
+    // The whole point. Grinding must not open these, or we have just renamed the
+    // ladder rather than removed it.
+    for (const key of activityKeys) {
+      expect(
+        hasEntitlement(key, { xp: 999999, tier: "Hadal", activity: { completedOrders: 0, verifiedSales: 0, activeListings: 0 } }),
+        `${key} must not open on XP alone`
+      ).toBe(false);
+    }
+  });
+
+  it("opens exactly at its declared threshold", () => {
+    for (const key of activityKeys) {
+      const { fact, min } = ENTITLEMENTS[key].requires;
+      expect(hasEntitlement(key, { activity: { [fact]: min - 1 } }), `${key} below min`).toBe(false);
+      expect(hasEntitlement(key, { activity: { [fact]: min } }), `${key} at min`).toBe(true);
+    }
+  });
+
+  it("FAILS OPEN when activity facts have not loaded", () => {
+    // Deliberate, and the opposite of the unknown-key rule. Wrongly withholding is
+    // invisible — a seller who has earned bulk management simply never sees it and
+    // files no bug. Wrongly granting shows an empty panel, which is obvious and
+    // self-correcting. So an unloaded caller must not look like a new account.
+    for (const key of activityKeys) {
+      expect(hasEntitlement(key, {}), `${key} with no ctx`).toBe(true);
+      expect(hasEntitlement(key, { activity: null }), `${key} with null activity`).toBe(true);
+      expect(hasEntitlement(key, { activity: {} }), `${key} with empty facts`).toBe(true);
+    }
   });
 });
 
@@ -160,10 +257,10 @@ describe("5. Discount invariant", () => {
 });
 
 describe("6. Reef parity — migrated privileges resolve to their existing required tiers", () => {
+  // The privileges that decide who may judge, teach, or moderate others keep their
+  // original tiers on purpose — see the SOCIAL AUTHORITY note in entitlements.js.
   const expected = {
     canCreateSchools: "Coastal",
-    canPostInsights: "Coastal",
-    canRequestAudits: "Coastal",
     canGiveAudits: "Abyssal",
     canMentor: "Abyssal",
     canHostVirtualTides: "Abyssal",
@@ -173,6 +270,14 @@ describe("6. Reef parity — migrated privileges resolve to their existing requi
 
   it.each(Object.entries(expected))("%s requires %s", (privilege, tier) => {
     expect(getRequiredTierFor(privilege)).toBe(tier);
+  });
+
+  // These two were nominally spam control, which XP never actually provided: a
+  // spammer inflates localStorage XP in one line, while a genuine new keeper waited
+  // months. Posting rate limits are the real control.
+  it.each(["canPostInsights", "canRequestAudits"])("%s is no longer tier-gated", (privilege) => {
+    expect(getRequiredTierFor(privilege)).toBeNull();
+    expect(hasEntitlement(privilege, { xp: 0 })).toBe(true);
   });
 });
 
@@ -205,11 +310,22 @@ describe("Task 18 — buyer order capabilities are REQUIRED, only analytics/watc
     expect(hasEntitlement(key, { xp: 0, tier: "Shallow", roles: [] })).toBe(true);
   });
 
-  const gatedOrderConveniences = ["order_analytics", "csv_export", "species_watchlist", "smart_reorder"];
+  // Watching a species is core discovery and is now REQUIRED. Charging months of
+  // chores for a bookmark was the clearest case of progression that felt like work
+  // for no reason.
+  it("species_watchlist is REQUIRED — a bookmark is not a reward", () => {
+    expect(ENTITLEMENTS.species_watchlist.class).toBe(REQUIRED);
+    expect(hasEntitlement("species_watchlist", { xp: 0, tier: "Shallow" })).toBe(true);
+  });
 
-  it.each(gatedOrderConveniences)("%s is EARNED (tier-gated), not REQUIRED", (key) => {
-    expect(ENTITLEMENTS[key].class).toBe(EARNED);
-    expect(hasEntitlement(key, { xp: 0, tier: "Shallow" })).toBe(false);
+  // The three genuine order tools open on having actually ordered.
+  const activityGatedOrderTools = ["order_analytics", "csv_export", "smart_reorder"];
+
+  it.each(activityGatedOrderTools)("%s opens on completed orders, not tier", (key) => {
+    expect(ENTITLEMENTS[key].class).toBe(ACTIVITY);
+    expect(ENTITLEMENTS[key].requires.fact).toBe("completedOrders");
+    // A maxed-out account with no orders still has nothing to analyse.
+    expect(hasEntitlement(key, { xp: 999999, activity: { completedOrders: 0 } })).toBe(false);
   });
 });
 

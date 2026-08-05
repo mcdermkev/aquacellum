@@ -40,6 +40,7 @@ import { OrderWatchlistReorder } from "./OrderWatchlistReorder";
 import { BuyerInsights } from "./BuyerInsights";
 import { getFeatureStatus, getNextTierUnlocks } from "../utils/orderFeatureGates";
 import { hasEntitlement } from "../services/entitlements";
+import { useActivityFacts } from "../hooks/useActivityFacts";
 import { normalizeBuyerOrders, filterBuyerOrders, assembleBuyerOrderView } from "../services/buyerOrderView";
 import { NEXT_ACTION_KIND } from "../services/orderCopy";
 import { FULFILLMENT_METHODS } from "../services/marketplaceStateMachine";
@@ -230,6 +231,9 @@ export function CheckoutSummary({
   // User tier for XP-gated features
   const [userTier, setUserTier] = useState("Shallow");
   const [totalXp, setTotalXp] = useState(0);
+  // Drives the ACTIVITY-gated analytics/reorder panels below. XP no longer gates
+  // any of them; it is still read above for the score meter.
+  const activity = useActivityFacts(walletAccount);
 
   useEffect(() => {
     if (preselectedOrderForCheckout && !loading) {
@@ -2186,13 +2190,17 @@ export function CheckoutSummary({
       {/* ─── XP-Gated Advanced Features Section ──────────────────────── */}
       {(shippingEscrows.length > 0 || purchases.length > 0) && (
         <div style={{ marginTop: "2rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-          {/* Order Analytics (Pelagic+ / 2,500 XP) */}
+          {/*
+            Order Analytics — opens with your first completed order (ACTIVITY),
+            not at a tier. The badge previously read "🔒 Pelagic", which is now
+            simply untrue: no amount of XP opens this.
+          */}
           <div>
             <h3 style={{ fontSize: "1.1rem", color: "#fff", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span>📊</span> {casualModeActive ? "Your Stats" : "Order Analytics"}
-              {!hasEntitlement("order_analytics", { tier: userTier, xp: totalXp }) && (
+              {!hasEntitlement("order_analytics", { activity }) && (
                 <span style={{ fontSize: "0.6rem", padding: "0.15rem 0.4rem", borderRadius: "8px", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24" }}>
-                  🔒 Pelagic
+                  🔒 After your first order
                 </span>
               )}
             </h3>
@@ -2204,15 +2212,14 @@ export function CheckoutSummary({
             />
           </div>
 
-          {/* Watchlist & Smart Reorder (Pelagic+ / Abyssal+) */}
+          {/*
+            The watchlist itself is now REQUIRED — watching a species is core
+            discovery, never a reward — so there is no lock badge to show. Smart
+            reorder inside this panel opens on a second order.
+          */}
           <div>
             <h3 style={{ fontSize: "1.1rem", color: "#fff", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span>👁️</span> {casualModeActive ? "Watchlist & Reorder" : "Species Watchlist & Smart Reorder"}
-              {!hasEntitlement("species_watchlist", { tier: userTier, xp: totalXp }) && (
-                <span style={{ fontSize: "0.6rem", padding: "0.15rem 0.4rem", borderRadius: "8px", background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24" }}>
-                  🔒 Pelagic
-                </span>
-              )}
             </h3>
             <OrderWatchlistReorder
               walletAccount={walletAccount}

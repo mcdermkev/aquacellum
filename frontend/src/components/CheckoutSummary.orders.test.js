@@ -52,8 +52,13 @@ describe("CheckoutSummary — order list wiring (§4.8, composition)", () => {
   it("gates advanced order features (analytics/watchlist) through hasEntitlement, not the legacy isFeatureUnlocked", () => {
     expect(SUMMARY_SOURCE).toContain('import { hasEntitlement } from "../services/entitlements"');
     expect(SUMMARY_SOURCE).toMatch(/hasEntitlement\("order_analytics"/);
-    expect(SUMMARY_SOURCE).toMatch(/hasEntitlement\("species_watchlist"/);
     expect(SUMMARY_SOURCE).not.toContain("isFeatureUnlocked(userTier,");
+    // The watchlist check is GONE from this file on purpose: species_watchlist is
+    // now REQUIRED, so there is no lock badge left to render. Watching a species is
+    // core discovery, not a reward — asserting a gate here would re-add one.
+    expect(SUMMARY_SOURCE).not.toMatch(/hasEntitlement\("species_watchlist"/);
+    // Order analytics is activity-gated, so the facts hook must be supplied.
+    expect(SUMMARY_SOURCE).toMatch(/useActivityFacts\(/);
   });
 });
 

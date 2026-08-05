@@ -63,7 +63,11 @@ describe("SellerAnalytics — entitlement boundary: base tiles universal, deep b
   });
 
   it("only the per-order fulfillment detail table gates on full_analytics_dashboard (Hadal)", () => {
-    expect(ANALYTICS_SOURCE).toContain('hasEntitlement("full_analytics_dashboard", { xp: totalXp })');
+    // Asserts the PROPERTY (the deep table is gated on this key) rather than the
+    // exact argument text, which pinned `{ xp: totalXp }` and broke the moment the
+    // gate moved off XP onto demonstrated sales.
+    expect(ANALYTICS_SOURCE).toMatch(/hasEntitlement\(\s*"full_analytics_dashboard"/);
+    expect(ANALYTICS_SOURCE).toMatch(/useActivityFacts\(/);
     const idx = ANALYTICS_SOURCE.indexOf("canSeeDeepBreakdowns &&");
     expect(idx).toBeGreaterThan(-1);
     const block = ANALYTICS_SOURCE.slice(idx, idx + 200);
@@ -135,8 +139,13 @@ describe("CheckoutSummary — mounts BuyerInsights on the buyer order-history su
 });
 
 describe("SellerAnalytics ownership after the My Store consolidation — lives only in the Breeder Terminal", () => {
-  it("BreederTerminal passes totalXp={xp} into SellerAnalytics so the deep-breakdown gate has a real value", () => {
-    expect(BREEDER_TERMINAL_SOURCE).toContain("totalXp={xp}");
+  it("does NOT thread XP into SellerAnalytics any more — the gate is activity-based", () => {
+    // This previously asserted `totalXp={xp}` was passed so "the deep-breakdown gate
+    // has a real value". The gate no longer reads XP at all: it opens on verified
+    // sales, sourced inside the component from useActivityFacts. Passing XP would
+    // leave a prop nothing reads, so the assertion is inverted rather than dropped.
+    expect(BREEDER_TERMINAL_SOURCE).not.toContain("totalXp={xp}");
+    expect(BREEDER_TERMINAL_SOURCE).toMatch(/<SellerAnalytics\s+walletAccount=/);
   });
 
   it("StorefrontSetup no longer embeds SellerAnalytics (analytics consolidated into the Terminal's Analytics section)", () => {

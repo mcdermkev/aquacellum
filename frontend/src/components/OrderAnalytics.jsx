@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { fetchSellerAnalytics, fetchBuyerAnalytics, fetchOrderHistory } from "../services/ordersSync";
 import { getNextTierUnlocks, ORDER_FEATURES } from "../utils/orderFeatureGates";
 import { hasEntitlement } from "../services/entitlements";
+import { useActivityFacts } from "../hooks/useActivityFacts";
 import { db } from "../db";
 
 /**
@@ -26,11 +27,13 @@ export function OrderAnalytics({ walletAccount, userTier, totalXp, casualModeAct
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview"); // "overview" | "selling" | "buying"
 
-  // Gating sourced from the centralized entitlement map (Task 6/18) rather
-  // than the legacy per-component isFeatureUnlocked check; ORDER_FEATURES is
-  // kept for its copy/icon/progress-bar metadata below. Same tiers (Pelagic).
-  const analyticsUnlocked = hasEntitlement("order_analytics", { tier: userTier, xp: totalXp });
-  const csvUnlocked = hasEntitlement("csv_export", { tier: userTier, xp: totalXp });
+  // Gating sourced from the centralized entitlement map (Task 6/18). Both of these
+  // are now ACTIVITY-gated on having completed an order rather than tier-gated:
+  // order analytics are meaningless with zero orders and obviously useful with
+  // one, which is a far better condition than 2,500 XP earned mostly elsewhere.
+  const activity = useActivityFacts(walletAccount);
+  const analyticsUnlocked = hasEntitlement("order_analytics", { activity });
+  const csvUnlocked = hasEntitlement("csv_export", { activity });
 
   useEffect(() => {
     if (!walletAccount || !analyticsUnlocked) {

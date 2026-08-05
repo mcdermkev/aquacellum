@@ -12,7 +12,11 @@
  * tool and is NEVER gated. Only the customer-segments view gates on
  * `customer_segmentation` (Hadal) — an earned analytical convenience.
  *
- * Props: { walletAccount, casualModeActive, totalXp }
+ * Props: { walletAccount, casualModeActive }
+ *
+ * `totalXp` was removed: it existed only to gate customer segmentation, which now
+ * opens on verified sales instead. Leaving the prop would be a parameter nothing
+ * reads — the dead-control shape this codebase has been clearing out.
  */
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -39,6 +43,7 @@ import {
 } from "../../services/promotionEngine.js";
 import { formatPriceCents } from "../../services/catalogQuery.js";
 import { hasEntitlement } from "../../services/entitlements.js";
+import { useActivityFacts } from "../../hooks/useActivityFacts.js";
 import { announce } from "../../utils/a11y.js";
 
 const EMPTY_DRAFT = {
@@ -56,7 +61,7 @@ const EMPTY_DRAFT = {
 // never a real order.
 const SAMPLE_CART = { items: [{ listingKey: "sample", unitPriceCents: 5000, quantity: 1 }] };
 
-export function PromotionsManager({ walletAccount, casualModeActive = false, totalXp = 0 }) {
+export function PromotionsManager({ walletAccount, casualModeActive = false }) {
   const [promotions, setPromotions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -66,7 +71,12 @@ export function PromotionsManager({ walletAccount, casualModeActive = false, tot
   const [segments, setSegments] = useState(null);
   const [segmentsLoading, setSegmentsLoading] = useState(false);
 
-  const canSeeSegments = hasEntitlement("customer_segmentation", { xp: totalXp });
+  // Segments need a customer base to segment, so this opens on verified sales
+  // rather than XP. `verifiedSales` comes from settled orders — never from the
+  // self-reported grow-out `sold` count, which is the distinction breederStats.js
+  // exists to enforce.
+  const activity = useActivityFacts(walletAccount);
+  const canSeeSegments = hasEntitlement("customer_segmentation", { activity });
 
   const refresh = async () => {
     setLoading(true);

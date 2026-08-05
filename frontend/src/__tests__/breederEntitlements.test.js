@@ -85,15 +85,23 @@ describe("breeder core capabilities are REQUIRED and can never be gated", () => 
   });
 });
 
-describe("only the multi-spawn convenience is earned", () => {
-  it("bulk_management stays EARNED at a real tier", () => {
-    expect(ENTITLEMENTS.bulk_management.class).toBe(ENTITLEMENT_CLASS.EARNED);
-    expect(getRequiredTierFor("bulk_management")).toBeTruthy();
+describe("only the multi-spawn convenience is gated, and not by XP", () => {
+  it("bulk_management opens on listing volume, not on a tier", () => {
+    // The boundary that matters is unchanged — one spawn free, many gated — but the
+    // condition is now a fact about the operation instead of a points total. A
+    // breeder with 40 listings needs the bulk bar whatever their XP; a breeder with
+    // two does not benefit from it at any tier.
+    expect(ENTITLEMENTS.bulk_management.class).toBe(ENTITLEMENT_CLASS.ACTIVITY);
+    expect(getRequiredTierFor("bulk_management")).toBeNull();
+    expect(ENTITLEMENTS.bulk_management.requires.fact).toBe("activeListings");
   });
 
   it("single-spawn checkpoint tracking is NOT the gated one", () => {
     expect(hasEntitlement("breeder_growout_tracking", { xp: 0 })).toBe(true);
-    expect(hasEntitlement("bulk_management", { xp: 0 })).toBe(false);
+    // Gated for a breeder with nothing to bulk-manage, regardless of XP.
+    expect(
+      hasEntitlement("bulk_management", { xp: 999999, activity: { activeListings: 0 } })
+    ).toBe(false);
   });
 
   it("morph review remains role-based, never XP", () => {
@@ -122,8 +130,12 @@ describe("BatchGrowOutPanel gates the bulk action, not the tracker", () => {
   });
 
   it("tells the breeder what unlocks it and what still works now", () => {
-    expect(SOURCE).toContain("bulkRequiredTier");
-    expect(SOURCE).toContain("getRequiredTierFor(\"bulk_management\")");
+    // Must describe the real condition. Naming a tier here would be a lie now that
+    // no amount of XP opens this, and it would send a breeder off to grind for
+    // something the grind cannot deliver.
+    expect(SOURCE).toContain("getUnlockRequirement(\"bulk_management\")");
+    expect(SOURCE).toContain("bulkUnlock.hint");
+    expect(SOURCE).not.toContain("bulkRequiredTier");
   });
 });
 

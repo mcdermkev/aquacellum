@@ -62,7 +62,8 @@ import { useMarketplaceListings } from "../../hooks/useMarketplaceListings";
 import { buildBreederDashboard } from "../../services/breederDashboard";
 import { formatPriceCents } from "../../services/catalogQuery";
 import { hasEntitlement } from "../../services/entitlements";
-import { getXp } from "../../utils/xp";
+import { useActivityFacts } from "../../hooks/useActivityFacts";
+
 import { CONTRACT_ADDRESS, MARKETPLACE_ADDRESS } from "../../config/appConfig";
 import { SellerAnalytics } from "../storefront/SellerAnalytics";
 import { StorefrontSetup } from "../StorefrontSetup";
@@ -272,13 +273,18 @@ export function BreederTerminal({ walletAccount, casualModeActive = false, initi
     [orders, sellerListings, lastVisitAt]
   );
 
-  const xp = useMemo(() => getXp(), []);
   // Convenience-only surfaces are the ones gated; the six dashboard cards,
   // every core seller operation (orders, listings, store, shipping, payouts),
   // and every single-order fulfillment action are never gated, per spec §4 /
-  // Task 19 spec §3. Only multi-select bulk actions are XP-gated (Abyssal+).
-  const canExportAdvancedAnalytics = hasEntitlement("csv_export", { xp });
-  const canBulkManage = hasEntitlement("bulk_management", { xp });
+  // Task 19 spec §3.
+  //
+  // These now open on demonstrated activity rather than XP: CSV export on having
+  // completed an order, bulk actions on having enough listings to bulk-manage.
+  // A seller with 40 listings needs the bulk bar regardless of how much XP they
+  // have accumulated, and a seller with two does not benefit from it at any tier.
+  const activity = useActivityFacts(walletAccount);
+  const canExportAdvancedAnalytics = hasEntitlement("csv_export", { activity });
+  const canBulkManage = hasEntitlement("bulk_management", { activity });
 
   // Task 19: pure normalize+filter pass over the local-first seller orders.
   const sellerViews = useMemo(() => normalizeSellerOrders(localSellerOrders, { casual: casualModeActive }), [localSellerOrders, casualModeActive]);
@@ -627,7 +633,7 @@ export function BreederTerminal({ walletAccount, casualModeActive = false, initi
       )}
 
       {activeSection === SECTIONS.PROMOTIONS && (
-        <PromotionsManager walletAccount={walletAccount} casualModeActive={casualModeActive} totalXp={xp} />
+        <PromotionsManager walletAccount={walletAccount} casualModeActive={casualModeActive} />
       )}
 
       {activeSection === SECTIONS.SHIPPING && (
@@ -642,7 +648,7 @@ export function BreederTerminal({ walletAccount, casualModeActive = false, initi
 
       {activeSection === SECTIONS.ANALYTICS && (
         <>
-          <SellerAnalytics walletAccount={walletAccount} casualModeActive={casualModeActive} totalXp={xp} />
+          <SellerAnalytics walletAccount={walletAccount} casualModeActive={casualModeActive} />
           {/* Convenience-only surface: deep CSV export beyond SellerAnalytics'
               own basic export is gated. SellerAnalytics already renders its
               own always-available "Export CSV" button (never gated); this is

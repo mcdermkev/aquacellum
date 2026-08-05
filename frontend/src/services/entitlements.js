@@ -3,19 +3,57 @@
  *
  * The single centralized entitlement map (Task 6).
  *
- * Preserves the existing XP tiers (Shallow/Coastal/Pelagic/Abyssal/Hadal) from
- * `../utils/xp.js` TIER_LADDER while guaranteeing that core commerce and
- * safety capabilities can never be XP-gated. Only convenience, analytics, and
- * scale tools may be gated.
+ * Guarantees that core commerce and safety capabilities can never be gated at
+ * all, and that the tools which ARE gated open when they become useful rather
+ * than when a points bar fills.
  *
- * Every capability is exactly one of three classes:
+ * Every capability is exactly one of four classes:
  *   - REQUIRED: never gated. Must return true for a brand-new, 0-XP account.
- *   - EARNED:   XP-gated convenience, sourced from the existing tier ladder.
+ *   - ACTIVITY: opens on demonstrated activity ("you have made a sale"), not XP.
+ *   - EARNED:   tier-gated. Now reserved for the loyalty perk and for social
+ *               authority still awaiting a policy decision — see below.
  *   - ADMIN:    role-based (curator/operator/etc.), never XP.
  *
- * See docs/TASK_06_ENTITLEMENTS_SPEC.md for the authoritative classification
- * (§3) that this module implements. Do not move a `required` capability into
- * a gated tier without an explicit Opus review.
+ * ─── WHY XP NO LONGER GATES TOOLS ──────────────────────────────────────────
+ *
+ * XP was doing a job it is bad at, for two independent reasons.
+ *
+ * 1. IT COULD NOT BE TRUSTED. `hasEntitlement` receives `ctx.xp` from
+ *    `getXp()`, i.e. straight out of localStorage, and `resolveTier` takes the
+ *    HIGHER of local XP and the server tier — so local inflation always won. A
+ *    DevTools one-liner unlocked every gated capability, which
+ *    BETA_READINESS_AUDIT.md §3.3 records as a known, accepted risk. A gate
+ *    anyone can open is not a gate; it is a chore for honest users only.
+ *
+ * 2. THE THRESHOLDS MEASURED THE WRONG THING. One ladder served two
+ *    populations with wildly different earn rates. A hobbyist with one tank
+ *    earns ~14 XP/day and needs ~3.5 months to clear Coastal (1,500); a breeder
+ *    logging one spawn plus ten fry certificates clears 650 in an afternoon. So
+ *    the same threshold was either months of chores or a rounding error,
+ *    depending on who you were — untunable, because it was one number trying to
+ *    measure two unrelated things.
+ *
+ * ACTIVITY gating fixes both. "You have completed an order" is server-checkable,
+ * cannot be inflated in DevTools in any way that matters, and — the real point —
+ * it hands someone a tool at the moment it starts helping them. Nobody games
+ * their way into a bulk-management panel they have nothing to bulk-manage.
+ *
+ * XP itself is now a SCORE AND A COSMETIC ENGINE: it drives the meter, the
+ * companion's form, Dex progress, and expressive unlocks. It withholds nothing
+ * functional.
+ *
+ * ⚠️ TWO RULES FOR COSMETIC UNLOCKS BUILT ON XP:
+ *   - Self-visible cosmetics (companion form, your own themes) may unlock from
+ *     LOCAL XP. Instant feedback, and inflating it harms nobody but the user.
+ *   - Anything OTHER PEOPLE see as credibility (badges on a listing, breeder
+ *     flair, a tier label next to your name) must be derived SERVER-SIDE from
+ *     verified events. `breederStats` already had this exact defect once: two
+ *     badges read a self-reported grow-out `sold` count, so "Sold 50+ bred fish"
+ *     was earnable by typing 50 — and every badge has a share button.
+ *
+ * See docs/TASK_06_ENTITLEMENTS_SPEC.md §3 for the original classification. Do
+ * not move a REQUIRED capability into any gated class without an explicit
+ * Tier A review.
  */
 
 import { TIER_LADDER } from "../utils/xp.js";
@@ -24,11 +62,30 @@ import { TIER_LADDER } from "../utils/xp.js";
 
 export const ENTITLEMENT_CLASS = Object.freeze({
   REQUIRED: "required",
+  ACTIVITY: "activity_gated",
   EARNED: "earned_convenience",
   ADMIN: "administrative",
 });
 
-const { REQUIRED, EARNED, ADMIN } = ENTITLEMENT_CLASS;
+const { REQUIRED, ACTIVITY, EARNED, ADMIN } = ENTITLEMENT_CLASS;
+
+/**
+ * The activity facts an ACTIVITY entitlement may depend on. Declared as a
+ * closed set so a typo in `requires.fact` fails the test suite instead of
+ * silently reading `undefined` and gating on nothing — the same
+ * name-contract-with-silent-fallback defect that the seam inventory exists to
+ * catch.
+ *
+ * Every fact must be countable from data the user cannot simply assert:
+ *   completedOrders — settled purchases (buyer side)
+ *   verifiedSales   — settled sales, via breederStats.countVerifiedSales
+ *   activeListings  — live listings the seller currently has published
+ */
+export const ACTIVITY_FACTS = Object.freeze([
+  "completedOrders",
+  "verifiedSales",
+  "activeListings",
+]);
 
 // Tier keys in ascending order, reused from the canonical XP tier ladder so
 // there is exactly one tier ordering in the codebase.
@@ -123,50 +180,130 @@ export const ENTITLEMENTS = Object.freeze({
   seller_customer_communication: { class: REQUIRED, label: "Customer communication" },
   seller_payout_onboarding: { class: REQUIRED, label: "Stripe payout onboarding" },
 
-  // ── §3.2 EARNED_CONVENIENCE — XP-gated ───────────────────────────────────
+  // ── Formerly XP-gated, now FREE ──────────────────────────────────────────
+  //
+  // These were never scale tools; the gate was arbitrary. Saving a search,
+  // watching a species, or receiving a dispatch reminder costs nothing to
+  // provide and helps most on day one — which is exactly when the old ladder
+  // withheld them. Charging months of chores for a bookmark is the clearest
+  // example of progression that felt like work for no reason.
+  //
+  // `canPostInsights` / `canRequestAudits` were nominally spam control, but XP
+  // was never doing that job: a spammer inflates localStorage XP in one line,
+  // while a genuine new keeper waited ~3.5 months. Posting rate limits are the
+  // real control and already exist.
+  saved_search: { class: REQUIRED, label: "Saved searches" },
+  species_watchlist: { class: REQUIRED, label: "Species watchlist" },
+  price_alerts: { class: REQUIRED, label: "Price alerts" },
+  dispatch_reminders: { class: REQUIRED, label: "Dispatch reminders" },
+  convenience_nudges: { class: REQUIRED, label: "Convenience nudges" },
+  canPostInsights: { class: REQUIRED, label: "Post insights" },
+  canRequestAudits: { class: REQUIRED, label: "Request audits" },
 
-  // Coastal (1,500)
-  dispatch_reminders: { class: EARNED, minTier: "Coastal", label: "Dispatch reminders" },
-  convenience_nudges: { class: EARNED, minTier: "Coastal", label: "Convenience nudges" },
+  // ── ACTIVITY — opens when the tool starts being useful ───────────────────
+  //
+  // Thresholds are deliberately low. The goal is "this appeared exactly when I
+  // needed it", not a second grind with a different name. An analytics panel is
+  // meaningless with zero orders and obviously useful with one, so that is the
+  // bar — not 2,500 points.
+  order_analytics: {
+    class: ACTIVITY,
+    requires: { fact: "completedOrders", min: 1 },
+    unlockHint: "your first completed order",
+    label: "Order analytics",
+  },
+  csv_export: {
+    class: ACTIVITY,
+    requires: { fact: "completedOrders", min: 1 },
+    unlockHint: "your first completed order",
+    label: "CSV export",
+  },
+  smart_reorder: {
+    // Reordering presupposes having ordered more than once.
+    class: ACTIVITY,
+    requires: { fact: "completedOrders", min: 2 },
+    unlockHint: "two completed orders",
+    label: "Smart reorder",
+  },
+  bulk_management: {
+    // Also gates the Breeder Tools batch grow-out panel: logging a checkpoint on
+    // ONE spawn is REQUIRED (breeder_growout_tracking); doing it across many at
+    // once is a scale convenience, and "many" is now measured in listings rather
+    // than points.
+    class: ACTIVITY,
+    requires: { fact: "activeListings", min: 10 },
+    unlockHint: "10 or more active listings",
+    label: "Bulk product/fulfillment management",
+  },
+  auto_completion_rules: {
+    class: ACTIVITY,
+    requires: { fact: "verifiedSales", min: 10 },
+    unlockHint: "10 verified sales",
+    label: "Auto-completion rules",
+  },
+  full_analytics_dashboard: {
+    class: ACTIVITY,
+    requires: { fact: "verifiedSales", min: 10 },
+    unlockHint: "10 verified sales",
+    label: "Full analytics dashboard",
+  },
+  deep_reputation_insights: {
+    class: ACTIVITY,
+    requires: { fact: "verifiedSales", min: 10 },
+    unlockHint: "10 verified sales",
+    label: "Deep reputation insights",
+  },
+  promotion_automation: {
+    class: ACTIVITY,
+    requires: { fact: "verifiedSales", min: 10 },
+    unlockHint: "10 verified sales",
+    label: "Promotion automation",
+  },
+  customer_segmentation: {
+    // Segments need a customer base to segment.
+    class: ACTIVITY,
+    requires: { fact: "verifiedSales", min: 10 },
+    unlockHint: "10 verified sales",
+    label: "Customer segmentation",
+  },
+  carrier_api_integration: {
+    // Wiring your own carrier account only pays off at real shipping volume.
+    class: ACTIVITY,
+    requires: { fact: "verifiedSales", min: 25 },
+    unlockHint: "25 verified sales",
+    label: "Carrier API integration",
+  },
+
+  // ── EARNED — what legitimately remains tier-gated ────────────────────────
+  //
+  // §3.4 — the loyalty perk. This one SHOULD track progression: it is the only
+  // EARNED entry that is a genuine reward rather than a tool, and withholding a
+  // discount from a new account denies nobody a capability.
+  //
+  // ⚠️ Because it is worth real money at checkout, its tier must come from the
+  // SERVER (`ctx.tier` from depth_score), never from local XP alone. Passing
+  // only `ctx.xp` here would let DevTools mint a permanent 8% discount.
+  tier_discount: { class: EARNED, minTier: "Coastal", label: "Loyalty tier discount" },
+
+  // ── SOCIAL AUTHORITY — still tier-gated, pending a policy decision ───────
+  //
+  // These are NOT conveniences and NOT scale tools: they decide who may judge,
+  // teach, or moderate other keepers. XP is a poor proxy for that (it mostly
+  // measures how much you sell), but "demonstrated husbandry success" does not
+  // exist as a measure yet, and converting them to ADMIN roles with no granting
+  // flow would make them permanently unreachable — a dead control.
+  //
+  // So they are LEFT AS THEY WERE ON PURPOSE, not overlooked, and revisited when
+  // the keeper-reputation model lands. Whoever picks this up: the question is
+  // "what earns the right to audit someone else's pedigree?", and it is a
+  // community-policy answer, not a refactor.
   canCreateSchools: { class: EARNED, minTier: "Coastal", label: "Create schools" },
-  canPostInsights: { class: EARNED, minTier: "Coastal", label: "Post insights" },
-  canRequestAudits: { class: EARNED, minTier: "Coastal", label: "Request audits" },
-
-  // Pelagic (2,500)
-  order_analytics: { class: EARNED, minTier: "Pelagic", label: "Order analytics" },
-  csv_export: { class: EARNED, minTier: "Pelagic", label: "CSV export" },
-  species_watchlist: { class: EARNED, minTier: "Pelagic", label: "Species watchlist" },
-  price_alerts: { class: EARNED, minTier: "Pelagic", label: "Price alerts" },
-
-  // Abyssal (5,000)
-  smart_reorder: { class: EARNED, minTier: "Abyssal", label: "Smart reorder" },
-  auto_completion_rules: { class: EARNED, minTier: "Abyssal", label: "Auto-completion rules" },
-  // Also gates the Breeder Tools batch grow-out panel: logging a checkpoint on
-  // ONE spawn is required (breeder_growout_tracking), logging across many at once
-  // is a scale convenience — the same line the Breeder Terminal draws for bulk
-  // fulfillment.
-  bulk_management: { class: EARNED, minTier: "Abyssal", label: "Bulk product/fulfillment management" },
   canGiveAudits: { class: EARNED, minTier: "Abyssal", label: "Give expert audits" },
   canMentor: { class: EARNED, minTier: "Abyssal", label: "Mentor" },
   canHostVirtualTides: { class: EARNED, minTier: "Abyssal", label: "Host virtual Tides" },
-
-  // Hadal (10,000)
-  full_analytics_dashboard: { class: EARNED, minTier: "Hadal", label: "Full analytics dashboard" },
-  carrier_api_integration: { class: EARNED, minTier: "Hadal", label: "Carrier API integration" },
-  priority_curator_queue: { class: EARNED, minTier: "Hadal", label: "Priority curator queue" },
-  deep_reputation_insights: { class: EARNED, minTier: "Hadal", label: "Deep reputation insights" },
-  promotion_automation: { class: EARNED, minTier: "Hadal", label: "Promotion automation" },
-  customer_segmentation: { class: EARNED, minTier: "Hadal", label: "Customer segmentation" },
   canHostExpoTides: { class: EARNED, minTier: "Hadal", label: "Host expo Tides" },
   canModerate: { class: EARNED, minTier: "Hadal", label: "Moderate content" },
-
-  // §3.4 — loyalty perk, never a checkout precondition
-  tier_discount: { class: EARNED, minTier: "Coastal", label: "Loyalty tier discount" },
-
-  // Task 8 — catalog convenience. Browsing/searching itself (browse_catalog)
-  // is REQUIRED and never gated; only the ability to *save* a search is an
-  // earned convenience, same tier as the other Coastal convenience perks.
-  saved_search: { class: EARNED, minTier: "Coastal", label: "Saved searches" },
+  priority_curator_queue: { class: EARNED, minTier: "Hadal", label: "Priority curator queue" },
 
   // ── §3.3 ADMINISTRATIVE — role-based, never XP ───────────────────────────
 
@@ -244,9 +381,57 @@ export function hasEntitlement(key, ctx = {}) {
     return (ctx.roles || []).includes(entry.role);
   }
 
+  if (entry.class === ACTIVITY) {
+    const { fact, min } = entry.requires;
+    const value = ctx.activity?.[fact];
+    // ⚠️ FAILS OPEN when the fact is unavailable, which is the opposite of the
+    // unknown-key rule above, and deliberately so.
+    //
+    // These are additive conveniences layered on top of capabilities that are
+    // already REQUIRED — nothing here withholds a core action. The two failure
+    // directions are not symmetric: wrongly WITHHOLDING is invisible (a seller
+    // who has earned bulk management just never sees it, and files no bug because
+    // they never knew it existed), whereas wrongly GRANTING shows an empty panel,
+    // which is self-correcting and obvious. A caller that has not loaded activity
+    // facts yet must not be indistinguishable from a brand-new account.
+    if (value == null) return true;
+    return Number(value) >= min;
+  }
+
   // EARNED: derive tier from ctx.tier or ctx.xp (higher of the two)
   const currentTierKey = resolveTier(ctx);
   return tierAtLeast(currentTierKey, entry.minTier);
+}
+
+/**
+ * Describe what would unlock a capability, so the UI can say something true.
+ *
+ * Exists because the old prompt copy ("unlocks at the Pelagic tier") becomes a
+ * LIE for an ACTIVITY entitlement — nothing about reaching a tier opens it. A
+ * gate that misreports its own condition is worse than a locked button: it sends
+ * someone off to grind for something the grind will never deliver.
+ *
+ * @param {string} key
+ * @returns {{kind:"none"}
+ *   | {kind:"unknown"}
+ *   | {kind:"role", role:string}
+ *   | {kind:"tier", tier:string}
+ *   | {kind:"activity", fact:string, min:number, hint:string}}
+ */
+export function getUnlockRequirement(key) {
+  const entry = ENTITLEMENTS[key];
+  if (!entry) return { kind: "unknown" };
+  if (entry.class === REQUIRED) return { kind: "none" };
+  if (entry.class === ADMIN) return { kind: "role", role: entry.role };
+  if (entry.class === ACTIVITY) {
+    return {
+      kind: "activity",
+      fact: entry.requires.fact,
+      min: entry.requires.min,
+      hint: entry.unlockHint,
+    };
+  }
+  return { kind: "tier", tier: entry.minTier };
 }
 
 /**
@@ -262,3 +447,11 @@ export function getRequiredTierFor(key) {
   if (!entry || entry.class !== EARNED) return null;
   return entry.minTier;
 }
+
+/**
+ * Set of ACTIVITY keys, derived from the map. Used by the test suite to assert
+ * every one declares a fact from the closed ACTIVITY_FACTS set.
+ */
+export const ACTIVITY_ENTITLEMENTS = new Set(
+  Object.keys(ENTITLEMENTS).filter((key) => ENTITLEMENTS[key].class === ACTIVITY)
+);

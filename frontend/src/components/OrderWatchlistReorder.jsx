@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { ORDER_FEATURES } from "../utils/orderFeatureGates";
 import { hasEntitlement } from "../services/entitlements";
+import { useActivityFacts } from "../hooks/useActivityFacts";
 import { addToWatchlist, getWatchlist, removeFromWatchlist } from "../services/ordersSync";
 import { db } from "../db";
 import { generateAlias } from "../utils/generateAlias";
@@ -22,8 +23,12 @@ export function OrderWatchlistReorder({ walletAccount, userTier, totalXp, casual
   // than the legacy per-component isFeatureUnlocked check; ORDER_FEATURES is
   // kept for its copy/icon/progress-bar metadata below. Same tiers
   // (Pelagic for watchlist, Abyssal for smart reorder).
-  const watchlistUnlocked = hasEntitlement("species_watchlist", { tier: userTier, xp: totalXp });
-  const reorderUnlocked = hasEntitlement("smart_reorder", { tier: userTier, xp: totalXp });
+  // `species_watchlist` is now REQUIRED — watching a species is core discovery and
+  // was never a scale tool. `smart_reorder` is ACTIVITY-gated on having ordered
+  // more than once, since reordering presupposes a previous order.
+  const activity = useActivityFacts(walletAccount);
+  const watchlistUnlocked = hasEntitlement("species_watchlist", {});
+  const reorderUnlocked = hasEntitlement("smart_reorder", { activity });
 
   const [activeSection, setActiveSection] = useState(watchlistUnlocked ? "watchlist" : "reorder");
   const [watchlist, setWatchlist] = useState([]);

@@ -4,8 +4,8 @@ import { addXp } from "../utils/xp";
 import { syncGrowoutCheckpointsToCloud } from "../services/cloudSync";
 import { formatLocalRecordRef } from "../utils/specimenIdentity";
 import { summarizeGrowout } from "../utils/growoutFunnel";
-import { hasEntitlement, getRequiredTierFor } from "../services/entitlements";
-import { getXp } from "../utils/xp";
+import { hasEntitlement, getUnlockRequirement } from "../services/entitlements";
+import { useActivityFacts } from "../hooks/useActivityFacts";
 
 /**
  * BatchGrowOutPanel — Table/grid view for managing multiple spawns at once.
@@ -43,8 +43,14 @@ export function BatchGrowOutPanel({ walletAccount, casualModeActive }) {
 
   // Multi-spawn actions only. Per-spawn checkpoint logging is REQUIRED and lives
   // on each spawn's own tracker, never gated.
-  const canBulkManage = hasEntitlement("bulk_management", { xp: getXp() });
-  const bulkRequiredTier = getRequiredTierFor("bulk_management");
+  //
+  // Opens on listing volume rather than XP: bulk tools are useful when you have
+  // enough to bulk-manage, which is a fact about your operation, not a points
+  // total. `getRequiredTierFor` now returns null here, so the copy below must use
+  // the unlock hint instead of naming a tier.
+  const activity = useActivityFacts(walletAccount);
+  const canBulkManage = hasEntitlement("bulk_management", { activity });
+  const bulkUnlock = getUnlockRequirement("bulk_management");
 
   useEffect(() => {
     if (!walletAccount) { setLoading(false); return; }
@@ -241,8 +247,8 @@ export function BatchGrowOutPanel({ walletAccount, casualModeActive }) {
           display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap",
         }}>
           <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
-            {selected.size} selected — applying one action across several spawns at once unlocks at{" "}
-            <strong style={{ color: "#a78bfa" }}>{bulkRequiredTier}</strong>. You can log a checkpoint on
+            {selected.size} selected — applying one action across several spawns at once unlocks with{" "}
+            <strong style={{ color: "#a78bfa" }}>{bulkUnlock.hint}</strong>. You can log a checkpoint on
             any single spawn now, from its own tracker.
           </span>
         </div>

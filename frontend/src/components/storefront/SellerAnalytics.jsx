@@ -44,6 +44,7 @@ import {
 import { fetchSellerAnalytics, fetchSellerOrders } from "../../services/ordersSync";
 import { boxUtilization, localDeliveryPerformance, cashSaleReport, ANALYTICS_COPY } from "../../services/marketplaceAnalytics";
 import { hasEntitlement } from "../../services/entitlements";
+import { useActivityFacts } from "../../hooks/useActivityFacts";
 import { formatPriceCents } from "../../services/catalogQuery";
 import { prefersReducedMotion } from "../../utils/a11y";
 
@@ -69,7 +70,9 @@ const fmtHours = (h) => {
   return `${(h / 24).toFixed(1)}d`;
 };
 
-export function SellerAnalytics({ walletAccount, casualModeActive = false, totalXp = 0 }) {
+// `totalXp` was removed from the props: it existed only to gate the deep breakdown
+// table, which now opens on verified sales.
+export function SellerAnalytics({ walletAccount, casualModeActive = false }) {
   const [viewStats, setViewStats] = useState(null); // from order_analytics view
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,7 +82,10 @@ export function SellerAnalytics({ walletAccount, casualModeActive = false, total
   // packing/delivery/cash detail table) gates on full_analytics_dashboard
   // (Hadal). The box-util/local-delivery/cash-sale KPI TILES themselves are
   // never gated, matching "base analytics stay universal."
-  const canSeeDeepBreakdowns = hasEntitlement("full_analytics_dashboard", { xp: totalXp });
+  // Opens on verified sales rather than XP — the per-order breakdown is only
+  // legible once there are enough orders for a pattern to exist.
+  const activity = useActivityFacts(walletAccount);
+  const canSeeDeepBreakdowns = hasEntitlement("full_analytics_dashboard", { activity });
 
   useEffect(() => {
     if (!walletAccount) {
