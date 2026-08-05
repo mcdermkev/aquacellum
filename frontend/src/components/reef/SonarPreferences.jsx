@@ -100,7 +100,16 @@ const DEFAULT_PREFS = {
     poseidon: { enabled: true, push: false },
   },
   quietHours: { enabled: false, start: "22:00", end: "08:00" },
-  emailDigest: "off", // off | daily | weekly
+  // ⚠️ "daily" is offered by the UI but NO daily digest exists. See the digest
+  // block in the markup below — the control is honest about that rather than
+  // silently accepting a cadence nothing implements.
+  emailDigest: "off", // off | weekly
+  // Win-back email after a lapse in activity. `api/retention.js:87` already
+  // honours `retentionEmail !== false`, but until now nothing could SET it — so it
+  // defaulted to on with no in-app way to opt out. Defaulting to `true` here keeps
+  // the server's existing behaviour for anyone who has never touched it; the switch
+  // below is what makes opting out possible at all.
+  retentionEmail: true,
 };
 
 export function SonarPreferences({ onClose, casualModeActive = false, poseidonAiDisabled = false, embedded = false }) {
@@ -174,7 +183,15 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
         .single();
 
       if (data?.notification_preferences) {
-        setPrefs({ ...DEFAULT_PREFS, ...data.notification_preferences });
+        const stored = { ...DEFAULT_PREFS, ...data.notification_preferences };
+        // Legacy value migration. "daily" was offered before any digest existed and
+        // no daily digest was ever built, so the option is gone. Anyone who picked
+        // it would otherwise land on a radiogroup with NOTHING selected — a control
+        // that cannot report its own state. Fold it to the nearest real cadence
+        // rather than silently resetting them to off, which would quietly opt out
+        // someone who had explicitly opted in.
+        if (stored.emailDigest === "daily") stored.emailDigest = "weekly";
+        setPrefs(stored);
       }
     }
     loadPrefs();
@@ -507,12 +524,52 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
         )}
       </div>
 
-      {/* Email Digest */}
+      {/*
+        Email — two separate things, and they are separate because only ONE of them
+        actually sends anything today.
+
+        DIGEST: not wired. `reef-digest` inserts an in-app row and returns;
+        `weeklyDigestTemplate` in api/_lib/resend.js has zero callers. The stored
+        preference is real and will be honoured once a sender exists, so the control
+        stays — but it says so plainly instead of implying mail is on its way. The
+        "daily" option is removed outright: there is no daily digest in any form, so
+        offering the cadence was inviting a choice that could never be delivered.
+
+        RETENTION: wired and LIVE. api/retention.js:87 reads `retentionEmail`, so
+        this switch takes effect immediately. It is the compliance-relevant one —
+        a win-back email that previously had no in-app way to decline.
+      */}
       <div className="sonar-prefs__email">
-        <h3>Email Digest</h3>
-        <p className="text-muted text-sm">Poseidon curates a summary of what you missed.</p>
+        <h3>Email</h3>
+
+        <label className="sonar-prefs__row">
+          <span>
+            <strong>Occasional check-in email</strong>
+            <span className="text-muted text-sm">
+              A nudge if you have been away for a while. Takes effect immediately.
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            role="switch"
+            aria-checked={prefs.retentionEmail !== false}
+            checked={prefs.retentionEmail !== false}
+            onChange={(e) => {
+              setPrefs((p) => ({ ...p, retentionEmail: e.target.checked }));
+              setSaved(false);
+            }}
+          />
+        </label>
+
+        <h4 style={{ marginTop: "1rem" }}>Digest</h4>
+        <p className="text-muted text-sm">
+          Poseidon curates a summary of what you missed.{" "}
+          <strong style={{ color: "var(--accent-amber)" }}>
+            Not sending yet — we will honour this setting once the digest goes out.
+          </strong>
+        </p>
         <div className="sonar-prefs__email-options" role="radiogroup" aria-label="Email digest frequency">
-          {["off", "daily", "weekly"].map((freq) => (
+          {["off", "weekly"].map((freq) => (
             <label
               key={freq}
               className={`sonar-pill${prefs.emailDigest === freq ? " sonar-pill--active" : ""}`}
@@ -527,7 +584,7 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
                   setSaved(false);
                 }}
               />
-              <span>{freq === "off" ? "Off" : freq.charAt(0).toUpperCase() + freq.slice(1)}</span>
+              <span>{freq === "off" ? "Off" : "Weekly"}</span>
             </label>
           ))}
         </div>

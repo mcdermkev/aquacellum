@@ -4076,6 +4076,60 @@ textarea:focus:not(:focus-visible) {
   color: var(--text-muted);
 }
 
+/* The Digest sub-heading sits under the section's own <h3>, so it needs the same
+   register one step quieter rather than the browser default. */
+.sonar-prefs__email h4 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  color: var(--text-muted);
+}
+
+/* ── A labelled switch row (retention email opt-out) ──────────────────────────
+   Added with the retention-email opt-out. Without it the control rendered as a
+   bare checkbox floating beside unstyled text — the same class of mistake as
+   using a `.btn` that does not exist. */
+.sonar-prefs__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 44px;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+}
+
+.sonar-prefs__row:hover {
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+.sonar-prefs__row > span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.sonar-prefs__row strong {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sonar-prefs__row input[type="checkbox"] {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent-blue);
+  cursor: pointer;
+}
+
 /* ── Device push enrolment block ───────────────────────────────────────────
    The section had no styles at all, so its <h3> rendered as a default heading
    next to the small uppercase labels its siblings get, and its buttons fell
