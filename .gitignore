@@ -61,6 +61,17 @@ docs/
 # Frontend scripts — internal tooling (image gen, cutouts, etc.)
 frontend/scripts/
 
+# Supabase CLI local cache. `.temp/cli-latest` just records the CLI version the
+# machine last saw, so it churns for every developer on a different version and
+# says nothing about the project. It was tracked by accident.
+supabase/.temp/
+
+# Review artefacts — inputs and outputs of review passes, not app source.
+# img_review/ in particular is several MB of species photos; binaries cannot be
+# diffed and stay in history permanently once committed.
+img_review/
+semantic-review/
+
 # FishBase data extraction (large parquet files, intermediate data)
 *.parquet
 fishbase_verified_data.json
