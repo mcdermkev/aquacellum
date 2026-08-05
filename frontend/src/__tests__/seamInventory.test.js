@@ -38,16 +38,20 @@ import { collectSourceFiles } from "../../scripts/seams/report.mjs";
  */
 const SEAM_BASELINE = [
   // ── Confirmed defects ───────────────────────────────────────────────────
-  {
-    id: "writtenNeverRead:aquadex_specimen_metadata_",
-    verdict: "bug",
-    note:
-      "Certificate metadata written by MintSpecimen and SpawningWizard. The reader " +
-      "was deliberately REMOVED when metadata moved to Supabase — " +
-      "specimenMetadataResolution.test.js asserts SpecimenDetailModal no longer " +
-      "reads it — but both writers were left behind, so this is now a pure dead " +
-      "write on the certificate path.",
-  },
+  //
+  // HISTORICAL NOTE, because it is the most useful thing in this file. Two entries
+  // that once sat here were WRONG, and both were resolver gaps rather than defects:
+  //
+  //   aquadex_specimen_metadata_ — read at specimenMetadata.js:408 via
+  //     localMetadataKey(id), a key-BUILDER FUNCTION. It is the deliberate local tier
+  //     of the hosted → local → none precedence chain. Acting on the finding would
+  //     have deleted a live write on the certificate path.
+  //   aquadex_tank_photo_ — written at tankMedia.js:66 through a builder call stored
+  //     in a const, and read through a wrapper that forwards a parameter to getItem.
+  //
+  // Both are now resolved automatically. The lesson is in the analyzer's own tests:
+  // a finding is a hypothesis about the producer, and it is worth nothing until
+  // someone has read the producer.
   {
     id: "writtenNeverRead:aquadex_xp_points",
     verdict: "bug",
@@ -134,14 +138,6 @@ const SEAM_BASELINE = [
       "supabase-js owns this key — it is passed to the client as its `storageKey`, " +
       "and the library writes it. supabaseClient.js:121 only reads it.",
   },
-  {
-    id: "readNeverWritten:aquadex_tank_photo_",
-    verdict: "expected",
-    note:
-      "One-way legacy migration. db.js:869 imports photos an OLDER release wrote to " +
-      "localStorage into Dexie, and TankList:460 reads it only as a fallback behind " +
-      "getTankPhoto(). Current code deliberately never writes it again.",
-  },
 ];
 
 const BASELINE_IDS = SEAM_BASELINE.map((s) => s.id).sort();
@@ -179,7 +175,7 @@ describe("seam inventory", () => {
 
   it("does not let the known-bug count grow", () => {
     // A ceiling, not a target. It should trend to 0.
-    expect(KNOWN_BUGS).toBeLessThanOrEqual(12);
+    expect(KNOWN_BUGS).toBeLessThanOrEqual(11);
   });
 
   it("every baseline entry carries a verdict and a reason", () => {
@@ -275,6 +271,70 @@ describe("the analyzer itself", () => {
     });
     expect(out.writtenNeverRead).toEqual([]);
     expect(out.readNeverWritten).toEqual([]);
+  });
+
+  it("resolves a key produced by a key-builder function", () => {
+    // The gap that produced a WRONG verdict about certificate metadata: the reader
+    // was `localStorage.getItem(localMetadataKey(id))`, which looked like nothing.
+    const out = analyze({
+      "keys.js": "export function metaKey(id) { return `k_meta_${id}`; }",
+      "w.js": "import { metaKey } from './keys.js'; localStorage.setItem(metaKey(1), 'x');",
+      "r.js": "import { metaKey } from './keys.js'; localStorage.getItem(metaKey(1));",
+    });
+    expect(out.writtenNeverRead).toEqual([]);
+    expect(out.readNeverWritten).toEqual([]);
+  });
+
+  it("resolves an arrow-function key builder", () => {
+    const out = analyze({
+      "w.js": "const k = (id) => `k_arrow_${id}`; localStorage.setItem(k(1), 'x');",
+      "r.js": "localStorage.getItem(`k_arrow_${1}`);",
+    });
+    expect(out.writtenNeverRead).toEqual([]);
+  });
+
+  it("resolves BOTH branches of a ternary key builder", () => {
+    // `legacyPhotoKey` returns a tank key or delegates to the specimen key builder.
+    // Taking only the first branch would leave the other looking unwritten.
+    const out = analyze({
+      "keys.js": `
+        export function specKey(id) { return \`k_spec_\${id}\`; }
+        export function anyKey(t, id) { return t === "tank" ? \`k_tank_\${id}\` : specKey(id); }
+      `,
+      "w.js": `
+        import { anyKey } from './keys.js';
+        const key = anyKey("tank", 1);
+        localStorage.setItem(key, "x");
+      `,
+      "r.js": "localStorage.getItem(`k_tank_${1}`); localStorage.getItem(`k_spec_${1}`);",
+    });
+    expect(out.readNeverWritten.map((f) => f.key)).toEqual([]);
+  });
+
+  it("resolves a key read through a storage wrapper function", () => {
+    // `readLocalStorageKey(key)` forwards a bare parameter to getItem, so the key
+    // itself never appears at the getItem call site.
+    const out = analyze({
+      "s.js": `
+        function readKey(key) { return localStorage.getItem(key) || null; }
+        export function get(id) { return readKey(\`k_wrapped_\${id}\`); }
+      `,
+      "w.js": "localStorage.setItem(`k_wrapped_${1}`, 'x');",
+    });
+    expect(out.writtenNeverRead).toEqual([]);
+    expect(out.readNeverWritten).toEqual([]);
+  });
+
+  it("does not treat a wrapper that transforms its key as a forward", () => {
+    // Only a DIRECT parameter forward is sound. If the helper rewrites the key we
+    // cannot know what it became, so the call must not be credited as a read.
+    const out = analyze({
+      "s.js": `
+        function readPrefixed(key) { return localStorage.getItem("pre_" + key); }
+        export function get() { return readPrefixed("k_transformed"); }
+      `,
+    });
+    expect(out.readNeverWritten.map((f) => f.key)).toEqual(["pre_"]);
   });
 
   it("does not let an unrelated prefix explain away a dead key", () => {

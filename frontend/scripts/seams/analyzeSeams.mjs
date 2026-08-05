@@ -126,6 +126,70 @@ function unwrapObjectExpression(node) {
   return null;
 }
 
+/**
+ * A KEY-BUILDER FUNCTION: one whose whole job is to return a key string.
+ *
+ *   export function localMetadataKey(id) { return `aquadex_specimen_metadata_${id}`; }
+ *   const photoKey = (id) => `aquadex_tank_photo_${id}`;
+ *
+ * This is the idiomatic way this codebase names per-row keys, and missing it is not a
+ * cosmetic gap: `readLocalCache` calls `localStorage.getItem(localMetadataKey(id))`,
+ * so without resolving the callee the certificate metadata cache looks like it has no
+ * reader at all — which is precisely the kind of confident-but-wrong finding that
+ * gets a tool like this thrown away.
+ *
+ * @returns {string[]} every prefix the function can return; empty if it is not a
+ *   key builder.
+ */
+function keyBuilderPrefixes(fnNode, builders) {
+  if (!fnNode) return [];
+
+  // Arrow with an expression body: (id) => `k_${id}`
+  if (fnNode.type === "ArrowFunctionExpression" && fnNode.body?.type !== "BlockStatement") {
+    return returnedPrefixes(fnNode.body, builders);
+  }
+
+  const body = fnNode.body;
+  if (body?.type !== "BlockStatement") return [];
+  // Only a single-statement `return` body is safe to treat as a key builder; anything
+  // with real control flow could yield keys we cannot see, and guessing there would
+  // produce exactly the confident-but-wrong findings this tool must not emit.
+  if (body.body.length !== 1 || body.body[0].type !== "ReturnStatement") return [];
+  return returnedPrefixes(body.body[0].argument, builders);
+}
+
+/**
+ * @returns {string[]} every prefix the expression could produce.
+ *
+ * A ternary yields BOTH, because `legacyPhotoKey` is
+ * `refType === "tank" ? \`aquadex_tank_photo_${id}\` : specimenPhotoKey(id)` — one
+ * builder owning two key families. Returning only the first branch would leave the
+ * other looking unwritten.
+ */
+function returnedPrefixes(node, builders) {
+  if (!node) return [];
+  if (node.type === "TemplateLiteral") {
+    const head = node.quasis?.[0]?.value?.cooked;
+    return head ? [head] : [];
+  }
+  if (node.type === "Literal" && typeof node.value === "string") return [node.value];
+  if (node.type === "BinaryExpression" && node.operator === "+") {
+    return returnedPrefixes(node.left, builders);
+  }
+  if (node.type === "ConditionalExpression") {
+    return [
+      ...returnedPrefixes(node.consequent, builders),
+      ...returnedPrefixes(node.alternate, builders),
+    ];
+  }
+  // A builder delegating to another builder.
+  if (node.type === "CallExpression" && node.callee?.type === "Identifier") {
+    const nested = builders?.get(node.callee.name);
+    return nested ? [...nested] : [];
+  }
+  return [];
+}
+
 /** All string values in an object literal, plus a property→value map. */
 function stringMapFrom(objectExpression) {
   const byProp = new Map();
@@ -154,25 +218,46 @@ function stringMapFrom(objectExpression) {
 function collectBindings(ast, inherited = {}) {
   const strings = new Map(inherited.strings || []);
   const maps = new Map(inherited.maps || []);
+  const builders = new Map(inherited.builders || []);
   const derived = new Map();
   const ambiguous = new Set();
 
-  walk(ast, (node) => {
-    if (node.type !== "VariableDeclarator" || node.id?.type !== "Identifier") return;
-    const name = node.id.name;
+  // Two sweeps so a builder that delegates to a builder declared later still resolves.
+  for (let pass = 0; pass < 2; pass++) {
+    walk(ast, (node) => {
+      // function localMetadataKey(id) { return `aquadex_specimen_metadata_${id}`; }
+      if (node.type === "FunctionDeclaration" && node.id?.type === "Identifier") {
+        const prefixes = keyBuilderPrefixes(node, builders);
+        if (prefixes.length) builders.set(node.id.name, prefixes);
+        return;
+      }
 
-    if (node.init?.type === "Literal" && typeof node.init.value === "string") {
-      if (strings.has(name) && strings.get(name) !== node.init.value) ambiguous.add(name);
-      strings.set(name, node.init.value);
-      return;
-    }
+      if (node.type !== "VariableDeclarator" || node.id?.type !== "Identifier") return;
+      const name = node.id.name;
 
-    const obj = unwrapObjectExpression(node.init);
-    if (obj) {
-      const map = stringMapFrom(obj);
-      if (map) maps.set(name, map);
-    }
-  });
+      if (node.init?.type === "Literal" && typeof node.init.value === "string") {
+        if (strings.has(name) && strings.get(name) !== node.init.value) ambiguous.add(name);
+        strings.set(name, node.init.value);
+        return;
+      }
+
+      // const photoKey = (id) => `aquadex_tank_photo_${id}`;
+      if (
+        node.init?.type === "ArrowFunctionExpression" ||
+        node.init?.type === "FunctionExpression"
+      ) {
+        const prefixes = keyBuilderPrefixes(node.init, builders);
+        if (prefixes.length) builders.set(name, prefixes);
+        return;
+      }
+
+      const obj = unwrapObjectExpression(node.init);
+      if (obj) {
+        const map = stringMapFrom(obj);
+        if (map) maps.set(name, map);
+      }
+    });
+  }
 
   // Second pass: keys derived from something already known.
   //
@@ -201,11 +286,23 @@ function collectBindings(ast, inherited = {}) {
         derived.set(node.id.name, [head]);
         derivedDynamic.add(node.id.name);
       }
+      return;
+    }
+
+    // const key = legacyPhotoKey(refType, refId)  — a builder call stored first and
+    // used on the next line. `tankMedia.js` writes every legacy photo this way, so
+    // without this the tank-photo key looks like it has no writer.
+    if (node.init?.type === "CallExpression" && node.init.callee?.type === "Identifier") {
+      const prefixes = builders.get(node.init.callee.name);
+      if (prefixes?.length) {
+        derived.set(node.id.name, [...prefixes]);
+        derivedDynamic.add(node.id.name);
+      }
     }
   });
 
   for (const name of ambiguous) strings.delete(name);
-  return { strings, maps, derived, derivedDynamic };
+  return { strings, maps, builders, derived, derivedDynamic };
 }
 
 /**
@@ -233,10 +330,21 @@ function memberCandidates(memberNode, map) {
  */
 function resolveKeyArg(arg, bindings) {
   if (!arg) return null;
-  const { strings, maps, derived } = bindings;
+  const { strings, maps, derived, builders } = bindings;
 
   if (arg.type === "Literal" && typeof arg.value === "string") {
     return { keys: [arg.value], dynamic: false };
+  }
+
+  // localStorage.getItem(localMetadataKey(id)) — resolve through the key builder.
+  if (arg.type === "CallExpression") {
+    const name =
+      arg.callee?.type === "Identifier" ? arg.callee.name
+      : arg.callee?.type === "MemberExpression" && arg.callee.property?.type === "Identifier"
+        ? arg.callee.property.name
+        : null;
+    const prefixes = name ? builders?.get(name) : null;
+    return prefixes?.length ? { keys: [...prefixes], dynamic: true } : null;
   }
 
   if (arg.type === "Identifier") {
@@ -293,6 +401,7 @@ function resolveKeyArg(arg, bindings) {
 export function collectExports(files, readFile = defaultRead) {
   const strings = new Map();
   const maps = new Map();
+  const builders = new Map();
   const ambiguous = new Set();
 
   for (const file of files) {
@@ -300,6 +409,14 @@ export function collectExports(files, readFile = defaultRead) {
     walk(ast, (node) => {
       if (node.type !== "ExportNamedDeclaration") return;
       const decl = node.declaration;
+
+      // export function localMetadataKey(id) { return `...${id}`; }
+      if (decl?.type === "FunctionDeclaration" && decl.id?.type === "Identifier") {
+        const prefixes = keyBuilderPrefixes(decl, builders);
+        if (prefixes.length) builders.set(decl.id.name, prefixes);
+        return;
+      }
+
       if (decl?.type !== "VariableDeclaration") return;
       for (const d of decl.declarations) {
         if (d.id?.type !== "Identifier") continue;
@@ -308,6 +425,14 @@ export function collectExports(files, readFile = defaultRead) {
             ambiguous.add(d.id.name);
           }
           strings.set(d.id.name, d.init.value);
+          continue;
+        }
+        if (
+          d.init?.type === "ArrowFunctionExpression" ||
+          d.init?.type === "FunctionExpression"
+        ) {
+          const prefixes = keyBuilderPrefixes(d.init, builders);
+          if (prefixes.length) builders.set(d.id.name, prefixes);
           continue;
         }
         const obj = unwrapObjectExpression(d.init);
@@ -320,11 +445,86 @@ export function collectExports(files, readFile = defaultRead) {
   }
 
   for (const name of ambiguous) strings.delete(name);
-  return { strings, maps };
+  return { strings, maps, builders };
 }
 
 function defaultRead(file) {
   return readFileSync(file, "utf8");
+}
+
+/**
+ * STORAGE WRAPPERS: functions that forward a parameter straight into a storage call.
+ *
+ *   function readLocalStorageKey(key) { return localStorage.getItem(key) || null; }
+ *
+ * Calls to these ARE reads and writes of whatever key is passed in, but the `getItem`
+ * itself only ever sees a bare parameter, so without this pass the key looks unread.
+ * That is not hypothetical: `tankMedia.js` reads every photo key through exactly this
+ * helper, which made `aquadex_specimen_photo_url_` look like a dead write when it is
+ * read two lines away.
+ *
+ * Only a DIRECT parameter forward counts. If the wrapper transforms the key first we
+ * cannot know what it becomes, and inventing an answer is worse than reporting none.
+ *
+ * @returns {Map<string, Array<{method: string, paramIndex: number}>>}
+ */
+export function collectStorageWrappers(files, readFile = defaultRead) {
+  const wrappers = new Map();
+  const conflicting = new Set();
+
+  const record = (name, entries) => {
+    if (!entries.length) return;
+    const existing = wrappers.get(name);
+    if (existing && JSON.stringify(existing) !== JSON.stringify(entries)) {
+      // Same helper name meaning different things in two files — unresolvable.
+      conflicting.add(name);
+    }
+    wrappers.set(name, entries);
+  };
+
+  const analyzeFn = (fnNode, name) => {
+    if (!name || !fnNode?.params) return;
+    const params = fnNode.params
+      .map((p, i) => (p.type === "Identifier" ? [p.name, i] : null))
+      .filter(Boolean);
+    if (params.length === 0) return;
+    const paramIndex = new Map(params);
+
+    const entries = [];
+    walk(fnNode.body, (n) => {
+      if (n.type !== "CallExpression") return;
+      if (n.callee?.type !== "MemberExpression") return;
+      if (n.callee.property?.type !== "Identifier") return;
+      const method = n.callee.property.name;
+      if (!STORAGE_METHODS.has(method)) return;
+      const arg = n.arguments?.[0];
+      if (arg?.type !== "Identifier") return;
+      if (!paramIndex.has(arg.name)) return;
+      entries.push({ method, paramIndex: paramIndex.get(arg.name) });
+    });
+    record(name, entries);
+  };
+
+  for (const file of files) {
+    const ast = parse(readFile(file), file);
+    walk(ast, (node) => {
+      if (node.type === "FunctionDeclaration" && node.id?.type === "Identifier") {
+        analyzeFn(node, node.id.name);
+        return;
+      }
+      if (node.type === "VariableDeclarator" && node.id?.type === "Identifier") {
+        if (
+          node.init?.type === "ArrowFunctionExpression" ||
+          node.init?.type === "FunctionExpression"
+        ) {
+          analyzeFn(node.init, node.id.name);
+        }
+      }
+    });
+  }
+
+  for (const name of conflicting) wrappers.delete(name);
+  return wrappers;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -347,6 +547,7 @@ export function analyzeSeams(files, opts = {}) {
   const relativize = opts.relativize || ((f) => f);
 
   const exported = collectExports(files, readFile);
+  const wrappers = collectStorageWrappers(files, readFile);
 
   /** key -> { reads, writes, removes, dynamic } */
   const storage = new Map();
@@ -412,6 +613,29 @@ export function analyzeSeams(files, opts = {}) {
 
       if (node.type !== "CallExpression") return;
       const callee = node.callee;
+
+      // ── a call to a storage wrapper: readLocalStorageKey(photoKey(id)) ──
+      if (callee?.type === "Identifier" && wrappers.has(callee.name)) {
+        for (const { method: m, paramIndex } of wrappers.get(callee.name)) {
+          const arg = node.arguments?.[paramIndex];
+          if (arg) consumed.add(arg);
+          const resolved = resolveKeyArg(arg, bindings);
+          if (!resolved) {
+            unresolved.push({ kind: "wrapper", method: `${callee.name}→${m}`, at: site(file, node, relativize) });
+            continue;
+          }
+          const where = site(file, node, relativize);
+          for (const key of resolved.keys) {
+            const entry = storageEntry(key);
+            if (resolved.dynamic) entry.dynamic = true;
+            if (READ_METHODS.has(m)) entry.reads.push(where);
+            else if (WRITE_METHODS.has(m)) entry.writes.push(where);
+            else entry.removes.push(where);
+          }
+        }
+        return;
+      }
+
       if (callee?.type !== "MemberExpression" || callee.property?.type !== "Identifier") return;
       const method = callee.property.name;
 
