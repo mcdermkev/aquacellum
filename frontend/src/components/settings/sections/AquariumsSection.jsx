@@ -23,13 +23,22 @@ import { db } from "../../../db";
  *      return 0`), but `setRemindersEnabled()` had ZERO callers, so
  *      `initGrowoutReminders()` ran on every boot and could not be turned off.
  *      This is the missing writer, not a new feature.
- *   3. SYNC STATUS — `aquadex_last_synced` was held in App state with no UI at
- *      all. Read-only here on purpose: it reports what is true rather than
- *      collecting an intention (§2). No "sync now" button, because there is no
- *      manual-sync entry point to call yet and a button that only looked like it
- *      synced would be exactly the defect this rework removes.
+ *   3. SYNC STATUS + "SYNC NOW" — `aquadex_last_synced` was held in App state with
+ *      no UI at all. The button calls `runCloudSync` in `App.jsx`, the same routine
+ *      the login sync runs, so there is one definition of what syncing means and
+ *      one owner of both the status and the timestamp. It is threaded in rather
+ *      than reimplemented here precisely so a second, subtly different sync cannot
+ *      exist — and it renders only when a sync can actually happen, since a button
+ *      that silently does nothing is the defect this rework removes.
  */
-export function AquariumsSection({ casualModeActive, displayTank, setDisplayTank }) {
+export function AquariumsSection({
+  casualModeActive,
+  displayTank,
+  setDisplayTank,
+  onSyncNow,
+  syncStatus,
+  lastSyncedAt,
+}) {
   const [tanks, setTanks] = useState([]);
   const [tanksLoading, setTanksLoading] = useState(true);
   const [remindersOn, setRemindersOn] = useState(() => areRemindersEnabled());
@@ -173,7 +182,7 @@ export function AquariumsSection({ casualModeActive, displayTank, setDisplayTank
           />
         </div>
 
-        {/* ─── Sync status ─── */}
+        {/* ─── Sync status + manual sync ─── */}
         <div>
           <SubsectionLabel>{casualModeActive ? "Backup status" : "Cloud sync"}</SubsectionLabel>
           <div
@@ -187,11 +196,16 @@ export function AquariumsSection({ casualModeActive, displayTank, setDisplayTank
               lineHeight: 1.5,
             }}
           >
-            {lastSynced ? (
+            {/*
+              Prefer the live timestamp from App.jsx over the one read from
+              localStorage on mount, so the readout updates the moment a sync
+              finishes instead of showing a stale value until the next reload.
+            */}
+            {(lastSyncedAt || lastSynced) ? (
               <>
                 {casualModeActive ? "Last backed up " : "Last synced "}
                 <strong style={{ color: "var(--text-primary)" }}>
-                  {lastSynced.toLocaleString()}
+                  {(lastSyncedAt || lastSynced).toLocaleString()}
                 </strong>
               </>
             ) : (
@@ -202,6 +216,42 @@ export function AquariumsSection({ casualModeActive, displayTank, setDisplayTank
               </span>
             )}
           </div>
+
+          {/*
+            "Sync now" calls the SAME routine the login sync runs (App.jsx's
+            runCloudSync), so there is one definition of syncing and one owner of
+            the status. It only renders when a sync can actually be performed —
+            no wallet, or E2E mode, means no button rather than a button that
+            silently does nothing.
+          */}
+          {onSyncNow ? (
+            <div style={{ marginTop: "0.75rem", display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  announce("Syncing now");
+                  onSyncNow();
+                }}
+                disabled={syncStatus === "syncing"}
+                style={{ padding: "0.5rem 1rem", fontSize: "0.78rem", minHeight: 40 }}
+              >
+                {syncStatus === "syncing" ? "Syncing…" : casualModeActive ? "Back up now" : "Sync now"}
+              </button>
+              {syncStatus === "success" && (
+                <span style={{ fontSize: "0.72rem", color: "var(--accent-green)" }}>✓ Up to date</span>
+              )}
+              {syncStatus === "failed" && (
+                <span style={{ fontSize: "0.72rem", color: "var(--accent-red)" }}>
+                  ⚠️ Sync failed — check your connection and try again.
+                </span>
+              )}
+            </div>
+          ) : (
+            <p style={{ margin: "0.6rem 0 0", fontSize: 11, color: "var(--text-muted)", lineHeight: 1.4 }}>
+              Sign in to back up and restore across devices.
+            </p>
+          )}
         </div>
       </div>
     </SettingsSection>

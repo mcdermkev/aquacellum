@@ -38,7 +38,15 @@ import { PrivacySection } from "./sections/PrivacySection";
  * sub-tabs (§6: "Sections are individually collapsible… Settings is a page
  * you scan, and sub-tabs hide the thing you are hunting for").
  */
-export function SettingsPanel({ casualModeActive, onToggleMode, displayTank, setDisplayTank }) {
+export function SettingsPanel({
+  casualModeActive,
+  onToggleMode,
+  displayTank,
+  setDisplayTank,
+  onSyncNow,
+  syncStatus,
+  lastSyncedAt,
+}) {
   const { poseidonEnabled, echoEnabled, setPoseidonEnabled, setEchoEnabled } = useAiPrefs();
   // A second, independent binding to the same persisted preference — the
   // app-wide *application* of high contrast is still the root-level
@@ -85,6 +93,9 @@ export function SettingsPanel({ casualModeActive, onToggleMode, displayTank, set
         casualModeActive={casualModeActive}
         displayTank={displayTank}
         setDisplayTank={setDisplayTank}
+        onSyncNow={onSyncNow}
+        syncStatus={syncStatus}
+        lastSyncedAt={lastSyncedAt}
       />
       <DiscoverySection casualModeActive={casualModeActive} />
       <SellerSection casualModeActive={casualModeActive} />

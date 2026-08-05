@@ -914,6 +914,13 @@ export default function App() {
             // drawer and specimen compatibility already read (App.jsx persists it).
             displayTank={displayTank}
             setDisplayTank={setDisplayTank}
+            // "Sync now" reuses the SAME routine the login sync runs, so there is
+            // one definition of what syncing means and one owner of the status and
+            // the `aquadex_last_synced` timestamp. A second implementation in the
+            // Settings section would be a button that syncs slightly differently.
+            onSyncNow={account && !isE2EMode() ? () => runCloudSync(account) : null}
+            syncStatus={syncStatus}
+            lastSyncedAt={lastSyncedAt}
           />
         );
       case "founders":
