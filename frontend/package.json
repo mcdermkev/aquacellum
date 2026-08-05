@@ -12,6 +12,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "seams": "node scripts/seams/report.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test"

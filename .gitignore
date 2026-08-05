@@ -59,7 +59,13 @@ docs/
 !docs/IMMERSIVE_REEF_ARCHITECTURE.md
 
 # Frontend scripts — internal tooling (image gen, cutouts, etc.)
-frontend/scripts/
+#
+# `/*` rather than `/` so git still DESCENDS into the directory; with a trailing
+# slash it refuses to look inside and the negation below can never match.
+frontend/scripts/*
+# Exception: the seam analyzer is a CI dependency, not local tooling —
+# src/__tests__/seamInventory.test.js imports it, so the suite cannot run without it.
+!frontend/scripts/seams/
 
 # Supabase CLI local cache. `.temp/cli-latest` just records the CLI version the
 # machine last saw, so it churns for every developer on a different version and
