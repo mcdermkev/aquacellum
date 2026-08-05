@@ -241,9 +241,26 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
     setSaving(true);
     setSaveError(null);
 
+    // Capture the browser's IANA timezone alongside the preferences.
+    //
+    // ⚠️ QUIET HOURS ARE MEANINGLESS WITHOUT THIS. "22:00" is a wall-clock time, and
+    // the sender runs server-side — with no zone it would have to assume UTC, so a
+    // user in New York asking for 22:00–08:00 would be muted 18:00–04:00 instead.
+    // Captured automatically rather than asked for: the browser already knows, and a
+    // timezone dropdown is a chore that adds nothing a user could answer better.
+    // Re-read on every save so it follows the user when they move.
+    let timezone = prefs.timezone;
+    try {
+      timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || timezone;
+    } catch {
+      // Keep whatever was stored; the sender fails open on a missing zone.
+    }
+
+    const prefsToSave = { ...prefs, timezone };
+
     const { error } = await supabase
       .from("profiles")
-      .update({ notification_preferences: prefs })
+      .update({ notification_preferences: prefsToSave })
       .eq("wallet_address", wallet);
 
     setSaving(false);
@@ -256,6 +273,12 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
 
     if (prefs.emailDigest !== "off") {
       trackEvent("notification_opt_in", { channel: "email", frequency: prefs.emailDigest });
+    }
+
+    // Reflect the captured timezone back into local state so the quiet-hours copy
+    // can show which clock it applies to without waiting for a reload.
+    if (timezone && timezone !== prefs.timezone) {
+      setPrefs((p) => ({ ...p, timezone }));
     }
 
     setSaved(true);
@@ -508,7 +531,15 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
           <span className="toggle-switch__label">Enable quiet hours (no push notifications during this time)</span>
         </label>
         {prefs.quietHours.enabled && (
-          <div className="sonar-prefs__quiet-times">
+          <>
+            {/* Name the clock. These are wall-clock times enforced server-side, so
+                without saying which zone they resolve in, "22:00" is a guess. */}
+            <p className="text-muted text-sm" style={{ margin: "0.4rem 0 0.6rem" }}>
+              {prefs.timezone
+                ? `Times are in your local zone (${prefs.timezone}), updated whenever you save.`
+                : "Times use your device's local zone, recorded the first time you save."}
+            </p>
+            <div className="sonar-prefs__quiet-times">
             <label className="form-field">
               <span>From</span>
               <input
@@ -525,7 +556,8 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
                 onChange={(e) => updateQuietHours("end", e.target.value)}
               />
             </label>
-          </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -533,8 +565,9 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
         Email — two separate things, and they are separate because only ONE of them
         actually sends anything today.
 
-        DIGEST: not wired. `reef-digest` inserts an in-app row and returns;
-        `weeklyDigestTemplate` in api/_lib/resend.js has zero callers. The stored
+        DIGEST: sends weekly. `reef-digest` generates the text and inserts the in-app
+        row; `api/retention.js?action=weekly-digest` mails it via `weeklyDigestTemplate`
+        on Sundays, honouring this preference. The stored
         preference is real and will be honoured once a sender exists, so the control
         stays — but it says so plainly instead of implying mail is on its way. The
         "daily" option is removed outright: there is no daily digest in any form, so

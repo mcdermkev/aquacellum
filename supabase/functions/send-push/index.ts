@@ -16,6 +16,18 @@
  *   tag?: string
  * }
  *
+ * Query params:
+ *   ?force=1  bypass the recipient's category/quiet-hours preferences. Used only
+ *             by the Settings "send a test notification" button, which has to
+ *             prove the pipeline works even when the user's own rules would mute it.
+ *
+ * RESPECTS `profiles.notification_preferences` (see _shared/pushPreferences.ts).
+ * It previously did not, which made every per-category Push switch in Settings and
+ * the entire Quiet Hours block dead controls. Suppression here only drops the
+ * PUSH — callers write the in-app `sonar_notifications` row separately, so nothing
+ * is lost, and a suppressed send returns `{ suppressed: true, reason }` rather than
+ * looking like a failure.
+ *
  * Implements the Web Push protocol end-to-end using only Web Crypto
  * (no npm/node web-push dependency, which does not work reliably under Deno —
  * see https://github.com/web-push-libs/web-push/issues for the ECDSA key
@@ -37,6 +49,7 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { shouldSendPush } from "../_shared/pushPreferences.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -56,6 +69,38 @@ serve(async (req) => {
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+    // ── Honour the user's notification preferences ─────────────────────────────
+    //
+    // This function used to ignore `notification_preferences` entirely, which made
+    // every per-category Push switch in Settings and the whole Quiet Hours block
+    // dead controls — a user could turn Social push off and still be pushed.
+    //
+    // Suppressing here does NOT lose the notification: callers write the in-app
+    // `sonar_notifications` row separately, so a quiet-hours message is waiting when
+    // the user next opens the app. Only the interruption is suppressed.
+    //
+    // `?force=1` exists for the Settings "send a test notification" button, which
+    // must prove the pipeline works even when the user's own rules would mute it.
+    const forcePush = new URL(req.url).searchParams.get("force") === "1";
+
+    if (!forcePush) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("notification_preferences")
+        .eq("wallet_address", wallet_address)
+        .maybeSingle();
+
+      const decision = shouldSendPush(profile?.notification_preferences, category);
+      if (!decision.send) {
+        // Reported, not silent: a skip that looks like a failure is how this app
+        // previously spent months believing push worked when it did not.
+        return new Response(
+          JSON.stringify({ sent: 0, suppressed: true, reason: decision.reason }),
+          { headers: { "Content-Type": "application/json" } }
+        );
+      }
+    }
 
     // Get all push subscriptions for this user
     const { data: subscriptions, error } = await supabase

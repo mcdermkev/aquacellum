@@ -120,7 +120,11 @@ export default async function handleTestPush(req, res) {
   }
 
   try {
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+    // `?force=1` bypasses the user's own category/quiet-hours rules. This button
+  // exists to prove the delivery pipeline works, so it must not be silently muted
+  // by the very preferences the user is trying to verify — a test that reports
+  // "sent 0" because it is 23:00 teaches the wrong lesson about a working setup.
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/send-push?force=1`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

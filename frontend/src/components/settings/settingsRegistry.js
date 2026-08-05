@@ -129,6 +129,21 @@ export const SETTINGS_REGISTRY = [
     control: "Experience Mode (first-run hint, ModeSegmentedControl)",
     readBy: ["components/ModeSegmentedControl.jsx"],
   },
+  {
+    // Server-side preference, not a localStorage key — it lives in
+    // `profiles.notification_preferences`. Registered anyway because AC-3's question
+    // ("does anything read this?") is the same question, and the answer used to be
+    // no: `send-push` ignored the column entirely, so all five per-category Push
+    // switches and the whole Quiet Hours block were dead controls. The reader is now
+    // supabase/functions/_shared/pushPreferences.ts via send-push.
+    key: "notification_preferences",
+    control: "Notifications → per-category push + quiet hours",
+    readBy: ["services/reefApi.js", "components/reef/SonarPreferences.jsx"],
+    // The authoritative reader is the Edge Function, which lives outside
+    // frontend/src and so outside this test's reach. `settingsPushEnforcement`
+    // covers that side; this entry pins the client half.
+    readerPattern: "notification_preferences",
+  },
 ];
 
 export default SETTINGS_REGISTRY;
