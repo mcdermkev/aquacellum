@@ -432,28 +432,36 @@ export function SpecimenDetailModal({
         setTankInfo(null);
       }
 
-      // 5. Resolve breeder/owner profile display name
+      // 5. Resolve breeder/owner profile display name.
+      //
+      // `profiles.display_name` is the ONLY store for a keeper's chosen name, so this
+      // is a two-outcome lookup: the name, or an address-derived handle.
+      //
+      // It used to be a four-tier fallback chain, and the middle two tiers were both
+      // dead in a way nothing reported:
+      //
+      //   `localProfile.alias`  — `alias` is not a field on `db.userProfile` (whose
+      //     schema carries no name at all). It is a customerSegments/sellerOrderView
+      //     concept: a privacy handle GENERATED from a wallet so a seller never sees a
+      //     buyer's raw address. Nothing has ever written `userProfile.alias`, and the
+      //     lookup also keyed Dexie on the chain's checksummed address while Dexie
+      //     stores lowercased — so it could not have matched even if the field existed.
+      //
+      //   `localStorage.aquadex_display_name` — read here and written nowhere in the
+      //     codebase.
+      //
+      // Both are deleted rather than repaired. A device-local mirror of an
+      // authoritative Supabase field would be a second source of truth for identity,
+      // and the name shown next to a specimen's ownership is not a fact worth having
+      // two answers for. When there is no display_name, `Breeder #XXXX` IS the answer.
       if (resolvedSpec.owner && resolvedSpec.owner !== ZeroAddress) {
+        const addressHandle = `Breeder #${resolvedSpec.owner.slice(2, 6).toUpperCase()}`;
         try {
           const profile = await getProfile(resolvedSpec.owner);
-          if (profile?.data?.display_name) {
-            setOwnerDisplayName(profile.data.display_name);
-          } else {
-            // Fallback: Check local Dexie userProfile table
-            const localProfile = await db.userProfile.get(resolvedSpec.owner);
-            if (localProfile?.alias) {
-              setOwnerDisplayName(localProfile.alias);
-            } else if (resolvedSpec.owner.toLowerCase() === walletAccount?.toLowerCase()) {
-              // Try local storage for active user display name
-              const activeDisplayName = localStorage.getItem("aquadex_display_name");
-              setOwnerDisplayName(activeDisplayName || `Breeder #${resolvedSpec.owner.slice(2, 6).toUpperCase()}`);
-            } else {
-              setOwnerDisplayName(`Breeder #${resolvedSpec.owner.slice(2, 6).toUpperCase()}`);
-            }
-          }
+          setOwnerDisplayName(profile?.data?.display_name || addressHandle);
         } catch (e) {
           console.warn("Error fetching owner profile:", e);
-          setOwnerDisplayName(`Breeder #${resolvedSpec.owner.slice(2, 6).toUpperCase()}`);
+          setOwnerDisplayName(addressHandle);
         }
       } else {
         setOwnerDisplayName("Unknown Breeder");

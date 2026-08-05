@@ -610,12 +610,30 @@ export function MarketplaceBoard({
       };
     });
 
-    // 2. Calculate fulfillment breakdown
+    // 2. Fulfillment breakdown.
+    //
+    // `aquadex_digital_orders_count` HAS NO WRITER anywhere in the codebase. The cash
+    // counter is real — CheckoutSummary and HandshakeVerification both increment it on
+    // a completed handshake — but its digital counterpart was never implemented, and
+    // the gap was hidden behind `|| 12`. So this card showed every seller a flat
+    // "12 Digital Escrow orders completed" and a split bar computed from it, on a
+    // business dashboard, regardless of what they had actually sold.
+    //
+    // The `|| 12` is gone rather than replaced with a fabricated alternative. I did
+    // NOT add a digital counter, because the only clean write point
+    // (`_recordPendingPurchase`) fires when a Stripe SESSION IS CREATED with status
+    // "pending" — counting there would book abandoned checkouts as completed sales,
+    // which is the same class of lie in the other direction. Which event counts as a
+    // completed digital order is a product decision, not a guess to make here.
     const cashOrders = Number(localStorage.getItem("aquadex_cash_orders_count") || 0);
-    const digitalOrders = Number(localStorage.getItem("aquadex_digital_orders_count") || 12);
-    const totalOrders = cashOrders + digitalOrders || 1;
-    const cashPct = Math.round((cashOrders / totalOrders) * 100);
-    const digitalPct = 100 - cashPct;
+    const digitalOrders = Number(localStorage.getItem("aquadex_digital_orders_count") || 0);
+    const totalOrders = cashOrders + digitalOrders;
+    // Guard the divide separately from the display: with no orders at all there is no
+    // split to show, and `|| 1` previously turned "nothing sold" into a confident
+    // 0% / 100% bar.
+    const hasFulfillmentData = totalOrders > 0;
+    const cashPct = hasFulfillmentData ? Math.round((cashOrders / totalOrders) * 100) : 0;
+    const digitalPct = hasFulfillmentData ? 100 - cashPct : 0;
 
     // 3. Calculate Double XP points
     let eventDoubleXp = 0;
@@ -722,15 +740,21 @@ export function MarketplaceBoard({
             </p>
             
             <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", margin: "auto 0" }}>
-              {/* Split Bar */}
-              <div style={{ display: "flex", height: "24px", width: "100%", borderRadius: "6px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)" }}>
-                <div style={{ width: `${cashPct}%`, background: "var(--accent-green)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "0.7rem", fontWeight: "700" }} title="Cash Handshake">
-                  {cashPct > 15 ? `${cashPct}%` : ""}
+              {/* Split Bar — only drawn when there is something to split. */}
+              {hasFulfillmentData ? (
+                <div style={{ display: "flex", height: "24px", width: "100%", borderRadius: "6px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div style={{ width: `${cashPct}%`, background: "var(--accent-green)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "0.7rem", fontWeight: "700" }} title="Cash Handshake">
+                    {cashPct > 15 ? `${cashPct}%` : ""}
+                  </div>
+                  <div style={{ width: `${digitalPct}%`, background: "var(--accent-blue)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "0.7rem", fontWeight: "700" }} title="Digital Escrow">
+                    {digitalPct > 15 ? `${digitalPct}%` : ""}
+                  </div>
                 </div>
-                <div style={{ width: `${digitalPct}%`, background: "var(--accent-blue)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "0.7rem", fontWeight: "700" }} title="Digital Escrow">
-                  {digitalPct > 15 ? `${digitalPct}%` : ""}
-                </div>
-              </div>
+              ) : (
+                <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0, fontStyle: "italic" }}>
+                  No completed orders on this device yet — nothing to compare.
+                </p>
+              )}
 
               {/* Legends */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>

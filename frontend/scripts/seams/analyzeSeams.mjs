@@ -705,25 +705,31 @@ export function analyzeSeams(files, opts = {}) {
 export function findings({ storage, events, literalSites = new Map() }) {
   const entries = [...storage.entries()];
 
-  const pairedByPrefix = (key, entry, side) =>
-    entries.some(([other, otherEntry]) => {
-      if (other === key) return false;
-      if (!entry.dynamic && !otherEntry.dynamic) return false;
-      const related = other.startsWith(key) || key.startsWith(other);
-      return related && otherEntry[side].length > 0;
-    });
+  /*
+    PAIRING IS EXACT. Keys match only when they are the same string.
+    A dynamic writer and a dynamic reader of the same family both reduce to the same
+    prefix (`aquadex_photo_`), so equality already pairs them — no prefix-relationship
+    logic is needed for the case that actually occurs.
 
+    An earlier version also paired keys where one was a lexical prefix of the other,
+    to cover a dynamic writer meeting a concrete literal reader. Measured against this
+    codebase it paired nothing real and hid a genuine dead read: `aquadex_tank_${id}`
+    was "explained" first by `aquadex_tank_photo_` and then by `aquadex_tank_comments`,
+    which are unrelated keys that merely share a prefix. `loadDemoTank` could only ever
+    return null and the tool said nothing.
+
+    The remaining risk is the reverse: a dynamic writer whose only reader names a
+    concrete key would now be reported. That is the right direction to fail — a false
+    positive gets investigated and explained, a false negative hides forever.
+  */
   const writtenNeverRead = [];
   const readNeverWritten = [];
 
   for (const [key, entry] of entries) {
-    const hasRead = entry.reads.length > 0 || pairedByPrefix(key, entry, "reads");
-    const hasWrite = entry.writes.length > 0 || pairedByPrefix(key, entry, "writes");
-
-    if (entry.writes.length > 0 && !hasRead) {
+    if (entry.writes.length > 0 && entry.reads.length === 0) {
       writtenNeverRead.push({ key, sites: entry.writes, dynamic: entry.dynamic });
     }
-    if (entry.reads.length > 0 && !hasWrite) {
+    if (entry.reads.length > 0 && entry.writes.length === 0) {
       readNeverWritten.push({ key, sites: entry.reads, dynamic: entry.dynamic });
     }
   }

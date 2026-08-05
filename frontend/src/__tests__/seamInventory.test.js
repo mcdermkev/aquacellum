@@ -18,10 +18,17 @@
  *
  * The verdicts are not guesses. Each was checked by reading the producer.
  *
- * ⚠️ HOW TO USE THIS: do not add a `verdict: "expected"` entry to silence a finding.
- * "expected" means a non-app writer owns the key (a library, or an older release of
- * this app). Everything else is "bug" and belongs on the fix list.
- * Run `node scripts/seams/report.mjs` for the full report with line numbers.
+ * ⚠️ HOW TO USE THIS: do not add an entry to silence a finding. There are exactly
+ * three honest verdicts:
+ *
+ *   "bug"      — nothing on the other side, and a user can reach it today.
+ *   "expected" — the other side is outside this codebase (a library, or an older
+ *                release of this app whose data we still migrate).
+ *   "unbuilt"  — a real gap in a feature that is not live, so it cannot affect anyone
+ *                yet. Must be finished before the feature ships. This is NOT a way to
+ *                park a live defect; it requires evidence the surface is unreachable.
+ *
+ * Run `npm run seams` for the full report with line numbers.
  */
 
 import { describe, it, expect } from "vitest";
@@ -64,25 +71,12 @@ const SEAM_BASELINE = [
     id: "readNeverWritten:aquadex_digital_orders_count",
     verdict: "bug",
     note:
-      "MarketplaceBoard:615 reads it as `Number(getItem(...) || 12)`. Nothing ever " +
-      "writes it, so the marketplace always displays a hardcoded 12 as though it " +
-      "were a real count.",
-  },
-  {
-    id: "readNeverWritten:aquadex_display_name",
-    verdict: "bug",
-    note:
-      "SpecimenDetailModal:448 uses this as the last fallback before " +
-      "'Breeder #XXXX'. Nothing writes it, and the real name lives in Supabase " +
-      "profiles.display_name — so your own display name never appears on your own " +
-      "specimens.",
-  },
-  {
-    id: "readNeverWritten:aquadex_demo_tank",
-    verdict: "bug",
-    note:
-      "reef/hooks/useTankData.js:169 falls back to it when no per-id tank is " +
-      "stored. Nothing writes it, so the fallback is unreachable.",
+      "MarketplaceBoard's Fulfillment Splits card. The FABRICATION is fixed — it read " +
+      "`|| 12` and showed every seller a flat '12 Digital Escrow orders completed', " +
+      "and now reads `|| 0` with an honest empty state. The SEAM remains: there is " +
+      "still no digital-order counter, because the only clean write point records a " +
+      "Stripe session as 'pending' and counting there would book abandoned checkouts " +
+      "as sales. Which event completes a digital order is a product decision.",
   },
   {
     id: "readNeverWritten:echo_last_evolution_ts",
@@ -108,11 +102,6 @@ const SEAM_BASELINE = [
       "what makes this one a typo rather than a design choice.",
   },
   {
-    id: "dispatchedNeverHandled:poseidon:species-search",
-    verdict: "bug",
-    note: "App.jsx:662 dispatches it on a Poseidon species search; nothing listens.",
-  },
-  {
     id: "dispatchedNeverHandled:aquadex_xp_rollback",
     verdict: "bug",
     note:
@@ -121,8 +110,18 @@ const SEAM_BASELINE = [
   },
   {
     id: "dispatchedNeverHandled:aquadex_campaign_reward",
-    verdict: "bug",
-    note: "SponsorCampaignBanner:28 dispatches a claimed reward; nothing listens.",
+    verdict: "unbuilt",
+    note:
+      "SponsorCampaignBanner:28 dispatches a claimed reward and nothing listens — and " +
+      "`claimReward()` grants NOTHING either: it writes a one-time 'claimed' marker, " +
+      "logs an impression, and returns a description. So the event was the only thing " +
+      "that could ever have delivered the reward. Not live, though: " +
+      "config/campaigns.json has `campaigns: []`, so hasCampaign is always false and " +
+      "the banner renders null — the claim button is unreachable. Rewards are " +
+      "badge/discount_code/xp_boost, i.e. value-bearing, so wiring this needs the XP " +
+      "and entitlement rework plus a Tier A review. MUST be finished before any " +
+      "campaign is added to that config, or the first claimant burns their one claim " +
+      "and receives nothing.",
   },
   {
     id: "dispatchedNeverHandled:echo_rare_moment",
@@ -142,6 +141,7 @@ const SEAM_BASELINE = [
 
 const BASELINE_IDS = SEAM_BASELINE.map((s) => s.id).sort();
 const KNOWN_BUGS = SEAM_BASELINE.filter((s) => s.verdict === "bug").length;
+const VERDICTS = ["bug", "expected", "unbuilt"];
 
 const FRONTEND = fileURLToPath(new URL("../../", import.meta.url));
 const rel = (f) => f.replace(FRONTEND, "").split("\\").join("/");
@@ -175,12 +175,12 @@ describe("seam inventory", () => {
 
   it("does not let the known-bug count grow", () => {
     // A ceiling, not a target. It should trend to 0.
-    expect(KNOWN_BUGS).toBeLessThanOrEqual(11);
+    expect(KNOWN_BUGS).toBeLessThanOrEqual(7);
   });
 
   it("every baseline entry carries a verdict and a reason", () => {
     for (const seam of SEAM_BASELINE) {
-      expect(["bug", "expected"], `${seam.id} has an invalid verdict`).toContain(seam.verdict);
+      expect(VERDICTS, `${seam.id} has an invalid verdict`).toContain(seam.verdict);
       expect(seam.note.length, `${seam.id} needs a real explanation`).toBeGreaterThan(40);
     }
   });
@@ -345,6 +345,26 @@ describe("the analyzer itself", () => {
       "r.js": `localStorage.getItem("k_xp");`,
     });
     expect(out.writtenNeverRead.map((f) => f.key)).toEqual(["k_xp_points"]);
+  });
+
+  it("keeps two dynamic key families separate even when one prefixes the other", () => {
+    // `aquadex_tank_${id}` and `aquadex_tank_photo_${id}` are unrelated families that
+    // share a lexical prefix. Pairing them let the photo key's writer explain away the
+    // tank key's missing writer, hiding a read that could only ever return null.
+    const out = analyze({
+      "photos.js": "localStorage.setItem(`k_tank_photo_${id}`, x); localStorage.getItem(`k_tank_photo_${id}`);",
+      "demo.js": "const t = localStorage.getItem(`k_tank_${id}`);",
+    });
+    expect(out.readNeverWritten.map((f) => f.key)).toEqual(["k_tank_"]);
+  });
+
+  it("keeps a concrete key from explaining away a dynamic family", () => {
+    // `k_tank_comments` is its own key, not an instance of `k_tank_${id}`.
+    const out = analyze({
+      "a.js": "localStorage.setItem('k_tank_comments', x); localStorage.getItem('k_tank_comments');",
+      "b.js": "const t = localStorage.getItem(`k_tank_${id}`);",
+    });
+    expect(out.readNeverWritten.map((f) => f.key)).toEqual(["k_tank_"]);
   });
 
   it("treats removeItem as neither a read nor a write", () => {

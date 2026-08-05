@@ -51,14 +51,10 @@ export function useTankData(tankId) {
 
   async function loadTankData(id) {
     if (!isSupabaseConfigured()) {
-      // Fallback: try to load from localStorage demo data
-      const demoTank = loadDemoTank(id);
-      if (demoTank) {
-        setSpeciesData(demoTank.species);
-        setTankMeta(demoTank.meta);
-        setLoading(false);
-        return;
-      }
+      // The `loadDemoTank(id)` fallback that used to sit here was removed: it read
+      // `aquadex_tank_<id>` and then `aquadex_demo_tank`, and NEITHER key is written
+      // anywhere in the codebase, so it could only ever return null and fall through
+      // to this same error. It read as a working offline path and was not one.
       setError("Supabase not configured. Connect to load tank data.");
       setLoading(false);
       return;
@@ -155,23 +151,6 @@ function mapSpecimensToSpecies(specimens, masterCatalog) {
   }
 
   return Array.from(speciesMap.values());
-}
-
-/**
- * Load demo tank from localStorage (for development/testing without Supabase)
- */
-function loadDemoTank(id) {
-  try {
-    const stored = localStorage.getItem(`aquadex_tank_${id}`);
-    if (stored) return JSON.parse(stored);
-
-    // Check if any tank stored as "demo"
-    const demo = localStorage.getItem("aquadex_demo_tank");
-    if (demo) return JSON.parse(demo);
-  } catch (e) {
-    return null;
-  }
-  return null;
 }
 
 /**

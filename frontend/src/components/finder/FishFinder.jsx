@@ -55,6 +55,8 @@ export function FishFinder({
   initialSelectedBreed,
   onSelectedBreedChange,
   deepLinkSpecies,
+  pendingSpeciesSearch,
+  onClearPendingSpeciesSearch,
 }) {
   const browseSectionRef = useRef(null);
 
@@ -173,6 +175,16 @@ export function FishFinder({
   useEffect(() => {
     setNameSearchTerm(searchText);
   }, [searchText, setNameSearchTerm]);
+
+  // A free-text query handed over from Poseidon ("look up neon tetra"). Setting
+  // `searchText` is enough — the effect above syncs it into the name search, and
+  // `discoveryActive` turns on from the same value, so the results appear without a
+  // second code path. Cleared immediately so returning to the tab doesn't re-apply it.
+  useEffect(() => {
+    if (!pendingSpeciesSearch) return;
+    setSearchText(pendingSpeciesSearch);
+    onClearPendingSpeciesSearch?.();
+  }, [pendingSpeciesSearch, onClearPendingSpeciesSearch]);
 
   const discoveryActive = !!activeIntent || !!searchText.trim();
 

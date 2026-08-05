@@ -453,6 +453,9 @@ export default function App() {
   // A saved filter set handed over from Settings → Fish Finder, consumed once by
   // MarketplaceBoard. Same stash-then-navigate shape as `activeSpeciesFilter`.
   const [pendingSavedSearch, setPendingSavedSearch] = useState(null);
+  // A free-text species query from Poseidon's "look this fish up" action, consumed
+  // once by whichever gallery is mounted (FishFinder in casual, BreedGallery in pro).
+  const [pendingSpeciesSearch, setPendingSpeciesSearch] = useState(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Echo Whispers — real user state from Dexie (replaces hardcoded values)
@@ -648,21 +651,28 @@ export default function App() {
     return () => window.removeEventListener("aquadex_open_conversation", handleOpenConversation);
   }, []);
 
-  // Listen for Poseidon deep-link navigation events (species search, tab switches)
+  // Listen for Poseidon deep-link navigation events (species search, tab switches).
+  //
+  // Poseidon's "look up this fish" action sends `{ tab: "gallery", search: <query> }`,
+  // and the query used to be re-dispatched 200ms later as `poseidon:species-search`
+  // "for the gallery to pick up". NOTHING has ever listened for that event, so asking
+  // Poseidon to find a species navigated to the gallery and silently dropped the
+  // search — the user landed on an unfiltered list with no indication anything was
+  // lost.
+  //
+  // It is now stashed and passed down as a prop, the same stash-then-consume shape
+  // already used for `pendingSavedSearch` and `activeSpeciesFilter`, so there is one
+  // way to hand a pending query to a tab rather than a parallel event channel.
+  //
+  // NOT routed through `?species=`: that param feeds `deepLinkSpecies`, which matches
+  // an EXACT scientificName to open one species' detail and is guarded to fire once.
+  // Poseidon sends free text ("neon tetra"), so it belongs in the search box, not in
+  // an exact-match deep link that would quietly resolve to nothing.
   useEffect(() => {
     const handlePoseidonNav = (e) => {
       const { tab, search } = e.detail || {};
-      if (tab) {
-        goToTab(tab);
-      }
-      // If a species search query is provided, dispatch it for the gallery to pick up
-      if (search) {
-        setTimeout(() => {
-          window.dispatchEvent(
-            new CustomEvent("poseidon:species-search", { detail: { query: search } })
-          );
-        }, 200);
-      }
+      if (search) setPendingSpeciesSearch(String(search));
+      if (tab) goToTab(tab);
     };
     window.addEventListener("poseidon:navigate", handlePoseidonNav);
     return () => window.removeEventListener("poseidon:navigate", handlePoseidonNav);
@@ -856,6 +866,8 @@ export default function App() {
           initialSelectedBreed: gallerySelectedBreed,
           onSelectedBreedChange: setGallerySelectedBreed,
           deepLinkSpecies: deepLinkSpecies,
+          pendingSpeciesSearch: pendingSpeciesSearch,
+          onClearPendingSpeciesSearch: () => setPendingSpeciesSearch(null),
         };
         return casualModeActive
           ? <FishFinder {...galleryProps} />

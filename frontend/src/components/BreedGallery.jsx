@@ -117,7 +117,9 @@ export function BreedGallery({
   casualModeActive,
   initialSelectedBreed,
   onSelectedBreedChange,
-  deepLinkSpecies
+  deepLinkSpecies,
+  pendingSpeciesSearch,
+  onClearPendingSpeciesSearch
 }) {
   const proMode = !casualModeActive;
   const [selectedBreed, setSelectedBreed] = useState(initialSelectedBreed || null);
@@ -643,6 +645,16 @@ export function BreedGallery({
   // BOTH the contract catalog and the global catalog (so it works regardless
   // of the specCode-vs-on-chain-id scheme), once, and only when no detail is
   // already open.
+  // A free-text query handed over from Poseidon ("look up neon tetra"). Distinct from
+  // `deepLinkSpecies` above, which is an exact-scientificName jump to one species'
+  // detail — this just fills the search box, which is what "search for this" means.
+  // Cleared immediately so re-opening the tab doesn't re-apply a stale query.
+  useEffect(() => {
+    if (!pendingSpeciesSearch) return;
+    setSearchTerm(pendingSpeciesSearch);
+    onClearPendingSpeciesSearch?.();
+  }, [pendingSpeciesSearch, setSearchTerm, onClearPendingSpeciesSearch]);
+
   const deepLinkHandledRef = useRef(false);
   useEffect(() => {
     if (!deepLinkSpecies || deepLinkHandledRef.current || selectedBreed) return;
