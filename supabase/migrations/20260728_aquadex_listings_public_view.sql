@@ -4,8 +4,8 @@
 -- ============================================================================
 -- ⚠️  NOT YET APPLIED. Review, then apply deliberately (see "TO APPLY" below).
 --     Creating this view is additive and breaks nothing on its own; it is the
---     PREREQUISITE for the RLS lockdown staged in
---     frontend/supabase/checks/aquadex_listings_rls_lockdown.sql.
+--     PREREQUISITE for the RLS lockdown, applied 2026-07-29 as
+--     supabase/migrations/20260729_aquadex_listings_rls_lockdown.sql.
 --
 -- ── WHY ─────────────────────────────────────────────────────────────────────
 -- `aquadex_listings.data` is a JSON dump of the whole local listing object

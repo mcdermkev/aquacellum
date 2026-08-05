@@ -111,9 +111,10 @@ export const WITHHELD_LISTING_DATA_FIELDS = Object.freeze([
   //
   // The fail-closed allowlist already suppresses them (they are simply not
   // allowlisted, which is the whole point), but they are named here so the
-  // suppression is intentional and asserted rather than incidental. A staged
-  // cleanup that strips them from stored rows lives at
-  // frontend/supabase/checks/aquadex_listings_purge_legacy_location.sql.
+  // suppression is intentional and asserted rather than incidental. The cleanup
+  // that strips them from stored rows lives at
+  // frontend/supabase/checks/aquadex_listings_purge_legacy_location.sql and was
+  // applied on 2026-07-29, so no stored row carries either field any more.
   "fuzzedLocation",
   "zoneHash",
   // ── Seller operational detail / commercial terms ──────────────────────────

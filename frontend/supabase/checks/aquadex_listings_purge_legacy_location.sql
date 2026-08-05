@@ -1,6 +1,20 @@
 -- ============================================================================
 -- aquadex_listings — purge legacy fabricated location fields from stored rows
--- Fish Finder Rework, D3 follow-up (found while verifying T14) — STAGED
+-- Fish Finder Rework, D3 follow-up (found while verifying T14)
+-- ============================================================================
+-- APPLIED 2026-07-29 to project yahsdztnvsykzecjatsl via
+--   supabase db query --linked -f <this file>
+--
+-- Before: 6 rows total, all 6 with `data` held as a JSON *string* scalar (so
+--         zero matched the object-shaped precondition — step 1 did the work),
+--         and all 6 carrying both fuzzedLocation and zoneHash.
+-- After:  6 rows total, all 6 now real jsonb objects, 0 with fuzzedLocation,
+--         0 with zoneHash, 21–33 keys retained per row. Confirmed separately
+--         with the public anon key that neither field is retrievable.
+--
+-- Kept here (not moved to migrations/) deliberately: it is a one-time data fix,
+-- and leaving it out of the ledger keeps `supabase db push` from ever replaying
+-- a data mutation. It is idempotent, so re-running is harmless.
 -- ============================================================================
 -- ⚠️  DO NOT APPLY WITHOUT READING. This one MUTATES DATA (an UPDATE over the
 --     listings table), unlike the other files here, and there is no way to

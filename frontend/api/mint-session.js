@@ -8,7 +8,15 @@
  *   2. Server verifies the Privy token against Privy's JWKS endpoint
  *   3. Server mints a Supabase-compatible JWT signed with SUPABASE_JWT_SECRET
  *      that includes: { role: "authenticated", wallet_address, sub (Privy userId) }
- *   4. Client uses this JWT with supabase.auth.setSession() for real RLS
+ *   4. Client attaches this JWT as the Authorization header on Supabase REST
+ *      requests for real RLS. It deliberately does NOT go through
+ *      supabase.auth.setSession(): GoTrue requires `sub` to be a UUID that
+ *      exists in auth.users, and these are wallet-identified users minted from
+ *      a Privy DID with no auth.users row. Verified against production —
+ *      a DID sub gives 400 bad_jwt, and a synthetic UUID sub gives
+ *      403 user_not_found. PostgREST validates only the signature and reads
+ *      `role` / `wallet_address` from the claims, so it accepts either.
+ *      See _mintedToken in src/services/supabaseClient.js.
  *
  * The minted JWT satisfies Supabase's RLS policies that check:
  *   auth.jwt()->>'wallet_address'

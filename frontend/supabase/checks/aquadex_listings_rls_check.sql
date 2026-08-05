@@ -78,7 +78,9 @@ order  by grantee, privilege_type;
 -- listings anonymously. So a blunt anon revoke is NOT the fix; the fix is a
 -- display-safe projecting view plus a lockdown of the raw table:
 --     supabase/migrations/20260728_aquadex_listings_public_view.sql
---     frontend/supabase/checks/aquadex_listings_rls_lockdown.sql   (staged)
+--     supabase/migrations/20260729_aquadex_listings_rls_lockdown.sql
+-- Both applied 2026-07-29; anon can no longer read the raw table (verified: the
+-- REST query below now returns [] instead of rows).
 --
 -- Second finding worth re-checking here: the in-app client is not reliably
 -- `authenticated` either. src/services/supabaseClient.js falls back to the anon

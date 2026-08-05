@@ -19,6 +19,12 @@ function readFrontendFile(relative) {
   return readFileSync(fileURLToPath(new URL(`../../${relative}`, import.meta.url)), "utf8");
 }
 
+/** Repo root, one level above frontend/. The Supabase CLI project (and so the
+ *  real migrations directory) lives there, not under frontend/. */
+function readRepoFile(relative) {
+  return readFileSync(fileURLToPath(new URL(`../../../${relative}`, import.meta.url)), "utf8");
+}
+
 const HELPER = readFrontendFile("public/js/public-listings.js");
 
 describe("public pages never read the raw aquadex_listings table", () => {
@@ -69,7 +75,7 @@ describe("public-listings.js helper", () => {
   });
 });
 
-describe("staged purge of legacy fabricated location data (D3 follow-up)", () => {
+describe("applied purge of legacy fabricated location data (D3 follow-up)", () => {
   const PURGE = readFrontendFile("supabase/checks/aquadex_listings_purge_legacy_location.sql");
   const PURGE_CODE = PURGE.replace(/^\s*--.*$/gm, "");
 
@@ -103,15 +109,57 @@ describe("staged purge of legacy fabricated location data (D3 follow-up)", () =>
   });
 });
 
-describe("staged RLS lockdown", () => {
-  const LOCKDOWN = readFrontendFile("supabase/checks/aquadex_listings_rls_lockdown.sql");
+describe("in-app board survives a failed JWT bridge", () => {
+  // Regression: after the lockdown, an anon-role session reads the raw table as
+  // `[]` with NO error, so the Breeder Store board rendered "No Entries Found"
+  // with nothing logged anywhere. pullCloudListings must retry against the view.
+  const CLOUD_SYNC = readFrontendFile("src/services/cloudSync.js");
+
+  it("falls back to the display-safe view when the raw table yields nothing", () => {
+    expect(CLOUD_SYNC).toContain('const LISTINGS_PUBLIC_VIEW = "aquadex_listings_public"');
+    // The raw table must still be tried FIRST — the in-app board needs the full
+    // blob, which the view deliberately does not expose.
+    expect(CLOUD_SYNC.indexOf("buildQuery(LISTINGS_TABLE)")).toBeLessThan(
+      CLOUD_SYNC.indexOf("buildQuery(LISTINGS_PUBLIC_VIEW)")
+    );
+  });
+
+  it("does not fall back silently", () => {
+    // A silent fallback would hide a broken auth bridge indefinitely.
+    expect(CLOUD_SYNC).toContain("_warnedListingsFallback");
+    expect(CLOUD_SYNC).toContain("mint-session");
+  });
+});
+
+describe("applied RLS lockdown", () => {
+  // Promoted out of frontend/supabase/checks/ and applied on 2026-07-29 once all
+  // three prerequisites were verified against production. It now lives in the
+  // Supabase CLI project at the repo root, ordered after the view migration.
+  const LOCKDOWN = readRepoFile("supabase/migrations/20260729_aquadex_listings_rls_lockdown.sql");
   /** Executable statements only — the prose documents the rollback and the
    *  superseded approach, both of which contain SQL-shaped text. */
   const LOCKDOWN_CODE = LOCKDOWN.replace(/^\s*--.*$/gm, "");
 
-  it("stays out of migrations/ so db push cannot auto-apply it", () => {
-    expect(LOCKDOWN).toContain("DO NOT APPLY YET");
-    expect(LOCKDOWN).toContain("supabase/checks/");
+  it("is ordered after the view migration it depends on", () => {
+    // The view is the public read path once anon loses the raw table; applying
+    // the lockdown first would blank every anonymous listing surface.
+    expect(readRepoFile("supabase/migrations/20260728_aquadex_listings_public_view.sql")).toContain(
+      "create or replace view public.aquadex_listings_public"
+    );
+    expect(Number("20260729")).toBeGreaterThan(Number("20260728"));
+  });
+
+  it("records the prerequisite verification rather than just asserting it", () => {
+    expect(LOCKDOWN).toContain("VERIFIED 2026-07-29");
+    // Prereq 3 is the one that can silently empty the in-app board.
+    expect(LOCKDOWN).toContain("mint-session");
+  });
+
+  it("also drops the blanket anon ALL policy found live in production", () => {
+    // This one was not merely a legacy leftover: production still had
+    // `anon full access listings` as PERMISSIVE FOR ALL TO anon USING (true),
+    // which let the public anon key insert/update/delete any listing.
+    expect(LOCKDOWN_CODE).toContain('drop policy if exists "anon full access listings"');
   });
 
   it("drops the anon read policy and does NOT re-scope reads to `authenticated`", () => {
