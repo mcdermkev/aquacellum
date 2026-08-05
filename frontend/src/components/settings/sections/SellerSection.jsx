@@ -1,6 +1,7 @@
 import React from "react";
 import { SettingsSection } from "../SettingsSection";
 import { SettingsSubsectionLabel as SubsectionLabel } from "../SettingsSubsectionLabel";
+import { VacationModeControl } from "../VacationModeControl";
 
 /**
  * SellerSection — Settings → Seller Hub / Breeder Store
@@ -15,21 +16,16 @@ import { SettingsSubsectionLabel as SubsectionLabel } from "../SettingsSubsectio
  * address ends up disagreeing with itself. So this section navigates; it does not
  * own anything.
  *
- * ⚠️ VACATION / AWAY MODE IS NOT HERE, and its absence is the biggest remaining gap
- * in the seller surface. The spec calls it "non-negotiable for livestock" and it is
- * right: a breeder who cannot pause a store ships fish they cannot ship, or fails
- * an order they never wanted to take.
+ * ⚠️ VACATION MODE IS ENFORCED, NOT JUST STORED. `VacationModeControl` writes
+ * `breeder_profiles.vacation_until`, and `services/cartRevalidation.js` reads the
+ * resulting paused-seller set to mark those items unavailable — excluding them from
+ * cart totals and from checkout.
  *
- * It is absent because **nothing implements it** — verified: no `vacation`,
- * `away_mode`, `storefront_paused` or `accepting_orders` field exists in the schema
- * or anywhere in the codebase. A real implementation has to stop orders being
- * placed, which means a storefront flag, listing availability honouring it, and
- * checkout refusing to settle against a paused store. That is marketplace and
- * money-path work with genuine blast radius, and a toggle here that only wrote a
- * local flag would be the most dangerous kind of dead control: a seller would
- * believe their store was closed and keep receiving orders for live animals.
- *
- * Tracked in SETTINGS_SPEC.md §10. Do not add the switch before the enforcement.
+ * That ordering is the whole point. A "pause my store" switch that writes a flag
+ * nothing honours is the most dangerous dead control in this app: the breeder
+ * believes the store is closed while orders for live animals keep arriving. The
+ * control was deliberately withheld until the enforcement existed. **If the cart
+ * wiring is ever removed, remove the control with it.**
  */
 export function SellerSection({ casualModeActive }) {
   const goToTerminal = (section) => {
@@ -131,27 +127,16 @@ export function SellerSection({ casualModeActive }) {
         ))}
       </div>
 
-      {/*
-        Say the true thing about the gap rather than leaving sellers to discover it
-        when they need it most. This is a statement of absence, not a control.
-      */}
-      <p
+      <div
         style={{
-          margin: "1.25rem 0 0",
-          paddingTop: "1rem",
+          marginTop: "1.5rem",
+          paddingTop: "1.25rem",
           borderTop: "1px solid rgba(255,255,255,0.06)",
-          fontSize: "0.75rem",
-          color: "var(--text-muted)",
-          lineHeight: 1.5,
         }}
       >
-        <strong style={{ color: "var(--accent-amber)" }}>
-          There is no vacation mode yet.
-        </strong>{" "}
-        {casualModeActive
-          ? "If you need to stop taking orders — a trip, a heat wave, a sick tank — unlist your listings for now. A proper pause switch is coming, and we would rather say so than give you a toggle that does not actually close your store."
-          : "To stop inbound orders you must currently unlist. A storefront-level pause requires enforcement at listing availability and checkout, so it is not exposed as a preference until that exists."}
-      </p>
+        <SubsectionLabel>{casualModeActive ? "Away mode" : "Vacation mode"}</SubsectionLabel>
+        <VacationModeControl casualModeActive={casualModeActive} />
+      </div>
     </SettingsSection>
   );
 }

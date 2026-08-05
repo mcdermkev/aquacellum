@@ -78,11 +78,46 @@ describe("CartDrawer / CartButton — composition (§7.7, no forked cart logic)"
 
   it("CartContext revalidates via the pure cartRevalidation.revalidateCart core", () => {
     expect(CONTEXT_SOURCE).toContain('import { revalidateCart } from "../services/cartRevalidation.js"');
-    expect(CONTEXT_SOURCE).toContain("revalidateCart(cart, listings)");
+    // Matches the call rather than one exact argument list. The point of this
+    // assertion is that CartContext DELEGATES to the pure core instead of forking
+    // cart logic — not that the signature never grows. It gained a third argument
+    // when vacation mode began passing `pausedSellers` through, which is the core
+    // being extended as designed (its `opts` was reserved for exactly this).
+    expect(CONTEXT_SOURCE).toMatch(/revalidateCart\(\s*cart,\s*listings\b/);
+    // And the forked-logic guard the assertion actually exists to enforce.
+    expect(CONTEXT_SOURCE).not.toMatch(/function\s+revalidateItem/);
+  });
+
+  it("CartContext passes seller vacation state into the revalidation core", () => {
+    // Vacation mode is only safe because it is ENFORCED here. A "pause my store"
+    // switch writing a flag nothing honours would leave the breeder believing the
+    // store is closed while orders for live animals kept arriving, so this pins the
+    // wiring rather than trusting it.
+    expect(CONTEXT_SOURCE).toContain('import { getPausedSellers } from "../services/sellerVacation.js"');
+    expect(CONTEXT_SOURCE).toMatch(/pausedSellers:\s*pausedSellersRef\.current/);
   });
 
   it("CartContext delegates every mutation to cartModel.js (no re-implemented single-seller/quantity logic)", () => {
-    expect(CONTEXT_SOURCE).toContain('import {\n  emptyCart,\n  addToCart as addToCartModel,\n  replaceCart as replaceCartModel,\n  setQuantity as setQuantityModel,\n  removeItem as removeItemModel,\n  cartTotals,\n} from "../services/cartModel.js";');
+    // Line endings are normalized before matching. This previously hard-coded `\n`
+    // inside a multi-line import string, which passes on a LF checkout and fails on
+    // a CRLF one — a false failure that says nothing about the property being
+    // tested. The property is that every mutation is IMPORTED from cartModel rather
+    // than reimplemented here, so assert the named imports and the absence of local
+    // reimplementations instead of one exact block of text.
+    const source = CONTEXT_SOURCE.replace(/\r\n/g, "\n");
+    expect(source).toContain('from "../services/cartModel.js"');
+    for (const named of [
+      "emptyCart",
+      "addToCart as addToCartModel",
+      "replaceCart as replaceCartModel",
+      "setQuantity as setQuantityModel",
+      "removeItem as removeItemModel",
+      "cartTotals",
+    ]) {
+      expect(source, `CartContext must import ${named} from cartModel`).toContain(named);
+    }
+    // The guard that actually matters: no forked single-seller/quantity logic here.
+    expect(source).not.toMatch(/function\s+(addToCart|setQuantity|replaceCart)\s*\(/);
   });
 });
 

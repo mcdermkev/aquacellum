@@ -11,7 +11,7 @@
  * detail, and checkout (see App.jsx).
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "./AuthContext.jsx";
 import { useMarketplaceListings } from "../hooks/useMarketplaceListings.js";
 import { CONTRACT_ADDRESS, MARKETPLACE_ADDRESS } from "../config/appConfig.js";
@@ -25,6 +25,7 @@ import {
   cartTotals,
 } from "../services/cartModel.js";
 import { revalidateCart } from "../services/cartRevalidation.js";
+import { getPausedSellers } from "../services/sellerVacation.js";
 
 const CartContext = createContext(null);
 
@@ -45,6 +46,15 @@ export function CartProvider({ children }) {
   const saveTimerRef = useRef(null);
   const liveListingsRef = useRef(liveListings);
   liveListingsRef.current = liveListings;
+
+  // Sellers currently on vacation. Held in a ref because `revalidate` is
+  // synchronous and called from several places (mount, focus, cart open, and
+  // immediately before checkout) — it cannot await a lookup.
+  //
+  // Fails OPEN: an empty set means "nobody is paused", so a failed or in-flight
+  // lookup never blocks a checkout for a seller who is actually available. The
+  // reverse default would turn a transient database blip into lost sales.
+  const pausedSellersRef = useRef(new Set());
   // Read via ref inside the debounced save effect so the effect can depend
   // only on [cart, loaded] (the debounce should reset on every cart change,
   // not on account, which only changes rarely and is always current here).
@@ -80,15 +90,50 @@ export function CartProvider({ children }) {
     };
   }, [cart, loaded]);
 
+  // ─── Seller vacation lookup ─────────────────────────────────────────────────
+  // Keyed on a sorted, de-duplicated seller string rather than the cart object, so
+  // this refetches when the cart's SELLERS change and not on every quantity tweak
+  // — and so setting the ref cannot feed back into its own dependency and loop.
+  const cartSellerKey = useMemo(() => {
+    const sellers = (cart?.items || [])
+      .map((i) => i?.sellerAddress || i?.seller || cart?.seller)
+      .filter(Boolean)
+      .map((s) => String(s).toLowerCase());
+    return [...new Set(sellers)].sort().join(",");
+  }, [cart]);
+
+  useEffect(() => {
+    if (!cartSellerKey) {
+      pausedSellersRef.current = new Set();
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const paused = await getPausedSellers(cartSellerKey.split(","));
+      if (cancelled) return;
+      pausedSellersRef.current = paused;
+      // Re-run revalidation now that we know, so a paused seller's items are
+      // flagged without waiting for the next focus event.
+      if (paused.size > 0) revalidateRef.current?.();
+    })();
+    return () => { cancelled = true; };
+  }, [cartSellerKey]);
+
   // ─── Revalidation (§4) ───────────────────────────────────────────────────────
   const revalidate = useCallback(() => {
     const listings = liveListingsRef.current;
     if (!Array.isArray(listings)) return { changes: [] };
-    const { cart: revalidatedCart, changes: newChanges } = revalidateCart(cart, listings);
+    const { cart: revalidatedCart, changes: newChanges } = revalidateCart(cart, listings, {
+      pausedSellers: pausedSellersRef.current,
+    });
     setCart(revalidatedCart);
     setChanges(newChanges);
     return { changes: newChanges };
   }, [cart]);
+
+  // NOTE: the vacation lookup above calls `revalidateRef.current?.()`. That ref is
+  // declared just below with the mount/focus handlers — deliberately reused rather
+  // than adding a second one, so there is only ever one "latest revalidate" holder.
 
   // Revalidate on mount-once-loaded, and again on window focus (spec §4:
   // "on cart open, on app focus/regain, and immediately before 'Proceed to

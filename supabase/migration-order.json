@@ -96,6 +96,7 @@
     "supabase/migrations/20260731_drop_dev_rls_bypass.sql",
     "supabase/migrations/20260731_close_service_write_bypasses.sql",
     "supabase/migrations/20260731_push_subscriptions_baseline.sql",
-    "supabase/migrations/20260804160000_digest_email_tracking.sql"
+    "supabase/migrations/20260804160000_digest_email_tracking.sql",
+    "supabase/migrations/20260804170000_seller_vacation_mode.sql"
   ]
 }

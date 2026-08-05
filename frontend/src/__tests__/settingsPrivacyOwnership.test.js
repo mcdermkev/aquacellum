@@ -139,12 +139,28 @@ describe("the seller section deep-links rather than duplicating owned state", ()
     expect(seller).not.toMatch(/<ShipFromSetup/);
   });
 
-  it("ships no vacation-mode toggle while nothing enforces it", () => {
-    // The dangerous version of this control: a seller believing their store is
-    // closed while orders for live animals keep arriving. There must be no switch
-    // until listing availability and checkout honour it.
-    expect(seller).not.toMatch(/SettingsToggle/);
-    // But it does have to SAY the gap exists.
-    expect(seller).toMatch(/no vacation mode yet/i);
+  it("ships vacation mode ONLY alongside its enforcement", () => {
+    // This assertion previously required the ABSENCE of a vacation control, because
+    // nothing honoured it — a seller believing their store was closed while orders
+    // for live animals kept arriving is the most dangerous dead control in the app.
+    // Enforcement now exists, so the requirement inverts: the control may ship, but
+    // only while the checkout gate still reads the paused-seller set.
+    //
+    // Both halves are asserted together on purpose. If someone removes the cart
+    // wiring, this fails and points at the control that must come out with it.
+    expect(seller).toMatch(/<VacationModeControl/);
+
+    const revalidation = read("services/cartRevalidation.js");
+    expect(
+      revalidation,
+      "cartRevalidation must consume pausedSellers — without it the Settings control is a lie"
+    ).toMatch(/pausedSellers/);
+    expect(revalidation).toMatch(/SELLER_PAUSED/);
+
+    const cartContext = read("contexts/CartContext.jsx");
+    expect(
+      cartContext,
+      "CartContext must supply the paused-seller set to revalidateCart"
+    ).toMatch(/pausedSellers:/);
   });
 });

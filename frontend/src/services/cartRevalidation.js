@@ -36,6 +36,11 @@ export const CART_CHANGE_TYPE = Object.freeze({
   UNAVAILABLE: "unavailable",
   QUANTITY_REDUCED: "quantity_reduced",
   PRICE_CHANGED: "price_changed",
+  // A separate type from UNAVAILABLE on purpose. "No longer available" tells a
+  // buyer the fish is gone and to look elsewhere; "the seller is away until the
+  // 20th" tells them to wait. Same effect on the total, very different message, and
+  // collapsing them would cost the seller a sale they were only postponing.
+  SELLER_PAUSED: "seller_paused",
 });
 
 /** Build a lookup of live listings by their listingKey. Defensive against a
@@ -165,7 +170,11 @@ function revalidateItem(item, live) {
  * @returns {{ cart: Object, changes: Array<Object> }}
  */
 export function revalidateCart(cart, liveListings, opts = {}) {
-  void opts; // no options consumed yet; kept in the signature per the spec's contract
+  // `pausedSellers` is a Set of LOWERCASED seller wallets currently on vacation
+  // (services/sellerVacation.js). This is the enforcement point for vacation mode:
+  // without it, a "pause my store" switch would write a flag nothing honoured and
+  // the seller would keep receiving orders for live animals.
+  const pausedSellers = opts.pausedSellers instanceof Set ? opts.pausedSellers : null;
   const safeItems = Array.isArray(cart?.items) ? cart.items : [];
   if (safeItems.length === 0) {
     return { cart: cart && Array.isArray(cart.items) ? cart : { seller: null, items: [], updatedAt: Date.now() }, changes: [] };
@@ -180,11 +189,28 @@ export function revalidateCart(cart, liveListings, opts = {}) {
       changes.push({ type: CART_CHANGE_TYPE.UNAVAILABLE, listingKey: item?.listingKey ?? null });
       return { ...(item || {}), unavailable: true };
     }
+    // Vacation mode is checked BEFORE the listing lookup, because a paused seller's
+    // listings may still be perfectly live and purchasable-looking — the block is a
+    // property of the seller right now, not of the listing. Checking after would
+    // let a live listing from an away seller pass straight through.
+    if (pausedSellers) {
+      const seller = item.sellerAddress || item.seller || cart.seller;
+      if (seller && pausedSellers.has(String(seller).toLowerCase())) {
+        // Already flagged for this reason: no new change, so the banner does not
+        // re-fire on every revalidation pass.
+        if (item.unavailable && item.pausedSeller) return item;
+        changes.push({ type: CART_CHANGE_TYPE.SELLER_PAUSED, listingKey: item.listingKey });
+        return { ...item, unavailable: true, pausedSeller: true };
+      }
+    }
+
     const live = byKey.get(item.listingKey);
     const { item: revalidated, change } = revalidateItem(item, live);
     if (Array.isArray(change)) changes.push(...change);
     else if (change) changes.push(change);
-    return revalidated;
+    // Clear a stale pause marker once the seller is back, so the item can become
+    // purchasable again without the buyer having to re-add it.
+    return revalidated.pausedSeller ? { ...revalidated, pausedSeller: false } : revalidated;
   });
 
   return {
