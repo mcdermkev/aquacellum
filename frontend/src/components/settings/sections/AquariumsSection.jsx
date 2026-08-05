@@ -4,7 +4,8 @@ import { SettingsToggle } from "../SettingsToggle";
 import { SettingsSubsectionLabel as SubsectionLabel } from "../SettingsSubsectionLabel";
 import { announce } from "../../../utils/a11y";
 import { areRemindersEnabled, setRemindersEnabled } from "../../../utils/growoutReminders";
-import { db } from "../../../db";
+import { useUserTanks } from "../../../hooks/useUserTanks";
+import { tankFitInputs } from "../../../services/compatibleTanks";
 
 /**
  * AquariumsSection — Settings → Aquariums & Logbook
@@ -18,6 +19,18 @@ import { db } from "../../../db";
  *      choice decides which tank compatibility is checked against when you shop.
  *      It was only settable from the tank list; this makes it visible and
  *      changeable where you'd look for it.
+ *
+ *      ⚠️ `displayTank` IS NOT A TANK RECORD. It is `{ id, name, volume, temp, ph }`
+ *      with volume in GALLONS and temp in °C, so a record (which stores
+ *      `volumeLiters` and hides water params in `latestLog`) MUST go through
+ *      `tankFitInputs()` first — the same call FishFinder makes. Storing a raw
+ *      record makes the fit scorer read NaN and silently return a perfect score for
+ *      any tank; see `__tests__/settingsActiveTank.test.js` for the mechanism.
+ *
+ *      Tanks come from `useUserTanks`, not a direct `db.tanks` read, for the same
+ *      reason "Sync now" reuses `runCloudSync`: one definition of "my tanks". It
+ *      also scopes by owner — a bare scan returns every account cached on the
+ *      device, so a shared browser could bind checks to a stranger's tank.
  *   2. GROW-OUT REMINDERS — `aquadex_growout_reminders_enabled`.
  *      `checkGrowoutReminders()` already honours it (`if (!areRemindersEnabled())
  *      return 0`), but `setRemindersEnabled()` had ZERO callers, so
@@ -33,37 +46,20 @@ import { db } from "../../../db";
  */
 export function AquariumsSection({
   casualModeActive,
+  contractAddress,
+  walletAccount,
   displayTank,
   setDisplayTank,
   onSyncNow,
   syncStatus,
   lastSyncedAt,
 }) {
-  const [tanks, setTanks] = useState([]);
-  const [tanksLoading, setTanksLoading] = useState(true);
+  // Same source, same query key, same owner scoping as Fish Finder and the tank
+  // list — so the list here cannot disagree with the list there, and react-query
+  // serves it from cache if any of those has already loaded it.
+  const { data: tanks = [], isLoading: tanksLoading } = useUserTanks(contractAddress, walletAccount);
   const [remindersOn, setRemindersOn] = useState(() => areRemindersEnabled());
   const [lastSynced, setLastSynced] = useState(null);
-
-  // Tanks come straight from Dexie rather than a prop, so this section does not
-  // depend on the tank list being mounted.
-  useEffect(() => {
-    let cancelled = false;
-    db.tanks
-      .filter((t) => t.active !== false)
-      .toArray()
-      .then((rows) => {
-        if (!cancelled) setTanks(rows || []);
-      })
-      .catch(() => {
-        if (!cancelled) setTanks([]);
-      })
-      .finally(() => {
-        if (!cancelled) setTanksLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     try {
@@ -79,8 +75,13 @@ export function AquariumsSection({
     setRemindersOn(next);
   };
 
+  /**
+   * Store the NORMALIZED shape, never the tank record — see the ⚠️ note above.
+   * `tankFitInputs` converts volumeLiters → gallons and lifts temp/pH out of
+   * `latestLog`, which is exactly what every consumer of `displayTank` expects.
+   */
   const handleSelectTank = (tank) => {
-    setDisplayTank(tank);
+    setDisplayTank(tank ? { id: tank.id, name: tank.name, ...tankFitInputs(tank) } : null);
     announce(tank ? `Active tank set to ${tank.name || "unnamed tank"}` : "Active tank cleared");
   };
 
@@ -111,11 +112,20 @@ export function AquariumsSection({
 
           {tanksLoading ? (
             <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Loading tanks…</p>
+          ) : !walletAccount ? (
+            /*
+              `useUserTanks` is owner-scoped and disabled without an account, so an
+              empty list here means "not signed in", NOT "no tanks". Saying the
+              latter would tell someone their tanks are gone.
+            */
+            <p style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
+              Sign in to choose which tank the app checks against.
+            </p>
           ) : tanks.length === 0 ? (
             <p style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
               {casualModeActive
                 ? "No tanks yet. Once you add one, you can pick it here."
-                : "No active tanks in the local registry."}
+                : "No active tanks registered to this account."}
             </p>
           ) : (
             <div
@@ -124,7 +134,13 @@ export function AquariumsSection({
               style={{ display: "flex", flexDirection: "column", gap: 8 }}
             >
               {tanks.map((tank) => {
-                const selected = tank.id === activeTankId;
+                // Null-guarded because `Number(null)` is 0, which would mark a
+                // tank with id 0 as selected whenever nothing is selected.
+                const selected = activeTankId != null && Number(tank.id) === Number(activeTankId);
+                // Same conversion as the stored value, so the label can't disagree
+                // with what compatibility is scored against. (`tank.volumeGallons`
+                // is not a field — reading it rendered nothing at all.)
+                const gallons = tankFitInputs(tank).volume;
                 return (
                   <button
                     key={tank.id}
@@ -143,8 +159,8 @@ export function AquariumsSection({
                           </span>
                         )}
                       </span>
-                      {tank.volumeGallons ? (
-                        <span style={optionDescStyle}>{tank.volumeGallons} gal</span>
+                      {gallons > 0 ? (
+                        <span style={optionDescStyle}>{gallons} gal</span>
                       ) : null}
                     </span>
                   </button>

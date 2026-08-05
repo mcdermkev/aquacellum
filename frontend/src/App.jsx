@@ -912,6 +912,11 @@ export default function App() {
             // Threaded rather than read from localStorage inside the section, so
             // picking an active tank in Settings updates the same state the cart
             // drawer and specimen compatibility already read (App.jsx persists it).
+            // contractAddress/walletAccount let the section load the tank list from
+            // the same owner-scoped `useUserTanks` query Fish Finder uses, instead
+            // of a second unscoped Dexie read that would list other accounts' tanks.
+            contractAddress={CONTRACT_ADDRESS}
+            walletAccount={account}
             displayTank={displayTank}
             setDisplayTank={setDisplayTank}
             // "Sync now" reuses the SAME routine the login sync runs, so there is

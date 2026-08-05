@@ -41,6 +41,8 @@ import { PrivacySection } from "./sections/PrivacySection";
 export function SettingsPanel({
   casualModeActive,
   onToggleMode,
+  contractAddress,
+  walletAccount,
   displayTank,
   setDisplayTank,
   onSyncNow,
@@ -91,6 +93,8 @@ export function SettingsPanel({
       <div className="settings-panel__group-heading">Your Fishroom</div>
       <AquariumsSection
         casualModeActive={casualModeActive}
+        contractAddress={contractAddress}
+        walletAccount={walletAccount}
         displayTank={displayTank}
         setDisplayTank={setDisplayTank}
         onSyncNow={onSyncNow}
