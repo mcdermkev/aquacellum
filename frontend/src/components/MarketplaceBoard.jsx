@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
+import { addSavedSearch, describeSavedSearch, normalizeSearch } from "../services/savedSearches";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ethers, Contract } from "ethers";
 import { Plus, MinusCircle } from "@phosphor-icons/react";
@@ -93,7 +94,12 @@ export function MarketplaceBoard({
   filterSpeciesId,
   onSelectCheckoutOrder,
   activeSellerFilter,
-  setActiveSellerFilter
+  setActiveSellerFilter,
+  // A saved filter set handed in from Settings → Fish Finder, and the callback that
+  // clears it once applied. Mirrors how `filterSpeciesId` / `activeSellerFilter`
+  // already arrive from App.jsx.
+  pendingSavedSearch,
+  onClearPendingSavedSearch
 }) {
   const { data: fetchedListings = [], isLoading: listingsLoading, error: listingsError, refetch: refetchListings } = useMarketplaceListings(contractAddress, marketplaceAddress, filterSpeciesId);
   const listings = fetchedListings;
@@ -129,6 +135,9 @@ export function MarketplaceBoard({
   const [fulfillmentFilter, setFulfillmentFilter] = useState("all");
   const [priceMinInput, setPriceMinInput] = useState("");
   const [priceMaxInput, setPriceMaxInput] = useState("");
+  // Confirms a save landed, and confirms an applied saved search — the save button
+  // previously gave no feedback at all, so there was no way to tell it had worked.
+  const [savedSearchNotice, setSavedSearchNotice] = useState(null);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
 
   // Offline banner: shows cached listings with a clear "offline" indicator
@@ -168,23 +177,46 @@ export function MarketplaceBoard({
   // REQUIRED and never gated — only the ability to persist a search).
   const xpForEntitlements = useMemo(() => getXp(), []);
 
+  // Saving now goes through services/savedSearches.js, which also de-duplicates an
+  // identical filter set. Previously this appended straight to localStorage, so two
+  // clicks on the same filters produced two identical rows.
   const saveCurrentSearch = () => {
-    try {
-      const saved = JSON.parse(localStorage.getItem("aquadex_saved_searches") || "[]");
-      saved.push({
-        search: searchQuery,
-        family: familyFilter,
-        careLevel: careLevelFilter,
-        fulfillment: fulfillmentFilter,
-        priceMinInput,
-        priceMaxInput,
-        savedAt: Date.now(),
-      });
-      localStorage.setItem("aquadex_saved_searches", JSON.stringify(saved));
-    } catch (e) {
-      console.warn("Failed to save search:", e);
-    }
+    addSavedSearch({
+      search: searchQuery,
+      family: familyFilter,
+      careLevel: careLevelFilter,
+      fulfillment: fulfillmentFilter,
+      priceMinInput,
+      priceMaxInput,
+    });
+    setSavedSearchNotice("Saved. Re-run it any time from Settings → Fish Finder.");
   };
+
+  /**
+   * Apply a saved search handed in from Settings.
+   *
+   * ⚠️ THIS IS THE READER THAT MAKES SAVING MEAN ANYTHING. Until now
+   * `aquadex_saved_searches` was write-only — the board appended to it and nothing
+   * ever read a record back, so the saved data was unreachable.
+   *
+   * `normalizeSearch` fills any field a legacy record is missing, because applying
+   * a PARTIAL filter set would leave the user's current selections in place and the
+   * restored results would not match what they saved.
+   */
+  useEffect(() => {
+    if (!pendingSavedSearch) return;
+    const filters = normalizeSearch(pendingSavedSearch);
+    setSearchQuery(filters.search);
+    setFamilyFilter(filters.family);
+    setCareLevelFilter(filters.careLevel);
+    setFulfillmentFilter(filters.fulfillment);
+    setPriceMinInput(filters.priceMinInput);
+    setPriceMaxInput(filters.priceMaxInput);
+    setSavedSearchNotice(`Showing your saved search: ${describeSavedSearch(filters)}`);
+    // Clear it so navigating away and back does not silently re-apply and override
+    // whatever the user has since typed.
+    if (onClearPendingSavedSearch) onClearPendingSavedSearch();
+  }, [pendingSavedSearch, onClearPendingSavedSearch]);
 
   // (Removed dead geolocation code — no real proximity feature reads it.)
 
@@ -1299,6 +1331,46 @@ export function MarketplaceBoard({
               </button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Confirms a save landed, and confirms an applied saved search. The save
+          button previously gave no feedback whatsoever, so a user had no way to
+          tell whether it had done anything — which, given nothing could read the
+          saved data back, it effectively had not. */}
+      {savedSearchNotice && (
+        <div
+          role="status"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "1rem",
+            padding: "0.6rem 1rem",
+            marginBottom: "1rem",
+            borderRadius: "var(--radius-sm)",
+            background: "rgba(52, 211, 153, 0.08)",
+            border: "1px solid rgba(52, 211, 153, 0.25)",
+            color: "var(--accent-green)",
+            fontSize: "0.78rem",
+          }}
+        >
+          <span>{savedSearchNotice}</span>
+          <button
+            type="button"
+            onClick={() => setSavedSearchNotice(null)}
+            aria-label="Dismiss"
+            style={{
+              background: "none",
+              border: "none",
+              color: "inherit",
+              cursor: "pointer",
+              fontSize: "0.9rem",
+              lineHeight: 1,
+            }}
+          >
+            ✕
+          </button>
         </div>
       )}
 

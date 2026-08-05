@@ -450,6 +450,9 @@ export default function App() {
   // "View listings" action deep-links into the directory for a species.
   // Shape: { id:number, name:string|null } | null.
   const [activeSpeciesFilter, setActiveSpeciesFilter] = useState(null);
+  // A saved filter set handed over from Settings → Fish Finder, consumed once by
+  // MarketplaceBoard. Same stash-then-navigate shape as `activeSpeciesFilter`.
+  const [pendingSavedSearch, setPendingSavedSearch] = useState(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Echo Whispers — real user state from Dexie (replaces hardcoded values)
@@ -700,10 +703,13 @@ export default function App() {
       // handleTabChange only clears the filter when *leaving* directory, so
       // setting it here and navigating to directory preserves it.
       if (tab === "directory") {
-        const { speciesId, speciesName } = e.detail || {};
+        const { speciesId, speciesName, savedSearch } = e.detail || {};
         setActiveSpeciesFilter(
           speciesId != null ? { id: Number(speciesId), name: speciesName || null } : null
         );
+        // "Run this search" from Settings. Stashed before the tab switch so the
+        // board sees it on its first render rather than a frame later.
+        if (savedSearch) setPendingSavedSearch(savedSearch);
       }
       // `section` means different things per destination, so it is resolved here
       // rather than by the caller:
@@ -828,6 +834,8 @@ export default function App() {
               activeSellerFilter={activeSellerFilter}
               setActiveSellerFilter={setActiveSellerFilter}
               filterSpeciesId={activeSpeciesFilter?.id ?? null}
+              pendingSavedSearch={pendingSavedSearch}
+              onClearPendingSavedSearch={() => setPendingSavedSearch(null)}
             />
           </>
         );

@@ -4,9 +4,13 @@ import { SettingsSubsectionLabel as SubsectionLabel } from "../SettingsSubsectio
 import { useUnlockGate } from "../../reef/UnlockPrompt";
 import { getRequiredTierFor } from "../../../services/entitlements";
 import { announce } from "../../../utils/a11y";
+import {
+  describeSavedSearch,
+  loadSavedSearches,
+  removeSavedSearch as removeSavedSearchFromStore,
+} from "../../../services/savedSearches";
 
 const WATCHLIST_KEY = "aquadex_watchlist";
-const SAVED_SEARCHES_KEY = "aquadex_saved_searches";
 
 /**
  * DiscoverySection — Settings → Fish Finder / Catalog & Alerts
@@ -32,18 +36,17 @@ const SAVED_SEARCHES_KEY = "aquadex_saved_searches";
  *   which `App.jsx` documents as retired and never imported. The Fish Finder does
  *   no distance filtering today, so a default-radius control would steer nothing.
  *
- * ── AN HONESTY PROBLEM THIS SECTION SURFACES RATHER THAN HIDES ─────────────
- *   `aquadex_saved_searches` is WRITE-ONLY in the current app.
- *   `MarketplaceBoard.saveCurrentSearch()` appends to it (the only two references
- *   to the key are both inside that one function), and nothing ever reads a saved
- *   search back to re-apply it. So "Save this search" currently stores data the
- *   user can never use — a §3.2-class defect the handoff's audit did not catch.
+ * ── SAVED SEARCHES ARE NOW RUNNABLE ───────────────────────────────────────
+ *   `aquadex_saved_searches` used to be WRITE-ONLY: `MarketplaceBoard` appended to
+ *   it (the only two references to the key were both inside one function) and
+ *   nothing ever read a record back. So "Save this search" stored data the user
+ *   could never use — on a capability gated behind an EARNED entitlement, meaning
+ *   people spent XP progress unlocking a button that did nothing.
  *
- *   This section does not pretend otherwise. It lists what is stored and lets you
- *   remove entries, and the copy states plainly that re-running a saved search
- *   from here isn't available yet. Making them recallable means applying the saved
- *   filter set to the marketplace board, which is a Fish Finder change, not a
- *   Settings one — logged in SETTINGS_SPEC.md §10.
+ *   Fixed: the store is `services/savedSearches.js`, and "Run" hands the filter set
+ *   to the marketplace board through the same `aquadex:navigate-tab` event the rest
+ *   of the app uses. `MarketplaceBoard` applies it via `pendingSavedSearch` and
+ *   confirms which search it restored.
  */
 export function DiscoverySection({ casualModeActive }) {
   const watchlistGate = useUnlockGate("species_watchlist");
@@ -59,12 +62,7 @@ export function DiscoverySection({ casualModeActive }) {
     } catch {
       setWatchlistCount(0);
     }
-    try {
-      const raw = JSON.parse(localStorage.getItem(SAVED_SEARCHES_KEY) || "[]");
-      setSavedSearches(Array.isArray(raw) ? raw : []);
-    } catch {
-      setSavedSearches([]);
-    }
+    setSavedSearches(loadSavedSearches());
   }, []);
 
   useEffect(() => {
@@ -82,14 +80,24 @@ export function DiscoverySection({ casualModeActive }) {
   };
 
   const removeSavedSearch = (index) => {
-    const next = savedSearches.filter((_, i) => i !== index);
-    try {
-      localStorage.setItem(SAVED_SEARCHES_KEY, JSON.stringify(next));
-    } catch {
-      // non-fatal
-    }
-    setSavedSearches(next);
+    setSavedSearches(removeSavedSearchFromStore(index));
     announce("Saved search removed");
+  };
+
+  /**
+   * Run a saved search — the reader that makes saving mean anything.
+   *
+   * Hands the filter set to the marketplace board via the same
+   * `aquadex:navigate-tab` event the rest of the app uses for cross-tab
+   * navigation; App.jsx stashes it and passes it down as `pendingSavedSearch`.
+   */
+  const runSavedSearch = (entry) => {
+    announce(`Running saved search: ${describeSavedSearch(entry)}`);
+    window.dispatchEvent(
+      new CustomEvent("aquadex:navigate-tab", {
+        detail: { tab: "directory", savedSearch: entry },
+      })
+    );
   };
 
   return (
@@ -155,13 +163,10 @@ export function DiscoverySection({ casualModeActive }) {
             <>
               <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12, lineHeight: 1.4 }}>
                 {savedSearches.length === 0
-                  ? "No saved searches yet."
-                  : `${savedSearches.length} saved.`}{" "}
-                {/* Say the true thing: these are stored but not yet re-runnable. */}
-                <span style={{ color: "var(--accent-amber)" }}>
-                  Re-running a saved search isn't available yet — for now you can review and
-                  remove them here.
-                </span>
+                  ? casualModeActive
+                    ? "No saved searches yet. Set up filters while browsing, then tap Save This Search."
+                    : "No saved filter sets. Save one from the marketplace filter bar."
+                  : `${savedSearches.length} saved. Run one to jump straight back to those results.`}
               </p>
 
               {savedSearches.length > 0 && (
@@ -190,15 +195,26 @@ export function DiscoverySection({ casualModeActive }) {
                           </span>
                         )}
                       </span>
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={() => removeSavedSearch(index)}
-                        aria-label={`Remove saved search: ${describeSavedSearch(entry)}`}
-                        style={{ padding: "0.4rem 0.75rem", fontSize: "0.72rem", minHeight: 36, flexShrink: 0 }}
-                      >
-                        Remove
-                      </button>
+                      <span style={{ display: "flex", gap: "0.4rem", flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          onClick={() => runSavedSearch(entry)}
+                          aria-label={`Run saved search: ${describeSavedSearch(entry)}`}
+                          style={{ padding: "0.4rem 0.85rem", fontSize: "0.72rem", minHeight: 36 }}
+                        >
+                          Run
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => removeSavedSearch(index)}
+                          aria-label={`Remove saved search: ${describeSavedSearch(entry)}`}
+                          style={{ padding: "0.4rem 0.75rem", fontSize: "0.72rem", minHeight: 36 }}
+                        >
+                          Remove
+                        </button>
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -209,26 +225,6 @@ export function DiscoverySection({ casualModeActive }) {
       </div>
     </SettingsSection>
   );
-}
-
-/**
- * Build a readable one-line summary from the filter set
- * `MarketplaceBoard.saveCurrentSearch()` stores.
- */
-export function describeSavedSearch(entry = {}) {
-  const parts = [];
-  if (entry.search) parts.push(`"${entry.search}"`);
-  if (entry.family) parts.push(entry.family);
-  if (entry.careLevel) parts.push(entry.careLevel);
-  if (entry.fulfillment) parts.push(entry.fulfillment);
-
-  const min = entry.priceMinInput;
-  const max = entry.priceMaxInput;
-  if (min && max) parts.push(`$${min}–$${max}`);
-  else if (min) parts.push(`from $${min}`);
-  else if (max) parts.push(`up to $${max}`);
-
-  return parts.length > 0 ? parts.join(" · ") : "All listings";
 }
 
 /**

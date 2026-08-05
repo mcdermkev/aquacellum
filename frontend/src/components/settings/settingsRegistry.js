@@ -105,12 +105,17 @@ export const SETTINGS_REGISTRY = [
     control: "Fish Finder → Watchlist (entitlement: species_watchlist)",
     readBy: ["components/MarketplaceBoard.jsx"],
   },
-  // ⚠️ `aquadex_saved_searches` is intentionally NOT registered as a satisfied
-  // entry. It IS written (MarketplaceBoard.saveCurrentSearch) and the Settings
-  // section lists and deletes entries — but nothing RE-APPLIES a saved search, so
-  // the feature does not yet deliver what its name promises. Registering it would
-  // let AC-3 report green on a capability that is still incomplete. The Settings
-  // copy says so explicitly instead; see SETTINGS_SPEC.md §10.
+  {
+    key: "aquadex_saved_searches",
+    control: "Fish Finder → Saved searches (entitlement: saved_search)",
+    // Was WRITE-ONLY for months: MarketplaceBoard appended to it and nothing ever
+    // read a record back, so a user could save a search and never use it. The
+    // store now lives in services/savedSearches.js and MarketplaceBoard consumes a
+    // saved set via `pendingSavedSearch`, which is the reader that makes saving
+    // mean anything.
+    readBy: ["services/savedSearches.js", "components/MarketplaceBoard.jsx"],
+    readerPattern: "aquadex_saved_searches|pendingSavedSearch",
+  },
   // ⚠️ `aquadex_voice_poseidon` / `aquadex_voice_echo` are deliberately NOT
   // here, and the Settings tab deliberately does not expose them
   // (docs/SETTINGS_SPEC.md D-S-7). They have a genuine reader
