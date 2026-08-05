@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { useAiPrefs } from "../../hooks/useAiPrefs";
 import { useHighContrast } from "../../hooks/useHighContrast";
 import { ExperienceModeSection } from "./sections/ExperienceModeSection";
+import { AccountSection } from "./sections/AccountSection";
 import { NotificationsSection } from "./sections/NotificationsSection";
 import { AccessibilitySection } from "./sections/AccessibilitySection";
 import { CompanionsSection } from "./sections/CompanionsSection";
@@ -63,6 +64,7 @@ export function SettingsPanel({ casualModeActive, onToggleMode, displayTank, set
     <div className="settings-panel">
       <div className="settings-panel__group-heading">You</div>
       <ExperienceModeSection casualModeActive={casualModeActive} onToggleMode={onToggleMode} />
+      <AccountSection casualModeActive={casualModeActive} />
 
       <div className="settings-panel__group-heading">Alerts</div>
       <NotificationsSection casualModeActive={casualModeActive} poseidonAiDisabled={!poseidonEnabled} />
