@@ -113,6 +113,20 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: "Retention job not configured (missing Supabase env vars)" });
   }
 
+  // ── `?action=weekly-digest` ───────────────────────────────────────────────
+  // Cron-authenticated (it sits after the gate above, unlike the user-facing
+  // test-push route). Emails the digest rows the `reef-digest` Edge Function has
+  // already generated — see _lib/weeklyDigest.js for why generation and sending
+  // are split, and why this hangs off retention.js instead of a 13th api/ file.
+  //
+  // Schedule it AFTER reef-digest's Sunday 09:00 UTC cron so there is something
+  // pending to send.
+  if (req.query?.action === "weekly-digest") {
+    const { sendWeeklyDigests } = await import("./_lib/weeklyDigest.js");
+    const digestResults = await sendWeeklyDigests(supabase);
+    return res.status(200).json({ action: "weekly-digest", ...digestResults });
+  }
+
   const results = {
     streakRisk: { scanned: 0, pushSent: 0, emailSent: 0, emailSkippedNoAddress: 0, emailSkippedOptOut: 0 },
     winBack: { scanned: 0, pushSent: 0, emailSent: 0, emailSkippedNoAddress: 0, emailSkippedOptOut: 0 },

@@ -100,10 +100,15 @@ const DEFAULT_PREFS = {
     poseidon: { enabled: true, push: false },
   },
   quietHours: { enabled: false, start: "22:00", end: "08:00" },
-  // ⚠️ "daily" is offered by the UI but NO daily digest exists. See the digest
-  // block in the markup below — the control is honest about that rather than
-  // silently accepting a cadence nothing implements.
-  emailDigest: "off", // off | weekly
+  // "off" | "weekly". Read by api/retention.js?action=weekly-digest via
+  // _lib/weeklyDigest.js, which emails the digest rows the reef-digest Edge
+  // Function generates. Defaults to "off" — the sender treats anything other than
+  // "weekly" as no, so silence is never taken as consent.
+  //
+  // "daily" was removed: no daily digest exists in any form, so offering the
+  // cadence invited a choice that could never be delivered. Legacy stored values
+  // migrate to "weekly" on load below.
+  emailDigest: "off",
   // Win-back email after a lapse in activity. `api/retention.js:87` already
   // honours `retentionEmail !== false`, but until now nothing could SET it — so it
   // defaulted to on with no in-app way to opt out. Defaulting to `true` here keeps
@@ -563,10 +568,8 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
 
         <h4 style={{ marginTop: "1rem" }}>Digest</h4>
         <p className="text-muted text-sm">
-          Poseidon curates a summary of what you missed.{" "}
-          <strong style={{ color: "var(--accent-amber)" }}>
-            Not sending yet — we will honour this setting once the digest goes out.
-          </strong>
+          Poseidon curates a summary of what you missed and emails it on Sundays. You will always
+          see it in your notifications either way.
         </p>
         <div className="sonar-prefs__email-options" role="radiogroup" aria-label="Email digest frequency">
           {["off", "weekly"].map((freq) => (

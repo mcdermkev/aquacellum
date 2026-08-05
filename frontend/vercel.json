@@ -9,7 +9,8 @@
   },
   "crons": [
     { "path": "/api/stripe?action=auto-release", "schedule": "0 9 * * *" },
-    { "path": "/api/retention", "schedule": "0 15 * * *" }
+    { "path": "/api/retention", "schedule": "0 15 * * *" },
+    { "path": "/api/retention?action=weekly-digest", "schedule": "30 10 * * 0" }
   ],
   "redirects": [
     { "source": "/tanks", "destination": "/app/tanks", "permanent": false },

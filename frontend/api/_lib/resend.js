@@ -27,7 +27,7 @@ export function isResendConfigured() {
  * @param {{ to: string, subject: string, html: string, from?: string, replyTo?: string }} params
  * @returns {Promise<{ success: boolean, id?: string, error?: string }>}
  */
-export async function sendEmail({ to, subject, html, from, replyTo }) {
+export async function sendEmail({ to, subject, html, from, replyTo, headers }) {
   if (!isResendConfigured()) {
     return { success: false, error: "Resend not configured (missing RESEND_API_KEY)" };
   }
@@ -50,6 +50,11 @@ export async function sendEmail({ to, subject, html, from, replyTo }) {
         subject,
         html,
         ...(replyTo ? { reply_to: replyTo } : {}),
+        // Custom headers, primarily so bulk mail can carry List-Unsubscribe.
+        // Gmail and Outlook both treat its absence on recurring mail as a spam
+        // signal, and an opt-out the user cannot reach from the message itself is
+        // the same defect as a Settings toggle nothing reads.
+        ...(headers ? { headers } : {}),
       }),
     });
 
@@ -151,11 +156,31 @@ export function winBackTemplate({ displayName, daysSinceActive, tankCount }) {
 export function weeklyDigestTemplate({ displayName, digestText }) {
   const name = displayName || "there";
   const subject = "🐙 Your Weekly Reef Digest";
+  const settingsUrl = `${APP_URL}/app/settings#settings/notifications`;
   const html = wrapEmail(
     `<p>Hey ${name},</p>
      <p>${digestText}</p>
-     ${ctaButton("Visit The Reef", `${APP_URL}/app?tab=reef`)}`,
+     ${ctaButton("Visit The Reef", `${APP_URL}/app?tab=reef`)}
+     <p style="margin-top:24px;font-size:12px;color:#64748b;">
+       You are getting this because your digest is set to weekly.
+       <a href="${settingsUrl}" style="color:#38bdf8;">Change it or turn it off</a>.
+     </p>`,
     { previewText: digestText.slice(0, 100) }
   );
-  return { subject, html };
+  return { subject, html, unsubscribeUrl: settingsUrl };
+}
+
+/**
+ * `List-Unsubscribe` headers for recurring mail.
+ *
+ * Returned separately from the template because `sendEmail` takes headers at the
+ * top level. The URL points at Settings → Notifications, which is where the
+ * `emailDigest` preference actually lives — so the header, the in-email link and
+ * the control the user ends up at are all the same thing.
+ *
+ * @param {string} unsubscribeUrl
+ */
+export function unsubscribeHeaders(unsubscribeUrl) {
+  if (!unsubscribeUrl) return undefined;
+  return { "List-Unsubscribe": `<${unsubscribeUrl}>` };
 }
