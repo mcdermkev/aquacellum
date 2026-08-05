@@ -152,6 +152,50 @@ export async function fetchZoneDetails(zoneHash) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Read the current user's REAL zone assignment.
+ *
+ * ⚠️ THE ONLY SOURCE OF TRUTH FOR "AM I IN A ZONE?" IS `profiles.zone_hash`.
+ * Do not use Dexie's `userProfile.zoneHash` for this. Despite the name, that
+ * field is a deterministic hash of the WALLET ADDRESS (`useXPSync.js`), written
+ * unconditionally on every XP award — it carries no geographic meaning and is
+ * non-empty for anyone who has ever earned a single XP point. Treating it as a
+ * zone assignment tells a user who has never joined a zone that they are already
+ * in one, which routes them into the transfer flow and its 90-day cooldown
+ * warning instead of the join flow.
+ *
+ * Returns nulls rather than throwing when unconfigured or not signed in, because
+ * "not in a zone" and "cannot tell" both mean the same thing to the caller: show
+ * the join flow. `assigned` is only ever true on a real, verified zone_hash.
+ *
+ * @returns {Promise<{assigned: boolean, zoneHash: string|null,
+ *   assignedAt: string|null, cooldownUntil: string|null, error: string|null}>}
+ */
+export async function fetchMyZoneAssignment() {
+  const none = { assigned: false, zoneHash: null, assignedAt: null, cooldownUntil: null };
+
+  if (!isSupabaseConfigured()) return { ...none, error: "Not configured" };
+
+  const wallet = getCurrentWallet();
+  if (!wallet) return { ...none, error: "Not connected" };
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("zone_hash, zone_assigned_at, zone_transfer_cooldown")
+    .eq("wallet_address", wallet)
+    .maybeSingle();
+
+  if (error) return { ...none, error: error.message };
+
+  return {
+    assigned: !!data?.zone_hash,
+    zoneHash: data?.zone_hash || null,
+    assignedAt: data?.zone_assigned_at || null,
+    cooldownUntil: data?.zone_transfer_cooldown || null,
+    error: null,
+  };
+}
+
+/**
  * Assign the user to a zone. Updates profiles.zone_hash and increments zone member_count.
  * Enforces 90-day transfer cooldown.
  * 

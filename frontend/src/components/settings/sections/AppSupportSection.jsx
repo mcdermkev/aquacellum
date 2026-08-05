@@ -79,7 +79,27 @@ function ReplayOnboardingSubsection({ casualModeActive }) {
 
     if (account) {
       try {
-        await db.userProfile.update(account, { onboardingComplete: false, onboardingPhase: null });
+        /*
+          Dexie primary keys are CASE-SENSITIVE and this table is written by
+          several call sites that key on whatever address string they were handed
+          (`useXPSync`, `IdentityStep`, `OnboardingContext`) — while Privy hands us
+          a checksummed, mixed-case address. So the row may be stored under either
+          casing, and `update()` on the wrong one is not an error: it resolves with
+          0 rows updated, so the surrounding try/catch never fires and the reset
+          silently skips its Dexie half.
+          `useReefProfile` carries the same lowercase fallback for the same reason.
+        */
+        const patch = { onboardingComplete: false, onboardingPhase: null };
+        let updated = await db.userProfile.update(account, patch);
+        const lower = account.toLowerCase();
+        if (!updated && lower !== account) {
+          updated = await db.userProfile.update(lower, patch);
+        }
+        if (!updated) {
+          // No local profile row at all — the gate falls back to Supabase and the
+          // cleared cache key, so this is expected for a fresh device, not a fault.
+          console.info("[replay] no local userProfile row to reset for", account);
+        }
       } catch (err) {
         console.warn("[replay] Dexie onboarding reset failed:", err);
       }

@@ -2,16 +2,26 @@ import React, { useState, useEffect } from "react";
 import { SettingsSection } from "../SettingsSection";
 import { ZoneAssignmentFlow } from "../../ZoneAssignmentFlow";
 import { useAuth } from "../../../contexts/AuthContext";
-import { db } from "../../../db";
+import { fetchMyZoneAssignment } from "../../../services/zoneLeaderboardApi";
 
 /**
  * ZoneSection — Settings → Zone & Location.
  *
  * Split out of the old DataPortabilityWidget.jsx; restyle-only per
  * docs/SETTINGS_SPEC.md §6 #10 (no behavior change to `ZoneAssignmentFlow`).
- * `zoneAssigned` (whether to render the flow as a transfer vs. a first
- * assignment) is looked up locally from Dexie rather than threaded down from
- * `App.jsx`/`SettingsPanel`, same as the original widget did.
+ *
+ * `zoneAssigned` decides whether the flow presents itself as a first-time JOIN or
+ * as a TRANSFER — and a transfer warns "you can only transfer once every 90 days".
+ * So getting it wrong does not just mislabel a heading, it invents a restriction.
+ *
+ * ⚠️ It is read from Supabase `profiles.zone_hash`, NOT from Dexie's
+ * `userProfile.zoneHash`. The Dexie field is misleadingly named: `useXPSync.js`
+ * sets it to a deterministic hash of the WALLET ADDRESS on every XP award, with no
+ * geographic input at all. Checking it (as this section originally did) made
+ * `zoneAssigned` true for anyone who had ever earned one XP point, so users who
+ * had never joined a zone were shown "Transfer Your Zone" and a 90-day cooldown
+ * that did not apply to them. Supabase is where `assignUserToZone` actually
+ * writes, so it is the only field that answers the question being asked.
  */
 export function ZoneSection({ casualModeActive }) {
   const { account } = useAuth();
@@ -20,12 +30,18 @@ export function ZoneSection({ casualModeActive }) {
 
   useEffect(() => {
     if (!account) return;
-    db.userProfile
-      .get(account)
-      .then((profile) => {
-        if (profile && profile.zoneHash) setZoneAssigned(true);
+    let cancelled = false;
+    // Defaults to false on any error: showing the join flow to someone already in
+    // a zone is recoverable (assignUserToZone re-checks the cooldown server-side
+    // and refuses), whereas claiming a nonexistent 90-day lockout is not.
+    fetchMyZoneAssignment()
+      .then((res) => {
+        if (!cancelled) setZoneAssigned(!!res.assigned);
       })
       .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [account]);
 
   return (

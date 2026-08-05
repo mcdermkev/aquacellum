@@ -3,6 +3,7 @@ import { SettingsSection } from "../SettingsSection";
 import { exportLocalDatabase, importLocalDatabase, db } from "../../../db";
 import { useQueryClient } from "@tanstack/react-query";
 import { generateFacilitySummary } from "../../../utils/pdfExport";
+import { useAuth } from "../../../contexts/AuthContext";
 
 /**
  * BackupSection — Settings → Backup & Restore ("Data Portability" in Pro).
@@ -17,6 +18,7 @@ import { generateFacilitySummary } from "../../../utils/pdfExport";
  * Phase 3 gate, so it can't ship half-done here).
  */
 export function BackupSection({ casualModeActive }) {
+  const { account } = useAuth();
   const queryClient = useQueryClient();
   const [importStatus, setImportStatus] = useState({ type: "", message: "" });
   const [isExporting, setIsExporting] = useState(false);
@@ -168,10 +170,43 @@ export function BackupSection({ casualModeActive }) {
             className="btn-secondary"
             onClick={async () => {
               try {
-                const tanks = await db.tanks.toArray();
+                /*
+                  Scope the report to THIS owner's live tanks.
+
+                  A bare `db.tanks.toArray()` returned every tank row in local
+                  IndexedDB — including any other account previously signed in on
+                  this browser — and then labelled the whole document with
+                  `tanks[0].ownerAddress`, so a shared device produced a facility
+                  report attributing someone else's units to you. It also counted
+                  soft-deleted tanks: retiring a tank sets `active: false` rather
+                  than deleting the row, so Total Units, Total Volume and the rack
+                  breakdown all included tanks the keeper had removed.
+
+                  CANONICAL ADDRESS RULE (see useUserTanks/relayer.js): every
+                  ownerAddress written to Dexie is lowercased, and Dexie's
+                  `.equals()` is case-sensitive, so the lookup MUST lowercase or it
+                  matches zero rows against Privy's checksummed address.
+                */
+                const owner = (account || "").toLowerCase();
+                if (!owner) {
+                  setImportStatus({
+                    type: "error",
+                    message: "Sign in to generate a facility summary.",
+                  });
+                  return;
+                }
+                const tanks = (await db.tanks.where("ownerAddress").equals(owner).toArray())
+                  .filter((t) => t.active !== false);
+                if (tanks.length === 0) {
+                  setImportStatus({
+                    type: "warning",
+                    message: "No active tanks to report on.",
+                  });
+                  return;
+                }
                 await generateFacilitySummary({
                   tanks,
-                  ownerAddress: tanks[0]?.ownerAddress || "Unknown",
+                  ownerAddress: owner,
                   recentSpawns: [],
                 });
                 setImportStatus({ type: "success", message: "Facility summary PDF generated." });

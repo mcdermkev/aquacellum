@@ -40,20 +40,36 @@ export function SmartWalletSection({ casualModeActive }) {
     setSmartWalletLoading(true);
 
     let cancelled = false;
+    /**
+     * Retry while the signer is still being registered.
+     *
+     * ⚠️ THE RETRY MUST BE DRIVEN BY A null RESULT, NOT BY A REJECTION.
+     * `getSmartWalletAddress()` RESOLVES with `null` when no signer is registered
+     * yet — it does not throw (services/smartAccountClient.js). Putting this ladder
+     * in `.catch()` meant the exact race it exists for (Settings mounting before
+     * the Privy signer lands) took the SUCCESS path, stored `null`, and never
+     * retried; the card then claimed "New entries are not being saved to the
+     * permanent record" for a wallet that was moments from being ready.
+     *
+     * Only keep waiting while `hasUserSigner()` is false, i.e. the address is
+     * absent for a reason that can still resolve itself. A null with a signer
+     * already present is a real failure and is reported as one.
+     */
     const attempt = (retries = 0) => {
       getSmartWalletAddress()
         .then((addr) => {
-          if (!cancelled) setSmartWalletAddress(addr);
-        })
-        .catch((err) => {
-          if (!cancelled && retries < 3 && !hasUserSigner()) {
+          if (cancelled) return;
+          if (!addr && retries < 3 && !hasUserSigner()) {
             setTimeout(() => attempt(retries + 1), 1000);
             return;
           }
-          if (!cancelled) console.warn("Smart wallet init failed:", err);
+          setSmartWalletAddress(addr);
+          setSmartWalletLoading(false);
         })
-        .finally(() => {
-          if (!cancelled) setSmartWalletLoading(false);
+        .catch((err) => {
+          if (cancelled) return;
+          console.warn("Smart wallet init failed:", err);
+          setSmartWalletLoading(false);
         });
     };
     const timer = setTimeout(() => attempt(), 500);
