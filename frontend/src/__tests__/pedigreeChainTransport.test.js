@@ -132,7 +132,7 @@ vi.mock("../services/supabaseClient", () => ({
 }));
 
 vi.mock("../utils/xp", () => ({
-  addXp: () => {},
+  awardXp: () => {},
   XP_ACTIONS: { MINT_SPECIMEN: { points: 1, label: "x" } },
 }));
 

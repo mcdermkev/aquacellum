@@ -52,6 +52,25 @@ export const XP_ACTIONS = {
   ENGAGEMENT_BONUS: { points: 8, label: "Post Reached 5+ Reactions" },
   JOIN_SCHOOL: { points: 15, label: "Joined a School" },
   MENTORED_USER: { points: 40, label: "Mentored Another User" },
+
+  // ── Actions that were being awarded with NO canonical entry ───────────────
+  //
+  // Each of these was a bare `addXp(<magic number>, "<prose label>")` call. The
+  // amounts are preserved exactly so nobody's earn rate changes — retuning the
+  // reward schedule is a separate, deliberate exercise — but they now exist in the
+  // table, which is what lets the server recognise them instead of 403-ing the
+  // claim and silently clawing it back after the user has already seen the toast.
+  //
+  // The dailyMax values are NEW, and they close farms rather than tune rewards:
+  // every one of these was uncapped and infinitely repeatable.
+  //   SPECIMEN_REHOMED — moving a fish A→B→A→B paid 10 XP per click, forever.
+  //   POST_COMMENT     — 5 XP per comment with no limit at all.
+  //   GROWOUT_CHECKPOINT — logged per spawn, so a breeder with many spawns has a
+  //     legitimately high ceiling; the cap only stops a single spawn being logged
+  //     hundreds of times in one sitting.
+  SPECIMEN_REHOMED: { points: 10, label: "Specimen Rehomed", dailyMax: 3 },
+  GROWOUT_CHECKPOINT: { points: 5, label: "Logged Grow-Out Checkpoint", dailyMax: 10 },
+  POST_COMMENT: { points: 5, label: "Posted Tank Observation Comment", dailyMax: 5 },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -166,10 +185,114 @@ export function getXp() {
 }
 
 /**
- * Add XP points and fire event notifications.
+ * Force the stored profile's point total to an authoritative value.
+ *
+ * Exists for rollback. `aquadex_xp_profile.points` is what `getXp()` returns, so
+ * correcting only the scalar mirrors (`aquadex_xp`, `aquadex_xp_points`) left the
+ * displayed score holding points the server had rejected — and every subsequent
+ * rejection compounded it. The tier is re-derived here so the profile can never
+ * report a tier its own point total does not support.
+ *
+ * Not an award: fires no event and appends no history entry.
+ *
+ * @param {number} points authoritative total (from Dexie `userProfile.totalXp`)
+ */
+export function setXpProfilePoints(points) {
+  const total = Math.max(0, Number(points) || 0);
+  const profile = getXpProfile();
+  const info = getTierInfo(total);
+  profile.points = total;
+  profile.tier = info.key;
+  profile.level = info.level;
+  try {
+    localStorage.setItem("aquadex_xp_profile", JSON.stringify(profile));
+  } catch (e) {
+    console.error("Failed correcting XP profile in local storage:", e);
+  }
+  return total;
+}
+
+/**
+ * Award XP for a NAMED action. This is the API every award site should use.
+ *
+ * ─── WHY THIS EXISTS ───────────────────────────────────────────────────────
+ *
+ * XP used to be awarded as a bare number plus a prose label, and `useXPSync`
+ * recovered the action by LOWERCASING THE LABEL AND SUBSTRING-MATCHING IT against
+ * ~20 `includes()` checks, with `return "LOG_FEEDING"` as the fallback. The server
+ * then rejected any claim whose points did not match the action it had inferred,
+ * and the client silently rolled the award back.
+ *
+ * That produced live, invisible breakage:
+ *   "Specimen Rehomed"  → matched nothing → fell back to LOG_FEEDING (5 expected,
+ *                         10 claimed) → 403 → removed after the toast said +10.
+ *   "⚡ LIVE EVENT DOUBLE LOYALTY REWARDS (Cash Handshake checkout)"
+ *                       → contains "handshake" → VERIFIED_PICKUP_BUYER (25
+ *                         expected, 40×N claimed) → 403 → removed.
+ *
+ * So the highest-value marketplace actions were the ones most likely to evaporate,
+ * and the only trace was a `console.info`. Passing the KEY removes the guessing:
+ * the amount is derived from the canonical table, so client and server cannot
+ * disagree about what an action is worth.
+ *
+ * An unknown key is a loud no-op rather than a silent fallback — a typo must not
+ * quietly become a feeding award.
+ *
+ * @param {string} actionKey a key of XP_ACTIONS
+ * @param {{quantity?: number, tankId?: string|number|null}} [opts]
+ *   quantity multiplies the canonical points for genuinely batched actions
+ *   (registering 10 certificates at once). The server validates
+ *   `points === action.points * quantity`, so it must be passed, not folded in.
+ * @returns {{newXp:number, tierInfo:object, tierChanged:boolean, awarded:number}}
+ */
+export function awardXp(actionKey, opts = {}) {
+  const action = XP_ACTIONS[actionKey];
+  if (!action) {
+    // Loud, and deliberately not an exception: a mistyped key must not break the
+    // user's actual action (registering a fish, completing a sale) just because the
+    // reward bookkeeping is wrong.
+    console.error(
+      `[XP] awardXp called with unknown action key "${actionKey}". No XP awarded. ` +
+        `Add it to XP_ACTIONS (and to VALID_ACTIONS in api/validate-xp.js) first.`
+    );
+    const current = getXp();
+    return { newXp: current, tierInfo: getTierInfo(current), tierChanged: false, awarded: 0 };
+  }
+
+  const quantity = Math.max(1, Math.floor(Number(opts.quantity) || 1));
+  const points = action.points * quantity;
+  const label = quantity > 1 ? `${action.label} ×${quantity}` : action.label;
+
+  const result = applyXp(points, label, {
+    actionKey,
+    quantity,
+    tankId: opts.tankId ?? null,
+    // Passed through to the server, which is the only side that can confirm an
+    // event is live and apply its multiplier. The client never doubles its own
+    // award — it just says which event it believes it was part of.
+    eventId: opts.eventId ?? null,
+  });
+  return { ...result, awarded: points };
+}
+
+/**
+ * Add XP by raw amount and prose label.
+ *
+ * ⚠️ LEGACY. Prefer `awardXp(actionKey, opts)`. Awards made through here carry no
+ * action key, so `useXPSync` has to infer one from the label and may infer wrong —
+ * see the note on `awardXp`. Retained only for the on-chain `XPEarned` path, where
+ * the reason genuinely arrives as a free-text string from the contract.
+ *
  * Returns { newXp, tierInfo, tierChanged }.
  */
 export function addXp(pointsToAdd, actionLabel = "Husbandry Activity") {
+  return applyXp(pointsToAdd, actionLabel, { actionKey: null, quantity: 1, tankId: null });
+}
+
+/**
+ * Shared write path for both award APIs. Persists, then announces.
+ */
+function applyXp(pointsToAdd, actionLabel, meta) {
   const points = Number(pointsToAdd || 0);
   if (points <= 0) return { newXp: getXp(), tierInfo: getTierInfo(getXp()), tierChanged: false };
 
@@ -209,6 +332,13 @@ export function addXp(pointsToAdd, actionLabel = "Husbandry Activity") {
       tierInfo: newInfo,
       tierChanged,
       newLevel: newInfo.level,
+      // The canonical identity of this award. `useXPSync` uses these instead of
+      // guessing the action from `actionLabel`; null means the award came through
+      // the legacy `addXp` path and still needs inferring.
+      actionKey: meta.actionKey,
+      quantity: meta.quantity,
+      tankId: meta.tankId,
+      eventId: meta.eventId,
       // Legacy compat fields
       levelInfo: newInfo,
       levelChanged: tierChanged,

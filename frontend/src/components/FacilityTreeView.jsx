@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ethers, Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
-import { addXp, XP_ACTIONS } from "../utils/xp";
+import { awardXp, XP_ACTIONS } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
 import { compressImage } from "../utils/imageCompression";
 import { relayRegisterTank, relayMintSpecimen } from "../services/relayer";
@@ -306,7 +306,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
         }
       }
 
-      addXp(XP_ACTIONS.REGISTER_TANK.points, XP_ACTIONS.REGISTER_TANK.label);
+      awardXp("REGISTER_TANK");
 
       // Notify onboarding tour / listeners that a tank was registered (no behavioral change)
       window.dispatchEvent(new CustomEvent("aquadex:tank_registered", { detail: { tankId: newTankId } }));

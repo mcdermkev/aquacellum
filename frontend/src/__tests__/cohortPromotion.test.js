@@ -103,7 +103,7 @@ vi.mock("../services/cloudSync", () => ({
 }));
 
 vi.mock("../utils/xp", () => ({
-  addXp: (points, label) => xpCalls.push({ points, label }),
+  awardXp: (actionKey, opts) => xpCalls.push({ actionKey, ...(opts || {}) }),
   XP_ACTIONS: { MINT_SPECIMEN: { points: 50, label: "Registered Birth Certificate" } },
 }));
 
@@ -382,6 +382,9 @@ describe("the checkpoint count is derived from successful mints", () => {
   it("awards certificate XP once per action, not once per fish", async () => {
     await promoteCohortToCertificates({ spawnId: SPAWN_ID, count: 4, speciesCatalog: CATALOG });
     expect(xpCalls).toHaveLength(1);
+    // And it names the action rather than passing a prose label the server has to
+    // infer from — inference is what silently discarded awards like this one.
+    expect(xpCalls[0].actionKey).toBe("MINT_SPECIMEN");
   });
 });
 

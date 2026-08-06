@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ethers, Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
-import { addXp, XP_ACTIONS } from "../utils/xp";
+import { awardXp } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
 import { compressImage } from "../utils/imageCompression";
 import { mapContractError } from "../utils/errorHandler";
@@ -266,9 +266,9 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
       // Trigger Breeding telemetry
       const isSpawn = Number(formData.sireId) > 0 || Number(formData.damId) > 0;
       if (isSpawn) {
-        addXp(XP_ACTIONS.SPAWN_BREED?.points, XP_ACTIONS.SPAWN_BREED?.label);
+        awardXp("SPAWN_BREED");
       } else {
-        addXp(XP_ACTIONS.MINT_SPECIMEN?.points, XP_ACTIONS.MINT_SPECIMEN?.label);
+        awardXp("MINT_SPECIMEN");
       }
 
       if (mintedTokenId) {

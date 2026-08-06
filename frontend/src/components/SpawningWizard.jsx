@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ethers, Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
-import { addXp, XP_ACTIONS } from "../utils/xp";
+import { awardXp } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
 import { relaySpawn, relayRegisterTank } from "../services/relayer";
 import { putSpecimenPhoto } from "../services/tankMedia";
@@ -457,7 +457,7 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
       }
 
       // Add Breeder XP points
-      addXp(XP_ACTIONS.SPAWN_BREED.points, XP_ACTIONS.SPAWN_BREED.label);
+      awardXp("SPAWN_BREED");
 
       setTxState({ status: "success", message: `Successfully registered Spawn Record Serial No. ${spawnId.toString().slice(-3)} with ${offspringCount} birth certificates!`, txHash: "" });
     } catch (err) {

@@ -6,7 +6,7 @@ import { getProvider } from "../utils/smartAccount";
 import { relayPurchaseBatch, relaySettleHandshake } from "../services/relayer";
 import { useHandshake } from "../hooks/useHandshake";
 import { db } from "../db";
-import { addXp, XP_ACTIONS } from "../utils/xp";
+import { awardXp, XP_ACTIONS } from "../utils/xp";
 
 import { mapContractError } from "../utils/errorHandler";
 
@@ -173,9 +173,14 @@ export function HandshakeVerification({
           }
         }
 
-        // 2. Increment analytics count & grant loyalty double XP
+        // 2. Increment analytics count & award the purchase.
+        //
+        // The hardcoded ×2 "LIVE EVENT DOUBLE LOYALTY REWARDS" is gone: it was
+        // unconditional (no event was ever checked), and the label matched
+        // `includes("handshake")` server-side, so the claim was rejected and rolled
+        // back every time. Event multipliers are validated and applied server-side.
         localStorage.setItem("aquadex_cash_orders_count", Number(localStorage.getItem("aquadex_cash_orders_count") || 0) + Number(quantity));
-        addXp(XP_ACTIONS.CLAIM_EXCHANGE.points * 2 * Number(quantity), `⚡ LIVE EVENT DOUBLE LOYALTY REWARDS (Cash Handshake checkout)`);
+        awardXp("CLAIM_EXCHANGE", { quantity: Number(quantity) });
 
         setCashHandshakePayload(payload);
         setStep("qr-display");

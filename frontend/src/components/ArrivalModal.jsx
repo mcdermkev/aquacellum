@@ -5,7 +5,7 @@ import { AcclimationNotes } from "./AcclimationNotes";
 import { useUserTanks } from "../hooks/useUserTanks";
 import { relayMoveSpecimen, relayUpdateShippingOrder } from "../services/relayer";
 import { releaseFiatOrder, disputeFiatOrder, openDoaClaim } from "../services/stripePayments";
-import { addXp, XP_ACTIONS } from "../utils/xp";
+import { awardXp } from "../utils/xp";
 import { receivePurchasedLot, resolvePurchaseChain, resolvePurchasePedigree } from "../services/lotIntake";
 import { receiveTransferredCertificate } from "../services/certificateTransfer";
 import { lotStage } from "../services/listingPedigree";
@@ -185,7 +185,7 @@ function ArrivalModal({
         });
 
         // Award XP
-        addXp(XP_ACTIONS.ARRIVAL_CONFIRMED.points, XP_ACTIONS.ARRIVAL_CONFIRMED.label);
+        awardXp("ARRIVAL_CONFIRMED");
       }
 
       // Step 2 (batch): Write arrival metadata on the order record
@@ -231,7 +231,7 @@ function ArrivalModal({
         }
 
         // Award batch XP
-        addXp(XP_ACTIONS.BATCH_ARRIVAL_CONFIRMED.points, XP_ACTIONS.BATCH_ARRIVAL_CONFIRMED.label);
+        awardXp("BATCH_ARRIVAL_CONFIRMED");
       }
 
       // Success

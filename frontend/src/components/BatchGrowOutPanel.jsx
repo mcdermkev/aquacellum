@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../db";
-import { addXp } from "../utils/xp";
+import { awardXp } from "../utils/xp";
 import { syncGrowoutCheckpointsToCloud } from "../services/cloudSync";
 import { formatLocalRecordRef } from "../utils/specimenIdentity";
 import { summarizeGrowout } from "../utils/growoutFunnel";
@@ -168,7 +168,7 @@ export function BatchGrowOutPanel({ walletAccount, casualModeActive }) {
       // Fire-and-forget cloud mirror. walletAccount is passed explicitly so the
       // batch skips a per-checkpoint spawn-owner lookup.
       syncGrowoutCheckpointsToCloud(entries, walletAccount).catch(() => {});
-      addXp(5 * selected.size, `Batch logged ${action.label} × ${selected.size} spawns`);
+      awardXp("GROWOUT_CHECKPOINT", { quantity: selected.size });
 
       // Reset
       setShowBatchForm(false);

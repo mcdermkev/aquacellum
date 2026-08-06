@@ -57,7 +57,7 @@ import { summarizeGrowout } from "../utils/growoutFunnel";
 import { SEX, normalizeSex } from "../utils/specimenSex";
 import { formatCertSerial } from "../utils/specimenIdentity";
 import { promotedLifeStage } from "../utils/lifeStage";
-import { addXp, XP_ACTIONS } from "../utils/xp";
+import { awardXp } from "../utils/xp";
 import { relayMintSpecimen } from "./relayer";
 import { buildSpecimenMetadata } from "./specimenMetadata";
 import { syncGrowoutCheckpointToCloud } from "./cloudSync";
@@ -546,7 +546,7 @@ export async function promoteCohortToCertificates({
     // One award per action, not per fish — matching how the Spawning wizard
     // awards SPAWN_BREED once for a cohort of up to ten offspring rather than ten
     // separate certificate awards.
-    addXp(XP_ACTIONS.MINT_SPECIMEN.points, XP_ACTIONS.MINT_SPECIMEN.label);
+    awardXp("MINT_SPECIMEN");
 
     const partial = specimenIds.length < requested;
     return {

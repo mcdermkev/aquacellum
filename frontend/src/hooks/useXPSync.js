@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { db } from "../db";
 import { deriveTierFromXp } from "../db";
-import { TIER_LADDER } from "../utils/xp";
+import { TIER_LADDER, setXpProfilePoints } from "../utils/xp";
 import { isSupabaseConfigured } from "../services/supabaseClient";
 import { syncXpProfileToCloud } from "../services/cloudSync";
 import { enforceXpCooldown } from "../utils/xpCooldowns";
@@ -226,12 +226,21 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
         detail: { walletAddress: user, amount: amountNum },
       }));
 
-      // Update localStorage for legacy consumers
+      // Bring localStorage back in line with Dexie.
+      //
+      // ⚠️ `aquadex_xp_profile` MUST be corrected too, and previously was not. That
+      // blob is what `getXp()` reads, so a rejected claim was removed from Dexie and
+      // from the two scalar mirrors while the number the app actually displays kept
+      // the points — permanently. Every rollback inflated it a little further, and
+      // because it also fed entitlement checks at the time, a user could be handed
+      // capabilities on the strength of XP the server had explicitly refused.
       try {
         const profile = await db.userProfile.get(user);
         if (profile) {
-          localStorage.setItem("aquadex_xp", String(profile.totalXp));
-          localStorage.setItem("aquadex_xp_points", String(profile.totalXp));
+          const corrected = String(profile.totalXp);
+          localStorage.setItem("aquadex_xp", corrected);
+          localStorage.setItem("aquadex_xp_points", corrected);
+          setXpProfilePoints(profile.totalXp);
         }
       } catch { /* ignore */ }
 
@@ -270,6 +279,10 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
           body: JSON.stringify({
             actionType: actionKey,
             pointsAwarded: amount,
+            // Batched actions (10 certificates at once) claim points × quantity.
+            // Sent as a separate field so the server validates the arithmetic
+            // rather than having to accept an unexplained larger number.
+            quantity: Number(metadata?.quantity) || 1,
             multiplier: 1.0, // Server calculates real multiplier
             metadata,
             walletAddress: user,
@@ -306,6 +319,18 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
 
     /**
      * Map free-text action reasons to XP_ACTIONS keys.
+     *
+     * ⚠️ LAST-RESORT INFERENCE, NOT THE NORMAL PATH. Awards made through
+     * `awardXp(actionKey)` carry their key and never come through here. This
+     * remains only for (a) the on-chain `XPEarned` event, whose reason really is a
+     * contract-supplied string, and (b) any legacy `addXp` call not yet migrated.
+     *
+     * Its failure mode is why `awardXp` exists: the substring checks run in order
+     * and fall back to LOG_FEEDING, so a label that matches nothing — or matches
+     * the wrong rule — produces a points mismatch, a 403, and a silent rollback
+     * after the user has already been told they earned it. "Specimen Rehomed" hit
+     * the fallback; the cash-handshake label matched `includes("handshake")` and
+     * resolved to a pickup award worth a fraction of the claim.
      */
     const mapReasonToActionKey = (reason) => {
       const r = (reason || "").toLowerCase();
@@ -354,7 +379,7 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
 
     window.triggerXpTracking = handleXpUpdate;
 
-    // ─── Bridge: catch addXp() events that only wrote to localStorage ──────
+    // ─── Bridge: catch awardXp()/addXp() events that only wrote to localStorage ──
     const handleExternalXpEvent = async (e) => {
       const detail = e.detail || {};
       // Skip events we dispatched ourselves (already in Dexie)
@@ -366,12 +391,29 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
       try {
         const { totalXp } = await processXpProgression(walletAddress, amount, reason);
 
-        // Validate with server
-        const actionKey = mapReasonToActionKey(reason);
+        // Prefer the action key the award declared. Inferring from the label is the
+        // fallback that used to lose real XP, so a missing key is worth a warning:
+        // it means an award site still calls the legacy addXp() and is one bad
+        // substring match away from being silently rolled back.
+        const actionKey = detail.actionKey || mapReasonToActionKey(reason);
+        if (!detail.actionKey) {
+          console.warn(
+            `[XP] award "${reason}" carried no actionKey; inferred "${actionKey}". ` +
+              `Migrate this call site to awardXp(actionKey) — inference can resolve ` +
+              `to the wrong action and get the award rejected.`
+          );
+        }
         if (isSupabaseConfigured()) {
           validateXpWithServer(walletAddress, amount, actionKey, {
-            source: "addXp_bridge",
+            source: detail.actionKey ? "awardXp" : "addXp_bridge",
             reason,
+            // Batched awards claim points × quantity; the server needs the
+            // multiplier to validate the total instead of rejecting it.
+            quantity: detail.quantity || 1,
+            ...(detail.tankId != null ? { tankId: detail.tankId } : {}),
+            // The server checks this against an active `tides` row before applying
+            // any event multiplier; it is a claim, not an instruction.
+            ...(detail.eventId != null ? { eventId: detail.eventId } : {}),
           });
         }
       } catch (err) {

@@ -10,7 +10,7 @@ import { ListSpecimenModal } from "./ListSpecimenModal";
 import { EditListingModal } from "./EditListingModal";
 import { BatchListingWizard } from "./BatchListingWizard";
 import { OfferModal } from "./OfferModal";
-import { addXp, XP_ACTIONS, getXp } from "../utils/xp";
+import { XP_ACTIONS, getXp } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
 import { relayCancelListing, relayCancelBatchListing } from "../services/relayer";
 import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";

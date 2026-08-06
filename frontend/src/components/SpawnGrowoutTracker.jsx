@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../db";
-import { addXp } from "../utils/xp";
+import { awardXp } from "../utils/xp";
 import { syncGrowoutCheckpointToCloud } from "../services/cloudSync";
 import { summarizeGrowout } from "../utils/growoutFunnel";
 import { generateSpawnNarration } from "../utils/spawnNarration";
@@ -113,7 +113,7 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
     // a device change (the photo is stripped server-side — see cloudSync.js).
     syncGrowoutCheckpointToCloud(checkpoint).catch(() => {});
 
-    addXp(5, "Logged Grow-Out Checkpoint");
+    awardXp("GROWOUT_CHECKPOINT");
     setFormCount("");
     setFormNote("");
     setFormPhoto(null);

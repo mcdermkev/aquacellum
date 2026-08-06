@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { ethers, Contract, parseEther } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
-import { addXp, XP_ACTIONS } from "../utils/xp";
+import { awardXp } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
 import { relayCreateListing } from "../services/relayer";
 import { checkSellerStatus, startSellerOnboarding } from "../services/stripePayments";
@@ -594,7 +594,7 @@ export function ListSpecimenModal({
       }
 
       // Trigger XP Telemetry & Toast
-      addXp(XP_ACTIONS.LIST_DIRECTORY?.points, XP_ACTIONS.LIST_DIRECTORY?.label);
+      awardXp("LIST_DIRECTORY");
 
       if (onSuccess) onSuccess();
       onClose();

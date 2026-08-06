@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Modal } from "./Modal";
 import { db } from "../db";
-import { addXp, XP_ACTIONS } from "../utils/xp";
+import { awardXp } from "../utils/xp";
 
 /**
  * AcclimationChecklist — Guided, timed acclimation flow for a newly arrived
@@ -144,7 +144,7 @@ export function AcclimationChecklist({
     });
     if (!awardedRef.current) {
       awardedRef.current = true;
-      addXp(XP_ACTIONS.ACCLIMATION_COMPLETED.points, XP_ACTIONS.ACCLIMATION_COMPLETED.label);
+      awardXp("ACCLIMATION_COMPLETED");
     }
     if (onComplete) onComplete({ completed: true });
   };

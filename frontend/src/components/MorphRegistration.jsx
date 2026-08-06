@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { getProvider } from "../utils/smartAccount";
-import { addXp, XP_ACTIONS } from "../utils/xp";
+import { awardXp } from "../utils/xp";
 import { isSupabaseConfigured } from "../services/supabaseClient";
 import {
   createMorphSubmission,
@@ -187,7 +187,10 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
       });
       if (err) throw new Error(err.message || err);
 
-      addXp(XP_ACTIONS.MORPH_REGISTERED.points, XP_ACTIONS.MORPH_REGISTERED.label);
+      // MORPH_REGISTERED was missing from the server's action table entirely, so
+      // this award was rejected as an "Invalid action_type" and clawed back every
+      // single time — the action was effectively un-earnable. Now registered.
+      awardXp("MORPH_REGISTERED");
 
       setSuccessMsg(
         casualModeActive

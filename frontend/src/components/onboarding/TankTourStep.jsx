@@ -4,7 +4,7 @@ import { useOnboarding } from "../../contexts/OnboardingContext";
 import { useTourStep } from "../../hooks/useTourStep";
 import { db } from "../../db";
 import { relayRegisterTank } from "../../services/relayer";
-import { addXp, XP_ACTIONS } from "../../utils/xp";
+import { awardXp } from "../../utils/xp";
 import { SpotlightOverlay } from "./SpotlightOverlay.jsx";
 import { TourCoachmark } from "./TourCoachmark.jsx";
 import { awardFirstTankXp } from "./firstTankReward.js";
@@ -185,7 +185,7 @@ export function TankTourStep({
         // notify the tour. The dispatched event is caught by `useTourStep`, which
         // runs `handleComplete` (first-tank bonus + advance) — keeping a single
         // completion path for both the spotlight and the fallback (Property 4).
-        addXp(XP_ACTIONS.REGISTER_TANK.points, XP_ACTIONS.REGISTER_TANK.label);
+        awardXp("REGISTER_TANK");
         window.dispatchEvent(
           new CustomEvent("aquadex:tank_registered", {
             detail: { tankId: result.tankId },

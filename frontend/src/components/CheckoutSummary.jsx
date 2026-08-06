@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { ethers, Contract, formatEther, parseEther } from "ethers";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
 import managerAbi from "../abi/AquadexManager.json";
-import { addXp, XP_ACTIONS } from "../utils/xp";
+import { awardXp, XP_ACTIONS } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
 import { fetchListingsByBreed } from "../utils/listingManager";
 import {
@@ -591,7 +591,14 @@ export function CheckoutSummary({
 
       // 3. Increment analytics count & grant loyalty double XP
       localStorage.setItem("aquadex_cash_orders_count", Number(localStorage.getItem("aquadex_cash_orders_count") || 0) + pendingTokenIds.length);
-      addXp(XP_ACTIONS.CLAIM_EXCHANGE.points * 2 * pendingTokenIds.length, `⚡ LIVE EVENT DOUBLE LOYALTY REWARDS (Cash Handshake checkout)`);
+      // Was `points × 2 × N` with a label reading "⚡ LIVE EVENT DOUBLE LOYALTY
+      // REWARDS". The ×2 was hardcoded and unconditional — not tied to any event
+      // check — and the whole award was then thrown away: the label contains
+      // "handshake", so the server inferred VERIFIED_PICKUP_BUYER (25) against a
+      // claim of 40×N, rejected it, and the client rolled it back after the toast.
+      // Event multipliers are the server's job (it validates against an active
+      // `tides` row); the client's job is to say truthfully what happened.
+      awardXp("CLAIM_EXCHANGE", { quantity: pendingTokenIds.length });
 
       // 4. Save payload to open QR Modal
       setCashHandshakePayload(payload);
@@ -894,14 +901,16 @@ export function CheckoutSummary({
       const result = await relaySettleHandshake({ purchaseId: selectedOrder.data.purchaseId });
       if (!result.success) throw new Error(result.error || "Settlement failed");
 
-      const baseXp = XP_ACTIONS.CLAIM_EXCHANGE.points;
-      const isInsideEventZone = insideEventZone === true || !!currentEventId;
-      const finalXp = isInsideEventZone ? baseXp * 2 : baseXp;
-      const finalLabel = isInsideEventZone 
-        ? "⚡ LIVE EVENT DOUBLE LOYALTY REWARDS UNLOCKED!" 
-        : "Verified In-Person Handshake";
+      // The client no longer doubles this itself. `insideEventZone`/`currentEventId`
+      // are client-supplied, so a self-applied ×2 was both unverifiable and futile:
+      // useXPSync always sends multiplier 1.0, and the inflated claim failed the
+      // server's points check and was rolled back. The server applies the real 2x
+      // after confirming the eventId matches an active `tides` row, and the bonus
+      // comes back as a second award — so passing the eventId is what actually
+      // earns the multiplier.
+      const eventId = currentEventId || null;
 
-      addXp(finalXp, finalLabel);
+      awardXp("CLAIM_EXCHANGE", { eventId });
       
       setPinInput("");
       setSelectedOrder(null);

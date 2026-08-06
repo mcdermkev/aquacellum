@@ -23,10 +23,16 @@
  * Validates: Requirements 3.4
  */
 
-import { addXp } from "../../utils/xp";
+import { awardXp, XP_ACTIONS } from "../../utils/xp";
 
-/** Onboarding first-tank bonus, in XP points. */
-export const FIRST_TANK_XP = 15;
+/**
+ * Onboarding first-tank bonus, in XP points.
+ *
+ * DERIVED from the canonical action rather than hardcoded. It was a literal 15 while
+ * `XP_ACTIONS.REGISTER_TANK` said 25 — two values for the identical event — and the
+ * mismatch is exactly why the award was rejected server-side and taken back.
+ */
+export const FIRST_TANK_XP = XP_ACTIONS.REGISTER_TANK.points;
 
 /** Telemetry label recorded in the XP history for this grant. */
 export const FIRST_TANK_XP_LABEL = "First Tank Set Up";
@@ -79,7 +85,17 @@ export function awardFirstTankXp() {
   // Latch BEFORE granting so a re-entrant call (e.g. event + poll firing in the
   // same tick) cannot slip through and double-award.
   writeFlag(FIRST_TANK_XP_KEY);
-  addXp(FIRST_TANK_XP, FIRST_TANK_XP_LABEL);
+  // Awarded as REGISTER_TANK, because that is what happened.
+  //
+  // This used to grant a bespoke 15 points under the label "First Tank Set Up",
+  // which matched none of the server's inference rules — it fell through to
+  // LOG_FEEDING (5 expected vs 15 claimed), was rejected, and was clawed back. So
+  // the very first reward a new keeper ever saw was one they did not keep.
+  //
+  // The canonical action for registering a tank is worth 25, so the onboarding grant
+  // now matches the rest of the app instead of maintaining a second, lower value for
+  // the identical event.
+  awardXp("REGISTER_TANK");
   return { awarded: true, points: FIRST_TANK_XP };
 }
 

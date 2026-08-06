@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Modal } from "./Modal";
 import { db } from "../db";
-import { addXp, XP_ACTIONS } from "../utils/xp";
+import { awardXp } from "../utils/xp";
 import { syncListingToCloud } from "../services/cloudSync";
 import { loadSpeciesCareLookup, deriveCareFields } from "../utils/speciesCarePrefill";
 import {
@@ -245,7 +245,9 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
       syncListingToCloud(listingWithPedigree).catch(() => {});
 
       // XP
-      addXp(XP_ACTIONS.LIST_DIRECTORY?.points || 50, "Listed Batch Fry for Sale");
+      // The old `|| 50` fallback also disagreed with the table (LIST_DIRECTORY is 30),
+      // so whichever branch ran, the claim could not match what the server expected.
+      awardXp("LIST_DIRECTORY");
 
       if (onSuccess) onSuccess();
       onClose();

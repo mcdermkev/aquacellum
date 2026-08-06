@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { ethers, Contract } from "ethers";
 import { FishSimple, Flask, Drop, Asterisk } from "@phosphor-icons/react";
 import aquadexAbi from "../abi/AquadexManager.json";
-import { addXp, XP_ACTIONS, getPointsSuffix } from "../utils/xp";
+import { awardXp, XP_ACTIONS, getPointsSuffix } from "../utils/xp";
 import { logCareAction, logCareActionBulk } from "../services/careLog";
 import { FacilityTreeView } from "./FacilityTreeView";
 import { getProvider } from "../utils/smartAccount";
@@ -585,7 +585,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         }
       }
 
-      addXp(XP_ACTIONS.MINT_SPECIMEN?.points * count, XP_ACTIONS.MINT_SPECIMEN?.label);
+      awardXp("MINT_SPECIMEN", { quantity: count });
       showToast(casualModeActive
         ? `🐟 ${count > 1 ? `${count} ` : ""}${species.commonName || "Fish"} added to your tank!`
         : `✅ ${count} birth certificate${count > 1 ? "s" : ""} registered for ${species.commonName || "specimen"}`
@@ -616,7 +616,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         throw new Error(result.error || "Move failed");
       }
 
-      addXp(10, "Specimen Rehomed");
+      awardXp("SPECIMEN_REHOMED");
       showToast(`✅ Specimen #${specimenId} moved successfully!`);
       await fetchDashboardData();
 
@@ -651,7 +651,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         const result = await relayMoveSpecimen({ specimenId, targetTankId });
         if (result?.success) moved += 1;
       }
-      if (moved > 0) addXp(10, "Specimens Rehomed");
+      // Was a flat 10 regardless of how many moved; now scales with the batch and
+      // is validated as such.
+      if (moved > 0) awardXp("SPECIMEN_REHOMED", { quantity: moved });
       showToast(moved === ids.length
         ? `✅ Moved ${moved} fish successfully!`
         : `Moved ${moved} of ${ids.length} fish.`);
@@ -843,7 +845,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         }
       }
 
-      addXp(XP_ACTIONS.MINT_SPECIMEN?.points * count, XP_ACTIONS.MINT_SPECIMEN?.label);
+      awardXp("MINT_SPECIMEN", { quantity: count });
       showToast(`✅ ${count} birth certificate${count > 1 ? "s" : ""} registered for ${species.commonName || "specimen"}`);
 
       setInlineDetailOpen(false);
@@ -948,10 +950,17 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     const isExpertAudit = (role === "master-breeder" || composerCategory === "lab-audit") && text.length >= 60;
 
     if (isExpertAudit) {
-      addXp(25, "Mentor XP (Expert Comment)");
-      addXp(50, "Prestige XP (Received Expert Audit)");
+      // Only the GIVER's award belongs to the person writing the comment.
+      //
+      // This used to grant 25 ("Mentor XP") AND 50 ("Prestige XP (Received Expert
+      // Audit)") to the same account — i.e. the commenter collected the receiving
+      // keeper's reward as well as their own, 75 points for one side of a two-sided
+      // interaction. AUDIT_RECEIVED belongs to the tank's owner and cannot be
+      // granted from here, because a client can only ever award XP to itself; it
+      // needs a server-side grant keyed to the audited wallet.
+      awardXp("AUDIT_GIVEN");
     } else {
-      addXp(5, "Posted Tank Observation Comment");
+      awardXp("POST_COMMENT");
     }
 
     const safeLogs = Array.isArray(activeTank.logs) ? activeTank.logs : [];
@@ -1093,7 +1102,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         }
       }
 
-      addXp(XP_ACTIONS.LOG_PARAMETERS.points * targets.length, XP_ACTIONS.LOG_PARAMETERS.label);
+      awardXp("LOG_PARAMETERS", { quantity: targets.length });
 
       setFormData({
         temp: "24.5",

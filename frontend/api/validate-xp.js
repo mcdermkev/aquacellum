@@ -61,6 +61,7 @@ const VALID_ACTIONS = {
 
   // Breeding & Operational
   MINT_SPECIMEN:        { points: 50,  cooldownMs: null, perTank: false, dailyMax: null },
+  MORPH_REGISTERED:     { points: 30,  cooldownMs: null, perTank: false, dailyMax: null },
   SPAWN_BREED:          { points: 150, cooldownMs: null, perTank: false, dailyMax: null },
   BATCH_SHIPPING:       { points: 35,  cooldownMs: null, perTank: false, dailyMax: null },
   AUDIT_GIVEN:          { points: 60,  cooldownMs: null, perTank: false, dailyMax: null },
@@ -69,6 +70,7 @@ const VALID_ACTIONS = {
   // Arrival Flow
   ARRIVAL_CONFIRMED:       { points: 25, cooldownMs: null, perTank: false, dailyMax: null },
   BATCH_ARRIVAL_CONFIRMED: { points: 15, cooldownMs: null, perTank: false, dailyMax: null },
+  ACCLIMATION_COMPLETED:   { points: 20, cooldownMs: null, perTank: false, dailyMax: null },
 
   // Community & Social
   POST_CURRENT:         { points: 10, cooldownMs: null, perTank: false, dailyMax: 2 },
@@ -76,7 +78,31 @@ const VALID_ACTIONS = {
   ENGAGEMENT_BONUS:     { points: 8,  cooldownMs: null, perTank: false, dailyMax: null },
   JOIN_SCHOOL:          { points: 15, cooldownMs: null, perTank: false, dailyMax: null },
   MENTORED_USER:        { points: 40, cooldownMs: null, perTank: false, dailyMax: null },
+
+  // Husbandry bookkeeping — capped, previously uncapped and unlisted
+  SPECIMEN_REHOMED:     { points: 10, cooldownMs: null, perTank: false, dailyMax: 3 },
+  GROWOUT_CHECKPOINT:   { points: 5,  cooldownMs: null, perTank: false, dailyMax: 10 },
+  POST_COMMENT:         { points: 5,  cooldownMs: null, perTank: false, dailyMax: 5 },
 };
+
+/**
+ * Actions that may legitimately be claimed for several items at once, with the
+ * highest quantity accepted.
+ *
+ * An allowlist rather than a global cap, because a quantity multiplier on the wrong
+ * action is a straightforward XP exploit: `LOG_FEEDING × 500` would sail past the
+ * per-tank cooldown, which only ever inspects whether an event exists, not how much
+ * it was worth. Only genuinely per-item actions belong here.
+ */
+const BATCHABLE_ACTIONS = Object.freeze({
+  MINT_SPECIMEN: 100,        // registering a spawn's certificates in one pass
+  BATCH_ARRIVAL_CONFIRMED: 100,
+  ACCLIMATION_COMPLETED: 100,
+  GROWOUT_CHECKPOINT: 50,    // one checkpoint across many spawns
+  SPECIMEN_REHOMED: 50,
+  LOG_PARAMETERS: 50,        // "log all tanks" writes one reading per tank
+  CLAIM_EXCHANGE: 50,        // a multi-item cart settles as one checkout
+});
 
 // Care actions eligible for streak bonus
 const CARE_ACTIONS = ["LOG_FEEDING", "LOG_WATER", "LOG_PARAMETERS", "PHOTO_OBSERVATION"];
@@ -122,7 +148,7 @@ export default async function handler(req, res) {
   res.setHeader("X-RateLimit-Remaining", String(remaining));
 
   // ── Parse request body ──────────────────────────────────────────────────────
-  const { actionType, pointsAwarded, multiplier = 1.0, metadata = {} } = req.body || {};
+  const { actionType, pointsAwarded, quantity = 1, multiplier = 1.0, metadata = {} } = req.body || {};
 
   if (!actionType) {
     return res.status(400).json({ error: "actionType is required" });
@@ -140,9 +166,40 @@ export default async function handler(req, res) {
     return res.status(403).json({ valid: false, reason: `Invalid action_type: ${actionType}` });
   }
 
+  // ── Validate the claimed quantity ────────────────────────────────────────────
+  //
+  // Batched awards are real (registering ten certificates from one spawn, logging
+  // parameters across every tank), and rejecting them was losing users legitimate
+  // XP: the old check compared the claim against a SINGLE action's points, so any
+  // `points × N` award failed and was silently rolled back on the client.
+  //
+  // The multiplier is still adversarial input, so it is bounded twice: the action
+  // must be on the batchable allowlist, and the count must not exceed that action's
+  // ceiling.
+  const claimedQuantity = Math.floor(Number(quantity) || 1);
+  if (!Number.isFinite(claimedQuantity) || claimedQuantity < 1) {
+    return res.status(403).json({ valid: false, reason: `Invalid quantity: ${quantity}` });
+  }
+  if (claimedQuantity > 1) {
+    const maxQuantity = BATCHABLE_ACTIONS[actionType];
+    if (!maxQuantity) {
+      return res.status(403).json({
+        valid: false,
+        reason: `${actionType} may not be claimed in batches`,
+      });
+    }
+    if (claimedQuantity > maxQuantity) {
+      return res.status(403).json({
+        valid: false,
+        reason: `Quantity ${claimedQuantity} exceeds the maximum ${maxQuantity} for ${actionType}`,
+      });
+    }
+  }
+
   // ── Validate points match expected (allow ±1 for rounding) ──────────────────
-  if (pointsAwarded !== undefined && Math.abs(pointsAwarded - actionDef.points) > 1) {
-    return res.status(403).json({ valid: false, reason: `Points mismatch: expected ${actionDef.points}, got ${pointsAwarded}` });
+  const expectedPoints = actionDef.points * claimedQuantity;
+  if (pointsAwarded !== undefined && Math.abs(pointsAwarded - expectedPoints) > 1) {
+    return res.status(403).json({ valid: false, reason: `Points mismatch: expected ${expectedPoints}, got ${pointsAwarded}` });
   }
 
   // ── Check Supabase availability ─────────────────────────────────────────────
@@ -152,7 +209,7 @@ export default async function handler(req, res) {
     // (local-first still works, just no server validation)
     return res.status(200).json({
       valid: true,
-      finalPoints: actionDef.points,
+      finalPoints: expectedPoints,
       multiplierApplied: 1.0,
       xpEventId: null,
       serverTotal: null,
@@ -235,7 +292,7 @@ export default async function handler(req, res) {
 
     // Use the highest validated multiplier (don't stack streak + expo)
     const finalMultiplier = Math.max(validatedMultiplier, 1.0);
-    const finalPoints = Math.round(actionDef.points * finalMultiplier);
+    const finalPoints = Math.round(expectedPoints * finalMultiplier);
 
     // ── Insert validated XP event ───────────────────────────────────────────
     const { data: inserted, error: insertErr } = await supabase
@@ -243,11 +300,13 @@ export default async function handler(req, res) {
       .insert({
         wallet_address: walletAddress,
         action_type: actionType,
-        points_awarded: actionDef.points,
+        points_awarded: expectedPoints,
         multiplier: finalMultiplier,
         final_points: finalPoints,
         zone_hash: profile?.zone_hash || null,
-        metadata: metadata || {},
+        // Record the batch size so a 10-certificate award is distinguishable from
+        // ten separate ones when the ledger is audited later.
+        metadata: { ...(metadata || {}), quantity: claimedQuantity },
       })
       .select("id")
       .single();
@@ -273,7 +332,8 @@ export default async function handler(req, res) {
       valid: true,
       finalPoints,
       multiplierApplied: finalMultiplier,
-      basePoints: actionDef.points,
+      basePoints: expectedPoints,
+      quantity: claimedQuantity,
       xpEventId: inserted.id,
       serverTotal: newServerTotal,
       actionType,
