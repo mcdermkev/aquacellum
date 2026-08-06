@@ -1,0 +1,95 @@
+name: E2E
+
+# NOT run on push, deliberately.
+#
+# This job used to run on every push to master with `continue-on-error: true`, which
+# meant it could never fail a build — it could only generate noise. What it actually
+# produced was a 15-minute wait for a second runner, red X marks on green code
+# (one run sat queued from 15:53 to 16:08 and was cancelled having executed zero
+# steps), and occasional 12-minute failures from Playwright's CDN returning 403
+# "not available in your location" while retrying browser downloads.
+#
+# Meanwhile the thing it was nominally protecting was already covered: the full
+# vitest suite, lint and build all run locally before every commit, and again in
+# `ci.yml` on a clean checkout.
+#
+# So it moved here: run it by hand when a user journey changes, and nightly to
+# accumulate flake data. Promoting it back to a required, per-push check is a
+# deliberate decision (see docs/TASK_11_E2E_SPEC.md), and it should be made from the
+# flake record this schedule builds — not by default.
+on:
+  workflow_dispatch:
+  schedule:
+    # 04:20 UTC daily — off-peak, so runner contention is unlikely.
+    - cron: '20 4 * * *'
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    # Still non-blocking: a flaky journey must not read as a broken build. Nothing
+    # gates on this workflow, so the flag is about the run's own status colour.
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Same reasoning as ci.yml — skip `marketing/` (151 MB) and
+          # `migration_assets/` (155 MB), which no test opens.
+          sparse-checkout: |
+            frontend
+            supabase
+            contracts
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Cache the browser binaries (~100 MB of Chromium) rather than downloading them
+      # on every run. This is what removes the CDN-403 failure mode entirely: a cache
+      # hit never contacts cdn.playwright.dev at all.
+      #
+      # Keyed on the lockfile because that is what pins the Playwright version, and a
+      # version bump needs matching browsers.
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+
+      - name: Install Playwright browsers and OS deps
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      # The apt packages Chromium links against live in system paths, NOT in the
+      # cached directory, so they must be installed even on a cache hit. Skipping this
+      # is the classic way a cached-Playwright setup fails with a missing shared
+      # library instead of a clear error.
+      - name: Install Playwright OS deps (cache hit)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+        env:
+          CI: true
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 14
