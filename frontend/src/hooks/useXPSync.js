@@ -237,9 +237,6 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
       try {
         const profile = await db.userProfile.get(user);
         if (profile) {
-          const corrected = String(profile.totalXp);
-          localStorage.setItem("aquadex_xp", corrected);
-          localStorage.setItem("aquadex_xp_points", corrected);
           setXpProfilePoints(profile.totalXp);
         }
       } catch { /* ignore */ }
@@ -431,6 +428,11 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
     // and, worse, bypasses the per-tank cooldown below entirely (which is how
     // spam-clicking "Feed" was able to farm unlimited XP/tier progress).
     const handleActionLogCreating = (primKey, obj, transaction) => {
+      // A log arriving from cloudSync is history being restored, not husbandry being
+      // performed. Without this, signing in on a second device replayed every synced
+      // feeding and water change through the award path and paid out for all of them.
+      if (obj.restoredFromCloud) return;
+
       const actionType = obj.actionType;
       let xpAmount = 0;
       let actionKey = "";

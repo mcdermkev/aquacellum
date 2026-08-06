@@ -16,7 +16,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { db } from "../db";
 import { useAuth } from "../contexts/AuthContext";
-import { getTierInfo, getPointsSuffix, TIER_LADDER } from "../utils/xp";
+import { getTierInfo, getPointsSuffix, getXp, TIER_LADDER } from "../utils/xp";
 import { getCurrentMood, getMoodLine, getEchoGreeting, getHoursSinceLastAction } from "../utils/echoMood";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -89,11 +89,11 @@ export function EchoCompanionWidget({ casualModeActive = true, compact = false }
           companion = await db.breederCompanion.get(acctLower);
         }
 
-        // Fallback: if Dexie has no profile, derive XP from localStorage
-        // (the legacy xp.js addXp() path writes there)
+        // Fallback for a device whose Dexie profile hasn't been created yet. Reads the
+        // single local cache via getXp() instead of the old `aquadex_xp` mirror, which
+        // no longer exists.
         const dexieXp = profile?.totalXp || 0;
-        const localStorageXp = Number(localStorage.getItem("aquadex_xp") || "0");
-        const effectiveXp = Math.max(dexieXp, localStorageXp);
+        const effectiveXp = Math.max(dexieXp, getXp());
 
         if (profile) {
           setEchoState({

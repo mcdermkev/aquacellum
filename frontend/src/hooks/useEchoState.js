@@ -24,6 +24,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { db } from "../db";
 import { ethers } from "ethers";
 import { getProvider } from "../utils/smartAccount";
+import { getXp } from "../utils/xp";
 import { COMPANION_ADDRESS } from "../config/appConfig";
 import companionAbi from "../abi/AquadexCompanion.json";
 import {
@@ -115,7 +116,9 @@ export function useEchoState(walletAddress) {
           profile = await db.userProfile.get(addrLower);
         }
 
-        const totalXp = profile?.totalXp || Number(localStorage.getItem("aquadex_xp") || "0");
+        // getXp() rather than a raw `aquadex_xp` read: that scalar mirror is gone, and
+        // reading it directly is how a second copy of the score comes back.
+        const totalXp = profile?.totalXp || getXp();
 
         if (totalXp < 500) {
           // Not hatched yet
@@ -314,7 +317,7 @@ export function useEchoState(walletAddress) {
         detail: {
           actionLabel: `Echo ${type}`,
           points,
-          totalXp: Number(localStorage.getItem("aquadex_xp") || "0") + points,
+          totalXp: getXp() + points,
         },
       }));
     }

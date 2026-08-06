@@ -83,6 +83,7 @@ const VALID_ACTIONS = {
   SPECIMEN_REHOMED:     { points: 10, cooldownMs: null, perTank: false, dailyMax: 3 },
   GROWOUT_CHECKPOINT:   { points: 5,  cooldownMs: null, perTank: false, dailyMax: 10 },
   POST_COMMENT:         { points: 5,  cooldownMs: null, perTank: false, dailyMax: 5 },
+  DEPOSIT_SECURED:      { points: 15, cooldownMs: null, perTank: false, dailyMax: 10 },
 };
 
 /**
@@ -102,6 +103,7 @@ const BATCHABLE_ACTIONS = Object.freeze({
   SPECIMEN_REHOMED: 50,
   LOG_PARAMETERS: 50,        // "log all tanks" writes one reading per tank
   CLAIM_EXCHANGE: 50,        // a multi-item cart settles as one checkout
+  COMPLETED_SALE: 50,        // a cash handshake settles a whole batch at once
 });
 
 // Care actions eligible for streak bonus

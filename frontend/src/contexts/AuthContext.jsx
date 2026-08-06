@@ -570,7 +570,15 @@ function PrivyAuthProvider({ children }) {
   const disconnect = useCallback(async () => {
     localStorage.removeItem("aquadex_session_key");
 
-    // Clear XP/profile localStorage to prevent stale rank data on next login
+    // Clear the XP cache so the next account does not inherit this one's score.
+    //
+    // `aquadex_xp_profile` is NOT wallet-scoped — one global blob for whoever is
+    // signed in — so clearing it here is load-bearing, not tidiness. useXPSync also
+    // re-derives it from Dexie for the active wallet on sign-in, which covers the
+    // case where a session ends without `disconnect` running.
+    //
+    // `aquadex_xp` / `aquadex_xp_points` are no longer written by anything; the
+    // removals stay so devices carrying the old keys get cleaned up.
     localStorage.removeItem("aquadex_xp_profile");
     localStorage.removeItem("aquadex_xp");
     localStorage.removeItem("aquadex_xp_points");

@@ -59,14 +59,10 @@ const SEAM_BASELINE = [
   // Both are now resolved automatically. The lesson is in the analyzer's own tests:
   // a finding is a hypothesis about the producer, and it is worth nothing until
   // someone has read the producer.
-  {
-    id: "writtenNeverRead:aquadex_xp_points",
-    verdict: "bug",
-    note:
-      "Six writers (useXPSync, cloudSync x3, xp.js x2), zero readers. cloudSync's " +
-      "own comment says it is maintained 'for legacy components that read from " +
-      "there'; those components no longer exist.",
-  },
+  //
+  // ALSO REMOVED (Phase 0 XP storage consolidation):
+  //   aquadex_xp_points — had six writers and zero readers. All six are now gone;
+  //     the seam no longer exists rather than being a known bug.
   {
     id: "readNeverWritten:aquadex_digital_orders_count",
     verdict: "bug",
@@ -175,7 +171,7 @@ describe("seam inventory", () => {
 
   it("does not let the known-bug count grow", () => {
     // A ceiling, not a target. It should trend to 0.
-    expect(KNOWN_BUGS).toBeLessThanOrEqual(7);
+    expect(KNOWN_BUGS).toBeLessThanOrEqual(6);
   });
 
   it("every baseline entry carries a verdict and a reason", () => {

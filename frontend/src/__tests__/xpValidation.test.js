@@ -243,7 +243,10 @@ describe("addXp", () => {
     addXp(42, "Persist test");
     const stored = JSON.parse(localStorageMock.getItem("aquadex_xp_profile"));
     expect(stored.points).toBe(42);
-    expect(localStorageMock.getItem("aquadex_xp")).toBe("42");
+    // The scalar mirrors `aquadex_xp` / `aquadex_xp_points` are GONE — one key,
+    // one truth. getXp() reads from the profile blob only.
+    expect(localStorageMock.getItem("aquadex_xp")).toBeNull();
+    expect(localStorageMock.getItem("aquadex_xp_points")).toBeNull();
   });
 });
 

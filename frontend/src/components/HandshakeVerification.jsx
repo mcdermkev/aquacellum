@@ -233,17 +233,12 @@ export function HandshakeVerification({
       setStep("qr-display");
       setToast({ message: "Deposit secured — your payment is protected!", type: "success" });
       
-      // Dispatch XP event for locking escrow (local-first rank system)
-      const xpEvent = new CustomEvent("aquadex_xp_added", {
-        detail: {
-          points: 15,
-          label: "Holding Deposit Secured (In-Person)",
-          newXp: Number(localStorage.getItem("aquadex_xp") || 0) + 15,
-          levelChanged: false
-        }
-      });
-      window.dispatchEvent(xpEvent);
-      localStorage.setItem("aquadex_xp", Number(localStorage.getItem("aquadex_xp") || 0) + 15);
+      // Was a hand-rolled `aquadex_xp_added` event plus a direct
+      // `localStorage.setItem("aquadex_xp", ...)`. That incremented one mirror while
+      // `aquadex_xp_profile.points` — the number getXp() returns and the UI shows —
+      // never moved, so the award was invisible in the place it mattered. The label
+      // also matched no server rule, so the Dexie half was rejected and rolled back.
+      awardXp("DEPOSIT_SECURED");
 
       const sellerAddress = listing.seller;
       if (onSuccess) {
@@ -292,17 +287,9 @@ export function HandshakeVerification({
       setScanSuccess(`Order Serial No. ${scanPurchaseId.padStart(3, "0")} settled successfully!`);
       setToast({ message: "Handshake verified and funds released!", type: "success" });
       
-      // Dispatch XP event for Breeder
-      const xpEvent = new CustomEvent("aquadex_xp_added", {
-        detail: {
-          points: 25,
-          label: "Handshake Order Settled",
-          newXp: Number(localStorage.getItem("aquadex_xp") || 0) + 25,
-          levelChanged: false
-        }
-      });
-      window.dispatchEvent(xpEvent);
-      localStorage.setItem("aquadex_xp", Number(localStorage.getItem("aquadex_xp") || 0) + 25);
+      // The seller side of a verified in-person pickup — which is exactly what
+      // VERIFIED_PICKUP_SELLER is, at the same 25 points this hand-rolled event used.
+      awardXp("VERIFIED_PICKUP_SELLER");
 
       if (onSuccess) {
         setTimeout(() => {
@@ -353,18 +340,19 @@ export function HandshakeVerification({
       setScanSuccess("Cash handshake settled and lineage provenance securely recorded!");
       setToast({ message: "Cash Handshake settled and recorded!", type: "success" });
 
-      // Breeder XP telemetry split
-      const breederXp = 300 * (isBatch ? quantityToSettle : tokenIds.length);
-      const xpEvent = new CustomEvent("aquadex_xp_added", {
-        detail: {
-          points: breederXp,
-          label: "⚡ LIVE EVENT CASH HANDSHAKE COMPLETED (Provenance Logged)",
-          newXp: Number(localStorage.getItem("aquadex_xp") || 0) + breederXp,
-          levelChanged: false
-        }
-      });
-      window.dispatchEvent(xpEvent);
-      localStorage.setItem("aquadex_xp", Number(localStorage.getItem("aquadex_xp") || 0) + breederXp);
+      // A completed sale, per item settled.
+      //
+      // ⚠️ THIS IS A DELIBERATE AMOUNT CHANGE, and the only one in this pass. The old
+      // value was `300 * quantity` under the label "⚡ LIVE EVENT CASH HANDSHAKE
+      // COMPLETED" — 300 points per fish, double SPAWN_BREED, with no canonical action
+      // behind it. It also never actually paid out: the label matched
+      // `includes("handshake")`, resolving to VERIFIED_PICKUP_SELLER's 25 against a
+      // claim of 300×N, so the server rejected it and the client rolled it back every
+      // time. "Preserving" 300×N would therefore not preserve anything anyone has ever
+      // received — it would newly inject the largest award in the game into the
+      // economy. COMPLETED_SALE (40) is what genuinely happened here.
+      const settledCount = isBatch ? quantityToSettle : tokenIds.length;
+      awardXp("COMPLETED_SALE", { quantity: settledCount });
 
       if (onSuccess) {
         setTimeout(() => {

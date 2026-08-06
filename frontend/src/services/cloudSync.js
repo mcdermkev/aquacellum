@@ -16,6 +16,7 @@
 
 import { supabase, isSupabaseConfigured } from "./supabaseClient";
 import { resolveSpecimenPhoto } from "./tankMedia";
+import { setXpProfilePoints } from "../utils/xp";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -348,7 +349,24 @@ export async function pullCloudDataForWallet(walletAddress) {
           if (!existing) {
             // Strip the id so Dexie auto-assigns (++id), but only if it was auto-generated
             const { id: _ignored, ...logWithoutId } = log;
-            await db.actionLogs.put({ id: Number(row.local_id) || undefined, ...logWithoutId });
+            await db.actionLogs.put({
+              id: Number(row.local_id) || undefined,
+              ...logWithoutId,
+              // ⚠️ MARKS THIS AS A RESTORE, NOT A NEW ACTION.
+              //
+              // `db.actionLogs` has a Dexie "creating" hook (useXPSync) that awards XP
+              // for feeding / water changes / tests, and `put` with a new key fires
+              // it. So pulling a keeper's history down onto a new device re-awarded XP
+              // for husbandry they logged months ago — restoring a backup paid out.
+              // The per-tank cooldown limited the damage to roughly one award per tank
+              // per action type, but the XP was still fabricated.
+              //
+              // An explicit flag rather than a timestamp heuristic: a restored log and
+              // a freshly created one are indistinguishable by age alone once the
+              // restore is recent, and guessing here would either keep paying or start
+              // silently dropping real awards.
+              restoredFromCloud: true,
+            });
             logs++;
           }
         } catch (parseErr) {
@@ -613,17 +631,15 @@ export async function pullXpProfileFromCloud(walletAddress) {
         await db.breederCompanion.put(companion);
       }
 
-      // Update localStorage XP for legacy components that read from there
+      // Refresh the single local XP cache from the merged total.
+      //
+      // This used to hand-build the `aquadex_xp_profile` blob and write two scalar
+      // mirrors alongside it, re-deriving the level with an inline ladder
+      // (`>= 10000 ? 5 : ...`) that was duplicated three times in this file — and it
+      // reset `history: []`, discarding the user's award log on every merge.
+      // setXpProfilePoints derives the tier from TIER_LADDER and preserves history.
       try {
-        const lsProfile = {
-          points: cloudXp,
-          tier: mergedProfile.currentTier,
-          level: cloudXp >= 10000 ? 5 : cloudXp >= 5000 ? 4 : cloudXp >= 2500 ? 3 : cloudXp >= 1500 ? 2 : 1,
-          history: [],
-        };
-        localStorage.setItem("aquadex_xp_profile", JSON.stringify(lsProfile));
-        localStorage.setItem("aquadex_xp", String(cloudXp));
-        localStorage.setItem("aquadex_xp_points", String(cloudXp));
+        setXpProfilePoints(cloudXp);
       } catch (e) { /* localStorage may be unavailable */ }
 
       // Sync restored tier to reef profile so the header badge is correct
@@ -664,15 +680,7 @@ export async function pullXpProfileFromCloud(walletAddress) {
 
       // Ensure localStorage reflects the correct local state
       try {
-        const lsProfile = {
-          points: localXp,
-          tier: localProfile.currentTier,
-          level: localXp >= 10000 ? 5 : localXp >= 5000 ? 4 : localXp >= 2500 ? 3 : localXp >= 1500 ? 2 : 1,
-          history: [],
-        };
-        localStorage.setItem("aquadex_xp_profile", JSON.stringify(lsProfile));
-        localStorage.setItem("aquadex_xp", String(localXp));
-        localStorage.setItem("aquadex_xp_points", String(localXp));
+        setXpProfilePoints(localXp);
       } catch (e) { /* localStorage may be unavailable */ }
 
       return localXp;
@@ -681,18 +689,8 @@ export async function pullXpProfileFromCloud(walletAddress) {
     // cloudXp === localXp — no merge needed, but ensure localStorage is populated
     // (it may have been cleared on logout)
     if (localXp > 0) {
-      const { deriveTierFromXp } = await import("../db");
-      const tier = localProfile?.currentTier || deriveTierFromXp(localXp);
       try {
-        const lsProfile = {
-          points: localXp,
-          tier,
-          level: localXp >= 10000 ? 5 : localXp >= 5000 ? 4 : localXp >= 2500 ? 3 : localXp >= 1500 ? 2 : 1,
-          history: [],
-        };
-        localStorage.setItem("aquadex_xp_profile", JSON.stringify(lsProfile));
-        localStorage.setItem("aquadex_xp", String(localXp));
-        localStorage.setItem("aquadex_xp_points", String(localXp));
+        setXpProfilePoints(localXp);
       } catch (e) { /* localStorage may be unavailable */ }
       return localXp;
     }

@@ -71,6 +71,7 @@ export const XP_ACTIONS = {
   SPECIMEN_REHOMED: { points: 10, label: "Specimen Rehomed", dailyMax: 3 },
   GROWOUT_CHECKPOINT: { points: 5, label: "Logged Grow-Out Checkpoint", dailyMax: 10 },
   POST_COMMENT: { points: 5, label: "Posted Tank Observation Comment", dailyMax: 5 },
+  DEPOSIT_SECURED: { points: 15, label: "Holding Deposit Secured", dailyMax: 10 },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -168,8 +169,6 @@ export function getXpProfile() {
   };
   try {
     localStorage.setItem("aquadex_xp_profile", JSON.stringify(fallback));
-    localStorage.setItem("aquadex_xp", "0");
-    localStorage.setItem("aquadex_xp_points", "0");
   } catch (e) {
     console.error("Local storage is not writable:", e);
   }
@@ -315,10 +314,14 @@ function applyXp(pointsToAdd, actionLabel, meta) {
     points,
   });
 
+  // ONE local key. `aquadex_xp` and `aquadex_xp_points` used to be written here as
+  // scalar mirrors, which gave the same number three independent homes that drifted
+  // apart in practice: rollback corrected two of them and not this one,
+  // HandshakeVerification incremented `aquadex_xp` on its own without touching the
+  // profile, and `aquadex_xp_points` had six writers and zero readers. Consumers now
+  // go through getXp().
   try {
     localStorage.setItem("aquadex_xp_profile", JSON.stringify(profile));
-    localStorage.setItem("aquadex_xp", newXp.toString());
-    localStorage.setItem("aquadex_xp_points", newXp.toString());
   } catch (e) {
     console.error("Failed saving XP state to local storage:", e);
   }
