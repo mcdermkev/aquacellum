@@ -212,6 +212,51 @@ const BADGE_DEFINITIONS = [
     unlock: (stats) => stats.longestStreak >= 90,
   },
 
+  // ─── Dex Completion Badges (COSMETIC_EXPRESSION_SPEC.md §5) ─────────────
+  //
+  // Tracks % of the combined catalog you've kept. As new species are added it
+  // incentivizes research into what was added — the Dex is a living target.
+  {
+    id: "dex_10",
+    icon: "🗺️",
+    name: "Explorer",
+    description: "Kept 10% of the known species catalog",
+    category: "collection",
+    unlock: (stats) => (stats.dexPercent || 0) >= 10,
+  },
+  {
+    id: "dex_25",
+    icon: "📖",
+    name: "Collector",
+    description: "Kept 25% of the known species catalog",
+    category: "collection",
+    unlock: (stats) => (stats.dexPercent || 0) >= 25,
+  },
+  {
+    id: "dex_50",
+    icon: "🌿",
+    name: "Naturalist",
+    description: "Kept 50% of the known species catalog",
+    category: "collection",
+    unlock: (stats) => (stats.dexPercent || 0) >= 50,
+  },
+  {
+    id: "dex_75",
+    icon: "🧭",
+    name: "Encyclopedist",
+    description: "Kept 75% of the known species catalog",
+    category: "collection",
+    unlock: (stats) => (stats.dexPercent || 0) >= 75,
+  },
+  {
+    id: "dex_100",
+    icon: "🏅",
+    name: "Complete Dex",
+    description: "Kept every species in both the curated and on-chain catalogs",
+    category: "collection",
+    unlock: (stats) => (stats.dexPercent || 0) >= 100,
+  },
+
   // ─── Weekly Contributor Badge (non-permanent, refreshes weekly) ─────────
   {
     id: "weekly_contributor",

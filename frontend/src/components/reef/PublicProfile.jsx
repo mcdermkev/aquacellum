@@ -644,6 +644,10 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
             postCount: currents.length,
             insightCount: 0, // TODO: query from species_insights
             tankmateCount: tankmates?.length || 0,
+            // Dex completion percentage — drives the Explorer/Collector/Naturalist/
+            // Encyclopedist/Complete Dex badges. Requires server-side dex_entries
+            // query for the viewed profile; wired in Phase A of the cosmetic spec.
+            dexPercent: 0, // TODO: useSpeciesMastery → computeDexCompletion
           }}
           showLocked={false}
           casualModeActive={casualModeActive}

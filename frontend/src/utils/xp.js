@@ -142,6 +142,30 @@ export const TIER_LADDER = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Tier → Echo stage/hue mapping (COSMETIC_EXPRESSION_SPEC.md §4)
+//
+// The canonical link between a keeper's XP tier and their Echo companion's
+// visual form. Previously defined as `companionForm` prose strings that nothing
+// consumed; now expressed as EchoRenderer stage floors and hue overrides.
+//
+// Stage floor: the MINIMUM EchoRenderer stage a keeper at this tier sees. If
+// their activity-derived stage (from useEchoState) is higher, that wins. The
+// tier just guarantees they are never below their rank's form.
+//
+// Hue override: the base CSS hue-rotation that gives each tier's companion its
+// signature color cast. Layered on top of the DNA-driven hue in EchoRenderer.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const TIER_ECHO_FORM = Object.freeze({
+  Shallow:         { stageFloor: 2, hueShift: 0,   label: "Translucent fry" },
+  Coastal:         { stageFloor: 3, hueShift: 195, label: "Silver-blue shimmer" },
+  Pelagic:         { stageFloor: 4, hueShift: 42,  label: "Golden aura" },
+  Abyssal:         { stageFloor: 5, hueShift: 270, label: "Evolved deep form" },
+  Hadal:           { stageFloor: 6, hueShift: 38,  label: "Legendary golden koi" },
+  "Hadal-Champion": { stageFloor: 6, hueShift: 38,  label: "Legendary golden koi" },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Core Functions
 // ─────────────────────────────────────────────────────────────────────────────
 

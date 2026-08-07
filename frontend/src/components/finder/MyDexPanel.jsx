@@ -3,6 +3,27 @@ import { computeDexCompletion } from "../../services/dexService.js";
 import { FINDER_COPY } from "./finderCopy";
 
 /**
+ * Dex completion → border color (COSMETIC_EXPRESSION_SPEC.md §5).
+ *
+ * The card's border progressively warms as completion grows, so even at a
+ * glance a keeper can tell roughly where they stand. Matches the badge
+ * thresholds in BadgeShelf (10/25/50/75/100%).
+ */
+function dexBorderColor(percent) {
+  if (percent >= 100) return "rgba(255, 215, 0, 0.5)";  // animated gold
+  if (percent >= 75) return "rgba(255, 215, 0, 0.3)";   // gold
+  if (percent >= 50) return "rgba(192, 192, 210, 0.3)";  // silver
+  if (percent >= 25) return "rgba(205, 127, 50, 0.3)";   // bronze
+  return "rgba(255, 255, 255, 0.06)";                     // default
+}
+
+function dexBoxShadow(percent) {
+  if (percent >= 100) return "0 0 12px rgba(255, 215, 0, 0.15)";
+  if (percent >= 75) return "0 0 8px rgba(255, 215, 0, 0.08)";
+  return "none";
+}
+
+/**
  * MyDexPanel — the "My Dex" collection summary (Fish Finder Rework Task 9).
  *
  * Presentation-only: reads dexEntries/candidates and composes
@@ -14,7 +35,14 @@ export function MyDexPanel({ dexEntries = [], candidates = [], wishlistCount = 0
   const { keptCount, totalCount, percent } = computeDexCompletion(dexEntries, candidates);
 
   return (
-    <div className="glass-card my-dex-panel">
+    <div
+      className="glass-card my-dex-panel"
+      style={{
+        borderColor: dexBorderColor(percent),
+        boxShadow: dexBoxShadow(percent),
+        transition: "border-color 0.4s ease, box-shadow 0.4s ease",
+      }}
+    >
       <div className="my-dex-panel__header">
         <h3 className="my-dex-panel__title">
           <span aria-hidden="true">📖</span> {FINDER_COPY.dex.title}

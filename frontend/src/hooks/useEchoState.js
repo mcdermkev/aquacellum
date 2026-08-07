@@ -24,7 +24,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { db } from "../db";
 import { ethers } from "ethers";
 import { getProvider } from "../utils/smartAccount";
-import { getXp } from "../utils/xp";
+import { getXp, TIER_ECHO_FORM } from "../utils/xp";
 import { COMPANION_ADDRESS } from "../config/appConfig";
 import companionAbi from "../abi/AquadexCompanion.json";
 import {
@@ -215,6 +215,13 @@ export function useEchoState(walletAddress) {
           else if (careDays >= 30) currentStage = 3;
           else if (currentStreak >= 7 || careDays >= 7) currentStage = 2;
           else if (careDays >= 3) currentStage = 1;
+
+          // Tier floor (COSMETIC_EXPRESSION_SPEC.md §4): a keeper's XP tier
+          // guarantees a minimum companion form. If activity already placed them
+          // higher, keep it — the floor only lifts, never caps.
+          const tierForm = TIER_ECHO_FORM[profile?.currentTier] || TIER_ECHO_FORM.Shallow;
+          currentStage = Math.max(currentStage, tierForm.stageFloor);
+
           setStage(currentStage);
 
           // Load personality from localStorage
