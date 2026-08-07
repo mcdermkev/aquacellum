@@ -164,6 +164,10 @@ export function buildSpecimenMetadata({
   name = null,
   description = null,
   extraAttributes = [],
+  // COSMETIC_EXPRESSION_SPEC.md §3: breeder mastery at the moment of minting.
+  // Stamped immutably — a breeder who later gains or loses mastery does not
+  // retroactively change the frame on certificates already issued.
+  breederMasteryAtMint = null, // "kept"|"bronze"|"silver"|"gold"|null
 } = {}) {
   const attributes = [
     { trait_type: "Sire ID", value: refValue(sireId) },
@@ -191,6 +195,9 @@ export function buildSpecimenMetadata({
       description ||
       `Registered birth certificate${speciesId != null ? ` — species ${speciesId}` : ""}.`,
     attributes,
+    // Immutable after mint. Determines the visual frame on the certificate.
+    // null = no mastery data was available at mint time (legacy certificates).
+    breederMasteryAtMint: breederMasteryAtMint || null,
   };
 }
 

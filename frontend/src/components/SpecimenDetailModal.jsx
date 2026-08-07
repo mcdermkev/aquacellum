@@ -1090,9 +1090,49 @@ export function SpecimenDetailModal({
 
               {/* Environmental Chemistry / Genetic Attributes */}
               {metadata && (
-                <div className="glass-card" style={{ padding: "1.25rem", background: "rgba(0,0,0,0.15)" }}>
+                <div
+                  className="glass-card"
+                  style={{
+                    padding: "1.25rem",
+                    background: "rgba(0,0,0,0.15)",
+                    // Certificate frame (COSMETIC_EXPRESSION_SPEC.md §3): the
+                    // border reflects the breeder's mastery of this species at the
+                    // moment the certificate was minted. Immutable after creation.
+                    ...(metadata.breederMasteryAtMint === "gold" ? {
+                      border: "2px solid rgba(255, 215, 0, 0.4)",
+                      boxShadow: "0 0 12px rgba(255, 215, 0, 0.1), inset 0 0 20px rgba(255, 215, 0, 0.03)",
+                    } : metadata.breederMasteryAtMint === "silver" ? {
+                      border: "2px solid rgba(192, 192, 210, 0.35)",
+                      boxShadow: "0 0 8px rgba(192, 192, 210, 0.08)",
+                    } : metadata.breederMasteryAtMint === "bronze" ? {
+                      border: "1.5px solid rgba(205, 127, 50, 0.35)",
+                    } : {}),
+                  }}
+                >
                   <h4 style={{ fontSize: "0.85rem", color: "var(--accent-green)", margin: "0 0 0.75rem 0", display: "flex", alignItems: "center", gap: "0.25rem" }}>
                     <span>📊</span> Telemetry & Genetics Log
+                    {metadata.breederMasteryAtMint && metadata.breederMasteryAtMint !== "kept" && (
+                      <span
+                        style={{
+                          marginLeft: "auto",
+                          fontSize: "0.6rem",
+                          padding: "0.15rem 0.4rem",
+                          borderRadius: "50px",
+                          background: metadata.breederMasteryAtMint === "gold" ? "rgba(255,215,0,0.1)"
+                            : metadata.breederMasteryAtMint === "silver" ? "rgba(192,192,210,0.08)"
+                            : "rgba(205,127,50,0.08)",
+                          color: metadata.breederMasteryAtMint === "gold" ? "#ffd700"
+                            : metadata.breederMasteryAtMint === "silver" ? "#c0c0d2"
+                            : "#cd7f32",
+                          fontWeight: 600,
+                        }}
+                        title={`This breeder had ${metadata.breederMasteryAtMint} mastery of this species when this certificate was created`}
+                      >
+                        {metadata.breederMasteryAtMint === "gold" ? "🥇 Master Breeder"
+                          : metadata.breederMasteryAtMint === "silver" ? "🥈 Experienced"
+                          : "🥉 Established"}
+                      </span>
+                    )}
                   </h4>
                   {metadataSource === METADATA_SOURCE.LOCAL_CACHE && (
                     // Says which copy this is rather than implying the two are

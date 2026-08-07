@@ -14,6 +14,7 @@ import {
   validateMetadataUri,
 } from "../services/specimenMetadata";
 import { db } from "../db";
+import { supabase, isSupabaseConfigured } from "../services/supabaseClient";
 import { loadOwnedSpecimens, specimenOptionLabel } from "../utils/ownedSpecimens";
 import { useProfile } from "../hooks/useReefProfile";
 import { generateAlias } from "../utils/generateAlias";
@@ -220,6 +221,24 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
       }
       setMetadataUriError(null);
 
+      // Look up the breeder's species mastery at THIS moment. The result is
+      // stamped into the certificate and determines its visual frame forever —
+      // it is never re-derived or updated after mint.
+      let breederMasteryAtMint = null;
+      try {
+        if (isSupabaseConfigured()) {
+          const { data: rows } = await supabase
+            .from("species_mastery")
+            .select("mastery_tier")
+            .eq("wallet_address", walletAccount.toLowerCase())
+            .eq("species_key", (commonName || "").toLowerCase().trim())
+            .limit(1);
+          breederMasteryAtMint = rows?.[0]?.mastery_tier || null;
+        }
+      } catch {
+        // Non-fatal — a certificate without a frame is still a certificate.
+      }
+
       // Built once and used twice: published to the certificate's hosted URL by
       // the relayer, and mirrored locally for the offline detail view.
       const certificateMetadata = buildSpecimenMetadata({
@@ -231,6 +250,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
         registrationDate: formData.birthDate,
         sex: normalizeSex(formData.gender),
         breederStockTag: formData.breederStockTag,
+        breederMasteryAtMint,
       });
 
       // Beta: store locally via relayer (no MetaMask, no gas)
