@@ -16,8 +16,10 @@ import { enforceXpCooldown } from "../utils/xpCooldowns";
  *   3. If rejected (cooldown, daily limit, gaming) → local XP is rolled back
  *   4. If accepted → serverTotal becomes the authoritative leaderboard value
  * 
- * Also maintains breederCompanion tier state (derived from totalXp) and
- * handles the God-Tier zone champion evaluation.
+ * Also maintains breederCompanion tier state (derived purely from totalXp).
+ * It does NOT compute geographic zoneHash or regional "champion" ranking —
+ * those are server-owned facts (see zoneLeaderboardApi / depthScoreApi) and were
+ * previously faked from single-device local data, corrupting the real values.
  * 
  * @param {string} walletAddress - Connected wallet address.
  * @param {object} contractInstance - Ethers.js Contract instance of AquadexMarketplace (optional).
@@ -37,16 +39,21 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
      */
     const processXpProgression = async (user, amount, reasonText, metadata = {}) => {
       const amountNum = Number(amount);
-      if (!amountNum || amountNum <= 0) return { totalXp: 0, zoneHash: "" };
+      if (!amountNum || amountNum <= 0) return { totalXp: 0 };
 
       const cleanReason = reasonText || "";
 
-      // Generate deterministic zoneHash from walletAddress
-      let hash = 0;
-      for (let i = 0; i < user.length; i++) {
-        hash = user.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      const zoneHash = "0x" + Math.abs(hash).toString(16).padStart(8, "0");
+      // NOTE: this hook does NOT own zoneHash or champion status.
+      //   - zoneHash is geographic, written only by the zone-assignment flow
+      //     (calculateZoneHash(lat,lng) -> profiles.zone_hash). It must never be
+      //     derived from the wallet address here — doing so clobbered the real
+      //     GPS-derived value on every single XP award.
+      //   - champion / regional-ranking status is a global fact the server owns;
+      //     it cannot be computed from this device's local Dexie rows (which only
+      //     ever contain this one user, making everyone "champion" on their own
+      //     device). Both were self-layer code faking social-layer facts.
+      // What this hook legitimately owns: the XP number, the tier DERIVED from
+      // that number, egg-state, and the care streak.
 
       let totalXp = 0;
       let finalLevel = 1;
@@ -60,7 +67,7 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
             walletAddress: user,
             totalXp: 0,
             currentTier: "Shallow",
-            zoneHash,
+            zoneHash: null,
             monthlyXp: 0,
             rewardCredits: 0,
             streakDays: 0,
@@ -77,7 +84,7 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
         profile.totalXp = oldTotalXp + amountNum;
         profile.monthlyXp = (profile.monthlyXp || 0) + amountNum;
         profile.currentTier = deriveTierFromXp(profile.totalXp);
-        profile.zoneHash = zoneHash;
+        // zoneHash intentionally left untouched — see note above.
 
         // Update care streak
         const today = new Date().toISOString().slice(0, 10);
@@ -104,11 +111,12 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
             eggState: 0,
             currentTier: "Shallow",
             selectedStats: ["tankCount", "masteredSpecies"],
-            zoneHash,
+            zoneHash: null,
           };
         }
 
-        companion.zoneHash = zoneHash;
+        // Mirror the XP-derived ladder tier only. Never a champion/ranking string
+        // (those aren't in TIER_LADDER, so tierAtLeast() would fail closed on them).
         companion.currentTier = profile.currentTier;
 
         // Egg state progression based on totalXp
@@ -120,37 +128,14 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
           companion.eggState = 0; // Locked
         }
 
-        // God-Tier zone champion evaluation (only at Hadal tier, 10k+)
-        if (totalXp >= 10000) {
-          const regionalBreeders = await db.breederCompanion
-            .where("zoneHash")
-            .equals(zoneHash)
-            .toArray();
-
-          let isHighest = true;
-          let currentChampion = null;
-
-          for (const breeder of regionalBreeders) {
-            if (breeder.walletAddress.toLowerCase() !== user.toLowerCase()) {
-              const breederProfile = await db.userProfile.get(breeder.walletAddress);
-              const breederXp = breederProfile ? breederProfile.totalXp : 0;
-              if (breederXp >= totalXp) {
-                isHighest = false;
-              }
-              if (breeder.currentTier === "Hadal-Champion") {
-                currentChampion = breeder;
-              }
-            }
-          }
-
-          if (isHighest) {
-            companion.currentTier = "Hadal-Champion";
-            if (currentChampion && currentChampion.walletAddress.toLowerCase() !== user.toLowerCase()) {
-              currentChampion.currentTier = "Hadal";
-              await db.breederCompanion.put(currentChampion);
-            }
-          }
-        }
+        // Regional / "God-Tier champion" ranking is deliberately NOT computed here.
+        // It is a global comparison across all users in a geographic zone, which
+        // this per-device hook cannot see: db.breederCompanion holds only this
+        // user's own row, so the old scan always concluded "I am the champion" and
+        // stamped a non-ladder "Hadal-Champion" string. When/if champion status is
+        // surfaced, it must come from a server view (like species_mastery), not from
+        // local Dexie. Removing it fixes both the self/social conflict and the
+        // fail-closed entitlement bug.
 
         await db.breederCompanion.put(companion);
       });
@@ -190,7 +175,7 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
       });
       window.dispatchEvent(xpEvent);
 
-      return { totalXp, zoneHash };
+      return { totalXp };
     };
 
     /**
@@ -358,7 +343,7 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
     // ─── Public trigger for components to award XP ─────────────────────────
     const handleXpUpdate = async (xpAmount, activityType, metadata = {}) => {
       try {
-        const { totalXp, zoneHash } = await processXpProgression(walletAddress, xpAmount, activityType, metadata);
+        await processXpProgression(walletAddress, xpAmount, activityType, metadata);
 
         // Server-side validation (non-blocking, runs after optimistic award)
         const actionKey = mapReasonToActionKey(activityType);

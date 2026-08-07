@@ -33,11 +33,13 @@ describe("zone assignment is read from the field that actually records it", () =
   const zoneCode = readCode("components/settings/sections/ZoneSection.jsx");
 
   it("does not treat Dexie userProfile.zoneHash as a zone assignment", () => {
-    // `useXPSync` sets userProfile.zoneHash to a deterministic hash of the WALLET
-    // ADDRESS on every XP award — no geographic input whatsoever. Reading it made
-    // `zoneAssigned` true for anyone with a single XP point, which routed users who
-    // had never joined a zone into the TRANSFER flow, complete with a "you can only
-    // transfer once every 90 days" warning that did not apply to them.
+    // `useXPSync` USED TO set userProfile.zoneHash to a deterministic hash of the
+    // WALLET ADDRESS on every XP award — no geographic input whatsoever. Reading it
+    // made `zoneAssigned` true for anyone with a single XP point, which routed users
+    // who had never joined a zone into the TRANSFER flow, complete with a "you can
+    // only transfer once every 90 days" warning that did not apply to them. The
+    // producer no longer writes that field (see the last test in this group), but
+    // ZoneSection must still read the geographic column regardless.
     expect(zoneCode).not.toMatch(/zoneHash/);
     expect(zoneCode).not.toMatch(/db\.userProfile/);
   });
@@ -52,12 +54,16 @@ describe("zone assignment is read from the field that actually records it", () =
     expect(api).toMatch(/assigned:\s*!!data\?\.zone_hash/);
   });
 
-  it("confirms the Dexie field really is address-derived, not geographic", () => {
-    // Pins the premise of this whole group. If XP sync ever starts writing a real
-    // zone hash, this fails and the reasoning above needs revisiting.
+  it("XP sync no longer writes a wallet-derived zoneHash over the geographic one", () => {
+    // The original bug: useXPSync hashed the wallet address and wrote it to
+    // userProfile.zoneHash AND breederCompanion.zoneHash on every award, clobbering
+    // the real GPS-derived value from calculateZoneHash(lat,lng). The fix removed
+    // the producer entirely. Pin that it stays gone: no charCode hash of the wallet,
+    // and no assignment of a computed zoneHash onto the profile/companion on award.
     const xpSync = read("hooks/useXPSync.js");
-    expect(xpSync).toMatch(/user\.charCodeAt\(i\)/);
-    expect(xpSync).toMatch(/profile\.zoneHash = zoneHash/);
+    expect(xpSync).not.toMatch(/user\.charCodeAt\(i\)/);
+    expect(xpSync).not.toMatch(/profile\.zoneHash = zoneHash/);
+    expect(xpSync).not.toMatch(/companion\.zoneHash = zoneHash/);
   });
 });
 
