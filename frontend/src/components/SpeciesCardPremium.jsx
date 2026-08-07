@@ -52,6 +52,7 @@ export function SpeciesCardPremium({
   isWishlisted,
   onToggleWishlist,
   isKept,
+  masteryTier, // "kept" | "bronze" | "silver" | "gold" | undefined
 }) {
   const proMode = !casualModeActive;
 
@@ -180,10 +181,33 @@ export function SpeciesCardPremium({
           </button>
         )}
 
-        {/* "Kept" ribbon (T9) — this species is already in the keeper's Dex. */}
+        {/* "Kept" ribbon (T9) — this species is already in the keeper's Dex.
+            Upgraded with mastery color when species_mastery data is present. */}
         {isKept && (
-          <span className="species-card-premium__kept-ribbon" title="Already in your Dex">
-            ✓ In your Dex
+          <span
+            className="species-card-premium__kept-ribbon"
+            title={
+              masteryTier === "gold" ? "Gold mastery — full lifecycle"
+              : masteryTier === "silver" ? "Silver mastery — bred or raised"
+              : masteryTier === "bronze" ? "Bronze mastery — 30+ days kept"
+              : "In your Dex"
+            }
+            style={masteryTier && masteryTier !== "kept" ? {
+              background: masteryTier === "gold" ? "rgba(255, 215, 0, 0.15)"
+                : masteryTier === "silver" ? "rgba(192, 192, 210, 0.12)"
+                : "rgba(205, 127, 50, 0.12)",
+              borderColor: masteryTier === "gold" ? "rgba(255, 215, 0, 0.4)"
+                : masteryTier === "silver" ? "rgba(192, 192, 210, 0.35)"
+                : "rgba(205, 127, 50, 0.35)",
+              color: masteryTier === "gold" ? "#ffd700"
+                : masteryTier === "silver" ? "#c0c0d2"
+                : "#cd7f32",
+            } : undefined}
+          >
+            {masteryTier === "gold" ? "🥇 Gold"
+              : masteryTier === "silver" ? "🥈 Silver"
+              : masteryTier === "bronze" ? "🥉 Bronze"
+              : "✓ In your Dex"}
           </span>
         )}
 

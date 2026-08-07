@@ -14,6 +14,7 @@ import { summarizeAvailability } from "../../services/speciesAvailability";
 import { rankSpeciesMatches } from "./matchRanking";
 import { DISCOVERY_INTENTS, filterByIntent } from "./discoveryIntents";
 import { MyDexPanel } from "./MyDexPanel";
+import { useSpeciesMastery, getMasteryForSpecies } from "../../hooks/useSpeciesMastery";
 import { FINDER_COPY } from "./finderCopy";
 import "./FishFinder.css";
 
@@ -72,6 +73,7 @@ export function FishFinder({
   // loop is visible, mirroring the existing showToast pattern (BreedGallery,
   // TankList, MintSpecimen, etc.).
   const { dexEntries, wishlist, lastAdded, isWishlisted, toggleWishlist, isKept } = useDex(walletAccount, tanks, !tanksLoading);
+  const { data: masteryMap } = useSpeciesMastery(walletAccount);
   const [toastMessage, setToastMessage] = useState(null);
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -291,6 +293,7 @@ export function FishFinder({
         isWishlisted={isWishlisted(entry.scientificName)}
         onToggleWishlist={() => toggleWishlist(entry)}
         isKept={isKept(entry.scientificName)}
+        masteryTier={getMasteryForSpecies(masteryMap, entry.scientificName).tier}
       />
     </div>
   );
