@@ -22,6 +22,7 @@ import {
   getSwapSheet,
   updateBringingSpecies,
   sendTideChatMessage,
+  postTideSystemMessage,
   getTideChatMessages,
   placeBid,
   getBidHistory,
@@ -126,6 +127,67 @@ export function useCreateTide() {
   return useMutation({
     mutationFn: createTide,
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reef", "tides"] });
+    },
+  });
+}
+
+/**
+ * Host control: take a tide LIVE (upcoming → live).
+ *
+ * This is the transition that actually "starts" the event: it unlocks the Live
+ * Feed / Chat / check-in tabs (all gated on status === 'live') and fires the
+ * notify_tide_live trigger that pings every RSVP'd attendee.
+ *
+ * To make the feed feel alive from the first second, it best-effort seeds a
+ * system "we're live" message. That chat insert is RLS-gated to attendees, so we
+ * first RSVP the host into their own event. Both seeding steps are non-critical —
+ * a failure never blocks going live.
+ */
+export function useStartTide(tideId) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await updateTide(tideId, { status: "live" });
+      if (error) throw new Error(error.message || String(error));
+
+      // Seed the live feed (best-effort — never block the host from going live).
+      try {
+        await rsvpTide(tideId, "going");
+        await postTideSystemMessage(tideId, "🌊 The tide is live — welcome aboard! Drop a reaction and say hi.");
+      } catch { /* seeding is non-critical */ }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reef", "tide", tideId] });
+      queryClient.invalidateQueries({ queryKey: ["reef", "tides"] });
+      queryClient.invalidateQueries({ queryKey: ["reef", "tide-attendees", tideId] });
+    },
+  });
+}
+
+/**
+ * Host control: end a tide (live → ended). Posts a closing narration line before
+ * flipping status so it lands while the feed is still live, then moves the tide
+ * into its post-event (recap) state.
+ */
+export function useEndTide(tideId) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      try {
+        await postTideSystemMessage(tideId, "🌙 The tide has ended — thanks for riding the current with us.");
+      } catch { /* non-critical */ }
+
+      const { data, error } = await updateTide(tideId, { status: "ended" });
+      if (error) throw new Error(error.message || String(error));
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reef", "tide", tideId] });
       queryClient.invalidateQueries({ queryKey: ["reef", "tides"] });
     },
   });

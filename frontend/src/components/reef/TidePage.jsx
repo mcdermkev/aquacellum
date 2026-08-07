@@ -8,7 +8,7 @@
  */
 
 import { useState } from "react";
-import { useTide, useTideAttendees, useMyRsvp, useRsvp, useCancelRsvp, useCheckIn } from "../../hooks/useTides";
+import { useTide, useTideAttendees, useMyRsvp, useRsvp, useCancelRsvp, useCheckIn, useStartTide, useEndTide } from "../../hooks/useTides";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { sameWallet } from "../../utils/wallet";
 import { useAuth } from "../../contexts/AuthContext";
@@ -19,6 +19,8 @@ import TideMap from "./TideMap";
 import SwapSheet from "./SwapSheet";
 import AuctionPanel from "./AuctionPanel";
 import { TideStreamPlayer } from "./TideStreamPlayer";
+import { TideLivePulse } from "./TideLivePulse";
+import { TIDE_VIDEO_ENABLED } from "../../config/liveEvents";
 
 const TIDE_TYPE_LABELS = {
   expo: { label: "Expo", icon: "📍", color: "#10b981" },
@@ -54,6 +56,44 @@ function TideCountdown({ startTime }) {
   return <div className="tide-page__countdown">{timeStr}</div>;
 }
 
+/**
+ * Virtual gathering panel — shown for Virtual Tides while video is deferred.
+ * A Virtual Tide runs as a live chat + presence gathering (no stream), so this
+ * points attendees to the Live Feed and Chat instead of a video player.
+ */
+function VirtualGatheringPanel({ isLive, isEnded, onOpenFeed, onOpenChat }) {
+  return (
+    <div
+      style={{
+        padding: "1.5rem",
+        borderRadius: "12px",
+        background: "rgba(99, 102, 241, 0.05)",
+        border: "1px solid rgba(99, 102, 241, 0.15)",
+        textAlign: "center",
+      }}
+      aria-label="Virtual gathering"
+    >
+      <p style={{ fontSize: "1.75rem", margin: "0 0 0.5rem" }}>🌊</p>
+      <h3 style={{ margin: "0 0 0.4rem", color: "#fff", fontSize: "0.95rem" }}>
+        {isEnded ? "This gathering has ended" : isLive ? "Live Virtual Gathering" : "Virtual Gathering"}
+      </h3>
+      <p style={{ margin: "0 0 1rem", fontSize: "0.78rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
+        {isEnded
+          ? "Catch the recap and see what you missed."
+          : isLive
+            ? "It's happening now — jump into the Live Feed and Chat to join the conversation and drop reactions."
+            : "When this goes live, join the Live Feed and Chat to talk with everyone in real time. No camera needed."}
+      </p>
+      {isLive && (
+        <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", flexWrap: "wrap" }}>
+          <button className="btn btn--primary btn--sm" onClick={onOpenFeed}>🌊 Live Feed</button>
+          <button className="btn btn--secondary btn--sm" onClick={onOpenChat}>💬 Chat</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TidePage({ tideId, onBack }) {
   const { data: tide, isLoading } = useTide(tideId);
   const { data: attendees = [] } = useTideAttendees(tideId);
@@ -61,6 +101,8 @@ export function TidePage({ tideId, onBack }) {
   const rsvpMutation = useRsvp(tideId);
   const cancelRsvpMutation = useCancelRsvp(tideId);
   const checkInMutation = useCheckIn(tideId);
+  const startTideMutation = useStartTide(tideId);
+  const endTideMutation = useEndTide(tideId);
 
   const [activeTab, setActiveTab] = useState("details");
   const { account } = useAuth();
@@ -94,6 +136,13 @@ export function TidePage({ tideId, onBack }) {
   const handleRsvp = (status) => rsvpMutation.mutate(status);
   const handleCancelRsvp = () => cancelRsvpMutation.mutate();
   const handleCheckIn = () => checkInMutation.mutate();
+
+  // ── Host lifecycle actions ──
+  const handleGoLive = () => startTideMutation.mutate();
+  const handleEndTide = () => {
+    if (!confirm("End this tide? Attendees will move to the recap and the live chat will close.")) return;
+    endTideMutation.mutate();
+  };
 
   // ── Determine available tabs ──
   const tabs = [{ key: "details", label: "Details" }];
@@ -158,6 +207,54 @@ export function TidePage({ tideId, onBack }) {
           </div>
         )}
       </header>
+
+      {/* Host lifecycle controls — the "go live" transition that starts the event */}
+      {isHost && !isEnded && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.6rem",
+            flexWrap: "wrap",
+            padding: "0.6rem 0.9rem",
+            margin: "0.5rem 0",
+            borderRadius: "12px",
+            background: "rgba(255,255,255,0.03)",
+            border: "1px solid rgba(255,255,255,0.08)",
+          }}
+        >
+          <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 600 }}>
+            🎬 Host controls
+          </span>
+          {isUpcoming && (
+            <button
+              className="btn btn--primary btn--sm"
+              onClick={handleGoLive}
+              disabled={startTideMutation.isPending}
+            >
+              {startTideMutation.isPending ? "Starting…" : "🔴 Go Live"}
+            </button>
+          )}
+          {isLive && (
+            <button
+              className="btn btn--ghost btn--sm"
+              onClick={handleEndTide}
+              disabled={endTideMutation.isPending}
+              style={{ color: "#f87171", borderColor: "rgba(239,68,68,0.3)" }}
+            >
+              {endTideMutation.isPending ? "Ending…" : "⏹ End Tide"}
+            </button>
+          )}
+          {startTideMutation.isError && (
+            <span style={{ fontSize: "0.68rem", color: "#f87171" }}>
+              Couldn&apos;t start — {startTideMutation.error?.message || "try again"}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Live pulse — real-time presence + reactions while the tide is live */}
+      {isLive && <div style={{ margin: "0.5rem 0" }}><TideLivePulse tideId={tideId} /></div>}
 
       {/* RSVP Bar */}
       {!isEnded && (
@@ -240,14 +337,24 @@ export function TidePage({ tideId, onBack }) {
               )}
             </section>
 
-            {/* Virtual Tides — Livestream Player */}
+            {/* Virtual Tides — video is deferred for launch (TIDE_VIDEO_ENABLED).
+                While off, a Virtual Tide runs as a live chat + presence gathering. */}
             {tide.tide_type === "virtual" && (
-              <section aria-label="Virtual Stream">
-                <TideStreamPlayer
-                  tideId={tideId}
-                  hostWallet={tide.host_wallet}
-                  tideStartTime={tide.start_time}
-                />
+              <section aria-label="Virtual gathering">
+                {TIDE_VIDEO_ENABLED ? (
+                  <TideStreamPlayer
+                    tideId={tideId}
+                    hostWallet={tide.host_wallet}
+                    tideStartTime={tide.start_time}
+                  />
+                ) : (
+                  <VirtualGatheringPanel
+                    isLive={isLive}
+                    isEnded={isEnded}
+                    onOpenFeed={() => setActiveTab("feed")}
+                    onOpenChat={() => setActiveTab("chat")}
+                  />
+                )}
               </section>
             )}
           </div>

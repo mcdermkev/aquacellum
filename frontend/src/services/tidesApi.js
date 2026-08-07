@@ -399,6 +399,32 @@ export async function sendTideChatMessage(tideId, body) {
 }
 
 /**
+ * Post a system/narration message into tide chat (is_system_message = true).
+ * Rendered as "narration" in the live feed. Used to seed the feed on go-live so
+ * it never looks dead. The RLS insert policy requires the author to be an
+ * attendee, so callers should ensure the host has RSVP'd first (see useStartTide).
+ */
+export async function postTideSystemMessage(tideId, body) {
+  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
+
+  const walletAddress = getCurrentWallet();
+  if (!walletAddress) return { data: null, error: "Not connected" };
+
+  const { data, error } = await supabase
+    .from("tide_chat")
+    .insert({
+      tide_id: tideId,
+      author_wallet: await resolveProfileWallet(walletAddress),
+      body,
+      is_system_message: true,
+    })
+    .select()
+    .single();
+
+  return { data, error };
+}
+
+/**
  * Fetch recent tide chat messages (for initial load).
  */
 export async function getTideChatMessages(tideId, { limit = 50 } = {}) {

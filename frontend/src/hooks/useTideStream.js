@@ -23,9 +23,14 @@ export function useTideStream(tideId, enabled = true) {
     queryFn: async () => {
       if (!isSupabaseConfigured() || !tideId) return null;
 
+      // Explicitly exclude the secret stream_key — viewers only need the
+      // playback id and status. The host receives their key directly from the
+      // stream-setup response, never from this table read. (Column-level SELECT
+      // on stream_key is also revoked server-side; see migration
+      // 20260809_tide_stream_key_hardening.sql.)
       const { data, error } = await supabase
         .from("tide_streams")
-        .select("*")
+        .select("id, tide_id, host_wallet, mux_live_stream_id, mux_playback_id, status, recording_playback_id, created_at")
         .eq("tide_id", tideId)
         .order("created_at", { ascending: false })
         .limit(1)
