@@ -22,7 +22,8 @@ import { ReviewModerationPanel } from "../reviews/ReviewModerationPanel";
 import { useProfile, useTankmates, useRelationshipStatus, useSendTankmateRequest, useUpdateProfile, useEnsureProfile } from "../../hooks/useReefProfile";
 import { useUserCurrents } from "../../hooks/useReefFeed";
 import { useAuditsReceived } from "../../hooks/useAudits";
-import { getTierPrivileges } from "../../services/depthScoreApi";
+import { useUnlockGate } from "./UnlockPrompt";
+import { useUserRoles } from "../../hooks/useUserRoles";
 import { getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
 import { sameWallet } from "../../utils/wallet";
 import { useAuth } from "../../contexts/AuthContext";
@@ -55,6 +56,18 @@ const TIER_ICONS = {
   "God-Tier": "👑",
   "Hadal-Champion": "👑",
 };
+
+// Keeper-role badges — a badge of honor for granted community authority
+// (founder / steward). Higher priority first; we show the top one held.
+const KEEPER_ROLE_BADGES = [
+  { role: "founder", icon: "👑", label: "Founder", color: "#f59e0b" },
+  { role: "steward", icon: "🛡️", label: "Steward", color: "#22d3ee" },
+];
+
+function pickRoleBadge(roles) {
+  if (!roles || roles.length === 0) return null;
+  return KEEPER_ROLE_BADGES.find((b) => roles.includes(b.role)) || null;
+}
 
 /**
  * Tier progression bar — shows how far into the current tier the user is and
@@ -285,11 +298,16 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
   const { data: auditsResult } = useAuditsReceived(walletAddress);
   const audits = auditsResult?.data || [];
 
-  // Moderation panel state (Hadal-tier only)
+  // Moderation panel state
   const [showModeration, setShowModeration] = useState(false);
-  // Review-reports moderation (Task 20) — same Hadal-tier gate, separate toggle
+  // Review-reports moderation (Task 20) — same granted-authority gate, separate toggle
   const [showReviewModeration, setShowReviewModeration] = useState(false);
-  const profilePrivileges = getTierPrivileges(profile?.companion_tier || "Shallow");
+  // Moderation is now a GRANTED role (founder/steward), not a tier. useUnlockGate
+  // resolves the VIEWER's authority; the panel is additionally gated on
+  // isOwnProfile, so a moderator sees the tools on their own profile.
+  const { hasAccess: canModerate } = useUnlockGate("canModerate");
+  // Roles held by the profile BEING VIEWED, for the Founder/Steward badge.
+  const { data: profileRoles = [] } = useUserRoles(walletAddress);
 
   // Auto-ensure profile exists for the user's own profile when it's not found
   const { data: ensuredProfile } = useEnsureProfile(
@@ -535,6 +553,31 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
               <span title={`${profile.companion_tier} Tier`} style={{ fontSize: "1rem" }}>
                 {tierIcon}
               </span>
+              {(() => {
+                const badge = pickRoleBadge(profileRoles);
+                if (!badge) return null;
+                return (
+                  <span
+                    title={`${badge.label} — granted community authority`}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.25rem",
+                      padding: "0.15rem 0.5rem",
+                      borderRadius: "50px",
+                      fontSize: "0.6rem",
+                      fontWeight: 700,
+                      letterSpacing: "0.04em",
+                      color: badge.color,
+                      background: `${badge.color}1a`,
+                      border: `1px solid ${badge.color}55`,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {badge.icon} {badge.label}
+                  </span>
+                );
+              })()}
             </div>
             <p style={{ margin: "0.2rem 0 0", fontSize: "0.7rem", color: "var(--text-muted)", fontFamily: "monospace" }}>
               {truncateWallet(walletAddress)}
@@ -775,8 +818,8 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
         />
       </div>
 
-      {/* Moderation Panel (Hadal-tier on own profile) */}
-      {isOwnProfile && profilePrivileges.canModerate && (
+      {/* Moderation Panel (granted founders/stewards, on own profile) */}
+      {isOwnProfile && canModerate && (
         <div style={{ marginBottom: "1.5rem" }}>
           <button
             onClick={() => setShowModeration(!showModeration)}
@@ -807,10 +850,10 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
         </div>
       )}
 
-      {/* Review Reports moderation (Task 20) — same Hadal-tier curator gate,
+      {/* Review Reports moderation (Task 20) — same granted-authority gate,
           composing the exact ModerationPanel pattern for the review_reports
           queue instead of a bespoke moderation surface. */}
-      {isOwnProfile && profilePrivileges.canModerate && (
+      {isOwnProfile && canModerate && (
         <div style={{ marginBottom: "1.5rem" }}>
           <button
             onClick={() => setShowReviewModeration(!showReviewModeration)}

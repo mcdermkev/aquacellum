@@ -13,6 +13,7 @@ import { getCurrentWallet } from "../../services/supabaseClient";
 import { getXp, XP_ACTIONS } from "../../utils/xp";
 import { hasEntitlement, getRequiredTierFor, getUnlockRequirement } from "../../services/entitlements";
 import { useActivityFacts } from "../../hooks/useActivityFacts";
+import { useUserRoles } from "../../hooks/useUserRoles";
 
 /**
  * Resolve a tier key from a numeric XP/score value using the canonical
@@ -162,11 +163,13 @@ export function UnlockPrompt({ privilege, casualModeActive = false, onClose }) {
         <p style={{ margin: "0 0 1.25rem", fontSize: "0.8rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
           {requirement.kind === "activity"
             ? `This opens with ${requirement.hint} — it isn't something you earn with XP.`
-            : requirement.kind === "role"
-              ? "This is handled by the curator team."
-              : casualModeActive
-                ? `Reach ${getTierLabel(requiredTier)} level to unlock this feature. Keep participating and you'll get there!`
-                : `This feature requires ${requiredTier.label} tier (${requiredTier.min.toLocaleString()} XP). Continue engaging to unlock.`
+            : requirement.kind === "granted"
+              ? "This is a community-authority role granted by the founders to trusted keepers — it isn't earned with XP or tier. Keep contributing and reach out if you'd like to help steward the community."
+              : requirement.kind === "role"
+                ? "This is handled by the curator team."
+                : casualModeActive
+                  ? `Reach ${getTierLabel(requiredTier)} level to unlock this feature. Keep participating and you'll get there!`
+                  : `This feature requires ${requiredTier.label} tier (${requiredTier.min.toLocaleString()} XP). Continue engaging to unlock.`
           }
         </p>
 
@@ -285,16 +288,23 @@ export function useUnlockGate(privilege) {
   // null until loaded, which hasEntitlement reads as "cannot tell → allow" so a
   // qualified seller is never briefly told they are locked out.
   const activity = useActivityFacts(walletAddress);
+  // Social-authority privileges (create schools, give audits, mentor, host
+  // Tides, moderate) are GRANTED by role, not earned — hasEntitlement reads
+  // these from ctx.roles, sourced from the server-authoritative user_roles
+  // table. [] until loaded, which reads as "no authority" (fail closed), the
+  // correct default for authority over other keepers.
+  const { data: roles = [] } = useUserRoles(walletAddress);
 
-  // Tier still matters for the loyalty perk and the social-authority privileges.
-  // The local XP profile (localStorage) drives the header meter, while the
-  // Supabase depth_score/depth_tier can lag or be null. hasEntitlement's
-  // resolveTier takes the higher of ctx.xp and ctx.tier so a user whose XP
-  // has already reached a tier isn't locked out by a stale DB value.
+  // Tier still matters for the loyalty perk. The local XP profile (localStorage)
+  // drives the header meter, while the Supabase depth_score/depth_tier can lag or
+  // be null. hasEntitlement's resolveTier takes the higher of ctx.xp and ctx.tier
+  // so a user whose XP has already reached a tier isn't locked out by a stale DB
+  // value.
   const hasAccess = hasEntitlement(privilege, {
     xp: getXp(),
     tier: scoreData?.depth_tier,
     activity,
+    roles,
   });
 
   const checkAccess = () => {

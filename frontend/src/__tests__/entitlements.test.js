@@ -37,7 +37,17 @@ import {
   getUnlockRequirement,
 } from "../services/entitlements.js";
 
-const { REQUIRED, ACTIVITY, EARNED, ADMIN } = ENTITLEMENT_CLASS;
+const { REQUIRED, ACTIVITY, EARNED, ADMIN, GRANTED } = ENTITLEMENT_CLASS;
+
+// The six social-authority privileges, now GRANTED by role rather than tier.
+const SOCIAL_AUTHORITY = [
+  "canCreateSchools",
+  "canGiveAudits",
+  "canMentor",
+  "canHostVirtualTides",
+  "canHostExpoTides",
+  "canModerate",
+];
 
 describe("TIER_ORDER", () => {
   it("matches the canonical XP tier ladder order", () => {
@@ -74,24 +84,16 @@ describe("1. Safety invariant — REQUIRED entitlements", () => {
 describe("2. Tier gating — EARNED entitlements", () => {
   const earnedKeys = Object.keys(ENTITLEMENTS).filter((k) => ENTITLEMENTS[k].class === EARNED);
 
-  it("tier-gates ONLY the loyalty perk and social authority — never a tool", () => {
+  it("tier-gates ONLY the loyalty perk and the curator-queue priority — never a tool or authority", () => {
     // XP is now a score and a cosmetic engine, not a gate. What legitimately
-    // remains tier-gated is (a) the loyalty discount, which is a reward rather
-    // than a capability, and (b) the privileges that decide who may judge, teach,
-    // or moderate other keepers — held back pending a policy decision, because
-    // converting them to ungranted roles would make them permanently unreachable.
-    //
-    // Every other former EARNED entry became REQUIRED or ACTIVITY. If a new tool
-    // shows up in this list, someone has put a convenience back behind a grind.
+    // remains tier-gated is (a) the loyalty discount, a reward rather than a
+    // capability, and (b) the priority curator queue, a perk that withholds
+    // nothing from anyone else. Social authority moved to GRANTED roles (§2c);
+    // every other former EARNED entry became REQUIRED or ACTIVITY. If a new tool
+    // or an authority privilege shows up here, someone has put it behind a grind.
     expect(new Set(earnedKeys)).toEqual(
       new Set([
         "tier_discount",
-        "canCreateSchools",
-        "canGiveAudits",
-        "canMentor",
-        "canHostVirtualTides",
-        "canHostExpoTides",
-        "canModerate",
         "priority_curator_queue",
       ])
     );
@@ -119,16 +121,68 @@ describe("2. Tier gating — EARNED entitlements", () => {
   });
 
   it("derives tier from xp when tier is absent", () => {
-    // Abyssal social-authority privilege, just under and just at 5,000 XP.
-    expect(hasEntitlement("canGiveAudits", { xp: 4999 })).toBe(false);
-    expect(hasEntitlement("canGiveAudits", { xp: 5000 })).toBe(true);
+    // tier_discount is Coastal (1,500), just under and just at the threshold.
+    expect(hasEntitlement("tier_discount", { xp: 1499 })).toBe(false);
+    expect(hasEntitlement("tier_discount", { xp: 1500 })).toBe(true);
   });
 
   it("uses the higher of xp and tier so a stale DB tier never locks out earned XP", () => {
-    // Local XP profile already at Abyssal, but a stale server tier says Shallow.
-    expect(hasEntitlement("canMentor", { xp: 5000, tier: "Shallow" })).toBe(true);
+    // Local XP profile already at Coastal, but a stale server tier says Shallow.
+    expect(hasEntitlement("tier_discount", { xp: 1500, tier: "Shallow" })).toBe(true);
     // Conversely, a fresher server tier ahead of stale local XP should also count.
-    expect(hasEntitlement("canMentor", { xp: 0, tier: "Abyssal" })).toBe(true);
+    expect(hasEntitlement("tier_discount", { xp: 0, tier: "Coastal" })).toBe(true);
+  });
+});
+
+describe("2c. Social authority — GRANTED by role, never earned with XP or tier", () => {
+  it("all six are classified GRANTED with granting roles and no minTier", () => {
+    for (const key of SOCIAL_AUTHORITY) {
+      const entry = ENTITLEMENTS[key];
+      expect(entry.class, `${key} must be GRANTED`).toBe(GRANTED);
+      expect(Array.isArray(entry.grantedByRoles) && entry.grantedByRoles.length > 0,
+        `${key} must list granting roles`).toBe(true);
+      expect(entry.minTier, `${key} must not carry a tier`).toBeUndefined();
+    }
+  });
+
+  it("is NEVER opened by XP or tier, no matter how high", () => {
+    // The whole point: you cannot grind your way into authority over other
+    // keepers. A max-XP, Hadal, no-role account is denied all six.
+    for (const key of SOCIAL_AUTHORITY) {
+      expect(hasEntitlement(key, { xp: 999999, tier: "Hadal", roles: [] }),
+        `${key} must not open on XP/tier`).toBe(false);
+      // Absent roles entirely (undefined) also fails closed.
+      expect(hasEntitlement(key, { xp: 999999, tier: "Hadal" }),
+        `${key} must fail closed with no roles`).toBe(false);
+    }
+  });
+
+  it("opens for a founder and for a steward, regardless of XP/tier", () => {
+    for (const key of SOCIAL_AUTHORITY) {
+      expect(hasEntitlement(key, { xp: 0, tier: "Shallow", roles: ["founder"] }),
+        `${key} should open for a founder`).toBe(true);
+      expect(hasEntitlement(key, { xp: 0, tier: "Shallow", roles: ["steward"] }),
+        `${key} should open for a steward`).toBe(true);
+    }
+  });
+
+  it("is not opened by an unrelated role (e.g. curator/operator)", () => {
+    for (const key of SOCIAL_AUTHORITY) {
+      expect(hasEntitlement(key, { roles: ["curator"] }),
+        `${key} must not open for curator`).toBe(false);
+      expect(hasEntitlement(key, { roles: ["operator"] }),
+        `${key} must not open for operator`).toBe(false);
+    }
+  });
+
+  it("reports its unlock requirement as a grant, not a tier", () => {
+    for (const key of SOCIAL_AUTHORITY) {
+      const req = getUnlockRequirement(key);
+      expect(req.kind, `${key} requirement kind`).toBe("granted");
+      expect(req.roles, `${key} lists granting roles`).toContain("founder");
+      // A grant is not tier-reachable, so no tier is advertised.
+      expect(getRequiredTierFor(key), `${key} has no required tier`).toBeNull();
+    }
   });
 });
 
@@ -256,20 +310,17 @@ describe("5. Discount invariant", () => {
   });
 });
 
-describe("6. Reef parity — migrated privileges resolve to their existing required tiers", () => {
-  // The privileges that decide who may judge, teach, or moderate others keep their
-  // original tiers on purpose — see the SOCIAL AUTHORITY note in entitlements.js.
-  const expected = {
-    canCreateSchools: "Coastal",
-    canGiveAudits: "Abyssal",
-    canMentor: "Abyssal",
-    canHostVirtualTides: "Abyssal",
-    canHostExpoTides: "Hadal",
-    canModerate: "Hadal",
-  };
+describe("6. Reef parity — social-authority privileges are granted, not tier-reachable", () => {
+  // The privileges that decide who may judge, teach, or moderate others are no
+  // longer tier-gated: authority is conferred by a role grant, not earned. So
+  // none of them advertise a required tier (getRequiredTierFor is null), and a
+  // founder holds all of them regardless of tier.
+  it.each(SOCIAL_AUTHORITY)("%s is not reachable by any tier", (privilege) => {
+    expect(getRequiredTierFor(privilege)).toBeNull();
+  });
 
-  it.each(Object.entries(expected))("%s requires %s", (privilege, tier) => {
-    expect(getRequiredTierFor(privilege)).toBe(tier);
+  it.each(SOCIAL_AUTHORITY)("%s is held by a founder", (privilege) => {
+    expect(hasEntitlement(privilege, { roles: ["founder"] })).toBe(true);
   });
 
   // These two were nominally spam control, which XP never actually provided: a

@@ -10,9 +10,11 @@
  * Every capability is exactly one of four classes:
  *   - REQUIRED: never gated. Must return true for a brand-new, 0-XP account.
  *   - ACTIVITY: opens on demonstrated activity ("you have made a sale"), not XP.
- *   - EARNED:   tier-gated. Now reserved for the loyalty perk and for social
- *               authority still awaiting a policy decision — see below.
- *   - ADMIN:    role-based (curator/operator/etc.), never XP.
+ *   - EARNED:   tier-gated. Now reserved for the loyalty perk and the curator
+ *               queue priority — genuine rewards, not authority over others.
+ *   - ADMIN:    role-based (curator/operator), never XP. Platform operations.
+ *   - GRANTED:  role-based community authority (founder/steward), never XP.
+ *               Conferred by trust, not earned — see SOCIAL AUTHORITY below.
  *
  * ─── WHY XP NO LONGER GATES TOOLS ──────────────────────────────────────────
  *
@@ -65,9 +67,17 @@ export const ENTITLEMENT_CLASS = Object.freeze({
   ACTIVITY: "activity_gated",
   EARNED: "earned_convenience",
   ADMIN: "administrative",
+  GRANTED: "granted_authority",
 });
 
-const { REQUIRED, ACTIVITY, EARNED, ADMIN } = ENTITLEMENT_CLASS;
+const { REQUIRED, ACTIVITY, EARNED, ADMIN, GRANTED } = ENTITLEMENT_CLASS;
+
+// Community roles that confer social authority. Held by founders and a
+// hand-picked few (see supabase/migrations/20260808_keeper_roles.sql). Both
+// currently grant the full set of authority privileges; the model is a
+// role→privilege intersection so narrower roles (e.g. a mentor-only role) can be
+// added later without touching this file's consumers.
+export const KEEPER_ROLES = Object.freeze(["founder", "steward"]);
 
 /**
  * The activity facts an ACTIVITY entitlement may depend on. Declared as a
@@ -285,24 +295,33 @@ export const ENTITLEMENTS = Object.freeze({
   // only `ctx.xp` here would let DevTools mint a permanent 8% discount.
   tier_discount: { class: EARNED, minTier: "Coastal", label: "Loyalty tier discount" },
 
-  // ── SOCIAL AUTHORITY — still tier-gated, pending a policy decision ───────
+  // ── SOCIAL AUTHORITY — GRANTED by role, never earned with XP ─────────────
   //
   // These are NOT conveniences and NOT scale tools: they decide who may judge,
-  // teach, or moderate other keepers. XP is a poor proxy for that (it mostly
-  // measures how much you sell), but "demonstrated husbandry success" does not
-  // exist as a measure yet, and converting them to ADMIN roles with no granting
-  // flow would make them permanently unreachable — a dead control.
+  // teach, or moderate other keepers. XP is a poor proxy for that — it mostly
+  // measures how much you sell and is inflation-gameable — so "grind your way to
+  // moderator" is exactly the wrong incentive at the highest-stakes surface.
   //
-  // So they are LEFT AS THEY WERE ON PURPOSE, not overlooked, and revisited when
-  // the keeper-reputation model lands. Whoever picks this up: the question is
-  // "what earns the right to audit someone else's pedigree?", and it is a
-  // community-policy answer, not a refactor.
-  canCreateSchools: { class: EARNED, minTier: "Coastal", label: "Create schools" },
-  canGiveAudits: { class: EARNED, minTier: "Abyssal", label: "Give expert audits" },
-  canMentor: { class: EARNED, minTier: "Abyssal", label: "Mentor" },
-  canHostVirtualTides: { class: EARNED, minTier: "Abyssal", label: "Host virtual Tides" },
-  canHostExpoTides: { class: EARNED, minTier: "Hadal", label: "Host expo Tides" },
-  canModerate: { class: EARNED, minTier: "Hadal", label: "Moderate content" },
+  // They were previously tier-gated only because there was no granting flow, and
+  // converting them to roles would have made them a dead control. That blocker is
+  // gone: keeper roles (founder/steward) are now granted server-side
+  // (supabase/migrations/20260808_keeper_roles.sql), held by the founders and a
+  // hand-picked few at launch. `grantedByRoles` lists the roles that confer each
+  // privilege; a caller has it iff it holds one of them (checked against
+  // ctx.roles, sourced from the user_roles table — never from XP or tier).
+  //
+  // A real EARNED path can be added later, once a keeper-reputation model
+  // (verified husbandry outcomes, peer endorsement) exists — this does not close
+  // that door, it refuses to fake it with points.
+  canCreateSchools: { class: GRANTED, grantedByRoles: KEEPER_ROLES, label: "Create schools" },
+  canGiveAudits: { class: GRANTED, grantedByRoles: KEEPER_ROLES, label: "Give expert audits" },
+  canMentor: { class: GRANTED, grantedByRoles: KEEPER_ROLES, label: "Mentor" },
+  canHostVirtualTides: { class: GRANTED, grantedByRoles: KEEPER_ROLES, label: "Host virtual Tides" },
+  canHostExpoTides: { class: GRANTED, grantedByRoles: KEEPER_ROLES, label: "Host expo Tides" },
+  canModerate: { class: GRANTED, grantedByRoles: KEEPER_ROLES, label: "Moderate content" },
+
+  // Still EARNED — a queue-priority perk, not authority over other keepers, so
+  // tracking progression is fine here (nothing is withheld from anyone else).
   priority_curator_queue: { class: EARNED, minTier: "Hadal", label: "Priority curator queue" },
 
   // ── §3.3 ADMINISTRATIVE — role-based, never XP ───────────────────────────
@@ -381,6 +400,14 @@ export function hasEntitlement(key, ctx = {}) {
     return (ctx.roles || []).includes(entry.role);
   }
 
+  if (entry.class === GRANTED) {
+    // Social authority: held iff the caller holds one of the granting roles.
+    // ctx.roles comes from the server-authoritative user_roles table. XP and
+    // tier are deliberately ignored — authority is conferred, not earned.
+    const held = ctx.roles || [];
+    return (entry.grantedByRoles || []).some((r) => held.includes(r));
+  }
+
   if (entry.class === ACTIVITY) {
     const { fact, min } = entry.requires;
     const value = ctx.activity?.[fact];
@@ -415,6 +442,7 @@ export function hasEntitlement(key, ctx = {}) {
  * @returns {{kind:"none"}
  *   | {kind:"unknown"}
  *   | {kind:"role", role:string}
+ *   | {kind:"granted", roles:string[]}
  *   | {kind:"tier", tier:string}
  *   | {kind:"activity", fact:string, min:number, hint:string}}
  */
@@ -423,6 +451,7 @@ export function getUnlockRequirement(key) {
   if (!entry) return { kind: "unknown" };
   if (entry.class === REQUIRED) return { kind: "none" };
   if (entry.class === ADMIN) return { kind: "role", role: entry.role };
+  if (entry.class === GRANTED) return { kind: "granted", roles: entry.grantedByRoles || [] };
   if (entry.class === ACTIVITY) {
     return {
       kind: "activity",
