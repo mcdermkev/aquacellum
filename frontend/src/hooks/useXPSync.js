@@ -86,13 +86,32 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
         profile.currentTier = deriveTierFromXp(profile.totalXp);
         // zoneHash intentionally left untouched — see note above.
 
-        // Update care streak
+        // Update care streak.
+        //
+        // A streak reflects continuity of PRESENCE, not continuity of grinding, so
+        // a single quiet day must never wipe it. We forgive one skipped day: acting
+        // on a consecutive day advances the streak, acting after exactly one quiet
+        // day still advances it, and only TWO OR MORE consecutive missed days start
+        // a fresh streak. (The old logic reset to 1 on any gap > 1 day, which
+        // punished people for a single day off.)
+        //
+        // The grace window (1 day) stays well inside the server's retention
+        // touchpoints (streak-at-risk nudge at "yesterday", win-back at 3/7/14 days
+        // in api/retention.js), so the two systems don't contradict each other.
+        const STREAK_GRACE_DAYS = 1;
         const today = new Date().toISOString().slice(0, 10);
         if (profile.lastActiveDate !== today) {
-          const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-          if (profile.lastActiveDate === yesterday) {
+          const lastMs = profile.lastActiveDate
+            ? Date.parse(`${profile.lastActiveDate}T00:00:00Z`)
+            : null;
+          const todayMs = Date.parse(`${today}T00:00:00Z`);
+          const gapDays = lastMs == null ? Infinity : Math.round((todayMs - lastMs) / 86400000);
+
+          if (gapDays <= 1 + STREAK_GRACE_DAYS) {
+            // Consecutive day, or a single quiet day forgiven — keep the streak going.
             profile.streakDays = (profile.streakDays || 0) + 1;
-          } else if (profile.lastActiveDate !== today) {
+          } else {
+            // Absent longer than the grace window — begin a new streak at day 1.
             profile.streakDays = 1;
           }
           profile.lastActiveDate = today;
