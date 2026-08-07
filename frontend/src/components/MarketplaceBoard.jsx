@@ -79,6 +79,41 @@ function SellerName({ address }) {
 }
 
 import { mapContractError } from "../utils/errorHandler";
+import { SellerChip } from "./SellerChip";
+import { useSpeciesMastery, getMasteryForSpecies } from "../hooks/useSpeciesMastery";
+
+/**
+ * SellerChipLoader — self-loading seller chip for a specific listing.
+ *
+ * Each instance fetches the seller's tier (from their profile, already cached by
+ * getProfile) and their species mastery (from the species_mastery view, cached by
+ * useSpeciesMastery). Both are react-query-driven with a 5-minute staleTime, so
+ * browsing a page of 20 listings from the same seller results in one fetch, not 20.
+ */
+function SellerChipLoader({ sellerAddress, scientificName }) {
+  const [tier, setTier] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!sellerAddress) return;
+    let cancelled = false;
+    getProfile(sellerAddress)
+      .then(({ data }) => {
+        if (!cancelled) setTier(data?.companion_tier || "Shallow");
+      })
+      .catch(() => {
+        if (!cancelled) setTier("Shallow");
+      });
+    return () => { cancelled = true; };
+  }, [sellerAddress]);
+
+  const { data: masteryMap } = useSpeciesMastery(sellerAddress);
+  const mastery = scientificName
+    ? getMasteryForSpecies(masteryMap, scientificName)
+    : null;
+
+  if (!tier) return null;
+  return <SellerChip sellerTier={tier} speciesMastery={mastery} compact />;
+}
 
 export function MarketplaceBoard({ 
   contractAddress, 
@@ -2287,6 +2322,7 @@ export function MarketplaceBoard({
                                 alias, and never renders a raw address. */}
                             <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
                               <span style={{ color: "var(--text-secondary)", fontWeight: "600" }}><SellerName address={item.seller} /></span>
+                              <SellerChipLoader sellerAddress={item.seller} scientificName={item.scientificName} />
                             </div>
                           </div>
                         </div>
