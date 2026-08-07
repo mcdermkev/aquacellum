@@ -30,13 +30,21 @@ import { getFollowerCount, getFollowingCount } from "../../services/reefApi";
 import { db } from "../../db";
 import { EchoRenderer } from "../EchoRenderer";
 import { useEchoState } from "../../hooks/useEchoState";
+import { RewardCreditsCard } from "../RewardCreditsCard";
+import { getTierInfo, getPointsSuffix } from "../../utils/xp";
 
+// Legacy hobbyist tier names kept for backwards compat with old profile rows,
+// plus the server-only cosmetic champion tiers. Real ladder tiers (Shallow,
+// Coastal, Pelagic, Abyssal, Hadal) intentionally fall through to
+// getTierInfo().colorHex / .icon below so they render their true colors rather
+// than the bronze fallback.
 const TIER_COLORS = {
   Bronze: "#cd7f32",
   Silver: "#c0c0c0",
   Gold: "#ffd700",
   Master: "#a855f7",
   "God-Tier": "#ffd700",
+  "Hadal-Champion": "#f59e0b",
 };
 
 const TIER_ICONS = {
@@ -45,7 +53,59 @@ const TIER_ICONS = {
   Gold: "🥇",
   Master: "💎",
   "God-Tier": "👑",
+  "Hadal-Champion": "👑",
 };
+
+/**
+ * Tier progression bar — shows how far into the current tier the user is and
+ * what XP reaches the next tier. Derived purely from xp_total (no server call),
+ * so it renders identically on your own profile and anyone else's.
+ */
+function TierProgress({ xp, casualModeActive }) {
+  const info = getTierInfo(Number(xp) || 0);
+  const suffix = getPointsSuffix(casualModeActive);
+  const atMax = info.nextLevelXp == null;
+  const nextInfo = atMax ? null : getTierInfo(info.nextLevelXp);
+  const toNext = atMax ? 0 : Math.max(0, info.nextLevelXp - (Number(xp) || 0));
+
+  return (
+    <div style={{ marginTop: "1.25rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.4rem" }}>
+        <span style={{ fontSize: "0.7rem", fontWeight: 700, color: info.colorHex }}>
+          {info.key}
+        </span>
+        <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>
+          {atMax
+            ? "Top tier reached 🎉"
+            : `${toNext.toLocaleString()} ${suffix} to ${nextInfo.key}`}
+        </span>
+      </div>
+      <div
+        style={{
+          height: "8px",
+          borderRadius: "50px",
+          background: "rgba(255,255,255,0.06)",
+          overflow: "hidden",
+        }}
+        role="progressbar"
+        aria-valuenow={Math.round(info.progressPct)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={atMax ? `${info.key}, top tier` : `${info.key} progress to ${nextInfo.key}`}
+      >
+        <div
+          style={{
+            width: `${info.progressPct}%`,
+            height: "100%",
+            borderRadius: "50px",
+            background: `linear-gradient(90deg, ${info.colorHex}88, ${info.colorHex})`,
+            transition: "width 0.4s ease",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
 
 function walletGradient(wallet) {
   if (!wallet) return "linear-gradient(135deg, #374151, #1f2937)";
@@ -374,8 +434,9 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
   }
 
   const displayName = profile.display_name || truncateWallet(walletAddress);
-  const tierColor = TIER_COLORS[profile.companion_tier] || "#cd7f32";
-  const tierIcon = TIER_ICONS[profile.companion_tier] || "🥉";
+  const headerTierInfo = getTierInfo(profile.xp_total || 0);
+  const tierColor = TIER_COLORS[profile.companion_tier] || headerTierInfo.colorHex || "#cd7f32";
+  const tierIcon = TIER_ICONS[profile.companion_tier] || headerTierInfo.icon || "🥉";
 
   return (
     <div style={{ maxWidth: "640px", margin: "0 auto" }}>
@@ -629,9 +690,20 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
           </div>
         </div>
 
+        {/* Tier progression — where you stand within your tier */}
+        <TierProgress xp={profile.xp_total || 0} casualModeActive={casualModeActive} />
+
         {/* Follower / Following counts */}
         <FollowerCounts walletAddress={walletAddress} />
       </div>
+
+      {/* Reward credits — own profile only (private earnings). The one place to
+          see everything earned: balance, tier discount, next payout, history. */}
+      {isOwnProfile && (
+        <div style={{ marginBottom: "1.5rem" }}>
+          <RewardCreditsCard casualModeActive={casualModeActive} />
+        </div>
+      )}
 
       {/* Badge Shelf */}
       <div style={{ marginBottom: "1.5rem" }}>
