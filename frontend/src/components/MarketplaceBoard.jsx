@@ -27,6 +27,7 @@ import { db } from "../db";
 import { evaluateTankFit } from "../services/addOnRecommender";
 import { applyCatalogQuery, SORT_OPTIONS, FULFILLMENT_TYPES, getListingKey } from "../services/catalogQuery";
 import { hasEntitlement } from "../services/entitlements";
+import { EXPO_ANALYTICS_ENABLED } from "../config/liveEvents";
 import { ProductDetailModal } from "./ProductDetailModal";
 import { useCart } from "../contexts/CartContext";
 import { resolveSpecimenPhoto } from "../services/tankMedia";
@@ -952,28 +953,34 @@ export function MarketplaceBoard({
           >
             🔍 Wanted Board
           </button>
-          <button
-            onClick={() => setActiveSubTab("analytics")}
-            style={{
-              flex: 1,
-              padding: "0.6rem",
-              fontSize: "0.85rem",
-              fontWeight: "600",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              background: activeSubTab === "analytics" ? "rgba(168, 85, 247, 0.18)" : "transparent",
-              color: activeSubTab === "analytics" ? "#c084fc" : "var(--text-muted)",
-              boxShadow: activeSubTab === "analytics" ? "0 0 10px rgba(168, 85, 247, 0.15)" : "none",
-              transition: "all 0.2s"
-            }}
-          >
-            📊 Event Sales & Inventory Analytics
-          </button>
+          {/* Event Sales & Inventory Analytics — hidden for launch: the panel's
+              data is fabricated (hardcoded velocity, per-device fulfillment,
+              always-on XP boost). Gated behind EXPO_ANALYTICS_ENABLED until it's
+              rebuilt on real data. See docs/DEFERRED_AND_GATED.md. */}
+          {EXPO_ANALYTICS_ENABLED && (
+            <button
+              onClick={() => setActiveSubTab("analytics")}
+              style={{
+                flex: 1,
+                padding: "0.6rem",
+                fontSize: "0.85rem",
+                fontWeight: "600",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                background: activeSubTab === "analytics" ? "rgba(168, 85, 247, 0.18)" : "transparent",
+                color: activeSubTab === "analytics" ? "#c084fc" : "var(--text-muted)",
+                boxShadow: activeSubTab === "analytics" ? "0 0 10px rgba(168, 85, 247, 0.15)" : "none",
+                transition: "all 0.2s"
+              }}
+            >
+              📊 Event Sales & Inventory Analytics
+            </button>
+          )}
         </div>
       )}
 
-      {activeSubTab === "analytics" ? (
+      {activeSubTab === "analytics" && EXPO_ANALYTICS_ENABLED ? (
         renderEventAnalytics()
       ) : activeSubTab === "wanted" ? (
         <WantedBoard casualModeActive={casualModeActive} walletAccount={walletAccount} />
