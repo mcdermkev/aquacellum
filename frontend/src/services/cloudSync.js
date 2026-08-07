@@ -549,7 +549,12 @@ export async function pushAllLocalDataToCloud(walletAddress) {
  *   updated_at timestamptz DEFAULT now()
  *
  * @param {string} walletAddress
- * @param {object} profile - { totalXp, currentTier, streakDays, lastActiveDate, monthlyXp }
+ * @param {object} profile - { totalXp, currentTier, streakDays, lastActiveDate }
+ *
+ * NOTE: monthly_xp is intentionally NOT written here. "XP earned this month" is
+ * derived server-side from the xp_events ledger (get_monthly_xp), not from a
+ * client counter. The user_xp_profiles.monthly_xp column is left untouched
+ * (retains its default/existing value) and is no longer read as authoritative.
  */
 export async function syncXpProfileToCloud(walletAddress, profile) {
   if (!isSupabaseConfigured() || !walletAddress) return;
@@ -563,7 +568,6 @@ export async function syncXpProfileToCloud(walletAddress, profile) {
         current_tier: profile.currentTier || "Shallow",
         streak_days: profile.streakDays || 0,
         last_active_date: profile.lastActiveDate || null,
-        monthly_xp: profile.monthlyXp || 0,
         updated_at: new Date().toISOString(),
       }, { onConflict: "wallet_address" });
     if (error) console.warn("[CloudSync] XP profile upsert failed:", error.message);
@@ -587,7 +591,7 @@ export async function pullXpProfileFromCloud(walletAddress) {
   try {
     const { data, error } = await supabase
       .from("user_xp_profiles")
-      .select("total_xp, current_tier, streak_days, last_active_date, monthly_xp")
+      .select("total_xp, current_tier, streak_days, last_active_date")
       .eq("wallet_address", addr)
       .maybeSingle();
 
@@ -613,7 +617,6 @@ export async function pullXpProfileFromCloud(walletAddress) {
         currentTier: data.current_tier || deriveTierFromXp(cloudXp),
         streakDays: Math.max(data.streak_days || 0, localProfile?.streakDays || 0),
         lastActiveDate: data.last_active_date || localProfile?.lastActiveDate || null,
-        monthlyXp: Math.max(data.monthly_xp || 0, localProfile?.monthlyXp || 0),
         zoneHash: localProfile?.zoneHash || "",
         rewardCredits: localProfile?.rewardCredits || 0,
         isCouncilMember: localProfile?.isCouncilMember || false,
@@ -663,7 +666,6 @@ export async function pullXpProfileFromCloud(walletAddress) {
         currentTier: localProfile.currentTier,
         streakDays: localProfile.streakDays,
         lastActiveDate: localProfile.lastActiveDate,
-        monthlyXp: localProfile.monthlyXp,
       }).catch(() => {});
 
       // Also sync to reef profile so the header badge is correct

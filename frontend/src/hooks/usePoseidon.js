@@ -143,7 +143,9 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
               totalXp: userProfile.totalXp || 0,
               currentTier: userProfile.currentTier || "Shallow",
               streakDays: userProfile.streakDays || 0,
-              monthlyXp: userProfile.monthlyXp || 0,
+              // monthlyXp removed: the local counter was unreliable (never reset).
+              // "This month" is now server-derived (get_monthly_xp) and dormant
+              // until rewards activate, so it's intentionally not narrated yet.
             };
           }
         } catch (err) {

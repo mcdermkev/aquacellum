@@ -82,9 +82,13 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
 
         // All XP goes into one pool
         profile.totalXp = oldTotalXp + amountNum;
-        profile.monthlyXp = (profile.monthlyXp || 0) + amountNum;
         profile.currentTier = deriveTierFromXp(profile.totalXp);
         // zoneHash intentionally left untouched — see note above.
+        // monthlyXp intentionally NOT maintained here anymore. "XP earned this
+        // month" is now derived server-side from the validated xp_events ledger
+        // (get_monthly_xp() / rewardsPoolApi.getMonthlyXp). The old local counter
+        // never reset and only grew, so it lied about the month. See migration
+        // 20260807_monthly_xp_function.sql.
 
         // Update care streak.
         //
@@ -165,7 +169,6 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
         currentTier: deriveTierFromXp(totalXp),
         streakDays: (await db.userProfile.get(user))?.streakDays || 0,
         lastActiveDate: (await db.userProfile.get(user))?.lastActiveDate || null,
-        monthlyXp: (await db.userProfile.get(user))?.monthlyXp || 0,
       }).catch(() => {});
 
       // Notify consumers
@@ -210,8 +213,8 @@ export function useXPSync(walletAddress, contractInstance, onXpUpdated, getAcces
         if (!profile) return;
 
         profile.totalXp = Math.max(0, (profile.totalXp || 0) - amountNum);
-        profile.monthlyXp = Math.max(0, (profile.monthlyXp || 0) - amountNum);
         profile.currentTier = deriveTierFromXp(profile.totalXp);
+        // monthlyXp not adjusted — it's no longer a local counter (server-derived).
         await db.userProfile.put(profile);
 
         // Sync companion tier

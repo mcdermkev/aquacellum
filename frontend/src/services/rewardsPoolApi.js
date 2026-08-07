@@ -72,6 +72,37 @@ export async function getRewardCredits(walletAddress) {
 }
 
 /**
+ * Get the authoritative XP the user has earned in the current month.
+ *
+ * This is the SERVER's number, summed from the validated xp_events ledger via the
+ * get_monthly_xp() SQL function — NOT the old local userProfile.monthlyXp counter,
+ * which never reset and could only grow. Because it comes from xp_events, it
+ * counts only server-validated (anti-gamed) awards, which is exactly what a
+ * real-money reward distribution should be proportional to.
+ *
+ * DORMANT: this is the read half of the rewards plumbing. Nothing surfaces it yet
+ * — rewards are wired up but not activated. When they are, this is the single
+ * source of truth for "XP earned this month".
+ *
+ * @param {string} [walletAddress] - Defaults to connected wallet
+ * @returns {Promise<{data: number, error: string|null}>}
+ */
+export async function getMonthlyXp(walletAddress) {
+  if (!isSupabaseConfigured()) return { data: 0, error: "Not configured" };
+
+  const wallet = walletAddress || getCurrentWallet();
+  if (!wallet) return { data: 0, error: "Not connected" };
+
+  const { data, error } = await supabase.rpc("get_monthly_xp", {
+    p_wallet: wallet.toLowerCase(),
+  });
+
+  if (error) return { data: 0, error: error.message };
+
+  return { data: Number(data) || 0, error: null };
+}
+
+/**
  * Get the user's credit transaction history (earn, spend, expire events).
  * 
  * @param {object} opts

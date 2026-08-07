@@ -361,8 +361,12 @@ db.version(14).stores({
 });
 
 // Version 15: Unified Gamification — merge prestigeXp + hobbyistXp into totalXp.
-// Adds monthlyXp (resets each distribution period), rewardCredits (loyalty pool payouts),
-// streakDays, lastActiveDate, and currentTier (cached from totalXp thresholds).
+// Adds monthlyXp, rewardCredits (loyalty pool payouts), streakDays, lastActiveDate,
+// and currentTier (cached from totalXp thresholds).
+// NOTE: monthlyXp is DEPRECATED as a maintained counter — it never reset reliably.
+// "XP earned this month" is now derived server-side from the xp_events ledger
+// (get_monthly_xp / rewardsPoolApi.getMonthlyXp). The field remains for schema
+// stability but is no longer incremented or read as authoritative.
 // The breederCompanion.companionXp is now derived from userProfile.totalXp.
 // Migration: existing prestigeXp + hobbyistXp are summed into totalXp.
 db.version(15).stores({

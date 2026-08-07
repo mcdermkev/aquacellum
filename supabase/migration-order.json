@@ -98,6 +98,7 @@
     "supabase/migrations/20260731_push_subscriptions_baseline.sql",
     "supabase/migrations/20260804160000_digest_email_tracking.sql",
     "supabase/migrations/20260804170000_seller_vacation_mode.sql",
-    "frontend/supabase/migrations/20260806_species_mastery_view.sql"
+    "frontend/supabase/migrations/20260806_species_mastery_view.sql",
+    "supabase/migrations/20260807_monthly_xp_function.sql"
   ]
 }

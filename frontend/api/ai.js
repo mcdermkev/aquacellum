@@ -354,7 +354,6 @@ function buildUserContext(sessionData) {
     parts.push(`- Loyalty Points (XP): ${stats.totalXp} total`);
     parts.push(`- Current Tier: ${stats.currentTier}`);
     if (stats.streakDays > 0) parts.push(`- Care Streak: ${stats.streakDays} days`);
-    if (stats.monthlyXp > 0) parts.push(`- This Month: ${stats.monthlyXp} pts earned`);
   }
 
   if (sessionData.tanks && sessionData.tanks.length > 0) {
