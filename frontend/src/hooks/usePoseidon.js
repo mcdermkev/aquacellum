@@ -8,12 +8,17 @@ import { db } from '../db';
  * - Sending messages to the Edge Function
  * - Maintaining conversation history (persisted to sessionStorage)
  * - Assembling session context (tanks, recent logs, species) from Dexie
- * - Falling back to the local worker when offline or API unavailable
- * - Rate limiting (20 requests/hour as per spec)
+ * - Showing an honest offline notice when the API is unreachable (there is no
+ *   local reasoning fallback in this hook)
+ * - Rate limiting (30 requests/hour, kept in sync with the server gate in api/ai.js)
  */
 
 const POSEIDON_API_URL = '/api/ai?action=poseidon';
-const MAX_REQUESTS_PER_HOUR = 20;
+// Kept in sync with the server-side gate in api/ai.js
+// (checkRateLimit `poseidon:${ip}`, maxRequests: 30). This is the client-side
+// pre-check and the number shown in the "queries remaining" counter — if it
+// disagrees with the server the counter lies about the real budget. Change both.
+const MAX_REQUESTS_PER_HOUR = 30;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const SESSION_STORAGE_KEY = 'aquadex_poseidon_conversation';
 const RATE_LIMIT_STORAGE_KEY = 'aquadex_poseidon_rate_limit';
@@ -317,8 +322,8 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
         id: `pos-${Date.now()}`,
         sender: 'poseidon',
         text: mode === 'pro'
-          ? '[POSEIDON OFFLINE] Network unreachable. Local command parsing active.'
-          : '🌊 I can\'t reach my knowledge base right now. Basic commands still work locally!',
+          ? '[POSEIDON OFFLINE] Network unreachable. Retry when your connection is back.'
+          : '🌊 I can\'t reach my knowledge base right now — check your connection and try again in a moment.',
         timestamp: Date.now(),
         intent: 'fallback_unknown',
         action: { type: 'NONE', payload: {} },
