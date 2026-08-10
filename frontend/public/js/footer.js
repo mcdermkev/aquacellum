@@ -44,7 +44,7 @@
             </a>
             <p class="footer-brand-desc">
               The intelligent platform for aquarium hobbyists and professional breeders. 
-              Track lineage, trade specimens, and discover 326+ species.
+              Track lineage, trade specimens, and discover 300+ species.
             </p>
           </div>
 
@@ -82,11 +82,9 @@
 
         <div class="footer-bottom">
           <span class="footer-copy">&copy; ${new Date().getFullYear()} Aquacellum Protocol. All rights reserved.</span>
-          <div class="footer-socials">
-            <a href="#" aria-label="Twitter / X">𝕏</a>
-            <a href="#" aria-label="Discord">⟠</a>
-            <a href="#" aria-label="GitHub">⌂</a>
-          </div>
+          <!-- Social links intentionally omitted until real profiles exist —
+               dead href="#" placeholders shipped on every page. Add real URLs here
+               (Twitter/X, Discord, GitHub) to restore the socials row. -->
         </div>
       </div>
     `;

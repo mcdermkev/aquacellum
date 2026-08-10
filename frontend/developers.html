@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Developers — Aquacellum Species Database API</title>
-  <meta name="description" content="Free public API for the Aquacellum species database. 326+ freshwater fish with FishBase-validated tank parameters, diet, breeding, and ecology data. Build with it, we'll link back for you.">
+  <meta name="description" content="Free public API for the Aquacellum species database. 300+ freshwater fish with FishBase-validated tank parameters, diet, breeding, and ecology data. Build with it, we'll link back for you.">
   <meta name="keywords" content="aquarium species api, fish database api, freshwater fish api, fishbase api, aquarium data api">
   <meta property="og:title" content="Aquacellum Species Database API">
-  <meta property="og:description" content="Free, public, read-only API over 326+ validated freshwater species. No auth required to start.">
+  <meta property="og:description" content="Free, public, read-only API over 300+ validated freshwater species. No auth required to start.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -91,6 +91,13 @@
     .growth-banner-text h3 { font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
     .growth-banner-text p { font-size: 0.85rem; color: var(--text-secondary); max-width: 480px; line-height: 1.6; }
   </style>
+  <link rel="canonical" href="https://aquacellum.com/developers">
+  <meta property="og:url" content="https://aquacellum.com/developers">
+  <meta property="og:site_name" content="Aquacellum">
+  <meta property="og:image" content="https://aquacellum.com/icons/icon-512.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Aquacellum Species Database API">
+  <meta name="twitter:description" content="Free, public, read-only API over 300+ validated freshwater species. No auth required to start.">
 </head>
 <body>
   <div class="ambient-layer"><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
@@ -102,7 +109,7 @@
     <div class="container">
       <div class="section-label" style="display:flex; justify-content:center;">🔌 Developer API</div>
       <h1>Build on the <span class="text-gradient">Species Database</span></h1>
-      <p>326+ freshwater species, validated against FishBase and WoRMS — tank parameters, diet, breeding behavior, and temperament, free to query. Embed it in a bot, a spreadsheet, a plugin, or your own app. Every response links back here.</p>
+      <p>300+ freshwater species, validated against FishBase and WoRMS — tank parameters, diet, breeding behavior, and temperament, free to query. Embed it in a bot, a spreadsheet, a plugin, or your own app. Every response links back here.</p>
       <div class="dev-hero-actions">
         <a href="#quickstart" class="btn btn-primary">Get Started</a>
         <a href="/species-openapi.json" class="btn btn-secondary" target="_blank" rel="noopener">OpenAPI Spec</a>
@@ -123,13 +130,13 @@
       <div class="code-block" style="margin-top:24px;">
         <span class="cm"># Search for beginner-friendly cichlids under 80°F</span>
         <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
-curl <span class="str">"https://aquadex.fish/api/species?family=Cichlidae&difficulty=Beginner&tempMax=27"</span>
+curl <span class="str">"https://aquacellum.com/api/species?family=Cichlidae&difficulty=Beginner&tempMax=27"</span>
       </div>
 
       <div class="code-block" style="margin-top:16px;">
         <button class="code-copy-btn" onclick="copyCode(this)">Copy</button>
 <span class="cm">// JavaScript / Node</span>
-<span class="kw">const</span> res = <span class="kw">await</span> fetch(<span class="str">"https://aquadex.fish/api/species?id=amatitlania-nigrofasciata"</span>);
+<span class="kw">const</span> res = <span class="kw">await</span> fetch(<span class="str">"https://aquacellum.com/api/species?id=amatitlania-nigrofasciata"</span>);
 <span class="kw">const</span> { data } = <span class="kw">await</span> res.json();
 console.log(data.commonName, data.tankParameters.temperatureRangeCelsius);
       </div>
@@ -229,7 +236,7 @@ console.log(data.commonName, data.tankParameters.temperatureRangeCelsius);
       <div class="card attribution-box">
         <p class="section-text" style="color:var(--text-secondary); line-height:1.8;">
           This API is free because the data is meant to travel. In exchange, any product or content built with it must credit
-          <strong style="color:#fff;">"Aquacellum (https://aquadex.fish)"</strong> visibly, and should link to the species'
+          <strong style="color:#fff;">"Aquacellum (https://aquacellum.com)"</strong> visibly, and should link to the species'
           <code style="color:var(--cyan-300);">links.viewOnAquacellum</code> URL when displaying that species. Every response
           already includes this link — just surface it in your UI.
         </p>
