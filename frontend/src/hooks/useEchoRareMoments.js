@@ -84,18 +84,12 @@ export function useEchoRareMoments(echoState, enabled = true) {
 
     const result = checkForRareMoment(context);
     if (result) {
-      // Trigger the rare moment!
+      // Trigger the rare moment. It is recorded locally (recordRareMoment) and
+      // shown. Durable/on-chain recording is deferred to the Echo backend rework:
+      // the previous `echo_rare_moment` event had no listener (dead dispatch), so
+      // it's removed rather than left as theater. See docs/DEFERRED_AND_GATED.md.
       setActiveMoment(result.moment);
       recordRareMoment(result.moment.id);
-
-      // Dispatch event for on-chain recording (picked up by relayer or next sync)
-      window.dispatchEvent(new CustomEvent("echo_rare_moment", {
-        detail: {
-          momentId: result.moment.id,
-          timestamp: Date.now(),
-          totalCount: getRareMomentsCount(),
-        },
-      }));
     }
   }, [activeMoment, buildContext]);
 

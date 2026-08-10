@@ -65,6 +65,27 @@ function generateLocalDna(walletAddress) {
   };
 }
 
+// Derive Echo's stage from local activity + the XP tier floor. Pure so it can be
+// reused by both the initial load and the reactive re-derivation (stage must
+// update within a session when XP/tier changes, not only on reload). Evolution
+// only ever raises the stage; the tier floor lifts a minimum but never caps.
+function deriveLocalStage(profile, totalXp) {
+  const careDays = profile?.totalCareDays || Math.floor((profile?.totalXp ?? totalXp ?? 0) / 20);
+  const streak = profile?.streakDays || 0;
+  const species = profile?.speciesWitnessed || 0;
+
+  let stage = 1;
+  if (careDays >= 365) stage = 6;
+  else if (careDays >= 180) stage = 5;
+  else if (careDays >= 90 && species >= 10) stage = 4;
+  else if (careDays >= 30) stage = 3;
+  else if (streak >= 7 || careDays >= 7) stage = 2;
+  else if (careDays >= 3) stage = 1;
+
+  const tierForm = TIER_ECHO_FORM[profile?.currentTier] || TIER_ECHO_FORM.Shallow;
+  return Math.max(stage, tierForm.stageFloor);
+}
+
 // Trick unlock conditions (simplified — check against stats)
 function deriveTricksUnlocked(stage, totalCareDays, streak, speciesWitnessed) {
   const tricks = [];
@@ -96,6 +117,9 @@ export function useEchoState(walletAddress) {
   const [tricksUnlocked, setTricksUnlocked] = useState([]);
 
   const needsRefreshInterval = useRef(null);
+  // Mirrors `stage` so the reactive re-derivation can detect a true increase
+  // without adding `stage` to its effect deps (which would re-subscribe on every change).
+  const stageRef = useRef(0);
 
   // ─── Load Echo state from Dexie ─────────────────────────────────────
   useEffect(() => {
@@ -120,8 +144,20 @@ export function useEchoState(walletAddress) {
         // reading it directly is how a second copy of the score comes back.
         const totalXp = profile?.totalXp || getXp();
 
-        if (totalXp < 500) {
-          // Not hatched yet
+        // Hatch reconciliation: onboarding hatches Echo immediately and writes a
+        // breederCompanion row with eggState === 1. EchoCompanionWidget already
+        // treats that as hatched, but this hook used to require totalXp >= 500 —
+        // so an onboarded keeper saw a hatched Echo on the dashboard while the
+        // ambient/living Echo surfaces (gated on hasEcho) insisted it hadn't
+        // hatched. Honor eggState here too; keep the 500-XP path as the legacy
+        // fallback for accounts with no companion row.
+        let companion = await db.breederCompanion.get(addr);
+        if (!companion && addrLower !== addr) {
+          companion = await db.breederCompanion.get(addrLower);
+        }
+        const hatched = companion?.eggState === 1 || totalXp >= 500;
+
+        if (!hatched) {
           setHasEcho(false);
           setStage(0);
           setDna(null);
@@ -207,28 +243,14 @@ export function useEchoState(walletAddress) {
           const species = profile?.speciesWitnessed || 0;
           setSpeciesWitnessed(species);
 
-          // Determine stage from local stats
-          let currentStage = 1;
-          if (careDays >= 365) currentStage = 6;
-          else if (careDays >= 180) currentStage = 5;
-          else if (careDays >= 90 && species >= 10) currentStage = 4;
-          else if (careDays >= 30) currentStage = 3;
-          else if (currentStreak >= 7 || careDays >= 7) currentStage = 2;
-          else if (careDays >= 3) currentStage = 1;
+          // Stage from local activity + XP tier floor (see deriveLocalStage).
+          setStage(deriveLocalStage(profile, totalXp));
 
-          // Tier floor (COSMETIC_EXPRESSION_SPEC.md §4): a keeper's XP tier
-          // guarantees a minimum companion form. If activity already placed them
-          // higher, keep it — the floor only lifts, never caps.
-          const tierForm = TIER_ECHO_FORM[profile?.currentTier] || TIER_ECHO_FORM.Shallow;
-          currentStage = Math.max(currentStage, tierForm.stageFloor);
-
-          setStage(currentStage);
-
-          // Load personality from localStorage
-          const storedPersonality = localStorage.getItem("echo_personality_" + addrLower);
-          if (storedPersonality) {
-            setPersonality(JSON.parse(storedPersonality));
-          }
+          // NOTE: personality is NOT restored from localStorage here. The old
+          // `echo_personality_<addr>` read had no writer (dead seam), so it never
+          // restored anything — off-chain personality stays at the default until
+          // the Echo rework builds real personality drift + persistence. See
+          // docs/DEFERRED_AND_GATED.md.
         }
 
         // Load needs from local storage (always off-chain)
@@ -299,6 +321,43 @@ export function useEchoState(walletAddress) {
 
     window.addEventListener("aquadex_xp_added", handleXpAction);
     return () => window.removeEventListener("aquadex_xp_added", handleXpAction);
+  }, [hasEcho, walletAddress]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Keep stageRef in sync so the re-derivation can detect a true rise ──
+  useEffect(() => {
+    stageRef.current = stage;
+  }, [stage]);
+
+  // ─── Re-derive stage on XP/tier change (within-session reactivity) ──────
+  // The load effect only runs on walletAddress, so earning XP or tiering up did
+  // not update Echo's stage until reload. Recompute the local stage on each XP
+  // event and RAISE it if it grew (never lower — protects an on-chain-authoritative
+  // stage). When it genuinely rises, stamp echo_last_evolution_ts, which
+  // useEchoRareMoments reads to gate the "just evolved" rare moment.
+  useEffect(() => {
+    if (!hasEcho || !walletAddress) return;
+
+    const reDeriveStage = async () => {
+      try {
+        const addr = walletAddress;
+        const addrLower = walletAddress.toLowerCase();
+        let profile = await db.userProfile.get(addr);
+        if (!profile && addrLower !== addr) profile = await db.userProfile.get(addrLower);
+
+        const derived = deriveLocalStage(profile, profile?.totalXp || getXp());
+        if (derived > stageRef.current) {
+          setStage(derived);
+          try {
+            localStorage.setItem("echo_last_evolution_ts", String(Date.now()));
+          } catch { /* localStorage may be unavailable */ }
+        }
+      } catch { /* non-critical — stage will still refresh on next load */ }
+    };
+
+    window.addEventListener("aquadex_xp_added", reDeriveStage);
+    return () => window.removeEventListener("aquadex_xp_added", reDeriveStage);
+    // Uses stageRef (not `stage`) on purpose so it doesn't re-subscribe on every
+    // stage change; the ref is kept current by the sync effect above.
   }, [hasEcho, walletAddress]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Replenish a need (public action) ───────────────────────────────

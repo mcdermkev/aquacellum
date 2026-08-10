@@ -142,12 +142,16 @@ export function EchoAmbient({
 
     window.addEventListener("aquadex_xp_added", handleXpEvent);
     window.addEventListener("popstate", handleNavigation);
-    window.addEventListener("aquadex_navigate", handleNavigation);
+    // The app dispatches "aquadex:navigate-tab" for in-app tab changes (see
+    // FishFinder, ProfileEdit, SellerSection, etc.). This previously listened for
+    // "aquadex_navigate" — a name nothing dispatches — so Echo never darted on
+    // navigation.
+    window.addEventListener("aquadex:navigate-tab", handleNavigation);
 
     return () => {
       window.removeEventListener("aquadex_xp_added", handleXpEvent);
       window.removeEventListener("popstate", handleNavigation);
-      window.removeEventListener("aquadex_navigate", handleNavigation);
+      window.removeEventListener("aquadex:navigate-tab", handleNavigation);
     };
   }, [resetIdleTimer]); // eslint-disable-line react-hooks/exhaustive-deps
 

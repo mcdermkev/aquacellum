@@ -63,6 +63,16 @@ const SEAM_BASELINE = [
   // ALSO REMOVED (Phase 0 XP storage consolidation):
   //   aquadex_xp_points — had six writers and zero readers. All six are now gone;
   //     the seam no longer exists rather than being a known bug.
+  //
+  // ALSO REMOVED (Echo bug-tier pass):
+  //   echo_last_evolution_ts — now written on stage rise in useEchoState, so the
+  //     evolution-timing rare moment can engage.
+  //   echo_personality_ — the dead read was removed; off-chain personality
+  //     persistence is deferred to the Echo rework rather than faked.
+  //   aquadex_navigate — EchoAmbient now listens for the real 'aquadex:navigate-tab'
+  //     event the app actually dispatches, so Echo reacts to tab navigation.
+  //   echo_rare_moment — orphaned dispatch removed; durable/on-chain rare-moment
+  //     recording is deferred to the Echo backend rework.
   {
     id: "readNeverWritten:aquadex_digital_orders_count",
     verdict: "bug",
@@ -73,29 +83,6 @@ const SEAM_BASELINE = [
       "still no digital-order counter, because the only clean write point records a " +
       "Stripe session as 'pending' and counting there would book abandoned checkouts " +
       "as sales. Which event completes a digital order is a product decision.",
-  },
-  {
-    id: "readNeverWritten:echo_last_evolution_ts",
-    verdict: "bug",
-    note:
-      "useEchoRareMoments:65 reads it to gate evolution timing. Never written, so " +
-      "whatever cooldown it guards never engages.",
-  },
-  {
-    id: "readNeverWritten:echo_personality_",
-    verdict: "bug",
-    note:
-      "useEchoState:218 reads `echo_personality_<address>`. Never written, so a " +
-      "stored Echo personality can never be restored.",
-  },
-  {
-    id: "handledNeverDispatched:aquadex_navigate",
-    verdict: "bug",
-    note:
-      "EchoAmbient:145 listens for 'aquadex_navigate'. The app dispatches " +
-      "'aquadex:navigate-tab' — different name, so Echo never reacts to in-app tab " +
-      "navigation. Its sibling listener 'aquadex_xp_added' IS dispatched, which is " +
-      "what makes this one a typo rather than a design choice.",
   },
   {
     id: "dispatchedNeverHandled:aquadex_xp_rollback",
@@ -118,11 +105,6 @@ const SEAM_BASELINE = [
       "and entitlement rework plus a Tier A review. MUST be finished before any " +
       "campaign is added to that config, or the first claimant burns their one claim " +
       "and receives nothing.",
-  },
-  {
-    id: "dispatchedNeverHandled:echo_rare_moment",
-    verdict: "bug",
-    note: "useEchoRareMoments:92 dispatches a rare moment; nothing listens.",
   },
 
   // ── Explained: the other side is outside this codebase ──────────────────
@@ -170,8 +152,10 @@ describe("seam inventory", () => {
   });
 
   it("does not let the known-bug count grow", () => {
-    // A ceiling, not a target. It should trend to 0.
-    expect(KNOWN_BUGS).toBeLessThanOrEqual(6);
+    // A ceiling, not a target. It should trend to 0. Lowered 6 -> 2 after the
+    // Echo bug-tier pass fixed four seams (navigate typo, evolution timestamp,
+    // dead personality read, orphaned rare-moment dispatch).
+    expect(KNOWN_BUGS).toBeLessThanOrEqual(2);
   });
 
   it("every baseline entry carries a verdict and a reason", () => {
