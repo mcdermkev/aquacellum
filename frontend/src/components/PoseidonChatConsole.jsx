@@ -38,7 +38,6 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
   const [inputText, setInputText] = useState("");
   const [pendingAction, setPendingAction] = useState(null); // { type, payload, msgId }
   const messagesEndRef = useRef(null);
-  const workerRef = useRef(null);
   const lastSeedRef = useRef(null);
 
   // Initialize greeting on mount
@@ -55,13 +54,6 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
       sendMessage(seedPrompt);
     }
   }, [seedPrompt, sendMessage]);
-
-  // Initialize Web Worker as offline fallback
-  useEffect(() => {
-    const worker = new Worker(new URL("../workers/poseidonWorker.js", import.meta.url));
-    workerRef.current = worker;
-    return () => { worker.terminate(); };
-  }, []);
 
   // Auto-scroll to bottom of conversation
   useEffect(() => {
