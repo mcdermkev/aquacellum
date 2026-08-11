@@ -7956,3 +7956,81 @@ input:checked + .broadcast-slider:before {
   outline: 2px solid var(--accent-blue);
   outline-offset: -2px;
 }
+
+/* ── Casual mobile bottom tab bar ─────────────────────────────────────────── */
+.casual-bottom-nav {
+  display: none; /* shown only at the mobile breakpoint below */
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 900;
+  justify-content: space-around;
+  align-items: stretch;
+  gap: 2px;
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+  background: rgba(8, 14, 26, 0.92);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-top: 1px solid rgba(56, 189, 248, 0.14);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
+}
+.cbn-tab {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-radius: 12px;
+  transition: color 0.15s ease, background 0.15s ease;
+  min-width: 0;
+}
+.cbn-tab:active { background: rgba(56, 189, 248, 0.08); }
+.cbn-tab--active { color: #38bdf8; }
+.cbn-icon { position: relative; font-size: 1.25rem; line-height: 1; }
+.cbn-tab--active .cbn-icon { filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.5)); }
+.cbn-label { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.01em; }
+.cbn-dot {
+  position: absolute;
+  top: -2px;
+  right: -5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 6px #38bdf8;
+}
+.profile-hub__link:hover {
+  border-color: rgba(56, 189, 248, 0.25) !important;
+  background: rgba(56, 189, 248, 0.05) !important;
+}
+
+@media (max-width: 768px) {
+  .casual-bottom-nav { display: flex; }
+  /* Casual uses the bottom bar on phones — retire the top pill strip there. */
+  .aquadex-nav--casual { display: none !important; }
+  /* Keep content clear of the fixed bottom bar. */
+  .app-content--casual { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important; }
+}
+
+/* Lift the floating action buttons above the casual bottom bar on phones so they
+   never cover the tab bar (the Poseidon FAB sits bottom-left, right on the first
+   tab, by default). Scoped via :has() so it only applies when the bar is present
+   (Casual). A dragged Poseidon FAB keeps its user-set position. */
+@media (max-width: 768px) {
+  body:has(.casual-bottom-nav) .poseidon-global-fab:not(.poseidon-global-fab--dragging) {
+    bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  body:has(.casual-bottom-nav) .poseidon-global-pill {
+    bottom: calc(150px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  body:has(.casual-bottom-nav) .feedback-fab {
+    bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}

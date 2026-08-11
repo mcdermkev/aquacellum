@@ -141,6 +141,7 @@ export function FeedbackWidget({ walletAddress, casualModeActive = true }) {
       {/* Floating trigger button */}
       <button
         onClick={handleOpen}
+        className="feedback-fab"
         style={styles.fab}
         aria-label="Report a bug or give feedback"
         title="Report Bug / Feedback"

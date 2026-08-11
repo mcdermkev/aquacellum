@@ -20,6 +20,8 @@ import { useXPSync } from "./hooks/useXPSync";
 import { LandingHobbyist } from "./components/LandingHobbyist";
 import { LandingBreeder } from "./components/LandingBreeder";
 import { ModeSegmentedControl } from "./components/ModeSegmentedControl";
+import { ProfileHub } from "./components/ProfileHub";
+import { CasualBottomNav } from "./components/CasualBottomNav";
 import { OnboardingWizard } from "./components/OnboardingWizard";
 import { useOnboardingGate } from "./hooks/useOnboardingGate";
 import { useAuth } from "./contexts/AuthContext";
@@ -948,6 +950,22 @@ export default function App() {
         return (
           <FoundersDashboard casualModeActive={casualModeActive} />
         );
+      case "profile":
+        return (
+          <ProfileHub
+            account={account}
+            levelInfo={levelInfo}
+            xp={xp}
+            speciesCount={speciesCount}
+            isFounder={isFounder}
+            isStorefrontBeta={isStorefrontBeta}
+            onNavigate={handleTabChange}
+            onSwitchToPro={() => {
+              setCasualModeActive(false);
+              localStorage.setItem("aquadex_casual_mode", "false");
+            }}
+          />
+        );
       case "breeder-terminal":
         return (
           <Suspense fallback={
@@ -1036,7 +1054,7 @@ export default function App() {
   return (
     <>
     <NetworkStatusBanner />
-    <div style={{ padding: "2rem max(2rem, (100vw - 1200px) / 2)", minHeight: "100vh" }}>
+    <div className={casualModeActive ? "app-content app-content--casual" : "app-content"} style={{ padding: "2rem max(2rem, (100vw - 1200px) / 2)", minHeight: "100vh" }}>
       <BetaBanner />
       {/* Premium Header Nav Bar — Redesigned v2 */}
       <header 
@@ -1302,7 +1320,7 @@ export default function App() {
             { id: "reef",      icon: "🪸",  label: casualModeActive ? "The Reef"      : "Social",        alwaysShow: true, badge: !postedFirstCurrent },
             { id: "settings",  icon: "⚙️", label: "Settings",                                           alwaysShow: true  },
             ...(isFounder ? [{ id: "founders", icon: "📊", label: "Founders", alwaysShow: true }] : []),
-            ...(isStorefrontBeta ? [{ id: "breeder-terminal", icon: "🧑‍🌾", label: casualModeActive ? "Seller Hub" : "Breeder Terminal", alwaysShow: true }] : []),
+            ...(!casualModeActive && isStorefrontBeta ? [{ id: "breeder-terminal", icon: "🧑‍🌾", label: "Breeder Terminal", alwaysShow: true }] : []),
           ]
             .filter((t) => t.alwaysShow)
             .map((tab) => {
@@ -1345,6 +1363,16 @@ export default function App() {
               );
             })}
         </nav>
+      )}
+
+      {/* Casual mobile bottom tab bar (hidden on wider screens + in Pro via CSS) */}
+      {account && casualModeActive && (
+        <CasualBottomNav
+          activeTab={activeTab}
+          onNavigate={handleTabChange}
+          reefBadge={!postedFirstCurrent}
+          incomingCount={incomingCount}
+        />
       )}
 
       {/* Main Content Area */}
