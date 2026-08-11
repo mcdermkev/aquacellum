@@ -6,23 +6,6 @@
  */
 
 /**
- * Generate a Supabase Storage image URL for a tank's primary species.
- * Falls back through inhabitants → species → tank name.
- */
-export function getSupabaseImageUrl(activeTank) {
-  if (!activeTank) return "";
-  
-  const targetName = 
-    (activeTank.inhabitants && activeTank.inhabitants[0] && activeTank.inhabitants[0].commonName) || 
-    activeTank.species || 
-    activeTank.name || 
-    "";
-
-  const formatted = targetName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-  return `https://oexctbbybpfvslgxlscg.supabase.co/storage/v1/object/public/fish-photos/${formatted}.jpg?width=300&height=300&resize=contain&quality=80`;
-}
-
-/**
  * Check if a parameter value falls within the safe envelope.
  */
 export function isInsideEnvelope(val, safeMin, safeMax) {

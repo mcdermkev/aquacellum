@@ -94,13 +94,6 @@ const isPlantEntry = (specCodeOrItem) => {
   return false;
 };
 
-const SUPABASE_BUCKET = "https://eybxazurluxacahrqubm.supabase.co/storage/v1/object/public/species-images";
-
-const getSupabaseImageUrl = (name) => {
-  if (!name) return "";
-  const formatted = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-  return `${SUPABASE_BUCKET}/${formatted}.jpg`;
-};
 
 export function BreedGallery({ 
   contractAddress, 

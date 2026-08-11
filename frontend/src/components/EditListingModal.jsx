@@ -12,11 +12,12 @@ import {
   resolveSpecimenPhoto,
 } from "../services/tankMedia";
 
-const getSpecimenPhotoUrl = (commonName) => {
-  if (!commonName) return "";
-  const formatted = commonName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-  return `https://oexctbbybpfvslgxlscg.supabase.co/storage/v1/object/public/fish-photos/${formatted}.jpg?width=150&height=150&resize=contain&quality=80`;
-};
+// The per-species stock-photo bucket was retired (dead Supabase project). There
+// is no per-species stock image, so use a neutral placeholder; the <img onError>
+// handlers below are a further safety net.
+const SPECIMEN_PHOTO_PLACEHOLDER =
+  "https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?auto=format&fit=crop&w=150&h=150&q=80";
+const getSpecimenPhotoUrl = () => SPECIMEN_PHOTO_PLACEHOLDER;
 
 export function EditListingModal({ isOpen, onClose, item, onSuccess }) {
   const [price, setPrice] = useState("");

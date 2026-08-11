@@ -60,7 +60,7 @@ import { LivingTank } from "./logbook/LivingTank";
 import { deriveTankHealth } from "../utils/tankHealth";
 import { getOrInitTankSchedules } from "../services/tankSchedules";
 import { getTankPhoto, putTankPhoto, putSpecimenPhoto, resolveSpecimenPhoto } from "../services/tankMedia";
-import { getSupabaseImageUrl, isInsideEnvelope, getTrackBackground, CONTAINMENT_TYPES, getWaterEnvelope, tankTypeLabel } from "../utils/tankUtils";
+import { isInsideEnvelope, getTrackBackground, CONTAINMENT_TYPES, getWaterEnvelope, tankTypeLabel } from "../utils/tankUtils";
 export function TankList({ contractAddress, walletAccount, onViewLineage, onListOnMarketplace, onSelectSpecimen, casualModeActive = false }) {
   const queryClient = useQueryClient();
   // Settings → Units & Formatting. `primaryTempUnit` collapses "both" to the
@@ -2307,9 +2307,15 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             <div 
               className="biotope-banner"
               style={{ 
+                // Pro: show the keeper's uploaded photo; otherwise a deep-water
+                // gradient. (We used to fall back to getSupabaseImageUrl, which
+                // pointed at a dead Supabase project — every photo-less tank hit a
+                // non-existent host, blanking the banner and spamming net::ERR_FAILED.)
                 backgroundImage: casualModeActive
                   ? "none"
-                  : `url('${activeTankPhoto || getSupabaseImageUrl(activeTank)}')` 
+                  : activeTankPhoto
+                  ? `url('${activeTankPhoto}')`
+                  : "linear-gradient(160deg, #123243 0%, #0b1c2b 55%, #071019 100%)"
               }}
             >
               {/* Casual: the header itself is a Living Tank hero (water reflects health).

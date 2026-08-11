@@ -83,7 +83,7 @@ const {
 
 const ID = 4217;
 const HOSTED =
-  "https://oexctbbybpfvslgxlscg.supabase.co/storage/v1/object/public/specimen-photos/0xaaaa/4217_1731000000.jpg";
+  "https://example.supabase.co/storage/v1/object/public/specimen-photos/0xaaaa/4217_1731000000.jpg";
 const DEXIE_BLOB = "data:image/jpeg;base64,ZGV4aWU=";
 const LEGACY_BLOB = "data:image/jpeg;base64,bGVnYWN5";
 
