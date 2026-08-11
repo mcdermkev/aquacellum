@@ -139,8 +139,13 @@ export function LivingTank({
               backgroundImage: `url('${photoUrl}')`,
               backgroundSize: "cover",
               backgroundPosition: "center",
-              opacity: 0.35,
-              mixBlendMode: "luminosity",
+              // Show the keeper's actual photo clearly. It used to render at
+              // opacity 0.35 with mix-blend luminosity, which washed a real tank
+              // photo out to a near-invisible ghost in casual (it looked fine in
+              // pro, which paints the photo at full opacity). The surface
+              // shimmer, caustics and fish layers still sit on top for the
+              // "living" effect.
+              opacity: 0.92,
             }}
           />
         )}

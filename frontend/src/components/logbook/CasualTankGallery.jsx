@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { LivingTank } from "./LivingTank";
 import { deriveTankHealth } from "../../utils/tankHealth";
 import { getOrInitTankSchedules } from "../../services/tankSchedules";
+import { getTankPhoto } from "../../services/tankMedia";
 import "./CasualTankGallery.css";
 
 /**
@@ -48,6 +49,25 @@ export function CasualTankGallery({
     })();
     return () => { cancelled = true; };
   }, [tanks, schedulesOverride]);
+
+  // Resolve each tank's uploaded photo so the card shows it (same precedence as
+  // the detail hero: durable tankMedia → legacy localStorage → none). Tanks with
+  // no photo fall back to the stylized living-water look.
+  const [photosByTank, setPhotosByTank] = useState({});
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const map = {};
+      await Promise.all(
+        tanks.map(async (t) => {
+          const legacy = typeof localStorage !== "undefined" ? localStorage.getItem(`aquadex_tank_photo_${t.id}`) : null;
+          map[t.id] = (await getTankPhoto(t.id)) || legacy || null;
+        })
+      );
+      if (!cancelled) setPhotosByTank(map);
+    })();
+    return () => { cancelled = true; };
+  }, [tanks]);
 
   return (
     <div className="casual-tank-gallery">
@@ -104,7 +124,7 @@ export function CasualTankGallery({
               }
             }}
           >
-            <LivingTank tank={tank} health={health} variant="card" fishbaseData={fishbaseData} />
+            <LivingTank tank={tank} health={health} variant="card" fishbaseData={fishbaseData} photoUrl={photosByTank[tank.id] || undefined} />
 
             {/* Care footer — quick glance at maintenance recency */}
             <div className="ctg-footer">
