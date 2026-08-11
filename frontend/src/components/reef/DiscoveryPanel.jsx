@@ -2,16 +2,18 @@
  * DiscoveryPanel.jsx
  *
  * Discovery features for The Reef (Task 17):
- * 1. Nearby Breeders — profiles grouped by regional zoneHash
- * 2. Breeders Who Keep [Species] — search breeders by species
- * 3. Top Contributors This Week — leaderboard (Insights posted + Audits given)
+ * 1. Breeders Who Keep [Species] — search breeders by species
+ * 2. Top Contributors This Week — leaderboard (Insights posted + Audits given)
+ *
+ * The location-based "Nearby Breeders" section was retired from the UI (the
+ * regional-zone surfaces were pulled); the zone backend/hooks remain parked.
  *
  * Renders as a sidebar/section within the Discover tab of the ReefFeed.
  */
 
 import React, { useState, useCallback } from "react";
 import { ProfileCard } from "./ProfileCard";
-import { useNearbyBreeders, useBreedersForSpecies, useTopContributors } from "../../hooks/useDiscovery";
+import { useBreedersForSpecies, useTopContributors } from "../../hooks/useDiscovery";
 import { useWeeklyContributors } from "../../hooks/useZoneLeaderboard";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -137,7 +139,6 @@ export function DiscoveryPanel({ onProfileClick, casualModeActive = false }) {
   const [expandedSection, setExpandedSection] = useState(null);
 
   // Hooks
-  const { data: nearbyBreeders, isLoading: nearbyLoading } = useNearbyBreeders();
   const { data: speciesBreeders, isLoading: speciesLoading } = useBreedersForSpecies(speciesQuery);
   const { data: topContributors, isLoading: contributorsLoading } = useTopContributors();
   const { data: weeklyLeaderboard } = useWeeklyContributors({ limit: 10 });
@@ -184,48 +185,6 @@ export function DiscoveryPanel({ onProfileClick, casualModeActive = false }) {
       role="region"
       aria-label="Discover breeders"
     >
-      {/* ─── Nearby Breeders ─── */}
-      <div style={sectionStyle}>
-        <div
-          onClick={() => toggleSection("nearby")}
-          style={{ cursor: "pointer" }}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && toggleSection("nearby")}
-          aria-expanded={expandedSection === "nearby"}
-        >
-          <SectionHeader
-            icon="📍"
-            title={casualModeActive ? "Nearby Fishkeepers" : "Nearby Breeders"}
-            subtitle={casualModeActive
-              ? "People in your area who keep fish"
-              : "Breeders in your region (zoneHash proximity)"
-            }
-            isExpanded={expandedSection === "nearby"}
-          />
-        </div>
-
-        {expandedSection === "nearby" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-            {nearbyLoading && <LoadingSkeleton />}
-            {!nearbyLoading && nearbyBreeders?.length === 0 && (
-              <EmptyState message={casualModeActive
-                ? "No fishkeepers found nearby yet. More will appear as people join!"
-                : "No breeders in your region yet."
-              } />
-            )}
-            {!nearbyLoading && nearbyBreeders?.map((breeder) => (
-              <BreederRow
-                key={breeder.wallet_address}
-                profile={breeder}
-                onProfileClick={onProfileClick}
-                extra={breeder.species_count ? `${breeder.species_count} species` : null}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* ─── Breeders Who Keep [Species] ─── */}
       <div style={sectionStyle}>
         <div

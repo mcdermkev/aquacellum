@@ -26,7 +26,6 @@ import { useAuth } from "./contexts/AuthContext";
 import { pullCloudDataForWallet, pushAllLocalDataToCloud } from "./services/cloudSync";
 import { retryPendingMetadataPublishes } from "./services/specimenMetadata";
 import { cleanupGarbledActionLogs } from "./utils/cleanupGarbledLogs";
-import { ZoneLeaderboardWidget } from "./components/ZoneLeaderboardWidget";
 import { RewardCreditsCard } from "./components/RewardCreditsCard";
 import { EchoCompanionWidget } from "./components/EchoCompanionWidget";
 import { EchoWhispers } from "./components/EchoWhispers";
@@ -981,9 +980,6 @@ export default function App() {
                   <EchoCompanionWidget casualModeActive={casualModeActive} compact />
                 </div>
               )}
-              <div style={{ flex: "1 1 260px", minWidth: 0 }}>
-                <ZoneLeaderboardWidget casualModeActive={casualModeActive} compact />
-              </div>
               <div style={{ flex: "1 1 260px", minWidth: 0 }}>
                 <RewardCreditsCard casualModeActive={casualModeActive} compact />
               </div>
