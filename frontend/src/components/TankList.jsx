@@ -2306,33 +2306,32 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             {/* Biotope banner image */}
             <div 
               className="biotope-banner"
-              style={{ 
-                // Pro: show the keeper's uploaded photo; otherwise a deep-water
-                // gradient. (We used to fall back to getSupabaseImageUrl, which
-                // pointed at a dead Supabase project — every photo-less tank hit a
-                // non-existent host, blanking the banner and spamming net::ERR_FAILED.)
-                backgroundImage: casualModeActive
-                  ? "none"
-                  : activeTankPhoto
-                  ? `url('${activeTankPhoto}')`
-                  : "linear-gradient(160deg, #123243 0%, #0b1c2b 55%, #071019 100%)"
+              style={{
+                // Both modes render the tank visual via the LivingTank hero below
+                // (the uploaded photo if present, otherwise stylized living water),
+                // so the banner element itself needs no background image. This also
+                // killed the old getSupabaseImageUrl fallback, which pointed at a
+                // dead Supabase project and blanked the pro banner for photo-less
+                // tanks while spamming net::ERR_FAILED.
+                backgroundImage: "none"
               }}
             >
-              {/* Casual: the header itself is a Living Tank hero (water reflects health).
-                  Sits behind the overlays; its own fish layer replaces the pro one. */}
-              {casualModeActive && (
-                <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none" }}>
-                  <LivingTank
-                    tank={activeTank}
-                    health={deriveTankHealth(activeTank, { schedules: activeTankSchedules })}
-                    variant="hero"
-                    height={200}
-                    fishbaseData={fishbaseData}
-                    photoUrl={activeTankPhoto || undefined}
-                    showLabel={false}
-                  />
-                </div>
-              )}
+              {/* The header is a Living Tank hero in BOTH modes: it shows the
+                  uploaded photo if there is one, otherwise stylized living water
+                  (water reflects health) — so pro is never a flat/empty banner.
+                  In pro we pass no fish here so the TankFishVisualization below owns
+                  the fish layer (avoids double fish); casual uses the hero's fish. */}
+              <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none" }}>
+                <LivingTank
+                  tank={activeTank}
+                  health={deriveTankHealth(activeTank, { schedules: activeTankSchedules })}
+                  variant="hero"
+                  height={200}
+                  fishbaseData={casualModeActive ? fishbaseData : []}
+                  photoUrl={activeTankPhoto || undefined}
+                  showLabel={false}
+                />
+              </div>
 
               <div className="biotope-banner-overlay"></div>
 
