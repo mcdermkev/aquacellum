@@ -2,7 +2,7 @@
  * ReefFeed.jsx
  * 
  * Main social feed view for The Reef.
- * Reorganized with clear tab navigation: Feed | Explore | Groups | Events | Live
+ * Reorganized with clear tab navigation: Feed | Explore | Groups | Events
  * Combined Inbox (Notifications + Messages), onboarding overlay, and
  * casual mode labels throughout for discoverability.
  */
@@ -22,7 +22,6 @@ import { TidePage } from "./TidePage";
 import { CreateTide } from "./CreateTide";
 import { ReefSearchBar } from "./ReefSearchBar";
 import { DiscoveryPanel } from "./DiscoveryPanel";
-import { TankCamDiscovery } from "../tank-cam/TankCamDiscovery";
 import { ReefOnboarding } from "./ReefOnboarding";
 import { UnlockPrompt, useUnlockGate } from "./UnlockPrompt";
 import { useFollowingFeed, useDiscoverFeed } from "../../hooks/useReefFeed";
@@ -295,9 +294,7 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
               padding: "0.5rem 0.4rem",
               borderRadius: "8px",
               border: "none",
-              background: activeTab === tab.key
-                ? (tab.key === "live" ? "rgba(239, 68, 68, 0.12)" : "rgba(56, 189, 248, 0.12)")
-                : "transparent",
+              background: activeTab === tab.key ? "rgba(56, 189, 248, 0.12)" : "transparent",
               color: activeTab === tab.key ? "#fff" : "var(--text-muted)",
               fontSize: "0.72rem",
               fontWeight: activeTab === tab.key ? 600 : 400,
@@ -428,10 +425,6 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
         </div>
       )}
 
-      {/* LIVE TAB */}
-      {activeTab === "live" && (
-        <TankCamDiscovery />
-      )}
 
       {/* Not configured notice */}
       {!configured && (
@@ -524,7 +517,6 @@ function getTabConfig(casualMode) {
     { key: "explore", icon: "🔍", label: "Explore" },
     { key: "groups", icon: "👥", label: casualMode ? "Groups" : "Schools" },
     { key: "events", icon: "📅", label: casualMode ? "Events" : "Tides" },
-    { key: "live", icon: "📹", label: "Live" },
   ];
 }
 

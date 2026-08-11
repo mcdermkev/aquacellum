@@ -5460,6 +5460,23 @@ textarea:focus:not(:focus-visible) {
   flex-direction: column;
 }
 
+/* Casual variant of the actions panel — same polished tiles, warmer blue
+   identity (not the pro "Command Console" violet) and friendlier labels. */
+.command-console-panel--casual {
+  border-color: rgba(56, 189, 248, 0.25);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8),
+              0 0 25px rgba(56, 189, 248, 0.15),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.command-console-panel--casual .console-category-header {
+  font-family: 'Outfit', sans-serif;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
 /* ─── Premium Social Observation Composer ────────────────── */
 .role-chip-group {
   display: flex;

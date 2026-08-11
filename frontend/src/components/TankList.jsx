@@ -29,7 +29,6 @@ import { useUnitPrefs } from "../hooks/useUnitPrefs";
 import { celsiusToFahrenheit, formatTemperature, showCelsius, showFahrenheit } from "../utils/units";
 import { createCurrent } from "../services/reefApi";
 import { isSupabaseConfigured } from "../services/supabaseClient";
-import { TankCamSetup } from "./tank-cam/TankCamSetup";
 import { ActivityLog } from "./ActivityLog";
 import { NotesTab } from "./NotesTab";
 import { QuickLogPanel } from "./QuickLogPanel";
@@ -2551,108 +2550,125 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       }}
                     />
                     {casualModeActive ? (
-                      <div style={{
-                        position: "absolute",
-                        top: "calc(100% + 0.5rem)",
-                        left: 0,
-                        zIndex: 100,
-                        width: "240px",
-                        background: "rgba(8, 25, 48, 0.98)",
-                        backdropFilter: "blur(20px)",
-                        border: "1px solid var(--glass-border-hover)",
-                        borderRadius: "8px",
-                        boxShadow: "0 10px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(56, 189, 248, 0.05)",
-                        padding: "0.4rem 0",
-                        display: "flex",
-                        flexDirection: "column"
-                      }}>
-                        <div style={{ padding: "0.4rem 1rem 0.2rem", fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Log Husbandry</div>
-                        
-                        <button
-                          type="button"
-                          onClick={() => { logFeedClick(); setQuickActionsOpen(false); }}
-                          className="dropdown-action-item"
-                        >
-                          <span style={{ marginRight: "0.25rem" }}>🥣</span> Quick Feed
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { logFeedLongPress(); setQuickActionsOpen(false); }}
-                          className="dropdown-action-item"
-                        >
-                          <span style={{ marginRight: "0.25rem" }}>🥣</span> Detailed Feed...
-                        </button>
+                      <div className="command-console-panel command-console-panel--casual">
+                        <div className="console-header">
+                          <span className="console-title">✨ Quick Actions</span>
+                          <span className="console-pulse-dot" />
+                        </div>
 
-                        <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.05)", margin: "0.3rem 0" }} />
-                        <div style={{ padding: "0.4rem 1rem 0.2rem", fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Log Environment</div>
+                        <div>
+                          <div className="console-category-header">Feeding</div>
+                          <div className="console-grid">
+                            <button
+                              type="button"
+                              onClick={() => { logFeedClick(); setQuickActionsOpen(false); }}
+                              className="console-tile tile-husbandry"
+                            >
+                              <span className="console-tile-icon">🥣</span>
+                              <span className="console-tile-label">Quick Feed</span>
+                              <span className="console-tile-desc">Standard dose</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { logFeedLongPress(); setQuickActionsOpen(false); }}
+                              className="console-tile tile-husbandry"
+                            >
+                              <span className="console-tile-icon">🥣</span>
+                              <span className="console-tile-label">Detailed Feed</span>
+                              <span className="console-tile-desc">Log the details</span>
+                            </button>
+                          </div>
+                        </div>
 
-                        <button
-                          type="button"
-                          onClick={() => { logTestClick(); setQuickActionsOpen(false); }}
-                          className="dropdown-action-item"
-                        >
-                          <span style={{ marginRight: "0.25rem" }}>🧪</span> Quick Water Test
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { logTestLongPress(); setQuickActionsOpen(false); }}
-                          className="dropdown-action-item"
-                        >
-                          <span style={{ marginRight: "0.25rem" }}>🧪</span> Detailed Test...
-                        </button>
+                        <div>
+                          <div className="console-category-header">Water</div>
+                          <div className="console-grid">
+                            <button
+                              type="button"
+                              onClick={() => { logTestClick(); setQuickActionsOpen(false); }}
+                              className="console-tile tile-environment"
+                            >
+                              <span className="console-tile-icon">🧪</span>
+                              <span className="console-tile-label">Quick Test</span>
+                              <span className="console-tile-desc">Log a water test</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { logTestLongPress(); setQuickActionsOpen(false); }}
+                              className="console-tile tile-environment"
+                            >
+                              <span className="console-tile-icon">🧪</span>
+                              <span className="console-tile-label">Detailed Test</span>
+                              <span className="console-tile-desc">Enter your readings</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { logWaterChange(); setQuickActionsOpen(false); }}
+                              className="console-tile tile-environment"
+                            >
+                              <span className="console-tile-icon">💧</span>
+                              <span className="console-tile-label">Water Change</span>
+                              <span className="console-tile-desc">Log a partial change</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { logAlgaeLongPress(); setQuickActionsOpen(false); }}
+                              className="console-tile tile-environment"
+                            >
+                              <span className="console-tile-icon">🧹</span>
+                              <span className="console-tile-label">Clean</span>
+                              <span className="console-tile-desc">Algae & filters</span>
+                            </button>
+                          </div>
+                        </div>
 
-                        <button
-                          type="button"
-                          onClick={() => { logWaterChange(); setQuickActionsOpen(false); }}
-                          className="dropdown-action-item"
-                        >
-                          <span style={{ marginRight: "0.25rem" }}>💧</span> Water Change
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { logAlgaeLongPress(); setQuickActionsOpen(false); }}
-                          className="dropdown-action-item"
-                        >
-                          <span style={{ marginRight: "0.25rem" }}>🧹</span> Detailed Clean...
-                        </button>
-
-                        <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.05)", margin: "0.3rem 0" }} />
-                        <div style={{ padding: "0.4rem 1rem 0.2rem", fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Tank Operations</div>
-
-                        <button
-                          type="button"
-                          onClick={() => { setPoseidonChatOpen(!poseidonChatOpen); setQuickActionsOpen(false); }}
-                          className="dropdown-action-item"
-                        >
-                          <span style={{ marginRight: "0.25rem" }}>💬</span> Ask Poseidon AI
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setInlineDetailType("population");
-                            setInlineDetailText(getSpecimenCount(activeTank).toString());
-                            setInlineDetailOpen(true);
-                            setTimeout(() => inlineDetailRef.current?.focus(), 100);
-                            setQuickActionsOpen(false);
-                          }}
-                          className="dropdown-action-item"
-                        >
-                          <span style={{ marginRight: "0.25rem" }}>🐟</span> Update Fish Count
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { photoInputRef.current?.click(); setQuickActionsOpen(false); }}
-                          className="dropdown-action-item"
-                        >
-                          <span style={{ marginRight: "0.25rem" }}>📷</span> Upload Photo
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { printTankQRLabel(activeTank); setQuickActionsOpen(false); }}
-                          className="dropdown-action-item"
-                        >
-                          <span style={{ marginRight: "0.25rem" }}>🏷️</span> Print QR label
-                        </button>
+                        <div>
+                          <div className="console-category-header">Tank</div>
+                          <div className="console-grid">
+                            <button
+                              type="button"
+                              onClick={() => { setPoseidonChatOpen(!poseidonChatOpen); setQuickActionsOpen(false); }}
+                              className="console-tile tile-system"
+                            >
+                              <span className="console-tile-icon">💬</span>
+                              <span className="console-tile-label">Ask Poseidon</span>
+                              <span className="console-tile-desc">Get advice</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInlineDetailType("population");
+                                setInlineDetailText(getSpecimenCount(activeTank).toString());
+                                setInlineDetailOpen(true);
+                                setTimeout(() => inlineDetailRef.current?.focus(), 100);
+                                setQuickActionsOpen(false);
+                              }}
+                              className="console-tile tile-system"
+                            >
+                              <span className="console-tile-icon">🐟</span>
+                              <span className="console-tile-label">Fish Count</span>
+                              <span className="console-tile-desc">Update the count</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { photoInputRef.current?.click(); setQuickActionsOpen(false); }}
+                              className="console-tile tile-system"
+                            >
+                              <span className="console-tile-icon">📷</span>
+                              <span className="console-tile-label">Upload Photo</span>
+                              <span className="console-tile-desc">Add a photo</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { printTankQRLabel(activeTank); setQuickActionsOpen(false); }}
+                              className="console-tile tile-system"
+                            >
+                              <span className="console-tile-icon">🏷️</span>
+                              <span className="console-tile-label">QR Label</span>
+                              <span className="console-tile-desc">Printable tag</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     ) : (
                       <div className="command-console-panel">
@@ -3170,8 +3186,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     }}
                   />
 
-                  {/* Tank Cam Setup */}
-                  <TankCamSetup tankId={activeTank.id} tankName={activeTank.name} />
+                  {/* Tank Cam Setup — deferred; entry point removed from the tank view. */}
                 </div>
               ) }
 {/* 2.2 FISH SUB-TAB: Fish inside tank — consumer label in Casual mode */}
