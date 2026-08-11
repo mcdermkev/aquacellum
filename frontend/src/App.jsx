@@ -143,6 +143,11 @@ export default function App() {
     };
   }, []);
 
+  // Signal the HTML boot splash (app.html) to fade out once auth is ready.
+  useEffect(() => {
+    if (ready) window.dispatchEvent(new Event("app:booted"));
+  }, [ready]);
+
   // Initialize Poseidon grow-out checkpoint reminders (PWA notifications)
   useEffect(() => { initGrowoutReminders(); }, []);
 

@@ -15,8 +15,113 @@
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png" />
 
     <script src="/ethers.umd.min.js"></script>
+
+    <!-- Boot splash: paints instantly (inline styles) with a freshwater
+         background while the JS bundle + app initialize, then fades out once
+         React signals it's ready (see main.jsx / App.jsx 'app:booted'). The
+         background rotates through the three /loading/*.png scenes on each cold
+         start (round-robin, persisted in localStorage) — see the inline script
+         next to #boot-splash below. -->
+    <style>
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background-color: #0a0e1a;
+        background-position: center;
+        background-size: cover;
+        background-repeat: no-repeat;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.6s ease;
+      }
+      #boot-splash.boot-hidden { opacity: 0; pointer-events: none; }
+      #boot-splash .boot-veil {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at center,
+          rgba(10, 14, 26, 0.30) 0%,
+          rgba(10, 14, 26, 0.68) 58%,
+          rgba(10, 14, 26, 0.92) 100%);
+      }
+      #boot-splash .boot-center {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+        text-align: center;
+      }
+      #boot-splash .boot-logo {
+        width: 84px;
+        height: 84px;
+        filter: drop-shadow(0 0 18px rgba(56, 189, 248, 0.55));
+        animation: boot-pulse 2.4s ease-in-out infinite;
+      }
+      #boot-splash .boot-caption {
+        font-family: "Outfit", system-ui, -apple-system, sans-serif;
+        font-size: 0.9rem;
+        letter-spacing: 0.02em;
+        color: rgba(226, 240, 255, 0.9);
+        text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+      }
+      #boot-splash .boot-dots { display: flex; gap: 6px; }
+      #boot-splash .boot-dots span {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: #38bdf8;
+        box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+        animation: boot-dot 1.2s ease-in-out infinite;
+      }
+      #boot-splash .boot-dots span:nth-child(2) { animation-delay: 0.15s; }
+      #boot-splash .boot-dots span:nth-child(3) { animation-delay: 0.3s; }
+      @keyframes boot-pulse {
+        0%, 100% { transform: scale(1); filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.45)); }
+        50% { transform: scale(1.06); filter: drop-shadow(0 0 24px rgba(56, 189, 248, 0.75)); }
+      }
+      @keyframes boot-dot {
+        0%, 100% { opacity: 0.3; transform: translateY(0); }
+        50% { opacity: 1; transform: translateY(-3px); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot-splash .boot-logo, #boot-splash .boot-dots span { animation: none; }
+      }
+    </style>
   </head>
   <body>
+    <div id="boot-splash" aria-hidden="true">
+      <div class="boot-veil"></div>
+      <div class="boot-center">
+        <img class="boot-logo" src="/aquacellum-favicon.svg" alt="" width="84" height="84" />
+        <div class="boot-caption">Cycling the tank&hellip;</div>
+        <div class="boot-dots"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+    <script>
+      // Rotate the boot-splash background across cold starts: abyss -> planted
+      // -> riverscape -> abyss ... Runs synchronously during parse (before first
+      // paint) so there's no flash. Falls back to random if storage is blocked.
+      (function () {
+        var scenes = ["abyss", "planted", "riverscape"];
+        var captions = ["Cycling the tank\u2026", "Counting the fry\u2026", "Tracing the bloodline\u2026"];
+        var idx;
+        try {
+          var key = "aquadex_splash_idx";
+          idx = (parseInt(localStorage.getItem(key) || "-1", 10) + 1) % scenes.length;
+          if (isNaN(idx)) idx = 0;
+          localStorage.setItem(key, String(idx));
+        } catch (e) {
+          idx = Math.floor(Math.random() * scenes.length);
+        }
+        var el = document.getElementById("boot-splash");
+        if (el) {
+          el.style.backgroundImage = "url('/loading/" + scenes[idx] + ".png')";
+          var cap = el.querySelector(".boot-caption");
+          if (cap) cap.textContent = captions[idx];
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

@@ -51,6 +51,18 @@ const appTree = (
   </QueryClientProvider>
 );
 
+// Remove the HTML boot splash (see app.html) once the app signals it's ready.
+// App.jsx dispatches 'app:booted' when auth is ready; the timeout is a safety
+// fallback so the splash can never get stuck if that event never fires.
+function hideBootSplash() {
+  const el = document.getElementById('boot-splash')
+  if (!el) return
+  el.classList.add('boot-hidden')
+  setTimeout(() => el.remove(), 700)
+}
+window.addEventListener('app:booted', hideBootSplash, { once: true })
+setTimeout(hideBootSplash, 8000)
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     {privyAppId ? (
