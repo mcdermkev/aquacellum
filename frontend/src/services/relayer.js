@@ -250,6 +250,140 @@ export async function relayRegisterTank({
   }
 }
 
+// Bulk tank creation ("rack stamping") — see docs/BULK_TANK_CREATE_SPEC.md.
+// Hard cap on how many units one bulk action may create.
+export const MAX_BULK_TANKS = 100;
+
+/**
+ * Build a display name from a numbering pattern.
+ *   pad: 0/undefined = no padding, 2 = "01", 3 = "001".
+ * Exported for unit tests and for the modal's live preview.
+ */
+export function buildBulkTankName({ prefix = "Unit", startNumber = 1, pad = 0 }, index = 0) {
+  const base = String(prefix ?? "").trim() || "Unit";
+  const n = Number(startNumber) + index;
+  const digits = String(n);
+  const padded = pad > 0 ? digits.padStart(pad, "0") : digits;
+  return `${base} ${padded}`;
+}
+
+/**
+ * Register N identical containment units in one action ("rack stamping").
+ *
+ * WHY THIS IS NOT `relayRegisterTank` IN A LOOP: that function keys each row by
+ * `Date.now()`. Called in a tight loop the ids collide within a millisecond and
+ * `db.tanks.put` silently overwrites, so you'd ask for 50 tanks and keep only a
+ * few. Here we assign `baseTs + i` ids (monotonic, collision-free) and write the
+ * whole set with a single `bulkPut`.
+ *
+ * Side-effect policy (see spec §5): one Dexie write, one initial ParameterLog
+ * per tank, per-tank fire-and-forget cloud sync + on-chain enqueue, but XP is
+ * awarded exactly ONCE by the caller (not here) and the
+ * `aquadex:tank_registered` event is dispatched ONCE by the caller — awarding
+ * +25 XP per row would let a keeper farm 1000s of XP from a single click.
+ *
+ * `volumeLiters` must already be in LITERS (caller converts from gallons).
+ *
+ * @returns {{ success: boolean, tankIds: number[], names: string[], error?: string }}
+ */
+export async function relayRegisterTanksBulk({
+  ownerAddress = "",
+  count = 1,
+  namePattern = { prefix: "Unit", startNumber: 1, pad: 0 },
+  tankType = 0,
+  volumeLiters = 75,
+  containment = 0,
+  facility = "",
+  room = "",
+  rack = "",
+  seedInitialLog = true,
+} = {}) {
+  // Last line of defense on the count, independent of any UI clamp.
+  const n = Math.floor(Number(count));
+  if (!Number.isFinite(n) || n < 1 || n > MAX_BULK_TANKS) {
+    return { success: false, tankIds: [], names: [], error: `Count must be between 1 and ${MAX_BULK_TANKS}.` };
+  }
+
+  try {
+    const owner = normalizeAddress(ownerAddress);
+    const creationTimestamp = Math.floor(Date.now() / 1000);
+    const baseTs = Date.now();
+
+    const rows = [];
+    const names = [];
+    for (let i = 0; i < n; i++) {
+      const name = buildBulkTankName(namePattern, i);
+      names.push(name);
+      rows.push({
+        id: baseTs + i, // unique, monotonic, still timestamp-shaped for sorting
+        ownerAddress: owner,
+        name,
+        tankType,
+        volumeLiters,
+        creationTimestamp,
+        active: true,
+        containment,
+        parentUnitId: 0, // stamped units are always top-level
+        facility: String(facility ?? "").trim(),
+        room: String(room ?? "").trim(),
+        rack: String(rack ?? "").trim(),
+        logs: [],
+        latestLog: null,
+        specimens: [],
+      });
+    }
+
+    // Source of truth: all-or-nothing local write.
+    await db.tanks.bulkPut(rows);
+
+    // Initial parameter reading per tank, matching the single-flow defaults so
+    // the Reef Composer and trends have a starting point.
+    if (seedInitialLog) {
+      const ts = Math.round(Date.now() / 1000);
+      await db.actionLogs.bulkAdd(
+        rows.map((t) => ({
+          tankId: t.id,
+          actionType: "ParameterLog",
+          timestamp: ts,
+          details: {
+            temp: 24.5,
+            ph: 7.2,
+            ammonia: 0,
+            nitrite: 0,
+            nitrate: 5,
+            notes: "System initialized via bulk registration",
+          },
+        }))
+      );
+    }
+
+    // Best-effort side effects, per tank, exactly like the single flow.
+    for (const t of rows) {
+      syncTankToCloud(t).catch(() => {});
+      enqueueOnChain(
+        buildRegisterTankCall({
+          name: t.name,
+          tankType: t.tankType,
+          volumeLiters: t.volumeLiters,
+          containment: t.containment,
+          parentUnitId: t.parentUnitId,
+          facility: t.facility,
+          room: t.room,
+          rack: t.rack,
+        }),
+        `registerTank(${t.name})`
+      );
+    }
+
+    trackEvent("tanks_bulk_created", { count: n, tank_type: tankType, volume_liters: volumeLiters });
+
+    return { success: true, tankIds: rows.map((t) => t.id), names };
+  } catch (err) {
+    console.error("[Relayer] Bulk tank registration failed:", err);
+    return { success: false, tankIds: [], names: [], error: err.message || "Failed to create units" };
+  }
+}
+
 /**
  * Mint a specimen locally in Dexie (beta mode — no on-chain write).
  * Adds the specimen to the target tank's specimens array and to the

@@ -10,6 +10,7 @@ import { db } from "../db";
 import { useContractSpecies } from "../hooks/useSpeciesData";
 import { useTankGroups } from "../hooks/useTankGroups";
 import { tankTypeLabel } from "../utils/tankUtils";
+import { BulkTankModal } from "./BulkTankModal";
 
 const CONTAINMENT_TYPES = ["Tank", "Tub", "Basket"];
 
@@ -31,6 +32,8 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
   
   // Registration Form Modal state
   const [isRegisterOpen, setIsRegisterOpen] = useState(openRegisterOnTreeMount || false);
+  // Bulk "rack stamping" modal (Pro only) — see docs/BULK_TANK_CREATE_SPEC.md
+  const [isBulkOpen, setIsBulkOpen] = useState(false);
   const [registerForm, setRegisterForm] = useState({
     name: "",
     tankType: "0",
@@ -470,9 +473,16 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h3 style={{ fontSize: "1.25rem", color: "#fff" }}>Husbandry Facility Hierarchy</h3>
-        <button className="btn-primary" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem" }} onClick={() => setIsRegisterOpen(true)}>
-          [ + Register Unit ]
-        </button>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          {!casualModeActive && (
+            <button className="btn-secondary" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem" }} onClick={() => setIsBulkOpen(true)}>
+              [ + Add a Rack ]
+            </button>
+          )}
+          <button className="btn-primary" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem" }} onClick={() => setIsRegisterOpen(true)}>
+            [ + Register Unit ]
+          </button>
+        </div>
       </div>
 
       {Object.keys(tree).length === 0 ? (
@@ -561,6 +571,20 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
             );
           })}
         </div>
+      )}
+
+      {/* Bulk "rack stamping" modal (Pro only) */}
+      {isBulkOpen && (
+        <BulkTankModal
+          walletAccount={walletAccount}
+          locationGroups={locationGroups}
+          onClose={() => setIsBulkOpen(false)}
+          onCreated={async (result) => {
+            showToast(`✓ Created ${result.tankIds.length} units`);
+            await fetchTanksData();
+            if (onReload) onReload();
+          }}
+        />
       )}
 
       {/* Modal Form for Register Containment Unit */}
