@@ -16,6 +16,12 @@
   isolation: isolate;
   background: #04121f;
   border: 1px solid rgba(255, 255, 255, 0.06);
+  /* Force a compositing layer so the animated (transformed) fish are actually
+     clipped to the rounded corners on mobile WebKit — overflow:hidden +
+     border-radius alone does NOT clip transformed children there, so the fish
+     "swim past" the card. */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .lt-root.lt-hero {

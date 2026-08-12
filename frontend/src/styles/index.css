@@ -7974,6 +7974,13 @@ input:checked + .broadcast-slider:before {
   -webkit-backdrop-filter: blur(18px);
   border-top: 1px solid rgba(56, 189, 248, 0.14);
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
+  /* Promote to its own compositing layer up front. A fixed element with
+     backdrop-filter often fails to paint/position on mobile until a scroll or
+     resize forces a repaint (the "bar only appears at the bottom until I resize"
+     bug); a stable layer makes it paint immediately. */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
 }
 .cbn-tab {
   flex: 1 1 0;
