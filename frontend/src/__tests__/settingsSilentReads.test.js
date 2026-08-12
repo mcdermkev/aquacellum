@@ -119,21 +119,3 @@ describe("the facility report covers this owner's live tanks only", () => {
   });
 });
 
-describe("replaying onboarding survives Dexie key casing", () => {
-  const support = readCode("components/settings/sections/AppSupportSection.jsx");
-
-  it("falls back to the lowercase key when the exact key matches nothing", () => {
-    // Dexie.update() resolves with 0 rather than throwing on a key miss, so the
-    // surrounding try/catch could never notice; the Dexie half of the reset was
-    // silently skipped for checksum-cased addresses.
-    expect(support).toMatch(/let updated = await db\.userProfile\.update\(account, patch\)/);
-    expect(support).toMatch(/if \(!updated && lower !== account\)/);
-    expect(support).toMatch(/db\.userProfile\.update\(lower, patch\)/);
-  });
-
-  it("matches the fallback another consumer already needed", () => {
-    // Pins the precedent this mirrors, so the two cannot drift apart.
-    const reefProfile = read("hooks/useReefProfile.js");
-    expect(reefProfile).toMatch(/Dexie keys are case-sensitive/);
-  });
-});

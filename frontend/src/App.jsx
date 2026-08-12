@@ -22,8 +22,6 @@ import { LandingBreeder } from "./components/LandingBreeder";
 import { ModeSegmentedControl } from "./components/ModeSegmentedControl";
 import { ProfileHub } from "./components/ProfileHub";
 import { CasualBottomNav } from "./components/CasualBottomNav";
-import { OnboardingWizard } from "./components/OnboardingWizard";
-import { useOnboardingGate } from "./hooks/useOnboardingGate";
 import { useAuth } from "./contexts/AuthContext";
 import { pullCloudDataForWallet, pushAllLocalDataToCloud } from "./services/cloudSync";
 import { retryPendingMetadataPublishes } from "./services/specimenMetadata";
@@ -56,6 +54,7 @@ import {
   formatSyncTime,
 } from "./config/appConfig";
 import { isE2EMode } from "./utils/e2eMode";
+import { installStarterQuestListeners, markStarterQuestStep } from "./utils/starterQuest";
 
 
 // ── Code-split tab views ───────────────────────────────────────────────────
@@ -170,6 +169,12 @@ export default function App() {
     window.addEventListener("aquadex_xp_added", handleXpEarned);
     return () => window.removeEventListener("aquadex_xp_added", handleXpEarned);
   }, []);
+
+  // Starter Quest: wire the real product signals (tank registered, water test
+  // logged, specimen added, first Reef post) to the activation checklist once.
+  // App.jsx is always mounted while signed in, so steps are recorded even when
+  // ProfileHub (which only mounts on the Profile tab) is not on screen.
+  useEffect(() => installStarterQuestListeners(), []);
 
   // Cloud sync: on login, pull cloud data to this device then push any local-only data up.
   // This is what makes tanks appear on any device the user signs in to.
@@ -362,6 +367,11 @@ export default function App() {
     }
   }, [tabFromPath, navigate]);
 
+  // Starter Quest: visiting the marketplace tab completes the "browse" step.
+  useEffect(() => {
+    if (activeTab === "directory") markStarterQuestStep("browse_market");
+  }, [activeTab]);
+
   // Scroll to top when switching tabs (prevents reef/other tabs from rendering mid-page)
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -413,23 +423,6 @@ export default function App() {
   const [enteredDashboard, setEnteredDashboard] = useState(() => {
     return localStorage.getItem("aquadex_entered_dashboard") === "true";
   });
-  // Per-account onboarding gate (replaces the old localStorage-only check).
-  // `loading` lets us avoid flashing the wizard before the per-account flag resolves.
-  // TODO: Re-enable once mobile onboarding bug is fixed
-  // const { showOnboarding, loading: onboardingLoading } = useOnboardingGate(account);
-  const showOnboarding = false;
-  const onboardingLoading = false;
-  const [postedFirstCurrent, setPostedFirstCurrent] = useState(() => {
-    return localStorage.getItem("aquadex_posted_first_current") === "true";
-  });
-
-  useEffect(() => {
-    const handleFirstCurrentPosted = () => {
-      setPostedFirstCurrent(true);
-    };
-    window.addEventListener("aquadex_first_current_posted", handleFirstCurrentPosted);
-    return () => window.removeEventListener("aquadex_first_current_posted", handleFirstCurrentPosted);
-  }, []);
   const [triggerLoginOnEntry, setTriggerLoginOnEntry] = useState(false);
   // View mode (hobbyist | breeder) is derived from the ?view= query param.
   // location.search updates on router navigation and browser back/forward, so
@@ -795,6 +788,16 @@ export default function App() {
     })();
   }, [account, syncStatus]); // re-count after sync completes
 
+  // Starter Quest: a keeper who already owns species has clearly set up a tank
+  // and added fish in a prior session — seed those steps so the checklist isn't
+  // misleadingly empty for returning users.
+  useEffect(() => {
+    if (speciesCount > 0) {
+      markStarterQuestStep("add_tank");
+      markStarterQuestStep("add_fish");
+    }
+  }, [speciesCount]);
+
   const renderContent = () => {
     switch (activeTab) {
       case "breeder":
@@ -1039,17 +1042,6 @@ export default function App() {
     }
   }
 
-  // Onboarding completion handler. OnboardingWizard's completeOnboarding()
-  // (via OnboardingContext) has ALREADY persisted the per-account flag + Dexie
-  // mirror + refreshed the localStorage cache before firing this exactly once.
-  // App's job is to react: update casual mode here, then let useOnboardingGate
-  // re-resolve and swap to the dashboard.
-  const handleOnboardingComplete = (isCasual) => {
-    if (isCasual !== null && isCasual !== undefined) {
-      setCasualModeActive(isCasual);
-      localStorage.setItem("aquadex_casual_mode", isCasual.toString());
-    }
-  };
 
   return (
     <>
@@ -1317,7 +1309,7 @@ export default function App() {
                opt-in version is T15b. /app/map redirects to /app/orders. */
             { id: "orders",    icon: "📦",  label: "My Orders",                                          alwaysShow: true  },
             ...(incomingCount > 0 ? [{ id: "incoming", icon: "🚚", label: casualModeActive ? "Incoming" : "In Transit", alwaysShow: true, incomingBadge: true }] : []),
-            { id: "reef",      icon: "🪸",  label: casualModeActive ? "The Reef"      : "Social",        alwaysShow: true, badge: !postedFirstCurrent },
+            { id: "reef",      icon: "🪸",  label: casualModeActive ? "The Reef"      : "Social",        alwaysShow: true },
             { id: "settings",  icon: "⚙️", label: "Settings",                                           alwaysShow: true  },
             ...(isFounder ? [{ id: "founders", icon: "📊", label: "Founders", alwaysShow: true }] : []),
             ...(!casualModeActive && isStorefrontBeta ? [{ id: "breeder-terminal", icon: "🧑‍🌾", label: "Breeder Terminal", alwaysShow: true }] : []),
@@ -1370,7 +1362,6 @@ export default function App() {
         <CasualBottomNav
           activeTab={activeTab}
           onNavigate={handleTabChange}
-          reefBadge={!postedFirstCurrent}
           incomingCount={incomingCount}
         />
       )}
@@ -1644,12 +1635,7 @@ export default function App() {
       />
     </div>
 
-      {/* TODO: Onboarding wizard + tour temporarily disabled (mobile bug — step 1 blocks progress).
-           Re-enable by restoring useOnboardingGate above and uncommenting the block below.
-      {!onboardingLoading && showOnboarding && (
-        <OnboardingWizard onComplete={handleOnboardingComplete} />
-      )}
-      */}
+
     </>
   );
 }

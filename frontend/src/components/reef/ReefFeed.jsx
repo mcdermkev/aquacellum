@@ -22,7 +22,6 @@ import { TidePage } from "./TidePage";
 import { CreateTide } from "./CreateTide";
 import { ReefSearchBar } from "./ReefSearchBar";
 import { DiscoveryPanel } from "./DiscoveryPanel";
-import { ReefOnboarding } from "./ReefOnboarding";
 import { UnlockPrompt, useUnlockGate } from "./UnlockPrompt";
 import { useFollowingFeed, useDiscoverFeed } from "../../hooks/useReefFeed";
 import { useEnsureProfile } from "../../hooks/useReefProfile";
@@ -164,8 +163,6 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
 
   return (
     <div style={{ maxWidth: "640px", margin: "0 auto" }} className="reef-feed-container">
-      {/* Onboarding overlay — shows once */}
-      <ReefOnboarding casualModeActive={casualModeActive} />
 
       {/* XP Unlock prompts */}
       {createSchoolGate.showPrompt && (
