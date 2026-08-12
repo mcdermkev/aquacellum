@@ -8041,3 +8041,17 @@ input:checked + .broadcast-slider:before {
     bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
+
+/* Kill phantom horizontal scroll. Decorative, intentionally-oversized elements
+   (e.g. LivingTank's .lt-caustic light bands at left:-30%/right:-30%) are clipped
+   visually by their card's overflow:hidden, but still leak into the document's
+   scrollWidth — giving the tanks tab ~30px of horizontal overflow. On mobile that
+   overflow also breaks `position: fixed` (the casual bottom bar only appeared after
+   scrolling). The clip must be on the ROOT element (html) — the overflow leaks
+   all the way to the document scroll, so clipping #root or body does nothing.
+   `overflow-x: clip` contains it with no scroll-container side effects (doesn't
+   break vertical scroll or position:sticky) and without becoming a containing
+   block for the fixed bottom bar. */
+html {
+  overflow-x: clip;
+}
