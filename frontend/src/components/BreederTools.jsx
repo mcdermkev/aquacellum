@@ -8,6 +8,8 @@ import { MorphRegistration } from "./MorphRegistration";
 import { GeneticsPrediction } from "./GeneticsPrediction";
 import { COICalculator } from "./COICalculator";
 import { BreederAchievements } from "./BreederAchievements";
+import { BreedingProgramModal } from "./BreedingProgramModal";
+import { useContractSpecies } from "../hooks/useSpeciesData";
 import {
   getUnseenMorphUpdates,
   markMorphsViewed,
@@ -28,6 +30,10 @@ export function BreederTools({
   onSwitchToPro,
 }) {
   const [activeSection, setActiveSection] = useState(initialSection || "register");
+  // Lineage-first intake (docs/LINEAGE_FIRST_INTAKE_SPEC.md)
+  const [isProgramOpen, setIsProgramOpen] = useState(false);
+  const [programResult, setProgramResult] = useState(null);
+  const { data: contractSpecies = [] } = useContractSpecies(contractAddress);
 
   // Sync with external navigation (e.g. "View Lineage" from another tab)
   useEffect(() => {
@@ -68,6 +74,7 @@ export function BreederTools({
 
   const sections = [
     { id: "register", icon: "✦", label: "Register" },
+    { id: "program", icon: "📋", label: "Program" },
     { id: "lineage", icon: "🌿", label: "Lineage" },
     { id: "spawning", icon: "🥚", label: "Spawning" },
     { id: "genetics", icon: "🧬", label: "Genetics" },
@@ -183,6 +190,54 @@ export function BreederTools({
           contractAddress={contractAddress}
           walletAccount={walletAccount}
           casualModeActive={casualModeActive}
+        />
+      )}
+
+      {activeSection === "program" && (
+        <div className="glass-card" style={{ padding: "2rem", maxWidth: "680px", margin: "0 auto" }}>
+          <h2 style={{ fontSize: "1.5rem", color: "#fff", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            📋 Breeding program
+          </h2>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", lineHeight: 1.6, marginTop: "0.5rem" }}>
+            {casualModeActive
+              ? "Setting up? List the groups of fish you breed and we'll make a tank for each one and add its fish."
+              : "New here, or moving a fishroom across? Declare the lines you keep and we'll build the tanks and register the stock in one pass — grouped by line, ready to spawn from."}
+          </p>
+
+          {programResult && (
+            <div
+              style={{
+                marginTop: "1rem",
+                padding: "0.75rem 0.9rem",
+                borderRadius: "var(--radius-sm)",
+                background: "rgba(52, 211, 153, 0.08)",
+                border: "1px solid rgba(52, 211, 153, 0.25)",
+                fontSize: "0.8rem",
+                color: "var(--text-secondary)",
+              }}
+            >
+              ✓ Created {programResult.tankIds.length} tanks and {programResult.specimenIds.length} birth certificates.
+              They're in My Aquariums, and you can pair them from the Spawning tab.
+            </div>
+          )}
+
+          <button
+            className="btn-primary"
+            onClick={() => setIsProgramOpen(true)}
+            style={{ marginTop: "1.25rem" }}
+          >
+            Declare your breeding program
+          </button>
+        </div>
+      )}
+
+      {isProgramOpen && (
+        <BreedingProgramModal
+          walletAccount={walletAccount}
+          catalog={contractSpecies}
+          casualModeActive={casualModeActive}
+          onClose={() => setIsProgramOpen(false)}
+          onCreated={(result) => setProgramResult(result)}
         />
       )}
 

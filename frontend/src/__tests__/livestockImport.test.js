@@ -137,6 +137,16 @@ describe("relayImportSpecimens", () => {
     expect(tanksMap.get(100).specimens[0]).toMatchObject({ speciesId: 1, status: 0 });
   });
 
+  it("persists a supplied breederStockTag and defaults it to empty", async () => {
+    await relayImportSpecimens({
+      ownerAddress: owner,
+      specimens: [spec({ breederStockTag: "  Blue Grass A1  " }), spec()],
+    });
+    // Trimmed, so a line label round-trips as the breeder typed it.
+    expect(specimenRows[0].breederStockTag).toBe("Blue Grass A1");
+    expect(specimenRows[1].breederStockTag).toBe("");
+  });
+
   it("rejects an empty list and writes nothing", async () => {
     const res = await relayImportSpecimens({ ownerAddress: owner, specimens: [] });
     expect(res.success).toBe(false);

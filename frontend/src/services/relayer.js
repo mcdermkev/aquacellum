@@ -630,10 +630,11 @@ export const MAX_IMPORT_SPECIMENS = 1000;
  * and do the specimen + tank writes inside a single Dexie transaction so the
  * whole import is atomic (a throw rolls everything back).
  *
- * Each spec is `{ speciesId, commonName, scientificName, gender, currentTankId }`
- * where `speciesId` is the CONTRACT-catalog id resolved + confirmed by the
- * caller (never a fuzzy guess). Lineage is always `sireId/damId = 0` — importing
- * fabricated parent pointers is unsafe, so it is not done here.
+ * Each spec is `{ speciesId, commonName, scientificName, gender, currentTankId,
+ * breederStockTag? }` where `speciesId` is the CONTRACT-catalog id resolved +
+ * confirmed by the caller (never a fuzzy guess). Lineage is always
+ * `sireId/damId = 0` — importing fabricated parent pointers is unsafe, so it is
+ * not done here.
  *
  * XP and the `aquadex:specimen_added` event are the caller's responsibility,
  * fired exactly once (mirrors the single add-fish flow).
@@ -676,7 +677,10 @@ export async function relayImportSpecimens({ ownerAddress = "", specimens = [] }
         scientificName: s.scientificName || "",
         status: 0, // Active
         gender: normalizeSex(s.gender),
-        breederStockTag: "",
+        // Free-text breeder label. The lineage-first intake flow uses it as the
+        // line/pair name, which is what lets a declared pair be a durable grouping
+        // with no new table and no migration (docs/LINEAGE_FIRST_INTAKE_SPEC.md §3).
+        breederStockTag: String(s.breederStockTag ?? "").trim(),
         createdAt,
         onChainId: null,
         chainStatus: "pending",
