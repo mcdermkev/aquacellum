@@ -85,7 +85,7 @@ vi.mock("../services/smartAccountClient", () => ({
   buildResolveShippingDisputeCall: vi.fn(),
 }));
 
-import { relayRegisterTanksBulk, buildBulkTankName, MAX_BULK_TANKS } from "../services/relayer";
+import { relayRegisterTanksBulk, relayImportTanks, buildBulkTankName, MAX_BULK_TANKS, MAX_IMPORT_TANKS } from "../services/relayer";
 
 beforeEach(() => {
   tankRows = [];
@@ -210,6 +210,75 @@ describe("relayRegisterTanksBulk", () => {
     const res = await relayRegisterTanksBulk({ ...base, count: 10 });
     expect(res.success).toBe(false);
     expect(res.error).toBeTruthy();
+    expect(tankRows).toHaveLength(0);
+    expect(actionLogRows).toHaveLength(0);
+  });
+});
+
+describe("relayImportTanks", () => {
+  const owner = "0xABCDEF0000000000000000000000000000000001";
+
+  const specs = (n) =>
+    Array.from({ length: n }, (_, i) => ({
+      name: `Imported ${i + 1}`,
+      tankType: i % 2 === 0 ? 0 : 2,
+      volumeLiters: 20 + i,
+      containment: 0,
+      facility: "Fish Room",
+      room: "Room A",
+      rack: `Rack ${i + 1}`,
+    }));
+
+  it("creates one row per spec with DISTINCT ids", async () => {
+    const res = await relayImportTanks({ ownerAddress: owner, tanks: specs(30) });
+    expect(res.success).toBe(true);
+    expect(res.tankIds).toHaveLength(30);
+    expect(new Set(tankRows.map((t) => t.id)).size).toBe(30);
+  });
+
+  it("preserves each spec's heterogeneous name / volume / type / location", async () => {
+    await relayImportTanks({ ownerAddress: owner, tanks: specs(3) });
+    expect(tankRows.map((t) => t.name)).toEqual(["Imported 1", "Imported 2", "Imported 3"]);
+    expect(tankRows.map((t) => t.volumeLiters)).toEqual([20, 21, 22]);
+    expect(tankRows.map((t) => t.tankType)).toEqual([0, 2, 0]);
+    expect(tankRows.map((t) => t.rack)).toEqual(["Rack 1", "Rack 2", "Rack 3"]);
+    for (const row of tankRows) {
+      expect(row.parentUnitId).toBe(0);
+      expect(row.active).toBe(true);
+      expect(row.ownerAddress).toBe(owner.toLowerCase());
+    }
+  });
+
+  it("seeds one initial log per tank by default and none when disabled", async () => {
+    await relayImportTanks({ ownerAddress: owner, tanks: specs(4) });
+    expect(actionLogRows).toHaveLength(4);
+    actionLogRows.length = 0;
+    tankRows.length = 0;
+    await relayImportTanks({ ownerAddress: owner, tanks: specs(4), seedInitialLog: false });
+    expect(actionLogRows).toHaveLength(0);
+  });
+
+  it("falls back to 'Unnamed Tank' for a blank name (defensive)", async () => {
+    await relayImportTanks({ ownerAddress: owner, tanks: [{ name: "  ", volumeLiters: 10 }] });
+    expect(tankRows[0].name).toBe("Unnamed Tank");
+  });
+
+  it("rejects an empty list and writes nothing", async () => {
+    const res = await relayImportTanks({ ownerAddress: owner, tanks: [] });
+    expect(res.success).toBe(false);
+    expect(tankRows).toHaveLength(0);
+  });
+
+  it("rejects more than MAX_IMPORT_TANKS and writes nothing", async () => {
+    const res = await relayImportTanks({ ownerAddress: owner, tanks: specs(MAX_IMPORT_TANKS + 1) });
+    expect(res.success).toBe(false);
+    expect(tankRows).toHaveLength(0);
+  });
+
+  it("is all-or-nothing on a failed bulkPut", async () => {
+    bulkPutShouldThrow = true;
+    const res = await relayImportTanks({ ownerAddress: owner, tanks: specs(10) });
+    expect(res.success).toBe(false);
     expect(tankRows).toHaveLength(0);
     expect(actionLogRows).toHaveLength(0);
   });

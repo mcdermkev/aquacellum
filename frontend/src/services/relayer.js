@@ -253,6 +253,82 @@ export async function relayRegisterTank({
 // Bulk tank creation ("rack stamping") — see docs/BULK_TANK_CREATE_SPEC.md.
 // Hard cap on how many units one bulk action may create.
 export const MAX_BULK_TANKS = 100;
+// CSV/paste import (heterogeneous rows) — see docs/CSV_TANK_IMPORT_SPEC.md.
+// Larger cap than a single rack stamp: a migrating breeder may bring their whole
+// fishroom in one paste.
+export const MAX_IMPORT_TANKS = 500;
+
+/**
+ * Build a full tank row from a partial spec. Shared by the bulk-create and
+ * import paths so every stamped/imported unit has the exact same shape as a
+ * single `relayRegisterTank` row. All units are top-level (`parentUnitId: 0`).
+ */
+function _tankRow(spec, id, owner, creationTimestamp) {
+  return {
+    id,
+    ownerAddress: owner,
+    name: spec.name,
+    tankType: Number(spec.tankType) || 0,
+    volumeLiters: Number(spec.volumeLiters) || 0,
+    creationTimestamp,
+    active: true,
+    containment: Number(spec.containment) || 0,
+    parentUnitId: 0,
+    facility: String(spec.facility ?? "").trim(),
+    room: String(spec.room ?? "").trim(),
+    rack: String(spec.rack ?? "").trim(),
+    logs: [],
+    latestLog: null,
+    specimens: [],
+  };
+}
+
+/**
+ * Shared persistence for the bulk tank paths (rack stamping + CSV import).
+ *
+ * WHY A SHARED HELPER: both paths must (a) assign collision-free ids — a loop of
+ * `relayRegisterTank` would reuse the same `Date.now()` and silently overwrite
+ * via `put` — and (b) apply identical side effects. Centralizing it means the
+ * correctness guarantees are written and tested once.
+ *
+ * One all-or-nothing `bulkPut`; one initial `ParameterLog` per tank (optional);
+ * per-tank fire-and-forget cloud sync + on-chain enqueue. Does NOT award XP or
+ * dispatch `aquadex:tank_registered` — callers do that EXACTLY ONCE so a keeper
+ * can't farm +25 XP per row. Throws on a failed Dexie write so callers report
+ * all-or-nothing failure.
+ */
+async function _persistTankRows(rows, seedInitialLog, logNote) {
+  await db.tanks.bulkPut(rows);
+
+  if (seedInitialLog) {
+    const ts = Math.round(Date.now() / 1000);
+    await db.actionLogs.bulkAdd(
+      rows.map((t) => ({
+        tankId: t.id,
+        actionType: "ParameterLog",
+        timestamp: ts,
+        details: { temp: 24.5, ph: 7.2, ammonia: 0, nitrite: 0, nitrate: 5, notes: logNote },
+      }))
+    );
+  }
+
+  for (const t of rows) {
+    syncTankToCloud(t).catch(() => {});
+    enqueueOnChain(
+      buildRegisterTankCall({
+        name: t.name,
+        tankType: t.tankType,
+        volumeLiters: t.volumeLiters,
+        containment: t.containment,
+        parentUnitId: t.parentUnitId,
+        facility: t.facility,
+        room: t.room,
+        rack: t.rack,
+      }),
+      `registerTank(${t.name})`
+    );
+  }
+}
 
 /**
  * Build a display name from a numbering pattern.
@@ -309,71 +385,16 @@ export async function relayRegisterTanksBulk({
     const creationTimestamp = Math.floor(Date.now() / 1000);
     const baseTs = Date.now();
 
-    const rows = [];
     const names = [];
+    const rows = [];
     for (let i = 0; i < n; i++) {
       const name = buildBulkTankName(namePattern, i);
       names.push(name);
-      rows.push({
-        id: baseTs + i, // unique, monotonic, still timestamp-shaped for sorting
-        ownerAddress: owner,
-        name,
-        tankType,
-        volumeLiters,
-        creationTimestamp,
-        active: true,
-        containment,
-        parentUnitId: 0, // stamped units are always top-level
-        facility: String(facility ?? "").trim(),
-        room: String(room ?? "").trim(),
-        rack: String(rack ?? "").trim(),
-        logs: [],
-        latestLog: null,
-        specimens: [],
-      });
+      // baseTs + i: unique, monotonic, still timestamp-shaped for sorting.
+      rows.push(_tankRow({ name, tankType, volumeLiters, containment, facility, room, rack }, baseTs + i, owner, creationTimestamp));
     }
 
-    // Source of truth: all-or-nothing local write.
-    await db.tanks.bulkPut(rows);
-
-    // Initial parameter reading per tank, matching the single-flow defaults so
-    // the Reef Composer and trends have a starting point.
-    if (seedInitialLog) {
-      const ts = Math.round(Date.now() / 1000);
-      await db.actionLogs.bulkAdd(
-        rows.map((t) => ({
-          tankId: t.id,
-          actionType: "ParameterLog",
-          timestamp: ts,
-          details: {
-            temp: 24.5,
-            ph: 7.2,
-            ammonia: 0,
-            nitrite: 0,
-            nitrate: 5,
-            notes: "System initialized via bulk registration",
-          },
-        }))
-      );
-    }
-
-    // Best-effort side effects, per tank, exactly like the single flow.
-    for (const t of rows) {
-      syncTankToCloud(t).catch(() => {});
-      enqueueOnChain(
-        buildRegisterTankCall({
-          name: t.name,
-          tankType: t.tankType,
-          volumeLiters: t.volumeLiters,
-          containment: t.containment,
-          parentUnitId: t.parentUnitId,
-          facility: t.facility,
-          room: t.room,
-          rack: t.rack,
-        }),
-        `registerTank(${t.name})`
-      );
-    }
+    await _persistTankRows(rows, seedInitialLog, "System initialized via bulk registration");
 
     trackEvent("tanks_bulk_created", { count: n, tank_type: tankType, volume_liters: volumeLiters });
 
@@ -381,6 +402,59 @@ export async function relayRegisterTanksBulk({
   } catch (err) {
     console.error("[Relayer] Bulk tank registration failed:", err);
     return { success: false, tankIds: [], names: [], error: err.message || "Failed to create units" };
+  }
+}
+
+/**
+ * Import a heterogeneous list of tank specs (CSV/paste importer).
+ * See docs/CSV_TANK_IMPORT_SPEC.md.
+ *
+ * Each spec is `{ name, tankType, volumeLiters, containment, facility, room, rack }`
+ * with `volumeLiters` already in LITERS (the parser converts from gallons).
+ * Same persistence guarantees and XP/event policy as `relayRegisterTanksBulk`:
+ * unique ids, one all-or-nothing write, and the CALLER awards XP + dispatches
+ * `aquadex:tank_registered` exactly once.
+ *
+ * @returns {{ success: boolean, tankIds: number[], names: string[], error?: string }}
+ */
+export async function relayImportTanks({ ownerAddress = "", tanks = [], seedInitialLog = true } = {}) {
+  if (!Array.isArray(tanks) || tanks.length < 1) {
+    return { success: false, tankIds: [], names: [], error: "No tanks to import." };
+  }
+  if (tanks.length > MAX_IMPORT_TANKS) {
+    return { success: false, tankIds: [], names: [], error: `Import is limited to ${MAX_IMPORT_TANKS} tanks at once.` };
+  }
+
+  try {
+    const owner = normalizeAddress(ownerAddress);
+    const creationTimestamp = Math.floor(Date.now() / 1000);
+    const baseTs = Date.now();
+
+    const rows = tanks.map((spec, i) =>
+      _tankRow(
+        {
+          name: String(spec.name ?? "").trim() || "Unnamed Tank",
+          tankType: spec.tankType,
+          volumeLiters: spec.volumeLiters,
+          containment: spec.containment,
+          facility: spec.facility,
+          room: spec.room,
+          rack: spec.rack,
+        },
+        baseTs + i,
+        owner,
+        creationTimestamp
+      )
+    );
+
+    await _persistTankRows(rows, seedInitialLog, "System initialized via import");
+
+    trackEvent("tanks_imported", { count: rows.length });
+
+    return { success: true, tankIds: rows.map((t) => t.id), names: rows.map((t) => t.name) };
+  } catch (err) {
+    console.error("[Relayer] Tank import failed:", err);
+    return { success: false, tankIds: [], names: [], error: err.message || "Failed to import tanks" };
   }
 }
 
