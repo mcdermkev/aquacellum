@@ -31,7 +31,6 @@ import { useQueryClient } from "@tanstack/react-query";
 export function ReefFeed({ casualModeActive = false, walletAddress, onNavigateProfile }) {
   const [activeTab, setActiveTab] = useState("feed");
   const [composerOpen, setComposerOpen] = useState(false);
-  const [composerPreselectedTank, setComposerPreselectedTank] = useState(null);
   const [viewingProfile, setViewingProfile] = useState(null);
   const [viewingSchool, setViewingSchool] = useState(null);
   const [creatingSchool, setCreatingSchool] = useState(false);
@@ -46,17 +45,12 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
   // Ensure profile exists on load
   useEnsureProfile(walletAddress);
 
-  // Listen for "Share Tank" event from tank detail panels
-  React.useEffect(() => {
-    const handleOpenComposer = (e) => {
-      setComposerOpen(true);
-      if (e.detail) {
-        setComposerPreselectedTank(e.detail);
-      }
-    };
-    window.addEventListener("reef_open_composer", handleOpenComposer);
-    return () => window.removeEventListener("reef_open_composer", handleOpenComposer);
-  }, []);
+  // NOTE: a `reef_open_composer` listener lived here, which opened the composer
+  // preselected to a tank. The chain feeding it (retired "Welcome aboard" modal
+  // → `reef_share_tank` → App bridge) is gone, so nothing could dispatch it.
+  // Removed rather than left one-sided — see the seam inventory guard. Sharing a
+  // tank still works from TankList's share action and from the composer's own
+  // tank picker.
 
   // Listen for "View Profile" event from header profile chip
   React.useEffect(() => {
@@ -486,11 +480,9 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
         isOpen={composerOpen}
         onClose={() => {
           setComposerOpen(false);
-          setComposerPreselectedTank(null);
         }}
         onSuccess={handlePostSuccess}
         casualModeActive={casualModeActive}
-        preselectedTank={composerPreselectedTank}
       />
 
       {/* Pulse animation keyframes */}

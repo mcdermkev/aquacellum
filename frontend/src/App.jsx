@@ -622,19 +622,11 @@ export default function App() {
     };
   }, []);
 
-  // Listen for "Share on Reef" events from tank detail panels
-  useEffect(() => {
-    const handleShareOnReef = (e) => {
-      // Navigate to reef tab
-      goToTab("reef");
-      // Dispatch event with the tank detail for ReefFeed to capture in React state
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent("reef_open_composer", { detail: e.detail }));
-      }, 300);
-    };
-    window.addEventListener("reef_share_tank", handleShareOnReef);
-    return () => window.removeEventListener("reef_share_tank", handleShareOnReef);
-  }, []);
+  // NOTE: a `reef_share_tank` listener lived here, which navigated to the Reef
+  // and re-emitted `reef_open_composer`. Its only dispatcher was the retired
+  // "Welcome aboard" modal's share button, so the listener could never fire.
+  // Removed rather than left one-sided — see the seam inventory guard. Sharing a
+  // tank to the Reef still works from the Reef composer itself.
 
   // Listen for "Ask the breeder" (and other cross-tab) requests to open a DM.
   // The inbox lives on the Reef tab, so navigate there first, then re-emit the

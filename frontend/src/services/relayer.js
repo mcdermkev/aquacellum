@@ -25,6 +25,7 @@ import { syncTankToCloud, syncSpecimenToCloud, syncListingToCloud, deactivateLis
 import { trackEvent } from "./analytics";
 import { putSpecimenPhoto } from "./tankMedia";
 import { SERIAL_CEILING } from "../utils/specimenIdentity";
+import { normalizeSex } from "../utils/specimenSex";
 import {
   METADATA_STATUS,
   normalizeMetadataUri,
@@ -614,6 +615,130 @@ export async function relayMintSpecimen({
   } catch (err) {
     console.error("[Relayer] Local specimen mint failed:", err);
     return { success: false, error: err.message || "Failed to save specimen" };
+  }
+}
+
+// Livestock/CSV import — see docs/LIVESTOCK_IMPORT_SPEC.md.
+export const MAX_IMPORT_SPECIMENS = 1000;
+
+/**
+ * Bulk-create imported specimens (livestock importer).
+ *
+ * WHY NOT LOOP relayMintSpecimen: that path recomputes the next serial by
+ * scanning the whole table on every call, so it must be awaited sequentially or
+ * serials collide. Here we read the max serial ONCE and assign `base + 1 + i`,
+ * and do the specimen + tank writes inside a single Dexie transaction so the
+ * whole import is atomic (a throw rolls everything back).
+ *
+ * Each spec is `{ speciesId, commonName, scientificName, gender, currentTankId }`
+ * where `speciesId` is the CONTRACT-catalog id resolved + confirmed by the
+ * caller (never a fuzzy guess). Lineage is always `sireId/damId = 0` — importing
+ * fabricated parent pointers is unsafe, so it is not done here.
+ *
+ * XP and the `aquadex:specimen_added` event are the caller's responsibility,
+ * fired exactly once (mirrors the single add-fish flow).
+ *
+ * @returns {{ success: boolean, specimenIds: number[], error?: string }}
+ */
+export async function relayImportSpecimens({ ownerAddress = "", specimens = [] } = {}) {
+  if (!Array.isArray(specimens) || specimens.length < 1) {
+    return { success: false, specimenIds: [], error: "No livestock to import." };
+  }
+  if (specimens.length > MAX_IMPORT_SPECIMENS) {
+    return { success: false, specimenIds: [], error: `Import is limited to ${MAX_IMPORT_SPECIMENS} fish at once.` };
+  }
+
+  try {
+    const owner = normalizeAddress(ownerAddress);
+    const createdAt = Math.floor(Date.now() / 1000);
+    let rows = [];
+    const touchedTankIds = new Set();
+
+    await db.transaction("rw", db.specimens, db.tanks, async () => {
+      // Base serial computed ONCE (same rule as relayMintSpecimen: ignore legacy
+      // Date.now() ids at/above SERIAL_CEILING).
+      const existing = await db.specimens.toArray();
+      const maxSerial = existing.reduce((max, s) => {
+        const n = Number(s.id);
+        return Number.isFinite(n) && n < SERIAL_CEILING && n > max ? n : max;
+      }, 0);
+
+      rows = specimens.map((s, i) => ({
+        id: maxSerial + 1 + i,
+        speciesId: Number(s.speciesId),
+        birthTimestamp: 0,
+        breeder: owner,
+        currentTankId: Number(s.currentTankId) || 0,
+        sireId: 0,
+        damId: 0,
+        ownerAddress: owner,
+        commonName: s.commonName || "",
+        scientificName: s.scientificName || "",
+        status: 0, // Active
+        gender: normalizeSex(s.gender),
+        breederStockTag: "",
+        createdAt,
+        onChainId: null,
+        chainStatus: "pending",
+        txHash: null,
+        ipfsMetadataUri: "",
+        metadataStatus: METADATA_STATUS.NONE,
+      }));
+
+      await db.specimens.bulkPut(rows);
+
+      // Append subset copies into each tank's embedded specimens[] (what the
+      // app reads for inhabitants + species count), grouped so each tank is
+      // touched once.
+      const byTank = new Map();
+      for (const r of rows) {
+        if (!r.currentTankId) continue;
+        if (!byTank.has(r.currentTankId)) byTank.set(r.currentTankId, []);
+        byTank.get(r.currentTankId).push({
+          id: r.id,
+          speciesId: r.speciesId,
+          commonName: r.commonName,
+          scientificName: r.scientificName,
+          status: 0,
+          gender: r.gender,
+        });
+      }
+      for (const [tankId, embeds] of byTank) {
+        const tank = await db.tanks.get(tankId);
+        if (tank) {
+          await db.tanks.update(tankId, { specimens: (tank.specimens || []).concat(embeds) });
+          touchedTankIds.add(tankId);
+        }
+      }
+    });
+
+    // Best-effort side effects, outside the transaction, per the single mint path.
+    for (const r of rows) {
+      syncSpecimenToCloud(r).catch(() => {});
+      enqueueOnChain(
+        buildMintSpecimenCall({
+          speciesId: r.speciesId,
+          birthTimestamp: createdAt,
+          breeder: owner,
+          currentTankId: r.currentTankId,
+          sireId: 0,
+          damId: 0,
+          ipfsMetadataUri: "",
+        }),
+        `mintSpecimen(species:${r.speciesId})`,
+        { type: "mintSpecimen", localId: r.id }
+      );
+    }
+    for (const tankId of touchedTankIds) {
+      db.tanks.get(tankId).then((t) => t && syncTankToCloud(t).catch(() => {})).catch(() => {});
+    }
+
+    trackEvent("specimens_imported", { count: rows.length });
+
+    return { success: true, specimenIds: rows.map((r) => r.id) };
+  } catch (err) {
+    console.error("[Relayer] Livestock import failed:", err);
+    return { success: false, specimenIds: [], error: err.message || "Failed to import livestock" };
   }
 }
 

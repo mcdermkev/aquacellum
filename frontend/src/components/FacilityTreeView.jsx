@@ -12,6 +12,7 @@ import { useTankGroups } from "../hooks/useTankGroups";
 import { tankTypeLabel } from "../utils/tankUtils";
 import { BulkTankModal } from "./BulkTankModal";
 import { ImportTanksModal } from "./ImportTanksModal";
+import { LivestockImportModal } from "./LivestockImportModal";
 
 const CONTAINMENT_TYPES = ["Tank", "Tub", "Basket"];
 
@@ -37,6 +38,8 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
   const [isBulkOpen, setIsBulkOpen] = useState(false);
   // CSV/paste import modal (Pro only) — see docs/CSV_TANK_IMPORT_SPEC.md
   const [isImportOpen, setIsImportOpen] = useState(false);
+  // Livestock CSV/paste import modal (Pro only) — see docs/LIVESTOCK_IMPORT_SPEC.md
+  const [isLivestockOpen, setIsLivestockOpen] = useState(false);
   const [registerForm, setRegisterForm] = useState({
     name: "",
     tankType: "0",
@@ -479,7 +482,12 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
         <div style={{ display: "flex", gap: "0.5rem" }}>
           {!casualModeActive && (
             <button className="btn-secondary" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem" }} onClick={() => setIsImportOpen(true)}>
-              [ Import ]
+              [ Import Tanks ]
+            </button>
+          )}
+          {!casualModeActive && (
+            <button className="btn-secondary" style={{ fontSize: "0.85rem", padding: "0.5rem 1rem" }} onClick={() => setIsLivestockOpen(true)}>
+              [ Import Livestock ]
             </button>
           )}
           {!casualModeActive && (
@@ -602,6 +610,21 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
           onClose={() => setIsImportOpen(false)}
           onCreated={async (result) => {
             showToast(`✓ Imported ${result.tankIds.length} tanks`);
+            await fetchTanksData();
+            if (onReload) onReload();
+          }}
+        />
+      )}
+
+      {/* Livestock CSV/paste import modal (Pro only) */}
+      {isLivestockOpen && (
+        <LivestockImportModal
+          walletAccount={walletAccount}
+          catalog={contractSpecies}
+          tanks={tanks}
+          onClose={() => setIsLivestockOpen(false)}
+          onCreated={async (result) => {
+            showToast(`✓ Imported ${result.specimenIds.length} fish`);
             await fetchTanksData();
             if (onReload) onReload();
           }}

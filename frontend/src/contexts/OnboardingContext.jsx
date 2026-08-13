@@ -339,8 +339,11 @@ export function OnboardingProvider({ children, account: accountProp }) {
     // Fast-path cache so the gate doesn't flash onboarding on the next load.
     refreshOnboardingCache();
 
-    // Set flag for main dashboard welcome modal guidance
-    localStorage.setItem("aquadex_show_welcome_guidance", "true");
+    // NOTE: this used to set `aquadex_show_welcome_guidance` for a "Welcome
+    // aboard" modal on the dashboard. That modal was retired along with the
+    // legacy onboarding events (the Starter Quest in the Profile hub is the
+    // activation surface now), so the flag had no reader left. Removed rather
+    // than left one-sided — see the seam inventory guard.
   }, [account]);
 
   const value = {
