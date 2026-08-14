@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { CaretDown, Wallet } from "@phosphor-icons/react";
 import { useAuth } from "../contexts/AuthContext";
 import { generateAlias } from "../utils/generateAlias";
@@ -180,8 +181,16 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
           <CaretDown size={10} weight="bold" style={{ opacity: 0.5, transition: "transform 0.2s", transform: menuOpen ? "rotate(180deg)" : "rotate(0)" }} />
         </button>
 
-        {/* Dropdown Menu — rendered as fixed overlay to avoid any clipping */}
-        {menuOpen && (
+        {/* Dropdown Menu — PORTALLED TO document.body.
+            `position: fixed` alone was not enough and this menu rendered UNDER the
+            tab strip on desktop. An ancestor with `backdrop-filter` (the header's
+            `.glass-card`) becomes both the containing block AND a stacking context
+            for fixed-position descendants, so `zIndex: 9999` below was being
+            resolved INSIDE the header rather than against the page — and the nav
+            strip, a later sibling that also has `backdrop-filter`, painted over
+            it. Portalling to the body is what actually escapes that; raising the
+            z-index here could never have worked. */}
+        {menuOpen && createPortal(
           <>
             {/* Invisible backdrop to catch outside clicks */}
             <div
@@ -284,7 +293,8 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
               {casualModeActive ? "📕 Close Logbook" : "⏻ Disconnect"}
             </button>
           </div>
-          </>
+          </>,
+          document.body
         )}
       </div>
     );

@@ -74,3 +74,45 @@ test.describe("Retired onboarding surfaces stay gone", () => {
     await expect(page.getByText(/Replay Onboarding/i)).toHaveCount(0);
   });
 });
+
+test.describe("Header user menu", () => {
+  // Regression: the dropdown rendered UNDER the tab strip on desktop. It used
+  // `position: fixed; zIndex: 9999`, but the header's `.glass-card` has
+  // `backdrop-filter`, which makes it the containing block AND a stacking context
+  // for fixed descendants — so the z-index was resolved inside the header and the
+  // nav strip painted over it. Fixed by portalling the menu to document.body.
+  //
+  // This asserts it by CLICKING a menu item: Playwright refuses to click an
+  // element another element covers, so a covered menu fails here.
+  test("Q6. the profile dropdown is not covered by the nav strip", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === "mobile-chromium", DESKTOP_ONLY_REASON);
+    await gotoDashboard(page, { casual: false });
+    await seed(page, { tanks: [{ name: "Existing Tank", volumeLiters: 75 }] });
+    await reloadDashboard(page);
+
+    await page.getByRole("button", { name: "User menu" }).click();
+
+    const menu = page.getByRole("menu", { name: "User menu" });
+    await expect(menu).toBeVisible();
+
+    // THE SYMPTOM, asserted first: whatever sits at the menu item's centre point
+    // must be the menu item itself. When the nav strip painted over the menu,
+    // elementFromPoint returned the nav — a menu you can see but cannot click.
+    const item = menu.getByRole("menuitem", { name: /View Profile/i });
+    await expect(item).toBeVisible();
+    const coveredBy = await item.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      if (el === top || el.contains(top)) return null;
+      return top ? `${top.tagName}.${top.className || "(no class)"}`.slice(0, 80) : "nothing";
+    });
+    expect(coveredBy, "the profile menu item is covered by another element").toBeNull();
+
+    // And the mechanism: the portal puts it directly under <body>, outside the
+    // header's stacking context. Raising the z-index alone could never work.
+    await expect(menu.evaluate((el) => el.parentElement === document.body)).resolves.toBe(true);
+
+    // Finally, it must be genuinely clickable (Playwright refuses covered targets).
+    await item.click();
+  });
+});
