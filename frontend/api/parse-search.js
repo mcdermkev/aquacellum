@@ -9,6 +9,7 @@
 
 import { buildSpeciesContext, findSpeciesInQuery } from './_lib/speciesIndex.js';
 import { vertexGenerateContent, isVertexConfigured } from './_lib/vertexClient.js';
+import { modelFor } from './_lib/aiModels.js';
 import { handleCorsPreFlight } from './_lib/cors.js';
 
 export default async function handler(req, res) {
@@ -65,7 +66,7 @@ Rules:
 
     const userPrompt = `Parse this search query: "${query}"${tankContext ? `\n\nUser's tank: ${tankContext.volume}gal, ${tankContext.temp}°C, pH ${tankContext.ph}` : ''}${mentionedSpecies.length > 0 ? `\n\nSpecies detected in catalog: ${mentionedSpecies.map(s => `${s.commonName} (${s.scientificName})`).join(', ')}` : ''}`;
 
-    const geminiResponse = await vertexGenerateContent('gemini-2.5-flash-lite', {
+    const geminiResponse = await vertexGenerateContent(modelFor('SEARCH'), {
         contents: [
           { role: "user", parts: [{ text: systemPrompt }] },
           { role: "model", parts: [{ text: "Understood. I will parse natural language aquarium search queries into structured filter JSON." }] },

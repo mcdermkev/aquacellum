@@ -12,6 +12,7 @@
  */
 
 import { vertexGenerateContent, isVertexConfigured } from './_lib/vertexClient.js';
+import { modelFor, configuredModels, expiringModels, AI_TASKS } from './_lib/aiModels.js';
 import { handleCorsPreFlight, setCorsHeaders } from './_lib/cors.js';
 import { buildSpeciesContext } from './_lib/speciesIndex.js';
 import { checkRateLimit } from './_lib/rateLimiter.js';
@@ -75,7 +76,7 @@ async function handleAltText(req, res) {
 Respond with ONLY the alt-text string, nothing else.`
     };
 
-    const geminiResponse = await vertexGenerateContent('gemini-2.5-flash-lite', {
+    const geminiResponse = await vertexGenerateContent(modelFor('VISION'), {
       contents: [{ parts: [imagePart, prompt] }],
       generationConfig: {
         temperature: 0.3,
@@ -199,7 +200,7 @@ async function handleSuggestSpecies(req, res) {
       Determine if it isApproved and provide explanation in auditNotes.
     `;
 
-    const geminiResponse = await vertexGenerateContent('gemini-2.5-flash', {
+    const geminiResponse = await vertexGenerateContent(modelFor('SUGGEST'), {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
         responseMimeType: "application/json",
@@ -519,7 +520,7 @@ async function handleListingDescriptionDraft(req, res) {
   ].join('\n');
 
   try {
-    const geminiResponse = await vertexGenerateContent('gemini-2.5-flash', {
+    const geminiResponse = await vertexGenerateContent(modelFor('EXTRACT'), {
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
         responseMimeType: 'application/json',
@@ -682,7 +683,7 @@ async function handlePoseidon(req, res) {
   messages.push({ role: "user", parts: [{ text: currentPrompt }] });
 
   try {
-    const geminiResponse = await vertexGenerateContent('gemini-2.5-flash', {
+    const geminiResponse = await vertexGenerateContent(modelFor('CHAT'), {
         contents: messages,
         generationConfig: {
           responseMimeType: "application/json",
@@ -824,27 +825,50 @@ async function handlePoseidonHealth(req, res) {
 
   const configured = isVertexConfigured();
 
-  // If configured, attempt a real Vertex AI ping
+  // If configured, ping EVERY model production is actually configured to use.
+  //
+  // This used to ping a hardcoded 'gemini-2.5-flash' — its own second copy of the
+  // name. So changing the chat model without also editing this line left the
+  // health check reporting green for a model nothing used, which is precisely the
+  // blind spot you don't want during a retirement. It now reads the same registry
+  // the request handlers do, so a retired or mislocated model shows up here first.
   let vertexTest = null;
+  let modelChecks = [];
   if (configured) {
-    try {
-      const testRes = await vertexGenerateContent('gemini-2.5-flash', {
-        contents: [{ role: 'user', parts: [{ text: 'Say OK' }] }],
-        generationConfig: { maxOutputTokens: 5 },
-      });
-      const testStatus = testRes.status;
-      if (testStatus === 200) {
-        const testData = await testRes.json();
-        const text = testData.candidates?.[0]?.content?.parts?.[0]?.text;
-        vertexTest = { success: true, status: testStatus, response: text || '(empty)' };
-      } else {
-        const errBody = await testRes.text();
-        vertexTest = { success: false, status: testStatus, error: errBody.slice(0, 500) };
+    const pingOne = async (cfg) => {
+      try {
+        const res = await vertexGenerateContent(cfg, {
+          contents: [{ role: 'user', parts: [{ text: 'Say OK' }] }],
+          generationConfig: { maxOutputTokens: 5 },
+        });
+        if (res.status === 200) {
+          const data = await res.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          return { ...cfg, ok: true, status: 200, response: text || '(empty)' };
+        }
+        const errBody = await res.text();
+        return { ...cfg, ok: false, status: res.status, error: errBody.slice(0, 300) };
+      } catch (e) {
+        return { ...cfg, ok: false, error: e.message };
       }
-    } catch (e) {
-      vertexTest = { success: false, error: e.message, stack: e.stack?.split('\n').slice(0, 3).join(' | ') };
+    };
+
+    modelChecks = await Promise.all(configuredModels().map(pingOne));
+
+    // Keep the original single-model shape so existing readers of this endpoint
+    // (foundersAnalytics' "Poseidon AI" check) don't break; it now reflects the
+    // CHAT model specifically rather than a hardcoded name.
+    const chatCfg = modelFor('CHAT');
+    const chatCheck = modelChecks.find((c) => c.model === chatCfg.model && c.location === chatCfg.location);
+    if (chatCheck) {
+      vertexTest = chatCheck.ok
+        ? { success: true, status: 200, response: chatCheck.response }
+        : { success: false, status: chatCheck.status, error: chatCheck.error };
     }
   }
+
+  // Announced retirements, surfaced rather than living only in an email.
+  const modelsExpiringSoon = expiringModels(60);
 
   // Relayer Wallet Balance Check
   let relayerHealth = null;
@@ -904,6 +928,20 @@ async function handlePoseidonHealth(req, res) {
       isVertexConfigured: configured,
     },
     vertexTest,
+    // Per-task model configuration and a live reachability ping for each distinct
+    // model. `source` says whether it came from an env override or the pinned
+    // default, so a deploy-time change is visible without reading the code.
+    models: {
+      byTask: AI_TASKS.map((task) => {
+        const cfg = modelFor(task);
+        return { task, model: cfg.model, location: cfg.location, source: cfg.source };
+      }),
+      reachability: modelChecks.map((c) => ({
+        model: c.model, location: c.location, tasks: c.tasks,
+        ok: c.ok, status: c.status ?? null, error: c.error ?? null,
+      })),
+      expiringSoon: modelsExpiringSoon,
+    },
     relayer: relayerHealth,
     timestamp: new Date().toISOString(),
   });

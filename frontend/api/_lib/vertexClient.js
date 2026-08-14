@@ -148,16 +148,46 @@ export function isVertexConfigured() {
 }
 
 /**
+ * Build the generateContent URL for a model.
+ *
+ * The `global` location is NOT just a different path segment — it is served from a
+ * different HOST. Regional models live at `<region>-aiplatform.googleapis.com`;
+ * global ones at the unprefixed `aiplatform.googleapis.com`. Probed 2026-08-11:
+ * every gemini-3.x model 404s on us-central1 (v1 and v1beta1 alike) and only
+ * answers on global, so building a regional URL for one looks exactly like a bad
+ * model name. This function is why a migration to the 3.x line is a config change
+ * rather than a debugging session.
+ *
+ * Exported for the unit test — the host/path split is the part worth pinning.
+ */
+export function buildVertexUrl({ project, location, model, apiVersion = 'v1' }) {
+  const host = location === 'global'
+    ? 'aiplatform.googleapis.com'
+    : `${location}-aiplatform.googleapis.com`;
+  return (
+    `https://${host}/${apiVersion}/projects/${project}` +
+    `/locations/${location}/publishers/google/models/${model}:generateContent`
+  );
+}
+
+/**
  * POST a generateContent request to Vertex AI Gemini.
  * Falls back to Google AI Studio if Vertex auth fails but GEMINI_API_KEY is set.
  *
- * @param {string} model  e.g. 'gemini-2.5-flash'
+ * @param {string|{model: string, location?: string}} modelOrConfig A bare model
+ *   name, or a config from `aiModels.modelFor(task)`. Prefer the config: it
+ *   carries the serving location, and a model reached at the wrong location 404s
+ *   in a way that looks like a bad name (see `buildVertexUrl`).
  * @param {object} body   { contents, generationConfig, safetySettings }
+ * @param {{ location?: string }} [options] Explicit location override.
  * @returns {Promise<Response>} Raw fetch Response
  */
-export async function vertexGenerateContent(model, body) {
+export async function vertexGenerateContent(modelOrConfig, body, options = {}) {
+  const model = typeof modelOrConfig === 'string' ? modelOrConfig : modelOrConfig?.model;
+  const configLocation = typeof modelOrConfig === 'string' ? null : modelOrConfig?.location;
+
   const project = process.env.GCP_PROJECT_ID;
-  const location = process.env.GCP_LOCATION || 'us-central1';
+  const location = options.location || configLocation || process.env.GCP_LOCATION || 'us-central1';
   const geminiApiKey = process.env.GEMINI_API_KEY;
 
   const credentials = getCredentials();
@@ -167,9 +197,7 @@ export async function vertexGenerateContent(model, body) {
     try {
       const token = await getAccessToken(credentials);
 
-      const url =
-        `https://${location}-aiplatform.googleapis.com/v1/projects/${project}` +
-        `/locations/${location}/publishers/google/models/${model}:generateContent`;
+      const url = buildVertexUrl({ project, location, model });
 
       const response = await fetch(url, {
         method: 'POST',
