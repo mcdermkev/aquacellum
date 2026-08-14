@@ -53,7 +53,7 @@
  */
 
 import { db } from "../db";
-import { summarizeGrowout } from "../utils/growoutFunnel";
+import { summarizeGrowout, nextFreeCheckpointTimestamp } from "../utils/growoutFunnel";
 import { SEX, normalizeSex } from "../utils/specimenSex";
 import { formatCertSerial } from "../utils/specimenIdentity";
 import { promotedLifeStage } from "../utils/lifeStage";
@@ -345,17 +345,6 @@ async function applyPromotionProvenance(specimenId, lot) {
   }
 }
 
-function nextFreeCheckpointTimestamp(existingCheckpoints, now) {
-  const taken = new Set(
-    (existingCheckpoints || [])
-      .filter((c) => c?.type === PROMOTED_TYPE)
-      .map((c) => Number(c.timestamp))
-  );
-  let ts = now;
-  while (taken.has(ts)) ts += 1;
-  return ts;
-}
-
 /**
  * A failure result.
  *
@@ -520,7 +509,8 @@ export async function promoteCohortToCertificates({
     // ── 6. Log the departure, for the count that actually exists ────────────
     const checkpointTimestamp = nextFreeCheckpointTimestamp(
       checkpoints,
-      Math.round(Date.now() / 1000)
+      Math.round(Date.now() / 1000),
+      PROMOTED_TYPE
     );
     const checkpoint = {
       spawnId: spawn.spawnId,

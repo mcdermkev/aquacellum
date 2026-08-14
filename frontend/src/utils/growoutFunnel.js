@@ -103,6 +103,36 @@ export function isCountingCheckpoint(checkpoint) {
   return !!checkpoint && !NON_COUNTING_TYPES.includes(checkpoint.type);
 }
 
+/**
+ * The first second at or after `now` with no checkpoint of `type` already on it.
+ *
+ * WHY THIS EXISTS AND WHY IT LIVES HERE: the cloud mirror table
+ * `aquadex_spawn_growout` has the natural key
+ * `(owner_address, spawn_id, event_timestamp, type)` and **collisions upsert**. So
+ * two checkpoints of the same type written in the same second silently collapse
+ * into one row and the cohort undercounts — a data bug that surfaces as wrong
+ * Achievements totals rather than as an error.
+ *
+ * It was private to `services/cohortPromotion.js`. It is here because this module
+ * is the one place checkpoint rules are supposed to live (see the header: a second
+ * copy is how the funnel math drifted across four files), and there is now a
+ * second writer — `services/growoutTank.js`.
+ *
+ * @param {Array<object>} existingCheckpoints rows for the spawn
+ * @param {number} now unix seconds
+ * @param {string} type the checkpoint type about to be written
+ */
+export function nextFreeCheckpointTimestamp(existingCheckpoints, now, type) {
+  const taken = new Set(
+    (existingCheckpoints || [])
+      .filter((c) => c?.type === type)
+      .map((c) => Number(c.timestamp))
+  );
+  let ts = now;
+  while (taken.has(ts)) ts += 1;
+  return ts;
+}
+
 function sumOf(checkpoints, type) {
   return checkpoints
     .filter((c) => c.type === type)

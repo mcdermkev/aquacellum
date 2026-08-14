@@ -9,6 +9,7 @@ import { compressImage } from "../utils/imageCompression";
 import { AnimatedFunnel, ConfettiCelebration } from "./BreederUXPolish";
 import { ShareButton } from "./ShareButton";
 import { generateNarrationCard, generateSurvivalCard } from "../utils/shareCard";
+import { GrowoutTankPanel } from "./GrowoutTankPanel";
 import {
   promoteCohortToCertificates,
   promotableCount,
@@ -325,6 +326,25 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
                 </div>
               ))}
           </div>
+        </div>
+      )}
+
+      {/* ── Grow-out tank: where this cohort physically lives ────────────────
+          Creates a tank and writes a `moved` checkpoint, which is deliberately
+          NOT a departure — relocating fry doesn't remove them from the cohort.
+          Mints nothing; the promote panel below is the only count → certificate
+          path. See docs/GROWOUT_TANK_SPEC.md. */}
+      {spawn && (
+        <div style={{ marginBottom: "0.5rem" }}>
+          <GrowoutTankPanel
+            spawnId={spawnId}
+            defaultName={`Grow-out ${String(spawnId).slice(-3)}`}
+            casual={casual}
+            onDone={async () => {
+              await loadCheckpoints();
+              await loadSpawn();
+            }}
+          />
         </div>
       )}
 
