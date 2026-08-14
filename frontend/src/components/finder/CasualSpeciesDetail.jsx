@@ -305,19 +305,20 @@ export function CasualSpeciesDetail({
         </div>
       )}
 
-      {/* PoseidonChatConsole positions itself absolute/top:0/right:0/height:100%
-          relative to its nearest positioned ancestor (see TankList's fixed-
-          height biotope-banner wrapper). This detail page has no such fixed-
-          height hero, so it gets its own viewport-fixed docking container. */}
+      {/* The `.csd-poseidon-dock` wrapper that used to be here is gone.
+          PoseidonChatConsole now portals itself to document.body and docks to the
+          viewport, so it no longer needs a positioned ancestor to size against.
+          Removing the wrapper matters rather than being tidy-up: it was
+          `position: fixed; height: 100vh` and `width: 100%` under 640px, so once
+          the console portalled out of it, the empty div would have sat invisibly
+          over the whole phone screen swallowing every tap. */}
       {poseidonOpen && (
-        <div className="csd-poseidon-dock">
-          <PoseidonChatConsole
-            casualModeActive={true}
-            walletAccount={walletAccount}
-            seedPrompt={poseidonSeed}
-            onClose={() => { setPoseidonOpen(false); setPoseidonSeed(null); }}
-          />
-        </div>
+        <PoseidonChatConsole
+          casualModeActive={true}
+          walletAccount={walletAccount}
+          seedPrompt={poseidonSeed}
+          onClose={() => { setPoseidonOpen(false); setPoseidonSeed(null); }}
+        />
       )}
     </div>
   );

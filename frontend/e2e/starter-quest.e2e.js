@@ -116,3 +116,50 @@ test.describe("Header user menu", () => {
     await item.click();
   });
 });
+
+test.describe("Poseidon console", () => {
+  // Regression: in Casual, My Tanks > Log Care / Actions > Ask Poseidon opened the
+  // console INSIDE the narrow tank-detail side panel. It was `position: absolute;
+  // height: 100%` so it sized to that panel's short hero banner — a tiny clipped
+  // strip you could see but not use. Now it portals to document.body and docks to
+  // the viewport.
+  //
+  // Asserts the SYMPTOM: the rendered box has to be big enough to actually use.
+  test("Q7. Ask Poseidon opens a usable, viewport-docked console in Casual", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === "mobile-chromium", DESKTOP_ONLY_REASON);
+    await gotoDashboard(page, { casual: true });
+    await seed(page, {
+      tanks: [{ name: "Primary Unit", volumeLiters: 76, specimens: [{ speciesId: 1, commonName: "Guppy" }] }],
+    });
+    await reloadDashboard(page);
+
+    // Open the tank, then the quick-actions menu, then Ask Poseidon.
+    await page.getByTestId("tank-card").first().click();
+    await page.getByRole("button", { name: "⚡ Log Care / Actions" }).click();
+    // Three "Ask Poseidon" affordances exist on this screen (the quick-actions
+    // tile, the flag-explainer link, and the care-guide link) — target the tile.
+    await page.getByRole("button", { name: "💬 Ask Poseidon Get advice" }).click();
+
+    const panel = page.locator(".poseidon-chat-panel");
+    await expect(panel).toBeVisible();
+
+    // THE SYMPTOM, asserted first: it must be big enough to actually use. The old
+    // bug sized it to the tank hero banner, producing a clipped sliver.
+    const box = await panel.boundingBox();
+    expect(box.width, `console too narrow (${Math.round(box.width)}px)`).toBeGreaterThanOrEqual(300);
+    expect(box.height, `console too short to use (${Math.round(box.height)}px)`).toBeGreaterThan(400);
+
+    // And the mechanism: it escaped its mount point.
+    await expect(panel.evaluate((el) => el.parentElement === document.body)).resolves.toBe(true);
+
+    // The input is reachable and typable, which is what "you can't see it" broke.
+    const input = panel.getByPlaceholder(/Ask Poseidon/i);
+    await expect(input).toBeVisible();
+    await input.fill("are my fish compatible?");
+    await expect(input).toHaveValue("are my fish compatible?");
+
+    // And it closes again.
+    await panel.getByRole("button", { name: /Close chat panel/i }).click();
+    await expect(panel).toHaveCount(0);
+  });
+});

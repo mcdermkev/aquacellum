@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { handlePoseidonAction } from "../utils/poseidonBridge";
 import { usePoseidon } from "../hooks/usePoseidon";
 
@@ -120,19 +121,36 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
   const shadowGlow = isPro ? "0 0 15px rgba(168, 85, 247, 0.15)" : "0 0 15px rgba(56, 189, 248, 0.15)";
   const titleText = isPro ? "ECOLOGICAL AUTO-PILOT TERMINAL" : "Poseidon Assistant";
 
-  return (
+  // Docked as a body-level overlay, NOT inside whatever mounted it.
+  //
+  // This used to be `position: absolute; top:0; right:0; height:100%`, which
+  // sized the console to its nearest positioned ancestor. In Casual mode the
+  // tank detail is a narrow inline side panel whose hero banner is only a couple
+  // of hundred pixels tall, so "Ask Poseidon" opened a ~320px-wide console
+  // squeezed into a short strip at the top of the panel — visible but unusable.
+  // CasualSpeciesDetail had already hit this and worked around it with a
+  // `.csd-poseidon-dock` wrapper; this fixes the cause instead.
+  //
+  // `position: fixed` alone is NOT sufficient: several ancestors here are
+  // `.glass-card`, and a `backdrop-filter` ancestor becomes the containing block
+  // AND a stacking context for fixed descendants (the same trap that put the
+  // header profile menu under the nav strip). Portalling to `document.body` is
+  // what actually escapes it.
+  //
+  // The ≤768px rule in index.css still promotes this to a full-screen sheet.
+  return createPortal(
     <div
       className="poseidon-chat-panel glass-card"
       style={{
-        position: "absolute",
+        position: "fixed",
         top: 0,
         right: 0,
-        width: "320px",
-        height: "100%",
+        bottom: 0,
+        width: "min(380px, 100vw)",
         background: consoleBg,
         borderLeft: `1px solid ${borderColor}`,
         boxShadow: shadowGlow,
-        zIndex: 5,
+        zIndex: 2000,
         display: "flex",
         flexDirection: "column",
         transition: "all 0.3s ease",
@@ -499,6 +517,7 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
           ))}
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
