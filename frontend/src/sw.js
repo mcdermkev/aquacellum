@@ -15,23 +15,62 @@
  * cached.
  */
 
-import { precacheAndRoute, createHandlerBoundToURL } from "workbox-precaching";
+import { precacheAndRoute, matchPrecache } from "workbox-precaching";
 import { registerRoute, NavigationRoute } from "workbox-routing";
-import { CacheFirst, StaleWhileRevalidate, NetworkOnly } from "workbox-strategies";
+import { CacheFirst, StaleWhileRevalidate, NetworkOnly, NetworkFirst } from "workbox-strategies";
 import { ExpirationPlugin } from "workbox-expiration";
 import { CacheableResponsePlugin } from "workbox-cacheable-response";
+import { clientsClaim } from "workbox-core";
 
 // ── Precache the built app assets (manifest injected by vite-plugin-pwa) ────
 precacheAndRoute(self.__WB_MANIFEST || []);
 
-// ── App-shell navigation fallback ──────────────────────────────────────────
-// Serve the SPA shell (/app.html) for any /app/* navigation — including deep
-// links like /app/tanks that have no precached HTML of their own — so the app
-// works offline and on hard refreshes. Marketing pages keep their own cached
-// HTML. /api is never handled as a navigation.
-const appShellHandler = createHandlerBoundToURL("/app.html");
+// ── Activate promptly, because a broken shell can strand a client ───────────
+//
+// The in-app "update available" prompt lives in the React app (PwaManager). If
+// the cached shell cannot boot — exactly the failure the navigation route below
+// fixes — then the prompt can never be shown, so the client has no way to
+// receive the fix and is stuck until the user manually clears site data. That
+// deadlock is why activation cannot be gated on the app being alive.
+//
+// The SKIP_WAITING message handler further down is kept so an explicit in-app
+// "reload to update" still works.
+self.addEventListener("install", () => self.skipWaiting());
+clientsClaim();
+
+// ── App-shell navigation: NETWORK FIRST, precache as the offline fallback ───
+//
+// THIS WAS THE BUG. It used `createHandlerBoundToURL("/app.html")`, which serves
+// the shell from the PRECACHE — cache-first, network never consulted. Combined
+// with an update prompt the user had to accept, a device kept serving the shell
+// from whenever it last updated.
+//
+// That is fatal here because `app.html` hard-references hashed chunk names
+// (`/assets/app-<hash>.js`). A new deployment replaces those files, so the stale
+// shell asks for chunks that return 404, nothing mounts, and the app sits on its
+// static "Counting the fry…" loading screen forever with no error surfaced —
+// there is no JS running to surface one.
+//
+// NetworkFirst means an online client ALWAYS gets a shell whose chunk hashes
+// match what the server is actually serving. Offline still works: the network
+// attempt fails fast (4s) and `handlerDidError` returns the precached shell,
+// whose chunks are in the runtime `app-assets` cache from previous visits.
+//
+// Vercel rewrites `/app` and `/app/:path*` to `/app.html` (see vercel.json), so
+// fetching the deep link over the network returns the shell — no rewrite is
+// needed here. `/api` is never treated as a navigation.
+const appShellStrategy = new NetworkFirst({
+  cacheName: "app-shell",
+  networkTimeoutSeconds: 4,
+  plugins: [
+    new CacheableResponsePlugin({ statuses: [0, 200] }),
+    {
+      handlerDidError: async () => (await matchPrecache("/app.html")) || Response.error(),
+    },
+  ],
+});
 registerRoute(
-  new NavigationRoute(appShellHandler, {
+  new NavigationRoute(appShellStrategy, {
     allowlist: [/^\/app(\/|$|\?)/],
     denylist: [/^\/api\//],
   })
