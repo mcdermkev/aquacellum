@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ethers, Contract, formatEther, parseEther } from "ethers";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
@@ -128,6 +128,9 @@ export function CheckoutSummary({
   const [purchases, setPurchases] = useState([]);
   const [shippingEscrows, setShippingEscrows] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Monotonic id for fetchOrders runs, so a slow earlier run can't commit its
+  // stale snapshot over a newer one. See the comment in fetchOrders.
+  const fetchSeqRef = useRef(0);
   const [error, setError] = useState(null);
   const [currentLocation, setCurrentLocation] = useState({ isInsideEventZone: true });
   const [insideEventZone, setInsideEventZone] = useState(true);
@@ -618,14 +621,35 @@ export function CheckoutSummary({
   const fetchOrders = async () => {
     if (!walletAccount || !marketplaceAddress) {
       // Don't set loading=false here — keep showing skeleton until account resolves.
-      // Only bail if we explicitly know there's no wallet to fetch for.
-      if (walletAccount === null && marketplaceAddress) {
-        // Account not yet resolved — stay in loading state
-        return;
-      }
+      // Any falsy account means "not resolved yet", not "no wallet": this used to
+      // test `walletAccount === null` specifically, so an `undefined` account
+      // during auth bootstrap fell through and flashed "No Orders Yet" before the
+      // account arrived. The 3s safety timer below is what releases the skeleton
+      // if an account genuinely never resolves.
+      if (marketplaceAddress) return;
       setLoading(false);
       return;
     }
+
+    // Stale-response guard. fetchOrders is called from several places at once —
+    // notably the mount effect AND the cloud-pull `.then()` — and each run holds
+    // its own snapshot of the local orders it read at the start. The on-chain scan
+    // below walks every specimen id, so an earlier run can finish LAST and commit
+    // its stale snapshot over a newer result.
+    //
+    // That is exactly the "My Orders is empty until I refresh" bug: on a first
+    // visit Dexie is empty, so run #1 snapshots []; the cloud pull then inserts the
+    // orders and triggers run #2, which renders them correctly; run #1's slow scan
+    // finally returns and overwrites state with its empty snapshot. On a refresh
+    // Dexie is already populated, so run #1's snapshot is correct and the clobber
+    // is invisible — which is why it only ever looked broken on the first click.
+    const seq = ++fetchSeqRef.current;
+    const isStale = () => seq !== fetchSeqRef.current;
+
+    // Declared out here, not inside the try, because the catch below needs them to
+    // decide whether this run genuinely found nothing.
+    let localShipping = [];
+    let localPurchases = [];
 
     try {
       setLoading(true);
@@ -634,8 +658,6 @@ export function CheckoutSummary({
 
       // ── Fast path: load local-first orders immediately (Dexie/IndexedDB) ──
       // This makes the tab feel instant for the common case.
-      let localShipping = [];
-      let localPurchases = [];
       try {
         const local = await relayGetOrders(walletAccount);
         localShipping = local.shippingEscrows || [];
@@ -645,6 +667,7 @@ export function CheckoutSummary({
       }
 
       // Show local results immediately so the UI isn't blank
+      if (isStale()) return;
       setShippingEscrows(localShipping);
       setPurchases(localPurchases);
       setLoading(false);
@@ -759,6 +782,20 @@ export function CheckoutSummary({
         }
       }
 
+      if (isStale()) return;
+
+      // Re-read the local orders before merging. The scan above can take seconds,
+      // and a cloud pull may have inserted rows into Dexie in the meantime — the
+      // snapshot taken at the top of this function would silently drop them.
+      try {
+        const fresh = await relayGetOrders(walletAccount);
+        localShipping = fresh.shippingEscrows || localShipping;
+        localPurchases = fresh.purchases || localPurchases;
+      } catch (e) {
+        // Keep the earlier snapshot; it is better than nothing.
+      }
+      if (isStale()) return;
+
       // Merge on-chain results with local (local takes priority for duplicates)
       const localShipIds = new Set(localShipping.map(o => Number(o.tokenId)));
       const localPurchIds = new Set(localPurchases.map(o => Number(o.purchaseId)));
@@ -776,9 +813,13 @@ export function CheckoutSummary({
       setPurchases(mergedPurchases);
     } catch (err) {
       console.error("Error reading on-chain orders:", err);
-      // Local orders were already loaded above, so UI is not blank.
-      // Only set error if we have nothing to show at all.
-      if (shippingEscrows.length === 0 && purchases.length === 0) {
+      if (isStale()) return;
+      // Local orders were already loaded above, so the UI is not blank. Only
+      // surface an error if this run genuinely found nothing — checked against the
+      // orders THIS run read, not the `shippingEscrows`/`purchases` state captured
+      // when this closure was created (which is stale by now and could show a
+      // network error over a perfectly good list).
+      if (localShipping.length === 0 && localPurchases.length === 0) {
         setError("Failed to fetch order tracking details from the network.");
       }
     }
