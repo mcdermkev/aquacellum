@@ -181,8 +181,9 @@ export function ImportTanksModal({ walletAccount, onClose, onCreated }) {
         )}
 
         {/* Step 1 — input */}
-        <label style={labelStyle}>Paste your rows</label>
+        <label style={labelStyle} htmlFor="import-tanks-paste">Paste your rows</label>
         <textarea
+          id="import-tanks-paste"
           value={rawText}
           onChange={handleTextChange}
           placeholder={SAMPLE}

@@ -106,26 +106,28 @@ export function GrowoutTankPanel({ spawnId, defaultName = "", casual = false, on
 
           <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "0.5rem" }}>
             <div>
-              <label style={labelStyle}>Tank name</label>
-              <input type="text" value={tankName} onChange={(e) => setTankName(e.target.value)} placeholder={defaultName} style={inputStyle} />
+              <label style={labelStyle} htmlFor={`growout-name-${spawnId}`}>Tank name</label>
+              <input id={`growout-name-${spawnId}`} type="text" value={tankName} onChange={(e) => setTankName(e.target.value)} placeholder={defaultName} style={inputStyle} />
             </div>
             <div>
-              <label style={labelStyle}>Size (gal)</label>
-              <input type="number" min={1} value={volumeGal} onChange={(e) => setVolumeGal(e.target.value)} style={inputStyle} />
+              <label style={labelStyle} htmlFor={`growout-volume-${spawnId}`}>Size (gal)</label>
+              <input id={`growout-volume-${spawnId}`} type="number" min={1} value={volumeGal} onChange={(e) => setVolumeGal(e.target.value)} style={inputStyle} />
             </div>
           </div>
 
           <div>
-            <label style={labelStyle}>{casual ? "How many babies? (optional)" : "Fry in this batch (optional)"}</label>
-            <input type="number" min={1} value={fryCount} onChange={(e) => setFryCount(e.target.value)} placeholder="e.g. 120" style={inputStyle} />
+            <label style={labelStyle} htmlFor={`growout-fry-${spawnId}`}>
+              {casual ? "How many babies? (optional)" : "Fry in this batch (optional)"}
+            </label>
+            <input id={`growout-fry-${spawnId}`} type="number" min={1} value={fryCount} onChange={(e) => setFryCount(e.target.value)} placeholder="e.g. 120" style={inputStyle} />
             <div style={{ fontSize: "0.64rem", color: "var(--text-muted)", marginTop: "0.25rem", lineHeight: 1.5 }}>
               {pick("headcountIsRunning")}
             </div>
           </div>
 
           <div>
-            <label style={labelStyle}>Note (optional)</label>
-            <input type="text" value={note} onChange={(e) => setNote(e.target.value)} style={inputStyle} />
+            <label style={labelStyle} htmlFor={`growout-note-${spawnId}`}>Note (optional)</label>
+            <input id={`growout-note-${spawnId}`} type="text" value={note} onChange={(e) => setNote(e.target.value)} style={inputStyle} />
           </div>
 
           <div style={{ fontSize: "0.64rem", color: "var(--text-muted)", lineHeight: 1.5 }}>{pick("oneTankPerMove")}</div>

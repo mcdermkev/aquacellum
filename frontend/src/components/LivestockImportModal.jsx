@@ -223,8 +223,9 @@ export function LivestockImportModal({ walletAccount, catalog = [], tanks = [], 
         )}
 
         {/* Step 1 — input */}
-        <label style={labelStyle}>Paste your rows</label>
+        <label style={labelStyle} htmlFor="import-livestock-paste">Paste your rows</label>
         <textarea
+          id="import-livestock-paste"
           value={rawText}
           onChange={(e) => { setRawText(e.target.value); applyParse(e.target.value); }}
           placeholder={SAMPLE}
@@ -256,6 +257,7 @@ export function LivestockImportModal({ walletAccount, catalog = [], tanks = [], 
                       {field === "species" && <span style={{ color: "var(--accent-red)" }}> *</span>}
                     </label>
                     <select
+                      aria-label={`Source column for ${FIELD_LABELS[field]}`}
                       value={mapping[field]}
                       onChange={(e) => { setMapping((p) => ({ ...p, [field]: Number(e.target.value) })); setPendingConfirm(false); }}
                       style={selectStyle}
@@ -308,6 +310,7 @@ export function LivestockImportModal({ walletAccount, catalog = [], tanks = [], 
                         "{name}"
                       </span>
                       <select
+                        aria-label={`Species for "${name}"`}
                         value={resolved ? String(resolved) : ""}
                         onChange={(e) => { setPicks((p) => ({ ...p, [name]: e.target.value })); setPendingConfirm(false); }}
                         style={{ ...selectStyle, flex: 1 }}

@@ -243,6 +243,7 @@ export function BreedingProgramModal({ walletAccount, catalog = [], casualModeAc
                   <tr key={i} style={{ borderTop: "1px solid var(--glass-border)" }}>
                     <td style={tdStyle}>
                       <input
+                        aria-label={`Line name, row ${i + 1}`}
                         type="text"
                         value={r.line}
                         onChange={(e) => setRow(i, { line: e.target.value })}
@@ -252,6 +253,7 @@ export function BreedingProgramModal({ walletAccount, catalog = [], casualModeAc
                     </td>
                     <td style={tdStyle}>
                       <input
+                        aria-label={`Species, row ${i + 1}`}
                         type="text"
                         value={r.species}
                         onChange={(e) => handleSpeciesText(i, e.target.value)}
@@ -260,6 +262,7 @@ export function BreedingProgramModal({ walletAccount, catalog = [], casualModeAc
                       />
                       {needsPick && (
                         <select
+                          aria-label={`Pick species, row ${i + 1}`}
                           value={r.speciesId ? String(r.speciesId) : ""}
                           onChange={(e) => setRow(i, { speciesId: e.target.value ? Number(e.target.value) : null })}
                           style={{ ...selectStyle, marginTop: "0.25rem" }}
@@ -279,16 +282,16 @@ export function BreedingProgramModal({ walletAccount, catalog = [], casualModeAc
                       )}
                     </td>
                     <td style={tdStyle}>
-                      <input type="number" min={0} value={r.males} onChange={(e) => setRow(i, { males: e.target.value })} style={numStyle} />
+                      <input aria-label={`Males, row ${i + 1}`} type="number" min={0} value={r.males} onChange={(e) => setRow(i, { males: e.target.value })} style={numStyle} />
                     </td>
                     <td style={tdStyle}>
-                      <input type="number" min={0} value={r.females} onChange={(e) => setRow(i, { females: e.target.value })} style={numStyle} />
+                      <input aria-label={`Females, row ${i + 1}`} type="number" min={0} value={r.females} onChange={(e) => setRow(i, { females: e.target.value })} style={numStyle} />
                     </td>
                     <td style={tdStyle}>
-                      <input type="number" min={0} value={r.unsexed} onChange={(e) => setRow(i, { unsexed: e.target.value })} style={numStyle} />
+                      <input aria-label={`Unsexed, row ${i + 1}`} type="number" min={0} value={r.unsexed} onChange={(e) => setRow(i, { unsexed: e.target.value })} style={numStyle} />
                     </td>
                     <td style={tdStyle}>
-                      <input type="number" min={0} value={r.volumeGal} onChange={(e) => setRow(i, { volumeGal: e.target.value })} style={numStyle} />
+                      <input aria-label={`Tank size in gallons, row ${i + 1}`} type="number" min={0} value={r.volumeGal} onChange={(e) => setRow(i, { volumeGal: e.target.value })} style={numStyle} />
                     </td>
                     <td style={{ ...tdStyle, fontSize: "0.68rem", color: ok ? "var(--text-muted)" : "var(--accent-red)" }}>
                       {ok ? `${planned.fishCount} fish` : planned?.errors[0] || ""}

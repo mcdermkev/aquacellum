@@ -169,8 +169,9 @@ export function BulkTankModal({ walletAccount, locationGroups = [], onClose, onC
           {/* Count + naming */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "1rem" }}>
             <div>
-              <label style={labelStyle}>How many units</label>
+              <label style={labelStyle} htmlFor="bulk-count">How many units</label>
               <input
+                id="bulk-count"
                 type="number"
                 min={1}
                 max={MAX_BULK_TANKS}
@@ -181,8 +182,9 @@ export function BulkTankModal({ walletAccount, locationGroups = [], onClose, onC
               />
             </div>
             <div>
-              <label style={labelStyle}>Name prefix</label>
+              <label style={labelStyle} htmlFor="bulk-prefix">Name prefix</label>
               <input
+                id="bulk-prefix"
                 type="text"
                 value={prefix}
                 onChange={(e) => setPrefix(e.target.value)}
@@ -272,12 +274,12 @@ export function BulkTankModal({ walletAccount, locationGroups = [], onClose, onC
               </datalist>
             </div>
             <div>
-              <label style={labelStyle}>Room</label>
-              <input type="text" value={room} onChange={(e) => setRoom(e.target.value)} placeholder="e.g. Room B" style={inputStyle} />
+              <label style={labelStyle} htmlFor="bulk-room">Room</label>
+              <input id="bulk-room" type="text" value={room} onChange={(e) => setRoom(e.target.value)} placeholder="e.g. Room B" style={inputStyle} />
             </div>
             <div>
-              <label style={labelStyle}>Rack</label>
-              <input type="text" value={rack} onChange={(e) => setRack(e.target.value)} placeholder="e.g. Rack 3" style={inputStyle} />
+              <label style={labelStyle} htmlFor="bulk-rack">Rack</label>
+              <input id="bulk-rack" type="text" value={rack} onChange={(e) => setRack(e.target.value)} placeholder="e.g. Rack 3" style={inputStyle} />
             </div>
           </div>
 

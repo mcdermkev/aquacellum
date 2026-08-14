@@ -75,3 +75,91 @@ export const TAB_LABELS = {
 export function tabLabel(mode, key) {
   return TAB_LABELS[mode][key];
 }
+
+// ─── Breeder-intake helpers (rack stamping, CSV import, program, grow-out) ───
+//
+// These flows read state `__seedForE2E` doesn't cover — the contract species
+// catalog and spawn records — so they write Dexie directly through the same
+// dev-only `window.__aquadexDb` handle `readTable` uses.
+
+/**
+ * The address `useContractSpecies` keys its Dexie cache on.
+ *
+ * Duplicated from `src/config/appConfig.js` on purpose: that module reads
+ * `import.meta.env` at load, which is undefined under plain Node, so importing it
+ * from a Playwright test throws. If the deployed address changes, change it here
+ * too — there is a test below that fails loudly if the catalog comes back empty,
+ * which is what catches the drift.
+ */
+export const E2E_CONTRACT_ADDRESS = "0x351ca8f34D94F29F6f865Afa419A636324473DeF";
+
+/** A small, stable species catalog for the pickers that need one. */
+export const E2E_SPECIES = [
+  { speciesId: 1, commonName: "Guppy", scientificName: "Poecilia reticulata" },
+  { speciesId: 2, commonName: "Neon Tetra", scientificName: "Paracheirodon innesi" },
+  { speciesId: 3, commonName: "Betta", scientificName: "Betta splendens" },
+];
+
+/**
+ * Seed the contract-species cache so species pickers have something to resolve
+ * against. `useContractSpecies` is stale-while-revalidate and serves this Dexie
+ * cache immediately, so no RPC is needed.
+ */
+export async function seedSpeciesCatalog(page, entries = E2E_SPECIES, contractAddress = E2E_CONTRACT_ADDRESS) {
+  return page.evaluate(
+    async ({ rows, addr }) => {
+      const cachedAt = Date.now();
+      await window.__aquadexDb.speciesManifest.bulkPut(
+        rows.map((r) => ({
+          ...r,
+          allSpeciesIds: [r.speciesId],
+          canonicalIpfsUri: "",
+          careLevel: 0,
+          minTemp: 22,
+          maxTemp: 26,
+          minPh: 6.5,
+          maxPh: 7.5,
+          specimenCount: 0,
+          contractAddress: addr,
+          cachedAt,
+        }))
+      );
+    },
+    { rows: entries, addr: contractAddress }
+  );
+}
+
+/** Seed a spawn record (the grow-out flow needs one to hang a cohort off). */
+export async function seedSpawn(page, { spawnId, tankId = 0, speciesId = 1, owner = E2E_STUB_ACCOUNT }) {
+  return page.evaluate(
+    async (s) => {
+      await window.__aquadexDb.spawns.put({
+        spawnId: s.spawnId,
+        sireId: 0,
+        damId: 0,
+        tankId: s.tankId,
+        speciesId: s.speciesId,
+        status: 1,
+        offspringIds: [],
+        ownerAddress: s.owner,
+        timestamp: Math.floor(Date.now() / 1000),
+        metadata: null,
+      });
+    },
+    { spawnId, tankId, speciesId, owner }
+  );
+}
+
+/** Switch the Pro-mode tanks tab into the Facility Tree view. */
+export async function openFacilityTree(page) {
+  await page.getByRole("radio", { name: /Facility Tree/i }).click();
+  await page.getByRole("heading", { name: /Husbandry Facility Hierarchy/i }).waitFor({ state: "visible" });
+}
+
+/** Tanks owned by the E2E stub account, newest first. */
+export async function readOwnedTanks(page) {
+  const rows = await readTable(page, "tanks");
+  return rows
+    .filter((t) => String(t.ownerAddress).toLowerCase() === E2E_STUB_ACCOUNT)
+    .sort((a, b) => Number(b.id) - Number(a.id));
+}

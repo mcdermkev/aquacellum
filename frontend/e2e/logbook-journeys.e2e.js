@@ -57,7 +57,11 @@ test.describe("Phase B — logbook journeys (authenticated, e2e-seeded)", () => 
     // poll the real db state rather than assume the write has landed the
     // instant the click resolves.
     await page.getByRole("button", { name: "⚡ Log Care / Actions" }).click();
-    await page.getByRole("button", { name: "🧪 Quick Water Test" }).click();
+    // The quick-actions menu became a console-tile grid ("polish casual Quick
+    // Actions menu", d1ed495) and this tile is now labelled "Quick Test" with a
+    // separate description span, so match on the label rather than the old exact
+    // "🧪 Quick Water Test" name. `Quick Test` also excludes "Detailed Test".
+    await page.getByRole("button", { name: /Quick Test/ }).click();
 
     await expect
       .poll(async () => {
