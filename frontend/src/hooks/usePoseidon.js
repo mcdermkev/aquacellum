@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { db } from '../db';
+import { answerAppQuestion, looksLikeNavigationQuestion } from '../services/appGuide';
+import { POSEIDON_ACTION } from '../utils/poseidonActions';
 
 /**
  * usePoseidon — React hook for interacting with the Poseidon AI gateway.
@@ -235,6 +237,41 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
       };
       setMessages(prev => [...prev, { id: `user-${Date.now()}`, sender: 'user', text: text.trim(), timestamp: Date.now() }, disabledMsg]);
       return disabledMsg;
+    }
+
+    // ─── Local app-guide answer, before spending anything ────────────────────
+    // "Where do I log a water test?" is answerable from the app's own capability
+    // manifest (services/appGuide.js). Doing it here means it costs no request
+    // against the 30/hr budget, returns instantly, and — unlike the model path —
+    // still works with no network, where the only alternative is a canned "I can't
+    // reach my knowledge base" sentence.
+    //
+    // Deliberately narrow: it requires BOTH a navigational cue and a confident
+    // manifest match, so husbandry questions still reach the model.
+    if (looksLikeNavigationQuestion(text)) {
+      const guided = answerAppQuestion(text, { casual: mode !== 'pro' });
+      if (guided) {
+        const userMsgLocal = {
+          id: `user-${Date.now()}`,
+          sender: 'user',
+          text: text.trim(),
+          timestamp: Date.now(),
+        };
+        const guideMsg = {
+          id: `pos-${Date.now()}`,
+          sender: 'poseidon',
+          text: guided.answer,
+          timestamp: Date.now(),
+          intent: 'app_guide',
+          // A retired destination has no navTarget, so no "take me there" is
+          // offered for somewhere that no longer exists.
+          action: guided.navTarget
+            ? { type: POSEIDON_ACTION.NAVIGATE, payload: { guideId: guided.entry.id } }
+            : { type: POSEIDON_ACTION.NONE, payload: {} },
+        };
+        setMessages((prev) => [...prev, userMsgLocal, guideMsg]);
+        return guideMsg;
+      }
     }
 
     // Rate limit check

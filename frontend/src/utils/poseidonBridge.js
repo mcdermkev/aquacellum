@@ -1,20 +1,87 @@
 import { db } from "../db";
+import { POSEIDON_ACTION, ACTION_CLASS, actionClass } from "./poseidonActions";
+import { guideEntryById, navTargetFor, APP_GUIDE } from "../services/appGuide";
 
 /**
- * Handle Poseidon local actions atomically inside a Dexie read-write transaction.
- * @param {Object} actionPayload - The payload dispatched from the Poseidon worker
- * @param {string} actionPayload.type - The action type ("CREATE_TANK" | "LOG_HUSBANDRY")
+ * Resolve and dispatch a NAVIGATE action.
+ *
+ * Poseidon can only send a keeper to a destination that exists in the app guide
+ * manifest (services/appGuide.js). That is deliberate: it means the assistant
+ * cannot invent a route, and every target has already been asserted against
+ * VALID_TABS and the real section lists by appGuide's drift test. An unknown
+ * target is refused rather than guessed at.
+ *
+ * `aquadex:navigate-tab` is the channel — NOT `poseidon:navigate`. That one takes
+ * only `{tab, search}`, so it cannot reach a section, and it bypasses
+ * `handleTabChange`, so it skips the filter cleanup every other navigation does.
+ *
+ * This runs OUTSIDE the Dexie transaction below: it writes nothing, and firing a
+ * UI event from inside a write transaction is a good way to have the event land
+ * before the data it describes.
+ */
+function runNavigate(payload = {}) {
+  let target = null;
+
+  if (payload.guideId) {
+    target = navTargetFor(guideEntryById(payload.guideId));
+  } else if (payload.tab) {
+    // Accept a raw tab/section pair only if the manifest actually lists it.
+    const section = payload.section || null;
+    const match = APP_GUIDE.find(
+      (e) => e.tab === payload.tab && (e.section || null) === section
+    );
+    target = navTargetFor(match);
+  }
+
+  if (!target) {
+    console.warn("[Poseidon Bridge] Refusing to navigate to an unlisted destination:", payload);
+    return { ok: false, reason: "unknown-destination" };
+  }
+
+  window.dispatchEvent(new CustomEvent("aquadex:navigate-tab", { detail: target }));
+  return { ok: true, target };
+}
+
+/**
+ * Handle Poseidon local actions.
+ *
+ * Writes run atomically inside a Dexie read-write transaction. Navigation runs
+ * outside it. Informational action types (QUERY_COMPATIBILITY, SUGGEST_SPECIES)
+ * are explicit no-ops — the model's prose was the whole answer — and the hosts no
+ * longer offer a confirm bar for them, so nothing invites a keeper to press a
+ * button that does nothing. See utils/poseidonActions.js.
+ *
+ * @param {Object} actionPayload
+ * @param {string} actionPayload.type - A POSEIDON_ACTION value
  * @param {number} [actionPayload.tankId] - The ID of the active tank
  * @param {string} [actionPayload.walletAddress] - The active user's account key
  * @param {Array} [actionPayload.logs] - Pre-structured list of logs to import
- * @param {Object} [actionPayload.payload] - Additional raw query payloads
+ * @param {Object} [actionPayload.payload] - Action-specific payload
+ * @returns {Promise<{ok: boolean, ran: boolean, reason?: string}>}
  */
 export async function handlePoseidonAction(actionPayload) {
-  if (!actionPayload || !actionPayload.type) return;
+  if (!actionPayload || !actionPayload.type) return { ok: false, ran: false, reason: "no-action" };
+
+  const type = actionPayload.type;
+  const cls = actionClass(type);
+
+  // Nothing to execute. Returned honestly so a caller can tell "handled, no work"
+  // apart from "failed".
+  if (cls === ACTION_CLASS.INFORMATIONAL || cls === ACTION_CLASS.NONE) {
+    return { ok: true, ran: false, reason: "informational" };
+  }
+
+  if (cls === ACTION_CLASS.NAVIGATION) {
+    const res = runNavigate(actionPayload.payload || {});
+    return { ok: res.ok, ran: res.ok, reason: res.reason };
+  }
+
+  // Set to false by a write branch that found nothing usable to write, so the
+  // caller isn't told a reading was saved when it wasn't.
+  let wrote = true;
 
   try {
     await db.transaction('rw', [db.actionLogs, db.tanks, db.userProfile], async () => {
-      const type = actionPayload.type;
 
       if (type === 'CREATE_TANK') {
         const rawQuery = (actionPayload.payload?.rawQuery || "").toLowerCase();
@@ -138,15 +205,78 @@ export async function handlePoseidonAction(actionPayload) {
           });
         }
 
+      } else if (type === POSEIDON_ACTION.LOG_WATER_PARAMS) {
+        // THE BUG THIS FIXES: this branch did not exist. The prompt advertised
+        // LOG_WATER_PARAMS, the UI offered "Poseidon wants to: record water
+        // parameters", and confirming it fell through the if/else chain and wrote
+        // nothing — so the keeper believed a reading was saved when it was not.
+        //
+        // Written the same way the rest of the app writes a reading: appended to
+        // the tank's `logs` with `latestLog` updated, using the fixed-point
+        // scaling the schema stores (×10 temp/pH, ×100 nitrogen, ×10000 salinity)
+        // — see services/relayer.relayLogWaterParameters, which owns this shape.
+        // Inlined rather than called so the write stays inside this transaction.
+        const targetTankId = Number(actionPayload.tankId || actionPayload.payload?.tankId || 0);
+        const p = actionPayload.payload || {};
+
+        // Only accept readings the model actually supplied. A missing value stays
+        // missing — defaulting ammonia to 0 would fabricate a safe reading, which
+        // is the one number a keeper acts on.
+        const scaled = (value, factor) =>
+          value == null || value === "" || !Number.isFinite(Number(value))
+            ? null
+            : Math.round(Number(value) * factor);
+
+        const reading = {
+          tempCelsiusX10: scaled(p.temp ?? p.tempCelsius, 10),
+          phX10: scaled(p.ph, 10),
+          ammoniaPpmX100: scaled(p.ammonia, 100),
+          nitritePpmX100: scaled(p.nitrite, 100),
+          nitratePpmX100: scaled(p.nitrate, 100),
+          salinitySgX10000: scaled(p.salinity, 10000),
+        };
+
+        const hasAnyReading = Object.values(reading).some((v) => v != null);
+        if (!targetTankId || !hasAnyReading) {
+          // Nothing usable. Fail loudly in the log rather than writing an empty
+          // reading that would look like a completed water test.
+          console.warn("[Poseidon Bridge] LOG_WATER_PARAMS ignored — no tank or no readings:", p);
+          wrote = false;
+        } else {
+          const tank = await db.tanks.get(targetTankId);
+          if (!tank) {
+            console.warn("[Poseidon Bridge] LOG_WATER_PARAMS ignored — tank not found:", targetTankId);
+            wrote = false;
+          } else {
+            const log = {
+              timestamp: Math.round(Date.now() / 1000),
+              ...reading,
+              notes: p.notes || "Water test logged via Poseidon.",
+            };
+            const logs = tank.logs || [];
+            logs.push(log);
+            await db.tanks.update(targetTankId, { logs, latestLog: log });
+            await db.actionLogs.add({
+              tankId: targetTankId,
+              actionType: "Quick Water Test",
+              timestamp: log.timestamp,
+              details: "Water test logged via Poseidon.",
+            });
+          }
+        }
       }
     });
+
+    if (!wrote) return { ok: false, ran: false, reason: "nothing-to-write" };
 
     // Dispatch custom event to notify React hooks to refetch/sync state
     window.dispatchEvent(new CustomEvent("aquadex_xp_added", {
       detail: { reason: `Poseidon Action: ${actionPayload.type}` }
     }));
 
+    return { ok: true, ran: true };
   } catch (error) {
     console.error("[Poseidon Bridge] Error executing database transaction:", error);
+    return { ok: false, ran: false, reason: "error" };
   }
 }

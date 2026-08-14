@@ -1,21 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { handlePoseidonAction } from "../utils/poseidonBridge";
+import { requiresConfirmation, actionLabel, actionConfirmLabel } from "../utils/poseidonActions";
 import { usePoseidon } from "../hooks/usePoseidon";
 
-/**
- * Format action type into a friendly label for the confirmation bar.
- */
-function formatActionLabel(actionType, casual = true) {
-  const labels = {
-    CREATE_TANK: casual ? "create a new tank" : "CREATE_TANK",
-    LOG_HUSBANDRY: casual ? "log a care event" : "LOG_HUSBANDRY",
-    QUERY_COMPATIBILITY: casual ? "check compatibility" : "QUERY_COMPATIBILITY",
-    SUGGEST_SPECIES: casual ? "suggest species" : "SUGGEST_SPECIES",
-    LOG_WATER_PARAMS: casual ? "record water parameters" : "LOG_WATER_PARAMS",
-  };
-  return labels[actionType] || (casual ? actionType.toLowerCase().replace(/_/g, " ") : actionType);
-}
+// The local `formatActionLabel` map that used to live here was the third copy of
+// the action list (prompt, bridge, this file) and it drifted: it labelled three
+// actions the bridge never implemented. Labels now come from the one registry.
 
 /**
  * PoseidonChatConsole Panel
@@ -66,8 +57,11 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
     const lastMsg = messages[messages.length - 1];
     if (!lastMsg || lastMsg.sender !== 'poseidon' || lastMsg.intent === 'init') return;
 
-    // Queue action for user confirmation (don't auto-execute)
-    if (lastMsg.action && lastMsg.action.type !== "NONE") {
+    // Queue action for user confirmation (don't auto-execute).
+    // Gated on `requiresConfirmation`, not on `type !== "NONE"`: the informational
+    // types (QUERY_COMPATIBILITY, SUGGEST_SPECIES) used to raise a bar whose
+    // Confirm button ran nothing at all.
+    if (lastMsg.action && requiresConfirmation(lastMsg.action.type)) {
       setPendingAction({
         type: lastMsg.action.type,
         payload: lastMsg.action.payload || {},
@@ -370,7 +364,7 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
           <span style={{ fontSize: "0.9rem" }}>⚡</span>
           <span style={{ fontSize: "0.72rem", color: casualModeActive ? "#fbbf24" : "#c084fc", flex: 1, minWidth: 0 }}>
             {casualModeActive
-              ? `Poseidon wants to: ${formatActionLabel(pendingAction.type, true)}`
+              ? `Poseidon wants to: ${actionLabel(pendingAction.type, { casual: true })}`
               : `ACTION: ${pendingAction.type}`}
           </span>
           <button
@@ -388,7 +382,7 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
               whiteSpace: "nowrap",
             }}
           >
-            {casualModeActive ? "Confirm" : "EXEC"}
+            {actionConfirmLabel(pendingAction.type, { casual: casualModeActive })}
           </button>
           <button
             type="button"

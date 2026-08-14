@@ -471,6 +471,30 @@ export function answerAppQuestion(query, { casual = true, currentTab = null } = 
   };
 }
 
+/**
+ * Whether a question is asking WHERE something is, rather than asking about fish.
+ *
+ * This gate exists so the local matcher can't hijack husbandry questions. "Is a
+ * betta compatible with guppies" would otherwise score against the compatibility
+ * entry and get answered with "go to Fish Finder" instead of a real answer — a
+ * strictly worse response than the model's. So a local answer requires an
+ * explicit navigational cue AND a confident manifest match; everything else goes
+ * to the model.
+ */
+const NAV_CUES = [
+  /\bwhere\b/, /\bwhere'?s\b/,
+  /\bhow (do|can|would) i\b/, /\bhow to\b/,
+  /\btake me\b/, /\bgo to\b/, /\bopen (the|my)\b/, /\bnavigate\b/,
+  /\bwhich (tab|screen|page|section)\b/,
+  /\bshow me (the|my)\b/, /\bfind the\b/,
+  /\bcan i (still|even)?\s*(do|see|find)\b/,
+];
+
+export function looksLikeNavigationQuestion(text) {
+  const q = String(text ?? "").toLowerCase();
+  return NAV_CUES.some((re) => re.test(q));
+}
+
 /** Every user-facing string in the manifest — for the language invariant test. */
 export function allGuideCopy() {
   const out = [];

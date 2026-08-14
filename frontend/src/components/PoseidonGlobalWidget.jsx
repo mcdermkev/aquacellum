@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { usePoseidon } from "../hooks/usePoseidon";
 import { handlePoseidonAction } from "../utils/poseidonBridge";
+import { requiresConfirmation, actionLabel, actionConfirmLabel } from "../utils/poseidonActions";
 import { parsePoseidonMessage } from "../utils/poseidonDeepLinks";
 
 /**
@@ -162,7 +163,9 @@ export function PoseidonGlobalWidget({ walletAddress, casualModeActive = true, a
     const lastMsg = messages[messages.length - 1];
     if (!lastMsg || lastMsg.sender !== "poseidon" || lastMsg.intent === "init") return;
 
-    if (lastMsg.action && lastMsg.action.type !== "NONE") {
+    // See the note in PoseidonChatConsole: gated on whether the action will
+    // actually do something, not merely on it not being NONE.
+    if (lastMsg.action && requiresConfirmation(lastMsg.action.type)) {
       setPendingAction({
         type: lastMsg.action.type,
         payload: lastMsg.action.payload || {},
@@ -429,11 +432,11 @@ export function PoseidonGlobalWidget({ walletAddress, casualModeActive = true, a
                 <span className="poseidon-global-panel__action-icon">⚡</span>
                 <span className="poseidon-global-panel__action-text">
                   {casualModeActive
-                    ? `Poseidon wants to: ${pendingAction.type.toLowerCase().replace(/_/g, " ")}`
+                    ? `Poseidon wants to: ${actionLabel(pendingAction.type, { casual: true })}`
                     : `ACTION: ${pendingAction.type}`}
                 </span>
                 <button onClick={confirmAction} className="poseidon-global-panel__action-btn poseidon-global-panel__action-btn--confirm">
-                  {casualModeActive ? "Do it" : "EXEC"}
+                  {actionConfirmLabel(pendingAction.type, { casual: casualModeActive })}
                 </button>
                 <button onClick={dismissAction} className="poseidon-global-panel__action-btn poseidon-global-panel__action-btn--dismiss">
                   {casualModeActive ? "Nah" : "SKIP"}
