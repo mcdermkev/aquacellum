@@ -80,6 +80,7 @@ function SellerName({ address }) {
 }
 
 import { mapContractError } from "../utils/errorHandler";
+import { PROVENANCE, resolveProvenance, provenanceLabel } from "../utils/provenance";
 import { SellerChip } from "./SellerChip";
 import { useSpeciesMastery, getMasteryForSpecies } from "../hooks/useSpeciesMastery";
 
@@ -485,9 +486,9 @@ export function MarketplaceBoard({
   // with its own performance profile, not a drive-by.
 
   // Map the UI's sort select to catalogQuery's canonical SORT_OPTIONS where a
-  // direct equivalent exists. "tier-purebred"/"tier-wild" are marketplace-
-  // specific pedigree sorts (not part of the generic catalog contract), so
-  // those stay as a local post-sort pass below rather than forking
+  // direct equivalent exists. "tier-purebred"/"tier-unverified" are marketplace-
+  // specific pedigree/provenance sorts (not part of the generic catalog
+  // contract), so those stay as a local post-sort pass below rather than forking
   // catalogQuery.js's sort logic.
   const catalogSort =
     sortBy === "price-asc" ? SORT_OPTIONS.PRICE_ASC
@@ -533,10 +534,14 @@ export function MarketplaceBoard({
         const bPure = (!b.isBatch && b.sireId !== 0 && b.damId !== 0) ? 1 : 0;
         return bPure - aPure;
       }
-      if (sortBy === "tier-wild") {
-        const aWild = (!a.isBatch && a.sireId === 0 && a.damId === 0) ? 1 : 0;
-        const bWild = (!b.isBatch && b.sireId === 0 && b.damId === 0) ? 1 : 0;
-        return bWild - aWild;
+      // Was "tier-wild", sorting by `sireId === 0 && damId === 0` under the label
+      // "Wild Caught First". That surfaced anything with no recorded parents as
+      // wild-caught, which is a claim the data never supported. Now sorts by the
+      // stored provenance instead, which is a fact the keeper stated.
+      if (sortBy === "tier-unverified") {
+        const aUnv = (!a.isBatch && resolveProvenance(a) === PROVENANCE.UNVERIFIED) ? 1 : 0;
+        const bUnv = (!b.isBatch && resolveProvenance(b) === PROVENANCE.UNVERIFIED) ? 1 : 0;
+        return bUnv - aUnv;
       }
       return 0;
     });
@@ -1224,7 +1229,7 @@ export function MarketplaceBoard({
           {!casualModeActive && (
             <>
               <option value="tier-purebred">Pedigree Tier: Purebred First</option>
-              <option value="tier-wild">Pedigree Tier: Wild Caught First</option>
+              <option value="tier-unverified">Provenance: Unverified First</option>
             </>
           )}
         </select>
@@ -1579,21 +1584,25 @@ export function MarketplaceBoard({
                         pedigreeLabel = "Batch Fry Stock";
                         pedigreeBadgeClass = "badge-blue";
                       } else {
+                        // Badge reads STORED provenance. It used to read
+                        // "Wild Caught" whenever both parent ids were 0, so a
+                        // shop-bought fish was advertised to buyers as wild-caught
+                        // founder stock on the strength of a missing field.
+                        // See utils/provenance.js.
                         const sireId = Number(item.sireId || 0);
                         const damId = Number(item.damId || 0);
-                        if (sireId === 0 && damId === 0) {
-                          pedigreeClass = "pedigree-wild";
-                          pedigreeLabel = "Wild Caught";
-                          pedigreeBadgeClass = "badge-amber";
-                        } else if ((sireId !== 0 && damId === 0) || (sireId === 0 && damId !== 0)) {
-                          pedigreeClass = "pedigree-f1";
-                          pedigreeLabel = "Ancestral F1";
-                          pedigreeBadgeClass = "badge-blue";
-                        } else {
+                        pedigreeLabel = provenanceLabel(item, { casual: casualModeActive });
+
+                        if (sireId !== 0 && damId !== 0) {
                           pedigreeClass = "pedigree-purebred";
-                          pedigreeLabel = "Purebred Pedigree";
                           pedigreeGlowClass = "pedigree-purebred-glow";
                           pedigreeBadgeClass = "badge-green";
+                        } else if (sireId !== 0 || damId !== 0) {
+                          pedigreeClass = "pedigree-f1";
+                          pedigreeBadgeClass = "badge-blue";
+                        } else {
+                          pedigreeClass = "pedigree-wild";
+                          pedigreeBadgeClass = "badge-amber";
                         }
                       }
 

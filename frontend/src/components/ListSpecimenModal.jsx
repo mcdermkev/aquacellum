@@ -9,6 +9,7 @@ import { checkSellerStatus, startSellerOnboarding } from "../services/stripePaym
 import { db } from "../db";
 import { Modal } from "./Modal";
 import { loadSpeciesRecordLookup, getSpeciesRecord } from "../utils/speciesRecordLookup";
+import { PROVENANCE, resolveProvenance, provenanceLabel, provenanceText } from "../utils/provenance";
 import { buildListingDraftFromSpecies } from "../services/listingDraft";
 import { draftListingDescription } from "../services/poseidonListingDraft";
 import { listParcelPresets } from "../services/parcelPresets";
@@ -809,20 +810,22 @@ export function ListSpecimenModal({
 
             {/* Digital Collector's Certificate Card */}
             {(() => {
+              // Reads the STORED provenance instead of inferring origin from the
+              // absence of parents, which labelled every shop-bought fish
+              // "Wild Caught" — a claim the keeper never made. See
+              // utils/provenance.js. Parent count still distinguishes how much
+              // lineage is on record, which is a fact about the record rather
+              // than about where the fish came from.
               const sireId = Number(specimenInfo.sireId || 0);
               const damId = Number(specimenInfo.damId || 0);
+              const provenance = resolveProvenance(specimenInfo);
+              const pedigreeLabel = provenanceLabel(specimenInfo);
+
               let pedigreeClass = "pedigree-wild";
-              let pedigreeLabel = "Wild Caught";
-              
-              if (sireId === 0 && damId === 0) {
-                pedigreeClass = "pedigree-wild";
-                pedigreeLabel = "Wild Caught";
-              } else if ((sireId !== 0 && damId === 0) || (sireId === 0 && damId !== 0)) {
-                pedigreeClass = "pedigree-f1";
-                pedigreeLabel = "Ancestral F1";
-              } else {
+              if (provenance === PROVENANCE.BRED_BY_KEEPER && sireId !== 0 && damId !== 0) {
                 pedigreeClass = "pedigree-purebred";
-                pedigreeLabel = "Purebred Pedigree";
+              } else if (sireId !== 0 || damId !== 0) {
+                pedigreeClass = "pedigree-f1";
               }
 
               const photoUrl = getSpecimenPhotoUrl(specimenInfo.commonName);
@@ -894,26 +897,13 @@ export function ListSpecimenModal({
             {step === 3 && (() => {
               const sireId = Number(specimenInfo.sireId || 0);
               const damId = Number(specimenInfo.damId || 0);
-              let globalAvg = "$50.00";
-              let lineageVal = "$48.00";
 
-              if (sireId === 0 && damId === 0) {
-                globalAvg = "$35.00";
-                lineageVal = "$32.00";
-              } else if ((sireId !== 0 && damId === 0) || (sireId === 0 && damId !== 0)) {
-                globalAvg = "$50.00";
-                lineageVal = "$48.00";
-              } else {
-                globalAvg = "$75.00";
-                lineageVal = "$72.00";
-              }
-
+              // The fee/payout maths is real (a 4% platform fee) and stays. The
+              // fabricated globalAvg/lineageVal/valuation-slider that used to live
+              // here is gone — see the note at the Provenance panel below.
               const parseVal = parseFloat(price) || 0;
               const feeVal = parseVal * 0.04;
               const payoutVal = Math.max(0, parseVal - feeVal);
-
-              const maxScale = parseFloat(globalAvg.replace("$", "")) * 2;
-              const markerPercent = Math.min(100, Math.max(0, (parseVal / maxScale) * 100));
 
               return (
                 <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
@@ -1396,24 +1386,19 @@ export function ListSpecimenModal({
 
                   {/* Market Intelligence Block */}
                   {(() => {
+                    // Stored provenance, not an origin guessed from parent count.
+                    const pedigreeLabel = provenanceLabel(specimenInfo);
                     let pedigreeClass = "pedigree-wild";
-                    let pedigreeLabel = "Wild Caught";
                     let pedigreeGlowClass = "";
                     let pedigreeBadgeClass = "badge-amber";
 
-                    if (sireId === 0 && damId === 0) {
-                      pedigreeClass = "pedigree-wild";
-                      pedigreeLabel = "Wild Caught";
-                      pedigreeBadgeClass = "badge-amber";
-                    } else if ((sireId !== 0 && damId === 0) || (sireId === 0 && damId !== 0)) {
-                      pedigreeClass = "pedigree-f1";
-                      pedigreeLabel = "Ancestral F1";
-                      pedigreeBadgeClass = "badge-blue";
-                    } else {
+                    if (sireId !== 0 && damId !== 0) {
                       pedigreeClass = "pedigree-purebred";
-                      pedigreeLabel = "Purebred Pedigree";
                       pedigreeGlowClass = "pedigree-purebred-glow";
                       pedigreeBadgeClass = "badge-green";
+                    } else if (sireId !== 0 || damId !== 0) {
+                      pedigreeClass = "pedigree-f1";
+                      pedigreeBadgeClass = "badge-blue";
                     }
 
                     return (
@@ -1427,51 +1412,46 @@ export function ListSpecimenModal({
                           background: "rgba(255,255,255,0.015)"
                         }}
                       >
+                        {/* WHAT WAS DELETED HERE, AND WHY.
+                            This panel was titled "Market Intelligence" and showed a
+                            "Global Platform Avg", a "Lineage Valuation Track", a
+                            position slider, and verdicts like "🔥 Undervalued /
+                            Deal Price". All of it came from three hardcoded string
+                            pairs chosen by parent count:
+
+                              if (sireId === 0 && damId === 0) globalAvg = "$35.00";
+                              else if (one parent)             globalAvg = "$50.00";
+                              else                             globalAvg = "$75.00";
+
+                            No listing, sale or species fed those numbers. It was
+                            fabricated market data telling a seller what to charge —
+                            the same defect class as the mock generators and invented
+                            trend badges removed from the Founders dashboard (§9.22),
+                            and it doubled as a reason to declare parents you might
+                            not have.
+
+                            A real price hint already exists a few lines above:
+                            `buildPriceSuggestion` derives one from comparable ACTIVE
+                            listings and hides itself below a sample floor rather than
+                            showing a misleading number. Two mechanisms, one honest —
+                            so the fabricated one goes rather than getting rewired.
+
+                            The slot now carries what a buyer genuinely needs and the
+                            seller genuinely knows: where this fish came from. Real
+                            aggregate demand per species is available from
+                            services/speciesAvailability.js if a true comparison is
+                            wanted here later. */}
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)", fontWeight: "600", textTransform: "uppercase" }}>
-                            📊 Market Intelligence
+                            🧬 Provenance
                           </span>
                           <span className={`badge ${pedigreeBadgeClass} ${pedigreeGlowClass}`} style={{ fontSize: "0.6rem" }}>
                             {pedigreeLabel}
                           </span>
                         </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", fontSize: "0.75rem" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between" }}>
-                            <span style={{ color: "var(--text-muted)" }}>Global Platform Avg:</span>
-                            <strong style={{ color: "#fff", fontFamily: "monospace" }}>{globalAvg}</strong>
-                          </div>
-                          <div style={{ display: "flex", justifyContent: "space-between" }}>
-                            <span style={{ color: "var(--text-muted)" }}>Lineage Valuation Track:</span>
-                            <strong style={{ color: "var(--accent-blue)", fontFamily: "monospace" }}>{lineageVal}</strong>
-                          </div>
-                        </div>
-
-                        {/* Visual valuation slider */}
-                        <div style={{ marginTop: "0.25rem" }}>
-                          <div className="price-valuation-bar">
-                            <div className="price-valuation-fill" style={{ width: `${markerPercent}%` }} />
-                            {parseVal > 0 && (
-                              <div className="price-valuation-marker" style={{ left: `${markerPercent}%` }} />
-                            )}
-                          </div>
-                          <div className="price-valuation-labels">
-                            <span>$0</span>
-                            <span>Avg: {globalAvg}</span>
-                            <span>Premium: ${maxScale.toFixed(0)}</span>
-                          </div>
-                          {parseVal > 0 && (
-                            <span style={{ 
-                              fontSize: "0.6rem", 
-                              color: parseVal < parseFloat(lineageVal.replace("$","")) ? "var(--accent-green)" : parseVal > parseFloat(globalAvg.replace("$","")) ? "#c084fc" : "var(--accent-blue)",
-                              display: "block",
-                              marginTop: "0.3rem",
-                              fontWeight: "600",
-                              textAlign: "center"
-                            }}>
-                              {parseVal < parseFloat(lineageVal.replace("$","")) ? "🔥 Undervalued / Deal Price" : parseVal > parseFloat(globalAvg.replace("$","")) ? "📈 Premium Breed Pricing" : "⚖️ Solid Market Average"}
-                            </span>
-                          )}
-                        </div>
+                        <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", margin: 0, lineHeight: 1.5 }}>
+                          {provenanceText(resolveProvenance(specimenInfo))}
+                        </p>
                       </div>
                     );
                   })()}

@@ -10,6 +10,7 @@ import { METADATA_URI_NONE, buildSpecimenMetadata } from "../services/specimenMe
 import { COI_RISK_CONFIG } from "../utils/coiCalculator";
 import { PAIRING_COPY, pairingCandidateComparator, sexSymbol } from "../utils/specimenSex";
 import { formatCertSerial, formatLocalRecordRef } from "../utils/specimenIdentity";
+import { provenanceLabel } from "../utils/provenance";
 import { compressImage } from "../utils/imageCompression";
 import {
   TRAIT_PICKER_OPTIONS,
@@ -631,7 +632,15 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                         color: selectedSire.sireId === 0 && selectedSire.damId === 0 ? "var(--accent-green)" : (selectedSire.sireId !== 0 && selectedSire.damId !== 0 ? "var(--accent-amber)" : "var(--accent-blue)"),
                         border: selectedSire.sireId === 0 && selectedSire.damId === 0 ? "1px solid rgba(52, 211, 153, 0.3)" : (selectedSire.sireId !== 0 && selectedSire.damId !== 0 ? "1px solid rgba(251, 191, 36, 0.3)" : "1px solid rgba(56, 189, 248, 0.3)")
                       }}>
-                        {selectedSire.sireId === 0 && selectedSire.damId === 0 ? "Wild Caught" : (selectedSire.sireId !== 0 && selectedSire.damId !== 0 ? "Purebred" : "Ancestral F1")}
+                        {/* Reads stored provenance rather than calling a
+                            parentless fish "Wild Caught" — see utils/provenance.js.
+                            The parent serials on the line below already state what
+                            lineage IS on record, which is the useful fact here. */}
+                        {selectedSire.sireId !== 0 && selectedSire.damId !== 0
+                          ? "Purebred"
+                          : selectedSire.sireId !== 0 || selectedSire.damId !== 0
+                          ? "Ancestral F1"
+                          : provenanceLabel(selectedSire)}
                       </span>
                       <span className="token-pedigree-info">
                         Parents: Sire Cert. Serial No. {formatCertSerial(selectedSire.sireId, { none: "—" })} | Dam Cert. Serial No. {formatCertSerial(selectedSire.damId, { none: "—" })}

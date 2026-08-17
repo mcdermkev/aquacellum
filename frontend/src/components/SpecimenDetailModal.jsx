@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { ethers, Contract, ZeroAddress } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { getProvider } from "../utils/smartAccount";
+import { lifeStageLabel, LIFE_STAGE_UNKNOWN_LABEL } from "../utils/lifeStage";
+import { provenanceLabel, provenanceText, resolveProvenance, isLineageRoot, PROVENANCE_COPY } from "../utils/provenance";
 import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";
 import { Modal } from "./Modal";
 import { db } from "../db";
@@ -498,16 +500,39 @@ export function SpecimenDetailModal({
   };
 
 
-  const calculateAge = (timestamp) => {
-    if (!timestamp || timestamp === 0) return "Wild-Caught / Unknown Age";
-    const diffSeconds = Math.floor(Date.now() / 1000) - timestamp;
-    if (diffSeconds < 0) return "Just Born";
+  /**
+   * Age line for the detail view.
+   *
+   * TWO CORRECTIONS HERE.
+   *
+   * 1. The stage now comes from the RECORDED `lifeStage` when there is one. This
+   *    function used to derive its own stage from elapsed time with a species-blind
+   *    ladder ("<30 days = Fry"), competing with the canonical LIFE_STAGE
+   *    vocabulary in utils/lifeStage.js. A 40-day killifish and a 40-day Oscar are
+   *    not at the same stage, and the keeper often just knows.
+   *
+   * 2. An unknown date no longer reads "Wild-Caught". `birthTimestamp === 0` means
+   *    the date was never recorded; it says nothing about origin. Origin is its own
+   *    stored field now (utils/provenance.js) and is displayed separately.
+   */
+  const calculateAge = (timestamp, lifeStage = null) => {
+    const stage = lifeStageLabel(lifeStage, { casual: casualModeActive });
+    const stageSuffix = stage !== LIFE_STAGE_UNKNOWN_LABEL ? ` (${stage})` : "";
+
+    if (!timestamp || Number(timestamp) === 0) {
+      // Say what IS known. A recorded stage is real information even with no date.
+      return stageSuffix ? `Age not recorded${stageSuffix}` : "Age not recorded";
+    }
+
+    const diffSeconds = Math.floor(Date.now() / 1000) - Number(timestamp);
+    if (diffSeconds < 0) return `Not yet born${stageSuffix}`;
+
     const days = Math.floor(diffSeconds / 86400);
-    if (days < 30) return `${days} Days Old (Fry)`;
+    if (days < 30) return `${days} Days Old${stageSuffix}`;
     const months = Math.floor(days / 30);
-    if (months < 12) return `${months} Months Old (Juvenile)`;
+    if (months < 12) return `${months} Months Old${stageSuffix}`;
     const years = (months / 12).toFixed(1);
-    return `${years} Years Old (Adult)`;
+    return `${years} Years Old${stageSuffix}`;
   };
 
   const evaluateCompatibility = (species, tank) => {
@@ -880,7 +905,7 @@ export function SpecimenDetailModal({
                   </div>
                   <div>
                     <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Estimated Age</span>
-                    <span style={{ fontSize: "0.9rem", color: "#fff" }}>{calculateAge(spec.birthTimestamp)}</span>
+                    <span style={{ fontSize: "0.9rem", color: "#fff" }}>{calculateAge(spec.birthTimestamp, spec.lifeStage)}</span>
                   </div>
                   <div>
                     <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Registered Breeder</span>
@@ -889,8 +914,40 @@ export function SpecimenDetailModal({
                     </span>
                   </div>
 
+                  {/* Origin, stated rather than inferred. Before this, origin was
+                      never stored and "Wild Caught" was guessed from the absence of
+                      parents — so a shop-bought fish claimed wild founder stock.
+                      See utils/provenance.js. */}
+                  <div>
+                    <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Origin</span>
+                    <span
+                      style={{ fontSize: "0.9rem", color: "#fff" }}
+                      title={provenanceText(resolveProvenance(spec), { casual: casualModeActive })}
+                    >
+                      {provenanceLabel(spec, { casual: casualModeActive })}
+                    </span>
+                  </div>
+
                 </div>
               </div>
+
+              {/* Why the family tree below stops here. PedigreeTree already renders
+                  absent ancestors honestly as "Unknown Ancestry", but six empty
+                  slots with no explanation read as "this fish has no ancestors".
+                  Mirrors pedigreeDocument.js's rule that a gap is not a forgery. */}
+              {isLineageRoot(spec) && (
+                <div style={{
+                  fontSize: "0.72rem",
+                  color: "var(--text-muted)",
+                  background: "rgba(56, 189, 248, 0.05)",
+                  border: "1px solid rgba(56, 189, 248, 0.15)",
+                  borderRadius: "8px",
+                  padding: "0.65rem 0.8rem",
+                  lineHeight: 1.5,
+                }}>
+                  {PROVENANCE_COPY.lineageRoot[casualModeActive ? "casual" : "pro"]}
+                </div>
+              )}
 
               {/* Husbandry Containment & Chemistry Snapshots */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>

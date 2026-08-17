@@ -8,6 +8,8 @@ import { mapContractError } from "../utils/errorHandler";
 import { relayMintSpecimen } from "../services/relayer";
 import { putSpecimenPhoto } from "../services/tankMedia";
 import { SEX, SEX_OPTIONS, normalizeSex, sexOptionLabel } from "../utils/specimenSex";
+import { LIFE_STAGE_OPTIONS, lifeStageOptionLabel, canBeCertificated } from "../utils/lifeStage";
+import { PROVENANCE } from "../utils/provenance";
 import {
   METADATA_URI_NONE,
   buildSpecimenMetadata,
@@ -81,6 +83,10 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
   const [formData, setFormData] = useState({
     speciesId: "",
     birthDate: "",
+    // "" means not recorded. An exact birth date is often a guess for bought-in
+    // stock, whereas the stage is knowable — so both are collected and neither is
+    // inferred from the other.
+    lifeStage: "",
     currentTankId: "0",
     sireId: "0",
     damId: "0",
@@ -275,6 +281,15 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
         scientificName,
         gender: normalizeSex(formData.gender),
         breederStockTag: formData.breederStockTag,
+        lifeStage: formData.lifeStage || null,
+        // Recorded parents ARE the evidence, so a parented registration is
+        // bredByKeeper. Without them the honest reading is that the trail starts
+        // here — which is what the beta feedback asked for, and what stops the
+        // absence of parents being rendered as the claim "wild caught".
+        provenance:
+          Number(formData.sireId) > 0 || Number(formData.damId) > 0
+            ? PROVENANCE.BRED_BY_KEEPER
+            : PROVENANCE.UNVERIFIED,
       });
 
       if (!result.success) {
@@ -481,7 +496,7 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
           </div>
           <div>
             <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-              Approx Birth Date
+              Approx Birth Date <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: "400" }}>(optional)</span>
             </label>
             <input 
               type="date"
@@ -491,7 +506,55 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
               onFocus={handleInputFocus}
               onBlur={handleInputBlur}
             />
+            <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>
+              Left blank stays blank. We never fill in a date we don&apos;t know.
+            </span>
           </div>
+        </div>
+
+        {/* Life stage. Added because a birth date is the wrong question for
+            bought-in stock — most keepers know they bought a young adult, not the
+            day it hatched. Recorded separately so neither value is derived from
+            the other, and unknown stays unknown (utils/lifeStage.js). */}
+        <div>
+          <label style={{ display: "block", fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+            Life stage <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: "400" }}>(optional)</span>
+          </label>
+          <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+            {LIFE_STAGE_OPTIONS.filter((o) => canBeCertificated(o.value)).map((option) => {
+              const selected = formData.lifeStage === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, lifeStage: selected ? "" : option.value })}
+                  aria-pressed={selected}
+                  style={{
+                    flex: "1 1 auto",
+                    minHeight: "40px",
+                    padding: "0.5rem 0.9rem",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontSize: "0.8rem",
+                    fontWeight: selected ? 600 : 400,
+                    color: selected ? "#fff" : "var(--text-muted)",
+                    background: selected
+                      ? (casualModeActive ? "rgba(56, 189, 248, 0.18)" : "rgba(168, 85, 247, 0.22)")
+                      : "rgba(0,0,0,0.2)",
+                    border: selected
+                      ? (casualModeActive ? "1px solid var(--accent-blue)" : "1px solid rgba(168, 85, 247, 0.5)")
+                      : "1px solid var(--glass-border)",
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  {lifeStageOptionLabel(option, { casual: casualModeActive })}
+                </button>
+              );
+            })}
+          </div>
+          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>
+            Eggs and fry are tracked as cohorts rather than individual certificates, so they aren&apos;t offered here.
+          </span>
         </div>
 
         {/* Sex — the certificate form was the ONLY add-a-fish surface that didn't

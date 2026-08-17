@@ -25,6 +25,8 @@ import {
   retirementOutcomeLabel,
 } from "../utils/specimenIdentity";
 import { SEX, SEX_OPTIONS, isKnownSex, normalizeSex, sexOptionLabel, sexSymbol } from "../utils/specimenSex";
+import { LIFE_STAGE_OPTIONS, lifeStageOptionLabel, canBeCertificated } from "../utils/lifeStage";
+import { PROVENANCE, provenanceText } from "../utils/provenance";
 import { useUnitPrefs } from "../hooks/useUnitPrefs";
 import { celsiusToFahrenheit, formatTemperature, showCelsius, showFahrenheit } from "../utils/units";
 import { createCurrent } from "../services/reefApi";
@@ -219,6 +221,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const [addFishError, setAddFishError] = useState(null);
   const [addFishQty, setAddFishQty] = useState(1);
   const [addFishGender, setAddFishGender] = useState(SEX.UNSEXED);
+  // "" means not recorded, and stays not recorded — never coerced to a stage.
+  const [addFishLifeStage, setAddFishLifeStage] = useState("");
   const { data: contractSpecies = [] } = useContractSpecies(contractAddress);
   const [poseidonChatOpen, setPoseidonChatOpen] = useState(false);
   const [poseidonSeed, setPoseidonSeed] = useState(null); // grounded question seeded from a contextual "Ask Poseidon" tip
@@ -539,6 +543,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     setAddFishSearch("");
     setAddFishQty(1);
     setAddFishGender(SEX.UNSEXED);
+    // Cleared per open so a stage chosen for one batch is never silently applied
+    // to the next — MintSpecimen leaves birthDate populated across registrations
+    // and that is exactly the stale-value trap to avoid here.
+    setAddFishLifeStage("");
     setAddFishError(null);
     setAddFishOpen(true);
   };
@@ -561,7 +569,14 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         }
         const result = await relayMintSpecimen({
           speciesId: Number(addFishSpeciesId),
+          // Still 0 — genuinely unknown, and now passed through to the chain as 0
+          // instead of being rewritten to "born today". The life stage below is
+          // what carries the age information a keeper actually has.
           birthTimestamp: 0,
+          lifeStage: addFishLifeStage || null,
+          // This drawer only ever adds fish the keeper already owns from
+          // elsewhere, so the trail demonstrably starts here.
+          provenance: PROVENANCE.UNVERIFIED,
           breeder: walletAccount,
           currentTankId: Number(addFishTankId),
           ownerAddress: walletAccount,
@@ -3891,6 +3906,66 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     })}
                   </div>
                 </div>
+              </div>
+
+              {/* Life stage — the age question a keeper can actually answer.
+                  This surface previously collected NO age at all and hardcoded
+                  birthTimestamp: 0, which the relayer then turned into "born
+                  today" on-chain. Most fish added here are shop-bought young
+                  adults, so an exact birth date is a guess; the stage is not.
+                  Unknown stays a first-class answer (utils/lifeStage.js). */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                  {casualModeActive ? "How old are they?" : "Life stage"}
+                  <span style={{ color: "var(--text-muted)", fontWeight: 400 }}> (optional)</span>
+                </label>
+                <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+                  {LIFE_STAGE_OPTIONS.filter((o) => canBeCertificated(o.value)).map((option) => {
+                    const sel = addFishLifeStage === option.value;
+                    return (
+                      <button
+                        type="button"
+                        key={option.value}
+                        onClick={() => setAddFishLifeStage(sel ? "" : option.value)}
+                        aria-pressed={sel}
+                        style={{
+                          flex: "1 1 auto",
+                          minHeight: "38px",
+                          padding: "0.4rem 0.75rem",
+                          background: sel ? "rgba(56, 189, 248, 0.18)" : "rgba(0,0,0,0.2)",
+                          border: sel ? "1px solid var(--accent-blue)" : "1px solid var(--glass-border)",
+                          borderRadius: "6px",
+                          color: sel ? "#fff" : "var(--text-secondary)",
+                          fontSize: "0.75rem",
+                          fontWeight: sel ? 600 : 400,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {lifeStageOptionLabel(option, { casual: casualModeActive })}
+                      </button>
+                    );
+                  })}
+                </div>
+                <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.3rem", display: "block" }}>
+                  {casualModeActive
+                    ? "Leave blank if you're not sure — we won't guess."
+                    : "Eggs and fry are tracked as cohorts, not individual certificates, so they aren't offered here."}
+                </span>
+              </div>
+
+              {/* Provenance. Fish added here come from outside Aquadex, so this
+                  records that rather than letting the absence of parents be read
+                  as "wild caught" — see utils/provenance.js. */}
+              <div style={{
+                fontSize: "0.68rem",
+                color: "var(--text-muted)",
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid var(--glass-border)",
+                borderRadius: "6px",
+                padding: "0.5rem 0.65rem",
+                lineHeight: 1.5,
+              }}>
+                {provenanceText(PROVENANCE.UNVERIFIED, { casual: casualModeActive })}
               </div>
 
               <button

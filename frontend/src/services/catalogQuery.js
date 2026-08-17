@@ -160,8 +160,20 @@ export const SORT_OPTIONS = Object.freeze({
 });
 
 function getListingTimestamp(item) {
-  const ts = item.birthTimestamp ?? item.createdAt ?? item.listedAt ?? null;
-  return Number.isFinite(Number(ts)) ? Number(ts) : -Infinity;
+  // `birthTimestamp` is 0 when the birth date is UNKNOWN, which is the common case
+  // for bought-in stock. `??` only falls through on null/undefined, so a stored 0
+  // was kept and the listing sorted as the oldest thing in the catalogue under
+  // NEWEST — unknown-age fish sank to the bottom of a "newest first" view.
+  //
+  // Treating 0 as absent restores the intended precedence. Note this must NOT
+  // become `||` on the whole chain: a legitimately falsy `createdAt` of 0 would
+  // have the same problem one link down, so each candidate is checked explicitly.
+  const candidates = [item.birthTimestamp, item.createdAt, item.listedAt];
+  for (const candidate of candidates) {
+    const n = Number(candidate);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return -Infinity;
 }
 
 function getListingDistance(item) {

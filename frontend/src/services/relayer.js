@@ -26,6 +26,8 @@ import { trackEvent } from "./analytics";
 import { putSpecimenPhoto } from "./tankMedia";
 import { SERIAL_CEILING } from "../utils/specimenIdentity";
 import { normalizeSex } from "../utils/specimenSex";
+import { normalizeProvenance, PROVENANCE } from "../utils/provenance";
+import { normalizeLifeStage } from "../utils/lifeStage";
 import {
   METADATA_STATUS,
   normalizeMetadataUri,
@@ -478,6 +480,18 @@ export async function relayMintSpecimen({
   gender = "Unsexed",
   breederStockTag = "",
   /**
+   * How this fish entered the collection (utils/provenance.js). Defaults to null
+   * so the caller decides; `resolveProvenance` then derives what it honestly can.
+   * Passing UNVERIFIED is what records "bought from outside Aquadex".
+   */
+  provenance = null,
+  /**
+   * Canonical life stage at registration (utils/lifeStage.js), or null. This is the
+   * answer to "how old is it" that a keeper buying a young adult can actually give,
+   * where an exact birth date is a guess.
+   */
+  lifeStage = null,
+  /**
    * Optional metadata document to publish for this certificate. When supplied
    * (and no explicit `ipfsMetadataUri` is given), its deterministic hosted URL
    * becomes the on-chain tokenURI and the upload happens fire-and-forget.
@@ -539,6 +553,15 @@ export async function relayMintSpecimen({
       status: 0, // Active
       gender,
       breederStockTag: breederStockTag || "",
+      // Non-indexed, so neither a Dexie version bump nor a Supabase migration is
+      // needed — the whole row rides in aquadex_specimens.data (jsonb). Index them
+      // only if we later want to QUERY by them.
+      //
+      // Stored as given, including null. `resolveProvenance` decides what a null
+      // means at read time; writing a fallback here would bake a guess into the
+      // record, which is the mistake the inferred "Wild Caught" label was.
+      provenance: normalizeProvenance(provenance),
+      lifeStage: normalizeLifeStage(lifeStage),
       createdAt: Math.floor(Date.now() / 1000),
       // On-chain reconciliation fields (full-on-chain readiness).
       // `id` above is the local serial (stable client ref). The authoritative
@@ -577,7 +600,20 @@ export async function relayMintSpecimen({
     enqueueOnChain(
       buildMintSpecimenCall({
         speciesId: Number(speciesId),
-        birthTimestamp: birthTimestamp || Math.floor(Date.now() / 1000),
+        // 0 means UNKNOWN and is passed through as 0.
+        //
+        // This used to be `birthTimestamp || Math.floor(Date.now() / 1000)`, which
+        // turned "I don't know when this fish was born" into the permanent claim
+        // "born at the moment of registration". The local Dexie row kept the honest
+        // 0 while the chain got today's date, so the two disagreed forever — the
+        // Specimen struct has no setter, and a certificate outlives this app.
+        //
+        // Downstream that surfaced as an adult bought from a shop reading as
+        // "0 Days Old (Fry)". AquadexStorage.sol already documents the field as
+        // "0 if unknown/wild-caught", so the contract supported unknown all along;
+        // only the client was fabricating. Same reasoning as
+        // services/cohortPromotion.js, which spells it out for hatch dates.
+        birthTimestamp: Number(birthTimestamp) || 0,
         breeder: breeder || ownerAddress,
         currentTankId: Number(currentTankId),
         sireId: Number(sireId),
@@ -681,6 +717,13 @@ export async function relayImportSpecimens({ ownerAddress = "", specimens = [] }
         // line/pair name, which is what lets a declared pair be a durable grouping
         // with no new table and no migration (docs/LINEAGE_FIRST_INTAKE_SPEC.md §3).
         breederStockTag: String(s.breederStockTag ?? "").trim(),
+        // An imported row is, by definition, stock this keeper already had from
+        // somewhere else — the importer has never asked for parentage and sets
+        // sireId/damId to 0 precisely because fabricating them is unsafe. So
+        // UNVERIFIED is the accurate reading, not a default standing in for one.
+        // A per-row override is honoured for a future importer column.
+        provenance: normalizeProvenance(s.provenance) || PROVENANCE.UNVERIFIED,
+        lifeStage: normalizeLifeStage(s.lifeStage),
         createdAt,
         onChainId: null,
         chainStatus: "pending",
@@ -722,7 +765,10 @@ export async function relayImportSpecimens({ ownerAddress = "", specimens = [] }
       enqueueOnChain(
         buildMintSpecimenCall({
           speciesId: r.speciesId,
-          birthTimestamp: createdAt,
+          // The Dexie row stores 0 (unknown), so sending `createdAt` here would
+          // put "born on import day" on-chain permanently for a CSV of fish whose
+          // ages the importer never asked for. Same fix as the single-mint path.
+          birthTimestamp: Number(r.birthTimestamp) || 0,
           breeder: owner,
           currentTankId: r.currentTankId,
           sireId: 0,
@@ -1642,7 +1688,15 @@ export async function relaySpawn({
     for (let i = 0; i < Number(offspringCount); i++) {
       const res = await relayMintSpecimen({
         speciesId,
-        birthTimestamp: Math.floor(Date.now() / 1000),
+        // The spawn's own timestamp, not a fresh Date.now() per iteration.
+        // Offspring of one spawn share a hatch date; reading the clock inside the
+        // loop drifted them apart by however long the loop took, and it is the
+        // same not-quite-right-clock habit that produced the unknown-date
+        // fabrication elsewhere in this file. Matches
+        // services/cohortPromotion.js, which stamps `Number(spawn.timestamp)`.
+        birthTimestamp: spawn.timestamp,
+        // Parents are recorded here by construction, so the origin is not in doubt.
+        provenance: PROVENANCE.BRED_BY_KEEPER,
         breeder: ownerAddress,
         currentTankId: tankId,
         sireId,
