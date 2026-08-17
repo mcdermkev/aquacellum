@@ -109,6 +109,9 @@
     "supabase/migrations/20260817140000_tide_xp_awarded_coherence.sql",
     "supabase/migrations/20260817150000_school_posts.sql",
     "supabase/migrations/20260817160000_school_challenge_lifecycle.sql",
-    "supabase/migrations/20260817170000_challenge_reward_bounds.sql"
+    "supabase/migrations/20260817170000_challenge_reward_bounds.sql",
+    "supabase/migrations/20260817180000_rls_close_open_policies.sql",
+    "supabase/migrations/20260817181000_rls_restore_public_reads.sql",
+    "supabase/migrations/20260817190000_rls_drop_spoofable_header_auth.sql"
   ]
 }

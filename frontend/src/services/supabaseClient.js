@@ -56,6 +56,22 @@ let _walletForHeader = null;
 let _mintedToken = null;
 
 /**
+ * The in-flight mint, if one is running.
+ *
+ * Requests issued while the bridge is still minting must WAIT for it, because the
+ * JWT is now the only credential that carries any authority. RLS previously also
+ * accepted an `x-wallet-address` header, which is set synchronously the moment a
+ * wallet connects — so that header quietly covered this window.
+ *
+ * Those header policies are gone (they were forgeable: a probe with a fabricated
+ * header returned another wallet's 38 specimens, 6 tanks and 200 XP events). With
+ * them removed, a query that races the mint is no longer merely unauthenticated —
+ * it comes back as a clean, cacheable EMPTY RESULT, which looks exactly like "you
+ * own nothing" rather than like a failure.
+ */
+let _mintInFlight = null;
+
+/**
  * Custom fetch wrapper that injects the x-wallet-address header
  * into every Supabase request for RLS enforcement, plus the minted JWT when the
  * bridge is active.
@@ -66,7 +82,18 @@ let _mintedToken = null;
  * request" → 401 on every request once a wallet is connected. We must merge via
  * the Headers API to preserve the existing headers.
  */
-function supabaseFetchWithWallet(url, options = {}) {
+async function supabaseFetchWithWallet(url, options = {}) {
+  // Wait for an in-flight mint so a request cannot land credential-less during
+  // sign-in and cache an empty result. Never block /auth/v1/* (which must not
+  // receive the minted token at all) and never block the mint itself.
+  if (_mintInFlight && !String(url).includes("/auth/v1/")) {
+    try {
+      await _mintInFlight;
+    } catch {
+      /* a failed mint must not block the request — it just goes out unauthenticated */
+    }
+  }
+
   const headers = new Headers(options.headers || {});
   if (_walletForHeader) {
     headers.set("x-wallet-address", _walletForHeader);
@@ -281,6 +308,11 @@ export async function authenticateWithWallet(walletAddress, privyToken = null) {
 
   // If we have a Privy token, attempt the JWT bridge
   if (privyToken) {
+    // Published so concurrent Supabase requests can await it rather than racing
+    // ahead without a credential. Resolved in the finally below whatever happens.
+    let settleMint;
+    _mintInFlight = new Promise((resolve) => { settleMint = resolve; });
+
     try {
       const response = await fetch("/api/mint-session", {
         method: "POST",
@@ -307,15 +339,28 @@ export async function authenticateWithWallet(walletAddress, privyToken = null) {
           return { success: true, authenticated: true };
         }
       } else if (response.status === 503) {
-        // JWT bridge not configured (SUPABASE_JWT_SECRET missing) — expected in some envs
-        console.info("[Reef] JWT bridge not configured (503), using header-based RLS");
+        // SUPABASE_JWT_SECRET missing on the server. This used to be survivable
+        // because RLS also accepted the x-wallet-address header; it is not any
+        // more. There is NO header fallback — every owner-scoped read will now
+        // return empty until the bridge works, so this is an error, not a notice.
+        console.error(
+          "[Reef] JWT bridge not configured (503): SUPABASE_JWT_SECRET is missing. " +
+          "Owner-scoped data will read as empty — RLS no longer accepts the x-wallet-address header."
+        );
       } else {
         const errBody = await response.json().catch(() => ({}));
-        console.warn("[Reef] mint-session failed:", response.status, errBody.error || "");
+        console.error("[Reef] mint-session failed:", response.status, errBody.error || "");
       }
     } catch (err) {
-      // Network error, endpoint not deployed, etc. — fall back gracefully
-      console.warn("[Reef] JWT bridge unavailable, falling back to header mode:", err.message);
+      console.error(
+        "[Reef] JWT bridge unavailable — owner-scoped data will read as empty. " +
+        "There is no header fallback any more:", err.message
+      );
+    } finally {
+      // Always release waiters, success or failure, or every later Supabase
+      // request would hang on a promise that never settles.
+      _mintInFlight = null;
+      settleMint();
     }
   }
 
