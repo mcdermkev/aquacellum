@@ -3668,17 +3668,37 @@ async function handleAuctionPaymentMethod(req, res) {
       });
     }
 
-    // off_session: the card is being saved now to be charged LATER without the
-    // buyer present, which is the whole point.
-    const setupIntent = await stripe.setupIntents.create({
+    // A HOSTED Checkout Session in setup mode, not a raw SetupIntent.
+    //
+    // A SetupIntent client secret has to be confirmed with Stripe Elements, which
+    // this app does not use and does not depend on — every existing payment flow
+    // redirects to a hosted Stripe page (see stripePayments.js: `window.location
+    // .href = data.checkoutUrl`). Adding Elements would mean a new frontend
+    // dependency, PCI surface, and a second card-entry pattern to maintain.
+    // Checkout in setup mode saves a card on Stripe's own page and returns here.
+    //
+    // usage: off_session on setup_intent_data is what authorises charging the card
+    // later without the buyer present, which is the entire point of the
+    // card-on-file rule.
+    const origin = req.headers.origin || process.env.PUBLIC_APP_URL || "";
+    const returnTo = String(req.body?.returnUrl || `${origin}/app/reef`);
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "setup",
       customer: customerId,
       payment_method_types: ["card"],
-      usage: "off_session",
-      metadata: { wallet_address: wallet, purpose: "aquadex_auction_bidding" },
+      // Metadata set HERE propagates to the SetupIntent, which is what the
+      // setup_intent.succeeded webhook reads. Metadata on the session alone does
+      // not reach it, and the card would then be saved with no wallet to attach.
+      setup_intent_data: {
+        metadata: { wallet_address: wallet, purpose: "aquadex_auction_bidding" },
+      },
+      success_url: `${returnTo}${returnTo.includes("?") ? "&" : "?"}card_saved=1`,
+      cancel_url: `${returnTo}${returnTo.includes("?") ? "&" : "?"}card_saved=0`,
     });
 
     return res.status(200).json({
-      clientSecret: setupIntent.client_secret,
+      checkoutUrl: session.url,
       customerId,
       hasCard: false,
     });

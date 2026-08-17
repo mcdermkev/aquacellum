@@ -206,7 +206,10 @@ export function TidePage({ tideId, onBack }) {
   if (isLive) tabs.push({ key: "chat", label: "Chat" });
   if (tide.tide_type === "expo" && (isLive || isUpcoming)) tabs.push({ key: "map", label: "Map" });
   if (isUpcoming || isLive) tabs.push({ key: "swap", label: "Swap Sheet" });
-  if (tide.tide_type === "auction" && (isLive || isUpcoming)) tabs.push({ key: "auction", label: "Auction" });
+  // Including ended tides matters: settling the auction and paying for a won lot
+  // both happen AFTER it finishes. Gated on live/upcoming only, this tab vanished
+  // at exactly the moment the host needed it, so an auction could never be closed.
+  if (tide.tide_type === "auction") tabs.push({ key: "auction", label: isEnded ? "Results" : "Auction" });
   if (isEnded && tide.recap_content) tabs.push({ key: "recap", label: "Recap" });
 
   return (
@@ -467,7 +470,13 @@ export function TidePage({ tideId, onBack }) {
         )}
 
         {activeTab === "auction" && (
-          <AuctionPanel tideId={tideId} isLive={isLive} />
+          <AuctionPanel
+            tideId={tideId}
+            isLive={isLive}
+            isEnded={isEnded}
+            isHost={isHost}
+            endTime={tide.end_time}
+          />
         )}
 
         {activeTab === "recap" && tide.recap_content && (

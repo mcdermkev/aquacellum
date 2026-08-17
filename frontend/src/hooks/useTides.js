@@ -28,6 +28,11 @@ import {
   getBidHistory,
   getHighestBid,
   getAuctionItems,
+  getAuctionPaymentMethod,
+  startAddPaymentMethod,
+  settleTideAuction,
+  getAuctionSettlements,
+  chargeAuctionLot,
 } from "../services/tidesApi";
 import { supabase, getCurrentWallet, isSupabaseConfigured } from "../services/supabaseClient";
 
@@ -601,4 +606,82 @@ export function useAuction(tideId, tokenId, enabled = true) {
   );
 
   return { highestBid, bidHistory, submitBid, isLoading, loadError };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUCTION SETTLEMENT
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Whether the current user has a card on file, which bidding requires.
+ *
+ * Queried up front so the panel can explain the requirement before someone types
+ * a bid, rather than letting them commit to an amount and then surfacing a
+ * database rejection.
+ */
+export function useAuctionPaymentMethod(enabled = true) {
+  const wallet = getCurrentWallet();
+
+  return useQuery({
+    queryKey: ["reef", "auction-payment-method", wallet],
+    queryFn: () => unwrap(getAuctionPaymentMethod(wallet), "getAuctionPaymentMethod"),
+    enabled: !!wallet && enabled,
+    staleTime: 60 * 1000,
+  });
+}
+
+/** Redirect to Stripe's hosted page to save a card. */
+export function useAddPaymentMethod() {
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await startAddPaymentMethod(window.location.href);
+      if (error) throw new Error(error);
+
+      // Already reconciled server-side from Stripe — no redirect needed.
+      if (data?.alreadySaved) return data;
+
+      if (data?.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+        return data;
+      }
+      throw new Error("Stripe did not return a setup page.");
+    },
+  });
+}
+
+/** Lot outcomes for a tide. */
+export function useAuctionSettlements(tideId, enabled = true) {
+  return useQuery({
+    queryKey: ["reef", "auction-settlements", tideId],
+    queryFn: () => unwrap(getAuctionSettlements(tideId), "getAuctionSettlements"),
+    enabled: !!tideId && enabled && isSupabaseConfigured(),
+    staleTime: 15 * 1000,
+  });
+}
+
+/** Host action: close the auction and decide every lot. */
+export function useSettleAuction(tideId) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => settleTideAuction(tideId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reef", "auction-settlements", tideId] });
+      queryClient.invalidateQueries({ queryKey: ["reef", "tide", tideId] });
+      // Bid rows changed status (won / outbid), so the per-lot auction state is stale.
+      queryClient.invalidateQueries({ queryKey: ["reef", "auction-items", tideId] });
+    },
+  });
+}
+
+/** Winner action: pay for a won lot. */
+export function useChargeAuctionLot(tideId) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ settlementId }) => chargeAuctionLot(settlementId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reef", "auction-settlements", tideId] });
+    },
+  });
 }

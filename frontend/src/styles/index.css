@@ -8767,3 +8767,121 @@ html {
   color: var(--text-secondary);
   flex-shrink: 0;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Auction settlement — card on file, results, paying for a won lot
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The card gate sits ABOVE the bid form on purpose: bidding requires a saved
+   card, and finding that out after typing an amount is a bad way to learn it. */
+.auction-panel__card-gate {
+  padding: 0.85rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent-blue-glow);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.auction-panel__card-gate h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.auction-panel__card-gate p {
+  margin: 0 0 0.6rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.auction-panel__card-ok {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--accent-green);
+}
+
+.auction-panel__host {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+  border-radius: var(--radius-sm);
+  background: rgba(251, 191, 36, 0.06);
+  border: 1px solid rgba(251, 191, 36, 0.22);
+}
+
+.auction-panel__host p {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.auction-panel__mine {
+  margin: 0.75rem 0;
+}
+
+.auction-panel__mine h4,
+.auction-panel__results h4 {
+  margin: 0 0 0.45rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.auction-panel__results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.auction-settlement {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.6rem;
+  margin-bottom: 0.45rem;
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+}
+
+.auction-settlement__info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  min-width: 0;
+}
+
+.auction-settlement__state {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.1rem 0.5rem;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+
+/* Money owed reads as urgent, settled reads as done, and closed reads as neither
+   — a forfeited or unsold lot is not a failure state to alarm anyone about. */
+.auction-settlement__state--due {
+  color: var(--accent-amber);
+  background: var(--accent-amber-glow);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.auction-settlement__state--ok {
+  color: var(--accent-green);
+  background: var(--accent-green-glow);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.auction-settlement__state--off {
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+}

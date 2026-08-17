@@ -623,3 +623,142 @@ export async function getAuctionItems(tideId) {
 
   return { data: enrichedItems, error: null };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUCTION SETTLEMENT — closing a lot, paying for it, getting the fish
+//
+// The rules live in Postgres (settle_tide_auction, forfeit_auction_settlement,
+// transfer_auction_lot, mark_auction_settlement_paid) and in api/stripe.js. These
+// are thin wrappers that surface those errors rather than re-deciding anything:
+// auction_settlements has no client write policy at all, precisely so a client
+// cannot mark its own lot paid.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Is a card on file for this wallet?
+ *
+ * Bidding requires one — enforce_bidder_has_payment_method rejects the insert
+ * otherwise. The UI checks this BEFORE someone types a bid, so the requirement is
+ * explained up front instead of arriving as a database error after they commit to
+ * a number.
+ */
+export async function getAuctionPaymentMethod(walletAddress) {
+  const wallet = walletAddress || getCurrentWallet();
+  if (!wallet) return { data: { hasCard: false }, error: null };
+
+  try {
+    const res = await fetch(`/api/stripe?action=auction-payment-method&wallet=${encodeURIComponent(wallet)}`);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      return { data: { hasCard: false }, error: body.error || `HTTP ${res.status}` };
+    }
+    return { data: await res.json(), error: null };
+  } catch (err) {
+    return { data: { hasCard: false }, error: err.message };
+  }
+}
+
+/**
+ * Begin adding a card. Returns a hosted Stripe URL to redirect to.
+ *
+ * Hosted rather than inline: every other payment flow in the app redirects to
+ * Stripe (stripePayments.js), and card data never touches our origin.
+ */
+export async function startAddPaymentMethod(returnUrl) {
+  const wallet = getCurrentWallet();
+  if (!wallet) return { data: null, error: "Not connected" };
+
+  try {
+    const res = await fetch("/api/stripe?action=auction-payment-method", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ walletAddress: wallet, returnUrl }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) return { data: null, error: body.error || `HTTP ${res.status}` };
+    return { data: body, error: null };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
+
+/**
+ * Host action: close every lot and decide its outcome.
+ *
+ * Also sweeps overdue settlements first. The deadline sweep is a function rather
+ * than a cron because the project has no scheduler, so it has to be called from
+ * somewhere a human naturally goes — an unenforced deadline is the same defect as
+ * tides.status sitting LIVE forever.
+ */
+export async function settleTideAuction(tideId) {
+  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
+
+  const walletAddress = getCurrentWallet();
+  if (!walletAddress) return { data: null, error: "Not connected" };
+
+  await supabase.rpc("sweep_overdue_auction_settlements").catch(() => {});
+
+  const { data, error } = await supabase.rpc("settle_tide_auction", {
+    target_tide: tideId,
+    actor_wallet: await resolveProfileWallet(walletAddress),
+  });
+
+  return { data, error };
+}
+
+/** Every lot outcome for a tide. RLS scopes this to the winner and the seller. */
+export async function getAuctionSettlements(tideId) {
+  if (!isSupabaseConfigured()) return { data: [], error: "Not configured" };
+
+  const { data, error } = await supabase
+    .from("auction_settlements")
+    .select(`
+      *,
+      winner_profile:winner_wallet (
+        wallet_address, display_name, avatar_url, companion_tier
+      )
+    `)
+    .eq("tide_id", tideId)
+    .order("token_id", { ascending: true });
+
+  return { data: data || [], error };
+}
+
+/** Settlements where the current user owes money. */
+export async function getMyAuctionSettlements() {
+  if (!isSupabaseConfigured()) return { data: [], error: "Not configured" };
+
+  const walletAddress = getCurrentWallet();
+  if (!walletAddress) return { data: [], error: null };
+
+  const { data, error } = await supabase
+    .from("auction_settlements")
+    .select("*")
+    .ilike("winner_wallet", (await resolveProfileWallet(walletAddress)).toLowerCase())
+    .in("status", ["awaiting_payment", "payment_failed"])
+    .order("payment_deadline", { ascending: true });
+
+  return { data: data || [], error };
+}
+
+/**
+ * Charge the winner's saved card for a lot, then transfer the certificate.
+ *
+ * The amount is NOT passed from here — api/stripe.js reads it from the settlement
+ * row with the service role. A client-supplied amount on a charge endpoint is an
+ * obvious way to buy a fish for a cent.
+ */
+export async function chargeAuctionLot(settlementId) {
+  try {
+    const res = await fetch("/api/stripe?action=auction-charge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ settlementId }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) return { data: null, error: body.error || `HTTP ${res.status}` };
+    return { data: body, error: null };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+}
