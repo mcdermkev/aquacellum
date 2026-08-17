@@ -34,6 +34,13 @@ import { setSessionTokenGetter as setPickupCoordinationSessionTokenGetter } from
 // sealed pedigree be attested at listing time, which is the whole reason listing time
 // was chosen as the sealing moment. Without it every document is `unattested`.
 import { setSessionTokenGetter as setListingPedigreeSessionTokenGetter } from "../services/listingPedigree";
+
+// Species curation (Breeders Council). The bearer token here is the ONLY thing
+// that authorizes a curation vote or a catalog publication, because the server
+// deliberately does not trust the Supabase session for those — see
+// docs/SPECIES_SUGGESTION_APPROVAL_SPEC.md §8. Without this registration a
+// founder cannot approve anything.
+import { setSessionTokenGetter as setSpeciesCurationSessionTokenGetter } from "../services/speciesCurationApi";
 import { ensureProfile, updateProfile } from "../services/reefApi";
 import { identifyUser, resetAnalyticsIdentity, trackEvent } from "../services/analytics";
 import { isE2EMode, E2E_STUB_ACCOUNT } from "../utils/e2eMode";
@@ -445,6 +452,7 @@ function PrivyAuthProvider({ children }) {
       setPromotionsSessionTokenGetter(getAccessToken);
       setPickupCoordinationSessionTokenGetter(getAccessToken);
       setListingPedigreeSessionTokenGetter(getAccessToken);
+      setSpeciesCurationSessionTokenGetter(getAccessToken);
     } else {
       setSessionTokenGetter(null);
       setShippingSessionTokenGetter(null);
@@ -454,6 +462,7 @@ function PrivyAuthProvider({ children }) {
       setPromotionsSessionTokenGetter(null);
       setPickupCoordinationSessionTokenGetter(null);
       setListingPedigreeSessionTokenGetter(null);
+      setSpeciesCurationSessionTokenGetter(null);
     }
     return () => {
       setSessionTokenGetter(null);
@@ -464,6 +473,7 @@ function PrivyAuthProvider({ children }) {
       setPromotionsSessionTokenGetter(null);
       setPickupCoordinationSessionTokenGetter(null);
       setListingPedigreeSessionTokenGetter(null);
+      setSpeciesCurationSessionTokenGetter(null);
     };
   }, [privyAuthenticated, getAccessToken]);
 

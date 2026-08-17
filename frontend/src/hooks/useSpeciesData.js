@@ -3,6 +3,43 @@ import { Contract } from "ethers";
 import { db } from "../db";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { getProvider } from "../utils/smartAccount";
+import { listPublishedSpeciesProfiles } from "../services/speciesCurationApi";
+
+/**
+ * Merge curator-authored profiles over the static reference catalog.
+ *
+ * Two cases, both wanted:
+ *   - an authored profile for a species NOT in the JSON is appended, which is the
+ *     only way a newly approved species gets a real card (see
+ *     services/speciesCurationApi.js listPublishedSpeciesProfiles for why
+ *     db.species cannot be patched instead)
+ *   - an authored profile for a species that IS in the JSON overrides it, so a
+ *     curator can correct reference data without editing a bundled file
+ *
+ * Keyed on lowercased scientificName, matching the dedupe in
+ * services/speciesCatalog.js buildGlobalCatalog.
+ */
+function mergeAuthoredProfiles(reference, authored) {
+  if (!Array.isArray(authored) || authored.length === 0) return reference;
+
+  const byName = new Map();
+  for (const row of authored) {
+    const key = String(row.scientificName || "").toLowerCase();
+    if (key) byName.set(key, row);
+  }
+
+  const merged = reference.map((item) => {
+    const override = byName.get(String(item.scientificName || "").toLowerCase());
+    if (!override) return item;
+    byName.delete(String(item.scientificName || "").toLowerCase());
+    return { ...item, ...override };
+  });
+
+  // Whatever is left had no reference counterpart — these are the new species.
+  for (const row of byName.values()) merged.push(row);
+
+  return merged;
+}
 
 // Hook to load static fishbase reference catalog (supports offline Dexie fallback)
 export function useSpeciesData() {
@@ -12,7 +49,13 @@ export function useSpeciesData() {
       try {
         const res = await fetch("/fishbase_master.json?v=2");
         if (!res.ok) throw new Error("Failed to load reference library");
-        const rawData = await res.json();
+        const rawJson = await res.json();
+
+        // Curator-authored profiles for species the bundled file does not cover.
+        // Non-fatal: an unavailable overlay degrades to the reference data alone
+        // rather than failing the whole catalog load.
+        const authored = await listPublishedSpeciesProfiles();
+        const rawData = mergeAuthoredProfiles(rawJson, authored);
 
         // Enrich reference data with safe fallbacks for missing rich fields
         const data = rawData.map(item => ({

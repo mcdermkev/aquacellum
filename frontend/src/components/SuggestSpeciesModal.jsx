@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { BreedersCouncil } from "./BreedersCouncil";
 
-export default function SuggestSpeciesModal({ 
-  isOpen, 
-  onClose, 
-  casualModeActive, 
+export default function SuggestSpeciesModal({
+  isOpen,
+  onClose,
+  casualModeActive,
   onSubmit,
   walletAccount,
   suggestionsQuery,
-  updateSuggestionStatus,
+  castVote,
+  isVoting,
+  promoteSpecies,
+  isPromoting,
   CARE_LEVEL_STRINGS,
   marketplaceAddress
 }) {
@@ -270,7 +273,10 @@ export default function SuggestSpeciesModal({
               <BreedersCouncil
                 walletAccount={walletAccount}
                 suggestionsQuery={suggestionsQuery}
-                updateSuggestionStatus={updateSuggestionStatus}
+                castVote={castVote}
+                isVoting={isVoting}
+                promoteSpecies={promoteSpecies}
+                isPromoting={isPromoting}
                 CARE_LEVEL_STRINGS={CARE_LEVEL_STRINGS}
                 marketplaceAddress={marketplaceAddress}
                 isModalView={true}

@@ -12,7 +12,7 @@ import { useContractSpecies, useSpeciesData } from "../hooks/useSpeciesData";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import SuggestSpeciesModal from "./SuggestSpeciesModal";
 import { useSuggestSpecies } from "../hooks/useSuggestSpecies";
-import { BreedersCouncil } from "./BreedersCouncil";
+import { useUserRoles } from "../hooks/useUserRoles";
 import { CurationQueuePanel } from "./CurationQueuePanel";
 import { db } from "../db";
 import { syncSpecimenToCloud } from "../services/cloudSync";
@@ -276,11 +276,20 @@ export function BreedGallery({
     };
   }, []);
 
-  const { 
-    suggestionsQuery, 
-    suggestSpecies, 
-    updateSuggestionStatus 
-  } = useSuggestSpecies(walletAccount, fishbaseData);
+  const {
+    suggestionsQuery,
+    suggestSpecies,
+    castVote,
+    isVoting,
+    promoteSpecies,
+    isPromoting,
+  } = useSuggestSpecies();
+
+  // Server-authoritative curation roles (user_roles). Distinct from `isCurator`,
+  // which compares against the on-chain curator address and therefore only ever
+  // matches the deployer wallet.
+  const { data: curationRoles = [] } = useUserRoles(walletAccount);
+  const isCouncilMember = curationRoles.some((r) => r === "founder" || r === "curator");
 
   const CARE_LEVEL_STRINGS = CARE_LABELS;
 
@@ -1940,8 +1949,12 @@ export function BreedGallery({
               </button>
             </>
           )}
-          {isCurator && (
-            <button 
+          {/* Gated on the server-authoritative keeper role, OR on holding the
+              on-chain curator address. `isCurator` alone matched only the deployer
+              wallet (0xc42e…c934), so neither founder could ever open this tab —
+              the same class of bug as the Hardhat allowlist in BreedersCouncil. */}
+          {(isCouncilMember || isCurator) && (
+            <button
               type="button"
               onClick={() => {
                 setViewMode("curation");
@@ -2244,13 +2257,15 @@ export function BreedGallery({
       )}
 
       {viewMode === "curation" ? (
-        <CurationQueuePanel 
-          contractInstance={contractInstance}
+        <CurationQueuePanel
+          walletAccount={walletAccount}
           suggestionsQuery={suggestionsQuery}
-          updateSuggestionStatus={updateSuggestionStatus}
-          refetchContractSpecies={refetchContractSpecies}
+          castVote={castVote}
+          isVoting={isVoting}
+          promoteSpecies={promoteSpecies}
+          isPromoting={isPromoting}
           CARE_LEVEL_STRINGS={CARE_LEVEL_STRINGS}
-          showToast={showToast}
+          marketplaceAddress={marketplaceAddress}
         />
       ) : loading || (viewMode === "global" && !globalData) ? (
         <div className="glass-card" style={{ padding: "3rem", textAlign: "center" }}>
@@ -3056,7 +3071,10 @@ export function BreedGallery({
         }}
         walletAccount={walletAccount}
         suggestionsQuery={suggestionsQuery}
-        updateSuggestionStatus={updateSuggestionStatus}
+        castVote={castVote}
+        isVoting={isVoting}
+        promoteSpecies={promoteSpecies}
+        isPromoting={isPromoting}
         CARE_LEVEL_STRINGS={CARE_LEVEL_STRINGS}
         marketplaceAddress={marketplaceAddress}
       />

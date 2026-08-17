@@ -17,6 +17,14 @@
  *   GET  /api/species?stats=true            → catalog-wide stats
  *   POST /api/species?action=request-key    → { email, appName?, appUrl? } → issues a free API key
  *
+ * Breeders Council curation (see _lib/speciesCuration.js and
+ * docs/SPECIES_SUGGESTION_APPROVAL_SPEC.md). These use the RESTRICTED origin
+ * allowlist, not the open CORS policy that applies to the public read routes:
+ *   GET  /api/species?action=queue          → the shared suggestion queue + vote tallies
+ *   POST /api/species?action=suggest        → submit a species suggestion (auth)
+ *   POST /api/species?action=vote           → cast a curation vote (auth, role-gated)
+ *   POST /api/species?action=promote        → publish an approved species on-chain (auth, founder)
+ *
  * Auth / rate limiting:
  *   - No key:      60 requests/hour per IP.
  *   - x-api-key:   1000 requests/hour, tracked per key in Supabase for analytics.
@@ -32,10 +40,33 @@ import { join } from "path";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { checkRateLimit } from "./_lib/rateLimiter.js";
+import { handleCorsPreFlight } from "./_lib/cors.js";
+import {
+  handleSuggest,
+  handleVote,
+  handleQueue,
+  handlePromote,
+} from "./_lib/speciesCuration.js";
 import {
   buildSpeciesAvailability,
   serializePublicAvailability,
 } from "../src/services/speciesAvailability.js";
+
+// Breeders Council curation, mounted here rather than as its own serverless
+// function: the project is at exactly 12 functions (the Vercel Hobby ceiling)
+// and this file already receives `includeFiles: public/fishbase_master.json`
+// from vercel.json, which the cross-check needs.
+const CURATION_ACTIONS = new Set(["suggest", "vote", "queue", "promote"]);
+
+function routeCurationAction(action, req, res) {
+  switch (action) {
+    case "suggest": return handleSuggest(req, res);
+    case "vote":    return handleVote(req, res);
+    case "queue":   return handleQueue(req, res);
+    case "promote": return handlePromote(req, res);
+    default:        return res.status(400).json({ error: `Unknown action: ${action}` });
+  }
+}
 
 const BASE_URL = "https://aquadex.fish";
 const APP_URL = `${BASE_URL}/app`;
@@ -374,6 +405,26 @@ function logUsage(caller, endpoint, speciesId) {
 // ─────────────────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
+  // ── Curation branch, handled BEFORE this file's open CORS policy ──────────
+  // Everything below `setOpenCors` is public read-only data, so `*` is correct
+  // there. These four actions are authenticated and three of them mutate state
+  // (one signs with the curator key), so they use the restricted origin
+  // allowlist in _lib/cors.js instead and must be routed before the wildcard
+  // header and the GET-only guard are applied.
+  // See docs/SPECIES_SUGGESTION_APPROVAL_SPEC.md.
+  const curationAction = (req.query.action || "").toLowerCase();
+  if (CURATION_ACTIONS.has(curationAction)) {
+    if (
+      handleCorsPreFlight(req, res, {
+        methods: "GET, POST, OPTIONS",
+        headers: "Content-Type, Authorization",
+      })
+    ) {
+      return;
+    }
+    return routeCurationAction(curationAction, req, res);
+  }
+
   setOpenCors(res);
   if (req.method === "OPTIONS") return res.status(204).end();
 

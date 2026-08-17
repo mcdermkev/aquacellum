@@ -1,154 +1,97 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import Dexie from 'dexie';
+/**
+ * useSuggestSpecies.js
+ *
+ * React Query bindings for the Breeders Council species curation flow.
+ *
+ * WHAT CHANGED AND WHY. This hook used to own a Dexie database
+ * ('AquadexCurationDB') holding suggestions in the browser they were typed into.
+ * That made the whole feature inert: a suggestion was invisible to every other
+ * account and device, so the second founder could never review it, and
+ * "approving" one wrote a row to the approving browser's own speciesManifest
+ * with `speciesId = Date.now()` — a value the Add Fish picker can never read.
+ *
+ * Everything now goes through services/speciesCurationApi.js to a shared
+ * Supabase-backed queue. The client holds no curation state of its own: it cannot
+ * set a status, cannot decide who may vote, and cannot write the catalog. All
+ * three are enforced in the database and the API layer.
+ *
+ * See docs/SPECIES_SUGGESTION_APPROVAL_SPEC.md.
+ */
 
-// Initialize Curation IndexedDB database
-const db = new Dexie('AquadexCurationDB');
-db.version(1).stores({
-  suggestions: 'id, scientificName, commonName, curatorStatus, timestamp, submitter'
-});
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  listSuggestionQueue,
+  submitSuggestion,
+  castVote,
+  promoteSuggestion,
+} from "../services/speciesCurationApi";
 
-export function useSuggestSpecies(walletAddress, existingSpecies = []) {
+export const SUGGESTIONS_QUERY_KEY = ["speciesSuggestions"];
+
+/**
+ * Takes no arguments, deliberately.
+ *
+ * It used to take `(walletAddress, existingSpecies)`: the wallet keyed the local
+ * store and stamped `submitter`, and the species array fed a client-side
+ * duplicate check. Both moved server-side. The acting wallet is now derived from
+ * the verified Privy token — a client-supplied wallet is never trusted — and the
+ * duplicate check runs against fishbase_master.json plus species_id_map on the
+ * server, because the old in-browser check was trivially bypassable.
+ *
+ * The queue itself is shared and public, so it is not keyed by wallet either.
+ */
+export function useSuggestSpecies() {
   const queryClient = useQueryClient();
 
-  const getSuggestions = async () => {
-    return await db.suggestions.orderBy('timestamp').reverse().toArray();
-  };
-
-  const addSuggestionMutation = useMutation({
-    mutationFn: async (formData) => {
-      const addressKey = (walletAddress || 'anonymous').toLowerCase();
-      
-      // 1. Rate Limiting: 3 suggestions per wallet address per 24 hours
-      const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
-      const recentSuggestions = await db.suggestions
-        .where('submitter')
-        .equals(addressKey)
-        .filter(item => item.timestamp > oneDayAgo)
-        .toArray();
-
-      if (recentSuggestions.length >= 3) {
-        throw new Error("Curation Rate Limit Exceeded: You can submit a maximum of 3 species suggestions per 24 hours.");
-      }
-
-      // 2. Fuzzy Duplicate Detection: Check locally queued items and existing catalog
-      const normalizeName = (name) => {
-        return name ? name.toLowerCase().replace(/[^a-z0-9]/g, "").trim() : "";
-      };
-
-      const cleanScientific = normalizeName(formData.scientificName);
-      const cleanCommon = normalizeName(formData.commonName);
-
-      if (!cleanScientific || !cleanCommon) {
-        throw new Error("Invalid Input: Both scientific and common names must contain alphanumeric characters.");
-      }
-
-      // Check current catalog
-      const catalogDuplicate = existingSpecies.find(sp => {
-        return normalizeName(sp.scientificName) === cleanScientific || 
-               normalizeName(sp.commonName) === cleanCommon;
-      });
-
-      if (catalogDuplicate) {
-        throw new Error(`Duplicate Registry Entry: "${formData.scientificName}" (or common name) is already cataloged in the Aquadex database.`);
-      }
-
-      // Check local DB queue
-      const pendingSuggestions = await db.suggestions.toArray();
-      const queueDuplicate = pendingSuggestions.find(item => {
-        return normalizeName(item.scientificName) === cleanScientific || 
-               normalizeName(item.commonName) === cleanCommon;
-      });
-
-      if (queueDuplicate) {
-        throw new Error(`Queue Collision: "${formData.scientificName}" (or common name) has already been suggested and is currently awaiting curator review.`);
-      }
-
-      const newEntry = {
-        id: crypto.randomUUID(),
-        scientificName: formData.scientificName.trim(),
-        commonName: formData.commonName.trim(),
-        careLevel: Number(formData.careLevel),
-        minTemp: Number(formData.minTemp),
-        maxTemp: Number(formData.maxTemp),
-        minPh: Number(formData.minPh),
-        maxPh: Number(formData.maxPh),
-        proofUrl: formData.proofUrl || '',
-        notes: formData.notes || '',
-        curatorStatus: 'Pending API Validation',
-        timestamp: Date.now(),
-        submitter: addressKey
-      };
-
-      // Add to local database
-      await db.suggestions.add(newEntry);
-      
-      // Trigger off-chain validation through the backend proxy
-      triggerOffChainCurationCheck(newEntry.id);
-
-      return newEntry;
+  const suggestionsQuery = useQuery({
+    queryKey: SUGGESTIONS_QUERY_KEY,
+    queryFn: async () => {
+      const { suggestions } = await listSuggestionQueue();
+      return suggestions || [];
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['speciesSuggestions'] });
-    }
+    // The queue is shared, so another founder's vote should show up without a
+    // reload, but it changes rarely enough that polling would be wasteful.
+    staleTime: 30 * 1000,
   });
 
-  // Simulated proxy validation call (in a production environment, this calls /api/ai?action=suggest-species)
-  const triggerOffChainCurationCheck = async (id) => {
-    try {
-      const entry = await db.suggestions.get(id);
-      if (!entry) return;
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: SUGGESTIONS_QUERY_KEY });
 
-      // Call our backend proxy
-      const response = await fetch('/api/ai?action=suggest-species', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(entry),
-      });
+  const addSuggestionMutation = useMutation({
+    mutationFn: (formData) => submitSuggestion(formData),
+    onSuccess: invalidate,
+  });
 
-      if (!response.ok) {
-        throw new Error('API verification failed');
-      }
+  const voteMutation = useMutation({
+    mutationFn: (args) => castVote(args),
+    onSuccess: invalidate,
+  });
 
-      const verifiedData = await response.json();
-      
-      // Update state in local DB based on the verification result
-      await db.suggestions.update(id, {
-        curatorStatus: verifiedData.verified 
-          ? 'AI Verified (Pending curator sign-off)' 
-          : `AI Rejected: ${verifiedData.reason || 'Failed taxonomy check'}`
-      });
-    } catch (err) {
-      console.error("Backend proxy validation failed, falling back to simulated validation:", err);
-      // Fallback in case backend route isn't running in local testing environment
-      setTimeout(async () => {
-        const passes = Math.random() > 0.1; // 90% pass rate for valid entries
-        await db.suggestions.update(id, {
-          curatorStatus: passes 
-            ? 'AI Verified (Pending curator sign-off)' 
-            : 'AI Rejected: Invalid ecological ranges or name spelling.'
-        });
-        queryClient.invalidateQueries({ queryKey: ['speciesSuggestions'] });
-      }, 3000);
-    } finally {
-      queryClient.invalidateQueries({ queryKey: ['speciesSuggestions'] });
-    }
-  };
-
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }) => {
-      await db.suggestions.update(id, { curatorStatus: status });
-    },
+  const promoteMutation = useMutation({
+    mutationFn: (suggestionId) => promoteSuggestion(suggestionId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['speciesSuggestions'] });
-    }
+      invalidate();
+      // A promoted species is now in the on-chain catalog, so the species lists
+      // and the Add Fish picker are stale. Both read through these keys.
+      queryClient.invalidateQueries({ queryKey: ["contractSpeciesLive"] });
+      queryClient.invalidateQueries({ queryKey: ["contractSpeciesCache"] });
+      // useSpeciesData caches with staleTime: Infinity and merges the authored
+      // profile overlay inside its queryFn, so the reference catalog has to be
+      // invalidated explicitly or a newly published species shows no card.
+      queryClient.invalidateQueries({ queryKey: ["species"] });
+    },
   });
 
   return {
-    suggestionsQuery: useQuery({ queryKey: ['speciesSuggestions'], queryFn: getSuggestions }),
+    suggestionsQuery,
+
     suggestSpecies: addSuggestionMutation.mutateAsync,
     isSuggesting: addSuggestionMutation.isPending,
-    updateSuggestionStatus: updateStatusMutation.mutateAsync
+
+    castVote: voteMutation.mutateAsync,
+    isVoting: voteMutation.isPending,
+
+    promoteSpecies: promoteMutation.mutateAsync,
+    isPromoting: promoteMutation.isPending,
   };
 }

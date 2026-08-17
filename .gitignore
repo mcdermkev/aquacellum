@@ -66,6 +66,10 @@ frontend/scripts/*
 # Exception: the seam analyzer is a CI dependency, not local tooling —
 # src/__tests__/seamInventory.test.js imports it, so the suite cannot run without it.
 !frontend/scripts/seams/
+#
+# NOTE: anything that must survive a fresh clone belongs in `frontend/ops/`, not
+# here. That directory is tracked precisely because this one is not — see
+# frontend/ops/README.md.
 
 # Supabase CLI local cache. `.temp/cli-latest` just records the CLI version the
 # machine last saw, so it churns for every developer on a different version and
@@ -84,3 +88,11 @@ fishbase_verified_data.json
 seriously_fish_data.json
 frontend/public/fishbase_master_proposed_backup.json
 frontend/public/fishbase_master_proposed_v2.json
+
+# Video pipeline — generated audio & voice samples (JSON scripts stay tracked)
+scripts/video/samples/
+scripts/video/out/audio/
+# Screen captures too: same reasoning as img_review/ above — a .webm cannot be
+# diffed and stays in history permanently once committed. The capture for one
+# episode alone is 3.65 MB, and these are regenerable from the shot list.
+scripts/video/out/capture/
