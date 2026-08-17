@@ -31,7 +31,13 @@ function ChatMessage({ msg, isOwn }) {
     <div className={`tide-chat__msg ${isOwn ? "tide-chat__msg--own" : ""}`}>
       {!isOwn && msg.profile && (
         <div className="tide-chat__msg-author">
-          <ProfileCard profile={msg.profile} compact />
+          <ProfileCard
+                walletAddress={msg.profile?.wallet_address}
+                displayName={msg.profile?.display_name}
+                avatarUrl={msg.profile?.avatar_url}
+                companionTier={msg.profile?.companion_tier}
+                size="small"
+              />
         </div>
       )}
       <div className="tide-chat__msg-bubble">

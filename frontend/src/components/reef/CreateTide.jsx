@@ -6,9 +6,12 @@
  * Supports: Expo, Virtual, Challenge, and Auction tide types.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCreateTide } from "../../hooks/useTides";
 import { uploadImage } from "../../services/mediaUpload";
+import { getCurrentWallet } from "../../services/supabaseClient";
+import { loadOwnedSpecimens, specimenOptionLabel } from "../../utils/ownedSpecimens";
+import { formatUsdCents, parseUsdToCents } from "../../utils/money";
 
 const TIDE_TYPES = [
   {
@@ -66,10 +69,123 @@ export function CreateTide({ onSuccess, onCancel, preselectedSchoolId = null }) 
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // ── Auction lots ─────────────────────────────────────────────────────────
+  // `formData.auctionItems` existed from the start but nothing ever wrote to it:
+  // there was no UI for it anywhere in the wizard. So every auction tide was
+  // created with `settings.auction_items: []`, and AuctionPanel correctly
+  // reported "no lots configured" forever. Hosts could build an auction and then
+  // had literally nothing to sell.
+  //
+  // Lots are chosen from the host's OWN registered specimens rather than typed as
+  // raw token IDs, so a lot always points at a real certificate they hold and can
+  // be shown with a proper name.
+  const [ownedSpecimens, setOwnedSpecimens] = useState([]);
+  const [specimensLoading, setSpecimensLoading] = useState(false);
+  const [lotDraft, setLotDraft] = useState({ specimenId: "", reserve: "", notes: "" });
+  const [lotError, setLotError] = useState(null);
+
   const createTide = useCreateTide();
+
+  useEffect(() => {
+    if (formData.tideType !== "auction") return;
+    let cancelled = false;
+
+    setSpecimensLoading(true);
+    loadOwnedSpecimens(getCurrentWallet())
+      .then((rows) => { if (!cancelled) setOwnedSpecimens(rows); })
+      .catch((e) => console.warn("[CreateTide] could not load specimens:", e))
+      .finally(() => { if (!cancelled) setSpecimensLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [formData.tideType]);
 
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const addLot = () => {
+    setLotError(null);
+
+    const spec = ownedSpecimens.find((s) => String(s.id) === String(lotDraft.specimenId));
+    if (!spec) {
+      setLotError("Pick which of your fish to auction.");
+      return;
+    }
+    if (formData.auctionItems.some((i) => String(i.token_id) === String(spec.id))) {
+      setLotError("That fish is already in this auction.");
+      return;
+    }
+
+    // A reserve is optional; an unparseable one is not. Storing junk here would
+    // land in the trigger's reserve check and reject every bid on the lot.
+    let reserveCents = null;
+    if (lotDraft.reserve.trim()) {
+      const parsed = parseUsdToCents(lotDraft.reserve);
+      if (parsed.error) {
+        setLotError(parsed.error);
+        return;
+      }
+      reserveCents = parsed.cents;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      auctionItems: [
+        ...prev.auctionItems,
+        {
+          token_id: spec.id,
+          title: specimenOptionLabel(spec),
+          species_name: spec.commonName || spec.scientificName || "",
+          reserve_cents: reserveCents,
+          notes: lotDraft.notes.trim() || null,
+        },
+      ],
+    }));
+    setLotDraft({ specimenId: "", reserve: "", notes: "" });
+  };
+
+  const removeLot = (tokenId) => {
+    setFormData((prev) => ({
+      ...prev,
+      auctionItems: prev.auctionItems.filter((i) => String(i.token_id) !== String(tokenId)),
+    }));
+  };
+
+  // ── Expo location ────────────────────────────────────────────────────────
+  // Latitude/longitude are now required for an expo, so typing raw coordinates
+  // cannot be the only way in. Both existing expos in production have
+  // gps_bounds: null precisely because the fields were optional and unlabelled.
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState(null);
+
+  const useMyLocation = () => {
+    setLocateError(null);
+
+    if (!navigator.geolocation) {
+      setLocateError("This browser can't share a location — enter the coordinates by hand.");
+      return;
+    }
+
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setFormData((prev) => ({
+          ...prev,
+          gpsLat: pos.coords.latitude.toFixed(6),
+          gpsLng: pos.coords.longitude.toFixed(6),
+        }));
+        setLocating(false);
+      },
+      (err) => {
+        setLocateError(
+          err.code === err.PERMISSION_DENIED
+            ? "Location permission denied — enter the coordinates by hand."
+            : "Couldn't get a location — enter the coordinates by hand."
+        );
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
   const handleBannerSelect = (e) => {
@@ -92,6 +208,29 @@ export function CreateTide({ onSuccess, onCancel, preselectedSchoolId = null }) 
         throw new Error("End time must be after start time.");
       }
 
+      // An auction with no lots is not an auction. This is what shipped before:
+      // the wizard happily created auction tides with an empty item list, and the
+      // bidding panel had nothing to render.
+      if (formData.tideType === "auction" && formData.auctionItems.length === 0) {
+        throw new Error("Add at least one fish to auction before creating this tide.");
+      }
+
+      // An expo without a location can't render its map or gate check-in, and
+      // both of those are the entire point of the type.
+      if (formData.tideType === "expo") {
+        if (!formData.gpsLat || !formData.gpsLng) {
+          throw new Error("Set the meetup location so attendees can find it and check in.");
+        }
+        const lat = parseFloat(formData.gpsLat);
+        const lng = parseFloat(formData.gpsLng);
+        if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+          throw new Error("Latitude must be between -90 and 90.");
+        }
+        if (!Number.isFinite(lng) || lng < -180 || lng > 180) {
+          throw new Error("Longitude must be between -180 and 180.");
+        }
+      }
+
       // Upload banner if provided
       let bannerUrl = null;
       if (formData.bannerFile) {
@@ -100,7 +239,8 @@ export function CreateTide({ onSuccess, onCancel, preselectedSchoolId = null }) 
         bannerUrl = url;
       }
 
-      // Build GPS bounds for Expo tides
+      // Build GPS bounds for Expo tides (validated as required above, so this is
+      // always populated for an expo rather than silently staying null).
       let gpsBounds = null;
       if (formData.tideType === "expo" && formData.gpsLat && formData.gpsLng) {
         gpsBounds = {
@@ -278,6 +418,21 @@ export function CreateTide({ onSuccess, onCancel, preselectedSchoolId = null }) 
           {formData.tideType === "expo" && (
             <fieldset className="create-tide__fieldset">
               <legend>📍 Expo Zone (GPS)</legend>
+              <p className="create-tide__hint">
+                Required — this places the meetup on the map and defines the area
+                attendees can check in from.
+              </p>
+              <button
+                type="button"
+                className="btn btn--secondary btn--sm"
+                onClick={useMyLocation}
+                disabled={locating}
+              >
+                {locating ? "Locating…" : "📍 Use my current location"}
+              </button>
+              {locateError && (
+                <p className="create-tide__error" role="alert">{locateError}</p>
+              )}
               <div className="create-tide__gps-row">
                 <label className="form-field">
                   <span>Latitude</span>
@@ -360,6 +515,109 @@ export function CreateTide({ onSuccess, onCancel, preselectedSchoolId = null }) 
                   rows={3}
                 />
               </label>
+            </fieldset>
+          )}
+
+          {/* Auction: the lots */}
+          {formData.tideType === "auction" && (
+            <fieldset className="create-tide__fieldset">
+              <legend>🔨 Auction Lots</legend>
+              <p className="create-tide__hint">
+                Choose which of your registered fish go up for bidding. Bids are in
+                US dollars.
+              </p>
+
+              {formData.auctionItems.length > 0 && (
+                <ul className="create-tide__lots">
+                  {formData.auctionItems.map((lot) => (
+                    <li key={lot.token_id} className="create-tide__lot">
+                      <div className="create-tide__lot-info">
+                        <strong>{lot.title}</strong>
+                        <span className="text-muted">
+                          {lot.reserve_cents
+                            ? `Opening bid ${formatUsdCents(lot.reserve_cents, { showCents: false })}`
+                            : "No reserve"}
+                        </span>
+                        {lot.notes && <span className="text-muted">{lot.notes}</span>}
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn--ghost btn--sm"
+                        onClick={() => removeLot(lot.token_id)}
+                        aria-label={`Remove ${lot.title} from the auction`}
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {specimensLoading ? (
+                <p className="text-muted">Loading your fish…</p>
+              ) : ownedSpecimens.length === 0 ? (
+                <p className="text-muted">
+                  You don't have any registered fish yet. Register a specimen first,
+                  then it can be auctioned here.
+                </p>
+              ) : (
+                <div className="create-tide__lot-draft">
+                  <label className="form-field">
+                    <span>Fish</span>
+                    <select
+                      value={lotDraft.specimenId}
+                      onChange={(e) => setLotDraft((d) => ({ ...d, specimenId: e.target.value }))}
+                    >
+                      <option value="">Choose a fish…</option>
+                      {ownedSpecimens
+                        .filter(
+                          (s) =>
+                            !formData.auctionItems.some(
+                              (i) => String(i.token_id) === String(s.id)
+                            )
+                        )
+                        .map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {specimenOptionLabel(s)}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+
+                  <label className="form-field">
+                    <span>Opening bid in USD (optional)</span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={lotDraft.reserve}
+                      onChange={(e) => setLotDraft((d) => ({ ...d, reserve: e.target.value }))}
+                      placeholder="e.g. 25"
+                    />
+                  </label>
+
+                  <label className="form-field">
+                    <span>Lot notes (optional)</span>
+                    <input
+                      type="text"
+                      value={lotDraft.notes}
+                      onChange={(e) => setLotDraft((d) => ({ ...d, notes: e.target.value }))}
+                      placeholder="e.g. proven breeder, 3 years old"
+                      maxLength={140}
+                    />
+                  </label>
+
+                  {lotError && <p className="create-tide__error" role="alert">{lotError}</p>}
+
+                  <button
+                    type="button"
+                    className="btn btn--secondary btn--sm"
+                    onClick={addLot}
+                    disabled={!lotDraft.specimenId}
+                  >
+                    + Add lot
+                  </button>
+                </div>
+              )}
             </fieldset>
           )}
 

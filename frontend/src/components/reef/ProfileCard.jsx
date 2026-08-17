@@ -43,19 +43,44 @@ function truncateWallet(wallet) {
   return `${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
 }
 
+/**
+ * @param {object}  [props.profile] - A profiles row, as returned by the embedded
+ *   selects across the Reef (`profile:wallet_address (wallet_address,
+ *   display_name, avatar_url, companion_tier)`). Shorthand for spreading the four
+ *   flat props below; explicit flat props win if both are given.
+ *
+ *   Supporting this shape is not sugar — it's the bug fix. Every caller in the
+ *   Reef had a row in hand and passed `profile={row} compact`, but this component
+ *   only ever read flat camelCase props. `displayName` was therefore always
+ *   undefined, so every name fell through to `truncateWallet(undefined)` and
+ *   rendered the literal string "Unknown" with a bronze medal, on tide hosts,
+ *   attendee lists, chat authors, live-feed rows and the winning bidder alike.
+ *   React silently ignored the unknown `compact` prop, so nothing warned.
+ *
+ * @param {boolean} [props.compact] - Alias for size="small", which is what the
+ *   Reef call sites have always passed.
+ */
 export function ProfileCard({
+  profile = null,
+  compact = false,
   walletAddress,
   displayName,
   avatarUrl,
-  companionTier = "Shallow",
-  size = "default", // "default" | "small" | "large"
+  companionTier,
+  size, // "default" | "small" | "large"
   onClick,
   showTier = true,
   style = {},
 }) {
-  const name = displayName || truncateWallet(walletAddress);
-  const tierIcon = TIER_ICONS[companionTier] || "🥉";
-  const tierColor = TIER_COLORS[companionTier] || "#cd7f32";
+  const wallet = walletAddress ?? profile?.wallet_address;
+  const resolvedName = displayName ?? profile?.display_name;
+  const avatar = avatarUrl ?? profile?.avatar_url;
+  const tier = companionTier ?? profile?.companion_tier ?? "Bronze";
+  const resolvedSize = size ?? (compact ? "small" : "default");
+
+  const name = resolvedName || truncateWallet(wallet);
+  const tierIcon = TIER_ICONS[tier] || "🥉";
+  const tierColor = TIER_COLORS[tier] || "#cd7f32";
 
   const sizes = {
     small: { avatar: 24, fontSize: "0.7rem", gap: "0.35rem" },
@@ -63,7 +88,7 @@ export function ProfileCard({
     large: { avatar: 44, fontSize: "0.9rem", gap: "0.65rem" },
   };
 
-  const s = sizes[size] || sizes.default;
+  const s = sizes[resolvedSize] || sizes.default;
 
   return (
     <div
@@ -90,10 +115,10 @@ export function ProfileCard({
           width: `${s.avatar}px`,
           height: `${s.avatar}px`,
           borderRadius: "50%",
-          background: avatarUrl ? `url(${avatarUrl}) center/cover` : walletGradient(walletAddress),
+          background: avatar ? `url(${avatar}) center/cover` : walletGradient(wallet),
           flexShrink: 0,
           border: `1.5px solid ${tierColor}`,
-          boxShadow: companionTier === "God-Tier" ? `0 0 8px ${tierColor}` : "none",
+          boxShadow: tier === "God-Tier" ? `0 0 8px ${tierColor}` : "none",
         }}
         aria-hidden="true"
       />
@@ -114,8 +139,8 @@ export function ProfileCard({
         </span>
         {showTier && (
           <span
-            style={{ fontSize: size === "small" ? "0.6rem" : "0.7rem" }}
-            title={`${companionTier} Tier`}
+            style={{ fontSize: resolvedSize === "small" ? "0.6rem" : "0.7rem" }}
+            title={`${tier} Tier`}
           >
             {tierIcon}
           </span>

@@ -32,6 +32,46 @@ import {
 import { supabase, getCurrentWallet, isSupabaseConfigured } from "../services/supabaseClient";
 
 // ─────────────────────────────────────────────────────────────────────────────
+// ERROR HANDLING
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Unwrap a `{ data, error }` service envelope, THROWING on error.
+ *
+ * Every query below used to do `select: (res) => res.data`, which reads the data
+ * out of the envelope and drops `res.error` on the floor. React Query never sees
+ * a rejection, so `isError` stays false, nothing retries, nothing logs, and the
+ * component renders its empty state.
+ *
+ * That is not a theoretical concern — it is exactly how this feature broke.
+ * `getTideAttendees` ordered by a `created_at` column that did not exist, so
+ * every request failed with Postgres 42703, and every tide reported
+ * "Attendees (0) — No RSVPs yet" while real RSVP rows sat in the table. A silent
+ * catch turned a loud schema error into a plausible-looking empty event.
+ *
+ * Throwing means a broken query now looks broken.
+ */
+async function unwrap(promise, label) {
+  const res = await promise;
+
+  // Services aren't perfectly uniform: a few return a bare value rather than an
+  // envelope. Anything without an `error` key is passed through as-is.
+  if (!res || typeof res !== "object" || !("error" in res)) return res ?? null;
+
+  if (res.error) {
+    const detail = typeof res.error === "string"
+      ? res.error
+      : res.error.message || res.error.code || JSON.stringify(res.error);
+    const err = new Error(`${label}: ${detail}`);
+    err.code = res.error?.code;
+    err.cause = res.error;
+    throw err;
+  }
+
+  return res.data ?? null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // TIDE QUERIES
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -41,10 +81,9 @@ import { supabase, getCurrentWallet, isSupabaseConfigured } from "../services/su
 export function useTide(tideId) {
   return useQuery({
     queryKey: ["reef", "tide", tideId],
-    queryFn: () => getTide(tideId),
+    queryFn: () => unwrap(getTide(tideId), "getTide"),
     enabled: !!tideId && isSupabaseConfigured(),
     staleTime: 30 * 1000,
-    select: (res) => res.data,
   });
 }
 
@@ -54,10 +93,9 @@ export function useTide(tideId) {
 export function useUpcomingTides({ tideType, schoolId } = {}) {
   return useQuery({
     queryKey: ["reef", "tides", "upcoming", { tideType, schoolId }],
-    queryFn: () => getUpcomingTides({ tideType, schoolId }),
+    queryFn: () => unwrap(getUpcomingTides({ tideType, schoolId }), "getUpcomingTides"),
     enabled: isSupabaseConfigured(),
     staleTime: 30 * 1000,
-    select: (res) => res.data,
   });
 }
 
@@ -67,10 +105,9 @@ export function useUpcomingTides({ tideType, schoolId } = {}) {
 export function usePastTides() {
   return useQuery({
     queryKey: ["reef", "tides", "past"],
-    queryFn: () => getPastTides(),
+    queryFn: () => unwrap(getPastTides(), "getPastTides"),
     enabled: isSupabaseConfigured(),
     staleTime: 60 * 1000,
-    select: (res) => res.data,
   });
 }
 
@@ -81,10 +118,9 @@ export function useMyTides(walletOverride = null) {
   const wallet = walletOverride || getCurrentWallet();
   return useQuery({
     queryKey: ["reef", "tides", "mine", wallet],
-    queryFn: getMyTides,
+    queryFn: () => unwrap(getMyTides(), "getMyTides"),
     enabled: !!wallet && isSupabaseConfigured(),
     staleTime: 30 * 1000,
-    select: (res) => res.data,
   });
 }
 
@@ -94,10 +130,9 @@ export function useMyTides(walletOverride = null) {
 export function useTideAttendees(tideId) {
   return useQuery({
     queryKey: ["reef", "tide-attendees", tideId],
-    queryFn: () => getTideAttendees(tideId),
+    queryFn: () => unwrap(getTideAttendees(tideId), "getTideAttendees"),
     enabled: !!tideId && isSupabaseConfigured(),
     staleTime: 15 * 1000,
-    select: (res) => res.data,
   });
 }
 
@@ -108,7 +143,7 @@ export function useMyRsvp(tideId, walletOverride = null) {
   const wallet = walletOverride || getCurrentWallet();
   return useQuery({
     queryKey: ["reef", "my-rsvp", tideId, wallet],
-    queryFn: () => getMyRsvp(tideId),
+    queryFn: () => unwrap(getMyRsvp(tideId), "getMyRsvp"),
     enabled: !!tideId && !!wallet && isSupabaseConfigured(),
     staleTime: 10 * 1000,
   });
@@ -206,6 +241,11 @@ export function useRsvp(tideId) {
       queryClient.invalidateQueries({ queryKey: ["reef", "my-rsvp", tideId] });
       queryClient.invalidateQueries({ queryKey: ["reef", "tide-attendees", tideId] });
       queryClient.invalidateQueries({ queryKey: ["reef", "tide", tideId] });
+      // Also the LISTS. TideCalendar renders "✓ Going" from `tide.my_rsvp`, which
+      // arrives on the upcoming/mine list rows — without this the card you just
+      // RSVP'd from keeps showing its RSVP button until something else
+      // refetches, which reads as the click having done nothing.
+      queryClient.invalidateQueries({ queryKey: ["reef", "tides"] });
     },
   });
 }
@@ -222,6 +262,7 @@ export function useCancelRsvp(tideId) {
       queryClient.invalidateQueries({ queryKey: ["reef", "my-rsvp", tideId] });
       queryClient.invalidateQueries({ queryKey: ["reef", "tide-attendees", tideId] });
       queryClient.invalidateQueries({ queryKey: ["reef", "tide", tideId] });
+      queryClient.invalidateQueries({ queryKey: ["reef", "tides"] });
     },
   });
 }
@@ -237,6 +278,7 @@ export function useCheckIn(tideId) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reef", "my-rsvp", tideId] });
       queryClient.invalidateQueries({ queryKey: ["reef", "tide-attendees", tideId] });
+      queryClient.invalidateQueries({ queryKey: ["reef", "tides"] });
     },
   });
 }
@@ -251,10 +293,9 @@ export function useCheckIn(tideId) {
 export function useSwapSheet(tideId) {
   return useQuery({
     queryKey: ["reef", "swap-sheet", tideId],
-    queryFn: () => getSwapSheet(tideId),
+    queryFn: () => unwrap(getSwapSheet(tideId), "getSwapSheet"),
     enabled: !!tideId && isSupabaseConfigured(),
     staleTime: 30 * 1000,
-    select: (res) => res.data,
   });
 }
 
@@ -283,6 +324,7 @@ export function useUpdateBringing(tideId) {
 export function useTideChat(tideId, enabled = true) {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const lastSentRef = useRef(0);
   const RATE_LIMIT_MS = 5000; // 1 message per 5 seconds
 
@@ -296,11 +338,16 @@ export function useTideChat(tideId, enabled = true) {
     let cancelled = false;
 
     async function loadMessages() {
-      const { data } = await getTideChatMessages(tideId);
-      if (!cancelled) {
+      const { data, error } = await getTideChatMessages(tideId);
+      if (cancelled) return;
+      if (error) {
+        console.error("[useTideChat] failed to load history:", error);
+        setLoadError(typeof error === "string" ? error : error.message || "Could not load chat");
+      } else {
+        setLoadError(null);
         setMessages(data || []);
-        setIsLoading(false);
       }
+      setIsLoading(false);
     }
 
     loadMessages();
@@ -358,7 +405,7 @@ export function useTideChat(tideId, enabled = true) {
     return { data, error };
   }, [tideId]);
 
-  return { messages, sendMessage, isLoading };
+  return { messages, sendMessage, isLoading, loadError };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -445,25 +492,59 @@ export function useTideLiveFeed(tideId, enabled = true) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Compare two bids by amount. Returns >0 if `a` beats `b`.
+ *
+ * Amounts are integer US cents, so this is a plain numeric comparison. A
+ * malformed amount loses rather than throwing, which keeps one bad row from
+ * breaking the whole ticker.
+ */
+function compareBidAmount(a, b) {
+  if (!a) return -1;
+  if (!b) return 1;
+  const av = Number(a.amount_cents ?? 0);
+  const bv = Number(b.amount_cents ?? 0);
+  if (!Number.isFinite(av)) return -1;
+  if (!Number.isFinite(bv)) return 1;
+  return av > bv ? 1 : av < bv ? -1 : 0;
+}
+
+/**
  * Hook for real-time auction bidding.
  */
 export function useAuction(tideId, tokenId, enabled = true) {
   const [highestBid, setHighestBid] = useState(null);
   const [bidHistory, setBidHistory] = useState([]);
-  const queryClient = useQueryClient();
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
   // Initial load
   useEffect(() => {
     if (!tideId || !tokenId || !enabled || !isSupabaseConfigured()) return;
 
+    let cancelled = false;
+
     async function load() {
-      const { data: high } = await getHighestBid(tideId, tokenId);
-      const { data: history } = await getBidHistory(tideId, tokenId);
-      setHighestBid(high);
-      setBidHistory(history || []);
+      const [high, history] = await Promise.all([
+        getHighestBid(tideId, tokenId),
+        getBidHistory(tideId, tokenId),
+      ]);
+      if (cancelled) return;
+
+      const failure = high.error || history.error;
+      if (failure) {
+        console.error("[useAuction] failed to load bid state:", failure);
+        setLoadError(typeof failure === "string" ? failure : failure.message || "Could not load bids");
+      } else {
+        setLoadError(null);
+      }
+
+      setHighestBid(high.data ?? null);
+      setBidHistory(history.data || []);
+      setIsLoading(false);
     }
 
     load();
+    return () => { cancelled = true; };
   }, [tideId, tokenId, enabled]);
 
   // Realtime subscription for new bids
@@ -481,11 +562,16 @@ export function useAuction(tideId, tokenId, enabled = true) {
           filter: `tide_id=eq.${tideId}`,
         },
         (payload) => {
-          if (payload.new.token_id === tokenId) {
-            // New bid came in — refresh
-            setHighestBid(payload.new);
-            setBidHistory((prev) => [payload.new, ...prev]);
-          }
+          if (payload.new.token_id !== tokenId) return;
+
+          setBidHistory((prev) =>
+            prev.some((b) => b.id === payload.new.id) ? prev : [payload.new, ...prev]
+          );
+
+          // Only promote it if it actually beats the standing bid. The previous
+          // version assigned every incoming bid straight to `highestBid`, so an
+          // out-of-order or losing bid could visually "win" the lot.
+          setHighestBid((prev) => (compareBidAmount(payload.new, prev) > 0 ? payload.new : prev));
         }
       )
       .subscribe();
@@ -498,10 +584,21 @@ export function useAuction(tideId, tokenId, enabled = true) {
   const submitBid = useCallback(
     async (amountWei) => {
       const result = await placeBid(tideId, tokenId, amountWei);
+
+      // Apply our own bid optimistically. Realtime only delivers INSERTs to
+      // *other* subscribers reliably; without this the bidder can sit staring at
+      // a stale "current bid" after a successful submit and assume it failed.
+      if (!result.error && result.data) {
+        setBidHistory((prev) =>
+          prev.some((b) => b.id === result.data.id) ? prev : [result.data, ...prev]
+        );
+        setHighestBid((prev) => (compareBidAmount(result.data, prev) > 0 ? result.data : prev));
+      }
+
       return result;
     },
     [tideId, tokenId]
   );
 
-  return { highestBid, bidHistory, submitBid };
+  return { highestBid, bidHistory, submitBid, isLoading, loadError };
 }

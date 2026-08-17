@@ -17,7 +17,13 @@ function LiveFeedItem({ item }) {
         <div className="live-feed-item live-feed-item--chat">
           <div className="live-feed-item__author">
             {item.data.profile ? (
-              <ProfileCard profile={item.data.profile} compact />
+              <ProfileCard
+                walletAddress={item.data.profile?.wallet_address}
+                displayName={item.data.profile?.display_name}
+                avatarUrl={item.data.profile?.avatar_url}
+                companionTier={item.data.profile?.companion_tier}
+                size="small"
+              />
             ) : (
               <span className="live-feed-item__wallet">
                 {item.data.author_wallet?.slice(0, 8)}…

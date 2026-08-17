@@ -51,10 +51,31 @@ function CountdownTimer({ targetTime }) {
   return <span className="tide-countdown">{timeLeft}</span>;
 }
 
-function TideCard({ tide, onSelect, onRsvp }) {
+function TideCard({ tide, onSelect }) {
   const typeInfo = TIDE_TYPE_LABELS[tide.tide_type] || TIDE_TYPE_LABELS.expo;
   const isLive = tide.status === "live";
   const startDate = new Date(tide.start_time);
+
+  // The RSVP mutation lives on the card, not the calendar, because useRsvp is
+  // scoped to a single tide id. The parent used to hold a `handleRsvp` that
+  // ignored its own `status` argument and just called onSelectTide — so the
+  // button labelled "RSVP" was a navigation link, and `useRsvp` sat imported and
+  // uncalled at the top of the file.
+  const rsvpMutation = useRsvp(tide.id);
+  const [rsvpError, setRsvpError] = useState(null);
+
+  const handleRsvpClick = (e) => {
+    e.stopPropagation();
+    setRsvpError(null);
+    rsvpMutation.mutate("going", {
+      onSuccess: (res) => {
+        if (res?.error) {
+          setRsvpError(typeof res.error === "string" ? res.error : res.error.message);
+        }
+      },
+      onError: (err) => setRsvpError(err?.message || "Couldn't RSVP"),
+    });
+  };
 
   return (
     <article
@@ -112,7 +133,13 @@ function TideCard({ tide, onSelect, onRsvp }) {
 
         {tide.host_profile && (
           <div className="tide-card__host">
-            <ProfileCard profile={tide.host_profile} compact />
+            <ProfileCard
+                walletAddress={tide.host_profile?.wallet_address}
+                displayName={tide.host_profile?.display_name}
+                avatarUrl={tide.host_profile?.avatar_url}
+                companionTier={tide.host_profile?.companion_tier}
+                size="small"
+              />
           </div>
         )}
 
@@ -124,13 +151,14 @@ function TideCard({ tide, onSelect, onRsvp }) {
           ) : (
             <button
               className="btn btn--sm btn--primary"
-              onClick={(e) => {
-                e.stopPropagation();
-                onRsvp(tide.id, "going");
-              }}
+              onClick={handleRsvpClick}
+              disabled={rsvpMutation.isPending}
             >
-              RSVP
+              {rsvpMutation.isPending ? "RSVPing…" : "RSVP"}
             </button>
+          )}
+          {rsvpError && (
+            <span className="tide-card__rsvp-error" role="alert">{rsvpError}</span>
           )}
         </div>
       </div>
@@ -147,11 +175,7 @@ export function TideCalendar({ onSelectTide, casualModeActive = false }) {
   });
   const { data: myTides = [] } = useMyTides();
 
-  // Inline RSVP mutation — we call at card level
-  const handleRsvp = async (tideId, status) => {
-    // Delegate to TidePage for full RSVP flow
-    if (onSelectTide) onSelectTide(tideId);
-  };
+
 
   const myUpcoming = myTides.filter(
     (t) => t.status === "upcoming" || t.status === "live"
@@ -218,7 +242,6 @@ export function TideCalendar({ onSelectTide, casualModeActive = false }) {
                 key={tide.id}
                 tide={tide}
                 onSelect={onSelectTide}
-                onRsvp={handleRsvp}
               />
             ))}
           </div>
@@ -254,7 +277,6 @@ export function TideCalendar({ onSelectTide, casualModeActive = false }) {
                 key={tide.id}
                 tide={tide}
                 onSelect={onSelectTide}
-                onRsvp={handleRsvp}
               />
             ))}
           </div>

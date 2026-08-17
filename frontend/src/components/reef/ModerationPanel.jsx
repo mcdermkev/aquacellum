@@ -88,7 +88,13 @@ function FlaggedItemCard({ item, onAction }) {
       {item.reporter_profile && (
         <div style={{ marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Reported by:</span>
-          <ProfileCard profile={item.reporter_profile} compact />
+          <ProfileCard
+              walletAddress={item.reporter_profile?.wallet_address}
+              displayName={item.reporter_profile?.display_name}
+              avatarUrl={item.reporter_profile?.avatar_url}
+              companionTier={item.reporter_profile?.companion_tier}
+              size="small"
+            />
           {item.prior_warnings > 0 && (
             <span style={{
               fontSize: "0.6rem",

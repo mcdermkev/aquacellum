@@ -52,6 +52,14 @@ export const XP_ACTIONS = {
   ENGAGEMENT_BONUS: { points: 8, label: "Post Reached 5+ Reactions" },
   JOIN_SCHOOL: { points: 15, label: "Joined a School" },
   MENTORED_USER: { points: 40, label: "Mentored Another User" },
+  // Physically turning up at an Expo Tide and checking in on site.
+  //
+  // TidePage has always LABELLED this button "📍 Check In (+100 XP)" while
+  // awarding nothing — `tide_attendees.xp_awarded` was never written by any code
+  // path, and production bears that out: a keeper who checked in at "Jersey meet"
+  // has xp_awarded false, while a row that never checked in at all has it true.
+  // 100 points matches what the button has been promising all along.
+  TIDE_CHECK_IN: { points: 100, label: "Checked In at an Expo", dailyMax: 2 },
 
   // ── Actions that were being awarded with NO canonical entry ───────────────
   //

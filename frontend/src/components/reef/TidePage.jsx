@@ -7,10 +7,11 @@
  * - Post-event: TideRecap with Poseidon-generated summary
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTide, useTideAttendees, useMyRsvp, useRsvp, useCancelRsvp, useCheckIn, useStartTide, useEndTide } from "../../hooks/useTides";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { sameWallet } from "../../utils/wallet";
+import { awardXp } from "../../utils/xp";
 import { useAuth } from "../../contexts/AuthContext";
 import { ProfileCard } from "./ProfileCard";
 import TideLiveFeed from "./TideLiveFeed";
@@ -29,10 +30,46 @@ const TIDE_TYPE_LABELS = {
   auction: { label: "Auction", icon: "🔨", color: "#ef4444" },
 };
 
+/**
+ * Format a tide's end for display beside its start.
+ *
+ * The end used to render with toLocaleTimeString only — time of day, no date. For
+ * a tide inside a single afternoon that reads fine, but production has a tide
+ * running a full 7 days, and it displayed as "3:50 PM → 3:50 PM": identical
+ * timestamps suggesting a zero-length event. The duration was real; only the
+ * formatting hid it.
+ *
+ * So: show just the time when the tide ends on the day it started, and include
+ * the date when it doesn't.
+ */
+function formatTideEnd(startTime, endTime) {
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+
+  const timeOnly = { hour: "numeric", minute: "2-digit" };
+  if (start.toDateString() === end.toDateString()) {
+    return end.toLocaleTimeString(undefined, timeOnly);
+  }
+
+  return end.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    ...timeOnly,
+  });
+}
+
 function TideCountdown({ startTime }) {
   const [timeStr, setTimeStr] = useState("");
 
-  useState(() => {
+  // useEffect, not useState. This was `useState(() => {...})`, which React treats
+  // as a lazy INITIALISER: it ran the body exactly once, threw away the returned
+  // cleanup, and never re-ran. Two consequences — the countdown froze at whatever
+  // it read on first paint (so "2h 14m 3s" just sat there, and a tide that had
+  // already started never flipped to "Starting now!"), and the 1s interval was
+  // never cleared, so every visit to a tide leaked another timer calling
+  // setState on an unmounted component. TideCalendar's copy does this correctly.
+  useEffect(() => {
     function update() {
       const diff = new Date(startTime).getTime() - Date.now();
       if (diff <= 0) {
@@ -51,7 +88,7 @@ function TideCountdown({ startTime }) {
     update();
     const iv = setInterval(update, 1000);
     return () => clearInterval(iv);
-  });
+  }, [startTime]);
 
   return <div className="tide-page__countdown">{timeStr}</div>;
 }
@@ -135,7 +172,26 @@ export function TidePage({ tideId, onBack }) {
   // ── RSVP actions ──
   const handleRsvp = (status) => rsvpMutation.mutate(status);
   const handleCancelRsvp = () => cancelRsvpMutation.mutate();
-  const handleCheckIn = () => checkInMutation.mutate();
+  // Award the check-in XP the button has always advertised. `xpClaimed` comes back
+  // true only for the request that actually flipped tide_attendees.xp_awarded from
+  // false, so a double-tap or a second device can't pay out twice.
+  const [xpToast, setXpToast] = useState(null);
+  const handleCheckIn = () => {
+    checkInMutation.mutate(undefined, {
+      onSuccess: (res) => {
+        if (!res?.xpClaimed) return;
+        const { awarded } = awardXp("TIDE_CHECK_IN", { eventId: tideId });
+        if (awarded > 0) setXpToast(`+${awarded} XP — checked in!`);
+      },
+    });
+  };
+
+  // Clear the toast after a few seconds.
+  useEffect(() => {
+    if (!xpToast) return;
+    const t = setTimeout(() => setXpToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [xpToast]);
 
   // ── Host lifecycle actions ──
   const handleGoLive = () => startTideMutation.mutate();
@@ -189,10 +245,7 @@ export function TidePage({ tideId, onBack }) {
           </time>
           <span> → </span>
           <time dateTime={tide.end_time}>
-            {new Date(tide.end_time).toLocaleTimeString(undefined, {
-              hour: "numeric",
-              minute: "2-digit",
-            })}
+            {formatTideEnd(tide.start_time, tide.end_time)}
           </time>
           <span className="tide-page__attendee-count">👥 {tide.attendee_count || attendees.length}</span>
         </div>
@@ -203,7 +256,13 @@ export function TidePage({ tideId, onBack }) {
         {tide.host_profile && (
           <div className="tide-page__host">
             <span>Hosted by</span>
-            <ProfileCard profile={tide.host_profile} compact />
+            <ProfileCard
+                walletAddress={tide.host_profile?.wallet_address}
+                displayName={tide.host_profile?.display_name}
+                avatarUrl={tide.host_profile?.avatar_url}
+                companionTier={tide.host_profile?.companion_tier}
+                size="small"
+              />
           </div>
         )}
       </header>
@@ -259,6 +318,9 @@ export function TidePage({ tideId, onBack }) {
       {/* RSVP Bar */}
       {!isEnded && (
         <div className="tide-page__rsvp-bar">
+          {xpToast && (
+            <span className="rsvp-badge rsvp-badge--xp" role="status">{xpToast}</span>
+          )}
           {myRsvp?.rsvp_status === "checked_in" ? (
             <span className="rsvp-badge rsvp-badge--checked-in">✓ Checked In</span>
           ) : myRsvp?.rsvp_status ? (
@@ -326,7 +388,13 @@ export function TidePage({ tideId, onBack }) {
                 <div className="tide-page__attendee-grid">
                   {attendees.slice(0, 20).map((a) => (
                     <div key={a.wallet_address} className="tide-page__attendee">
-                      <ProfileCard profile={a.profile} compact />
+                      <ProfileCard
+                walletAddress={a.profile?.wallet_address}
+                displayName={a.profile?.display_name}
+                avatarUrl={a.profile?.avatar_url}
+                companionTier={a.profile?.companion_tier}
+                size="small"
+              />
                       {a.rsvp_status === "checked_in" && <span className="checkin-dot">📍</span>}
                     </div>
                   ))}
@@ -368,14 +436,30 @@ export function TidePage({ tideId, onBack }) {
           <TideChat tideId={tideId} enabled={isLive} />
         )}
 
-        {activeTab === "map" && tide.gps_bounds && (
-          <TideMap
-            tideId={tideId}
-            gpsBounds={tide.gps_bounds}
-            attendees={attendees}
-            isLive={isLive}
-            onCheckIn={handleCheckIn}
-          />
+        {/* The tab button (above) appears for every expo, but this body used to
+            require gps_bounds — and both expos in production have it null, because
+            the create wizard's lat/lng fields were optional. Result: tapping "Map"
+            showed an entirely blank panel with no explanation. New expos now
+            require a location; this covers the ones created before that. */}
+        {activeTab === "map" && (
+          tide.gps_bounds ? (
+            <TideMap
+              tideId={tideId}
+              gpsBounds={tide.gps_bounds}
+              attendees={attendees}
+              isLive={isLive}
+              onCheckIn={handleCheckIn}
+            />
+          ) : (
+            <div className="tide-page__empty">
+              <p>🗺️ No location set for this expo.</p>
+              <p className="text-muted">
+                {isHost
+                  ? "Add a meetup location so attendees can find the spot and check in when they arrive."
+                  : "The host hasn't pinned the meetup spot yet. Check the description for directions."}
+              </p>
+            </div>
+          )
         )}
 
         {activeTab === "swap" && (

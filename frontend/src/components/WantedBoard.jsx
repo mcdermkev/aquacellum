@@ -3,6 +3,7 @@ import { supabase, isSupabaseConfigured } from "../services/supabaseClient";
 import { notifyWantedMatch } from "../services/marketplaceNotifications";
 import { getOrCreateConversation, sendMessage } from "../services/messagesApi";
 import { useSpeciesSearch } from "../hooks/useSpeciesSearch";
+import { formatUsdCents, parseUsdToCents } from "../utils/money";
 import { LazyImage } from "./LazyImage";
 import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";
 import { db } from "../db";
@@ -38,12 +39,18 @@ function timeAgo(dateString) {
   return new Date(dateString).toLocaleDateString();
 }
 
-// Format a free-text budget: prefix "$" when it looks like a bare number.
-function formatBudget(value) {
-  if (!value) return null;
-  const trimmed = String(value).trim();
-  if (/^\d+(\.\d+)?$/.test(trimmed)) return `$${trimmed}`;
-  return trimmed;
+/**
+ * Format a stored budget (integer US cents) for display.
+ *
+ * This used to take free text out of a column called `max_price_eth` and prefix a
+ * "$" if it looked numeric — so keepers typed dollars into a field labelled ETH
+ * and it happened to render correctly, while the match notification multiplied
+ * the same value by 1000 (an old ETH→USD rate) and announced a $50 budget as
+ * "$50,000". The column is `max_price_cents` now and the units are unambiguous.
+ */
+function formatBudget(cents) {
+  if (cents === null || cents === undefined || cents === "") return null;
+  return formatUsdCents(cents, { showCents: false });
 }
 
 export function WantedBoard({ casualModeActive = false, walletAccount }) {
@@ -180,7 +187,7 @@ export function WantedBoard({ casualModeActive = false, walletAccount }) {
               recipientWallet: walletAccount,
               speciesName: wanted.species_name,
               buyerName: wanted.profiles?.display_name || "A buyer",
-              maxBudget: wanted.max_price_eth ? parseFloat(wanted.max_price_eth) * 1000 : null,
+              maxBudgetCents: wanted.max_price_cents ?? null,
               wantedId: wanted.id,
             });
             break;
@@ -210,13 +217,26 @@ export function WantedBoard({ casualModeActive = false, walletAccount }) {
       return;
     }
 
+    // The budget is optional, but if it's filled in it has to be a real dollar
+    // amount — max_price_cents is an INTEGER column, so free text would fail at
+    // the database instead of here where we can say something useful.
+    let maxPriceCents = null;
+    if (maxPrice.trim()) {
+      const parsed = parseUsdToCents(maxPrice);
+      if (parsed.error) {
+        setFormError(parsed.error);
+        return;
+      }
+      maxPriceCents = parsed.cents;
+    }
+
     setSubmitting(true);
     try {
       const { error } = await supabase.from("wanted_listings").insert({
         wallet_address: walletAccount.toLowerCase(),
         species_name: selectedSpecies.commonName || selectedSpecies.scientificName,
         species_id: selectedSpecies.specCode ?? selectedSpecies.speciesId ?? null,
-        max_price_eth: maxPrice.trim() || null,
+        max_price_cents: maxPriceCents,
         notes: notes.trim() || null,
       });
 
@@ -397,7 +417,7 @@ export function WantedBoard({ casualModeActive = false, walletAccount }) {
               type="text"
               value={maxPrice}
               onChange={(e) => setMaxPrice(e.target.value)}
-              placeholder="Max budget (optional, e.g. $25)"
+              placeholder="Max budget in USD (optional, e.g. 25)"
               style={{ ...inputStyle, flex: "1", minWidth: "140px", fontSize: "0.8rem" }}
             />
             <input
@@ -514,7 +534,7 @@ export function WantedBoard({ casualModeActive = false, walletAccount }) {
             const count = demandCounts.get(normalized) || 1;
             const matchesMe = !isOwn && mySpeciesNames.has(normalized);
             const art = resolveArt(item);
-            const budget = formatBudget(item.max_price_eth);
+            const budget = formatBudget(item.max_price_cents);
             const status = respondStatus[item.id];
             const isResponding = respondingId === item.id;
 

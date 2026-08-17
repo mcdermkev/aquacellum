@@ -78,6 +78,10 @@ const VALID_ACTIONS = {
   ENGAGEMENT_BONUS:     { points: 8,  cooldownMs: null, perTank: false, dailyMax: null },
   JOIN_SCHOOL:          { points: 15, cooldownMs: null, perTank: false, dailyMax: null },
   MENTORED_USER:        { points: 40, cooldownMs: null, perTank: false, dailyMax: null },
+  // Showing up in person. dailyMax 2 allows a genuine double-header without
+  // making check-in farmable; the real guard is tide_attendees.xp_awarded, which
+  // is claimed atomically so a given tide can only ever pay out once.
+  TIDE_CHECK_IN:        { points: 100, cooldownMs: null, perTank: false, dailyMax: 2 },
 
   // Husbandry bookkeeping — capped, previously uncapped and unlisted
   SPECIMEN_REHOMED:     { points: 10, cooldownMs: null, perTank: false, dailyMax: 3 },

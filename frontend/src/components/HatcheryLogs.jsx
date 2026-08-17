@@ -4,6 +4,7 @@ import marketplaceAbi from "../abi/AquadexMarketplace.json";
 import { HandshakeVerification } from "./HandshakeVerification";
 import { getProvider } from "../utils/smartAccount";
 import { relayPurchaseBatch } from "../services/relayer";
+import { normalizePriceCents, formatPriceCents } from "../services/catalogQuery";
 import { db } from "../db";
 import { SpawnGrowoutTracker } from "./SpawnGrowoutTracker";
 
@@ -430,7 +431,21 @@ export function HatcheryLogs({ specCode, contractInstance, marketplaceAddress, w
                         Batch Available via secure holding
                       </span>
                       <strong style={{ fontSize: "0.9rem", color: "#fff", display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
-                        {log.listing.quantity} available @ <span style={{ color: "var(--accent-amber)" }}>${(parseFloat(formatEther(log.listing.pricePerFish)) * 1000).toFixed(2)}</span>
+                        {/* Price goes through the canonical marketplace formatter
+                            (catalogQuery.js), the same one the board, cart and
+                            LocalBreederMap use. This read
+                            `formatEther(pricePerFish) * 1000` — wei converted to
+                            "dollars" at a hardcoded 1000:1 rate. Aquadex settles in
+                            USD, so that number was fiction: a $25 fish printed as
+                            $25,000. An unknown price shows as "—" rather than
+                            $0.00, which would read as free. */}
+                        {log.listing.quantity} available @{" "}
+                        <span style={{ color: "var(--accent-amber)" }}>
+                          {(() => {
+                            const cents = normalizePriceCents(log.listing);
+                            return Number.isFinite(cents) && cents > 0 ? formatPriceCents(cents) : "—";
+                          })()}
+                        </span>
                       </strong>
                     </div>
 

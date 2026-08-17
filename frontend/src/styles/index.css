@@ -170,6 +170,157 @@ h1, h2, h3, h4, h5, h6 {
   border-color: var(--glass-border-hover);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   BEM button namespace — .btn / .btn--*
+   ═══════════════════════════════════════════════════════════════════════════
+
+   These rules did not exist. `.btn` had NO base rule anywhere in the stylesheet,
+   and `btn--primary`, `btn--secondary`, `btn--ghost`, `btn--sm`, `btn--xs` and
+   `btn--lg` were used across 26 elements in 12 components with nothing to match
+   them — Tides, Storefront, TankList, SwapSheet, TideMap, AuctionPanel and the
+   Poseidon widget. Every one of those rendered as an unstyled grey browser
+   button. That is what beta feedback flagged on the tide page: "← Back to
+   Tides", "I'm Going" and "Interested" were raw default buttons sitting on a
+   glassmorphic card.
+
+   The only `btn--` rules that existed were SCOPED overrides
+   (`.create-tide__nav-buttons .btn--primary`, `.sonar-prefs__header .btn--ghost`,
+   and similar), which is why the create-tide wizard looked fine while the same
+   markup elsewhere did not — and it is also why everything here is deliberately
+   single-class. Those scoped rules are two-class selectors, so they keep winning
+   and the wizard's appearance is unchanged.
+
+   Values are copied from .btn-primary / .btn-secondary above rather than
+   reinvented, so the two naming systems are visually identical. Prefer this BEM
+   set for new work; `.btn-primary` remains for the older call sites.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-decoration: none;
+  transition: var(--transition-smooth);
+  /* Long labels shouldn't blow out a narrow phone layout. */
+  max-width: 100%;
+}
+
+.btn:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border-hover);
+}
+
+/* Keyboard focus was invisible on these too, since there was no rule at all. */
+.btn:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Variants ─────────────────────────────────────────────────────────────── */
+
+.btn--primary {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 14px 0 rgba(2, 132, 199, 0.4);
+}
+
+.btn--primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px 0 rgba(2, 132, 199, 0.6);
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+  border: none;
+}
+
+.btn--primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn--secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--glass-border-hover);
+}
+
+/* Ghost: for dismissals, "✕" closers and back links — reads as text until
+   hovered, so it doesn't compete with the primary action beside it. */
+.btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border);
+  color: var(--text-primary);
+}
+
+.btn--danger {
+  background: transparent;
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: var(--accent-red-glow);
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
+/* ── Sizes ────────────────────────────────────────────────────────────────── */
+/* After the variants on purpose: same single-class specificity, so these must
+   come later to win the padding/font-size cascade. */
+
+.btn--xs {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  gap: 0.25rem;
+}
+
+.btn--sm {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.8rem;
+  gap: 0.35rem;
+}
+
+.btn--lg {
+  padding: 0.9rem 1.9rem;
+  font-size: 1rem;
+}
+
+/* Full-width on narrow screens is handled per-component, but a button should
+   never force horizontal scroll on a 384px viewport. */
+@media (max-width: 420px) {
+  .btn {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
 /* Badge Indicator styles */
 .badge {
   padding: 0.25rem 0.75rem;

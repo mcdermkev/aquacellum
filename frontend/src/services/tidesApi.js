@@ -263,12 +263,14 @@ export async function checkInToTide(tideId) {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { data: null, error: "Not connected" };
 
+  const profileWallet = await resolveProfileWallet(walletAddress);
+
   const { data, error } = await supabase
     .from("tide_attendees")
     .upsert(
       {
         tide_id: tideId,
-        wallet_address: await resolveProfileWallet(walletAddress),
+        wallet_address: profileWallet,
         rsvp_status: "checked_in",
         checked_in_at: new Date().toISOString(),
       },
@@ -277,7 +279,32 @@ export async function checkInToTide(tideId) {
     .select()
     .single();
 
-  return { data, error };
+  if (error) return { data, error, xpClaimed: false };
+
+  // Claim the one-time check-in XP.
+  //
+  // The button has always read "Check In (+100 XP)" and no code ever awarded it
+  // or wrote xp_awarded. Doing it as a conditional UPDATE filtered on
+  // `xp_awarded = false` makes the claim atomic: whoever's request flips the flag
+  // gets rows back, and a double-tap, a retry, or a second device gets none. That
+  // matters because XP is applied on the client — without a server-side claim,
+  // "check in, leave, check in again" would pay out every time.
+  const { data: claimed, error: claimError } = await supabase
+    .from("tide_attendees")
+    .update({ xp_awarded: true })
+    .eq("tide_id", tideId)
+    .ilike("wallet_address", profileWallet.toLowerCase())
+    .eq("xp_awarded", false)
+    .select("id");
+
+  if (claimError) {
+    // Never fail the check-in itself over reward bookkeeping — the attendee is
+    // present either way, which is the thing that actually matters.
+    console.warn("[tidesApi] check-in recorded but XP claim failed:", claimError);
+    return { data, error: null, xpClaimed: false };
+  }
+
+  return { data, error: null, xpClaimed: (claimed?.length ?? 0) > 0 };
 }
 
 /**
@@ -305,19 +332,19 @@ export async function getTideAttendees(tideId, { limit = 50 } = {}) {
  * Get the current user's RSVP status for a tide.
  */
 export async function getMyRsvp(tideId) {
-  if (!isSupabaseConfigured()) return null;
+  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
 
   const walletAddress = getCurrentWallet();
-  if (!walletAddress) return null;
+  if (!walletAddress) return { data: null, error: null };
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("tide_attendees")
-    .select("rsvp_status, checked_in_at, bringing_species")
+    .select("wallet_address, rsvp_status, checked_in_at, bringing_species")
     .eq("tide_id", tideId)
     .ilike("wallet_address", walletAddress.toLowerCase())
     .maybeSingle();
 
-  return data;
+  return { data, error };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -333,13 +360,40 @@ export async function updateBringingSpecies(tideId, speciesList) {
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { error: "Not connected" };
 
-  const { error } = await supabase
-    .from("tide_attendees")
-    .update({ bringing_species: speciesList })
-    .eq("tide_id", tideId)
-    .ilike("wallet_address", walletAddress.toLowerCase());
+  // Upsert, not UPDATE. A bare UPDATE ... WHERE tide_id AND wallet_address
+  // matches zero rows for anyone who has not RSVP'd yet, and PostgREST reports
+  // that as a clean success (`error: null`, 0 rows affected). The user filled in
+  // "I'm bringing…", saw no error, and the list stayed empty forever.
+  //
+  // Saying what you're bringing is itself an expression of intent to attend, so
+  // creating the attendee row is the honest behaviour.
+  const profileWallet = await resolveProfileWallet(walletAddress);
 
-  return { error };
+  // Read the current status first so the upsert cannot demote it. Supabase
+  // overwrites every column it is given, so passing a literal "going" would send
+  // an already-checked-in attendee backwards the moment they edited their list.
+  const { data: existing } = await supabase
+    .from("tide_attendees")
+    .select("rsvp_status")
+    .eq("tide_id", tideId)
+    .ilike("wallet_address", profileWallet.toLowerCase())
+    .maybeSingle();
+
+  const { data, error } = await supabase
+    .from("tide_attendees")
+    .upsert(
+      {
+        tide_id: tideId,
+        wallet_address: profileWallet,
+        rsvp_status: existing?.rsvp_status || "going",
+        bringing_species: speciesList,
+      },
+      { onConflict: "tide_id,wallet_address", ignoreDuplicates: false }
+    )
+    .select("wallet_address, rsvp_status, bringing_species")
+    .single();
+
+  return { data, error };
 }
 
 /**
@@ -450,13 +504,26 @@ export async function getTideChatMessages(tideId, { limit = 50 } = {}) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Place a bid on an auction item.
+ * Place a bid on an auction lot.
+ *
+ * `amountCents` is an integer number of US cents. Aquadex settles in dollars —
+ * the previous signature took wei, which was pre-launch crypto scaffolding.
+ *
+ * The ascending-price rule, the reserve floor, "no bidding against yourself" and
+ * "the tide must be live" are all enforced by the enforce_auction_bid_rules
+ * trigger, so a rejected bid comes back as a Postgres error with a message
+ * written for the bidder. Don't duplicate those checks as the source of truth
+ * here; the client copy is a courtesy so the common case fails fast.
  */
-export async function placeBid(tideId, tokenId, amountWei) {
+export async function placeBid(tideId, tokenId, amountCents) {
   if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
 
   const walletAddress = getCurrentWallet();
   if (!walletAddress) return { data: null, error: "Not connected" };
+
+  if (!Number.isInteger(amountCents) || amountCents <= 0) {
+    return { data: null, error: "Bid must be a positive dollar amount." };
+  }
 
   const { data, error } = await supabase
     .from("auction_bids")
@@ -464,9 +531,14 @@ export async function placeBid(tideId, tokenId, amountWei) {
       tide_id: tideId,
       token_id: tokenId,
       bidder_wallet: await resolveProfileWallet(walletAddress),
-      amount_wei: amountWei,
+      amount_cents: amountCents,
     })
-    .select()
+    .select(`
+      *,
+      bidder_profile:bidder_wallet (
+        wallet_address, display_name, avatar_url, companion_tier
+      )
+    `)
     .single();
 
   return { data, error };
@@ -511,9 +583,15 @@ export async function getHighestBid(tideId, tokenId) {
     .eq("tide_id", tideId)
     .eq("token_id", tokenId)
     .eq("status", "active")
-    .order("created_at", { ascending: false })
+    // Order by AMOUNT, not recency. This used to be created_at DESC, which made
+    // this function return the most recent bid and call it the highest — so a $1
+    // bid placed after a $5,000 bid took the lot. maybeSingle, not single:
+    // single() raises PGRST116 on a lot with no bids yet, which is a completely
+    // ordinary state and not an error.
+    .order("amount_cents", { ascending: false })
+    .order("created_at", { ascending: true })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   return { data, error };
 }
@@ -524,13 +602,14 @@ export async function getHighestBid(tideId, tokenId) {
 export async function getAuctionItems(tideId) {
   if (!isSupabaseConfigured()) return { data: [], error: "Not configured" };
 
-  // Get the tide settings to know which tokens are up for auction
-  const { data: tide } = await supabase
+  // Get the tide settings to know which lots are up for auction
+  const { data: tide, error: tideError } = await supabase
     .from("tides")
     .select("settings")
     .eq("id", tideId)
     .single();
 
+  if (tideError) return { data: [], error: tideError };
   if (!tide?.settings?.auction_items) return { data: [], error: null };
 
   // For each auction item, get the current highest bid

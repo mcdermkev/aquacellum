@@ -4,6 +4,7 @@ import marketplaceAbi from "../abi/AquadexMarketplace.json";
 import managerAbi from "../abi/AquadexManager.json";
 import { getProvider } from "../utils/smartAccount";
 import { relayPurchaseBatch, relaySettleHandshake } from "../services/relayer";
+import { normalizePriceCents, formatPriceCents } from "../services/catalogQuery";
 import { useHandshake } from "../hooks/useHandshake";
 import { db } from "../db";
 import { awardXp, XP_ACTIONS } from "../utils/xp";
@@ -529,15 +530,33 @@ export function HandshakeVerification({
                   fontSize: "0.8rem",
                   color: "var(--text-secondary)"
                 }}>
-                  {isCashHandshake ? (
-                    <span>
-                      🤝 <strong>Cash Handshake Mode</strong>: You are paying <strong>${(parseFloat(listing.price) * quantity * 1000).toFixed(2)}</strong> directly to the breeder in cash. Establish a 4-digit PIN for tracking. Breeder will scan the QR code to log provenance.
-                    </span>
-                  ) : (
-                    <span>
-                      🔐 Your payment of <strong>${(parseFloat(formatEther(BigInt(listing.pricePerFish) * BigInt(quantity))) * 1000).toFixed(2)}</strong> will be held securely until pickup is confirmed. Establish a 4-digit verification PIN. Give this PIN or the QR code to the breeder ONLY when you have the fish in hand.
-                    </span>
-                  )}
+                  {/* This is the screen that tells someone what they are about to
+                      pay, and BOTH branches were computing it from a hardcoded
+                      1000:1 "ETH→USD" rate:
+
+                        cash:   parseFloat(listing.price) * quantity * 1000
+                        escrow: formatEther(pricePerFish * quantity) * 1000
+
+                      `listing.price` is already dollars, so the cash line showed a
+                      $25 fish as "$25,000.00". Aquadex settles in USD; there is no
+                      exchange rate to apply. Both now use the canonical
+                      marketplace formatter, and an unknown price says so instead of
+                      quoting a confident wrong number. */}
+                  {(() => {
+                    const unitCents = normalizePriceCents(listing);
+                    const totalCents = Number.isFinite(unitCents) ? unitCents * Number(quantity || 1) : 0;
+                    const totalText = totalCents > 0 ? formatPriceCents(totalCents) : "the listed price";
+
+                    return isCashHandshake ? (
+                      <span>
+                        🤝 <strong>Cash Handshake Mode</strong>: You are paying <strong>{totalText}</strong> directly to the breeder in cash. Establish a 4-digit PIN for tracking. Breeder will scan the QR code to log provenance.
+                      </span>
+                    ) : (
+                      <span>
+                        🔐 Your payment of <strong>{totalText}</strong> will be held securely until pickup is confirmed. Establish a 4-digit verification PIN. Give this PIN or the QR code to the breeder ONLY when you have the fish in hand.
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 {/* Gated Event Zone Check for Cash Handshake */}

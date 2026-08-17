@@ -30,6 +30,7 @@
  */
 
 import { createNotification as createSonarNotification } from "./reefApi";
+import { formatUsdCents } from "../utils/money";
 
 const EVENT_ICONS = {
   offer_received: "💰",
@@ -153,12 +154,18 @@ export function notifyArrivalConfirmed({ recipientWallet, speciesName, buyerName
   });
 }
 
-export function notifyWantedMatch({ recipientWallet, speciesName, buyerName, maxBudget, wantedId }) {
+/**
+ * @param {number|null} maxBudgetCents - budget in integer US cents. Was previously
+ *   `maxBudget` in bare dollars, which the caller produced by multiplying a column
+ *   called max_price_eth by 1000 — so a $50 budget went out as "up to $50000".
+ */
+export function notifyWantedMatch({ recipientWallet, speciesName, buyerName, maxBudgetCents, wantedId }) {
+  const budgetText = maxBudgetCents ? ` (budget: up to ${formatUsdCents(maxBudgetCents, { showCents: false })})` : "";
   return deliver({
     recipientWallet,
     event: "wanted_match",
     title: `Someone's looking for ${speciesName}!`,
-    body: `${buyerName} posted a "wanted" for ${speciesName}${maxBudget ? ` (budget: up to $${maxBudget})` : ""}. You may have what they need.`,
+    body: `${buyerName} posted a "wanted" for ${speciesName}${budgetText}. You may have what they need.`,
     linkType: "wanted",
     linkId: wantedId,
   });
