@@ -21,6 +21,12 @@ import {
   removeMember,
   getSchoolChallenges,
   createChallenge,
+  getSchoolPosts,
+  createSchoolPost,
+  updateSchoolPost,
+  deleteSchoolPost,
+  setSchoolPostPinned,
+  toggleSchoolPostReaction,
 } from "../services/schoolsApi";
 import { getCurrentWallet, isSupabaseConfigured } from "../services/supabaseClient";
 
@@ -225,4 +231,58 @@ export function useCreateChallenge() {
       queryClient.invalidateQueries({ queryKey: ["schools", "challenges", schoolId] });
     },
   });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCHOOL POSTS — the feed
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * A school's feed: pinned first, then newest.
+ */
+export function useSchoolPosts(schoolId) {
+  return useQuery({
+    queryKey: ["schools", "posts", schoolId],
+    queryFn: () => getSchoolPosts(schoolId),
+    enabled: !!schoolId && isSupabaseConfigured(),
+    staleTime: 30 * 1000,
+  });
+}
+
+/**
+ * Every post mutation invalidates the same feed key, so pinning, reacting,
+ * editing and deleting all reconcile through one path rather than each keeping
+ * its own optimistic copy in sync.
+ */
+function usePostMutation(schoolId, mutationFn) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schools", "posts", schoolId] });
+    },
+  });
+}
+
+export function useCreateSchoolPost(schoolId) {
+  return usePostMutation(schoolId, ({ body, imageUrl }) =>
+    createSchoolPost(schoolId, { body, imageUrl })
+  );
+}
+
+export function useUpdateSchoolPost(schoolId) {
+  return usePostMutation(schoolId, ({ postId, body }) => updateSchoolPost(postId, { body }));
+}
+
+export function useDeleteSchoolPost(schoolId) {
+  return usePostMutation(schoolId, ({ postId }) => deleteSchoolPost(postId));
+}
+
+export function useSetSchoolPostPinned(schoolId) {
+  return usePostMutation(schoolId, ({ postId, pinned }) => setSchoolPostPinned(postId, pinned));
+}
+
+export function useToggleSchoolPostReaction(schoolId) {
+  return usePostMutation(schoolId, ({ postId, emoji }) => toggleSchoolPostReaction(postId, emoji));
 }

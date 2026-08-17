@@ -5,7 +5,9 @@
  */
 
 import React, { useState } from "react";
-import { useSchoolById, useMySchoolRole, useSchoolMembers, useSchoolChallenges, useLeaveSchool, useUpdateMemberRole, useRemoveMember, useCreateChallenge, useUpdateSchool } from "../../hooks/useSchools";
+import { useSchoolById, useMySchoolRole, useSchoolMembers, useSchoolChallenges, useLeaveSchool, useUpdateMemberRole, useRemoveMember, useCreateChallenge, useUpdateSchool, useSchoolPosts, useCreateSchoolPost, useDeleteSchoolPost, useSetSchoolPostPinned, useToggleSchoolPostReaction } from "../../hooks/useSchools";
+import { getCurrentWallet } from "../../services/supabaseClient";
+import { sameWallet } from "../../utils/wallet";
 import { ProfileCard } from "./ProfileCard";
 import { SchoolChat } from "./SchoolChat";
 import { ChallengeCard } from "./ChallengeCard";
@@ -37,6 +39,10 @@ export function SchoolPage({ schoolId, onBack, onViewProfile }) {
   const members = membersResult?.data || [];
   const challenges = challengesResult?.data || [];
   const isAdmin = myRole === "founder" || myRole === "elder";
+  // Posting is gated on membership. A visitor sees the feed but gets told to join
+  // rather than being handed a composer whose insert RLS would reject.
+  const isMember = myRole === "founder" || myRole === "elder" || myRole === "member";
+  const myWallet = getCurrentWallet();
 
   if (isLoading) {
     return (
@@ -162,7 +168,14 @@ export function SchoolPage({ schoolId, onBack, onViewProfile }) {
 
       {/* Tab Content */}
       {activeTab === "feed" && (
-        <SchoolFeedTab school={school} />
+        <SchoolFeedTab
+          school={school}
+          schoolId={schoolId}
+          isMember={isMember}
+          isAdmin={isAdmin}
+          myWallet={myWallet}
+          onViewProfile={onViewProfile}
+        />
       )}
 
       {activeTab === "members" && (
@@ -173,7 +186,13 @@ export function SchoolPage({ schoolId, onBack, onViewProfile }) {
           onViewProfile={onViewProfile}
           onPromote={(wallet) => updateRoleMutation.mutate({ schoolId, targetWallet: wallet, newRole: "elder" })}
           onDemote={(wallet) => updateRoleMutation.mutate({ schoolId, targetWallet: wallet, newRole: "member" })}
-          onKick={(wallet) => removeMemberMutation.mutate({ schoolId, targetWallet: wallet })}
+          // Removing a member was a single unguarded click sitting next to
+          // Promote/Demote, with no way back — the kicked member has to be
+          // re-invited. Destructive and irreversible actions get a confirm.
+          onKick={(wallet, label) => {
+            if (!confirm(`Remove ${label || "this member"} from the school? They'll need to be invited back.`)) return;
+            removeMemberMutation.mutate({ schoolId, targetWallet: wallet });
+          }}
         />
       )}
 
@@ -192,13 +211,247 @@ export function SchoolPage({ schoolId, onBack, onViewProfile }) {
   );
 }
 
-function SchoolFeedTab({ school }) {
+const REACTION_EMOJI = ["🌊", "🐟", "🔥", "👏", "🧬", "❤️"];
+
+/**
+ * The school feed.
+ *
+ * Replaces a "School feed coming soon" placeholder that was also the DEFAULT tab,
+ * so every school opened onto an empty state.
+ *
+ * Schools have their own posts rather than a filtered view of members' Currents:
+ * a Current belongs to a keeper's tank, so a Currents-derived feed would be
+ * something nobody could deliberately post to. Conversation still belongs in the
+ * Chat tab — this is the durable layer, which is why posts can be pinned.
+ */
+function SchoolFeedTab({ school, schoolId, isMember, isAdmin, myWallet, onViewProfile }) {
+  const { data: postsResult, isLoading, isError, error } = useSchoolPosts(schoolId);
+  const createPost = useCreateSchoolPost(schoolId);
+  const deletePost = useDeleteSchoolPost(schoolId);
+  const setPinned = useSetSchoolPostPinned(schoolId);
+  const toggleReaction = useToggleSchoolPostReaction(schoolId);
+
+  const [draft, setDraft] = useState("");
+  const [composerError, setComposerError] = useState(null);
+
+  const posts = postsResult?.data || [];
+  const loadError = postsResult?.error || (isError ? error?.message : null);
+
+  const handlePost = () => {
+    setComposerError(null);
+    createPost.mutate(
+      { body: draft },
+      {
+        onSuccess: (res) => {
+          if (res?.error) {
+            setComposerError(typeof res.error === "string" ? res.error : res.error.message);
+          } else {
+            setDraft("");
+          }
+        },
+        onError: (err) => setComposerError(err?.message || "Couldn't post."),
+      }
+    );
+  };
+
+  const handleDelete = (postId) => {
+    if (!confirm("Delete this post? It will be removed from the feed.")) return;
+    deletePost.mutate({ postId });
+  };
+
   return (
-    <div style={{ textAlign: "center", padding: "2rem 1rem", color: "var(--text-muted)" }}>
-      <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>📰</div>
-      <p style={{ fontSize: "0.85rem" }}>School feed coming soon.</p>
-      <p style={{ fontSize: "0.7rem" }}>Member Currents tagged to tracked species will appear here.</p>
+    <div className="school-feed">
+      {/* Composer — members only. Visitors get told why, rather than seeing a
+          box that fails on submit. */}
+      {isMember ? (
+        <div className="school-feed__composer">
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={`Share something with ${school?.name || "the school"}…`}
+            rows={3}
+            maxLength={2000}
+            aria-label="Write a post"
+            className="school-feed__composer-input"
+          />
+          <div className="school-feed__composer-actions">
+            <span className="school-feed__counter">{draft.length}/2000</span>
+            <button
+              className="btn btn--primary btn--sm"
+              onClick={handlePost}
+              disabled={!draft.trim() || createPost.isPending}
+            >
+              {createPost.isPending ? "Posting…" : "Post"}
+            </button>
+          </div>
+          {composerError && (
+            <p className="school-feed__error" role="alert">{composerError}</p>
+          )}
+        </div>
+      ) : (
+        <p className="school-feed__gate text-muted">
+          Join this school to post to its feed.
+        </p>
+      )}
+
+      {/* Tracked species — this was stored on every school and never read
+          anywhere in the UI, so members had no idea what the school followed. */}
+      {Array.isArray(school?.tracked_species) && school.tracked_species.length > 0 && (
+        <div className="school-feed__tracked">
+          <span className="text-muted">Tracking</span>
+          {school.tracked_species.slice(0, 8).map((s) => (
+            <span key={typeof s === "string" ? s : s?.name} className="school-feed__species-chip">
+              {typeof s === "string" ? s : s?.name || s?.common_name}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {isLoading ? (
+        <p className="text-muted">Loading the feed…</p>
+      ) : loadError ? (
+        <p className="school-feed__error" role="alert">Couldn't load the feed. {String(loadError)}</p>
+      ) : posts.length === 0 ? (
+        <div className="school-feed__empty">
+          <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>📰</div>
+          <p>No posts yet.</p>
+          <p className="text-muted">
+            {isMember
+              ? "Be the first — share a spawn, ask a question, or introduce yourself."
+              : "This school hasn't posted anything yet."}
+          </p>
+        </div>
+      ) : (
+        <ul className="school-feed__list">
+          {posts.map((post) => (
+            <SchoolPostCard
+              key={post.id}
+              post={post}
+              isAdmin={isAdmin}
+              isMember={isMember}
+              myWallet={myWallet}
+              onViewProfile={onViewProfile}
+              onDelete={handleDelete}
+              onTogglePin={(pinned) => setPinned.mutate({ postId: post.id, pinned })}
+              onReact={(emoji) => toggleReaction.mutate({ postId: post.id, emoji })}
+            />
+          ))}
+        </ul>
+      )}
     </div>
+  );
+}
+
+function SchoolPostCard({
+  post,
+  isAdmin,
+  isMember,
+  myWallet,
+  onViewProfile,
+  onDelete,
+  onTogglePin,
+  onReact,
+}) {
+  const [showReactions, setShowReactions] = useState(false);
+
+  const isAuthor = sameWallet(post.author_wallet, myWallet);
+  const isPinned = !!post.pinned_at;
+  const reactions = post.reactions || [];
+
+  // Group reactions by emoji so the card shows "🌊 3  🔥 1" rather than a flat
+  // count, and so the current user's own reaction can be highlighted.
+  const grouped = reactions.reduce((acc, r) => {
+    acc[r.emoji] = acc[r.emoji] || { count: 0, mine: false };
+    acc[r.emoji].count += 1;
+    if (sameWallet(r.wallet_address, myWallet)) acc[r.emoji].mine = true;
+    return acc;
+  }, {});
+
+  return (
+    <li className={`school-post ${isPinned ? "school-post--pinned" : ""}`}>
+      {isPinned && <span className="school-post__pin-badge">📌 Pinned</span>}
+
+      <div className="school-post__header">
+        <ProfileCard
+          walletAddress={post.profile?.wallet_address || post.author_wallet}
+          displayName={post.profile?.display_name}
+          avatarUrl={post.profile?.avatar_url}
+          companionTier={post.profile?.companion_tier}
+          size="small"
+          onClick={onViewProfile ? () => onViewProfile(post.author_wallet) : undefined}
+        />
+        <time dateTime={post.created_at} className="school-post__time">
+          {new Date(post.created_at).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          })}
+          {post.edited_at && <span className="text-muted"> · edited</span>}
+        </time>
+      </div>
+
+      <p className="school-post__body">{post.body}</p>
+
+      {post.image_url && (
+        <img src={post.image_url} alt="" className="school-post__image" loading="lazy" />
+      )}
+
+      <div className="school-post__actions">
+        {/* Existing reaction tallies */}
+        {Object.entries(grouped).map(([emoji, { count, mine }]) => (
+          <button
+            key={emoji}
+            className={`school-post__reaction ${mine ? "school-post__reaction--mine" : ""}`}
+            onClick={() => onReact(emoji)}
+            disabled={!isMember}
+            aria-label={`${count} reacted with ${emoji}${mine ? ", including you" : ""}`}
+          >
+            {emoji} {count}
+          </button>
+        ))}
+
+        {isMember && (
+          <div className="school-post__react-wrap">
+            <button
+              className="btn btn--ghost btn--xs"
+              onClick={() => setShowReactions((v) => !v)}
+              aria-expanded={showReactions}
+              aria-label="Add a reaction"
+            >
+              ＋
+            </button>
+            {showReactions && (
+              <div className="school-post__react-picker" role="menu">
+                {REACTION_EMOJI.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => { onReact(emoji); setShowReactions(false); }}
+                    className="school-post__react-option"
+                    aria-label={`React with ${emoji}`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <span className="school-post__spacer" />
+
+        {isAdmin && (
+          <button className="btn btn--ghost btn--xs" onClick={() => onTogglePin(!isPinned)}>
+            {isPinned ? "Unpin" : "Pin"}
+          </button>
+        )}
+        {(isAuthor || isAdmin) && (
+          <button className="btn btn--ghost btn--xs" onClick={() => onDelete(post.id)}>
+            Delete
+          </button>
+        )}
+      </div>
+    </li>
   );
 }
 
@@ -277,7 +530,7 @@ function MembersTab({ members, isAdmin, schoolId, onViewProfile, onPromote, onDe
                   </button>
                 )}
                 <button
-                  onClick={() => onKick(profile.wallet_address)}
+                  onClick={() => onKick(profile.wallet_address, profile.display_name)}
                   style={{ background: "none", border: "none", color: "var(--accent-red)", fontSize: "0.65rem", cursor: "pointer" }}
                   title="Remove from school"
                 >

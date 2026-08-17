@@ -737,3 +737,196 @@ export async function cancelSchoolInvite(inviteId) {
 
   return { error };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCHOOL POSTS — the durable feed
+//
+// Distinct from school_chat. Chat is conversation: fast, ephemeral, read in
+// order. Posts are the things worth keeping — a spawn report, an announcement, a
+// question — so they support pinning, reactions and editing.
+//
+// The Feed tab was a "coming soon" placeholder AND the default tab, so every
+// school opened onto an empty state.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const POST_SELECT = `
+  *,
+  profile:author_wallet (
+    wallet_address,
+    display_name,
+    avatar_url,
+    companion_tier
+  ),
+  reactions:school_post_reactions (
+    wallet_address,
+    emoji
+  )
+`;
+
+/**
+ * Post to a school's feed.
+ *
+ * @param {string} schoolId
+ * @param {{ body: string, imageUrl?: string|null }} content
+ */
+export async function createSchoolPost(schoolId, { body, imageUrl = null } = {}) {
+  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
+
+  const walletAddress = getCurrentWallet();
+  if (!walletAddress) return { data: null, error: "Not connected" };
+
+  // Validated here as well as by the DB CHECK so the composer can say something
+  // useful instead of surfacing a constraint violation.
+  const trimmed = (body || "").trim();
+  if (!trimmed) return { data: null, error: "Write something first." };
+  if (trimmed.length > 2000) return { data: null, error: "Posts are limited to 2000 characters." };
+
+  const authorWallet = await resolveProfileWallet(walletAddress);
+
+  const { data, error } = await supabase
+    .from("school_posts")
+    .insert({
+      school_id: schoolId,
+      author_wallet: authorWallet,
+      body: trimmed,
+      image_url: imageUrl || null,
+    })
+    .select(POST_SELECT)
+    .single();
+
+  return { data, error };
+}
+
+/**
+ * Read a school's feed: pinned posts first, then newest.
+ *
+ * Soft-deleted posts are filtered here rather than by RLS so moderators can still
+ * audit them directly if they ever need to.
+ */
+export async function getSchoolPosts(schoolId, { limit = 30 } = {}) {
+  if (!isSupabaseConfigured()) return { data: [], error: "Not configured" };
+
+  const { data, error } = await supabase
+    .from("school_posts")
+    .select(POST_SELECT)
+    .eq("school_id", schoolId)
+    .eq("is_deleted", false)
+    .order("pinned_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  return { data: data || [], error };
+}
+
+/**
+ * Edit your own post. RLS also allows admins here (for moderation), but the UI
+ * only offers editing to the author.
+ */
+export async function updateSchoolPost(postId, { body }) {
+  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
+
+  const trimmed = (body || "").trim();
+  if (!trimmed) return { data: null, error: "Write something first." };
+  if (trimmed.length > 2000) return { data: null, error: "Posts are limited to 2000 characters." };
+
+  const { data, error } = await supabase
+    .from("school_posts")
+    .update({ body: trimmed, edited_at: new Date().toISOString() })
+    .eq("id", postId)
+    .select(POST_SELECT)
+    .single();
+
+  return { data, error };
+}
+
+/**
+ * Soft-delete a post. Author or elder/founder, enforced by RLS.
+ *
+ * Soft, not hard: moderation should be reversible and leave a record of what was
+ * removed. Mirrors school_chat.is_deleted.
+ */
+export async function deleteSchoolPost(postId) {
+  if (!isSupabaseConfigured()) return { error: "Not configured" };
+
+  const { error } = await supabase
+    .from("school_posts")
+    .update({ is_deleted: true })
+    .eq("id", postId);
+
+  return { error };
+}
+
+/**
+ * Pin or unpin a post. Elders and founders only (enforced by RLS).
+ *
+ * pinned_at/pinned_by are constrained to travel together, so both are always
+ * written as a pair.
+ */
+export async function setSchoolPostPinned(postId, pinned) {
+  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
+
+  const walletAddress = getCurrentWallet();
+  if (!walletAddress) return { data: null, error: "Not connected" };
+
+  const patch = pinned
+    ? { pinned_at: new Date().toISOString(), pinned_by: await resolveProfileWallet(walletAddress) }
+    : { pinned_at: null, pinned_by: null };
+
+  const { data, error } = await supabase
+    .from("school_posts")
+    .update(patch)
+    .eq("id", postId)
+    .select(POST_SELECT)
+    .single();
+
+  return { data, error };
+}
+
+/**
+ * Toggle the current user's reaction on a post.
+ *
+ * One reaction per member per post, enforced by a UNIQUE constraint — without it
+ * a "like" is just a counter anyone can inflate by clicking repeatedly. Reacting
+ * with the same emoji removes it; a different emoji replaces it.
+ */
+export async function toggleSchoolPostReaction(postId, emoji = "🌊") {
+  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
+
+  const walletAddress = getCurrentWallet();
+  if (!walletAddress) return { data: null, error: "Not connected" };
+
+  const wallet = await resolveProfileWallet(walletAddress);
+
+  const { data: existing, error: readError } = await supabase
+    .from("school_post_reactions")
+    .select("id, emoji")
+    .eq("post_id", postId)
+    .ilike("wallet_address", wallet.toLowerCase())
+    .maybeSingle();
+
+  if (readError) return { data: null, error: readError };
+
+  // Same emoji again = un-react.
+  if (existing && existing.emoji === emoji) {
+    const { error } = await supabase
+      .from("school_post_reactions")
+      .delete()
+      .eq("id", existing.id);
+    return { data: { removed: true }, error };
+  }
+
+  // Different emoji = change it rather than stacking a second reaction.
+  if (existing) {
+    const { error } = await supabase
+      .from("school_post_reactions")
+      .update({ emoji })
+      .eq("id", existing.id);
+    return { data: { changed: true }, error };
+  }
+
+  const { error } = await supabase
+    .from("school_post_reactions")
+    .insert({ post_id: postId, wallet_address: wallet, emoji });
+
+  return { data: { added: true }, error };
+}

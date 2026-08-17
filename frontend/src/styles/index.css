@@ -8364,3 +8364,228 @@ html {
   outline: 2px solid var(--accent-blue, #38bdf8);
   outline-offset: 2px;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   School feed — schools have their own posts
+   ═══════════════════════════════════════════════════════════════════════════
+   Replaces the "School feed coming soon" placeholder that was also the DEFAULT
+   tab, so every school opened onto an empty state. Posts are the durable layer
+   (pinnable, reactable); conversation stays in the Chat tab.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.school-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.school-feed__composer {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+}
+
+.school-feed__composer-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  padding: 0.6rem;
+  resize: vertical;
+}
+
+.school-feed__composer-input:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 1px;
+}
+
+.school-feed__composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.school-feed__counter {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.school-feed__gate,
+.school-feed__empty {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  font-size: 0.85rem;
+}
+
+.school-feed__empty p {
+  margin: 0.2rem 0;
+}
+
+.school-feed__error {
+  color: var(--accent-red);
+  font-size: 0.75rem;
+  margin: 0.4rem 0 0;
+}
+
+/* Tracked species. Every school stores these and nothing ever displayed them,
+   so members could not tell what the school actually followed. */
+.school-feed__tracked {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  font-size: 0.7rem;
+}
+
+.school-feed__species-chip {
+  background: var(--accent-blue-glow);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 50px;
+  padding: 0.1rem 0.5rem;
+  color: var(--accent-blue);
+}
+
+.school-feed__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.school-post {
+  position: relative;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+}
+
+.school-post--pinned {
+  border-color: rgba(251, 191, 36, 0.3);
+  background: rgba(251, 191, 36, 0.04);
+}
+
+.school-post__pin-badge {
+  display: inline-block;
+  font-size: 0.6rem;
+  color: var(--accent-amber);
+  margin-bottom: 0.35rem;
+}
+
+.school-post__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.school-post__time {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.school-post__body {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--text-primary);
+  /* Posts are user text: a pasted URL or a long species name must not force the
+     card to scroll sideways on a narrow phone. */
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.school-post__image {
+  margin-top: 0.5rem;
+  width: 100%;
+  border-radius: var(--radius-sm);
+  display: block;
+}
+
+.school-post__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.school-post__spacer {
+  flex: 1 1 auto;
+}
+
+.school-post__reaction {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: 50px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  transition: var(--transition-smooth);
+}
+
+.school-post__reaction:hover:not(:disabled) {
+  border-color: var(--glass-border-hover);
+  background: var(--glass-bg-hover);
+}
+
+.school-post__reaction:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+/* Your own reaction is visibly yours, so tapping again to remove it is
+   discoverable rather than a guess. */
+.school-post__reaction--mine {
+  background: var(--accent-blue-glow);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: var(--accent-blue);
+}
+
+.school-post__react-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.school-post__react-picker {
+  position: absolute;
+  bottom: calc(100% + 0.3rem);
+  left: 0;
+  z-index: 5;
+  display: flex;
+  gap: 0.15rem;
+  padding: 0.3rem;
+  background: rgba(15, 23, 42, 0.97);
+  border: 1px solid var(--glass-border-hover);
+  border-radius: 50px;
+  box-shadow: var(--glass-shadow);
+}
+
+.school-post__react-option {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.2rem;
+  border-radius: 50%;
+  transition: transform 0.15s ease;
+}
+
+.school-post__react-option:hover,
+.school-post__react-option:focus-visible {
+  transform: scale(1.25);
+  outline: none;
+}

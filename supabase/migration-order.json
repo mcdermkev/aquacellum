@@ -106,6 +106,7 @@
     "supabase/migrations/20260816130000_species_queue_profile_flag.sql",
     "supabase/migrations/20260817120000_tide_attendees_created_at.sql",
     "supabase/migrations/20260817130000_auction_usd_and_bid_invariants.sql",
-    "supabase/migrations/20260817140000_tide_xp_awarded_coherence.sql"
+    "supabase/migrations/20260817140000_tide_xp_awarded_coherence.sql",
+    "supabase/migrations/20260817150000_school_posts.sql"
   ]
 }
