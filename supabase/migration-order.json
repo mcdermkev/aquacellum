@@ -112,6 +112,9 @@
     "supabase/migrations/20260817170000_challenge_reward_bounds.sql",
     "supabase/migrations/20260817180000_rls_close_open_policies.sql",
     "supabase/migrations/20260817181000_rls_restore_public_reads.sql",
-    "supabase/migrations/20260817190000_rls_drop_spoofable_header_auth.sql"
+    "supabase/migrations/20260817190000_rls_drop_spoofable_header_auth.sql",
+    "supabase/migrations/20260817200000_auction_settlement.sql",
+    "supabase/migrations/20260817201000_auction_money_message_format.sql",
+    "supabase/migrations/20260817202000_settle_idempotence_fix.sql"
   ]
 }
