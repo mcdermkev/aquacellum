@@ -13,6 +13,7 @@ import { LoadingSkeleton } from "./LoadingSkeleton";
 import SuggestSpeciesModal from "./SuggestSpeciesModal";
 import { useSuggestSpecies } from "../hooks/useSuggestSpecies";
 import { useUserRoles } from "../hooks/useUserRoles";
+import { ScrollFade } from "./ScrollFade";
 import { CurationQueuePanel } from "./CurationQueuePanel";
 import { db } from "../db";
 import { syncSpecimenToCloud } from "../services/cloudSync";
@@ -1510,11 +1511,14 @@ export function BreedGallery({
                 }
 
                 return (
-                  <div 
-                    style={{ 
-                      display: "flex", 
-                      gap: "0.75rem", 
-                      overflowX: "auto", 
+                  <ScrollFade
+                    focusable
+                    role="group"
+                    aria-label="Compatible tankmates"
+                    style={{
+                      display: "flex",
+                      gap: "0.75rem",
+                      overflowX: "auto",
                       paddingBottom: "0.5rem",
                       scrollbarWidth: "thin",
                       scrollbarColor: "rgba(255,255,255,0.1) transparent"
@@ -1555,7 +1559,7 @@ export function BreedGallery({
                         </span>
                       </div>
                     ))}
-                  </div>
+                  </ScrollFade>
                 );
               })()}
             </div>

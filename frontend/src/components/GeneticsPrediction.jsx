@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { ScrollFade } from "./ScrollFade";
 
 /**
  * GeneticsPrediction — Interactive genetics calculator for aquarium fish breeding.
@@ -371,7 +372,16 @@ function DihybridGrid({ result, trait1, trait2 }) {
   const formatGamete = (gamete) => `${gamete.a1}${gamete.a2}`;
 
   return (
-    <div style={{ marginTop: "1rem", overflowX: "auto" }}>
+    // No border of its own, so the fade goes straight on the scroller. Focusable
+    // because the grid cells are static text — without it the square cannot be
+    // scrolled by keyboard at all.
+    <ScrollFade
+      table
+      focusable
+      role="group"
+      aria-label="Punnett square — scroll sideways for more columns"
+      style={{ marginTop: "1rem", overflowX: "auto" }}
+    >
       {/* Header row: Dam gametes */}
       <div style={{ display: "grid", gridTemplateColumns: "70px repeat(4, 1fr)", gap: "3px", marginBottom: "3px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -450,7 +460,7 @@ function DihybridGrid({ result, trait1, trait2 }) {
         <span style={{ fontSize: "0.58rem", color: trait1.color, fontWeight: "600" }}>Top = {trait1.label}</span>
         <span style={{ fontSize: "0.58rem", color: trait2.color, fontWeight: "600" }}>Bottom = {trait2.label}</span>
       </div>
-    </div>
+    </ScrollFade>
   );
 }
 

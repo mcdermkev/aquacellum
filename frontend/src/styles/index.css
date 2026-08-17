@@ -1801,9 +1801,35 @@ input[type="range"] {
   box-shadow: 0 4px 20px rgba(0,0,0,0.35), 0 0 0 1px rgba(168,85,247,0.06) !important;
 }
 
-/* Scroll-edge fade masks */
-.aquadex-nav--scrolled-start::before,
-.aquadex-nav--scrolled-end::after {
+/* Scroll-edge fade masks.
+   ───────────────────────────────────────────────────────────────────────────
+   Driven by `data-scroll-edges` from useScrollAffordance(), replacing the old
+   `--scrolled-start` / `--scrolled-end` classes set by an inline ref in App.jsx.
+
+   THE BUG THAT CAUSED THE BETA REPORT. The right-hand fade was bound to
+   `scrollLeft >= scrollWidth - clientWidth - 10` — which is true when you have
+   REACHED the end. So the "there is more this way" cue appeared only once there
+   was nothing more, and was absent at rest, when the tabs genuinely did continue
+   off-screen. Inverted, and invisible in exactly the state a first-time user sees.
+
+   This element keeps the overlay-gradient approach rather than `.scroll-fade`'s
+   mask, because a mask would fade the pill tray's own rounded border out at the
+   edges. But it fades to `--bg-primary`, NOT `--glass-bg`.
+
+   That distinction is the difference between a visible cue and no cue at all.
+   `--glass-bg` is `rgba(255, 255, 255, 0.03)` — the nav's own translucent
+   overlay colour. A gradient to it adds at most 3% white over the tab, hiding
+   nothing; measured in the running app, the clipped tab was still fully legible.
+   `--bg-primary` (#080c14) is the opaque page colour actually behind the nav, so
+   fading to it genuinely dissolves the tab. This matches the existing
+   `.tabs-scroll-container` rules above, which had it right.
+
+   (It would have appeared to work in high-contrast mode, where `--glass-bg` is
+   overridden to `rgba(10, 14, 22, 0.92)` — nearly opaque. Easy to be misled by.) */
+.aquadex-nav[data-scroll-edges="start"]::before,
+.aquadex-nav[data-scroll-edges="both"]::before,
+.aquadex-nav[data-scroll-edges="end"]::after,
+.aquadex-nav[data-scroll-edges="both"]::after {
   content: "";
   position: absolute;
   top: 0;
@@ -1812,13 +1838,18 @@ input[type="range"] {
   pointer-events: none;
   z-index: 2;
 }
-.aquadex-nav--scrolled-start::before {
+/* Content hidden to the LEFT — i.e. we have scrolled away from the start. */
+.aquadex-nav[data-scroll-edges="start"]::before,
+.aquadex-nav[data-scroll-edges="both"]::before {
   left: 0;
-  background: linear-gradient(to right, var(--glass-bg), transparent);
+  background: linear-gradient(to right, var(--bg-primary) 20%, transparent 100%);
 }
-.aquadex-nav--scrolled-end::after {
+/* Content hidden to the RIGHT — the state a user lands on, and the one the old
+   condition got backwards. */
+.aquadex-nav[data-scroll-edges="end"]::after,
+.aquadex-nav[data-scroll-edges="both"]::after {
   right: 0;
-  background: linear-gradient(to left, var(--glass-bg), transparent);
+  background: linear-gradient(to left, var(--bg-primary) 20%, transparent 100%);
 }
 
 /* Individual tab pill */
@@ -8054,4 +8085,131 @@ input:checked + .broadcast-slider:before {
    block for the fixed bottom bar. */
 html {
   overflow-x: clip;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HORIZONTAL SCROLL AFFORDANCE
+   ───────────────────────────────────────────────────────────────────────────
+   Beta feedback at 384px: tab bars holding more tabs than fit gave no hint that
+   sideways scrolling was possible. Several of those bars removed the only cue
+   themselves (`scrollbar-width: none` + `::-webkit-scrollbar { display: none }`),
+   and on iOS/Android scrollbars are overlay-only regardless — they appear *while*
+   scrolling, so they can never announce that scrolling is possible up front.
+
+   Pair `.scroll-fade` with the `useScrollAffordance()` hook, which sets
+   `data-scroll-edges` to none | start | end | both. The edge only fades when
+   there is genuinely content past it: a permanently-faded edge is worse than
+   none, because then reaching the last tab never confirms you have seen
+   everything.
+
+   WHY `mask-image` AND NOT A GRADIENT OVERLAY
+   The app is glassmorphic — these containers sit on `backdrop-filter` cards over
+   varying backgrounds. An overlay div fading to a fixed colour only matches where
+   the backdrop happens to match, and looks like a smear everywhere else.
+   `mask-image` fades the CONTENT to transparent instead, so whatever is behind
+   shows through correctly. It also needs no extra element and cannot intercept
+   taps, which a full-width overlay very much can.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.scroll-fade {
+  /* Wide enough to read as a soft edge rather than a hard crop, narrow enough
+     not to obscure a whole chip. */
+  --scroll-fade-size: 28px;
+}
+
+/* Not scrollable: no mask at all. Deliberately unset rather than a
+   fully-opaque mask, so we are not paying for a compositing layer on every
+   container that happens to fit. */
+.scroll-fade[data-scroll-edges="none"] {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* At the start — content continues to the right. */
+.scroll-fade[data-scroll-edges="end"] {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 calc(100% - var(--scroll-fade-size)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    #000 calc(100% - var(--scroll-fade-size)),
+    transparent 100%
+  );
+}
+
+/* At the end — content continues to the left. */
+.scroll-fade[data-scroll-edges="start"] {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--scroll-fade-size)
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--scroll-fade-size)
+  );
+}
+
+/* Mid-scroll — content both ways. */
+.scroll-fade[data-scroll-edges="both"] {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--scroll-fade-size),
+    #000 calc(100% - var(--scroll-fade-size)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--scroll-fade-size),
+    #000 calc(100% - var(--scroll-fade-size)),
+    transparent 100%
+  );
+}
+
+/* Before the hook attaches, `data-scroll-edges` is absent for one frame. Assume
+   "more to the right", which is true for any container that overflows and is the
+   common case — it avoids a visible flash of an unfaded edge on mount. */
+.scroll-fade:not([data-scroll-edges]) {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 calc(100% - var(--scroll-fade-size)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    #000 calc(100% - var(--scroll-fade-size)),
+    transparent 100%
+  );
+}
+
+/* Tables need a smaller fade: a 28px bite out of a numeric cell is hard to read,
+   and the header row makes the clipped edge obvious anyway. */
+.scroll-fade--table {
+  --scroll-fade-size: 18px;
+}
+
+/* Bordered scrollers (the CSV import previews, breeding-line table) keep their
+   border and radius on a WRAPPER, because a mask applied to the scroller fades
+   its own border out at the edges, which reads as a rendering fault rather than
+   as "there is more". The wrapper draws the frame; the child scrolls inside it. */
+.scroll-fade-frame {
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Keyboard reachability. A scroll container whose children are not focusable
+   (a table, a strip of static cards) cannot be scrolled by a keyboard-only user
+   at all — there is nothing to Tab to that would scroll it into view. Giving it
+   `tabindex="0"` makes it focusable so arrow keys work; this styles that focus
+   visibly instead of relying on the UA default, which the glass background can
+   swallow. Tab bars do NOT need this: focusing a button scrolls it into view. */
+.scroll-fade[tabindex="0"]:focus-visible {
+  outline: 2px solid var(--accent-blue, #38bdf8);
+  outline-offset: 2px;
 }

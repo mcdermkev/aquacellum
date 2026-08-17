@@ -7,6 +7,7 @@ import {
   filterTanksByGroup,
   normalizeGroupName,
 } from "../../services/tankGroups";
+import { useScrollAffordance } from "../../hooks/useScrollAffordance";
 import "./LocationGroupBar.css";
 
 /** MIME type for a tank being dragged. Kept in sync with the drag sources in
@@ -54,6 +55,7 @@ export function LocationGroupBar({
   const [error, setError] = useState(null);
   const createInputRef = useRef(null);
   const editInputRef = useRef(null);
+  const chipsScrollRef = useScrollAffordance();
 
   useEffect(() => { if (creating) createInputRef.current?.focus(); }, [creating]);
   useEffect(() => { if (editingGroup) editInputRef.current?.focus(); }, [editingGroup]);
@@ -145,7 +147,9 @@ export function LocationGroupBar({
         )}
       </div>
 
-      <div className="locgroup-chips">
+      {/* Edge fade so it is visible that group chips continue off-screen. This
+          bar hides its scrollbar, which on a phone was the only cue there was. */}
+      <div className="locgroup-chips scroll-fade" ref={chipsScrollRef}>
         {/* All */}
         <div className={`locgroup-chip ${selected === ALL_GROUPS ? "is-active" : ""}`}>
           <button type="button" className="locgroup-chip-main" onClick={() => onSelect?.(ALL_GROUPS)}>

@@ -27,8 +27,10 @@ import { useFollowingFeed, useDiscoverFeed } from "../../hooks/useReefFeed";
 import { useEnsureProfile } from "../../hooks/useReefProfile";
 import { getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
 import { useQueryClient } from "@tanstack/react-query";
+import { useScrollAffordance } from "../../hooks/useScrollAffordance";
 
 export function ReefFeed({ casualModeActive = false, walletAddress, onNavigateProfile }) {
+  const tabsScrollRef = useScrollAffordance();
   const [activeTab, setActiveTab] = useState("feed");
   const [composerOpen, setComposerOpen] = useState(false);
   const [viewingProfile, setViewingProfile] = useState(null);
@@ -275,7 +277,7 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
         background: "rgba(255, 255, 255, 0.03)",
         border: "1px solid rgba(255, 255, 255, 0.06)",
         overflowX: "auto",
-      }} className="reef-feed-tabs">
+      }} className="reef-feed-tabs scroll-fade" ref={tabsScrollRef}>
         {getTabConfig(casualModeActive).map((tab) => (
           <button
             key={tab.key}

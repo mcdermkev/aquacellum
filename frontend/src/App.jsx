@@ -4,6 +4,7 @@ import "./styles/index.css";
 import "./styles/storefront-setup.css";
 import { GlobeHemisphereWest } from "@phosphor-icons/react";
 import { ConnectWallet } from "./components/ConnectWallet";
+import { useScrollAffordance } from "./hooks/useScrollAffordance";
 import { CartButton } from "./components/cart/CartButton";
 import { CartDrawer } from "./components/cart/CartDrawer";
 import { useFontSettings } from "./hooks/useFontSettings";
@@ -316,6 +317,9 @@ export default function App() {
   // state + URL hash. This gives real URLs, deep-linking, and proper
   // back/forward without full page reloads.
   const navigate = useNavigate();
+  // Edge-fade cue for the main tab bar, which overflows on narrow viewports.
+  const navScrollRef = useScrollAffordance();
+
   const location = useLocation();
   const tabFromPath = location.pathname.replace(/^\/app\/?/, "").split("/")[0];
   const activeTab = VALID_TABS.includes(tabFromPath) ? tabFromPath : "tanks";
@@ -1273,15 +1277,12 @@ export default function App() {
       {account && (
         <nav
           aria-label="Main navigation"
-          ref={(el) => {
-            if (!el) return;
-            const handleScroll = () => {
-              el.classList.toggle("aquadex-nav--scrolled-start", el.scrollLeft > 10);
-              el.classList.toggle("aquadex-nav--scrolled-end", el.scrollLeft >= el.scrollWidth - el.clientWidth - 10);
-            };
-            el.addEventListener("scroll", handleScroll, { passive: true });
-            handleScroll();
-          }}
+          // Was an inline ref toggling --scrolled-start/--scrolled-end. That had
+          // the right-edge condition inverted (it fired on REACHING the end, so
+          // the "more this way" cue was missing at rest — the beta report), never
+          // removed its scroll listener, and did not react to resize or to the tab
+          // count changing with mode/role. useScrollAffordance handles all three.
+          ref={navScrollRef}
           className={`aquadex-nav glass-card ${casualModeActive ? "aquadex-nav--casual" : "aquadex-nav--pro"}`}
           style={{ marginBottom: "2rem" }}
         >

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ScrollFade } from "./ScrollFade";
 import { awardXp } from "../utils/xp";
 import { relayImportSpecimens, MAX_IMPORT_SPECIMENS } from "../services/relayer";
 import { buildSpeciesMatcher } from "../utils/matchSpecies";
@@ -333,7 +334,15 @@ export function LivestockImportModal({ walletAccount, catalog = [], tanks = [], 
               <strong style={{ color: "var(--accent-green)" }}>{readyFish} fish ready</strong>
               {skippedRows > 0 && <span> · <strong style={{ color: "var(--accent-red)" }}>{skippedRows} rows skipped</strong></span>}
             </div>
-            <div style={{ marginTop: "0.5rem", overflowX: "auto", border: "1px solid var(--glass-border)", borderRadius: "6px" }}>
+            {/* Border/radius on the wrapper so the fade mask does not eat them. */}
+            <div style={{ marginTop: "0.5rem", border: "1px solid var(--glass-border)", borderRadius: "6px", overflow: "hidden" }}>
+              <ScrollFade
+                table
+                focusable
+                role="group"
+                aria-label="Import preview — scroll sideways for more columns"
+                style={{ overflowX: "auto" }}
+              >
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.76rem" }}>
                 <thead>
                   <tr style={{ color: "var(--text-muted)", textAlign: "left" }}>
@@ -366,6 +375,7 @@ export function LivestockImportModal({ walletAccount, catalog = [], tanks = [], 
                   })}
                 </tbody>
               </table>
+              </ScrollFade>
             </div>
             {rows.length > PREVIEW_LIMIT && (
               <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.35rem" }}>

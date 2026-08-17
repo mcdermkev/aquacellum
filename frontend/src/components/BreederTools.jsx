@@ -10,6 +10,7 @@ import { COICalculator } from "./COICalculator";
 import { BreederAchievements } from "./BreederAchievements";
 import { BreedingProgramModal } from "./BreedingProgramModal";
 import { useContractSpecies } from "../hooks/useSpeciesData";
+import { useScrollAffordance } from "../hooks/useScrollAffordance";
 import {
   getUnseenMorphUpdates,
   markMorphsViewed,
@@ -30,6 +31,7 @@ export function BreederTools({
   onSwitchToPro,
 }) {
   const [activeSection, setActiveSection] = useState(initialSection || "register");
+  const subNavScrollRef = useScrollAffordance();
   // Lineage-first intake (docs/LINEAGE_FIRST_INTAKE_SPEC.md)
   const [isProgramOpen, setIsProgramOpen] = useState(false);
   const [programResult, setProgramResult] = useState(null);
@@ -119,9 +121,14 @@ export function BreederTools({
         </div>
       )}
 
-      {/* Internal sub-navigation pills */}
+      {/* Internal sub-navigation pills.
+          `.scroll-fade` only engages on mobile, where the media query switches
+          this to width:100% + overflow-x:auto and hides the scrollbar. Its own
+          border is faint (0.12 alpha) so the mask softening it at the edges reads
+          as intentional rather than as a rendering fault. */}
       <div
-        className="breeder-sub-nav"
+        className="breeder-sub-nav scroll-fade"
+        ref={subNavScrollRef}
         style={{
           display: "flex",
           gap: "0.5rem",

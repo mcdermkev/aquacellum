@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { ScrollFade } from "./ScrollFade";
 import { awardXp } from "../utils/xp";
 import { relayImportTanks, relayImportSpecimens } from "../services/relayer";
 import { buildSpeciesMatcher } from "../utils/matchSpecies";
@@ -213,8 +214,18 @@ export function BreedingProgramModal({ walletAccount, catalog = [], casualModeAc
           </div>
         )}
 
-        {/* Line rows */}
-        <div style={{ overflowX: "auto", border: "1px solid var(--glass-border)", borderRadius: "8px" }}>
+        {/* Line rows.
+            Border and radius live on this OUTER element: a mask applied to the
+            scroller fades its own border out at the edges, which reads as a
+            rendering fault rather than as "there is more this way". */}
+        <div style={{ border: "1px solid var(--glass-border)", borderRadius: "8px", overflow: "hidden" }}>
+          <ScrollFade
+            table
+            focusable
+            role="group"
+            aria-label="Breeding lines — scroll sideways for more columns"
+            style={{ overflowX: "auto" }}
+          >
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
@@ -311,6 +322,7 @@ export function BreedingProgramModal({ walletAccount, catalog = [], casualModeAc
               })}
             </tbody>
           </table>
+          </ScrollFade>
         </div>
 
         <button

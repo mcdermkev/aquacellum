@@ -63,6 +63,7 @@ import { buildBreederDashboard } from "../../services/breederDashboard";
 import { formatPriceCents } from "../../services/catalogQuery";
 import { hasEntitlement } from "../../services/entitlements";
 import { useActivityFacts } from "../../hooks/useActivityFacts";
+import { useScrollAffordance } from "../../hooks/useScrollAffordance";
 
 import { CONTRACT_ADDRESS, MARKETPLACE_ADDRESS } from "../../config/appConfig";
 import { SellerAnalytics } from "../storefront/SellerAnalytics";
@@ -143,6 +144,9 @@ export function BreederTerminal({ walletAccount, casualModeActive = false, initi
   const [activeSection, setActiveSection] = useState(
     isKnownSection(initialSection) ? initialSection : SECTIONS.HOME
   );
+
+  // Edge-fade cue for the section nav, which overflows at phone widths.
+  const sectionNavScrollRef = useScrollAffordance();
 
   // The initializer above only covers a cold mount. This tab is lazy-loaded and
   // stays mounted once visited, so a second deep-link from Settings while it is
@@ -509,6 +513,8 @@ export function BreederTerminal({ walletAccount, casualModeActive = false, initi
       {/* Section nav — mobile-first horizontal scroll of large touch targets */}
       <nav
         aria-label="Breeder Terminal sections"
+        className="scroll-fade"
+        ref={sectionNavScrollRef}
         style={{
           display: "flex",
           gap: "0.5rem",
@@ -910,6 +916,12 @@ function OrdersSection({
   onConfirmPickupTime,
   pickupConfirmBusyId,
 }) {
+  // ABOVE the loading early-return on purpose: hooks must run on every render or
+  // the count changes between the shimmer and the loaded view — "Rendered more
+  // hooks than during the previous render".
+  const fulfillmentTabsScrollRef = useScrollAffordance();
+  const statusTabsScrollRef = useScrollAffordance();
+
   if (loading) {
     return <div className="shimmer-placeholder" style={{ height: "240px", borderRadius: "12px" }} />;
   }
@@ -941,7 +953,7 @@ function OrdersSection({
       )}
 
       {/* Fulfillment-type tabs */}
-      <div style={{ display: "flex", gap: "0.4rem", overflowX: "auto", WebkitOverflowScrolling: "touch" }} role="tablist" aria-label="Fulfillment type">
+      <div className="scroll-fade" ref={fulfillmentTabsScrollRef} style={{ display: "flex", gap: "0.4rem", overflowX: "auto", WebkitOverflowScrolling: "touch" }} role="tablist" aria-label="Fulfillment type">
         {FULFILLMENT_TABS.map((tab) => {
           const isActive = fulfillmentFilter === tab.key;
           return (
@@ -972,7 +984,7 @@ function OrdersSection({
       </div>
 
       {/* Status filter tabs */}
-      <div style={{ display: "flex", gap: "0.4rem", overflowX: "auto", WebkitOverflowScrolling: "touch" }} role="tablist" aria-label="Order status">
+      <div className="scroll-fade" ref={statusTabsScrollRef} style={{ display: "flex", gap: "0.4rem", overflowX: "auto", WebkitOverflowScrolling: "touch" }} role="tablist" aria-label="Order status">
         {STATUS_TABS.map((tab) => {
           const isActive = statusFilter === tab.key;
           return (

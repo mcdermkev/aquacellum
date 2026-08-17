@@ -46,6 +46,7 @@ import {
 } from "../../services/storeMerchandising.js";
 import { getListingKey, formatPriceCents, normalizePriceCents } from "../../services/catalogQuery.js";
 import { announce, prefersReducedMotion } from "../../utils/a11y.js";
+import { ScrollFade } from "../ScrollFade";
 
 function listingLabel(item) {
   const key = getListingKey(item);
@@ -367,7 +368,14 @@ export function StorefrontMerchandising({ walletAccount, casualModeActive = fals
               <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-secondary)", marginBottom: "0.4rem" }}>
                 {section.title}
               </div>
-              <div style={{ display: "flex", gap: "0.5rem", overflowX: "auto", paddingBottom: "0.25rem" }}>
+              {/* ScrollFade, not a ref: this renders once per section, and a
+                  single shared ref would only ever attach to the last one. */}
+              <ScrollFade
+                focusable
+                role="group"
+                aria-label={`${section.title} preview`}
+                style={{ display: "flex", gap: "0.5rem", overflowX: "auto", paddingBottom: "0.25rem" }}
+              >
                 {section.listings.map((item) => (
                   <div
                     key={getListingKey(item)}
@@ -386,7 +394,7 @@ export function StorefrontMerchandising({ walletAccount, casualModeActive = fals
                     {formatPriceCents(normalizePriceCents(item))}
                   </div>
                 ))}
-              </div>
+              </ScrollFade>
             </div>
           ))
         )}

@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
+import { ScrollFade } from "./ScrollFade";
 import { awardXp } from "../utils/xp";
 import { relayImportTanks, MAX_IMPORT_TANKS } from "../services/relayer";
 import { tankTypeLabel } from "../utils/tankUtils";
@@ -241,8 +242,16 @@ export function ImportTanksModal({ walletAccount, onClose, onCreated }) {
               {warnCount > 0 && <span> · <strong style={{ color: "var(--accent-amber, #fbbf24)" }}>{warnCount} with warnings</strong></span>}
             </div>
 
-            {/* Step 2b — preview */}
-            <div style={{ marginTop: "0.5rem", overflowX: "auto", border: "1px solid var(--glass-border)", borderRadius: "6px" }}>
+            {/* Step 2b — preview. Border/radius on the wrapper so the fade mask
+                does not eat them. */}
+            <div style={{ marginTop: "0.5rem", border: "1px solid var(--glass-border)", borderRadius: "6px", overflow: "hidden" }}>
+              <ScrollFade
+                table
+                focusable
+                role="group"
+                aria-label="Import preview — scroll sideways for more columns"
+                style={{ overflowX: "auto" }}
+              >
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.76rem" }}>
                 <thead>
                   <tr style={{ color: "var(--text-muted)", textAlign: "left" }}>
@@ -274,6 +283,7 @@ export function ImportTanksModal({ walletAccount, onClose, onCreated }) {
                   })}
                 </tbody>
               </table>
+              </ScrollFade>
             </div>
             {rows.length > PREVIEW_LIMIT && (
               <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.35rem" }}>

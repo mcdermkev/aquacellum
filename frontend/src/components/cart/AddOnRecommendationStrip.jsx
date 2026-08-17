@@ -17,8 +17,10 @@ import React from "react";
 import { CheckCircle, Warning, Package, Plus } from "@phosphor-icons/react";
 import { FishSilhouetteSVG } from "../SilhouetteSVG.jsx";
 import { addOnCopy } from "../../services/addOnPresenter.js";
+import { useScrollAffordance } from "../../hooks/useScrollAffordance";
 
 export function AddOnRecommendationStrip({ recommendations, sellerName, onAdd, casualModeActive = false }) {
+  const stripScrollRef = useScrollAffordance();
   if (!recommendations || recommendations.length === 0) return null;
 
   return (
@@ -42,6 +44,11 @@ export function AddOnRecommendationStrip({ recommendations, sellerName, onAdd, c
       <div
         role="list"
         aria-label="Recommended add-ons"
+        className="scroll-fade"
+        ref={stripScrollRef}
+        // Focusable because the cards are static: with nothing tabbable inside,
+        // a keyboard-only user has no way to scroll this strip at all.
+        tabIndex={0}
         style={{
           display: "flex",
           gap: "0.65rem",

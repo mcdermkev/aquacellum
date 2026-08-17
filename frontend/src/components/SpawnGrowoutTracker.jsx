@@ -17,6 +17,7 @@ import {
 } from "../services/cohortPromotion";
 import { SEX_OPTIONS, sexOptionLabel, SEX } from "../utils/specimenSex";
 import { formatCertSerial } from "../utils/specimenIdentity";
+import { useScrollAffordance } from "../hooks/useScrollAffordance";
 
 // Grow-out checkpoint types
 export const GROWOUT_TYPES = {
@@ -48,6 +49,7 @@ export const MANUAL_GROWOUT_TYPES = Object.freeze(
 
 // Inline grow-out tracker component for a single spawn
 export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
+  const photoTimelineScrollRef = useScrollAffordance();
   const [checkpoints, setCheckpoints] = useState([]);
   const [spawn, setSpawn] = useState(null);
   const [expanded, setExpanded] = useState(false);
@@ -295,10 +297,19 @@ export function SpawnGrowoutTracker({ spawnId, eggCount, speciesName, mode }) {
           <div style={{ fontSize: "0.65rem", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>
             📸 Photo Timeline
           </div>
-          <div style={{
-            display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px",
-            scrollbarWidth: "thin",
-          }}>
+          <div
+            className="scroll-fade"
+            ref={photoTimelineScrollRef}
+            // Photos are not focusable, so without this the timeline is
+            // unreachable by keyboard.
+            tabIndex={0}
+            role="group"
+            aria-label="Photo timeline"
+            style={{
+              display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px",
+              scrollbarWidth: "thin",
+            }}
+          >
             {checkpoints
               .filter(cp => cp.photo)
               .sort((a, b) => a.timestamp - b.timestamp)

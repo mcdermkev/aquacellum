@@ -9,6 +9,7 @@ import { useSchoolById, useMySchoolRole, useSchoolMembers, useSchoolChallenges, 
 import { ProfileCard } from "./ProfileCard";
 import { SchoolChat } from "./SchoolChat";
 import { ChallengeCard } from "./ChallengeCard";
+import { useScrollAffordance } from "../../hooks/useScrollAffordance";
 
 const TYPE_EMOJI = {
   species: "🐟",
@@ -20,6 +21,7 @@ const TYPE_EMOJI = {
 };
 
 export function SchoolPage({ schoolId, onBack, onViewProfile }) {
+  const tabsScrollRef = useScrollAffordance();
   const [activeTab, setActiveTab] = useState("feed");
   
   const { data: schoolResult, isLoading } = useSchoolById(schoolId);
@@ -130,7 +132,7 @@ export function SchoolPage({ schoolId, onBack, onViewProfile }) {
       </div>
 
       {/* Tabs */}
-      <div style={{
+      <div className="scroll-fade" ref={tabsScrollRef} style={{
         display: "flex",
         gap: "0.25rem",
         marginBottom: "1.5rem",
