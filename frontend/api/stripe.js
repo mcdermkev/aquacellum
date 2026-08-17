@@ -674,6 +674,43 @@ async function handleWebhook(req, res) {
       return res.status(200).json({ received: true, action: "dispute_flagged" });
     }
 
+    case "setup_intent.succeeded": {
+      // A bidder finished saving a card. Recording payment_method_id is what
+      // actually unlocks bidding — enforce_bidder_has_payment_method tests that
+      // column, not mere row existence, so an unrecorded card means the person
+      // still cannot bid.
+      //
+      // handleAuctionPaymentMethod also reconciles from Stripe on demand, so a
+      // missed or slow webhook is recoverable rather than a dead end.
+      const si = event.data.object;
+      const siWallet = String(si.metadata?.wallet_address || "").toLowerCase();
+
+      if (!siWallet || !si.payment_method) {
+        console.warn("[Stripe] setup_intent.succeeded without wallet metadata or payment method:", si.id);
+        break;
+      }
+
+      try {
+        const savedPm = await stripe.paymentMethods.retrieve(si.payment_method);
+        const { error: pmError } = await supabase
+          .from("buyer_payment_methods")
+          .update({
+            payment_method_id: savedPm.id,
+            brand: savedPm.card?.brand || null,
+            last4: savedPm.card?.last4 || null,
+            exp_month: savedPm.card?.exp_month || null,
+            exp_year: savedPm.card?.exp_year || null,
+            updated_at: new Date().toISOString(),
+          })
+          .ilike("wallet_address", siWallet);
+
+        if (pmError) console.error("[Stripe] could not store payment method:", pmError.message);
+      } catch (e) {
+        console.error("[Stripe] setup_intent.succeeded handling failed:", e.message);
+      }
+      break;
+    }
+
     case "charge.refunded": {
       // Stripe-side refund (issued from the dashboard, the refunds API, or a
       // won/lost dispute). Record it so the order history reflects the money
@@ -2794,6 +2831,11 @@ export default async function handler(req, res) {
       return handleHandoffIssue(req, res);
     case "cash-confirm":
       return handleCashConfirm(req, res);
+    // ── Auctions ───────────────────────────────────────────────────────────
+    case "auction-payment-method":
+      return handleAuctionPaymentMethod(req, res);
+    case "auction-charge":
+      return handleAuctionCharge(req, res);
     default:
       return res.status(400).json({ error: `Unknown action: ${action}` });
   }
@@ -3511,5 +3553,286 @@ async function handleCreateCheckout(req, res) {
       error: "Failed to create checkout session",
       details: err.message,
     });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AUCTIONS — card on file, then an automatic charge when the lot closes
+//
+// A bid is a commitment, so bidding requires a saved payment method
+// (enforce_bidder_has_payment_method rejects the INSERT without one). That design
+// removes the moment where a winner decides whether to pay, instead of penalising
+// non-payment afterwards — see 20260817210000_auction_payment_method_required.sql.
+//
+// Two endpoints:
+//   auction-payment-method  GET  → is a card on file, and which
+//                           POST → a SetupIntent client secret to add one
+//   auction-charge          POST → charge the winner off-session, then transfer
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Find or create the Stripe Customer for a wallet.
+ *
+ * One Customer per wallet, reused for every auction, because a saved card belongs
+ * to a Customer. Stored in buyer_payment_methods so we never create duplicates
+ * (duplicate Customers are how saved cards silently go missing).
+ */
+async function getOrCreateBuyerCustomer(walletAddress) {
+  const wallet = String(walletAddress).toLowerCase();
+
+  const { data: existing } = await supabase
+    .from("buyer_payment_methods")
+    .select("wallet_address, stripe_customer_id, payment_method_id, brand, last4")
+    .ilike("wallet_address", wallet)
+    .maybeSingle();
+
+  if (existing?.stripe_customer_id) return { row: existing, customerId: existing.stripe_customer_id };
+
+  const customer = await stripe.customers.create({
+    metadata: { wallet_address: wallet, purpose: "aquadex_auction_bidding" },
+  });
+
+  // Upsert rather than insert: two tabs opening the bid sheet at once would
+  // otherwise race and one would fail on the primary key.
+  const { data: row, error } = await supabase
+    .from("buyer_payment_methods")
+    .upsert(
+      { wallet_address: wallet, stripe_customer_id: customer.id, updated_at: new Date().toISOString() },
+      { onConflict: "wallet_address" }
+    )
+    .select("wallet_address, stripe_customer_id, payment_method_id, brand, last4")
+    .single();
+
+  if (error) throw new Error(`Could not record customer: ${error.message}`);
+  return { row, customerId: row.stripe_customer_id };
+}
+
+/**
+ * GET  → { hasCard, brand, last4 }
+ * POST → { clientSecret, customerId } for Stripe.js to confirm a card
+ *
+ * POST also RECONCILES: if a SetupIntent already succeeded but the webhook has not
+ * landed, it reads the Customer's default card straight from Stripe and stores it.
+ * Without that, a slow or missed webhook leaves someone unable to bid despite
+ * having entered a card, with no way to retry into a good state.
+ */
+async function handleAuctionPaymentMethod(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "GET, POST, OPTIONS" })) return;
+  if (!stripe) return res.status(500).json({ error: "Stripe not configured" });
+
+  const wallet = String(req.method === "GET" ? req.query.wallet : req.body?.walletAddress || "").toLowerCase();
+  if (!wallet) return res.status(400).json({ error: "Missing wallet" });
+
+  try {
+    if (req.method === "GET") {
+      const { data } = await supabase
+        .from("buyer_payment_methods")
+        .select("payment_method_id, brand, last4, exp_month, exp_year")
+        .ilike("wallet_address", wallet)
+        .maybeSingle();
+
+      return res.status(200).json({
+        hasCard: !!data?.payment_method_id,
+        brand: data?.brand || null,
+        last4: data?.last4 || null,
+        expMonth: data?.exp_month || null,
+        expYear: data?.exp_year || null,
+      });
+    }
+
+    if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+    const { customerId } = await getOrCreateBuyerCustomer(wallet);
+
+    // Reconcile first — a card may already be attached from an earlier attempt.
+    const methods = await stripe.paymentMethods.list({ customer: customerId, type: "card", limit: 1 });
+    if (methods.data.length > 0) {
+      const pm = methods.data[0];
+      await supabase
+        .from("buyer_payment_methods")
+        .update({
+          payment_method_id: pm.id,
+          brand: pm.card?.brand || null,
+          last4: pm.card?.last4 || null,
+          exp_month: pm.card?.exp_month || null,
+          exp_year: pm.card?.exp_year || null,
+          updated_at: new Date().toISOString(),
+        })
+        .ilike("wallet_address", wallet);
+
+      return res.status(200).json({
+        alreadySaved: true,
+        hasCard: true,
+        brand: pm.card?.brand || null,
+        last4: pm.card?.last4 || null,
+      });
+    }
+
+    // off_session: the card is being saved now to be charged LATER without the
+    // buyer present, which is the whole point.
+    const setupIntent = await stripe.setupIntents.create({
+      customer: customerId,
+      payment_method_types: ["card"],
+      usage: "off_session",
+      metadata: { wallet_address: wallet, purpose: "aquadex_auction_bidding" },
+    });
+
+    return res.status(200).json({
+      clientSecret: setupIntent.client_secret,
+      customerId,
+      hasCard: false,
+    });
+  } catch (err) {
+    console.error("[Stripe] auction-payment-method failed:", err);
+    return res.status(500).json({ error: err.message || "Could not set up a payment method" });
+  }
+}
+
+/**
+ * Charge the winner of a settled lot, off-session, then transfer the certificate.
+ *
+ * Ordering matters and is deliberate:
+ *   1. charge
+ *   2. mark_auction_settlement_paid
+ *   3. transfer_auction_lot
+ *
+ * Ownership only ever moves after money has — transfer_auction_lot refuses unless
+ * the settlement is already 'paid', so an optimistic caller cannot hand over a
+ * fish for free.
+ *
+ * A decline is recorded as payment_failed, NOT forfeited. The winner keeps their
+ * window to fix the card; only sweep_overdue_auction_settlements forfeits the lot
+ * and promotes the next bidder.
+ */
+async function handleAuctionCharge(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (!stripe) return res.status(500).json({ error: "Stripe not configured" });
+
+  const { settlementId } = req.body || {};
+  if (!settlementId) return res.status(400).json({ error: "Missing settlementId" });
+
+  try {
+    // Read with the service role: auction_settlements has no client write policy
+    // and the amount must come from the database, never from the request body.
+    const { data: s, error: readError } = await supabase
+      .from("auction_settlements")
+      .select("id, tide_id, token_id, winner_wallet, seller_wallet, amount_cents, status")
+      .eq("id", settlementId)
+      .maybeSingle();
+
+    if (readError) throw new Error(readError.message);
+    if (!s) return res.status(404).json({ error: "Settlement not found" });
+
+    if (s.status === "paid" || s.status === "transferred") {
+      return res.status(200).json({ alreadyPaid: true, status: s.status });
+    }
+    if (s.status === "forfeited" || s.status === "unsold") {
+      return res.status(409).json({ error: `This lot is ${s.status}.` });
+    }
+    if (!s.amount_cents || s.amount_cents <= 0) {
+      return res.status(409).json({ error: "Settlement has no amount to charge." });
+    }
+
+    const { data: pm } = await supabase
+      .from("buyer_payment_methods")
+      .select("stripe_customer_id, payment_method_id")
+      .ilike("wallet_address", String(s.winner_wallet).toLowerCase())
+      .maybeSingle();
+
+    if (!pm?.payment_method_id) {
+      // Should be impossible: bidding requires a card. Treated as a payment
+      // failure so the lot follows the normal recovery path rather than wedging.
+      await supabase.rpc("record_auction_payment_failure", {
+        target_settlement: settlementId,
+        failure_reason: "No saved payment method on file",
+      });
+      return res.status(409).json({ error: "No payment method on file for the winner." });
+    }
+
+    // The seller's Connect account, so the money lands with them.
+    const { data: seller } = await supabase
+      .from("seller_stripe_accounts")
+      .select("stripe_account_id, payouts_enabled")
+      .ilike("wallet_address", String(s.seller_wallet).toLowerCase())
+      .maybeSingle();
+
+    if (!seller?.stripe_account_id || !seller.payouts_enabled) {
+      return res.status(409).json({ error: "Seller cannot receive payouts yet." });
+    }
+
+    let intent;
+    try {
+      intent = await stripe.paymentIntents.create({
+        amount: s.amount_cents,
+        currency: "usd",
+        customer: pm.stripe_customer_id,
+        payment_method: pm.payment_method_id,
+        // The buyer is not at the keyboard: this is the saved-card charge the
+        // SetupIntent authorised.
+        off_session: true,
+        confirm: true,
+        transfer_data: { destination: seller.stripe_account_id },
+        metadata: {
+          purpose: "aquadex_auction_lot",
+          settlement_id: s.id,
+          tide_id: s.tide_id,
+          token_id: String(s.token_id),
+          winner_wallet: s.winner_wallet,
+          seller_wallet: s.seller_wallet,
+        },
+        // Idempotent against double submits and retries.
+        idempotencyKey: `auction-settle-${s.id}`,
+      });
+    } catch (chargeErr) {
+      // Declines and 3DS-required both arrive here. Recorded as a recoverable
+      // failure, with Stripe's own message so the winner knows what to fix.
+      const reason = chargeErr?.raw?.message || chargeErr.message || "Card was declined";
+      await supabase.rpc("record_auction_payment_failure", {
+        target_settlement: settlementId,
+        failure_reason: reason,
+      });
+      return res.status(402).json({ error: reason, requiresAction: chargeErr?.code === "authentication_required" });
+    }
+
+    if (intent.status !== "succeeded") {
+      await supabase.rpc("record_auction_payment_failure", {
+        target_settlement: settlementId,
+        failure_reason: `Payment ${intent.status}`,
+      });
+      return res.status(402).json({ error: `Payment ${intent.status}`, paymentIntent: intent.id });
+    }
+
+    const { error: paidError } = await supabase.rpc("mark_auction_settlement_paid", {
+      target_settlement: settlementId,
+      payment_intent: intent.id,
+    });
+    if (paidError) throw new Error(paidError.message);
+
+    // Transfer is best-effort AFTER payment: if the seller no longer holds the
+    // specimen, transfer_auction_lot raises rather than reporting a move that did
+    // not happen. The buyer has paid, so that needs a human, not a silent pass.
+    let transferred = false;
+    let transferError = null;
+    const { error: xferError } = await supabase.rpc("transfer_auction_lot", {
+      target_settlement: settlementId,
+    });
+    if (xferError) {
+      transferError = xferError.message;
+      console.error("[Stripe] auction lot paid but transfer failed:", settlementId, xferError.message);
+    } else {
+      transferred = true;
+    }
+
+    return res.status(200).json({
+      paid: true,
+      paymentIntent: intent.id,
+      amountCents: s.amount_cents,
+      transferred,
+      transferError,
+    });
+  } catch (err) {
+    console.error("[Stripe] auction-charge failed:", err);
+    return res.status(500).json({ error: err.message || "Charge failed" });
   }
 }

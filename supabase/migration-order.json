@@ -115,6 +115,7 @@
     "supabase/migrations/20260817190000_rls_drop_spoofable_header_auth.sql",
     "supabase/migrations/20260817200000_auction_settlement.sql",
     "supabase/migrations/20260817201000_auction_money_message_format.sql",
-    "supabase/migrations/20260817202000_settle_idempotence_fix.sql"
+    "supabase/migrations/20260817202000_settle_idempotence_fix.sql",
+    "supabase/migrations/20260817210000_auction_payment_method_required.sql"
   ]
 }
