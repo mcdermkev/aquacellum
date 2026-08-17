@@ -52,6 +52,20 @@ export const XP_ACTIONS = {
   ENGAGEMENT_BONUS: { points: 8, label: "Post Reached 5+ Reactions" },
   JOIN_SCHOOL: { points: 15, label: "Joined a School" },
   MENTORED_USER: { points: 40, label: "Mentored Another User" },
+  // School challenges. Two FIXED amounts, deliberately not driven by the host's
+  // school_challenges.reward_xp.
+  //
+  // reward_xp is set by whoever creates the challenge, and routing it into the XP
+  // award — whether directly or as a `quantity` multiplier — would let any founder
+  // mint unlimited XP for their own school by creating a challenge worth 999999
+  // and entering it. Host-controlled input must never determine a reward amount.
+  // BATCHABLE_ACTIONS in api/validate-xp.js exists to block exactly this shape.
+  //
+  // Both claims are guarded atomically by
+  // school_challenge_participants.xp_claimed_at, so a refresh cannot pay twice.
+  CHALLENGE_COMPLETED: { points: 50, label: "Completed a School Challenge", dailyMax: 5 },
+  CHALLENGE_WON: { points: 150, label: "Won a School Challenge", dailyMax: 3 },
+
   // Physically turning up at an Expo Tide and checking in on site.
   //
   // TidePage has always LABELLED this button "📍 Check In (+100 XP)" while

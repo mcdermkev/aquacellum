@@ -6,8 +6,19 @@
 
 import React, { useState } from "react";
 import { useSchoolById, useMySchoolRole, useSchoolMembers, useSchoolChallenges, useLeaveSchool, useUpdateMemberRole, useRemoveMember, useCreateChallenge, useUpdateSchool, useSchoolPosts, useCreateSchoolPost, useDeleteSchoolPost, useSetSchoolPostPinned, useToggleSchoolPostReaction } from "../../hooks/useSchools";
+import { useChallengeParticipants, useChallengeSubmissions, useJoinChallenge, useLeaveChallenge, useSubmitChallengeEntry, useVoteForEntry, useFinalizeChallenge, useClaimChallengeReward } from "../../hooks/useSchools";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { sameWallet } from "../../utils/wallet";
+import { awardXp } from "../../utils/xp";
+import {
+  resolveChallengePhase,
+  CHALLENGE_PHASE,
+  challengeScoring,
+  canJoinChallenge,
+  canSubmitToChallenge,
+  canVoteInChallenge,
+  canFinalizeChallenge,
+} from "../../utils/challenges";
 import { ProfileCard } from "./ProfileCard";
 import { SchoolChat } from "./SchoolChat";
 import { ChallengeCard } from "./ChallengeCard";
@@ -197,7 +208,13 @@ export function SchoolPage({ schoolId, onBack, onViewProfile }) {
       )}
 
       {activeTab === "challenges" && (
-        <ChallengesTab challenges={challenges} schoolId={schoolId} isAdmin={isAdmin} />
+        <ChallengesTab
+          challenges={challenges}
+          schoolId={schoolId}
+          isAdmin={isAdmin}
+          isMember={isMember}
+          myWallet={myWallet}
+        />
       )}
 
       {activeTab === "chat" && (
@@ -545,10 +562,22 @@ function MembersTab({ members, isAdmin, schoolId, onViewProfile, onPromote, onDe
   );
 }
 
-function ChallengesTab({ challenges, schoolId, isAdmin }) {
+function ChallengesTab({ challenges, schoolId, isAdmin, isMember, myWallet }) {
   const [showForm, setShowForm] = useState(false);
-  const active = challenges.filter((c) => c.status === "active" || c.status === "upcoming");
-  const completed = challenges.filter((c) => c.status === "completed");
+  const [openId, setOpenId] = useState(null);
+
+  // Group by DERIVED phase, not the stored `status`. The old code filtered on
+  // c.status, which createChallenge set once at insert and nothing ever updated —
+  // so every challenge stayed 'upcoming' and the "Completed" section was empty by
+  // construction, no matter how long ago the challenge finished.
+  const live = challenges.filter((c) => {
+    const p = resolveChallengePhase(c);
+    return p === CHALLENGE_PHASE.UPCOMING || p === CHALLENGE_PHASE.ACTIVE || p === CHALLENGE_PHASE.SCORING;
+  });
+  const completed = challenges.filter((c) => {
+    const p = resolveChallengePhase(c);
+    return p === CHALLENGE_PHASE.COMPLETED || p === CHALLENGE_PHASE.CANCELLED;
+  });
 
   return (
     <div>
@@ -582,7 +611,7 @@ function ChallengesTab({ challenges, schoolId, isAdmin }) {
         </div>
       )}
 
-      {active.length === 0 && completed.length === 0 && !showForm ? (
+      {live.length === 0 && completed.length === 0 && !showForm ? (
         <div style={{ textAlign: "center", padding: "2rem 1rem", color: "var(--text-muted)" }}>
           <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>🏆</div>
           <p style={{ fontSize: "0.85rem" }}>No challenges yet.</p>
@@ -595,17 +624,343 @@ function ChallengesTab({ challenges, schoolId, isAdmin }) {
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          {active.map((challenge) => (
-            <ChallengeCard key={challenge.id} challenge={challenge} />
+          {live.map((challenge) => (
+            <ChallengePanel
+              key={challenge.id}
+              challenge={challenge}
+              schoolId={schoolId}
+              isAdmin={isAdmin}
+              isMember={isMember}
+              myWallet={myWallet}
+              isOpen={openId === challenge.id}
+              onToggle={() => setOpenId(openId === challenge.id ? null : challenge.id)}
+            />
           ))}
           {completed.length > 0 && (
             <>
               <h4 style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "1rem" }}>Completed</h4>
               {completed.map((challenge) => (
-                <ChallengeCard key={challenge.id} challenge={challenge} />
+                <ChallengePanel
+                  key={challenge.id}
+                  challenge={challenge}
+                  schoolId={schoolId}
+                  isAdmin={isAdmin}
+                  isMember={isMember}
+                  myWallet={myWallet}
+                  isOpen={openId === challenge.id}
+                  onToggle={() => setOpenId(openId === challenge.id ? null : challenge.id)}
+                />
               ))}
             </>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * A challenge, and everything you can do with it.
+ *
+ * Previously a challenge was a card and nothing else: no way to enter, submit,
+ * vote, or see a result. This adds the lifecycle — join, submit, vote, and a
+ * host-run finalize that scores and closes it.
+ *
+ * What each phase offers depends on the type, because the four types genuinely
+ * differ (see utils/challenges.js). breeding_sprint and care_streak are scored
+ * from data the app already stores, so entrants just join. photo_contest and
+ * growout_race need an entry, because nothing stored can judge them.
+ */
+function ChallengePanel({ challenge, schoolId, isAdmin, isMember, myWallet, isOpen, onToggle }) {
+  const phase = resolveChallengePhase(challenge);
+  const scoring = challengeScoring(challenge.challenge_type);
+
+  const { data: participantsResult } = useChallengeParticipants(isOpen ? challenge.id : null);
+  const { data: submissionsResult } = useChallengeSubmissions(
+    isOpen && scoring.needsSubmission ? challenge.id : null
+  );
+
+  const join = useJoinChallenge(challenge.id, schoolId);
+  const leave = useLeaveChallenge(challenge.id, schoolId);
+  const submit = useSubmitChallengeEntry(challenge.id, schoolId);
+  const vote = useVoteForEntry(challenge.id, schoolId);
+  const finalize = useFinalizeChallenge(challenge.id, schoolId);
+  const claim = useClaimChallengeReward(challenge.id, schoolId);
+
+  const [entryDraft, setEntryDraft] = useState({ body: "", imageUrl: "", declaredValue: "" });
+  const [actionError, setActionError] = useState(null);
+  const [claimToast, setClaimToast] = useState(null);
+
+  const participants = participantsResult?.data || [];
+  const submissions = submissionsResult?.data || [];
+
+  const me = participants.find((p) => sameWallet(p.wallet_address, myWallet));
+  const myEntry = submissions.find((s) => sameWallet(s.wallet_address, myWallet));
+  const myVote = submissions.find((s) => (s.votes || []).some((v) => sameWallet(v.voter_wallet, myWallet)));
+
+  // Surface the DB's message rather than a generic failure — the triggers write
+  // their errors for the person reading them ("You cannot vote for your own
+  // entry", "Submissions are only open while the challenge is running").
+  const run = (mutation, args) => {
+    setActionError(null);
+    mutation.mutate(args, {
+      onSuccess: (res) => {
+        if (res?.error) {
+          setActionError(typeof res.error === "string" ? res.error : res.error.message);
+        }
+      },
+      onError: (err) => setActionError(err?.message || "That didn't work."),
+    });
+  };
+
+  const handleClaim = () => {
+    setActionError(null);
+    claim.mutate(undefined, {
+      onSuccess: (res) => {
+        if (res?.error) {
+          setActionError(typeof res.error === "string" ? res.error : res.error.message);
+          return;
+        }
+        if (!res?.data?.claimed) return; // already claimed, or not scored yet
+        // Fixed platform amounts keyed off the placing the DB computed — never off
+        // challenge.reward_xp, which the host controls and could set to anything.
+        const won = res.data.rank === 1;
+        const { awarded } = awardXp(won ? "CHALLENGE_WON" : "CHALLENGE_COMPLETED");
+        if (awarded > 0) setClaimToast(`+${awarded} XP${won ? " — you won!" : ""}`);
+      },
+      onError: (err) => setActionError(err?.message || "Couldn't claim that."),
+    });
+  };
+
+  return (
+    <div className="challenge-panel">
+      <ChallengeCard challenge={{ ...challenge, status: phase }} />
+
+      <button
+        className="btn btn--ghost btn--sm challenge-panel__toggle"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+      >
+        {isOpen ? "Hide details" : phase === CHALLENGE_PHASE.COMPLETED ? "View results" : "Open challenge"}
+      </button>
+
+      {isOpen && (
+        <div className="challenge-panel__body">
+          <p className="challenge-panel__how">
+            {scoring.emoji} {scoring.howScored}
+          </p>
+
+          {/* ── Entering ────────────────────────────────────────────────── */}
+          {isMember && !me && canJoinChallenge(challenge) && (
+            <button
+              className="btn btn--primary btn--sm"
+              onClick={() => run(join)}
+              disabled={join.isPending}
+            >
+              {join.isPending ? "Joining…" : "Join this challenge"}
+            </button>
+          )}
+
+          {isMember && me && phase !== CHALLENGE_PHASE.COMPLETED && (
+            <div className="challenge-panel__joined">
+              <span className="challenge-panel__badge">✓ You're in</span>
+              {canJoinChallenge(challenge) && (
+                <button
+                  className="btn btn--ghost btn--xs"
+                  onClick={() => run(leave)}
+                  disabled={leave.isPending}
+                >
+                  Withdraw
+                </button>
+              )}
+            </div>
+          )}
+
+          {!isMember && (
+            <p className="text-muted">Join the school to take part in its challenges.</p>
+          )}
+
+          {/* ── Your entry (submission-scored types only) ───────────────── */}
+          {isMember && me && scoring.needsSubmission && canSubmitToChallenge(challenge) && (
+            <div className="challenge-panel__entry">
+              <h5>{myEntry ? "Update your entry" : "Your entry"}</h5>
+              {scoring.mode === "declared" && (
+                <label className="form-field">
+                  <span>Measurement</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={entryDraft.declaredValue}
+                    onChange={(e) => setEntryDraft((d) => ({ ...d, declaredValue: e.target.value }))}
+                    placeholder="e.g. 18 (mm)"
+                  />
+                </label>
+              )}
+              <label className="form-field">
+                <span>Photo URL</span>
+                <input
+                  type="url"
+                  value={entryDraft.imageUrl}
+                  onChange={(e) => setEntryDraft((d) => ({ ...d, imageUrl: e.target.value }))}
+                  placeholder="https://…"
+                />
+              </label>
+              <label className="form-field">
+                <span>Notes</span>
+                <input
+                  type="text"
+                  value={entryDraft.body}
+                  onChange={(e) => setEntryDraft((d) => ({ ...d, body: e.target.value }))}
+                  placeholder="Anything the judges should know"
+                  maxLength={280}
+                />
+              </label>
+              <button
+                className="btn btn--secondary btn--sm"
+                onClick={() => run(submit, entryDraft)}
+                disabled={submit.isPending}
+              >
+                {submit.isPending ? "Saving…" : myEntry ? "Update entry" : "Submit entry"}
+              </button>
+              {myEntry && (
+                <p className="text-muted">
+                  You have one entry in this challenge. Submitting again replaces it.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* ── Entries + voting ───────────────────────────────────────── */}
+          {scoring.needsSubmission && submissions.length > 0 && (
+            <div className="challenge-panel__entries">
+              <h5>Entries ({submissions.length})</h5>
+              <ul>
+                {submissions.map((s) => {
+                  const voteCount = (s.votes || []).length;
+                  const isMine = sameWallet(s.wallet_address, myWallet);
+                  const votedThis = myVote?.id === s.id;
+
+                  return (
+                    <li key={s.id} className="challenge-entry">
+                      <div className="challenge-entry__head">
+                        <ProfileCard
+                          walletAddress={s.profile?.wallet_address || s.wallet_address}
+                          displayName={s.profile?.display_name}
+                          avatarUrl={s.profile?.avatar_url}
+                          companionTier={s.profile?.companion_tier}
+                          size="small"
+                        />
+                        {s.declared_value !== null && s.declared_value !== undefined && (
+                          <span className="challenge-entry__value">{s.declared_value}</span>
+                        )}
+                      </div>
+
+                      {s.image_url && (
+                        <img src={s.image_url} alt="" className="challenge-entry__image" loading="lazy" />
+                      )}
+                      {s.body && <p className="challenge-entry__body">{s.body}</p>}
+
+                      {scoring.needsVote && (
+                        <div className="challenge-entry__vote-row">
+                          <span className="text-muted">{voteCount} {voteCount === 1 ? "vote" : "votes"}</span>
+                          {isMember && canVoteInChallenge(challenge) && !isMine && (
+                            <button
+                              className={`btn btn--xs ${votedThis ? "btn--secondary" : "btn--ghost"}`}
+                              onClick={() => run(vote, { submissionId: s.id })}
+                              disabled={vote.isPending}
+                            >
+                              {votedThis ? "✓ Your vote" : "Vote"}
+                            </button>
+                          )}
+                          {/* Being explicit beats a mysteriously missing button. */}
+                          {isMine && <span className="text-muted">Your entry</span>}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              {scoring.needsVote && isMember && myVote && (
+                <p className="text-muted">
+                  One vote each — voting another entry moves your vote, and tapping
+                  yours again takes it back.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* ── Standings / results ────────────────────────────────────── */}
+          {participants.length > 0 && (
+            <div className="challenge-panel__board">
+              <h5>
+                {phase === CHALLENGE_PHASE.COMPLETED
+                  ? "Final results"
+                  : `Entered (${participants.length})`}
+              </h5>
+              <ol className="challenge-board">
+                {participants.map((p) => (
+                  <li key={p.id} className="challenge-board__row">
+                    {p.rank != null && <span className="challenge-board__rank">#{p.rank}</span>}
+                    <ProfileCard
+                      walletAddress={p.profile?.wallet_address || p.wallet_address}
+                      displayName={p.profile?.display_name}
+                      avatarUrl={p.profile?.avatar_url}
+                      companionTier={p.profile?.companion_tier}
+                      size="small"
+                    />
+                    {p.scored_at && (
+                      <span className="challenge-board__score">
+                        {Number(p.score ?? 0)} {scoring.scoreLabel}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {/* ── Reward ─────────────────────────────────────────────────── */}
+          {phase === CHALLENGE_PHASE.COMPLETED && me?.scored_at && !me?.xp_claimed_at && (
+            <button
+              className="btn btn--primary btn--sm"
+              onClick={handleClaim}
+              disabled={claim.isPending}
+            >
+              {/* The real platform amount, not the host's reward_xp field. The
+                  button says what you will actually receive. */}
+              {claim.isPending ? "Claiming…" : `Claim ${me.rank === 1 ? 150 : 50} XP`}
+            </button>
+          )}
+          {claimToast && <span className="challenge-panel__badge" role="status">{claimToast}</span>}
+          {me?.xp_claimed_at && (
+            <p className="text-muted">Reward claimed.</p>
+          )}
+
+          {/* ── Host controls ──────────────────────────────────────────── */}
+          {isAdmin && canFinalizeChallenge(challenge) && (
+            <div className="challenge-panel__host">
+              <p className="text-muted">
+                This challenge has ended. Finalizing scores everyone, locks the
+                results and can't be undone.
+              </p>
+              <button
+                className="btn btn--primary btn--sm"
+                onClick={() => {
+                  if (!confirm("Finalize this challenge? Scores and rankings will be locked in permanently.")) return;
+                  run(finalize);
+                }}
+                disabled={finalize.isPending}
+              >
+                {finalize.isPending ? "Scoring…" : "🏁 Finalize results"}
+              </button>
+            </div>
+          )}
+
+          {isAdmin && phase === CHALLENGE_PHASE.SCORING && participants.length === 0 && (
+            <p className="text-muted">Nobody entered this one.</p>
+          )}
+
+          {actionError && <p className="challenge-panel__error" role="alert">{actionError}</p>}
         </div>
       )}
     </div>

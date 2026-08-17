@@ -8589,3 +8589,181 @@ html {
   transform: scale(1.25);
   outline: none;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   School challenges — the lifecycle after "create"
+   ═══════════════════════════════════════════════════════════════════════════
+   Challenges were a card and nothing more: no way to enter, submit, vote or see
+   a result. These styles cover the expanded panel that adds join / submit / vote
+   / standings / finalize.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.challenge-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.challenge-panel__toggle {
+  align-self: flex-start;
+}
+
+.challenge-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.75rem;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+}
+
+/* How this type is scored. Stated up front because the four types are NOT
+   scored the same way, and two of them are judged by people. */
+.challenge-panel__how {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.challenge-panel__body h5 {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.challenge-panel__joined,
+.challenge-panel__host {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.challenge-panel__host {
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.6rem;
+  border-radius: var(--radius-sm);
+  background: rgba(251, 191, 36, 0.06);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.challenge-panel__badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: 50px;
+  color: var(--accent-green);
+  background: var(--accent-green-glow);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.challenge-panel__error {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--accent-red);
+}
+
+.challenge-panel__entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--glass-border);
+}
+
+.challenge-panel__entries ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.challenge-entry {
+  padding: 0.55rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+}
+
+.challenge-entry__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.challenge-entry__value {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+}
+
+.challenge-entry__image {
+  margin-top: 0.4rem;
+  width: 100%;
+  border-radius: var(--radius-sm);
+  display: block;
+}
+
+.challenge-entry__body {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.challenge-entry__vote-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+  font-size: 0.7rem;
+}
+
+/* Standings / final results */
+.challenge-board {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.challenge-board__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.45rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Ties share a rank (the scorer uses rank(), not row_number()), so two rows
+   legitimately showing "#2" is correct, not a bug. */
+.challenge-board__rank {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-amber);
+  min-width: 1.75rem;
+  flex-shrink: 0;
+}
+
+.challenge-board__score {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}

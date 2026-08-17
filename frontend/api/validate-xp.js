@@ -82,6 +82,13 @@ const VALID_ACTIONS = {
   // making check-in farmable; the real guard is tide_attendees.xp_awarded, which
   // is claimed atomically so a given tide can only ever pay out once.
   TIDE_CHECK_IN:        { points: 100, cooldownMs: null, perTank: false, dailyMax: 2 },
+  // School challenges. FIXED amounts, and deliberately absent from
+  // BATCHABLE_ACTIONS: the per-challenge reward is set by the host, so allowing a
+  // quantity multiplier here would let a founder mint unlimited XP by creating a
+  // challenge worth any amount and entering it themselves. Guarded further by
+  // school_challenge_participants.xp_claimed_at.
+  CHALLENGE_COMPLETED:  { points: 50,  cooldownMs: null, perTank: false, dailyMax: 5 },
+  CHALLENGE_WON:        { points: 150, cooldownMs: null, perTank: false, dailyMax: 3 },
 
   // Husbandry bookkeeping — capped, previously uncapped and unlisted
   SPECIMEN_REHOMED:     { points: 10, cooldownMs: null, perTank: false, dailyMax: 3 },

@@ -27,6 +27,16 @@ import {
   deleteSchoolPost,
   setSchoolPostPinned,
   toggleSchoolPostReaction,
+  joinChallenge,
+  leaveChallenge,
+  getChallengeParticipants,
+  submitChallengeEntry,
+  getChallengeSubmissions,
+  withdrawChallengeEntry,
+  voteForChallengeEntry,
+  finalizeChallenge,
+  cancelChallenge,
+  claimChallengeReward,
 } from "../services/schoolsApi";
 import { getCurrentWallet, isSupabaseConfigured } from "../services/supabaseClient";
 
@@ -285,4 +295,84 @@ export function useSetSchoolPostPinned(schoolId) {
 
 export function useToggleSchoolPostReaction(schoolId) {
   return usePostMutation(schoolId, ({ postId, emoji }) => toggleSchoolPostReaction(postId, emoji));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CHALLENGE LIFECYCLE
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function useChallengeParticipants(challengeId) {
+  return useQuery({
+    queryKey: ["schools", "challenge", challengeId, "participants"],
+    queryFn: () => getChallengeParticipants(challengeId),
+    enabled: !!challengeId && isSupabaseConfigured(),
+    staleTime: 20 * 1000,
+  });
+}
+
+export function useChallengeSubmissions(challengeId) {
+  return useQuery({
+    queryKey: ["schools", "challenge", challengeId, "submissions"],
+    queryFn: () => getChallengeSubmissions(challengeId),
+    enabled: !!challengeId && isSupabaseConfigured(),
+    staleTime: 20 * 1000,
+  });
+}
+
+/**
+ * Any challenge write invalidates that challenge's participants and submissions,
+ * plus the school's challenge list (finalizing rewrites `leaderboard` and
+ * `finalized_at` on the challenge row itself).
+ *
+ * `schoolId` is needed because the challenge list is keyed by school, and a
+ * finalize changes both.
+ */
+function useChallengeMutation(challengeId, schoolId, mutationFn) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schools", "challenge", challengeId] });
+      queryClient.invalidateQueries({ queryKey: ["schools", "challenges", schoolId] });
+    },
+  });
+}
+
+export function useJoinChallenge(challengeId, schoolId) {
+  return useChallengeMutation(challengeId, schoolId, () => joinChallenge(challengeId));
+}
+
+export function useLeaveChallenge(challengeId, schoolId) {
+  return useChallengeMutation(challengeId, schoolId, () => leaveChallenge(challengeId));
+}
+
+export function useSubmitChallengeEntry(challengeId, schoolId) {
+  return useChallengeMutation(challengeId, schoolId, (entry) =>
+    submitChallengeEntry(challengeId, entry)
+  );
+}
+
+export function useWithdrawChallengeEntry(challengeId, schoolId) {
+  return useChallengeMutation(challengeId, schoolId, ({ submissionId }) =>
+    withdrawChallengeEntry(submissionId)
+  );
+}
+
+export function useVoteForEntry(challengeId, schoolId) {
+  return useChallengeMutation(challengeId, schoolId, ({ submissionId }) =>
+    voteForChallengeEntry(challengeId, submissionId)
+  );
+}
+
+export function useFinalizeChallenge(challengeId, schoolId) {
+  return useChallengeMutation(challengeId, schoolId, () => finalizeChallenge(challengeId));
+}
+
+export function useCancelChallenge(challengeId, schoolId) {
+  return useChallengeMutation(challengeId, schoolId, () => cancelChallenge(challengeId));
+}
+
+export function useClaimChallengeReward(challengeId, schoolId) {
+  return useChallengeMutation(challengeId, schoolId, () => claimChallengeReward(challengeId));
 }

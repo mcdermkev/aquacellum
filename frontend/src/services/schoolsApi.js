@@ -930,3 +930,265 @@ export async function toggleSchoolPostReaction(postId, emoji = "🌊") {
 
   return { data: { added: true }, error };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CHALLENGE LIFECYCLE — join, submit, vote, finalize
+//
+// createChallenge() wrote a row and that was the end of it. `status` never
+// changed, `leaderboard` was never written, and there was no way to enter, score
+// or win anything. ChallengesTab filters on status === 'completed', so that tab
+// was permanently empty.
+//
+// The rules that decide who wins live in the database (triggers +
+// finalize_school_challenge), not here. These functions surface those errors
+// rather than duplicating the checks as the source of truth.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Enter a challenge. One row per member, enforced by a UNIQUE constraint. */
+export async function joinChallenge(challengeId) {
+  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
+
+  const walletAddress = getCurrentWallet();
+  if (!walletAddress) return { data: null, error: "Not connected" };
+
+  const { data, error } = await supabase
+    .from("school_challenge_participants")
+    .insert({
+      challenge_id: challengeId,
+      wallet_address: await resolveProfileWallet(walletAddress),
+    })
+    .select()
+    .single();
+
+  return { data, error };
+}
+
+/** Withdraw from a challenge. */
+export async function leaveChallenge(challengeId) {
+  if (!isSupabaseConfigured()) return { error: "Not configured" };
+
+  const walletAddress = getCurrentWallet();
+  if (!walletAddress) return { error: "Not connected" };
+
+  const { error } = await supabase
+    .from("school_challenge_participants")
+    .delete()
+    .eq("challenge_id", challengeId)
+    .ilike("wallet_address", (await resolveProfileWallet(walletAddress)).toLowerCase());
+
+  return { error };
+}
+
+/**
+ * Everyone entered, with their score and rank once finalized.
+ * Ordered by rank when scored, otherwise by who joined first.
+ */
+export async function getChallengeParticipants(challengeId) {
+  if (!isSupabaseConfigured()) return { data: [], error: "Not configured" };
+
+  const { data, error } = await supabase
+    .from("school_challenge_participants")
+    .select(`
+      *,
+      profile:wallet_address (
+        wallet_address, display_name, avatar_url, companion_tier
+      )
+    `)
+    .eq("challenge_id", challengeId)
+    .order("rank", { ascending: true, nullsFirst: false })
+    .order("joined_at", { ascending: true });
+
+  return { data: data || [], error };
+}
+
+/**
+ * Submit or update your entry.
+ *
+ * One entry per member (UNIQUE), so this upserts: without that, a photo contest
+ * becomes "whoever uploads the most photos", which is not the contest.
+ */
+export async function submitChallengeEntry(challengeId, { body, imageUrl, declaredValue } = {}) {
+  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
+
+  const walletAddress = getCurrentWallet();
+  if (!walletAddress) return { data: null, error: "Not connected" };
+
+  const hasContent =
+    (body && body.trim()) || imageUrl || (declaredValue !== null && declaredValue !== undefined && declaredValue !== "");
+  if (!hasContent) return { data: null, error: "Add a photo, a measurement, or a note." };
+
+  let value = null;
+  if (declaredValue !== null && declaredValue !== undefined && declaredValue !== "") {
+    value = Number(declaredValue);
+    if (!Number.isFinite(value) || value < 0) {
+      return { data: null, error: "Enter a measurement as a positive number." };
+    }
+  }
+
+  const wallet = await resolveProfileWallet(walletAddress);
+
+  const { data, error } = await supabase
+    .from("school_challenge_submissions")
+    .upsert(
+      {
+        challenge_id: challengeId,
+        wallet_address: wallet,
+        body: (body || "").trim() || null,
+        image_url: imageUrl || null,
+        declared_value: value,
+        edited_at: new Date().toISOString(),
+      },
+      { onConflict: "challenge_id,wallet_address" }
+    )
+    .select()
+    .single();
+
+  return { data, error };
+}
+
+/** All live entries for a challenge, with vote counts. */
+export async function getChallengeSubmissions(challengeId) {
+  if (!isSupabaseConfigured()) return { data: [], error: "Not configured" };
+
+  const { data, error } = await supabase
+    .from("school_challenge_submissions")
+    .select(`
+      *,
+      profile:wallet_address (
+        wallet_address, display_name, avatar_url, companion_tier
+      ),
+      votes:school_challenge_votes (
+        voter_wallet
+      )
+    `)
+    .eq("challenge_id", challengeId)
+    .eq("is_deleted", false)
+    .order("created_at", { ascending: true });
+
+  return { data: data || [], error };
+}
+
+/** Withdraw your entry (soft delete, so its votes stay auditable). */
+export async function withdrawChallengeEntry(submissionId) {
+  if (!isSupabaseConfigured()) return { error: "Not configured" };
+
+  const { error } = await supabase
+    .from("school_challenge_submissions")
+    .update({ is_deleted: true })
+    .eq("id", submissionId);
+
+  return { error };
+}
+
+/**
+ * Cast or move your single vote.
+ *
+ * One vote per member per challenge (UNIQUE), you cannot vote for your own entry,
+ * and voting closes when results are locked — all enforced by
+ * enforce_challenge_vote. Voting the same entry again retracts it; voting a
+ * different entry moves the vote rather than adding a second.
+ */
+export async function voteForChallengeEntry(challengeId, submissionId) {
+  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
+
+  const walletAddress = getCurrentWallet();
+  if (!walletAddress) return { data: null, error: "Not connected" };
+
+  const voter = await resolveProfileWallet(walletAddress);
+
+  const { data: existing, error: readError } = await supabase
+    .from("school_challenge_votes")
+    .select("id, submission_id")
+    .eq("challenge_id", challengeId)
+    .ilike("voter_wallet", voter.toLowerCase())
+    .maybeSingle();
+
+  if (readError) return { data: null, error: readError };
+
+  if (existing?.submission_id === submissionId) {
+    const { error } = await supabase.from("school_challenge_votes").delete().eq("id", existing.id);
+    return { data: { removed: true }, error };
+  }
+
+  if (existing) {
+    const { error } = await supabase
+      .from("school_challenge_votes")
+      .update({ submission_id: submissionId })
+      .eq("id", existing.id);
+    return { data: { moved: true }, error };
+  }
+
+  const { error } = await supabase
+    .from("school_challenge_votes")
+    .insert({ challenge_id: challengeId, submission_id: submissionId, voter_wallet: voter });
+
+  return { data: { added: true }, error };
+}
+
+/**
+ * Score and close a challenge. Founders and elders only.
+ *
+ * Everything happens inside finalize_school_challenge: it scores every
+ * participant according to the challenge type, ranks them (ties share a rank),
+ * writes the leaderboard, and stamps finalized_at. It refuses to run on a
+ * challenge that is still going, or one already finalized — rescoring after the
+ * fact would invalidate a reward someone has already claimed.
+ */
+export async function finalizeChallenge(challengeId) {
+  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
+
+  const walletAddress = getCurrentWallet();
+  if (!walletAddress) return { data: null, error: "Not connected" };
+
+  const { data, error } = await supabase.rpc("finalize_school_challenge", {
+    target_challenge: challengeId,
+    actor_wallet: await resolveProfileWallet(walletAddress),
+  });
+
+  return { data, error };
+}
+
+/** Cancel a challenge. Founders and elders only (RLS on school_challenges). */
+export async function cancelChallenge(challengeId) {
+  if (!isSupabaseConfigured()) return { error: "Not configured" };
+
+  const { error } = await supabase
+    .from("school_challenges")
+    .update({ cancelled_at: new Date().toISOString(), status: "cancelled" })
+    .eq("id", challengeId);
+
+  return { error };
+}
+
+/**
+ * Claim the reward XP for a finished challenge, once.
+ *
+ * XP is applied on the client, so the claim has to be atomic here or a refresh
+ * pays out again. Filtering the UPDATE on `xp_claimed_at IS NULL` means whichever
+ * request flips it gets a row back and every retry gets none — the same pattern
+ * as the tide check-in claim.
+ *
+ * @returns {{ data: { claimed: boolean, rank: number|null }, error: any }}
+ */
+export async function claimChallengeReward(challengeId) {
+  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
+
+  const walletAddress = getCurrentWallet();
+  if (!walletAddress) return { data: null, error: "Not connected" };
+
+  const wallet = await resolveProfileWallet(walletAddress);
+
+  const { data, error } = await supabase
+    .from("school_challenge_participants")
+    .update({ xp_claimed_at: new Date().toISOString() })
+    .eq("challenge_id", challengeId)
+    .ilike("wallet_address", wallet.toLowerCase())
+    .is("xp_claimed_at", null)
+    .not("scored_at", "is", null)   // only after the challenge has been scored
+    .select("rank, score");
+
+  if (error) return { data: null, error };
+
+  const row = data?.[0];
+  return { data: { claimed: !!row, rank: row?.rank ?? null }, error: null };
+}

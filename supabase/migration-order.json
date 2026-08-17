@@ -107,6 +107,8 @@
     "supabase/migrations/20260817120000_tide_attendees_created_at.sql",
     "supabase/migrations/20260817130000_auction_usd_and_bid_invariants.sql",
     "supabase/migrations/20260817140000_tide_xp_awarded_coherence.sql",
-    "supabase/migrations/20260817150000_school_posts.sql"
+    "supabase/migrations/20260817150000_school_posts.sql",
+    "supabase/migrations/20260817160000_school_challenge_lifecycle.sql",
+    "supabase/migrations/20260817170000_challenge_reward_bounds.sql"
   ]
 }
