@@ -3,6 +3,9 @@ import React from "react";
 /**
  * ReefHUD — Adaptive controls for all three modes (master/tank/visit).
  */
+import { useUnitPrefs } from "../hooks/useUnitPrefs";
+import { formatVolume } from "../utils/units";
+
 export function ReefHUD({
   title,
   subtitle,
@@ -25,6 +28,8 @@ export function ReefHUD({
   onToggleVoiceSettings,
   voiceSettingsOpen
 }) {
+  const { volumeUnit } = useUnitPrefs();
+
   return (
     <div
       style={{
@@ -138,7 +143,7 @@ export function ReefHUD({
             borderRadius: 8, fontSize: 11, color: "#c4b5fd",
             lineHeight: 1.5, maxWidth: 220
           }}>
-            <div>📐 {tankMeta.volumeLiters}L • {tankMeta.tankType}</div>
+            <div>📐 {formatVolume(tankMeta.volumeLiters, volumeUnit)} • {tankMeta.tankType}</div>
             {tankMeta.tempCelsius && <div>🌡️ {tankMeta.tempCelsius}°C</div>}
             {tankMeta.ph && <div>⚗️ pH {tankMeta.ph}</div>}
             {tankMeta.specimenCount > 0 && <div>🐟 {tankMeta.specimenCount} fish</div>}

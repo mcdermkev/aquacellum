@@ -32,17 +32,42 @@
 
 export const DISTANCE_UNIT_KEY = "aquadex_distance_unit";
 export const TEMP_UNIT_KEY = "aquadex_temp_unit";
+export const VOLUME_UNIT_KEY = "aquadex_volume_unit";
 
 export const DISTANCE_UNITS = Object.freeze(["mi", "km"]);
 export const TEMP_UNITS = Object.freeze(["both", "c", "f"]);
+export const VOLUME_UNITS = Object.freeze(["gal", "l"]);
 
 export const DEFAULT_DISTANCE_UNIT = "mi";
 export const DEFAULT_TEMP_UNIT = "both";
+
+/**
+ * Gallons, not litres.
+ *
+ * This is not a guess about the audience — it is what the app already asks for.
+ * EVERY tank-volume input is labelled in gallons ("Volume (gal)" in
+ * BulkTankModal, "Volume (Gallons)" in FacilityTreeView, "Size (gal)" in
+ * GrowoutTankPanel, the CSV importer's gallons column) and each one multiplies by
+ * 3.78541 before storing. Storage is litres and correctly so; the DISPLAY then
+ * showed litres too, so a keeper typed 20 and their tank card read "76L".
+ *
+ * That is the reported confusion, and it is also an internal contradiction:
+ * StockingGuidance already showed "20 gal" for the very tank whose card said
+ * "76L". Defaulting to gallons makes the display agree with both the input and
+ * the stocking panel. It also matches the existing "mi" distance default.
+ */
+export const DEFAULT_VOLUME_UNIT = "gal";
 
 /** Fired after any unit preference changes, so mounted consumers re-read. */
 export const UNITS_CHANGED_EVENT = "aquadex:units-changed";
 
 const MILES_TO_KM = 1.60934;
+
+/**
+ * US liquid gallons. The same constant every write path already uses
+ * (3.78541), inverted here so a round trip cannot drift.
+ */
+const LITERS_TO_GALLONS = 1 / 3.78541;
 
 /**
  * Coerce to a finite number, or null.
@@ -101,6 +126,29 @@ export function loadTempUnit(storage = safeLocalStorage()) {
   }
 }
 
+/**
+ * @param {Storage} [storage]
+ * @returns {"gal"|"l"}
+ */
+export function loadVolumeUnit(storage = safeLocalStorage()) {
+  if (!storage) return DEFAULT_VOLUME_UNIT;
+  try {
+    const raw = storage.getItem(VOLUME_UNIT_KEY);
+    return VOLUME_UNITS.includes(raw) ? raw : DEFAULT_VOLUME_UNIT;
+  } catch {
+    return DEFAULT_VOLUME_UNIT;
+  }
+}
+
+export function persistVolumeUnit(unit, storage = safeLocalStorage()) {
+  if (!storage || !VOLUME_UNITS.includes(unit)) return;
+  try {
+    storage.setItem(VOLUME_UNIT_KEY, unit);
+  } catch {
+    // non-fatal
+  }
+}
+
 export function persistDistanceUnit(unit, storage = safeLocalStorage()) {
   if (!storage || !DISTANCE_UNITS.includes(unit)) return;
   try {
@@ -140,6 +188,11 @@ export function milesToKilometers(miles) {
   return miles * MILES_TO_KM;
 }
 
+/** @param {number} liters */
+export function litersToGallons(liters) {
+  return liters * LITERS_TO_GALLONS;
+}
+
 // ─── Formatting ──────────────────────────────────────────────────────────────
 
 /**
@@ -160,6 +213,46 @@ export function formatDistance(miles, unit = DEFAULT_DISTANCE_UNIT, { precision 
   if (value === null) return "";
   if (unit === "km") return `${milesToKilometers(value).toFixed(precision)} km`;
   return `${value.toFixed(precision)} mi`;
+}
+
+/**
+ * Format a tank volume held in LITRES into the user's chosen unit.
+ *
+ * Litres is the storage unit (`volumeLiters`) and stays that way — every write
+ * path already converts the gallons a keeper types, so this converts on display
+ * only and never writes a converted value back.
+ *
+ * SAFE OVER THE CAPACITY MATHS, which is why volume was previously left out of
+ * Settings. The concern recorded in UnitsSection was that a display-only toggle
+ * over a value feeding capacity calculations would "lie about whether a fish
+ * fits". It does not, because the calculation layer never reads this preference:
+ * stockingGuidance.js and compatibleTanks.js each hold their own
+ * LITERS_TO_GALLONS and do their arithmetic in gallons regardless of what is
+ * displayed. Species minimums are stored in gallons (`minVolumeGallons`) and
+ * compared against a gallons figure derived from litres, entirely independently.
+ * This function changes a label, not a comparison.
+ *
+ * Whole gallons by default: tanks are sold as round numbers ("a 20 gallon"), so
+ * "20 gal" is the honest rendering of 76 litres and "20.1 gal" is false
+ * precision on a value the keeper typed as 20.
+ *
+ * @param {number} liters
+ * @param {"gal"|"l"} unit
+ * @param {{precision?: number, long?: boolean}} [opts]
+ * @returns {string} e.g. "20 gal", "76L"
+ */
+export function formatVolume(liters, unit = DEFAULT_VOLUME_UNIT, { precision = 0, long = false } = {}) {
+  const value = toFiniteNumber(liters);
+  if (value === null) return "";
+
+  if (unit === "l") {
+    // Litres keep no decimals: the stored value is already a rounded integer.
+    return long ? `${Math.round(value)} litres` : `${Math.round(value)}L`;
+  }
+
+  const gallons = litersToGallons(value);
+  const shown = precision === 0 ? Math.round(gallons) : gallons.toFixed(precision);
+  return long ? `${shown} gallons` : `${shown} gal`;
 }
 
 /**
@@ -220,4 +313,9 @@ export const TEMP_UNIT_LABELS = Object.freeze({
   both: "Both",
   c: "Celsius only",
   f: "Fahrenheit only",
+});
+
+export const VOLUME_UNIT_LABELS = Object.freeze({
+  gal: "Gallons",
+  l: "Litres",
 });

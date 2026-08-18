@@ -79,6 +79,23 @@ export const SETTINGS_REGISTRY = [
     readerPattern: "aquadex_temp_unit|tempUnit",
   },
   {
+    key: "aquadex_volume_unit",
+    control: "Units & Formatting → Tank volume",
+    // Defaults to GALLONS, matching what every volume input already asks for.
+    // Storage stays litres; this is display only, and the capacity maths in
+    // stockingGuidance/compatibleTanks never reads it (they convert internally).
+    readBy: [
+      "utils/units.js",
+      "components/logbook/LivingTank.jsx",
+      "components/TankList.jsx",
+      "components/TankSelector.jsx",
+      "components/FacilityTreeView.jsx",
+      "reef/ReefHUD.jsx",
+      "reef/ImmersiveReef.jsx",
+    ],
+    readerPattern: "aquadex_volume_unit|volumeUnit",
+  },
+  {
     key: "aquadex_distance_unit",
     control: "Units & Formatting → Distance",
     // The orphaned pref from handoff §3.5: its only previous consumer,

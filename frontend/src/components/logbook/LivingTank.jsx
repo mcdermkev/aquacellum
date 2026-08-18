@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { TankFishVisualization } from "../TankFishVisualization";
 import { scoreToAmbient } from "../../utils/tankHealth";
 import { tankTypeLabel } from "../../utils/tankUtils";
+import { useUnitPrefs } from "../../hooks/useUnitPrefs";
+import { formatVolume } from "../../utils/units";
 import "./LivingTank.css";
 
 /**
@@ -104,6 +106,13 @@ export function LivingTank({
   const animate = inView && !reducedMotion;
   const specimens = (tank?.specimens || []).filter((s) => Number(s?.status ?? 0) === 0);
   const fishCount = specimens.length;
+
+  // Volume respects the user's unit preference. This line is the one a new keeper
+  // asked about: they typed "20" into a field labelled gallons and the card read
+  // "76L", because storage is litres (correctly) and the display was hardcoded to
+  // match storage rather than the entry unit.
+  const { volumeUnit } = useUnitPrefs();
+  const volumeLabel = tank?.volumeLiters != null ? formatVolume(tank.volumeLiters, volumeUnit) : "--";
 
   const waterBg = `linear-gradient(to bottom, ${top} 0%, ${mid} 55%, ${bottom} 100%)`;
   const hazeOpacity = (1 - ambient.clarity) * 0.85;
@@ -253,13 +262,13 @@ export function LivingTank({
               </div>
               {variant !== "strip" && (
                 <span style={{ color: "rgba(255,255,255,0.65)", fontSize: "0.7rem" }}>
-                  {typeName} · {tank?.volumeLiters ?? "—"}L · {fishCount} fish
+                  {typeName} · {volumeLabel} · {fishCount} fish
                 </span>
               )}
             </div>
             {variant === "strip" && (
               <span style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.72rem", whiteSpace: "nowrap" }}>
-                {fishCount} fish · {tank?.volumeLiters ?? "—"}L
+                {fishCount} fish · {volumeLabel}
               </span>
             )}
           </div>

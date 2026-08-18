@@ -25,11 +25,15 @@ import {
   celsiusToFahrenheit,
   formatDistance,
   formatTemperature,
+  formatVolume,
+  litersToGallons,
   loadDistanceUnit,
   loadTempUnit,
+  loadVolumeUnit,
   milesToKilometers,
   persistDistanceUnit,
   persistTempUnit,
+  persistVolumeUnit,
   showCelsius,
   showFahrenheit,
 } from "./units.js";
@@ -219,5 +223,108 @@ describe("formatTemperature", () => {
     // 0°C is a real reading and must still format; only ABSENT values blank out.
     expect(formatTemperature(0, "both")).toBe("0.0°C / 32.0°F");
     expect(formatTemperature(-5, "f")).toBe("23.0°F");
+  });
+});
+
+// ─── Volume ──────────────────────────────────────────────────────────────────
+//
+// The reported bug: a keeper typed 20 into a field labelled "Volume (gal)" and
+// their tank card read "76L". Storage in litres is correct — every write path
+// multiplies by 3.78541 — but the display was hardcoded to match storage rather
+// than the unit the keeper entered.
+describe("formatVolume", () => {
+  it("renders the gallons a keeper actually typed", () => {
+    // 20 gal stores as round(20 * 3.78541) = 76 litres. That must come back as 20.
+    expect(formatVolume(76, "gal")).toBe("20 gal");
+    expect(formatVolume(38, "gal")).toBe("10 gal");
+    expect(formatVolume(189, "gal")).toBe("50 gal");
+  });
+
+  it("renders litres when asked", () => {
+    expect(formatVolume(76, "l")).toBe("76L");
+    expect(formatVolume(49, "l")).toBe("49L");
+  });
+
+  it("defaults to gallons, matching every volume input in the app", () => {
+    expect(formatVolume(76)).toBe("20 gal");
+  });
+
+  it("rounds gallons to whole numbers by default", () => {
+    // Tanks are sold as round numbers. "20.1 gal" is false precision on a value
+    // the keeper entered as 20.
+    expect(formatVolume(76, "gal")).not.toContain(".");
+    expect(formatVolume(76, "gal", { precision: 1 })).toBe("20.1 gal");
+  });
+
+  it("has a long form for prose", () => {
+    expect(formatVolume(76, "gal", { long: true })).toBe("20 gallons");
+    expect(formatVolume(76, "l", { long: true })).toBe("76 litres");
+  });
+
+  it("returns empty for a missing volume rather than a plausible zero", () => {
+    // Same reasoning as temperature: "0 gal" is a readable-looking number and
+    // would be confidently wrong about the tank. Absent stays absent.
+    expect(formatVolume(null)).toBe("");
+    expect(formatVolume(undefined)).toBe("");
+    expect(formatVolume("")).toBe("");
+    expect(formatVolume("abc")).toBe("");
+  });
+
+  it("still renders a genuine zero", () => {
+    expect(formatVolume(0, "l")).toBe("0L");
+    expect(formatVolume(0, "gal")).toBe("0 gal");
+  });
+
+  it("round-trips against the constant the write paths use", () => {
+    // GAL_TO_L = 3.78541 is duplicated across BulkTankModal, FacilityTreeView,
+    // parseTankCsv, growoutTank, breedingProgram and poseidonBridge. If the
+    // display constant ever drifts from those, a keeper's entry stops matching
+    // what they see back.
+    for (const gal of [5, 10, 20, 29, 40, 55, 75, 125]) {
+      const storedLiters = Math.round(gal * 3.78541);
+      expect(formatVolume(storedLiters, "gal")).toBe(`${gal} gal`);
+    }
+  });
+
+  it("falls back to gallons for an unrecognised unit", () => {
+    expect(formatVolume(76, "furlongs")).toBe("20 gal");
+  });
+});
+
+describe("volume preference persistence", () => {
+  function fakeStorage(initial = {}) {
+    const store = { ...initial };
+    return {
+      getItem: (k) => (k in store ? store[k] : null),
+      setItem: (k, v) => { store[k] = String(v); },
+      _store: store,
+    };
+  }
+
+  it("defaults to gallons when nothing is stored", () => {
+    expect(loadVolumeUnit(fakeStorage())).toBe("gal");
+  });
+
+  it("reads a stored preference", () => {
+    expect(loadVolumeUnit(fakeStorage({ aquadex_volume_unit: "l" }))).toBe("l");
+  });
+
+  it("ignores a junk stored value rather than rendering an unknown unit", () => {
+    expect(loadVolumeUnit(fakeStorage({ aquadex_volume_unit: "quarts" }))).toBe("gal");
+  });
+
+  it("persists only valid units", () => {
+    const s = fakeStorage();
+    persistVolumeUnit("l", s);
+    expect(s._store.aquadex_volume_unit).toBe("l");
+
+    persistVolumeUnit("hogsheads", s);
+    expect(s._store.aquadex_volume_unit).toBe("l"); // unchanged
+  });
+
+  it("survives storage throwing", () => {
+    const hostile = { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } };
+    expect(loadVolumeUnit(hostile)).toBe("gal");
+    expect(() => persistVolumeUnit("l", hostile)).not.toThrow();
   });
 });

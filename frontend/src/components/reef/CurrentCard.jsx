@@ -17,6 +17,11 @@ import { watchTank, unwatchTank, isWatchingTank } from "../../services/reefApi";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { sameWallet } from "../../utils/wallet";
 import { useAuth } from "../../contexts/AuthContext";
+import { useUnitPrefs } from "../../hooks/useUnitPrefs";
+import { formatTemperature } from "../../utils/units";
+
+/** Thermometer, as an escape so the glyph survives tooling that mangles emoji. */
+const TEMP_ICON = "\u{1F321}\u{FE0F}";
 import { VideoPlayer } from "../video/VideoPlayer";
 import { VideoThumbnail } from "../video/VideoThumbnail";
 
@@ -92,10 +97,11 @@ function PhotoGrid({ urls, altTexts }) {
  * Parameter snapshot chips
  */
 function ParameterChips({ snapshot }) {
+  const { tempUnit } = useUnitPrefs();
   if (!snapshot) return null;
 
   const chips = [];
-  if (snapshot.temp) chips.push({ icon: "🌡️", label: `${snapshot.temp}°C` });
+  if (snapshot.temp) chips.push({ icon: TEMP_ICON, label: formatTemperature(snapshot.temp, tempUnit) });
   if (snapshot.ph) chips.push({ icon: "🧪", label: `pH ${snapshot.ph}` });
   if (snapshot.nitrate) chips.push({ icon: "💧", label: `NO₃ ${snapshot.nitrate}ppm` });
   if (snapshot.ammonia) chips.push({ icon: "⚠️", label: `NH₃ ${snapshot.ammonia}ppm` });

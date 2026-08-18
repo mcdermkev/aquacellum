@@ -28,7 +28,7 @@ import { SEX, SEX_OPTIONS, isKnownSex, normalizeSex, sexOptionLabel, sexSymbol }
 import { LIFE_STAGE_OPTIONS, lifeStageOptionLabel, canBeCertificated } from "../utils/lifeStage";
 import { PROVENANCE, provenanceText } from "../utils/provenance";
 import { useUnitPrefs } from "../hooks/useUnitPrefs";
-import { celsiusToFahrenheit, formatTemperature, showCelsius, showFahrenheit } from "../utils/units";
+import { celsiusToFahrenheit, formatTemperature, formatVolume, showCelsius, showFahrenheit } from "../utils/units";
 import { createCurrent } from "../services/reefApi";
 import { isSupabaseConfigured } from "../services/supabaseClient";
 import { ActivityLog } from "./ActivityLog";
@@ -67,8 +67,12 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const queryClient = useQueryClient();
   // Settings → Units & Formatting. `primaryTempUnit` collapses "both" to the
   // leading scale, for lines (like the ideal range) that show one value only.
-  const { tempUnit } = useUnitPrefs();
+  const { tempUnit, volumeUnit } = useUnitPrefs();
   const primaryTempUnit = showCelsius(tempUnit) ? "c" : "f";
+  // The unit NOT chosen, shown as the muted secondary figure. Volume is one of
+  // those numbers where showing both is genuinely useful — a keeper thinks in
+  // gallons but species guidance and forum advice are often metric.
+  const secondaryVolumeUnit = volumeUnit === "gal" ? "l" : "gal";
   const { data: fishbaseData = [] } = useSpeciesData();
   const { data: fetchedTanks = [], isLoading: tanksLoading, error: tanksError, refetch: refetchTanks } = useUserTanks(contractAddress, walletAccount);
   const tanks = fetchedTanks;
@@ -1611,7 +1615,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       Last test: {getRelativeTime(child.latestLog.timestamp)}
                     </span>
                   )}
-                  <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>{child.volumeLiters}L</span>
+                  <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>{formatVolume(child.volumeLiters, volumeUnit)}</span>
                 </div>
               </div>
               {/* Recursive child containment lookup */}
@@ -1943,22 +1947,19 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           )}
                         </div>
 
+                        {/* Which unit leads is now the user's SETTING, not a
+                            consequence of casual/pro mode. This branch used to key
+                            off casualModeActive — casual got gallons first, pro got
+                            litres first — so the unit was an assumption about the
+                            keeper rather than a preference they could state, and
+                            switching to Pro silently changed their units. */}
                         <div style={{ textAlign: "right" }}>
-                          {casualModeActive ? (
-                            <>
-                              <strong style={{ fontSize: "1.05rem", color: "#fff" }}>{toGallons(tank.volumeLiters)} gal</strong>
-                              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block" }}>
-                                (approx {tank.volumeLiters}L)
-                              </span>
-                            </>
-                          ) : (
-                            <>
-                              <strong style={{ fontSize: "1.05rem", color: "#fff" }}>{tank.volumeLiters}L</strong>
-                              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block" }}>
-                                ({toGallons(tank.volumeLiters)} gal)
-                              </span>
-                            </>
-                          )}
+                          <strong style={{ fontSize: "1.05rem", color: "#fff" }}>
+                            {formatVolume(tank.volumeLiters, volumeUnit)}
+                          </strong>
+                          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block" }}>
+                            ({formatVolume(tank.volumeLiters, secondaryVolumeUnit)})
+                          </span>
                         </div>
                       </div>
 
@@ -2845,9 +2846,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>📐 Tank Volume</span>
                         </div>
                         <strong style={{ fontSize: "1.25rem", color: "#fff", display: "block", marginTop: "0.5rem" }}>
-                          {toGallons(activeTank.volumeLiters)} gal
+                          {formatVolume(activeTank.volumeLiters, volumeUnit)}
                         </strong>
-                        <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>Approx. {activeTank.volumeLiters} Liters</span>
+                        <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>
+                          Approx. {formatVolume(activeTank.volumeLiters, secondaryVolumeUnit, { long: true })}
+                        </span>
                       </div>
 
                       {/* Population */}

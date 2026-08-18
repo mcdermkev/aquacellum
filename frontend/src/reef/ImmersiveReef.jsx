@@ -2,6 +2,8 @@ import React, { useState, useEffect, Suspense, useCallback, useRef } from "react
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { ReefEnvironment } from "./ReefEnvironment";
+import { useUnitPrefs } from "../hooks/useUnitPrefs";
+import { formatVolume } from "../utils/units";
 import { TankEnvironment } from "./TankEnvironment";
 import { SpeciesSwarm } from "./SpeciesSwarm";
 import { NarrationLayer } from "./NarrationLayer";
@@ -75,6 +77,7 @@ class ReefErrorBoundary extends React.Component {
  *    Tour someone else's tank from the Social Reef.
  */
 export function ImmersiveReef() {
+  const { volumeUnit } = useUnitPrefs();
   // Parse URL to determine mode
   const { tankId, isVisit, ownerName } = parseReefParams();
 
@@ -131,7 +134,7 @@ export function ImmersiveReef() {
   const subtitle = mode === "master"
     ? `${biomeSpeciesCount} species • ${BIOME_LABELS[biome] || "Main Reef"}`
     : tankMeta
-      ? `${speciesData.length} species • ${tankMeta.volumeLiters}L ${tankMeta.name || ""}`
+      ? `${speciesData.length} species • ${formatVolume(tankMeta.volumeLiters, volumeUnit)} ${tankMeta.name || ""}`
       : `${speciesData.length} species`;
 
   if (loading) {
@@ -287,7 +290,7 @@ export function ImmersiveReef() {
             Visiting {ownerName || "a friend"}'s tank
           </div>
           <div style={{ color: "#94a3b8", fontSize: 12, marginTop: 4 }}>
-            {speciesData.length} species • {tankMeta?.volumeLiters || "?"}L
+            {speciesData.length} species • {tankMeta?.volumeLiters ? formatVolume(tankMeta.volumeLiters, volumeUnit) : "?"}
           </div>
           <style>{`
             @keyframes fadeOut {

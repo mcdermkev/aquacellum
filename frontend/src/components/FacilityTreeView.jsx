@@ -10,6 +10,8 @@ import { db } from "../db";
 import { useContractSpecies } from "../hooks/useSpeciesData";
 import { useTankGroups } from "../hooks/useTankGroups";
 import { tankTypeLabel } from "../utils/tankUtils";
+import { useUnitPrefs } from "../hooks/useUnitPrefs";
+import { formatVolume } from "../utils/units";
 import { BulkTankModal } from "./BulkTankModal";
 import { ImportTanksModal } from "./ImportTanksModal";
 import { LivestockImportModal } from "./LivestockImportModal";
@@ -17,6 +19,7 @@ import { LivestockImportModal } from "./LivestockImportModal";
 const CONTAINMENT_TYPES = ["Tank", "Tub", "Basket"];
 
 export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank, onReload, openRegisterOnTreeMount, onCloseRegister, casualModeActive = false }) {
+  const { volumeUnit } = useUnitPrefs();
   const [tanks, setTanks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -440,7 +443,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <span style={{ fontSize: "0.75rem", opacity: 0.6 }}>[{CONTAINMENT_TYPES[node.containment]}]</span>
             <strong style={{ color: "#fff" }}>{node.name}</strong>
-            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>ID: {node.id} ({node.volumeLiters}L)</span>
+            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>ID: {node.id} ({formatVolume(node.volumeLiters, volumeUnit)})</span>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>

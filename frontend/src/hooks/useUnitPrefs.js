@@ -12,32 +12,41 @@ import { useCallback, useEffect, useState } from "react";
 import {
   DISTANCE_UNIT_KEY,
   TEMP_UNIT_KEY,
+  VOLUME_UNIT_KEY,
   UNITS_CHANGED_EVENT,
   broadcastUnitsChanged,
   loadDistanceUnit,
   loadTempUnit,
+  loadVolumeUnit,
   persistDistanceUnit,
   persistTempUnit,
+  persistVolumeUnit,
 } from "../utils/units";
 
 export function useUnitPrefs() {
   const [prefs, setPrefs] = useState(() => ({
     distanceUnit: loadDistanceUnit(),
     tempUnit: loadTempUnit(),
+    volumeUnit: loadVolumeUnit(),
   }));
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const resync = () =>
-      setPrefs({ distanceUnit: loadDistanceUnit(), tempUnit: loadTempUnit() });
+      setPrefs({
+        distanceUnit: loadDistanceUnit(),
+        tempUnit: loadTempUnit(),
+        volumeUnit: loadVolumeUnit(),
+      });
 
     const onStorage = (event) => {
       // `key === null` is a localStorage.clear(); re-read for that too.
       if (
         event.key === null ||
         event.key === DISTANCE_UNIT_KEY ||
-        event.key === TEMP_UNIT_KEY
+        event.key === TEMP_UNIT_KEY ||
+        event.key === VOLUME_UNIT_KEY
       ) {
         resync();
       }
@@ -63,11 +72,19 @@ export function useUnitPrefs() {
     broadcastUnitsChanged();
   }, []);
 
+  const setVolumeUnit = useCallback((unit) => {
+    persistVolumeUnit(unit);
+    setPrefs((prev) => ({ ...prev, volumeUnit: unit }));
+    broadcastUnitsChanged();
+  }, []);
+
   return {
     distanceUnit: prefs.distanceUnit,
     tempUnit: prefs.tempUnit,
+    volumeUnit: prefs.volumeUnit,
     setDistanceUnit,
     setTempUnit,
+    setVolumeUnit,
   };
 }
 

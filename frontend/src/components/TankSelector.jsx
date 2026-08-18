@@ -1,5 +1,7 @@
 import React from "react";
 import { tankTypeLabel, tankTypeIcon } from "../utils/tankUtils";
+import { useUnitPrefs } from "../hooks/useUnitPrefs";
+import { formatVolume } from "../utils/units";
 
 /**
  * TankSelector — Reusable tank picker for the Arrival Flow.
@@ -14,6 +16,8 @@ function TankSelector({
   suggestedTankId = null,
   casualModeActive = true,
 }) {
+  const { volumeUnit } = useUnitPrefs();
+
   // Sort tanks by most recently interacted (latest test or change timestamp)
   const sorted = [...tanks].sort((a, b) => {
     const aTime = Math.max(a.latestTestTimestamp || 0, a.latestChangeTimestamp || 0, a.creationTimestamp || 0);
@@ -89,7 +93,7 @@ function TankSelector({
                 color: "var(--text-muted, #94a3b8)",
                 marginTop: "0.15rem",
               }}>
-                {tankTypeLabel(typeIndex)} · {tank.volumeLiters || "?"}L · {specimenCount} {casualModeActive ? "fish" : "specimens"}
+                {tankTypeLabel(typeIndex)} · {tank.volumeLiters ? formatVolume(tank.volumeLiters, volumeUnit) : "?"} · {specimenCount} {casualModeActive ? "fish" : "specimens"}
               </div>
             </div>
 

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../../db";
 import { deriveTankHealth } from "../../utils/tankHealth";
+import { useUnitPrefs } from "../../hooks/useUnitPrefs";
+import { formatTemperature } from "../../utils/units";
 import { TankHealthRing } from "./TankHealthRing";
 import "./JournalTimeline.css";
 
@@ -17,6 +19,7 @@ import "./JournalTimeline.css";
  *   entriesOverride — optional pre-built entries (for the preview/tests)
  */
 export function JournalTimeline({ tank, entriesOverride }) {
+  const { tempUnit } = useUnitPrefs();
   const [entries, setEntries] = useState(entriesOverride || []);
   const [loading, setLoading] = useState(!entriesOverride);
 
@@ -105,7 +108,9 @@ export async function loadJournalEntries(tankId) {
     const readings = await db.paramReadings.where("tankId").anyOf(idKeys).toArray();
     for (const r of readings) {
       const bits = [];
-      if (r.temp != null) bits.push(`${Number(r.temp).toFixed(1)}°C`);
+      // Respects Settings → Units & Formatting → Temperature. This line hardcoded
+    // °C, so a keeper who chose Fahrenheit still saw Celsius in their own journal.
+    if (r.temp != null) bits.push(formatTemperature(r.temp, tempUnit));
       if (r.ph != null) bits.push(`pH ${Number(r.ph).toFixed(1)}`);
       if (r.ammonia != null) bits.push(`NH₃ ${Number(r.ammonia).toFixed(2)}`);
       if (r.nitrate != null) bits.push(`NO₃ ${Number(r.nitrate).toFixed(0)}`);

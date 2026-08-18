@@ -6,8 +6,10 @@ import { useUnitPrefs } from "../../../hooks/useUnitPrefs";
 import {
   DISTANCE_UNIT_LABELS,
   TEMP_UNIT_LABELS,
+  VOLUME_UNIT_LABELS,
   formatDistance,
   formatTemperature,
+  formatVolume,
 } from "../../../utils/units";
 
 /**
@@ -21,20 +23,32 @@ import {
  *   temperature → `ActivityLog` and the `TankList` telemetry tile, which
  *                 hardcoded showing BOTH °C and °F
  *
- * Volume (gallons/litres), date format and currency are NOT here. Volume is the
- * tempting one — but `minVolumeGallons` is the stored unit across ~34 render
- * sites including the stocking calculator, and a display-only toggle over a
- * value that feeds capacity maths is how you ship a control that lies about
- * whether a fish fits. That needs the conversion to live in the calculation
- * layer first, which is its own task. Shipping a toggle here before then would
- * be a new dead control, which is the thing this rework exists to stop (§2).
+ * VOLUME was deliberately excluded here, on the grounds that a display-only
+ * toggle over a value feeding capacity maths "is how you ship a control that
+ * lies about whether a fish fits", and that the conversion needed to live in the
+ * calculation layer first. The caution was right; the prerequisite turns out to
+ * be already met, so volume is now included:
+ *
+ *   - The calculation layer NEVER reads this preference. stockingGuidance.js and
+ *     compatibleTanks.js each hold their own LITERS_TO_GALLONS and do their
+ *     arithmetic in gallons whatever is displayed. Species minimums are stored as
+ *     `minVolumeGallons` and compared against a gallons figure derived from
+ *     litres, independently of any setting.
+ *   - Leaving it out was not neutral. Every volume INPUT is already labelled in
+ *     gallons and multiplies by 3.78541 before storing, so a keeper typed 20 and
+ *     their tank card read "76L" — while StockingGuidance showed "20 gal" for
+ *     that same tank. The absent control was not "no opinion", it was a
+ *     contradiction, and it is what the first new user asked about.
+ *
+ * Date format and currency remain out of scope.
  *
  * The live samples beside each option are the point of the section, not
  * decoration: they show what the choice actually does, so the panel demonstrates
  * rather than asserts.
  */
 export function UnitsSection({ casualModeActive }) {
-  const { distanceUnit, tempUnit, setDistanceUnit, setTempUnit } = useUnitPrefs();
+  const { distanceUnit, tempUnit, volumeUnit, setDistanceUnit, setTempUnit, setVolumeUnit } =
+    useUnitPrefs();
 
   // A representative reading (24.5°C / 76.1°F) and a representative zone radius
   // (20 mi / 32.2 km) — real values from the app's own defaults, formatted by the
@@ -51,6 +65,14 @@ export function UnitsSection({ casualModeActive }) {
     sample: formatDistance(20, value, { precision: 0 }),
   }));
 
+  // 76 litres deliberately: it is what a "20 gallon" tank stores as, so the
+  // samples read "20 gal" and "76L" — the exact pair a keeper was confused by.
+  const volumeOptions = ["gal", "l"].map((value) => ({
+    value,
+    label: VOLUME_UNIT_LABELS[value],
+    sample: formatVolume(76, value),
+  }));
+
   return (
     <SettingsSection
       id="units"
@@ -58,9 +80,9 @@ export function UnitsSection({ casualModeActive }) {
       title="Units & Formatting"
       description={{
         casual:
-          "Choose how temperatures and distances are shown. This changes the display only — your saved logs keep the exact values you entered.",
+          "Choose how tank sizes, temperatures and distances are shown. This changes the display only — your saved logs keep the exact values you entered.",
         pro:
-          "Display-unit preferences. Conversion is applied at render time only; stored readings remain canonical (°C at tenth precision, distances in miles).",
+          "Display-unit preferences. Conversion is applied at render time only; stored values remain canonical (litres for volume, °C at tenth precision, distances in miles).",
       }}
       casualModeActive={casualModeActive}
     >
@@ -78,6 +100,22 @@ export function UnitsSection({ casualModeActive }) {
             options={tempOptions}
             value={tempUnit}
             onChange={setTempUnit}
+          />
+        </div>
+
+        <div>
+          <SettingsSubsectionLabel>Tank volume</SettingsSubsectionLabel>
+          <SettingsRadioGroup
+            label="Volume unit"
+            announceAs="Tank volume unit"
+            hint={
+              casualModeActive
+                ? "How tank sizes are shown. You always ENTER sizes in gallons — this only changes how they're displayed back to you."
+                : "Applies to tank cards, the tank selector, facility tree and reef HUD. Stored canonically in litres; entry remains in gallons."
+            }
+            options={volumeOptions}
+            value={volumeUnit}
+            onChange={setVolumeUnit}
           />
         </div>
 
