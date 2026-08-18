@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { db } from "../../db";
 import { getWaterEnvelope } from "../../utils/tankUtils";
 import { normalizeReading } from "../../utils/tankHealth";
+import { useUnitPrefs } from "../../hooks/useUnitPrefs";
+import { resolveTempScale } from "../../utils/units";
 import "./ParamTrends.css";
 
 /**
@@ -23,8 +25,16 @@ import "./ParamTrends.css";
  *   title            — optional heading override
  *   readingsOverride — optional readings array (preview/tests; bypasses Dexie)
  */
+/**
+ * `temp` carries no literal unit string: it is resolved per-render from the
+ * keeper's Settings → Units & Formatting → Temperature choice. `isTemp` marks the
+ * one metric whose values are in Celsius and therefore need converting alongside
+ * its label — a sparkline has a single axis, so labelling it °F while plotting
+ * Celsius would be a chart that lies. See `resolveTempScale` for why "both"
+ * resolves to Celsius here.
+ */
 const METRICS = [
-  { key: "temp", label: "Temperature", unit: "°C", bandKey: ["tempMin", "tempMax"], decimals: 1 },
+  { key: "temp", label: "Temperature", unit: null, isTemp: true, bandKey: ["tempMin", "tempMax"], decimals: 1 },
   { key: "ph", label: "pH", unit: "", bandKey: ["phMin", "phMax"], decimals: 1 },
   { key: "nitrate", label: "Nitrate", unit: "ppm", bandKey: [0, "nitrateMax"], decimals: 0 },
 ];
@@ -32,6 +42,8 @@ const METRICS = [
 const DAY_SECONDS = 86400;
 
 export function ParamTrends({ tank, tanks, title, readingsOverride }) {
+  const { tempUnit } = useUnitPrefs();
+  const tempScale = resolveTempScale(tempUnit);
   const rackMode = Array.isArray(tanks) && tanks.length > 0;
   const loadTanks = rackMode ? tanks : (tank ? [tank] : []);
   // Envelope from the (first) tank's type; racks are typically one water type.
@@ -71,13 +83,22 @@ export function ParamTrends({ tank, tanks, title, readingsOverride }) {
         {METRICS.map((m) => {
           let series = buildTrendSeries(readings, m.key);
           if (rackMode) series = bucketAverageSeries(series, DAY_SECONDS);
-          const bandMin = typeof m.bandKey[0] === "number" ? m.bandKey[0] : env[m.bandKey[0]];
-          const bandMax = typeof m.bandKey[1] === "number" ? m.bandKey[1] : env[m.bandKey[1]];
+          let bandMin = typeof m.bandKey[0] === "number" ? m.bandKey[0] : env[m.bandKey[0]];
+          let bandMax = typeof m.bandKey[1] === "number" ? m.bandKey[1] : env[m.bandKey[1]];
+
+          // Convert the series AND the safe band together, so the shaded
+          // in-range region still means the same water it did in Celsius.
+          if (m.isTemp && tempScale.scale === "f") {
+            series = series.map((p) => ({ ...p, v: tempScale.convert(p.v) }));
+            bandMin = tempScale.convert(bandMin);
+            bandMax = tempScale.convert(bandMax);
+          }
+
           return (
             <Sparkline
               key={m.key}
               label={m.label}
-              unit={m.unit}
+              unit={m.isTemp ? tempScale.suffix : m.unit}
               decimals={m.decimals}
               series={series}
               bandMin={bandMin}

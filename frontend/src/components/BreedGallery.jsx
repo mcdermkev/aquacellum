@@ -25,6 +25,8 @@ import { buildGlobalCatalog, CARE_LABELS } from "../services/speciesCatalog";
 import { assessSpeciesFit } from "../services/speciesFit";
 import { CasualSpeciesDetail } from "./finder/CasualSpeciesDetail";
 import { resolveSpecimenPhoto } from "../services/tankMedia";
+import { useUnitPrefs } from "../hooks/useUnitPrefs";
+import { formatTemperature, formatTemperatureRange, resolveTempScale } from "../utils/units";
 
 // Compatibility ring/label hue per honest fit verdict (Fish Finder T2). Driven
 // by verdict rather than raw score so an unknown-data "caution" never shows a
@@ -116,6 +118,12 @@ export function BreedGallery({
   onClearPendingSpeciesSearch
 }) {
   const proMode = !casualModeActive;
+  // Temperature display honours Settings → Units & Formatting. NOTE: every
+  // temperature VALUE in this component (simTemp, minTemp/maxTemp, the slider's
+  // 15–35 domain, the evolution checks) stays in Celsius — only the rendering is
+  // converted. Converting the stored values would break the comparisons below.
+  const { tempUnit } = useUnitPrefs();
+  const tempScale = resolveTempScale(tempUnit);
   const [selectedBreed, setSelectedBreed] = useState(initialSelectedBreed || null);
   const [selectedBreedSpecs, setSelectedBreedSpecs] = useState([]);
   const [residingSpecies, setResidingSpecies] = useState([]);
@@ -788,7 +796,7 @@ export function BreedGallery({
             </div>
             <div>
               <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Temperature</span>
-              <strong style={{ fontSize: "0.9rem", color: "#fff" }}>{selectedBreed.minTemp}°C - {selectedBreed.maxTemp}°C</strong>
+              <strong style={{ fontSize: "0.9rem", color: "#fff" }}>{formatTemperatureRange(selectedBreed.minTemp, selectedBreed.maxTemp, tempUnit, { dash: " - " })}</strong>
             </div>
             <div>
               <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>pH Range</span>
@@ -1405,7 +1413,7 @@ export function BreedGallery({
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.4rem" }}>
                     <span style={{ color: "var(--text-secondary)" }}>Temperature</span>
-                    <strong style={{ color: "#fff" }}>{simTemp} °C</strong>
+                    <strong style={{ color: "#fff" }}>{tempScale.convert(simTemp).toFixed(1)} {tempScale.suffix}</strong>
                   </div>
                   <input 
                     type="range" 
@@ -1417,9 +1425,11 @@ export function BreedGallery({
                     className="premium-slider"
                   />
                   <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "flex", justifyContent: "space-between" }}>
-                    <span>15.0 °C</span>
-                    <span>Ideal: {selectedBreed.minTemp} - {selectedBreed.maxTemp} °C</span>
-                    <span>35.0 °C</span>
+                    {/* The slider's domain stays 15–35 °C; only these end labels
+                        are converted, so the input value never changes meaning. */}
+                    <span>{tempScale.convert(15).toFixed(1)} {tempScale.suffix}</span>
+                    <span>Ideal: {formatTemperatureRange(selectedBreed.minTemp, selectedBreed.maxTemp, tempScale.scale, { dash: " - " })}</span>
+                    <span>{tempScale.convert(35).toFixed(1)} {tempScale.suffix}</span>
                   </div>
                 </div>
 
@@ -1464,8 +1474,8 @@ export function BreedGallery({
                   <span>{(simTemp >= selectedBreed.minTemp && simTemp <= selectedBreed.maxTemp) ? "🟢" : "🔴"}</span>
                   <span style={{ color: (simTemp >= selectedBreed.minTemp && simTemp <= selectedBreed.maxTemp) ? "var(--text-primary)" : "var(--text-muted)" }}>
                     {(simTemp >= selectedBreed.minTemp && simTemp <= selectedBreed.maxTemp) 
-                      ? `Temp is within safe limits (${selectedBreed.minTemp} - ${selectedBreed.maxTemp}°C)` 
-                      : `Temp is out of range (${selectedBreed.minTemp} - ${selectedBreed.maxTemp}°C)`}
+                      ? `Temp is within safe limits (${formatTemperatureRange(selectedBreed.minTemp, selectedBreed.maxTemp, tempScale.scale, { dash: " - " })})` 
+                      : `Temp is out of range (${formatTemperatureRange(selectedBreed.minTemp, selectedBreed.maxTemp, tempScale.scale, { dash: " - " })})`}
                   </span>
                 </li>
               </ul>
@@ -1651,7 +1661,7 @@ export function BreedGallery({
                   <div>
                     <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "600", display: "block", marginBottom: "0.25rem" }}>Temp Ceiling</span>
                     <span className="badge badge-red" style={{ fontSize: "0.8rem", padding: "0.35rem 0.75rem" }}>
-                      Up to {fullProfile.ecology?.tempCeiling || selectedBreed.maxTemp}°C
+                      Up to {formatTemperature(fullProfile.ecology?.tempCeiling || selectedBreed.maxTemp, tempScale.scale, { precision: 0 })}
                     </span>
                   </div>
                 </div>
@@ -2483,9 +2493,11 @@ export function BreedGallery({
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem" }}>
                   {[
                     { val: "All", label: "All" },
-                    { val: "Cold", label: "Cold (<22°C)" },
-                    { val: "Tropical", label: "Tropical (22-28°C)" },
-                    { val: "Warm", label: "Warm (>28°C)" }
+                    // The 22/28 °C bucket boundaries are the filter's own logic and
+                    // stay in Celsius; only the labels follow the preference.
+                    { val: "Cold", label: `Cold (<${formatTemperature(22, tempScale.scale, { precision: 0 })})` },
+                    { val: "Tropical", label: `Tropical (${formatTemperatureRange(22, 28, tempScale.scale, { dash: "-" })})` },
+                    { val: "Warm", label: `Warm (>${formatTemperature(28, tempScale.scale, { precision: 0 })})` }
                   ].map(opt => {
                     const isActive = filters.tempBucket === opt.val;
                     const count = facets.temp[opt.val] || 0;
@@ -2967,7 +2979,7 @@ export function BreedGallery({
                       // Check parameters (pH: 7.2, Temp: 20°C)
                       const isPerfect = Math.abs(simPh - 7.2) < 0.15 && Math.abs(simTemp - 20.0) < 0.8;
                       if (!isPerfect) {
-                        setEvolutionError(`Parameters unstable! Goldfish evolution requires ideal coldwater biology. Target: pH 7.2, Temp 20.0°C. (Current: pH ${simPh} | Temp ${simTemp}°C)`);
+                        setEvolutionError(`Parameters unstable! Goldfish evolution requires ideal coldwater biology. Target: pH 7.2, Temp ${formatTemperature(20, tempScale.scale)}. (Current: pH ${simPh} | Temp ${formatTemperature(simTemp, tempScale.scale)})`);
                         return;
                       }
                       setEvolutionError("");

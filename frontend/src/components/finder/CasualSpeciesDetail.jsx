@@ -11,6 +11,8 @@ import { getPersonality } from "../../utils/personality";
 import { SpeciesInsights } from "../reef/SpeciesInsights";
 import { PoseidonChatConsole } from "../PoseidonChatConsole";
 import { DETAIL_COPY } from "./finderCopy";
+import { useUnitPrefs } from "../../hooks/useUnitPrefs";
+import { formatTemperatureRange } from "../../utils/units";
 import "./CasualSpeciesDetail.css";
 
 const isPlantEntry = (item) => !!item && item.type === "plant";
@@ -46,6 +48,7 @@ export function CasualSpeciesDetail({
 }) {
   const { data: tanks = [] } = useUserTanks(contractAddress, walletAccount);
   const { getAvailability } = useSpeciesAvailability(contractAddress, marketplaceAddress);
+  const { tempUnit } = useUnitPrefs();
 
   const fullProfile = useMemo(() => {
     return fishbaseData.find(
@@ -235,7 +238,7 @@ export function CasualSpeciesDetail({
           <h3 className="csd-section-title">{DETAIL_COPY.careTitle}</h3>
           <div className="cg-chips">
             {care.tempMin != null && care.tempMax != null && (
-              <span className="cg-chip">🌡️ {care.tempMin}–{care.tempMax}°C</span>
+              <span className="cg-chip">🌡️ {formatTemperatureRange(care.tempMin, care.tempMax, tempUnit)}</span>
             )}
             {care.phMin != null && care.phMax != null && (
               <span className="cg-chip">🧪 pH {care.phMin}–{care.phMax}</span>

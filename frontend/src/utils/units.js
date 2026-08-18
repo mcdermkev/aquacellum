@@ -303,6 +303,75 @@ export function formatTemperature(
   return parts.join(separator);
 }
 
+/**
+ * Format a temperature RANGE held in Celsius, e.g. a species' safe band.
+ *
+ * Ranges are the most common way this app shows a temperature — every care chip
+ * is "22–28°C" — and they were the sites still hardcoding the unit after the
+ * preference shipped, because `formatTemperature()` only takes one value and
+ * nobody wanted to call it twice and stitch the suffixes.
+ *
+ * Whole degrees by default. A care band is advice, not a measurement: 22–28°C
+ * converts to 71.6–82.4°F, and "72–82°F" is the honest rendering of a range
+ * whose author picked round numbers. Decimals here would invent precision.
+ *
+ * @param {number} minCelsius
+ * @param {number} maxCelsius
+ * @param {"both"|"c"|"f"} unit
+ * @param {{precision?: number, dash?: string}} [opts]
+ * @returns {string} "22–28°C", "72–82°F", or "22–28°C (72–82°F)"
+ */
+export function formatTemperatureRange(
+  minCelsius,
+  maxCelsius,
+  unit = DEFAULT_TEMP_UNIT,
+  { precision = 0, dash = "–" } = {}
+) {
+  const lo = toFiniteNumber(minCelsius);
+  const hi = toFiniteNumber(maxCelsius);
+  if (lo === null || hi === null) return "";
+
+  const band = (a, b, suffix) =>
+    `${a.toFixed(precision)}${dash}${b.toFixed(precision)}${suffix}`;
+
+  const parts = [];
+  if (showCelsius(unit)) parts.push(band(lo, hi, "°C"));
+  if (showFahrenheit(unit)) {
+    parts.push(band(celsiusToFahrenheit(lo), celsiusToFahrenheit(hi), "°F"));
+  }
+  return parts.length === 2 ? `${parts[0]} (${parts[1]})` : parts.join("");
+}
+
+/**
+ * Collapse the preference to the ONE scale a chart axis or a slider can carry.
+ *
+ * Some surfaces cannot render both readings. A sparkline plots numbers against a
+ * single axis, and a range input has one numeric domain — showing "°C / °F" on
+ * either would be a label that lies about half its values. So those sites need a
+ * single scale plus the conversion to match, and this is the one place that
+ * decides which.
+ *
+ * "both" resolves to CELSIUS, deliberately. Celsius is the storage unit, so this
+ * keeps the default rendering byte-identical to what these surfaces showed before
+ * the preference existed — the same reasoning that made "both" the default in the
+ * first place. Only an explicit "f" changes anything here.
+ *
+ * ⚠️ `convert` must be applied to EVERY number that shares the axis — the series,
+ * the safe band, the tick labels — or the chart will draw Celsius data under a
+ * Fahrenheit label. It is a pure function so it is safe to map over a series.
+ *
+ * @param {"both"|"c"|"f"} unit
+ * @returns {{scale: "c"|"f", suffix: string, convert: (celsius: number) => number}}
+ */
+export function resolveTempScale(unit = DEFAULT_TEMP_UNIT) {
+  const fahrenheit = unit === "f";
+  return {
+    scale: fahrenheit ? "f" : "c",
+    suffix: fahrenheit ? "°F" : "°C",
+    convert: fahrenheit ? celsiusToFahrenheit : (celsius) => celsius,
+  };
+}
+
 /** Human labels for the Settings controls. */
 export const DISTANCE_UNIT_LABELS = Object.freeze({
   mi: "Miles",

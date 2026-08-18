@@ -1,5 +1,7 @@
 import React from "react";
 import { buildSpeciesCarePrompt } from "../../utils/poseidonPrompts";
+import { useUnitPrefs } from "../../hooks/useUnitPrefs";
+import { formatTemperatureRange } from "../../utils/units";
 import "./SpeciesCareGuide.css";
 
 /**
@@ -15,6 +17,7 @@ import "./SpeciesCareGuide.css";
  *   contractSpecies — on-chain species catalog with temp/pH/care level (useContractSpecies)
  */
 export function SpeciesCareGuide({ tank, fishbaseData = [], contractSpecies = [], onAskPoseidon }) {
+  const { tempUnit } = useUnitPrefs();
   const refs = uniqueSpecies(tank?.specimens);
   if (refs.length === 0) return null;
 
@@ -36,7 +39,7 @@ export function SpeciesCareGuide({ tank, fishbaseData = [], contractSpecies = []
             </div>
             <div className="cg-chips">
               {c.tempMin != null && c.tempMax != null && (
-                <span className="cg-chip">🌡️ {fmt(c.tempMin)}–{fmt(c.tempMax)}°C</span>
+                <span className="cg-chip">🌡️ {formatTemperatureRange(c.tempMin, c.tempMax, tempUnit)}</span>
               )}
               {c.phMin != null && c.phMax != null && (
                 <span className="cg-chip">🧪 pH {fmt(c.phMin)}–{fmt(c.phMax)}</span>

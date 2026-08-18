@@ -5,6 +5,8 @@ import { getProvider } from "../utils/smartAccount";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
 import { useXPSync } from "../hooks/useXPSync";
 import { useUserRoles } from "../hooks/useUserRoles";
+import { useUnitPrefs } from "../hooks/useUnitPrefs";
+import { formatTemperatureRange } from "../utils/units";
 
 // Breeder Moniker Card UI component
 export function BreederProfileCard({ profile, companion }) {
@@ -173,6 +175,7 @@ export function BreedersCouncil({
   const [busyId, setBusyId] = useState(null);
 
   const { data: roles = [], isLoading: rolesLoading } = useUserRoles(walletAccount);
+  const { tempUnit } = useUnitPrefs();
   const isFounder = roles.includes("founder");
   const isCouncil = roles.some((r) => CURATION_ROLES.includes(r));
 
@@ -492,7 +495,7 @@ export function BreedersCouncil({
                       display: "flex", gap: "1rem", fontSize: "0.8rem",
                       color: "var(--text-muted)", marginTop: "0.4rem", flexWrap: "wrap",
                     }}>
-                      <span>Temp: {item.min_temp_c}°C – {item.max_temp_c}°C</span>
+                      <span>Temp: {formatTemperatureRange(item.min_temp_c, item.max_temp_c, tempUnit)}</span>
                       <span>pH: {item.min_ph} – {item.max_ph}</span>
                       <span>
                         Care: {CARE_LEVEL_STRINGS ? CARE_LEVEL_STRINGS[item.care_level] : item.care_level}

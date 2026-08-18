@@ -15,6 +15,8 @@ import { createCurrent } from "../../services/reefApi";
 import { getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
 import { VideoRecorder } from "../video/VideoRecorder";
 import { SPECIES_SECTIONS } from "../../constants/speciesSections";
+import { useUnitPrefs } from "../../hooks/useUnitPrefs";
+import { formatTemperature } from "../../utils/units";
 
 const MAX_PHOTOS = 4;
 const MAX_BODY_LENGTH = 2000;
@@ -28,6 +30,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
   const [showRecorder, setShowRecorder] = useState(false);
   const [visibility, setVisibility] = useState("public");
   const [params, setParams] = useState(null); // auto-fetched from tank
+  const { tempUnit } = useUnitPrefs();
   const [speciesTags, setSpeciesTags] = useState([]);
   const [section, setSection] = useState(null); // species-page section routing
   const [submitting, setSubmitting] = useState(false);
@@ -635,7 +638,7 @@ export function ContentComposer({ isOpen, onClose, onSuccess, casualModeActive =
             color: "var(--text-secondary)",
           }}>
             <span style={{ fontWeight: 600, color: "var(--accent-green, #34d399)" }}>📊 Latest params attached:</span>{" "}
-            {params.temp && `${params.temp}°C`}
+            {params.temp && formatTemperature(params.temp, tempUnit, { parenthesizeSecond: true })}
             {params.ph && ` • pH ${params.ph}`}
             {params.nitrate && ` • NO₃ ${params.nitrate}ppm`}
           </div>
