@@ -64,8 +64,11 @@ export function ProfileEdit({ profile, onSave, onCancel, casualModeActive = fals
           return;
         }
         updates.avatar_url = url;
-        // Notify onboarding tour / listeners that an avatar was set (no behavioral change)
-        window.dispatchEvent(new CustomEvent("aquadex:avatar_set", { detail: { avatarUrl: url } }));
+        // An `aquadex:avatar_set` CustomEvent used to be dispatched here. Its only
+        // listener was the onboarding tour's profile step, which has been deleted,
+        // so the event became a dispatch into the void — the exact one-sided seam
+        // that scripts/seams/report.mjs exists to catch. Removed rather than left
+        // firing, since a listener-less event reads like a working notification.
       }
 
       if (Object.keys(updates).length > 0) {

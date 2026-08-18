@@ -7,7 +7,7 @@
  * components transitively import ethers/other browser-only dependencies. So,
  * following the established pattern for component tests in this codebase
  * (src/components/MarketplaceBoard.catalog.test.js,
- * src/components/onboarding/IdentityStep.test.js), we verify the behavioral
+ * src/__tests__/settingsPrivacyOwnership.test.js), we verify the behavioral
  * contract via static source guards over the comment-stripped source,
  * complementing the exhaustive pure-module unit tests (orderCopy.test.js,
  * buyerOrderView.test.js).

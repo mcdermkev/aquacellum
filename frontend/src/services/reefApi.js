@@ -15,22 +15,18 @@ import { checkRateLimit, recordAction } from "./rateLimiter";
 // PROFILES
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// REQUIRED SUPABASE SCHEMA (onboarding-revamp spec):
-//   ALTER TABLE profiles ADD COLUMN onboarding_complete BOOLEAN DEFAULT false;
-//
-// `onboarding_complete` is the server-side source of truth for the first-login-only
-// onboarding gate (Requirements 6.1, 6.2, 6.6). It is mirrored locally to the Dexie
-// `userProfile.onboardingComplete` field for offline-first reads. If the column is not
-// present, these reads/writes degrade gracefully (Supabase returns the row without the
-// field / an error on update) and the gate falls back to the Dexie mirror per-device.
+// `profiles.onboarding_complete` IS NO LONGER USED. It backed the first-login gate
+// for the onboarding wizard, which has been retired along with its gate hook, so
+// nothing reads the column any more. The writes are gone from here too: an INSERT
+// naming a column that a project never added is a hard error, so writing a value
+// nobody reads was pure downside. The column itself is left in place — dropping it
+// is a destructive migration with no upside, and Postgres ignores a column nobody
+// selects. Treat any new appearance of this field as a mistake.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Get or create a profile for the given wallet address.
  * Called on first login to ensure the profile row exists.
- *
- * The returned profile includes `onboarding_complete` (when the column exists), used by
- * the onboarding gate to decide whether to show the wizard.
  */
 export async function ensureProfile(walletAddress, initialData = {}) {
   if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
@@ -67,7 +63,6 @@ export async function ensureProfile(walletAddress, initialData = {}) {
       species_count: initialData.species_count || 0,
       xp_total: initialData.xp_total || 0,
       companion_tier: initialData.companion_tier || "Shallow",
-      onboarding_complete: initialData.onboarding_complete ?? false,
     })
     .select()
     .single();
@@ -192,30 +187,9 @@ export async function checkDisplayNameAvailable(displayName, excludeWallet) {
   return { available: !data || data.length === 0, error: null };
 }
 
-/**
- * Set the per-account onboarding-complete flag (server source of truth for the
- * first-login-only gate — Requirements 6.1, 6.2, 6.6).
- *
- * Requires the `profiles.onboarding_complete BOOLEAN DEFAULT false` column (see the
- * PROFILES section header). When Supabase is not configured this is a no-op so callers
- * can rely solely on the Dexie mirror in offline/local-only mode.
- *
- * @param {string} walletAddress - account whose flag is being set.
- * @param {boolean} [value=true] - the completion state to persist.
- * @returns {Promise<{ data: object|null, error: any }>}
- */
-export async function setOnboardingComplete(walletAddress, value = true) {
-  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
-
-  const { data, error } = await supabase
-    .from("profiles")
-    .update({ onboarding_complete: value, updated_at: new Date().toISOString() })
-    .eq("wallet_address", walletAddress)
-    .select()
-    .single();
-
-  return { data, error };
-}
+// `setOnboardingComplete()` lived here. It was the last writer of
+// `profiles.onboarding_complete` and had no callers left once the wizard was
+// retired — see the PROFILES header above.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CURRENTS (Tank Posts)

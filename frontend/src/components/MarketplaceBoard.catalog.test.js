@@ -6,7 +6,8 @@
  * testing-library) — see vite.config.js `test.environment: 'node'` — and both
  * components transitively import ethers/@tanstack/react-virtual and other
  * browser-only dependencies. So, following the established pattern for
- * component tests in this codebase (src/components/onboarding/*.test.js), we
+ * component tests in this codebase (CheckoutSummary.orders.test.js,
+ * src/__tests__/settingsPrivacyOwnership.test.js), we
  * verify the behavioral contract via static source guards over the
  * comment-stripped source, complementing the exhaustive pure-module unit
  * tests (catalogQuery.test.js, compatibilityExplanation.test.js,

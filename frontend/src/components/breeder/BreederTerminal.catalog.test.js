@@ -5,8 +5,8 @@
  * testing-library) — see vite.config.js `test.environment: 'node'` — and
  * BreederTerminal.jsx transitively imports ethers/@tanstack/react-query and
  * other browser-only dependencies. Following the established pattern for
- * component tests in this codebase (src/components/onboarding/*.test.js,
- * MarketplaceBoard.catalog.test.js), we verify the behavioral contract via
+ * component tests in this codebase (MarketplaceBoard.catalog.test.js,
+ * src/__tests__/firstRunDefaults.test.js), we verify the behavioral contract via
  * static source guards over the comment-stripped source, complementing the
  * exhaustive pure-module unit tests in breederDashboard.test.js.
  *

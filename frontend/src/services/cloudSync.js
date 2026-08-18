@@ -620,7 +620,10 @@ export async function pullXpProfileFromCloud(walletAddress) {
         zoneHash: localProfile?.zoneHash || "",
         rewardCredits: localProfile?.rewardCredits || 0,
         isCouncilMember: localProfile?.isCouncilMember || false,
-        onboardingComplete: localProfile?.onboardingComplete || false,
+        // `onboardingComplete` was carried through here to survive the put().
+        // Nothing reads it now that the wizard and its gate are gone, so it is
+        // no longer copied forward. The Dexie index on the field stays — that
+        // schema history must not be rewritten.
       };
 
       await db.userProfile.put(mergedProfile);

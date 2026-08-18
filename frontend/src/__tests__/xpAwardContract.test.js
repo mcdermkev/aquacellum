@@ -47,8 +47,9 @@ const AWARD_SITES = [
   "components/SpawnGrowoutTracker.jsx",
   "components/SpawningWizard.jsx",
   "components/TankList.jsx",
-  "components/onboarding/TankTourStep.jsx",
-  "components/onboarding/firstTankReward.js",
+  // components/onboarding/TankTourStep.jsx and .../firstTankReward.js used to be
+  // listed here. They were deleted with the retired onboarding tree, so the only
+  // XP award sites left are the ones a user can actually reach.
   "services/cohortPromotion.js",
 ];
 

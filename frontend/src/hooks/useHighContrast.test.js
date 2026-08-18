@@ -3,8 +3,7 @@
  * `node` environment with no DOM, so the persist/apply logic is exercised as
  * plain, injectable-target functions (loadHighContrastPreference/
  * persistHighContrastPreference/applyHighContrast) rather than rendering the
- * thin React hook — mirroring the useTourStep.test.js precedent of testing
- * the DOM-free core directly.
+ * thin React hook — testing the DOM-free core directly.
  *
  * See docs/TASK_21D_PWA_HARDENING_SPEC.md §5.
  */

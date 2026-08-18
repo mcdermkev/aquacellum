@@ -87,7 +87,8 @@ export default async function handler(req, res) {
         species_count: initialData.species_count || 0,
         xp_total: initialData.xp_total || 0,
         companion_tier: initialData.companion_tier || "Shallow",
-        onboarding_complete: initialData.onboarding_complete ?? false,
+        // No `onboarding_complete`: the wizard it gated is retired and nothing
+        // reads the column. See the PROFILES header in src/services/reefApi.js.
       })
       .select()
       .single();
