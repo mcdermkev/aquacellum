@@ -22,6 +22,7 @@ import { LandingHobbyist } from "./components/LandingHobbyist";
 import { LandingBreeder } from "./components/LandingBreeder";
 import { ModeSegmentedControl } from "./components/ModeSegmentedControl";
 import { ProfileHub } from "./components/ProfileHub";
+import { StarterQuestCard } from "./components/StarterQuestCard";
 import { CasualBottomNav } from "./components/CasualBottomNav";
 import { useAuth } from "./contexts/AuthContext";
 import { pullCloudDataForWallet, pushAllLocalDataToCloud } from "./services/cloudSync";
@@ -419,10 +420,33 @@ export default function App() {
     const saved = localStorage.getItem("aquadex_last_synced");
     return saved ? new Date(saved) : null;
   });
+  // Casual, not Pro, when nobody has expressed a preference.
+  //
+  // This default used to be `false` (Pro), and that was an ACCIDENT rather than a
+  // decision. The retired onboarding wizard's persona step was the only code in
+  // the app that ever wrote `aquadex_casual_mode` for a new account; when the
+  // wizard was removed, nothing replaced the question and Pro silently became the
+  // first-run experience.
+  //
+  // What a brand-new hobbyist therefore read on their empty dashboard was
+  // "Register your first containment unit to begin … define your system topology",
+  // with a Breeder Tools tab sitting as a peer of Aquariums. That is the reported
+  // "lost and overwhelmed", almost verbatim.
+  //
+  // Casual is the right default because the two failure modes are not
+  // symmetrical. A breeder who lands in Casual is mildly under-served and has an
+  // obvious way out — the mode control sits in the header, and the empty state
+  // now points at it. A hobbyist who lands in Pro is reading vocabulary for a
+  // job they don't have, with no clue that a friendlier view exists.
+  //
+  // Anyone who has ever toggled keeps their choice: `saved !== null` still wins.
+  // This only changes the answer for accounts that never expressed one, and it is
+  // explicitly a display preference, not an entitlement (services/entitlements.js
+  // L154-158), so it is reversible in one click.
   const [casualModeActive, setCasualModeActive] = useState(() => {
     const saved = localStorage.getItem("aquadex_casual_mode");
     if (saved !== null) return saved === "true";
-    return false;
+    return true;
   });
   const [enteredDashboard, setEnteredDashboard] = useState(() => {
     return localStorage.getItem("aquadex_entered_dashboard") === "true";
@@ -983,6 +1007,15 @@ export default function App() {
       default:
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+            {/* The activation checklist, on the page a new keeper actually lands
+                on. It used to render only inside ProfileHub, on the `profile`
+                tab — which has no entry in the nav array above, so on desktop it
+                was reachable only by typing /app/profile. The thing built to
+                orient a new user was one unlinked route away from them.
+
+                It self-hides once dismissed, and dismissal is available
+                immediately rather than only on completion. */}
+            <StarterQuestCard onNavigate={handleTabChange} compact />
             <TankList 
               contractAddress={CONTRACT_ADDRESS} 
               walletAccount={account} 

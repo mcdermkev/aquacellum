@@ -1634,15 +1634,17 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         className={`tank-action-bar glass-card ${casualModeActive ? "tank-action-bar--casual" : "tank-action-bar--pro"}`}
         style={{ marginBottom: "1.5rem" }}
       >
-        {/* Primary CTA: Scan */}
-        <button
-          className={`tank-action-pill tank-action-pill--scan${casualModeActive ? " tank-action-pill--casual" : " tank-action-pill--pro"}`}
-          onClick={triggerScan}
-          aria-label={casualModeActive ? "Scan Tank" : "Scan Unit"}
-        >
-          <span>📸</span>
-          <span>{casualModeActive ? "Scan Tank" : "Scan Unit"}</span>
-        </button>
+        {/* Primary CTA: Scan — also needs a tank to scan into. */}
+        {tanks.length > 0 && (
+          <button
+            className={`tank-action-pill tank-action-pill--scan${casualModeActive ? " tank-action-pill--casual" : " tank-action-pill--pro"}`}
+            onClick={triggerScan}
+            aria-label={casualModeActive ? "Scan Tank" : "Scan Unit"}
+          >
+            <span>📸</span>
+            <span>{casualModeActive ? "Scan Tank" : "Scan Unit"}</span>
+          </button>
+        )}
 
         {/* View mode toggler (Pro only) */}
         {!casualModeActive && (
@@ -1684,19 +1686,26 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         {/* Spacer pushes Quick Log + Register to the right */}
         <div style={{ flex: 1 }} />
 
-        {/* Quick Log */}
-        <button
-          className={`tank-action-pill tank-action-pill--secondary${casualModeActive ? " tank-action-pill--casual-secondary" : " tank-action-pill--pro-secondary"}`}
-          onClick={() => {
-            setQuickLogMode("water_test");
-            setBulkLogScope("single");
-            setQuickLogOpen(true);
-          }}
-          aria-label="Quick Log"
-        >
-          <span>✍️</span>
-          <span>Quick Log</span>
-        </button>
+        {/* Quick Log — hidden until there is a tank to log against.
+            With zero tanks the drawer's picker resolves
+            `tanks.find(...) || activeTank || tanks[0]` to undefined, so this was
+            a live control that could not succeed. On a brand-new dashboard it was
+            one of three buttons where two did nothing, which is a large part of
+            why the first screen read as overwhelming. */}
+        {tanks.length > 0 && (
+          <button
+            className={`tank-action-pill tank-action-pill--secondary${casualModeActive ? " tank-action-pill--casual-secondary" : " tank-action-pill--pro-secondary"}`}
+            onClick={() => {
+              setQuickLogMode("water_test");
+              setBulkLogScope("single");
+              setQuickLogOpen(true);
+            }}
+            aria-label="Quick Log"
+          >
+            <span>✍️</span>
+            <span>Quick Log</span>
+          </button>
+        )}
 
         {/* Register / Add Tank */}
         <button
@@ -1795,7 +1804,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     </h2>
                     <p style={{ color: "var(--text-secondary)", lineHeight: "1.6", marginBottom: "1.5rem" }}>
                       {casualModeActive
-                        ? "Create your first aquarium to start tracking your fish. You'll be able to log water parameters, catalog species, and monitor tank health all in one place."
+                        ? "Add your first tank and everything else follows — log water tests, catalogue the fish in it, and track how it's doing over time."
                         : "Register your first containment unit to begin. Head to the Breeder Tools tab or use the facility tree view to define your system topology."}
                     </p>
                     <button
@@ -1808,9 +1817,15 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     >
                       {casualModeActive ? "➕ Create My First Tank" : "➕ Register Containment Unit"}
                     </button>
+                    {/* The escape hatch for the audience the default is now
+                        wrong for. Casual is the new first-run default because a
+                        confused hobbyist cannot find their way out of "facility
+                        topology", whereas a breeder just needs to be told the
+                        other mode exists — which is what this line does, at the
+                        one moment it is relevant. */}
                     <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginTop: "1rem" }}>
                       {casualModeActive
-                        ? "Or switch to Facility Tree view above to set up rooms and racks first."
+                        ? "Running a breeding operation? Switch to Pro in the header for racks, rooms and facility tools."
                         : "This will open the facility tree registration workflow."}
                     </p>
                   </div>
@@ -3986,8 +4001,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         </div>
       )}
 
-      {/* MOBILE FLOATING QUICK LOG FAB — always accessible without scrolling */}
-      {!quickLogOpen && (
+      {/* MOBILE FLOATING QUICK LOG FAB — always accessible without scrolling.
+          Also gated on having a tank: same reason as the toolbar button. */}
+      {!quickLogOpen && tanks.length > 0 && (
         <button
           className="quick-log-fab"
           onClick={() => {

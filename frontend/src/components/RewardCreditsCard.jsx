@@ -50,6 +50,22 @@ export function RewardCreditsCard({ casualModeActive = true, compact = false }) 
 
   const rewardsLabel = casualModeActive ? "Loyalty Credits" : "Reward Credits";
 
+  // ─── Nothing to report yet ─────────────────────────────────────────────
+  //
+  // A keeper with no credits, no history and no earned tier discount was still
+  // shown this card in full: a $0.00 balance, a tier badge, and a "next
+  // distribution in 14d" date. On a brand-new account that is furniture — it
+  // describes a reward programme they have not entered yet, on the same screen
+  // as an empty tank list, and it was part of what made the dashboard read as
+  // overwhelming rather than empty.
+  //
+  // FryNursery already sets the precedent (`if (… length === 0) return null`).
+  // This follows it: the card appears the moment there is something in it.
+  const hasNothingYet =
+    !isLoading && credits === 0 && tierDiscount === 0 && (history?.length ?? 0) === 0;
+
+  if (hasNothingYet) return null;
+
   // ─── Loading state ─────────────────────────────────────────────────────
   if (isLoading) {
     return (
