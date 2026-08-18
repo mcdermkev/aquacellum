@@ -193,6 +193,21 @@ export function useEndTide(tideId) {
 
       const { data, error } = await updateTide(tideId, { status: "ended" });
       if (error) throw new Error(error.message || String(error));
+
+      // Generate the recap. TidePage has a fully built Recap tab gated on
+      // `isEnded && tide.recap_content`, and nothing ever wrote that column — so
+      // the tab could not appear for any tide that had ever existed.
+      //
+      // Built server-side from real counts, and only after the status flip so the
+      // numbers describe a finished event. Best-effort: a missing recap must not
+      // stop a host ending their tide, and build_tide_recap is idempotent, so a
+      // later end/re-end simply recomputes it.
+      try {
+        await supabase.rpc("build_tide_recap", { target_tide: tideId });
+      } catch (e) {
+        console.warn("[useEndTide] tide ended but the recap could not be generated:", e);
+      }
+
       return data;
     },
     onSuccess: () => {
