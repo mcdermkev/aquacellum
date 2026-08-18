@@ -8885,3 +8885,16 @@ html {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--glass-border);
 }
+
+/* Advisory, not a blocker: the host can still create the auction, they just
+   can't settle it until payouts are connected. Amber rather than red. */
+.create-tide__warning {
+  margin: 0 0 0.6rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-sm);
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  color: var(--accent-amber);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}

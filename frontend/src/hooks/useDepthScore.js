@@ -7,6 +7,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getDepthScore, getDepthScoreHistory, getDepthLeaderboard, getTierPrivileges } from "../services/depthScoreApi";
 import { getCurrentWallet, isSupabaseConfigured } from "../services/supabaseClient";
+import { unwrap } from "../utils/unwrapEnvelope";
 
 /**
  * Get the current user's (or specified user's) depth score and tier.
@@ -16,10 +17,9 @@ export function useDepthScore(walletAddress) {
 
   return useQuery({
     queryKey: ["reef", "depth-score", wallet],
-    queryFn: () => getDepthScore(wallet),
+    queryFn: () => unwrap(getDepthScore(wallet), "getDepthScore"),
     enabled: !!wallet && isSupabaseConfigured(),
     staleTime: 60 * 1000,
-    select: (res) => res.data,
   });
 }
 
@@ -31,10 +31,9 @@ export function useDepthScoreHistory(walletAddress, { limit = 20 } = {}) {
 
   return useQuery({
     queryKey: ["reef", "depth-history", wallet, limit],
-    queryFn: () => getDepthScoreHistory(wallet, { limit }),
+    queryFn: () => unwrap(getDepthScoreHistory(wallet, { limit }), "getDepthScoreHistory"),
     enabled: !!wallet && isSupabaseConfigured(),
     staleTime: 30 * 1000,
-    select: (res) => res.data,
   });
 }
 
@@ -44,10 +43,9 @@ export function useDepthScoreHistory(walletAddress, { limit = 20 } = {}) {
 export function useDepthLeaderboard({ limit = 20 } = {}) {
   return useQuery({
     queryKey: ["reef", "depth-leaderboard", limit],
-    queryFn: () => getDepthLeaderboard({ limit }),
+    queryFn: () => unwrap(getDepthLeaderboard({ limit }), "getDepthLeaderboard"),
     enabled: isSupabaseConfigured(),
     staleTime: 5 * 60 * 1000,
-    select: (res) => res.data,
   });
 }
 

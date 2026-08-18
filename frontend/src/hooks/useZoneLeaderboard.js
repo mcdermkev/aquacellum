@@ -17,6 +17,7 @@ import {
   fetchWeeklyContributors,
 } from "../services/zoneLeaderboardApi";
 import { getCurrentWallet, isSupabaseConfigured } from "../services/supabaseClient";
+import { unwrap } from "../utils/unwrapEnvelope";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Zone Leaderboard Hooks
@@ -34,10 +35,9 @@ export function useMyZoneLeaderboard({ limit = 20 } = {}) {
 
   return useQuery({
     queryKey: ["zone", "my-leaderboard", wallet, limit],
-    queryFn: () => fetchMyZoneLeaderboard({ limit }),
+    queryFn: () => unwrap(fetchMyZoneLeaderboard({ limit }), "fetchMyZoneLeaderboard"),
     enabled: !!wallet && isSupabaseConfigured(),
     staleTime: 2 * 60 * 1000, // 2 min — leaderboard is a materialized view refreshed every 5 min
-    select: (res) => res.data,
   });
 }
 
@@ -51,10 +51,9 @@ export function useMyZoneLeaderboard({ limit = 20 } = {}) {
 export function useZoneLeaderboard(zoneHash, { limit = 20 } = {}) {
   return useQuery({
     queryKey: ["zone", "leaderboard", zoneHash, limit],
-    queryFn: () => fetchZoneLeaderboardByHash(zoneHash, { limit }),
+    queryFn: () => unwrap(fetchZoneLeaderboardByHash(zoneHash, { limit }), "fetchZoneLeaderboardByHash"),
     enabled: !!zoneHash && isSupabaseConfigured(),
     staleTime: 2 * 60 * 1000,
-    select: (res) => res.data,
   });
 }
 
@@ -68,10 +67,9 @@ export function useUserZoneRank(walletAddress) {
 
   return useQuery({
     queryKey: ["zone", "user-rank", wallet],
-    queryFn: () => fetchUserZoneRank(wallet),
+    queryFn: () => unwrap(fetchUserZoneRank(wallet), "fetchUserZoneRank"),
     enabled: !!wallet && isSupabaseConfigured(),
     staleTime: 60 * 1000,
-    select: (res) => res.data,
   });
 }
 
@@ -88,10 +86,9 @@ export function useUserZoneRank(walletAddress) {
 export function useAvailableZones({ limit = 50 } = {}) {
   return useQuery({
     queryKey: ["zone", "all-zones", limit],
-    queryFn: () => fetchAllZones({ limit }),
+    queryFn: () => unwrap(fetchAllZones({ limit }), "fetchAllZones"),
     enabled: isSupabaseConfigured(),
     staleTime: 5 * 60 * 1000, // Zones don't change often
-    select: (res) => res.data,
   });
 }
 
@@ -103,10 +100,9 @@ export function useAvailableZones({ limit = 50 } = {}) {
 export function useZoneSearch(query) {
   return useQuery({
     queryKey: ["zone", "search", query],
-    queryFn: () => searchZones(query),
+    queryFn: () => unwrap(searchZones(query), "searchZones"),
     enabled: !!query && query.length >= 2 && isSupabaseConfigured(),
     staleTime: 30 * 1000,
-    select: (res) => res.data,
   });
 }
 
@@ -118,10 +114,9 @@ export function useZoneSearch(query) {
 export function useZoneDetails(zoneHash) {
   return useQuery({
     queryKey: ["zone", "details", zoneHash],
-    queryFn: () => fetchZoneDetails(zoneHash),
+    queryFn: () => unwrap(fetchZoneDetails(zoneHash), "fetchZoneDetails"),
     enabled: !!zoneHash && isSupabaseConfigured(),
     staleTime: 5 * 60 * 1000,
-    select: (res) => res.data,
   });
 }
 
@@ -158,9 +153,8 @@ export function useAssignZone() {
 export function useWeeklyContributors({ limit = 10 } = {}) {
   return useQuery({
     queryKey: ["zone", "weekly-contributors", limit],
-    queryFn: () => fetchWeeklyContributors({ limit }),
+    queryFn: () => unwrap(fetchWeeklyContributors({ limit }), "fetchWeeklyContributors"),
     enabled: isSupabaseConfigured(),
     staleTime: 5 * 60 * 1000,
-    select: (res) => res.data,
   });
 }

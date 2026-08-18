@@ -14,6 +14,7 @@ import {
   applyCreditsAtCheckout,
 } from "../services/rewardsPoolApi";
 import { getCurrentWallet, isSupabaseConfigured } from "../services/supabaseClient";
+import { unwrap } from "../utils/unwrapEnvelope";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Credit Balance & Tier Discount
@@ -30,10 +31,9 @@ export function useRewardCredits(walletAddress) {
 
   return useQuery({
     queryKey: ["rewards", "credits", wallet],
-    queryFn: () => getRewardCredits(wallet),
+    queryFn: () => unwrap(getRewardCredits(wallet), "getRewardCredits"),
     enabled: !!wallet && isSupabaseConfigured(),
     staleTime: 60 * 1000,
-    select: (res) => res.data,
   });
 }
 
@@ -52,10 +52,9 @@ export function useCreditHistory({ limit = 20 } = {}) {
 
   return useQuery({
     queryKey: ["rewards", "credit-history", wallet, limit],
-    queryFn: () => getCreditHistory(wallet, { limit }),
+    queryFn: () => unwrap(getCreditHistory(wallet, { limit }), "getCreditHistory"),
     enabled: !!wallet && isSupabaseConfigured(),
     staleTime: 2 * 60 * 1000,
-    select: (res) => res.data,
   });
 }
 
@@ -70,10 +69,9 @@ export function useDistributionHistory({ limit = 12 } = {}) {
 
   return useQuery({
     queryKey: ["rewards", "distributions", wallet, limit],
-    queryFn: () => getDistributionHistory(wallet, { limit }),
+    queryFn: () => unwrap(getDistributionHistory(wallet, { limit }), "getDistributionHistory"),
     enabled: !!wallet && isSupabaseConfigured(),
     staleTime: 5 * 60 * 1000,
-    select: (res) => res.data,
   });
 }
 
@@ -87,10 +85,9 @@ export function useDistributionHistory({ limit = 12 } = {}) {
 export function usePoolStatus() {
   return useQuery({
     queryKey: ["rewards", "pool-status"],
-    queryFn: () => getPoolStatus(),
+    queryFn: () => unwrap(getPoolStatus(), "getPoolStatus"),
     enabled: isSupabaseConfigured(),
     staleTime: 5 * 60 * 1000,
-    select: (res) => res.data,
   });
 }
 

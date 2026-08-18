@@ -23,6 +23,7 @@ import {
   useChargeAuctionLot,
 } from "../../hooks/useTides";
 import { getAuctionItems } from "../../services/tidesApi";
+import { isSellerFiatReady, startSellerOnboarding } from "../../services/stripePayments";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { sameWallet } from "../../utils/wallet";
 import { formatUsdCents, parseUsdToCents, minimumNextBidCents } from "../../utils/money";
@@ -275,6 +276,34 @@ export function AuctionPanel({ tideId, isLive = false, endTime, isHost = false, 
   const mySettlements = settlements.filter((s) => sameWallet(s.winner_wallet, walletAddress));
   const settled = settlements.length > 0;
 
+  // null = still checking, so the settle button can say so rather than flashing
+  // the wrong state on first paint.
+  const [payoutsReady, setPayoutsReady] = useState(null);
+  const [startingPayouts, setStartingPayouts] = useState(false);
+
+  useEffect(() => {
+    if (!isHost || !isEnded || !walletAddress) return;
+    let cancelled = false;
+
+    isSellerFiatReady(walletAddress)
+      .then((ready) => { if (!cancelled) setPayoutsReady(!!ready); })
+      .catch(() => { if (!cancelled) setPayoutsReady(false); });
+
+    return () => { cancelled = true; };
+  }, [isHost, isEnded, walletAddress]);
+
+  const handleStartPayouts = async () => {
+    setActionError(null);
+    setStartingPayouts(true);
+    const { success, onboardingUrl, error } = await startSellerOnboarding({ walletAddress });
+    if (success && onboardingUrl) {
+      window.location.href = onboardingUrl;
+      return;
+    }
+    setActionError(error || "Couldn't open Stripe onboarding.");
+    setStartingPayouts(false);
+  };
+
   const run = (mutation, args) => {
     setActionError(null);
     mutation.mutate(args, {
@@ -363,20 +392,47 @@ export function AuctionPanel({ tideId, isLive = false, endTime, isHost = false, 
       {/* ── Host: close the auction ─────────────────────────────────────── */}
       {isHost && isEnded && !settled && (
         <div className="auction-panel__host">
-          <p className="text-muted">
-            The auction has ended. Settling picks the winner for each lot, charges
-            nothing yet, and can't be undone.
-          </p>
-          <button
-            className="btn btn--primary btn--sm"
-            onClick={() => {
-              if (!confirm("Settle this auction? Winners are locked in for every lot.")) return;
-              run(settleAuction);
-            }}
-            disabled={settleAuction.isPending}
-          >
-            {settleAuction.isPending ? "Settling…" : "🏁 Settle auction"}
-          </button>
+          {payoutsReady === false ? (
+            // settle_tide_auction refuses unless the host can actually receive
+            // payouts — better than telling someone they sold a fish with nowhere
+            // to send the money. But the onboarding flow lives in the Breeder
+            // Terminal, so the bare refusal was a dead end: a message about Stripe
+            // setup with no way to do it. The action goes here instead.
+            <>
+              <p className="text-muted">
+                Set up Stripe payouts before settling. Winners are charged
+                automatically, so the money needs somewhere to land.
+              </p>
+              <button
+                className="btn btn--primary btn--sm"
+                onClick={handleStartPayouts}
+                disabled={startingPayouts}
+              >
+                {startingPayouts ? "Opening Stripe…" : "Set up payouts"}
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-muted">
+                The auction has ended. Settling picks the winner for each lot, charges
+                nothing yet, and can't be undone.
+              </p>
+              <button
+                className="btn btn--primary btn--sm"
+                onClick={() => {
+                  if (!confirm("Settle this auction? Winners are locked in for every lot.")) return;
+                  run(settleAuction);
+                }}
+                disabled={settleAuction.isPending || payoutsReady === null}
+              >
+                {settleAuction.isPending
+                  ? "Settling…"
+                  : payoutsReady === null
+                    ? "Checking payouts…"
+                    : "🏁 Settle auction"}
+              </button>
+            </>
+          )}
         </div>
       )}
 

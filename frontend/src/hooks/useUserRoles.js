@@ -13,16 +13,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { getUserRoles } from "../services/rolesApi";
 import { getCurrentWallet, isSupabaseConfigured } from "../services/supabaseClient";
+import { unwrap } from "../utils/unwrapEnvelope";
 
 export function useUserRoles(walletAddress) {
   const wallet = walletAddress || getCurrentWallet();
 
   return useQuery({
     queryKey: ["reef", "user-roles", wallet],
-    queryFn: () => getUserRoles(wallet),
+    queryFn: () => unwrap(getUserRoles(wallet), "getUserRoles"),
     enabled: !!wallet && isSupabaseConfigured(),
     // Roles change rarely (a manual grant), so cache generously.
     staleTime: 5 * 60 * 1000,
-    select: (res) => res.data,
   });
 }

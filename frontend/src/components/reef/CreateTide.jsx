@@ -11,6 +11,7 @@ import { useCreateTide } from "../../hooks/useTides";
 import { uploadImage } from "../../services/mediaUpload";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { loadOwnedSpecimens, specimenOptionLabel } from "../../utils/ownedSpecimens";
+import { isSellerFiatReady } from "../../services/stripePayments";
 import { formatUsdCents, parseUsdToCents } from "../../utils/money";
 
 const TIDE_TYPES = [
@@ -86,6 +87,9 @@ export function CreateTide({ onSuccess, onCancel, preselectedSchoolId = null }) 
 
   const createTide = useCreateTide();
 
+  // null while unknown, so no warning flashes before the answer arrives.
+  const [payoutsReady, setPayoutsReady] = useState(null);
+
   useEffect(() => {
     if (formData.tideType !== "auction") return;
     let cancelled = false;
@@ -95,6 +99,10 @@ export function CreateTide({ onSuccess, onCancel, preselectedSchoolId = null }) 
       .then((rows) => { if (!cancelled) setOwnedSpecimens(rows); })
       .catch((e) => console.warn("[CreateTide] could not load specimens:", e))
       .finally(() => { if (!cancelled) setSpecimensLoading(false); });
+
+    isSellerFiatReady(getCurrentWallet())
+      .then((ready) => { if (!cancelled) setPayoutsReady(!!ready); })
+      .catch(() => { if (!cancelled) setPayoutsReady(false); });
 
     return () => { cancelled = true; };
   }, [formData.tideType]);
@@ -526,6 +534,18 @@ export function CreateTide({ onSuccess, onCancel, preselectedSchoolId = null }) 
                 Choose which of your registered fish go up for bidding. Bids are in
                 US dollars.
               </p>
+
+              {/* Surfaced here rather than at settlement. An auction cannot be
+                  settled until the host can receive payouts, so finding out after
+                  running the event means a wasted auction and disappointed
+                  bidders. */}
+              {payoutsReady === false && (
+                <p className="create-tide__warning">
+                  ⚠️ Stripe payouts aren't set up yet. You can create this auction,
+                  but you'll need to connect payouts before you can settle it and
+                  charge the winners.
+                </p>
+              )}
 
               {formData.auctionItems.length > 0 && (
                 <ul className="create-tide__lots">
