@@ -473,6 +473,37 @@
     .badge-difficult { background: rgba(167,139,250,0.2); color: var(--violet-400); border: 1px solid rgba(167,139,250,0.3); }
     .badge-unknown { background: rgba(255,255,255,0.1); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); }
 
+    /* Sexing badge. Class names come from the shared contract
+       (window.SexingGuide badgeClass) so this page and the in-app SexingGuide
+       style the same three states. Sits top-LEFT so it never collides with the
+       difficulty badge on the right. Semantic colours, always paired with text:
+       green = tell by eye, amber = documented but don't trust your eyes.
+       Amber not red — "hard to sex" is information, not a failure. */
+    .card-sexing-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 4;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      backdrop-filter: blur(8px);
+      white-space: nowrap;
+    }
+    .sexing-badge--reliable { background: rgba(52,211,153,0.2); color: var(--emerald-300); border: 1px solid rgba(52,211,153,0.32); }
+    .sexing-badge--unreliable { background: rgba(251,191,36,0.18); color: #fbbf24; border: 1px solid rgba(251,191,36,0.32); }
+    .sexing-badge--undocumented { background: rgba(148,163,184,0.14); color: var(--text-muted); border: 1px solid rgba(148,163,184,0.24); }
+
+    /* Male/female comparison inside the detail popup. Mirrors the layout
+       species.html already uses for its dimorphism section. */
+    .sex-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+    .sex-col { padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); }
+    .sex-col-title { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+    .sex-col-text { font-size: 0.78rem; line-height: 1.5; color: var(--text-secondary); }
+    @media (max-width: 640px) { .sex-compare { grid-template-columns: 1fr; } }
+
     .card-info {
       padding: 18px 20px 16px;
       background: linear-gradient(180deg, rgba(18,18,21,0.95) 0%, rgba(15,15,18,1) 100%);
@@ -1010,6 +1041,12 @@
       <select class="filter-select" id="familyFilter">
         <option value="">All Families</option>
       </select>
+      <select class="filter-select" id="sexingFilter" title="Filter by whether we document how to tell males from females">
+        <option value="any">Any sexing info</option>
+        <option value="reliable">Visually sexable</option>
+        <option value="documented">Sexing documented</option>
+        <option value="undocumented">Sexing missing</option>
+      </select>
       <select class="filter-select" id="difficultyFilter">
         <option value="">All Difficulties</option>
         <option value="Beginner">Beginner</option>
@@ -1096,6 +1133,12 @@
   <!-- Canonical difficulty contract (shared with the in-app catalog) -->
   <script src="/js/species-catalog.js"></script>
 
+  <!-- Canonical sexing contract (shared with the in-app SexingGuide). Kept in
+       lockstep by the parity test in src/services/sexingGuide.test.js, so this
+       page and the app can never disagree about whether a fish can be sexed by
+       eye. -->
+  <script src="/js/sexing-guide.js"></script>
+
   <!-- ========== SCRIPT ========== -->
   <script>
     let allSpecies = [];
@@ -1125,6 +1168,21 @@
     ]);
 
     // ---- Helpers ----
+    // Escape catalog prose before it goes into markup. The sexing descriptions
+    // are free text from the catalog (and, once contribution lands, from
+    // curators), so they get escaped rather than trusted — unlike the short
+    // enumerated values this page interpolates elsewhere.
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
     function toSlug(name) {
       return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     }
@@ -1235,6 +1293,7 @@
       const query = document.getElementById('searchInput').value.toLowerCase().trim();
       const familyVal = document.getElementById('familyFilter').value;
       const diffVal = document.getElementById('difficultyFilter').value;
+      const sexingVal = document.getElementById('sexingFilter').value;
 
       filteredSpecies = allSpecies.filter(sp => {
         if (query) {
@@ -1256,6 +1315,10 @@
             sp.personality?.flavorText?.casual || '',
             // Difficulty
             sp.tankMetrics?.difficulty || '',
+            // Sexing notes — searching "gravid", "ovipositor" or "nuchal hump"
+            // should find the species whose sexing description says it.
+            sp.sexualDimorphism?.male || '',
+            sp.sexualDimorphism?.female || '',
             // Size category hints
             (sp.maxLengthCm && sp.maxLengthCm <= 4) ? 'nano tiny small' : '',
             (sp.maxLengthCm && sp.maxLengthCm >= 20) ? 'large big' : '',
@@ -1266,6 +1329,8 @@
         }
         if (familyVal && sp.family !== familyVal) return false;
         if (diffVal && sp.tankMetrics?.difficulty !== diffVal) return false;
+        // Shared predicate, not a local reimplementation — see /js/sexing-guide.js.
+        if (!window.SexingGuide.matchesSexingFilter(sp, sexingVal)) return false;
         return true;
       });
 
@@ -1364,6 +1429,14 @@
         const videoSlug = sp.scientificName.toLowerCase().replace(/\s+/g, '-');
         const videoPath = `/videos/species/${videoSlug}.mp4`;
 
+        // Sexing badge — only for species we have actually documented. A grey
+        // "not documented" pill on the other 296 cards would be noise on a
+        // browsing grid; the Sexing filter is how you find the gaps deliberately.
+        const sexing = window.SexingGuide.normalizeSexingGuide(sp);
+        const sexingHtml = sexing.documented
+          ? `<span class="card-sexing-badge ${sexing.badgeClass}" title="${escapeAttr(window.SexingGuide.sexingBlurb(sexing))}">♂♀ ${window.SexingGuide.sexingShortLabel(sexing)}</span>`
+          : '';
+
         const imageHtml = hasImage
           ? `<img class="blur-bg" src="${sp.masterPhotoUrl}" alt="" aria-hidden="true"><img class="main-img" src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="lazy"><video class="card-video" src="${videoPath}" muted loop playsinline preload="metadata"></video>`
           : `<span class="placeholder-icon">🐟</span>`;
@@ -1429,6 +1502,7 @@
             <div class="card-image">
               ${imageHtml}
               <div class="card-vignette"></div>
+              ${sexingHtml}
               <span class="card-difficulty-badge ${badgeClass}">${difficulty}</span>
               <button class="card-compare-btn" onclick="event.stopPropagation();addToCompare(${idx})" title="Add to Compare">⇄</button>
             </div>
@@ -1599,6 +1673,26 @@
           </div>`;
       }
 
+      // Sexual dimorphism. Placed straight after Reproduction because it is the
+      // question that precedes breeding: you cannot pair what you cannot sex.
+      // Rendered for the unreliable state too — an entry saying "you need the
+      // genital papilla in breeding condition" is the answer for that species,
+      // not a gap, and omitting it would read as "males and females look alike".
+      const sexingDetail = window.SexingGuide.normalizeSexingGuide(sp);
+      if (sexingDetail.documented) {
+        backHtml += `
+          <div class="back-section">
+            <div class="back-section-title">Sexual Dimorphism</div>
+            <p class="back-text"><span class="${sexingDetail.badgeClass}" style="padding:2px 8px;border-radius:20px;font-size:0.62rem;font-weight:700;">♂♀ ${window.SexingGuide.sexingShortLabel(sexingDetail)}</span></p>
+            <p class="back-text" style="margin-top:6px;">${escapeHtml(window.SexingGuide.sexingBlurb(sexingDetail))}</p>
+            ${sexingDetail.maturityAge ? `<p class="back-text" style="margin-top:6px;"><strong>Sexual maturity:</strong> ${escapeHtml(sexingDetail.maturityAge)}</p>` : ''}
+            <div class="sex-compare">
+              ${sexingDetail.male ? `<div class="sex-col"><div class="sex-col-title">♂ Male</div><div class="sex-col-text">${escapeHtml(sexingDetail.male)}</div></div>` : ''}
+              ${sexingDetail.female ? `<div class="sex-col"><div class="sex-col-title">♀ Female</div><div class="sex-col-text">${escapeHtml(sexingDetail.female)}</div></div>` : ''}
+            </div>
+          </div>`;
+      }
+
       if (sp.personality?.flavorText?.casual) {
         backHtml += `
           <div class="back-section">
@@ -1674,6 +1768,7 @@
     document.getElementById('searchInput').addEventListener('input', applyFilters);
     document.getElementById('familyFilter').addEventListener('change', applyFilters);
     document.getElementById('difficultyFilter').addEventListener('change', applyFilters);
+    document.getElementById('sexingFilter').addEventListener('change', applyFilters);
 
     // ---- Taxonomy Grouped View ----
     function quickSearch(term) {
@@ -1755,11 +1850,19 @@
             ? `<img class="blur-bg" src="${sp.masterPhotoUrl}" alt="" aria-hidden="true"><img class="main-img" src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="lazy">`
             : `<span class="placeholder-icon">🐟</span>`;
 
+          // Same badge as the flat grid — the taxonomy view is a second render
+          // path over the same cards, so it has to stay in step.
+          const taxSexing = window.SexingGuide.normalizeSexingGuide(sp);
+          const taxSexingHtml = taxSexing.documented
+            ? `<span class="card-sexing-badge ${taxSexing.badgeClass}" title="${escapeAttr(window.SexingGuide.sexingBlurb(taxSexing))}">♂♀ ${window.SexingGuide.sexingShortLabel(taxSexing)}</span>`
+            : '';
+
           html += `
             <div class="species-card card-visible ${tierClass}" onclick="openPopup(${idx})" data-idx="${idx}">
               <div class="card-image">
                 ${imageHtml}
                 <div class="card-vignette"></div>
+                ${taxSexingHtml}
                 <span class="card-difficulty-badge ${badgeClass}">${difficulty}</span>
                 <button class="card-compare-btn" onclick="event.stopPropagation();addToCompare(${idx})" title="Add to Compare">⇄</button>
               </div>

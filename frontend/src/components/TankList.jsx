@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { ethers, Contract } from "ethers";
 import { FishSimple, Flask, Drop, Asterisk } from "@phosphor-icons/react";
 import aquadexAbi from "../abi/AquadexManager.json";
@@ -25,6 +25,8 @@ import {
   retirementOutcomeLabel,
 } from "../utils/specimenIdentity";
 import { SEX, SEX_OPTIONS, isKnownSex, normalizeSex, sexOptionLabel, sexSymbol } from "../utils/specimenSex";
+import { findCatalogRecord } from "../services/sexingGuide";
+import { SexingGuide } from "./SexingGuide";
 import { LIFE_STAGE_OPTIONS, lifeStageOptionLabel, canBeCertificated } from "../utils/lifeStage";
 import { PROVENANCE, provenanceText } from "../utils/provenance";
 import { useUnitPrefs } from "../hooks/useUnitPrefs";
@@ -228,6 +230,20 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   // "" means not recorded, and stays not recorded — never coerced to a stage.
   const [addFishLifeStage, setAddFishLifeStage] = useState("");
   const { data: contractSpecies = [] } = useContractSpecies(contractAddress);
+
+  // The reference catalog record for the species being added, so the Gender
+  // control can show that species' sexing notes. Resolved by NAME via the
+  // contract entry, never by id — the on-chain speciesId and the catalog's
+  // specCode are different numbering schemes (see findCatalogRecord).
+  const addFishSpeciesRecord = useMemo(() => {
+    if (!addFishSpeciesId) return null;
+    const onChain = contractSpecies.find((s) => String(s.speciesId) === String(addFishSpeciesId));
+    if (!onChain) return null;
+    return findCatalogRecord(fishbaseData, {
+      scientificName: onChain.scientificName,
+      commonName: onChain.commonName,
+    });
+  }, [addFishSpeciesId, contractSpecies, fishbaseData]);
   const [poseidonChatOpen, setPoseidonChatOpen] = useState(false);
   const [poseidonSeed, setPoseidonSeed] = useState(null); // grounded question seeded from a contextual "Ask Poseidon" tip
   const [activeTankSchedules, setActiveTankSchedules] = useState([]); // schedules for the open tank, so the hero ambient reflects overdue maintenance
@@ -3924,6 +3940,19 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     })}
                   </div>
                 </div>
+
+                {/* How to actually answer the question above. The catalog has
+                    documented sexing notes for this species and, until now, the
+                    only place they rendered was the public species page — so the
+                    keeper was asked to pick a sex with no help identifying it.
+                    Hidden when undocumented so the form does not grow a row that
+                    says nothing. */}
+                <SexingGuide
+                  record={addFishSpeciesRecord}
+                  casual={casualModeActive}
+                  compact
+                  hideWhenUndocumented
+                />
               </div>
 
               {/* Life stage — the age question a keeper can actually answer.

@@ -27,6 +27,7 @@ import { CasualSpeciesDetail } from "./finder/CasualSpeciesDetail";
 import { resolveSpecimenPhoto } from "../services/tankMedia";
 import { useUnitPrefs } from "../hooks/useUnitPrefs";
 import { formatTemperature, formatTemperatureRange, resolveTempScale } from "../utils/units";
+import { SexingGuide } from "./SexingGuide";
 
 // Compatibility ring/label hue per honest fit verdict (Fish Finder T2). Driven
 // by verdict rather than raw score so an unknown-data "caution" never shows a
@@ -1762,6 +1763,12 @@ export function BreedGallery({
                     {fullProfile.reproduction?.comments || "Egg scattering species. Separate hatchery tank recommended."}
                   </p>
                 </div>
+
+                {/* Sexing sits in the reproduction tab because that is the decision
+                    it serves: you cannot pair what you cannot sex. Shown even when
+                    undocumented here — a breeder needs to know the gap is ours
+                    before planning around it. */}
+                <SexingGuide record={fullProfile} casual={casualModeActive} />
               </div>
             )}
 

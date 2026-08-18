@@ -198,6 +198,24 @@ function toPublicSpecies(sp, fields) {
           notes: sp.reproduction.comments ?? null,
         }
       : null,
+    // How to tell a male from a female. Present on the catalog records that have
+    // it and omitted (null) otherwise — this whitelist previously dropped the
+    // field entirely, so no API consumer could see it at all.
+    //
+    // `visuallySexable` is the important part of the contract: it is `true` ONLY
+    // when the catalog explicitly says the difference is reliable. For a species
+    // documented as NOT visually sexable it is `false` while `maleNotes` and
+    // `femaleNotes` still describe what to look at, so a consumer can tell
+    // "subtle differences you cannot trust" apart from "we have no data" (which
+    // is the whole object being null). Do not collapse those two cases.
+    sexualDimorphism: sp.sexualDimorphism
+      ? {
+          visuallySexable: sp.sexualDimorphism.identifiable === true,
+          maleNotes: sp.sexualDimorphism.male ?? null,
+          femaleNotes: sp.sexualDimorphism.female ?? null,
+          sexualMaturity: sp.sexualDimorphism.maturityAge ?? null,
+        }
+      : null,
     personality: sp.personality
       ? {
           tagline: sp.personality.vibeLine?.casual ?? null,

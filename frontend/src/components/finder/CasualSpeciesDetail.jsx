@@ -13,6 +13,7 @@ import { PoseidonChatConsole } from "../PoseidonChatConsole";
 import { DETAIL_COPY } from "./finderCopy";
 import { useUnitPrefs } from "../../hooks/useUnitPrefs";
 import { formatTemperatureRange } from "../../utils/units";
+import { SexingGuide } from "../SexingGuide";
 import "./CasualSpeciesDetail.css";
 
 const isPlantEntry = (item) => !!item && item.type === "plant";
@@ -259,6 +260,11 @@ export function CasualSpeciesDetail({
               )}
             </div>
           )}
+
+          {/* Male vs female. Hidden when undocumented: this is a browsing surface
+              for someone choosing a fish, so an "unknown" row per species would be
+              noise. The species page states the gap explicitly instead. */}
+          <SexingGuide record={fullProfile} casual hideWhenUndocumented />
 
           <button
             type="button"

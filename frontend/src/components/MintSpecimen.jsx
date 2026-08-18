@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { ethers, Contract } from "ethers";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { awardXp } from "../utils/xp";
@@ -8,6 +8,9 @@ import { mapContractError } from "../utils/errorHandler";
 import { relayMintSpecimen } from "../services/relayer";
 import { putSpecimenPhoto } from "../services/tankMedia";
 import { SEX, SEX_OPTIONS, normalizeSex, sexOptionLabel } from "../utils/specimenSex";
+import { useSpeciesData } from "../hooks/useSpeciesData";
+import { findCatalogRecord } from "../services/sexingGuide";
+import { SexingGuide } from "./SexingGuide";
 import { LIFE_STAGE_OPTIONS, lifeStageOptionLabel, canBeCertificated } from "../utils/lifeStage";
 import { PROVENANCE } from "../utils/provenance";
 import {
@@ -22,6 +25,10 @@ import { useProfile } from "../hooks/useReefProfile";
 import { generateAlias } from "../utils/generateAlias";
 
 export function MintSpecimen({ contractAddress, walletAccount, casualModeActive }) {
+  // Reference catalog, for this form's sexing notes. react-query with
+  // staleTime: Infinity, so this shares the cache every other species surface
+  // already populated rather than costing another fetch.
+  const { data: referenceCatalog = [] } = useSpeciesData();
   const [speciesList, setSpeciesList] = useState([]);
   const [tankList, setTankList] = useState([]);
   const [specimenOptions, setSpecimenOptions] = useState([]);
@@ -101,6 +108,19 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
   });
   const [metadataUriError, setMetadataUriError] = useState(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Reference record for the selected species, resolved by NAME through the
+  // contract catalog entry. `speciesList` ids are on-chain ids, which are a
+  // different numbering scheme from the catalog's specCode — see
+  // findCatalogRecord for why matching them would read the wrong fish.
+  const selectedSpeciesRecord = useMemo(() => {
+    const onChain = speciesList.find((s) => String(s.id) === String(formData.speciesId));
+    if (!onChain) return null;
+    return findCatalogRecord(referenceCatalog, {
+      scientificName: onChain.scientificName,
+      commonName: onChain.commonName,
+    });
+  }, [speciesList, formData.speciesId, referenceCatalog]);
 
   useEffect(() => {
     if (walletAccount) {
@@ -599,6 +619,18 @@ export function MintSpecimen({ contractAddress, walletAccount, casualModeActive 
           <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.25rem", display: "block" }}>
             Optional. Recording it lets the Spawning tools check a pairing before you breed.
           </span>
+
+          {/* This species' documented sexing notes, right where the sex is being
+              recorded. A certificate carries its sex forever and feeds the
+              pairing checks, so answering it from the catalog beats guessing —
+              and for a species documented as NOT visually sexable, saying so
+              here is what stops a confident wrong answer. */}
+          <SexingGuide
+            record={selectedSpeciesRecord}
+            casual={casualModeActive}
+            compact
+            hideWhenUndocumented
+          />
         </div>
 
         <div className="form-grid-2col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
