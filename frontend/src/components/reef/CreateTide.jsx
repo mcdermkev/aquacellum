@@ -12,6 +12,7 @@ import { uploadImage } from "../../services/mediaUpload";
 import { getCurrentWallet } from "../../services/supabaseClient";
 import { loadOwnedSpecimens, specimenOptionLabel } from "../../utils/ownedSpecimens";
 import { isSellerFiatReady } from "../../services/stripePayments";
+import { LocationPicker } from "../LocationPicker";
 import { formatUsdCents, parseUsdToCents } from "../../utils/money";
 
 const TIDE_TYPES = [
@@ -159,42 +160,9 @@ export function CreateTide({ onSuccess, onCancel, preselectedSchoolId = null }) 
     }));
   };
 
-  // ── Expo location ────────────────────────────────────────────────────────
-  // Latitude/longitude are now required for an expo, so typing raw coordinates
-  // cannot be the only way in. Both existing expos in production have
-  // gps_bounds: null precisely because the fields were optional and unlabelled.
-  const [locating, setLocating] = useState(false);
-  const [locateError, setLocateError] = useState(null);
-
-  const useMyLocation = () => {
-    setLocateError(null);
-
-    if (!navigator.geolocation) {
-      setLocateError("This browser can't share a location — enter the coordinates by hand.");
-      return;
-    }
-
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setFormData((prev) => ({
-          ...prev,
-          gpsLat: pos.coords.latitude.toFixed(6),
-          gpsLng: pos.coords.longitude.toFixed(6),
-        }));
-        setLocating(false);
-      },
-      (err) => {
-        setLocateError(
-          err.code === err.PERMISSION_DENIED
-            ? "Location permission denied — enter the coordinates by hand."
-            : "Couldn't get a location — enter the coordinates by hand."
-        );
-        setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
+  // Expo location is handled by LocationPicker, which owns the map, venue search,
+  // "use my location" and the radius circle. The geolocation handling that briefly
+  // lived here moved into it rather than being duplicated.
 
   const handleBannerSelect = (e) => {
     const file = e.target.files?.[0];
@@ -430,49 +398,42 @@ export function CreateTide({ onSuccess, onCancel, preselectedSchoolId = null }) 
                 Required — this places the meetup on the map and defines the area
                 attendees can check in from.
               </p>
-              <button
-                type="button"
-                className="btn btn--secondary btn--sm"
-                onClick={useMyLocation}
-                disabled={locating}
-              >
-                {locating ? "Locating…" : "📍 Use my current location"}
-              </button>
-              {locateError && (
-                <p className="create-tide__error" role="alert">{locateError}</p>
-              )}
-              <div className="create-tide__gps-row">
-                <label className="form-field">
-                  <span>Latitude</span>
-                  <input
-                    type="number"
-                    step="any"
-                    value={formData.gpsLat}
-                    onChange={(e) => updateField("gpsLat", e.target.value)}
-                    placeholder="45.5231"
-                  />
-                </label>
-                <label className="form-field">
-                  <span>Longitude</span>
-                  <input
-                    type="number"
-                    step="any"
-                    value={formData.gpsLng}
-                    onChange={(e) => updateField("gpsLng", e.target.value)}
-                    placeholder="-122.6765"
-                  />
-                </label>
-                <label className="form-field">
-                  <span>Radius (km)</span>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0.1"
-                    value={formData.gpsRadius}
-                    onChange={(e) => updateField("gpsRadius", e.target.value)}
-                  />
-                </label>
-              </div>
+              {/* Search, tap or drag — not two decimal-degree number fields.
+                  Nobody organising a meetup knows their venue's coordinates,
+                  which is why both existing expos were created with gps_bounds
+                  null and their Map tab had nothing to draw. */}
+              <LocationPicker
+                lat={formData.gpsLat === "" ? null : Number(formData.gpsLat)}
+                lng={formData.gpsLng === "" ? null : Number(formData.gpsLng)}
+                radiusKm={Number(formData.gpsRadius) || null}
+                searchPlaceholder="Search the venue — e.g. Portland Expo Center"
+                onPick={(pickedLat, pickedLng) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    gpsLat: pickedLat == null ? "" : String(pickedLat),
+                    gpsLng: pickedLng == null ? "" : String(pickedLng),
+                  }));
+                }}
+              />
+
+              {/* A slider rather than a number box: the radius decides who may
+                  check in, and the circle on the map above updates as it moves,
+                  so the host can see the zone instead of guessing at kilometres. */}
+              <label className="form-field create-tide__radius">
+                <span>
+                  Check-in zone: {formData.gpsRadius} km
+                  <span className="text-muted"> — how close attendees must be to check in</span>
+                </span>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="10"
+                  step="0.1"
+                  value={formData.gpsRadius}
+                  onChange={(e) => updateField("gpsRadius", e.target.value)}
+                  aria-label={`Check-in radius in kilometres, currently ${formData.gpsRadius}`}
+                />
+              </label>
             </fieldset>
           )}
 

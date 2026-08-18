@@ -8898,3 +8898,120 @@ html {
   font-size: 0.72rem;
   line-height: 1.5;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LocationPicker — pick a place, don't type coordinates
+   ═══════════════════════════════════════════════════════════════════════════
+   Replaces "Latitude"/"Longitude" number fields on the Expo Tide form. Both
+   expos in production were created with gps_bounds null, because nobody
+   organising a meetup knows their venue's decimal coordinates.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.location-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.location-picker__search {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.location-picker__search-input {
+  flex: 1 1 12rem;
+  min-width: 0;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.82rem;
+  padding: 0.5rem 0.6rem;
+}
+
+.location-picker__search-input:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 1px;
+}
+
+.location-picker__results {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+  background: rgba(15, 23, 42, 0.97);
+  border: 1px solid var(--glass-border-hover);
+  box-shadow: var(--glass-shadow);
+  max-height: 11rem;
+  overflow-y: auto;
+}
+
+.location-picker__results button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  padding: 0.45rem 0.5rem;
+  border-radius: 4px;
+}
+
+.location-picker__results button:hover,
+.location-picker__results button:focus-visible {
+  background: var(--glass-bg-hover);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.location-picker__map {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  overflow: hidden;
+}
+
+.location-picker__hint,
+.location-picker__resolved {
+  margin: 0;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.location-picker__hint {
+  color: var(--text-muted);
+}
+
+/* The reverse-geocoded address. This is the confirmation step — a coordinate
+   pair cannot be checked by eye, but "Portland Expo Center, OR" can. */
+.location-picker__resolved {
+  color: var(--accent-blue);
+  overflow-wrap: anywhere;
+}
+
+.location-picker__error {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--accent-red);
+}
+
+.location-picker__coords {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+/* The radius slider sits under the map so the circle above it moves as you drag,
+   which is the whole point of having a slider rather than a number box. */
+.create-tide__radius input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent-blue);
+  /* Comfortable to drag with a thumb on a narrow phone. */
+  min-height: 34px;
+}
