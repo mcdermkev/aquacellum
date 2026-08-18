@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { db } from "../../db";
 import { deriveTankHealth } from "../../utils/tankHealth";
 import { useUnitPrefs } from "../../hooks/useUnitPrefs";
-import { formatTemperature } from "../../utils/units";
+import { formatTemperature, DEFAULT_TEMP_UNIT } from "../../utils/units";
 import { TankHealthRing } from "./TankHealthRing";
 import "./JournalTimeline.css";
 
@@ -32,14 +32,17 @@ export function JournalTimeline({ tank, entriesOverride }) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const built = await loadJournalEntries(tank?.id);
+      const built = await loadJournalEntries(tank?.id, tempUnit);
       if (!cancelled) {
         setEntries(built);
         setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [tank?.id, entriesOverride]);
+    // tempUnit is a dependency because the readings are formatted during the
+    // load, so switching Celsius/Fahrenheit has to rebuild the entries. Without
+    // it the journal would keep the old unit until the tank changed.
+  }, [tank?.id, entriesOverride, tempUnit]);
 
   const health = tank ? deriveTankHealth(tank) : null;
 
@@ -82,7 +85,7 @@ export function JournalTimeline({ tank, entriesOverride }) {
  * Load + merge journal entries for a tank from the spine tables.
  * Exported for reuse/testing.
  */
-export async function loadJournalEntries(tankId) {
+export async function loadJournalEntries(tankId, tempUnit = DEFAULT_TEMP_UNIT) {
   if (tankId == null) return [];
   const idKeys = [tankId, String(tankId), Number(tankId)];
   const out = [];
@@ -109,8 +112,11 @@ export async function loadJournalEntries(tankId) {
     for (const r of readings) {
       const bits = [];
       // Respects Settings → Units & Formatting → Temperature. This line hardcoded
-    // °C, so a keeper who chose Fahrenheit still saw Celsius in their own journal.
-    if (r.temp != null) bits.push(formatTemperature(r.temp, tempUnit));
+      // °C, so a keeper who chose Fahrenheit still saw Celsius in their own
+      // journal. The unit arrives as an argument rather than being read here
+      // because this loader is a plain module function, not a hook — the
+      // component owns the subscription and passes the current value down.
+      if (r.temp != null) bits.push(formatTemperature(r.temp, tempUnit));
       if (r.ph != null) bits.push(`pH ${Number(r.ph).toFixed(1)}`);
       if (r.ammonia != null) bits.push(`NH₃ ${Number(r.ammonia).toFixed(2)}`);
       if (r.nitrate != null) bits.push(`NO₃ ${Number(r.nitrate).toFixed(0)}`);
