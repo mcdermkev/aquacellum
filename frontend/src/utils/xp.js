@@ -166,27 +166,18 @@ export const TIER_LADDER = [
 // ─────────────────────────────────────────────────────────────────────────────
 // Tier → Echo stage/hue mapping (COSMETIC_EXPRESSION_SPEC.md §4)
 //
-// The canonical link between a keeper's XP tier and their Echo companion's
-// visual form. Previously defined as `companionForm` prose strings that nothing
-// consumed; now expressed as EchoRenderer stage floors and hue overrides.
+// `TIER_ECHO_FORM` lived here — a tier → { stageFloor, hueShift, label } map that
+// tied Echo's appearance to XP rank. Removed with the Echo rework
+// (docs/ECHO_CHARACTER_SPEC.md §2): Echo is one character, identical for every
+// keeper, so there is no per-tier form to look up.
 //
-// Stage floor: the MINIMUM EchoRenderer stage a keeper at this tier sees. If
-// their activity-derived stage (from useEchoState) is higher, that wins. The
-// tier just guarantees they are never below their rank's form.
-//
-// Hue override: the base CSS hue-rotation that gives each tier's companion its
-// signature color cast. Layered on top of the DNA-driven hue in EchoRenderer.
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const TIER_ECHO_FORM = Object.freeze({
-  Shallow:         { stageFloor: 2, hueShift: 0,   label: "Translucent fry" },
-  Coastal:         { stageFloor: 3, hueShift: 195, label: "Silver-blue shimmer" },
-  Pelagic:         { stageFloor: 4, hueShift: 42,  label: "Golden aura" },
-  Abyssal:         { stageFloor: 5, hueShift: 270, label: "Evolved deep form" },
-  Hadal:           { stageFloor: 6, hueShift: 38,  label: "Legendary golden koi" },
-  "Hadal-Champion": { stageFloor: 6, hueShift: 38,  label: "Legendary golden koi" },
-});
-
+// It is worth recording WHY it went, because it was actively misleading. The map
+// claimed to set a *minimum* stage that a keeper's activity could exceed. In
+// practice it dominated: entry-tier Shallow floored at stage 2, which made the
+// `careDays >= 3` and `careDays >= 7` branches unreachable, and Hadal floored at
+// 6, which bypassed the entire 365-care-day path. Since `careDays` itself fell
+// back to `totalXp / 20`, "Echo grows from care, not XP" was inverted in code —
+// she was a re-skinned XP bar wearing a care ladder's labels.
 // ─────────────────────────────────────────────────────────────────────────────
 // Core Functions
 // ─────────────────────────────────────────────────────────────────────────────

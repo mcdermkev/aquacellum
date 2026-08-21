@@ -25,7 +25,63 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { getTierInfo, TIER_LADDER } from "../utils/xp";
-import { getActionReaction } from "../utils/echoMood";
+
+/**
+ * Action reaction lines, inlined from the deleted `utils/echoMood.js`.
+ *
+ * That module held a SECOND mood system — six moods derived from streak and
+ * hours-idle — running in parallel with the needs-average moods in `echoNeeds.js`.
+ * Both exported a symbol called `MOODS`, and each had its own set of consumers.
+ * Both are gone (docs/ECHO_CHARACTER_SPEC.md §6); this one small function was the
+ * only part anything reachable still used, so it moved here rather than keeping a
+ * 281-line module alive for it.
+ *
+ * ⚠️ These lines are hardcoded prose, which is the thing spec §5 replaces: Echo's
+ * voice should be Poseidon's grounded output, not an array picked at random. This
+ * component is scheduled for replacement by the observation layer. Do not add
+ * lines here — and note that none of them may give husbandry advice, which is why
+ * they only ever acknowledge an action the keeper already took.
+ */
+const ACTION_REACTIONS = {
+  LOG_FEEDING: [
+    "Fed and happy. Echo approves.",
+    "Full bellies, content fins.",
+    "Mealtime is the best time. Echo agrees.",
+  ],
+  LOG_WATER: [
+    "Fresh water makes everything better. Echo feels it.",
+    "Clean change logged. The tank breathes easier now.",
+    "Water renewed. A simple act that means everything.",
+  ],
+  LOG_PARAMETERS: [
+    "Parameters locked in. Knowledge is power.",
+    "Good data leads to good care. Echo relaxes.",
+    "Numbers checked. Your fish don't know — but they benefit.",
+  ],
+  REGISTER_TANK: [
+    "A new home registered. Echo is excited to explore it.",
+    "Another tank in the family. The journey grows.",
+  ],
+  MINT_SPECIMEN: [
+    "A birth certificate, officially sealed. Legacy captured.",
+    "New life, documented. Echo hums with quiet pride.",
+  ],
+  SPAWN_BREED: [
+    "New life! Echo can barely contain herself.",
+    "The cycle continues. Echo witnesses something beautiful.",
+  ],
+  TIER_UP: [
+    "Echo evolved! A new form, earned through care.",
+    "Tier unlocked. Echo shimmers with a deeper light now.",
+    "Growth. Real growth. Echo feels it in her scales.",
+  ],
+};
+
+function getActionReaction(actionKey) {
+  const lines = ACTION_REACTIONS[actionKey];
+  if (!lines || lines.length === 0) return null;
+  return lines[Math.floor(Math.random() * lines.length)];
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Configuration

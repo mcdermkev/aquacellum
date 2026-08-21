@@ -69,7 +69,7 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
       });
     }
 
-    // Dispatch echo reaction to CompanionFishEntity (non-destructive, ok to auto-run)
+    // Dispatch echo reaction to EchoAmbient (non-destructive, ok to auto-run)
     if (lastMsg.echoReaction) {
       window.dispatchEvent(
         new CustomEvent("poseidon:echo-reaction", {

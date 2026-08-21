@@ -1,476 +1,176 @@
+import React, { useEffect, useRef, useState } from "react";
+import { EchoRenderer } from "./EchoRenderer";
+import "./EchoAmbient.css";
+
 /**
- * EchoAmbient.jsx
+ * EchoAmbient — Echo's persistent presence.
  *
- * Persistent ambient Echo presence — a small (32px) companion that floats
- * in the bottom-left corner of the app across all pages.
+ * See docs/ECHO_CHARACTER_SPEC.md §3. Poseidon is the brain, Echo is the body:
+ * she is present, she drifts, and she will react to him. That is all.
  *
- * Behaviors:
- *   - Idle: gentle bob animation
- *   - Page transition: dart to new position, look around
- *   - User action: quick reaction (bounce, sparkle, nod)
- *   - Long idle (2+ min): falls asleep (zzz)
- *   - Tap: expands to quick-status popover (needs summary, mood, streak)
+ * WHAT THIS REPLACED
+ *
+ * 437 lines that also owned a tap-to-open handler for a full-screen pet screen,
+ * a needs-summary popover with per-need progress bars, a mood header, and a
+ * streak readout. All of that belonged to the Tamagotchi role the spec removed —
+ * a companion you can neglect cannot also be a guide you trust.
+ *
+ * Two behavioural fixes carried over from the old version's problems:
+ *
+ *   0. She never listened to Poseidon. `poseidon:echo-reaction` was dispatched
+ *      from five places and received only by `CompanionFishEntity`. She listens
+ *      now — see the effect below.
+ *   1. She roamed on `setInterval(4000–7000ms)`. A fixed cadence reads as a
+ *      screensaver, not a creature. Every reposition now gets its own jittered
+ *      delay (spec §4 rule 2).
+ *   2. She was a `role="button"` with `tabIndex={0}` sitting at `zIndex: 8000`
+ *      in the corner — a focusable, clickable object over the UI. She is now
+ *      inert: `pointer-events: none` and `aria-hidden`, so she cannot swallow a
+ *      click or a tab stop. This project has already lost time to a floating
+ *      element covering a control.
+ *
+ * ⚠️ SHE IS DELIBERATELY NON-INTERACTIVE. Tapping Echo should open Poseidon (spec
+ * §3), but `PoseidonGlobalWidget` keeps `isOpen` in local state with no
+ * programmatic entry point, so that direction still needs a bridge. Rather than
+ * leave a button that does nothing, she is presence-only: she hears Poseidon, she
+ * cannot yet summon him.
  *
  * Props:
- *   - dna {object} EchoDNA from on-chain
- *   - stage {number} 0–6
- *   - needs {object} Current calculated needs
- *   - personality {object} Personality axes
- *   - mood {object} Current mood from getMoodFromNeeds
- *   - streak {number} Care streak days
- *   - onOpenFull {function} Handler to open full EchoLivingCompanion screen
- *   - visible {boolean} Whether to show (false in pro mode or during full screen)
+ *   visible {boolean} render at all — the caller owns the Settings gate
+ *   calm    {boolean} Pro mode: quieter motion, no roaming
  */
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { EchoRenderer } from "./EchoRenderer";
-import { getMoodFromNeeds, getNeedsSummary, getMostCriticalNeed } from "../utils/echoNeeds";
+const AMBIENT_SIZE = 56;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────────────────────────────────────
+// Roam cadence. Jittered per move; see the docblock.
+const ROAM_MIN_MS = 9000;
+const ROAM_JITTER_MS = 7000;
 
-const IDLE_SLEEP_MS = 120000; // 2 minutes idle → sleep
-const REACTION_DURATION_MS = 2000;
-const POPOVER_DISMISS_MS = 6000;
-const AMBIENT_SIZE = 32;
-const ROAM_MIN_X = 12;
-const ROAM_MAX_X_PCT = 0.28; // max 28% of viewport width
-const DART_DISTANCE = 60; // px burst on XP/navigation event
+// How far she may drift from her anchor, in px. Small on purpose: she is a
+// presence in the corner, not a pet wandering the viewport.
+const DRIFT_RANGE = 22;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Ambient state types
-// ─────────────────────────────────────────────────────────────────────────────
+// Long idle → she settles. Real inactivity, not a timer since mount.
+const REST_AFTER_MS = 2 * 60 * 1000;
 
-const AMBIENT_STATES = {
-  idle: "idle",
-  sleeping: "sleeping",
-  reacting: "reacting",
-  darting: "darting",
-};
+// Poseidon reaction timing. Spec §4 rule 3: she reacts a BEAT LATE. Reacting on
+// the same frame as his output reads as scripted; a short delay reads as reacting
+// to it. Rule 4: the response is brief and bounded — the payload can ask for 12
+// seconds, which is a pose, not a reaction.
+const REACT_DELAY_MS = 250;
+const REACT_MAX_MS = 2200;
 
-// Quick reaction emojis for XP events
-const REACTION_EMOJIS = {
-  feed: "🍽️",
-  water: "💧",
-  params: "🧪",
-  scan: "🔍",
-  social: "💬",
-  xp: "✨",
-  streak: "🔥",
-  default: "💫",
-};
+export function EchoAmbient({ visible = true, calm = false }) {
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [resting, setResting] = useState(false);
+  const [reacting, setReacting] = useState(false);
+  const roamTimer = useRef(null);
+  const restTimer = useRef(null);
+  const reactTimers = useRef([]);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Component
-// ─────────────────────────────────────────────────────────────────────────────
-
-export function EchoAmbient({
-  dna,
-  stage = 2,
-  needs,
-  personality,
-  mood,
-  streak = 0,
-  onOpenFull,
-  visible = true,
-}) {
-  const [ambientState, setAmbientState] = useState(AMBIENT_STATES.idle);
-  const [reactionEmoji, setReactionEmoji] = useState(null);
-  const [showPopover, setShowPopover] = useState(false);
-  const [position, setPosition] = useState({ x: 16, y: 0 }); // bottom-left offset
-  const [facingLeft, setFacingLeft] = useState(false);
-  const [lastInteraction, setLastInteraction] = useState(null);
-
-  const idleTimer = useRef(null);
-  const reactionTimer = useRef(null);
-  const popoverTimer = useRef(null);
-  const lastActivityTime = useRef(Date.now());
-
-  // Reset idle timer on any activity
-  const resetIdleTimer = useCallback(() => {
-    lastActivityTime.current = Date.now();
-    if (ambientState === AMBIENT_STATES.sleeping) {
-      setAmbientState(AMBIENT_STATES.idle);
-    }
-
-    if (idleTimer.current) clearTimeout(idleTimer.current);
-    idleTimer.current = setTimeout(() => {
-      setAmbientState(AMBIENT_STATES.sleeping);
-    }, IDLE_SLEEP_MS);
-  }, [ambientState]);
-
-  // Initialize idle timer
+  // ─── Irregular drift ──────────────────────────────────────────────────────
   useEffect(() => {
-    resetIdleTimer();
-    return () => {
-      if (idleTimer.current) clearTimeout(idleTimer.current);
+    if (!visible || calm || resting) return;
+
+    const schedule = () => {
+      const delay = ROAM_MIN_MS + Math.random() * ROAM_JITTER_MS;
+      roamTimer.current = setTimeout(() => {
+        setOffset({
+          x: (Math.random() * 2 - 1) * DRIFT_RANGE,
+          y: (Math.random() * 2 - 1) * (DRIFT_RANGE * 0.6),
+        });
+        schedule();
+      }, delay);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Slow horizontal roam on idle — gives Echo presence instead of sitting still
-  useEffect(() => {
-    if (!visible || !dna) return;
-    const maxX = Math.max(60, window.innerWidth * ROAM_MAX_X_PCT);
-    const roamInterval = setInterval(() => {
-      if (ambientState === AMBIENT_STATES.sleeping || showPopover) return;
-      setPosition(prev => {
-        const dir = Math.random() > 0.5 ? 1 : -1;
-        const step = 8 + Math.random() * 16;
-        let newX = prev.x + dir * step;
-        newX = Math.max(ROAM_MIN_X, Math.min(maxX, newX));
-        // Flip facing when direction changes
-        setFacingLeft(dir < 0);
-        return { x: newX, y: prev.y + (Math.random() - 0.5) * 4 };
-      });
-    }, 4000 + Math.random() * 3000);
-
-    return () => clearInterval(roamInterval);
-  }, [visible, dna, ambientState, showPopover]);
-
-  // Listen for user activity (XP events, page navigation)
-  useEffect(() => {
-    const handleXpEvent = (e) => {
-      resetIdleTimer();
-      triggerReaction(e.detail);
-    };
-
-    const handleNavigation = () => {
-      resetIdleTimer();
-      triggerDart();
-    };
-
-    window.addEventListener("aquadex_xp_added", handleXpEvent);
-    window.addEventListener("popstate", handleNavigation);
-    // The app dispatches "aquadex:navigate-tab" for in-app tab changes (see
-    // FishFinder, ProfileEdit, SellerSection, etc.). This previously listened for
-    // "aquadex_navigate" — a name nothing dispatches — so Echo never darted on
-    // navigation.
-    window.addEventListener("aquadex:navigate-tab", handleNavigation);
+    schedule();
 
     return () => {
-      window.removeEventListener("aquadex_xp_added", handleXpEvent);
-      window.removeEventListener("popstate", handleNavigation);
-      window.removeEventListener("aquadex:navigate-tab", handleNavigation);
+      if (roamTimer.current) clearTimeout(roamTimer.current);
     };
-  }, [resetIdleTimer]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [visible, calm, resting]);
 
-  // Trigger a reaction animation (bounce + emoji)
-  const triggerReaction = useCallback((detail) => {
-    if (reactionTimer.current) clearTimeout(reactionTimer.current);
-
-    // Determine reaction emoji based on action
-    const label = (detail?.actionLabel || "").toLowerCase();
-    let emoji = REACTION_EMOJIS.default;
-    if (label.includes("feed")) emoji = REACTION_EMOJIS.feed;
-    else if (label.includes("water change")) emoji = REACTION_EMOJIS.water;
-    else if (label.includes("param")) emoji = REACTION_EMOJIS.params;
-    else if (label.includes("scan") || label.includes("species")) emoji = REACTION_EMOJIS.scan;
-    else if (label.includes("post") || label.includes("share")) emoji = REACTION_EMOJIS.social;
-    else if (detail?.tierChanged) emoji = REACTION_EMOJIS.streak;
-    else emoji = REACTION_EMOJIS.xp;
-
-    setReactionEmoji(emoji);
-    setAmbientState(AMBIENT_STATES.reacting);
-    setLastInteraction({ type: "react", timestamp: Date.now() });
-
-    reactionTimer.current = setTimeout(() => {
-      setReactionEmoji(null);
-      setAmbientState(AMBIENT_STATES.idle);
-    }, REACTION_DURATION_MS);
-  }, []);
-
-  // Trigger a dart animation (page transition)
-  const triggerDart = useCallback(() => {
-    setAmbientState(AMBIENT_STATES.darting);
-    // Real burst — jump 40-80px in a random direction, then ease back via CSS transition
-    const maxX = Math.max(60, window.innerWidth * ROAM_MAX_X_PCT);
-    const dartDir = Math.random() > 0.5 ? 1 : -1;
-    const dartDist = DART_DISTANCE * (0.6 + Math.random() * 0.4);
-    setFacingLeft(dartDir < 0);
-    setPosition((prev) => ({
-      x: Math.max(ROAM_MIN_X, Math.min(maxX, prev.x + dartDir * dartDist)),
-      y: prev.y + (Math.random() - 0.5) * 10,
-    }));
-
-    setTimeout(() => {
-      setAmbientState(AMBIENT_STATES.idle);
-    }, 600);
-  }, []);
-
-  // Toggle popover on tap
-  const handleTap = useCallback((e) => {
-    e.stopPropagation();
-    resetIdleTimer();
-
-    if (showPopover) {
-      setShowPopover(false);
-      if (popoverTimer.current) clearTimeout(popoverTimer.current);
-    } else {
-      setShowPopover(true);
-      popoverTimer.current = setTimeout(() => setShowPopover(false), POPOVER_DISMISS_MS);
-    }
-  }, [showPopover, resetIdleTimer]);
-
-  // Dismiss popover on outside click
+  // ─── Rest on genuine inactivity ───────────────────────────────────────────
+  //
+  // Listens to real input rather than counting from mount, so a user who is
+  // reading rather than clicking still lets her settle — and any activity wakes
+  // her. `visibilitychange` matters too: a hidden tab should not animate.
   useEffect(() => {
-    if (!showPopover) return;
-    const dismiss = () => setShowPopover(false);
-    const timer = setTimeout(() => {
-      document.addEventListener("click", dismiss, { once: true });
-    }, 100);
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener("click", dismiss);
-      if (popoverTimer.current) clearTimeout(popoverTimer.current);
-    };
-  }, [showPopover]);
+    if (!visible) return;
 
-  // Cleanup
+    const wake = () => {
+      setResting(false);
+      if (restTimer.current) clearTimeout(restTimer.current);
+      restTimer.current = setTimeout(() => setResting(true), REST_AFTER_MS);
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) setResting(true);
+      else wake();
+    };
+
+    const events = ["pointerdown", "keydown", "scroll"];
+    for (const e of events) window.addEventListener(e, wake, { passive: true });
+    document.addEventListener("visibilitychange", onVisibility);
+    wake();
+
+    return () => {
+      for (const e of events) window.removeEventListener(e, wake);
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (restTimer.current) clearTimeout(restTimer.current);
+    };
+  }, [visible]);
+
+  // ─── React to Poseidon ────────────────────────────────────────────────────
+  //
+  // THE FIRST TIME POSEIDON AND ECHO ARE ACTUALLY CONNECTED. `poseidon:echo-reaction`
+  // has been dispatched from five places for a long time — the chat console, the
+  // global widget, and three easter eggs — and its only listener was
+  // `CompanionFishEntity`, a CSS-div fish buried in the tank detail panel that most
+  // users never opened. Deleting that component is what surfaced the mismatch:
+  // Poseidon was talking to a fish nobody could see.
+  //
+  // This is a deliberately thin reading of the payload. It carries `mood`,
+  // `glowColor` and `swimSpeedMultiplier`, and mapping those properly is the
+  // behaviour model in step 3. For now: she notices, briefly, and settles.
   useEffect(() => {
-    return () => {
-      if (reactionTimer.current) clearTimeout(reactionTimer.current);
-      if (popoverTimer.current) clearTimeout(popoverTimer.current);
+    if (!visible) return;
+
+    const onReaction = (e) => {
+      const requested = Number(e?.detail?.durationMs) || 900;
+      const duration = Math.min(Math.max(requested, 400), REACT_MAX_MS);
+
+      // Poseidon speaking is activity — she should not stay asleep through it.
+      setResting(false);
+
+      const start = setTimeout(() => {
+        setReacting(true);
+        const end = setTimeout(() => setReacting(false), duration);
+        reactTimers.current.push(end);
+      }, REACT_DELAY_MS);
+      reactTimers.current.push(start);
     };
-  }, []);
 
-  if (!visible || !dna) return null;
+    window.addEventListener("poseidon:echo-reaction", onReaction);
+    return () => {
+      window.removeEventListener("poseidon:echo-reaction", onReaction);
+      for (const t of reactTimers.current) clearTimeout(t);
+      reactTimers.current = [];
+    };
+  }, [visible]);
 
-  const currentMood = mood || getMoodFromNeeds(needs);
-  const criticalNeed = getMostCriticalNeed(needs);
-  const needsSummary = getNeedsSummary(needs);
-
-  // Animation class based on state
-  const getAnimationClass = () => {
-    switch (ambientState) {
-      case AMBIENT_STATES.sleeping: return "echo-ambient-sleep";
-      case AMBIENT_STATES.reacting: return "echo-ambient-bounce";
-      case AMBIENT_STATES.darting: return "echo-ambient-dart";
-      default: return "echo-ambient-idle";
-    }
-  };
+  if (!visible) return null;
 
   return (
-    <>
-      <div
-        className={`echo-ambient-container ${getAnimationClass()}`}
-        onClick={handleTap}
-        onKeyDown={(e) => e.key === "Enter" && handleTap(e)}
-        role="button"
-        tabIndex={0}
-        aria-label={`Echo companion — ${currentMood.label}. Tap for status.`}
-        style={{
-          position: "fixed",
-          bottom: `calc(4.5rem + ${position.y}px)`,
-          left: `${position.x}px`,
-          width: `${AMBIENT_SIZE}px`,
-          height: `${AMBIENT_SIZE * 0.6}px`,
-          zIndex: 8000,
-          cursor: "pointer",
-          transition: "left 0.5s cubic-bezier(0.22, 1, 0.36, 1), bottom 0.5s ease",
-          pointerEvents: "auto",
-          transform: `scaleX(${facingLeft ? -1 : 1})`,
-        }}
-      >
-        {/* Mini Echo renderer — disableWander since ambient controls position */}
-        <EchoRenderer
-          dna={dna}
-          stage={stage}
-          needs={needs}
-          personality={personality}
-          size={AMBIENT_SIZE}
-          animated={ambientState !== AMBIENT_STATES.sleeping}
-          disableWander={true}
-          lastInteraction={lastInteraction}
-        />
-
-        {/* Sleep indicator */}
-        {ambientState === AMBIENT_STATES.sleeping && (
-          <span
-            style={{
-              position: "absolute",
-              top: "-8px",
-              right: "-4px",
-              fontSize: "0.6rem",
-              animation: "echo-zzz 2s ease-in-out infinite",
-            }}
-          >
-            💤
-          </span>
-        )}
-
-        {/* Reaction emoji */}
-        {reactionEmoji && (
-          <span
-            style={{
-              position: "absolute",
-              top: "-12px",
-              left: "50%",
-              transform: "translateX(-50%)",
-              fontSize: "0.75rem",
-              animation: "echo-reaction-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
-              pointerEvents: "none",
-            }}
-          >
-            {reactionEmoji}
-          </span>
-        )}
-
-        {/* Critical need indicator dot */}
-        {criticalNeed && criticalNeed.value < 20 && (
-          <span
-            style={{
-              position: "absolute",
-              bottom: "-2px",
-              right: "-2px",
-              width: "7px",
-              height: "7px",
-              borderRadius: "50%",
-              background: "#ef4444",
-              border: "1.5px solid #0a0f1e",
-              animation: "echo-pulse-dot 1.5s ease infinite",
-            }}
-          />
-        )}
-      </div>
-
-      {/* Popover (quick status) */}
-      {showPopover && (
-        <div
-          role="dialog"
-          aria-label="Echo quick status"
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            position: "fixed",
-            bottom: `calc(4.5rem + ${AMBIENT_SIZE * 0.6 + 12}px)`,
-            left: "16px",
-            width: "220px",
-            padding: "0.75rem",
-            borderRadius: "12px",
-            background: "rgba(10, 15, 30, 0.95)",
-            border: "1px solid rgba(56, 189, 248, 0.15)",
-            backdropFilter: "blur(12px)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-            zIndex: 8500,
-            animation: "echo-popover-in 0.25s ease",
-          }}
-        >
-          {/* Mood header */}
-          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.5rem" }}>
-            <span style={{ fontSize: "1rem" }}>{currentMood.emoji}</span>
-            <span style={{ fontSize: "0.75rem", fontWeight: "700", color: "#fff" }}>
-              {currentMood.label}
-            </span>
-            {streak > 0 && (
-              <span style={{ fontSize: "0.6rem", color: "#fbbf24", marginLeft: "auto" }}>
-                🔥 {streak}d
-              </span>
-            )}
-          </div>
-
-          {/* Mini needs bars */}
-          <div style={{ display: "grid", gap: "0.25rem", marginBottom: "0.6rem" }}>
-            {needsSummary.map((need) => (
-              <div key={need.key} style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                <span style={{ fontSize: "0.6rem", width: "1rem" }}>{need.emoji}</span>
-                <div style={{
-                  flex: 1,
-                  height: "4px",
-                  background: "rgba(255,255,255,0.06)",
-                  borderRadius: "2px",
-                  overflow: "hidden",
-                }}>
-                  <div style={{
-                    width: `${need.value}%`,
-                    height: "100%",
-                    borderRadius: "2px",
-                    background: need.status === "critical" ? "#ef4444"
-                      : need.status === "low" ? "#f97316"
-                      : need.status === "ok" ? "#38bdf8"
-                      : "#34d399",
-                    transition: "width 0.3s ease",
-                  }} />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Open full Echo button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowPopover(false);
-              if (onOpenFull) onOpenFull();
-            }}
-            style={{
-              width: "100%",
-              padding: "0.4rem",
-              borderRadius: "6px",
-              border: "1px solid rgba(56, 189, 248, 0.2)",
-              background: "rgba(56, 189, 248, 0.08)",
-              color: "#38bdf8",
-              fontSize: "0.65rem",
-              fontWeight: "600",
-              cursor: "pointer",
-              textAlign: "center",
-            }}
-          >
-            Visit Echo →
-          </button>
-        </div>
-      )}
-
-      {/* CSS Animations */}
-      <style>{`
-        @keyframes echo-ambient-bob {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-3px); }
-        }
-        .echo-ambient-idle {
-          animation: echo-ambient-bob 3s ease-in-out infinite;
-        }
-        @keyframes echo-ambient-sleep-bob {
-          0%, 100% { transform: translateY(0) scale(0.95); opacity: 0.6; }
-          50% { transform: translateY(1px) scale(0.95); opacity: 0.5; }
-        }
-        .echo-ambient-sleep {
-          animation: echo-ambient-sleep-bob 4s ease-in-out infinite;
-        }
-        @keyframes echo-ambient-bounce-anim {
-          0% { transform: translateY(0) scale(1); }
-          30% { transform: translateY(-8px) scale(1.1); }
-          60% { transform: translateY(2px) scale(0.95); }
-          100% { transform: translateY(0) scale(1); }
-        }
-        .echo-ambient-bounce {
-          animation: echo-ambient-bounce-anim 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        @keyframes echo-ambient-dart-anim {
-          0% { transform: translateX(0) scaleX(1); }
-          40% { transform: translateX(12px) scaleX(1.2); }
-          100% { transform: translateX(0) scaleX(1); }
-        }
-        .echo-ambient-dart {
-          animation: echo-ambient-dart-anim 0.5s ease-out;
-        }
-        @keyframes echo-zzz {
-          0%, 100% { opacity: 0.5; transform: translateY(0); }
-          50% { opacity: 1; transform: translateY(-4px); }
-        }
-        @keyframes echo-reaction-pop {
-          from { transform: translateX(-50%) scale(0) translateY(4px); opacity: 0; }
-          to { transform: translateX(-50%) scale(1) translateY(0); opacity: 1; }
-        }
-        @keyframes echo-pulse-dot {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(1.3); }
-        }
-        @keyframes echo-popover-in {
-          from { opacity: 0; transform: translateY(8px) scale(0.95); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-      `}</style>
-    </>
+    <div
+      className={`echo-ambient${reacting ? " echo-ambient--reacting" : ""}`}
+      style={{
+        transform: `translate(${offset.x.toFixed(1)}px, ${offset.y.toFixed(1)}px)`,
+        opacity: resting ? 0.45 : 1,
+      }}
+      aria-hidden="true"
+    >
+      <EchoRenderer size={AMBIENT_SIZE} animated={!resting} />
+    </div>
   );
 }
 

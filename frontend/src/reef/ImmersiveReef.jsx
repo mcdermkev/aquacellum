@@ -8,7 +8,6 @@ import { TankEnvironment } from "./TankEnvironment";
 import { SpeciesSwarm } from "./SpeciesSwarm";
 import { NarrationLayer } from "./NarrationLayer";
 import { ReefHUD } from "./ReefHUD";
-import { CompanionGuide } from "./CompanionGuide";
 import { GenerativeReef, BiomeSelector } from "./GenerativeReef";
 import { VoiceSettings } from "./VoiceSettings";
 import { useReefAudio } from "./hooks/useReefAudio";
@@ -198,15 +197,10 @@ export function ImmersiveReef() {
             biome={biome}
           />
 
-          {/* Companion Echo fish */}
-          {companionVisible && (
-            <CompanionGuide
-              tier="Silver"
-              mood={inspectedSpecies ? "excited" : "calm"}
-              inspectedSpecies={inspectedSpecies}
-              visible={true}
-            />
-          )}
+          {/* CompanionGuide — a fifth Echo, as a Three.js billboard — used to swim
+              here. Removed with the other duplicates (see
+              docs/ECHO_CHARACTER_SPEC.md §6). If Echo ever enters the reef she
+              does it as the one character, not a bespoke copy. */}
         </Suspense>
 
         <OrbitControls

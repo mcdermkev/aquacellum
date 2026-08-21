@@ -1,0 +1,64 @@
+/**
+ * EchoAmbient.css
+ *
+ * Bottom-LEFT on purpose. Poseidon's launcher is a draggable FAB on the right,
+ * and the mobile Quick Log FAB also lives bottom-right — putting Echo on the
+ * left keeps her out of both. The old version sat at `zIndex: 8000` as a
+ * focusable button; she is now inert and sits below interactive chrome.
+ */
+
+.echo-ambient {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 1.25rem;
+
+  /* Above page content, below every interactive overlay (Poseidon console,
+     modals, toasts). She must never be the thing on top. */
+  z-index: 40;
+
+  /* Belt and braces with EchoRenderer's own rule: nothing here takes a click or
+     a tab stop, so she cannot cover a control. */
+  pointer-events: none;
+
+  transition:
+    transform 2.8s cubic-bezier(0.37, 0, 0.63, 1),
+    opacity 1.2s ease-in-out;
+  will-change: transform, opacity;
+}
+
+/* Below the mobile breakpoint the bottom-left corner is contested by the casual
+   bottom nav, so she lifts clear of it. */
+@media (max-width: 768px) {
+  .echo-ambient {
+    bottom: 5.5rem;
+    left: 0.75rem;
+  }
+}
+
+/* Poseidon said something. Small on purpose — spec §4 rule 4 asks for a response
+   proportional to the news, and the old code fired the same
+   `scale(1.12) rotate(8deg)` burst for everything from a water-change log to an
+   easter egg. A lift and a brighten reads as "noticed", not "startled". */
+.echo-ambient--reacting {
+  scale: 1.06;
+  filter: brightness(1.12);
+}
+
+.echo-ambient {
+  transition:
+    transform 2.8s cubic-bezier(0.37, 0, 0.63, 1),
+    opacity 1.2s ease-in-out,
+    scale 420ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    filter 420ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-ambient {
+    transition: opacity 1.2s ease-in-out, filter 420ms ease-out;
+    transform: none !important;
+  }
+  /* The brighten survives — it conveys the reaction without motion. */
+  .echo-ambient--reacting {
+    scale: 1;
+  }
+}

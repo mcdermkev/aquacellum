@@ -11,7 +11,6 @@ import { db } from "../db";
 import { PoseidonChatConsole } from "./PoseidonChatConsole";
 import { mapContractError } from "../utils/errorHandler";
 import { TankQRCode } from "./TankQRCode";
-import { CompanionFishEntity } from "./CompanionFishEntity";
 import { TankFishVisualization } from "./TankFishVisualization";
 import { useUserTanks } from "../hooks/useUserTanks";
 import { useSpeciesData } from "../hooks/useSpeciesData";
@@ -2272,10 +2271,11 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                 />
               )}
 
-              {/* Companion Fish Entity (swimming fry or hatched tier) — hidden in Pro mode */}
-              {casualModeActive && companionData && companionData.eggState >= 1 && (
-                <CompanionFishEntity tier={companionData.currentTier} companionXp={companionData.companionXp || 0} />
-              )}
+              {/* A third Echo — a CSS-div fish with its own swim loop — used to
+                  swim here, driven by `companionData.companionXp`, a field
+                  de-indexed at schema v15 that nothing has written since, so it
+                  always read 0 and she always moved at the slowest speed. Echo is
+                  one character now, and she lives in EchoAmbient. */}
 
               {/* Quiet Mystery Egg UI Overlay — hidden in Pro mode */}
               {casualModeActive && companionData && companionData.eggState === 1 && (

@@ -56,9 +56,12 @@ export function CompanionsSection({
         }
       />
 
+      {/* Copy corrected with the Echo rework: she is no longer a gamification
+          engine or an "evolving" companion — the needs, moods, tiers and
+          per-wallet forms are gone. She is Poseidon's presence in the interface. */}
       <AiCompanionToggle
         name="Echo"
-        description={casualModeActive ? "Your evolving tank companion" : "Emotional intelligence • Companion entity • Gamification engine"}
+        description={casualModeActive ? "Your guide around the app" : "Companion presence • Poseidon's visual layer"}
         avatarSrc="/echo-evolved.jpg"
         accentRgb="139, 92, 246"
         enabled={echoEnabled}
@@ -66,9 +69,12 @@ export function CompanionsSection({
       />
 
       <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.5rem", lineHeight: "1.4" }}>
+        {/* Both strings previously described progress, streaks, evolution and
+            rare-moment checks. None of those exist any more, so the copy said
+            things the app no longer does. */}
         {casualModeActive
-          ? "Both are enabled by default. Changes take effect immediately — no reload needed. Turning Echo off just hides it; your companion keeps its progress and comes back exactly as you left it."
-          : "Preferences stored locally and applied without a reload. Disabling Poseidon halts all Edge Function calls. Disabling Echo suppresses companion rendering and rare-moment checks; stored Echo state, streak, and evolution are preserved."}
+          ? "Both are enabled by default. Changes take effect immediately — no reload needed. Turning Echo off hides her; nothing is lost."
+          : "Preferences stored locally and applied without a reload. Disabling Poseidon halts all Edge Function calls. Disabling Echo suppresses companion rendering; she holds no per-account state."}
       </div>
     </SettingsSection>
   );

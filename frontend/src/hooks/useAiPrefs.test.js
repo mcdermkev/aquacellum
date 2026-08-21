@@ -112,12 +112,12 @@ describe("the Echo toggle has readers (D-S-4)", () => {
 
   // Every Echo surface rendered in App.jsx. If a new one is added, add it here —
   // that is the point: the list is the contract.
+  // The list shrank with the Echo rework (docs/ECHO_CHARACTER_SPEC.md §6):
+  // EchoCompanionWidget, EchoLivingCompanion and EchoRareMomentOverlay were
+  // deleted, so there are two surfaces left to gate rather than five.
   const ECHO_SURFACES = [
-    "<EchoCompanionWidget",
     "<EchoWhispers",
     "<EchoAmbient",
-    "<EchoLivingCompanion",
-    "<EchoRareMomentOverlay",
   ];
 
   it("reads the preference through useAiPrefs, not inline localStorage", () => {
@@ -135,22 +135,24 @@ describe("the Echo toggle has readers (D-S-4)", () => {
     expect(window, `${tag} is rendered without an echoEnabled guard`).toContain("echoEnabled");
   });
 
-  it("gates the rare-moment CHECK, not just the overlay", () => {
-    // performCheck() calls recordRareMoment(), which permanently consumes the
-    // moment. Gating only the overlay would spend rare moments the user is never
-    // shown, so the flag has to reach the hook.
-    expect(appSource).toMatch(/useEchoRareMoments\(\s*echoState\s*,\s*echoEnabled\s*\)/);
-
-    const hookSource = readSource("./useEchoRareMoments.js");
-    expect(hookSource).toMatch(/export function useEchoRareMoments\(echoState, enabled = true\)/);
-    expect(hookSource).toMatch(/const active = !!enabled && !!echoState\?\.hasEcho/);
+  it("has no rare-moment system left to gate", () => {
+    // The old test asserted the rare-moment CHECK was gated, not just its overlay,
+    // because performCheck() consumed the moment it picked. The whole subsystem is
+    // gone — it fired on a 1–5% roll per 30-minute check, mostly night-gated, so
+    // it was near-unreachable by construction. Asserted as an absence so it
+    // cannot quietly return.
+    expect(appSource).not.toContain("useEchoRareMoments");
+    expect(appSource).not.toContain("RareMoment");
   });
 
-  it("suppresses presence without resetting state", () => {
-    // Off means quiet, not reset: useEchoState keeps running so needs stay
-    // replenished by XP events and the companion returns as the user left it.
-    expect(appSource).toMatch(/useEchoState\(account\)/);
-    expect(appSource).not.toMatch(/echoEnabled\s*&&\s*useEchoState/);
+  it("has no per-account Echo state to preserve", () => {
+    // The old contract was "off means quiet, not reset" — useEchoState kept
+    // running so needs stayed replenished while Echo was hidden. There is no
+    // needs system and no per-account Echo state now: she is one character,
+    // identical for everyone, so hiding her cannot lose anything. useEchoState
+    // is deleted, which also removed a failing on-chain read that ran on every
+    // page load and was swallowed at console.debug.
+    expect(appSource).not.toContain("useEchoState");
   });
 });
 

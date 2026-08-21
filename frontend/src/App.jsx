@@ -29,11 +29,8 @@ import { pullCloudDataForWallet, pushAllLocalDataToCloud } from "./services/clou
 import { retryPendingMetadataPublishes } from "./services/specimenMetadata";
 import { cleanupGarbledActionLogs } from "./utils/cleanupGarbledLogs";
 import { RewardCreditsCard } from "./components/RewardCreditsCard";
-import { EchoCompanionWidget } from "./components/EchoCompanionWidget";
 import { EchoWhispers } from "./components/EchoWhispers";
 import { EchoAmbient } from "./components/EchoAmbient";
-import { useEchoState } from "./hooks/useEchoState";
-import { useEchoRareMoments } from "./hooks/useEchoRareMoments";
 import { useAiPrefs } from "./hooks/useAiPrefs";
 import { BetaBanner } from "./components/BetaBanner";
 import { db } from "./db";
@@ -107,16 +104,6 @@ const ReefFeed = lazy(() =>
 // Lazy-load the Breeder Terminal (unified seller workspace, Task 9)
 const BreederTerminal = lazy(() =>
   import("./components/breeder/BreederTerminal").then((m) => ({ default: m.BreederTerminal }))
-);
-
-// Lazy-load Echo Living Companion (full-screen interactive experience)
-const EchoLivingCompanion = lazy(() =>
-  import("./components/EchoLivingCompanion").then((m) => ({ default: m.EchoLivingCompanion }))
-);
-
-// Lazy-load Echo Rare Moment Overlay (special animation events)
-const EchoRareMomentOverlay = lazy(() =>
-  import("./components/EchoRareMomentOverlay").then((m) => ({ default: m.EchoRareMomentOverlay }))
 );
 
 export default function App() {
@@ -490,26 +477,10 @@ export default function App() {
   const [echoTankData, setEchoTankData] = useState({});
 
   // AI companion preferences (Settings → AI Companions). `echoEnabled` gates every
-  // Echo surface below; see docs/SETTINGS_SPEC.md D-S-4. Deliberately does NOT gate
-  // `useEchoState` itself: off means quiet, not reset. Echo's needs keep being
-  // replenished by XP events while hidden, so switching it back on returns the
-  // companion as you left it rather than a starved one.
+  // Echo surface below; see docs/SETTINGS_SPEC.md D-S-4. There is no per-account
+  // Echo state to preserve any more — she is one character, identical for everyone
+  // — so switching her off simply stops rendering her.
   const { echoEnabled } = useAiPrefs();
-
-  // Echo Living Companion — unified state hook for the new Tamagotchi system
-  const echoState = useEchoState(account);
-  const [echoFullScreenOpen, setEchoFullScreenOpen] = useState(false);
-
-  // Echo Rare Moments — time-gated special animations. Gated at the hook, not the
-  // overlay: the check consumes the moment it picks (see the hook's docblock).
-  const { activeMoment, dismissMoment } = useEchoRareMoments(echoState, echoEnabled);
-
-  // Switching Echo off while the full-screen companion is open closes it, rather
-  // than leaving `echoFullScreenOpen` latched — otherwise re-enabling Echo later
-  // would drop the user straight back into a full-screen overlay they never reopened.
-  useEffect(() => {
-    if (!echoEnabled) setEchoFullScreenOpen(false);
-  }, [echoEnabled]);
 
   const [marketplaceContract, setMarketplaceContract] = useState(null);
 
@@ -1025,11 +996,10 @@ export default function App() {
               onSelectSpecimen={setSelectedSpecimenId}
             />
             <div className="zone-leaderboard-sidebar" style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-              {casualModeActive && echoEnabled && (
-                <div style={{ flex: "1 1 260px", minWidth: 0 }}>
-                  <EchoCompanionWidget casualModeActive={casualModeActive} compact />
-                </div>
-              )}
+              {/* The Echo dashboard card used to sit here. It was a static JPG
+                  headshot with its own Dexie loader and its own mood system — a
+                  third rendering of a character who now has exactly one. Echo is
+                  ambient presence; she does not need a card. */}
               <div style={{ flex: "1 1 260px", minWidth: 0 }}>
                 <RewardCreditsCard casualModeActive={casualModeActive} compact />
               </div>
@@ -1437,48 +1407,12 @@ export default function App() {
         />
       )}
 
-      {/* Echo Ambient Presence — persistent floating companion (casual mode only) */}
-      {casualModeActive && echoEnabled && echoState.hasEcho && !echoFullScreenOpen && (
-        <EchoAmbient
-          dna={echoState.dna}
-          stage={echoState.stage}
-          needs={echoState.needs}
-          personality={echoState.personality}
-          mood={echoState.mood}
-          streak={echoState.streak}
-          onOpenFull={() => setEchoFullScreenOpen(true)}
-          visible={true}
-        />
-      )}
-
-      {/* Echo Living Companion — full-screen interactive experience */}
-      {echoFullScreenOpen && echoEnabled && echoState.hasEcho && (
-        <Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#0a0f1e", zIndex: 9500 }} />}>
-          <EchoLivingCompanion
-            dna={echoState.dna}
-            stage={echoState.stage}
-            needs={echoState.needs}
-            personality={echoState.personality}
-            streak={echoState.streak}
-            totalCareDays={echoState.totalCareDays}
-            tricksUnlocked={echoState.tricksUnlocked}
-            onInteraction={(type, xp) => echoState.recordInteraction(type)}
-            onClose={() => setEchoFullScreenOpen(false)}
-            casualModeActive={casualModeActive}
-          />
-        </Suspense>
-      )}
-
-      {/* Echo Rare Moment Overlay — special time-gated animations */}
-      {activeMoment && casualModeActive && echoEnabled && (
-        <Suspense fallback={null}>
-          <EchoRareMomentOverlay
-            moment={activeMoment}
-            dna={echoState.dna}
-            onComplete={dismissMoment}
-          />
-        </Suspense>
-      )}
+      {/* Echo — persistent presence, both modes.
+          Pro gets `calm`: she is there but still and silent, per spec §3. She used
+          to be casual-only, which meant a Pro keeper had no guide at all.
+          No `hasEcho` gate any more: she was hidden below 500 XP, which withheld
+          the guide from exactly the people who need one. */}
+      {echoEnabled && <EchoAmbient visible calm={!casualModeActive} />}
 
       {/* Feedback Widget — floating bug report / feedback button */}
       <FeedbackWidget walletAddress={account} casualModeActive={casualModeActive} />
