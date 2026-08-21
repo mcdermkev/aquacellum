@@ -24,9 +24,9 @@
  *
  * ⚠️ Default is ENABLED. Storage holds `"true"`/`"false"` strings and anything
  * other than the exact string `"false"` reads as on — preserving the original
- * `localStorage.getItem(key) !== "false"` semantics at the 6 existing Poseidon
- * call sites (usePoseidon, useNaturalSearch, altTextGenerator, spawnNarration,
- * useEchoObservations). Do not switch to a truthy/`"1"` scheme without migrating
+ * `localStorage.getItem(key) !== "false"` semantics at the existing Poseidon call
+ * sites (usePoseidon, useNaturalSearch, altTextGenerator, spawnNarration,
+ * SonarPreferences). Do not switch to a truthy/`"1"` scheme without migrating
  * those, or every user who opted out silently gets opted back in.
  */
 import { useCallback, useEffect, useState } from "react";

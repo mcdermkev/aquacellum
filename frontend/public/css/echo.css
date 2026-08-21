@@ -303,11 +303,153 @@
   animation-duration: 6.2s;
 }
 
+/* ─── Whispers ─────────────────────────────────────────────────────────────────
+ *
+ * The bubble Echo speaks from — one observation drawn from the keeper's own logs.
+ * Content and wording come from `services/echoNotices.js`; this is only where it
+ * sits and how it arrives.
+ *
+ * It lives HERE, beside `.echo-ambient`, rather than as inline styles in the
+ * component, because the two have to agree about a moving target: she is 56 px at
+ * `bottom: 1.25rem` on desktop and lifts to `5.5rem` on mobile to clear the bottom
+ * nav. A bubble positioned independently was going to end up on top of her at one
+ * breakpoint or the other. Both offsets are now in one file, three rules apart.
+ */
+.echo-whisper {
+  position: fixed;
+
+  /* Clears the 56 px fish plus her 1.25rem inset, so the bubble sits above her
+     rather than over her. */
+  bottom: 6rem;
+  left: 1.25rem;
+  max-width: min(20rem, calc(100vw - 2.5rem));
+
+  /* Above her, below every interactive overlay — same ceiling she has, since a
+     notice must never cover the console it offers to open. */
+  z-index: 41;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.6rem 0.5rem 0.6rem 0.75rem;
+
+  /* Tail on the bottom-left corner, pointing back at her. */
+  border-radius: 12px 12px 12px 4px;
+  background: rgba(10, 15, 30, 0.92);
+  border: 1px solid rgba(94, 234, 212, 0.18);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  animation: echo-whisper-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+
+.echo-whisper--leaving {
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
+}
+
+.echo-whisper--pro {
+  border-radius: 0;
+  border-color: rgba(167, 139, 250, 0.25);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+.echo-whisper__icon {
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.echo-whisper__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.echo-whisper__text {
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: #fff;
+}
+
+.echo-whisper__hint {
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+  color: #5eead4;
+  opacity: 0.75;
+}
+
+/* The actionable form. A button only when there is genuinely something to open —
+   a control that merely dismisses itself misrepresents what it does. */
+.echo-whisper__action,
+.echo-whisper__static {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+}
+
+.echo-whisper__action {
+  cursor: pointer;
+}
+
+.echo-whisper__action:hover .echo-whisper__hint,
+.echo-whisper__action:focus-visible .echo-whisper__hint {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.echo-whisper__close {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.echo-whisper__close:hover,
+.echo-whisper__close:focus-visible {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+@keyframes echo-whisper-in {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 /* Below the mobile breakpoint the bottom-left corner is contested by the casual
    bottom nav, so she lifts clear of it. */
 @media (max-width: 768px) {
   .echo-ambient {
     bottom: 5.5rem;
+    left: 0.75rem;
+  }
+  /* Tracks her up. Kept adjacent to the rule above on purpose — these two numbers
+     are one decision, and separating them is how the bubble ends up over the fish. */
+  .echo-whisper {
+    bottom: 10.25rem;
     left: 0.75rem;
   }
 }
@@ -347,5 +489,14 @@
   .echo-svg .echo-aura,
   .echo-svg .echo-spots {
     transition: none;
+  }
+
+  /* The bubble still appears and still leaves; it just does not slide in. */
+  .echo-whisper {
+    animation: none;
+    transition: opacity 300ms ease;
+  }
+  .echo-whisper--leaving {
+    transform: none;
   }
 }

@@ -1,362 +1,174 @@
 /**
- * EchoWhispers.jsx
- * 
- * Proactive nudge system — contextual micro-prompts that appear as
- * a floating speech bubble from Echo. Timer/state-based, no AI calls.
- * 
- * Triggers:
- *   - On app open (after 3s idle on dashboard)
- *   - After action logged (contextual follow-up)
- *   - When idle for 10s on tank detail
- * 
- * Whisper types:
- *   - Care reminders ("It's been 3 days since water change...")
- *   - Progress nudges ("You're 120 pts from Gold...")
- *   - Social nudges ("A new breeder joined your zone...")
- *   - Streak encouragement ("One more day and you hit 7-day streak!")
- * 
- * Auto-dismisses after 8s or on click. Max 1 whisper per 2 minutes.
- * 
+ * EchoWhispers.jsx — Echo mentions something she noticed.
+ *
+ * A small bubble near Echo carrying ONE observation drawn from the keeper's own
+ * logs. Tapping a care observation opens Poseidon with that question already asked.
+ *
+ * ── What this component is not allowed to do ─────────────────────────────────
+ * Hold copy, or decide what is worth saying. Both live in
+ * `services/echoNotices.js`, which is pure and tested — including a test that no
+ * notice is phrased as advice. This file is timing and rendering only.
+ *
+ * That split is the point. The previous version was 380 lines with a hardcoded
+ * string table in it, and it told keepers their "fish would appreciate" a water
+ * change: husbandry advice, in Echo's voice, unreviewable because it was tangled up
+ * with the render. Now the rules are assertable and this file cannot contribute
+ * prose.
+ *
+ * ── Echo notices; Poseidon explains ──────────────────────────────────────────
+ * Care notices carry a `seedPrompt` and the bubble becomes a button that opens the
+ * chat with it. He is the brain: he has the species context, he is bound by the
+ * anti-diagnosis prompt, and his writes need confirming. Celebratory notices have
+ * nothing to ask, so they render as plain text and are not focusable — a button
+ * that only dismisses itself is a lie about what it does.
+ *
+ * ── Both modes ───────────────────────────────────────────────────────────────
+ * This used to be casual-only. That is the same mistake as the XP gate that hid
+ * Echo below 500 points: it withheld the guide from a whole mode. Pro gets the
+ * terse wording from the notices module instead of getting nothing.
+ *
+ * Position and motion live in /css/echo.css, next to `.echo-ambient`, so the bubble
+ * and the fish she speaks from cannot drift apart across breakpoints.
+ *
  * Props:
- *   - casualModeActive {boolean}
- *   - userState {{ totalXp, streakDays, lastActiveDate, currentTier }}
- *   - tankData {{ lastWaterChange, lastFeeding, lastParams, tankCount }}
+ *   casualModeActive {boolean}
+ *   userState {{ totalXp, streakDays }}
+ *   tankData {{ lastWaterChange, lastFeeding, lastParams, tankCount }}
  */
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { getTierInfo, TIER_LADDER } from "../utils/xp";
+import { buildNotices, pickNotice, noticeText } from "../services/echoNotices";
 
-/**
- * Action reaction lines, inlined from the deleted `utils/echoMood.js`.
- *
- * That module held a SECOND mood system — six moods derived from streak and
- * hours-idle — running in parallel with the needs-average moods in `echoNeeds.js`.
- * Both exported a symbol called `MOODS`, and each had its own set of consumers.
- * Both are gone (docs/ECHO_CHARACTER_SPEC.md §6); this one small function was the
- * only part anything reachable still used, so it moved here rather than keeping a
- * 281-line module alive for it.
- *
- * ⚠️ These lines are hardcoded prose, which is the thing spec §5 replaces: Echo's
- * voice should be Poseidon's grounded output, not an array picked at random. This
- * component is scheduled for replacement by the observation layer. Do not add
- * lines here — and note that none of them may give husbandry advice, which is why
- * they only ever acknowledge an action the keeper already took.
- */
-const ACTION_REACTIONS = {
-  LOG_FEEDING: [
-    "Fed and happy. Echo approves.",
-    "Full bellies, content fins.",
-    "Mealtime is the best time. Echo agrees.",
-  ],
-  LOG_WATER: [
-    "Fresh water makes everything better. Echo feels it.",
-    "Clean change logged. The tank breathes easier now.",
-    "Water renewed. A simple act that means everything.",
-  ],
-  LOG_PARAMETERS: [
-    "Parameters locked in. Knowledge is power.",
-    "Good data leads to good care. Echo relaxes.",
-    "Numbers checked. Your fish don't know — but they benefit.",
-  ],
-  REGISTER_TANK: [
-    "A new home registered. Echo is excited to explore it.",
-    "Another tank in the family. The journey grows.",
-  ],
-  MINT_SPECIMEN: [
-    "A birth certificate, officially sealed. Legacy captured.",
-    "New life, documented. Echo hums with quiet pride.",
-  ],
-  SPAWN_BREED: [
-    "New life! Echo can barely contain herself.",
-    "The cycle continues. Echo witnesses something beautiful.",
-  ],
-  TIER_UP: [
-    "Echo evolved! A new form, earned through care.",
-    "Tier unlocked. Echo shimmers with a deeper light now.",
-    "Growth. Real growth. Echo feels it in her scales.",
-  ],
-};
-
-function getActionReaction(actionKey) {
-  const lines = ACTION_REACTIONS[actionKey];
-  if (!lines || lines.length === 0) return null;
-  return lines[Math.floor(Math.random() * lines.length)];
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Configuration
-// ─────────────────────────────────────────────────────────────────────────────
-
-const WHISPER_DISPLAY_MS = 8000;      // Auto-dismiss after 8s
-const WHISPER_COOLDOWN_MS = 120000;   // Min 2 minutes between whispers
-const INITIAL_DELAY_MS = 3000;        // Wait 3s after mount before first whisper
-const ACTION_REACTION_DELAY_MS = 1500; // Wait 1.5s after action for reaction whisper
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Whisper Generator
-// ─────────────────────────────────────────────────────────────────────────────
-
-function generateWhisper(userState, tankData, casualModeActive) {
-  const { totalXp = 0, streakDays = 0, lastActiveDate, currentTier } = userState || {};
-  const { lastWaterChange, lastFeeding, lastParams, tankCount = 0 } = tankData || {};
-  const suffix = casualModeActive ? "pts" : "XP";
-
-  const now = Date.now();
-  const candidates = [];
-
-  // ─── Care reminders ─────────────────────────────────────────────────
-  if (lastWaterChange) {
-    const daysSinceWater = Math.floor((now - new Date(lastWaterChange).getTime()) / (1000 * 60 * 60 * 24));
-    if (daysSinceWater >= 3) {
-      candidates.push({
-        priority: 3,
-        text: daysSinceWater >= 7
-          ? `It's been ${daysSinceWater} days since the last water change. Your fish would appreciate one.`
-          : `${daysSinceWater} days since your last water change. Good time for a refresh?`,
-        icon: "💧",
-      });
-    }
-  }
-
-  if (lastFeeding) {
-    const hoursSinceFeeding = Math.floor((now - new Date(lastFeeding).getTime()) / (1000 * 60 * 60));
-    if (hoursSinceFeeding >= 36) {
-      candidates.push({
-        priority: 2,
-        text: "Your fish haven't been fed in a while. A quick log goes a long way.",
-        icon: "🍽️",
-      });
-    }
-  }
-
-  if (lastParams) {
-    const daysSinceParams = Math.floor((now - new Date(lastParams).getTime()) / (1000 * 60 * 60 * 24));
-    if (daysSinceParams >= 5) {
-      candidates.push({
-        priority: 1,
-        text: `It's been ${daysSinceParams} days since parameters were checked. A quick test keeps everyone safe.`,
-        icon: "🧪",
-      });
-    }
-  }
-
-  // ─── Progress nudges ────────────────────────────────────────────────
-  const tierInfo = getTierInfo(totalXp);
-  if (tierInfo.nextLevelXp) {
-    const ptsToNext = tierInfo.nextLevelXp - totalXp;
-    if (ptsToNext <= 200 && ptsToNext > 0) {
-      const nextTier = TIER_LADDER.find((t) => t.min === tierInfo.nextLevelXp);
-      const nextLabel = casualModeActive
-        ? (nextTier?.hobbyistLabel || "next tier")
-        : (nextTier?.breederLabel || "next tier");
-      candidates.push({
-        priority: 2,
-        text: `You're only ${ptsToNext} ${suffix} from ${nextLabel}. So close.`,
-        icon: "🌟",
-      });
-    }
-  }
-
-  // ─── Streak encouragement ──────────────────────────────────────────
-  if (streakDays === 6) {
-    candidates.push({
-      priority: 3,
-      text: "One more day and you hit a 7-day streak! That unlocks the 1.5x bonus.",
-      icon: "🔥",
-    });
-  } else if (streakDays >= 7 && streakDays % 7 === 0) {
-    candidates.push({
-      priority: 1,
-      text: `${streakDays} days of consistent care. Echo shimmers with pride.`,
-      icon: "✨",
-    });
-  } else if (streakDays >= 3 && streakDays < 7) {
-    candidates.push({
-      priority: 0,
-      text: `${streakDays}-day streak and counting. Keep it going.`,
-      icon: "🔥",
-    });
-  }
-
-  // ─── New user encouragement ────────────────────────────────────────
-  if (totalXp < 100 && tankCount >= 1) {
-    candidates.push({
-      priority: 1,
-      text: casualModeActive
-        ? "Try logging a feeding or water change. Each care action earns points and helps Echo grow."
-        : "Log operational metrics to accumulate reputation. Each action synchronizes with the leaderboard.",
-      icon: "💡",
-    });
-  }
-
-  // ─── Return the highest priority whisper (with some randomness) ────
-  if (candidates.length === 0) return null;
-
-  // Sort by priority (highest first), then pick randomly from top tier
-  candidates.sort((a, b) => b.priority - a.priority);
-  const topPriority = candidates[0].priority;
-  const topCandidates = candidates.filter((c) => c.priority === topPriority);
-  return topCandidates[Math.floor(Math.random() * topCandidates.length)];
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Component
-// ─────────────────────────────────────────────────────────────────────────────
+const DISPLAY_MS = 9000; // long enough to read and reach for
+const COOLDOWN_MS = 120000; // at most one every two minutes
+const INITIAL_DELAY_MS = 3000; // let the page settle before she speaks
+const LEAVE_MS = 300; // matches the CSS transition
+const AFTER_ACTION_MS = 1800; // let the log land before re-checking
 
 export function EchoWhispers({ casualModeActive = true, userState, tankData }) {
-  const [whisper, setWhisper] = useState(null);
-  const [visible, setVisible] = useState(false);
-  const [animatingOut, setAnimatingOut] = useState(false);
-  const lastWhisperTime = useRef(0);
-  const dismissTimer = useRef(null);
+  const pro = !casualModeActive;
 
-  // Dismiss function
+  const [notice, setNotice] = useState(null);
+  const [leaving, setLeaving] = useState(false);
+
+  const lastShownIdRef = useRef(null);
+  const lastShownAtRef = useRef(0);
+  const dismissTimerRef = useRef(null);
+
+  // Read through refs inside the timers below so a data refresh does not restart
+  // the schedule — App reloads these on every XP event, and re-running the mount
+  // effect on each one would make her speak far more often than the cooldown says.
+  const dataRef = useRef({ userState, tankData });
+  dataRef.current = { userState, tankData };
+
   const dismiss = useCallback(() => {
-    setAnimatingOut(true);
+    setLeaving(true);
     setTimeout(() => {
-      setWhisper(null);
-      setVisible(false);
-      setAnimatingOut(false);
-    }, 300);
+      setNotice(null);
+      setLeaving(false);
+    }, LEAVE_MS);
   }, []);
 
-  // Show a whisper with auto-dismiss
-  const showWhisper = useCallback((w) => {
-    if (!w) return;
+  const maybeShow = useCallback(() => {
     const now = Date.now();
-    if (now - lastWhisperTime.current < WHISPER_COOLDOWN_MS) return;
+    if (now - lastShownAtRef.current < COOLDOWN_MS) return;
 
-    lastWhisperTime.current = now;
-    setWhisper(w);
-    setVisible(true);
-    setAnimatingOut(false);
+    const { userState: u, tankData: t } = dataRef.current;
+    const next = pickNotice(buildNotices({ userState: u, tankData: t, now }), {
+      excludeId: lastShownIdRef.current,
+    });
+    if (!next) return; // nothing true to report; say nothing
 
-    if (dismissTimer.current) clearTimeout(dismissTimer.current);
-    dismissTimer.current = setTimeout(dismiss, WHISPER_DISPLAY_MS);
+    lastShownIdRef.current = next.id;
+    lastShownAtRef.current = now;
+    setNotice(next);
+    setLeaving(false);
+
+    if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+    dismissTimerRef.current = setTimeout(dismiss, DISPLAY_MS);
   }, [dismiss]);
 
-  // Initial whisper on mount (after delay)
+  // First look, once, after the page has settled.
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const w = generateWhisper(userState, tankData, casualModeActive);
-      showWhisper(w);
-    }, INITIAL_DELAY_MS);
-
+    const timer = setTimeout(maybeShow, INITIAL_DELAY_MS);
     return () => clearTimeout(timer);
-  }, []); // Only on mount
+  }, [maybeShow]);
 
-  // Action reaction whispers
+  // A logged care action changes the facts, so re-check shortly after one lands.
+  //
+  // It also makes Echo MOVE, via the same event the chat console and the easter
+  // eggs use. That replaces the old behaviour of picking a congratulatory sentence
+  // at random ("Fed and happy. Echo approves.") — she is the body, so she reacts
+  // with motion, and any words belong to Poseidon.
   useEffect(() => {
-    const handleAction = (e) => {
-      const { actionLabel, points } = e.detail || {};
-      if (!actionLabel) return;
-
-      // Map common action labels to reaction keys
-      let reactionKey = null;
-      const label = (actionLabel || "").toLowerCase();
-      if (label.includes("feed")) reactionKey = "LOG_FEEDING";
-      else if (label.includes("water change")) reactionKey = "LOG_WATER";
-      else if (label.includes("water") || label.includes("param")) reactionKey = "LOG_PARAMETERS";
-      else if (label.includes("tank")) reactionKey = "REGISTER_TANK";
-      else if (label.includes("mint") || label.includes("birth")) reactionKey = "MINT_SPECIMEN";
-      else if (label.includes("spawn") || label.includes("breed")) reactionKey = "SPAWN_BREED";
-
-      if (reactionKey) {
-        const reaction = getActionReaction(reactionKey);
-        if (reaction) {
-          setTimeout(() => {
-            showWhisper({ text: reaction, icon: "🐠" });
-          }, ACTION_REACTION_DELAY_MS);
-        }
-      }
+    const onXp = () => {
+      window.dispatchEvent(
+        new CustomEvent("poseidon:echo-reaction", {
+          detail: { durationMs: 900, swimSpeedMultiplier: 1.35 },
+        }),
+      );
+      setTimeout(maybeShow, AFTER_ACTION_MS);
     };
 
-    window.addEventListener("aquadex_xp_added", handleAction);
-    return () => window.removeEventListener("aquadex_xp_added", handleAction);
-  }, [showWhisper]);
+    window.addEventListener("aquadex_xp_added", onXp);
+    return () => window.removeEventListener("aquadex_xp_added", onXp);
+  }, [maybeShow]);
 
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      if (dismissTimer.current) clearTimeout(dismissTimer.current);
-    };
-  }, []);
+  useEffect(() => () => clearTimeout(dismissTimerRef.current), []);
 
-  if (!visible || !whisper) return null;
+  if (!notice) return null;
+
+  const text = noticeText(notice, { pro });
+  const actionable = Boolean(notice.seedPrompt);
+
+  const ask = () => {
+    // The widget listens for this and opens with the question already asked. A DOM
+    // event because the FAB owns its own open state and lives elsewhere in the tree.
+    window.dispatchEvent(
+      new CustomEvent("poseidon:open", { detail: { seedPrompt: notice.seedPrompt } }),
+    );
+    dismiss();
+  };
+
+  const body = (
+    <>
+      <span className="echo-whisper__icon" aria-hidden="true">
+        {notice.icon}
+      </span>
+      <span className="echo-whisper__body">
+        <span className="echo-whisper__text">{text}</span>
+        <span className="echo-whisper__hint">
+          {actionable ? (pro ? "Query Poseidon" : "Ask Poseidon about it") : "Echo noticed"}
+        </span>
+      </span>
+    </>
+  );
 
   return (
+    // The live region is the wrapper, so the observation is announced when it
+    // arrives whether or not it happens to be focusable.
     <div
-      className="echo-whisper"
-      onClick={dismiss}
-      onKeyDown={(e) => (e.key === "Escape" || e.key === "Enter") && dismiss()}
+      className={`echo-whisper${leaving ? " echo-whisper--leaving" : ""}${pro ? " echo-whisper--pro" : ""}`}
       role="status"
       aria-live="polite"
-      aria-label="Echo whisper notification — click or press Escape to dismiss"
-      tabIndex={0}
-      style={{
-        position: "fixed",
-        bottom: "5.5rem",
-        left: "2rem",
-        maxWidth: "320px",
-        padding: "0.75rem 1rem",
-        borderRadius: "12px 12px 12px 4px",
-        background: "rgba(10, 15, 30, 0.92)",
-        border: "1px solid rgba(56, 189, 248, 0.15)",
-        backdropFilter: "blur(12px)",
-        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4), 0 0 12px rgba(56, 189, 248, 0.08)",
-        cursor: "pointer",
-        zIndex: 9000,
-        display: "flex",
-        alignItems: "flex-start",
-        gap: "0.6rem",
-        opacity: animatingOut ? 0 : 1,
-        transform: animatingOut ? "translateY(8px) scale(0.95)" : "translateY(0) scale(1)",
-        transition: "opacity 0.3s ease, transform 0.3s ease",
-        animation: !animatingOut ? "echo-whisper-in 0.4s cubic-bezier(0.16, 1, 0.3, 1)" : "none",
-      }}
     >
-      {/* Echo avatar mini */}
-      <div style={{
-        width: "28px",
-        height: "28px",
-        borderRadius: "50%",
-        background: "rgba(56, 189, 248, 0.1)",
-        border: "1.5px solid rgba(56, 189, 248, 0.25)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "0.85rem",
-        flexShrink: 0,
-      }}>
-        {whisper.icon || "🐠"}
-      </div>
+      {actionable ? (
+        <button type="button" className="echo-whisper__action" onClick={ask}>
+          {body}
+        </button>
+      ) : (
+        // Not a button: nothing to activate, and it disappears on its own.
+        <span className="echo-whisper__static">{body}</span>
+      )}
 
-      {/* Whisper text */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontSize: "0.72rem",
-          color: "#fff",
-          lineHeight: "1.45",
-          fontStyle: "italic",
-        }}>
-          {whisper.text}
-        </div>
-        <div style={{
-          fontSize: "0.55rem",
-          color: "var(--text-muted)",
-          marginTop: "0.25rem",
-        }}>
-          Echo · tap to dismiss
-        </div>
-      </div>
-
-      {/* CSS animation keyframe (injected once) */}
-      <style>{`
-        @keyframes echo-whisper-in {
-          0% { opacity: 0; transform: translateY(16px) scale(0.9); }
-          100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
-      `}</style>
+      <button
+        type="button"
+        className="echo-whisper__close"
+        onClick={dismiss}
+        aria-label="Dismiss"
+      >
+        ×
+      </button>
     </div>
   );
 }

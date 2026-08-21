@@ -38,7 +38,6 @@ export const SETTINGS_REGISTRY = [
       "hooks/useNaturalSearch.js",
       "utils/altTextGenerator.js",
       "utils/spawnNarration.js",
-      "hooks/useEchoObservation.js",
       "components/reef/SonarPreferences.jsx",
     ],
   },

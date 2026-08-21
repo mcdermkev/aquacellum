@@ -1398,8 +1398,11 @@ export default function App() {
         </div>
       </main>
 
-      {/* Echo Whispers — proactive companion nudges (casual mode only) */}
-      {casualModeActive && echoEnabled && (
+      {/* Echo mentions one thing she noticed in the keeper's own logs, and hands
+          the question to Poseidon on tap. Both modes now: casual-only was the same
+          mistake as the old XP gate below — it withheld the guide from a whole mode.
+          Pro gets the terse wording from services/echoNotices.js. */}
+      {echoEnabled && (
         <EchoWhispers
           casualModeActive={casualModeActive}
           userState={echoUserState}

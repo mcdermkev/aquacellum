@@ -144,6 +144,32 @@ export function PoseidonGlobalWidget({ walletAddress, casualModeActive = true, a
     }
   }, [isOpen, messages.length, initGreeting]);
 
+  // ─── Opened from elsewhere, optionally with a question already asked ───────
+  //
+  // `EchoWhispers` uses this: Echo notices something in the keeper's logs and the
+  // bubble hands the question to Poseidon, who is the one allowed to answer it.
+  //
+  // A DOM event because this widget owns its own `isOpen` and sits far from the
+  // things that want to open it — the same reason `poseidon:navigate` and
+  // `echo:attend` are events. Lifting the state to App just for this would put a
+  // re-render of the whole tree behind every open.
+  //
+  // Seeding only ASKS. Anything Poseidon proposes to write still queues in the
+  // confirmation bar below, so this cannot become a way to trigger a write.
+  const seededRef = useRef(null);
+  useEffect(() => {
+    const onOpen = (e) => {
+      const seed = e?.detail?.seedPrompt;
+      setIsOpen(true);
+      if (!seed || seededRef.current === seed) return;
+      seededRef.current = seed;
+      sendMessage(seed);
+    };
+
+    window.addEventListener("poseidon:open", onOpen);
+    return () => window.removeEventListener("poseidon:open", onOpen);
+  }, [sendMessage]);
+
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
