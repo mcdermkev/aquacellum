@@ -105,6 +105,29 @@ export function getProvider() {
       providers,
       1
     );
+
+    /**
+     * Slow the event poll right down. This is the single biggest source of network
+     * traffic in the app.
+     *
+     * ethers v5 defaults `pollingInterval` to 4000ms, and every poll costs one
+     * `eth_blockNumber` PLUS one `eth_getLogs` for each registered event filter.
+     * There are six — five contract listeners in App.jsx for cache invalidation,
+     * and XPEarned in useXPSync.js — so a 4s poll is about seven JSON-RPC calls
+     * every four seconds, indefinitely. Each is a cross-origin POST with a JSON
+     * content type, so each also needs a CORS preflight: roughly 3.5 HTTP requests
+     * per second before any failover fan-out, which is what filled the network
+     * panel with hundreds of rows and made a single dead endpoint look catastrophic.
+     *
+     * Every one of those listeners exists only to invalidate a React Query cache
+     * after someone mints, lists, or cancels. None of it needs four-second latency,
+     * and React Query already refetches on window focus and staleness. 30s cuts the
+     * traffic by about 7.5x and changes nothing a user would notice.
+     *
+     * Set on the FallbackProvider deliberately: it owns the filters and the poll
+     * loop, while the StaticJsonRpcProviders beneath it only service `perform()`.
+     */
+    _readOnlyProvider.pollingInterval = 30_000;
   }
   return _readOnlyProvider;
 }
