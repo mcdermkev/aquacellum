@@ -36,9 +36,17 @@ import "./EchoRenderer.css";
  * shared module so `database.html` can run the same character. This component
  * only avoids regressing to a dead sprite in the meantime.
  *
+ * GAZE OVERRIDES WANDERING. When `facingLeft` is a boolean the behaviour core has
+ * a target and that wins — she is looking at something, so she must not flip away
+ * from it on an idle timer. When it is `null` nothing is being attended to and she
+ * manages her own irregular glancing. Rule 1 in the spec: orientation is the
+ * highest-value believability cue, so it takes precedence over ambience.
+ *
  * Props:
- *   size     {number}  render size in px
- *   animated {boolean} idle motion; always off under prefers-reduced-motion
+ *   size       {number}        render size in px
+ *   animated   {boolean}       idle motion; always off under prefers-reduced-motion
+ *   facingLeft {boolean|null}  from the core; null means "self-manage"
+ *   tiltDeg    {number}        lean toward the attended target
  */
 
 // The single canonical Echo. Replaced wholesale in step 7.
@@ -54,22 +62,29 @@ const ECHO_ART = "/echo-stages/stage-4-adult.png?v1";
 const IDLE_MIN_MS = 5200;
 const IDLE_JITTER_MS = 4300;
 
-export function EchoRenderer({ size = 64, animated = true }) {
+export function EchoRenderer({
+  size = 64,
+  animated = true,
+  facingLeft = null,
+  tiltDeg = 0,
+}) {
   const reducedMotion = useMemo(() => prefersReducedMotion(), []);
   const shouldAnimate = animated && !reducedMotion;
 
-  // Facing flips on an irregular cadence so she reads as looking around rather
-  // than cycling. Never mid-flip on mount, so she doesn't pop.
-  const [facingLeft, setFacingLeft] = useState(false);
+  // Idle glancing, used only when nothing is being attended to.
+  const [idleFacingLeft, setIdleFacingLeft] = useState(false);
   const flipTimer = useRef(null);
+  const attending = typeof facingLeft === "boolean";
 
   useEffect(() => {
-    if (!shouldAnimate) return;
+    // Do not run the idle flip while she has a target — she would turn away from
+    // the thing she is supposed to be looking at.
+    if (!shouldAnimate || attending) return;
 
     const schedule = () => {
       const delay = IDLE_MIN_MS + Math.random() * IDLE_JITTER_MS;
       flipTimer.current = setTimeout(() => {
-        setFacingLeft((prev) => !prev);
+        setIdleFacingLeft((prev) => !prev);
         schedule();
       }, delay);
     };
@@ -78,7 +93,18 @@ export function EchoRenderer({ size = 64, animated = true }) {
     return () => {
       if (flipTimer.current) clearTimeout(flipTimer.current);
     };
-  }, [shouldAnimate]);
+  }, [shouldAnimate, attending]);
+
+  const facing = attending ? facingLeft : idleFacingLeft;
+
+  // Mirror THEN tilt. Composed in this order so the lean reads as "toward the
+  // target" on both sides rather than inverting when she turns.
+  const transform = [
+    facing ? "scaleX(-1)" : null,
+    tiltDeg ? `rotate(${tiltDeg.toFixed(1)}deg)` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div
@@ -97,7 +123,7 @@ export function EchoRenderer({ size = 64, animated = true }) {
         style={{
           width: "100%",
           height: "100%",
-          transform: facingLeft ? "scaleX(-1)" : "none",
+          transform: transform || "none",
         }}
       />
     </div>

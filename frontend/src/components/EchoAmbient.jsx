@@ -1,175 +1,176 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { EchoRenderer } from "./EchoRenderer";
+import {
+  ECHO_EVENT,
+  ECHO_STATE,
+  TIMING,
+  createEchoState,
+  reduce,
+  describe as describeEcho,
+  nextTransitionAt,
+  nextDriftDelay,
+  nextDriftOffset,
+} from "../services/echoBehaviour";
 import "./EchoAmbient.css";
 
 /**
  * EchoAmbient — Echo's persistent presence.
  *
- * See docs/ECHO_CHARACTER_SPEC.md §3. Poseidon is the brain, Echo is the body:
- * she is present, she drifts, and she will react to him. That is all.
+ * See docs/ECHO_CHARACTER_SPEC.md §3–4. Poseidon is the brain, Echo is the body.
  *
- * WHAT THIS REPLACED
+ * THIS COMPONENT DECIDES NOTHING. All of it — what state she is in, how long a
+ * reaction lasts, when she rests, how far she drifts — lives in
+ * `services/echoBehaviour.js`, which is pure and mirrored for `database.html`.
+ * This file is a binding: translate DOM events into behaviour events, translate
+ * behaviour state into pixels.
  *
- * 437 lines that also owned a tap-to-open handler for a full-screen pet screen,
- * a needs-summary popover with per-need progress bars, a mood header, and a
- * streak readout. All of that belonged to the Tamagotchi role the spec removed —
- * a companion you can neglect cannot also be a guide you trust.
+ * That split is the whole reason step 3 exists. Every previous Echo scattered its
+ * timing across component-local intervals, so the behaviour only existed as an
+ * emergent property of four components and nobody could say what she was supposed
+ * to do. Do not add a `setTimeout` here that encodes a *decision*; the two timers
+ * below exist only to advance the clock.
  *
- * Two behavioural fixes carried over from the old version's problems:
- *
- *   0. She never listened to Poseidon. `poseidon:echo-reaction` was dispatched
- *      from five places and received only by `CompanionFishEntity`. She listens
- *      now — see the effect below.
- *   1. She roamed on `setInterval(4000–7000ms)`. A fixed cadence reads as a
- *      screensaver, not a creature. Every reposition now gets its own jittered
- *      delay (spec §4 rule 2).
- *   2. She was a `role="button"` with `tabIndex={0}` sitting at `zIndex: 8000`
- *      in the corner — a focusable, clickable object over the UI. She is now
- *      inert: `pointer-events: none` and `aria-hidden`, so she cannot swallow a
- *      click or a tab stop. This project has already lost time to a floating
- *      element covering a control.
- *
- * ⚠️ SHE IS DELIBERATELY NON-INTERACTIVE. Tapping Echo should open Poseidon (spec
- * §3), but `PoseidonGlobalWidget` keeps `isOpen` in local state with no
- * programmatic entry point, so that direction still needs a bridge. Rather than
- * leave a button that does nothing, she is presence-only: she hears Poseidon, she
- * cannot yet summon him.
- *
- * Props:
- *   visible {boolean} render at all — the caller owns the Settings gate
- *   calm    {boolean} Pro mode: quieter motion, no roaming
+ * ONE SCHEDULED WAKE-UP, not one per concern. `nextTransitionAt()` returns the
+ * single soonest instant at which `observe()` could change its answer, so a
+ * reaction, a speaking window and a rest deadline share one timeout. When nothing
+ * is pending it returns null and we schedule nothing — an idle Echo in a
+ * background tab costs zero timers.
  */
 
 const AMBIENT_SIZE = 56;
 
-// Roam cadence. Jittered per move; see the docblock.
-const ROAM_MIN_MS = 9000;
-const ROAM_JITTER_MS = 7000;
-
-// How far she may drift from her anchor, in px. Small on purpose: she is a
-// presence in the corner, not a pet wandering the viewport.
-const DRIFT_RANGE = 22;
-
-// Long idle → she settles. Real inactivity, not a timer since mount.
-const REST_AFTER_MS = 2 * 60 * 1000;
-
-// Poseidon reaction timing. Spec §4 rule 3: she reacts a BEAT LATE. Reacting on
-// the same frame as his output reads as scripted; a short delay reads as reacting
-// to it. Rule 4: the response is brief and bounded — the payload can ask for 12
-// seconds, which is a pose, not a reaction.
-const REACT_DELAY_MS = 250;
-const REACT_MAX_MS = 2200;
-
 export function EchoAmbient({ visible = true, calm = false }) {
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [resting, setResting] = useState(false);
-  const [reacting, setReacting] = useState(false);
-  const roamTimer = useRef(null);
-  const restTimer = useRef(null);
-  const reactTimers = useRef([]);
+  // `useReducer` with the pure core as the reducer. React's contract (same state
+  // + same action ⇒ same result, no side effects) is exactly what the core
+  // already guarantees, so they compose without a wrapper.
+  const [behaviour, dispatch] = useReducer(reduce, undefined, () => createEchoState(Date.now()));
 
-  // ─── Irregular drift ──────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!visible || calm || resting) return;
+  // Re-render tick. The core is a function of `now`, so advancing this is how a
+  // pending transition becomes visible.
+  const [tick, setTick] = useState(0);
+  const bump = useCallback(() => setTick((n) => n + 1), []);
 
-    const schedule = () => {
-      const delay = ROAM_MIN_MS + Math.random() * ROAM_JITTER_MS;
-      roamTimer.current = setTimeout(() => {
-        setOffset({
-          x: (Math.random() * 2 - 1) * DRIFT_RANGE,
-          y: (Math.random() * 2 - 1) * (DRIFT_RANGE * 0.6),
-        });
-        schedule();
-      }, delay);
-    };
-    schedule();
+  const send = useCallback((type, extra) => {
+    dispatch({ type, now: Date.now(), ...extra });
+  }, []);
 
-    return () => {
-      if (roamTimer.current) clearTimeout(roamTimer.current);
-    };
-  }, [visible, calm, resting]);
-
-  // ─── Rest on genuine inactivity ───────────────────────────────────────────
-  //
-  // Listens to real input rather than counting from mount, so a user who is
-  // reading rather than clicking still lets her settle — and any activity wakes
-  // her. `visibilitychange` matters too: a hidden tab should not animate.
+  // ─── Advance the clock exactly when something can change ───────────────────
+  const wakeTimer = useRef(null);
   useEffect(() => {
     if (!visible) return;
 
-    const wake = () => {
-      setResting(false);
-      if (restTimer.current) clearTimeout(restTimer.current);
-      restTimer.current = setTimeout(() => setResting(true), REST_AFTER_MS);
-    };
+    const at = nextTransitionAt(behaviour, Date.now());
+    if (at === null) return;
 
-    const onVisibility = () => {
-      if (document.hidden) setResting(true);
-      else wake();
-    };
-
-    const events = ["pointerdown", "keydown", "scroll"];
-    for (const e of events) window.addEventListener(e, wake, { passive: true });
-    document.addEventListener("visibilitychange", onVisibility);
-    wake();
-
+    const delay = Math.max(0, at - Date.now());
+    wakeTimer.current = setTimeout(bump, delay);
     return () => {
-      for (const e of events) window.removeEventListener(e, wake);
-      document.removeEventListener("visibilitychange", onVisibility);
-      if (restTimer.current) clearTimeout(restTimer.current);
+      if (wakeTimer.current) clearTimeout(wakeTimer.current);
     };
-  }, [visible]);
+    // `tick` IS a dependency, deliberately. A reaction has two transitions — it
+    // begins 250 ms late and ends when its window closes — and `behaviour` does
+    // not change between them. Without `tick` here the effect would run once,
+    // schedule the first wake-up, and never schedule the second, leaving her stuck
+    // mid-reaction until some unrelated event happened to re-render her.
+  }, [behaviour, tick, visible, bump]);
 
-  // ─── React to Poseidon ────────────────────────────────────────────────────
+  // ─── Poseidon ─────────────────────────────────────────────────────────────
   //
-  // THE FIRST TIME POSEIDON AND ECHO ARE ACTUALLY CONNECTED. `poseidon:echo-reaction`
-  // has been dispatched from five places for a long time — the chat console, the
-  // global widget, and three easter eggs — and its only listener was
-  // `CompanionFishEntity`, a CSS-div fish buried in the tank detail panel that most
-  // users never opened. Deleting that component is what surfaced the mismatch:
-  // Poseidon was talking to a fish nobody could see.
-  //
-  // This is a deliberately thin reading of the payload. It carries `mood`,
-  // `glowColor` and `swimSpeedMultiplier`, and mapping those properly is the
-  // behaviour model in step 3. For now: she notices, briefly, and settles.
+  // `poseidon:echo-reaction` is dispatched from five places — the chat console,
+  // the global widget, and three easter eggs. Its only listener used to be
+  // `CompanionFishEntity`, a CSS fish in the tank detail panel most users never
+  // opened, so Poseidon was talking to something nobody could see.
   useEffect(() => {
     if (!visible) return;
 
     const onReaction = (e) => {
-      const requested = Number(e?.detail?.durationMs) || 900;
-      const duration = Math.min(Math.max(requested, 400), REACT_MAX_MS);
-
-      // Poseidon speaking is activity — she should not stay asleep through it.
-      setResting(false);
-
-      const start = setTimeout(() => {
-        setReacting(true);
-        const end = setTimeout(() => setReacting(false), duration);
-        reactTimers.current.push(end);
-      }, REACT_DELAY_MS);
-      reactTimers.current.push(start);
+      const d = e?.detail || {};
+      send(ECHO_EVENT.POSEIDON_REACTION, {
+        durationMs: d.durationMs,
+        swimSpeedMultiplier: d.swimSpeedMultiplier,
+      });
     };
 
     window.addEventListener("poseidon:echo-reaction", onReaction);
+    return () => window.removeEventListener("poseidon:echo-reaction", onReaction);
+  }, [visible, send]);
+
+  // ─── Wake on genuine input, rest on real inactivity ───────────────────────
+  //
+  // Real input rather than a countdown from mount, so a keeper who is reading
+  // rather than clicking still lets her settle, and any activity wakes her.
+  useEffect(() => {
+    if (!visible) return;
+
+    const onActivity = () => send(ECHO_EVENT.ACTIVITY);
+    const onVisibility = () =>
+      send(document.hidden ? ECHO_EVENT.HIDDEN : ECHO_EVENT.VISIBLE);
+
+    const events = ["pointerdown", "keydown", "scroll"];
+    for (const e of events) window.addEventListener(e, onActivity, { passive: true });
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
-      window.removeEventListener("poseidon:echo-reaction", onReaction);
-      for (const t of reactTimers.current) clearTimeout(t);
-      reactTimers.current = [];
+      for (const e of events) window.removeEventListener(e, onActivity);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [visible]);
+  }, [visible, send]);
+
+  // ─── Irregular drift ──────────────────────────────────────────────────────
+  //
+  // Each leg schedules the next with its own jittered delay from the core. A
+  // shared interval is the mechanical tell rule 2 is about.
+  const driftTimer = useRef(null);
+  const observedState = describeEcho(behaviour, Date.now()).state;
+  const shouldDrift = visible && !calm && observedState !== ECHO_STATE.RESTING;
+
+  useEffect(() => {
+    if (!shouldDrift) return;
+
+    const schedule = () => {
+      driftTimer.current = setTimeout(() => {
+        const { x, y } = nextDriftOffset();
+        send(ECHO_EVENT.DRIFT, { x, y });
+        schedule();
+      }, nextDriftDelay());
+    };
+    schedule();
+
+    return () => {
+      if (driftTimer.current) clearTimeout(driftTimer.current);
+    };
+  }, [shouldDrift, send]);
 
   if (!visible) return null;
 
+  const view = describeEcho(behaviour, Date.now());
+  const reacting = view.state === ECHO_STATE.REACTING;
+  const resting = view.state === ECHO_STATE.RESTING;
+
   return (
     <div
-      className={`echo-ambient${reacting ? " echo-ambient--reacting" : ""}`}
+      className={`echo-ambient echo-ambient--${view.state}`}
       style={{
-        transform: `translate(${offset.x.toFixed(1)}px, ${offset.y.toFixed(1)}px)`,
+        transform: `translate(${view.drift.x.toFixed(1)}px, ${view.drift.y.toFixed(1)}px)`,
         opacity: resting ? 0.45 : 1,
+        // Rule 4: the reaction is scaled by the core's intensity rather than a
+        // fixed burst, so a water-change log and an easter egg no longer produce
+        // identical motion.
+        scale: reacting ? 1 + view.intensity * 0.09 : 1,
+        filter: reacting ? `brightness(${(1 + view.intensity * 0.18).toFixed(2)})` : "none",
+        // Rule 5: one settle duration, owned by the core.
+        transitionDuration: `${TIMING.settleMs}ms`,
       }}
+      // Decorative and inert. Spec §3: she must never intercept a click she does
+      // not own or take a tab stop.
       aria-hidden="true"
     >
-      <EchoRenderer size={AMBIENT_SIZE} animated={!resting} />
+      <EchoRenderer
+        size={AMBIENT_SIZE}
+        animated={view.animate}
+        facingLeft={view.facingLeft}
+        tiltDeg={view.tiltDeg}
+      />
     </div>
   );
 }
