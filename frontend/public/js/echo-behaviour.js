@@ -227,6 +227,21 @@
     return { facingLeft: facingLeft, tiltDeg: facingLeft ? -tilt : tilt };
   }
 
+  function offsetBetweenRects(target, self) {
+    if (!target || !self) return null;
+
+    var tw = Number(target.width) || 0;
+    var th = Number(target.height) || 0;
+    if (tw === 0 && th === 0) return null;
+
+    var tx = (Number(target.left) || 0) + tw / 2;
+    var ty = (Number(target.top) || 0) + th / 2;
+    var sx = (Number(self.left) || 0) + (Number(self.width) || 0) / 2;
+    var sy = (Number(self.top) || 0) + (Number(self.height) || 0) / 2;
+
+    return { dx: tx - sx, dy: ty - sy };
+  }
+
   function describe(state, now) {
     now = Number(now) || 0;
     var observed = observe(state, now);
@@ -285,6 +300,7 @@
     clampReactionDuration: clampReactionDuration,
     reactionIntensity: reactionIntensity,
     gazeFromOffset: gazeFromOffset,
+    offsetBetweenRects: offsetBetweenRects,
     describe: describe,
   };
 });

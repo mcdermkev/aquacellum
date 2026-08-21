@@ -389,6 +389,43 @@ export function gazeFromOffset(dx = 0, dy = 0) {
 }
 
 /**
+ * Centre-to-centre offset between a target and Echo herself.
+ *
+ * Takes two DOMRect-shaped objects rather than elements, so the arithmetic — the
+ * part that has to agree between the app and `database.html` — is pure and
+ * testable while each mount does its own `getBoundingClientRect()`.
+ *
+ * ONLY THE MOUNT KNOWS WHERE ECHO IS, which is why gaze works this way: a
+ * component that wants her attention names an element, and the mount converts
+ * that into an offset. A dispatcher computing its own offset would need to know
+ * her position, and would go stale the moment she drifted.
+ *
+ * Returns `null` for a target worth ignoring — nothing there, or zero-sized (an
+ * unmounted node, a collapsed container, a `display: none` panel). Null means
+ * "don't change where she is looking" rather than "look at the origin", because
+ * a zero rect sits at the top-left of the viewport and would yank her gaze to a
+ * corner for no reason.
+ *
+ * @param {{left: number, top: number, width: number, height: number}|null} target
+ * @param {{left: number, top: number, width: number, height: number}|null} self
+ * @returns {{dx: number, dy: number}|null}
+ */
+export function offsetBetweenRects(target, self) {
+  if (!target || !self) return null;
+
+  const tw = Number(target.width) || 0;
+  const th = Number(target.height) || 0;
+  if (tw === 0 && th === 0) return null;
+
+  const tx = (Number(target.left) || 0) + tw / 2;
+  const ty = (Number(target.top) || 0) + th / 2;
+  const sx = (Number(self.left) || 0) + (Number(self.width) || 0) / 2;
+  const sy = (Number(self.top) || 0) + (Number(self.height) || 0) / 2;
+
+  return { dx: tx - sx, dy: ty - sy };
+}
+
+/**
  * Everything the renderer needs, derived in one call.
  *
  * A single entry point so a surface cannot accidentally read three fields and

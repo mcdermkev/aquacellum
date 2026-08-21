@@ -3,6 +3,7 @@ import { usePoseidon } from "../hooks/usePoseidon";
 import { handlePoseidonAction } from "../utils/poseidonBridge";
 import { requiresConfirmation, actionLabel, actionConfirmLabel } from "../utils/poseidonActions";
 import { parsePoseidonMessage } from "../utils/poseidonDeepLinks";
+import { useEchoAttend } from "../hooks/useEchoAttend";
 
 /**
  * PoseidonGlobalWidget — Always-available floating Poseidon AI chat.
@@ -23,6 +24,12 @@ export function PoseidonGlobalWidget({ walletAddress, casualModeActive = true, a
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const panelRef = useRef(null);
+
+  // Echo looks at the console while it is open. This is the whole relationship in
+  // one line: Poseidon is the brain, Echo is the body, so when he is talking she
+  // is turned toward where the talking is happening
+  // (docs/ECHO_CHARACTER_SPEC.md §1, §4 rule 1). No-ops when she is switched off.
+  useEchoAttend(panelRef, isOpen);
 
   // ── Draggable "chat-head" FAB ──────────────────────────────────────────────
   // Long-press to pick the bubble up, then drag it anywhere (it remembers where

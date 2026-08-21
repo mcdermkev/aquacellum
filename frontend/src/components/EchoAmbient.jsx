@@ -12,6 +12,7 @@ import {
   nextGlanceDelay,
   wrapperVisuals,
 } from "../services/echoBehaviour";
+import { attachGazeTracking } from "../services/echoGaze";
 // Styling lives in /css/echo.css, linked from app.html — one stylesheet shared
 // with database.html so the two surfaces cannot style two different characters.
 
@@ -97,6 +98,22 @@ export function EchoAmbient({ visible = true, calm = false }) {
     return () => window.removeEventListener("poseidon:echo-reaction", onReaction);
   }, [visible, send]);
 
+  // ─── Gaze (rule 1) ────────────────────────────────────────────────────────
+  //
+  // Components ask via `useEchoAttend(ref, active)`, which dispatches
+  // `echo:attend` with an element. The mount is the half that does the geometry,
+  // because only it knows where she currently is — and she drifts, so an offset
+  // computed by a caller would be stale before it arrived.
+  const selfRef = useRef(null);
+  useEffect(() => {
+    if (!visible) return;
+    return attachGazeTracking({
+      getSelf: () => selfRef.current,
+      onOffset: ({ dx, dy }) => send(ECHO_EVENT.ATTEND, { dx, dy }),
+      onRelease: () => send(ECHO_EVENT.RELEASE),
+    });
+  }, [visible, send]);
+
   // ─── Wake on genuine input, rest on real inactivity ───────────────────────
   //
   // Real input rather than a countdown from mount, so a keeper who is reading
@@ -170,6 +187,7 @@ export function EchoAmbient({ visible = true, calm = false }) {
 
   return (
     <div
+      ref={selfRef}
       className={`echo-ambient echo-ambient--${view.state}`}
       // Every value here comes from the core, including the reaction scale and
       // brightness (rule 4: proportional to the news) and the settle duration

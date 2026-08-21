@@ -31,6 +31,7 @@ import {
   artTransform,
   wrapperVisuals,
   nextGlanceDelay,
+  offsetBetweenRects,
 } from "./echoBehaviour.js";
 
 /** Apply a sequence of events, threading state through. */
@@ -334,6 +335,43 @@ describe("nextTransitionAt keeps the React binding to one timer", () => {
   });
 });
 
+describe("offsetBetweenRects — the dispatcher names an element, the mount measures", () => {
+  const self = { left: 20, top: 700, width: 56, height: 56 }; // bottom-left anchor
+
+  it("measures centre to centre", () => {
+    const target = { left: 100, top: 100, width: 200, height: 100 };
+    // target centre (200,150) minus her centre (48,728)
+    expect(offsetBetweenRects(target, self)).toEqual({ dx: 152, dy: -578 });
+  });
+
+  it("returns null for a zero-sized target rather than the viewport corner", () => {
+    // THE POINT. An unmounted node, a collapsed container or a display:none panel
+    // reports a rect at 0,0 with no size. Treating that as a real position would
+    // yank her gaze to the top-left of the screen for no reason, so null means
+    // "leave her looking where she was".
+    expect(offsetBetweenRects({ left: 0, top: 0, width: 0, height: 0 }, self)).toBeNull();
+  });
+
+  it("still measures a target with only one dimension", () => {
+    // A 1px-tall divider is odd but real; only fully collapsed is meaningless.
+    expect(offsetBetweenRects({ left: 0, top: 0, width: 100, height: 0 }, self)).not.toBeNull();
+  });
+
+  it("returns null when either rect is missing", () => {
+    expect(offsetBetweenRects(null, self)).toBeNull();
+    expect(offsetBetweenRects({ left: 0, top: 0, width: 10, height: 10 }, null)).toBeNull();
+    expect(offsetBetweenRects()).toBeNull();
+  });
+
+  it("composes with gazeFromOffset into a believable look", () => {
+    // Panel on the right, well above her: she faces right and leans up.
+    const offset = offsetBetweenRects({ left: 900, top: 120, width: 380, height: 500 }, self);
+    const gaze = gazeFromOffset(offset.dx, offset.dy);
+    expect(gaze.facingLeft).toBe(false);
+    expect(gaze.tiltDeg).toBeLessThan(0);
+  });
+});
+
 describe("appearance is decided once, for both renderers", () => {
   // Spec §8 forbids a second renderer. `database.html` cannot use the React one,
   // so the enforceable version is that NEITHER renderer decides anything: both
@@ -537,6 +575,17 @@ describe("public browser mirror stays in lockstep", () => {
     }
     for (const [dx, dy] of [[0, 0], [-200, 0], [200, 0], [600, -300], [0, -300], [1, 5000]]) {
       expect(mirror.gazeFromOffset(dx, dy)).toEqual(gazeFromOffset(dx, dy));
+    }
+    // Gaze geometry must agree too, or the app and database.html look elsewhere.
+    const selfRect = { left: 20, top: 700, width: 56, height: 56 };
+    const targets = [
+      { left: 100, top: 100, width: 200, height: 100 },
+      { left: 0, top: 0, width: 0, height: 0 },
+      { left: 900, top: 120, width: 380, height: 500 },
+      null,
+    ];
+    for (const t of targets) {
+      expect(mirror.offsetBetweenRects(t, selfRect)).toEqual(offsetBetweenRects(t, selfRect));
     }
     // Injected randomness, so the jittered helpers are comparable at all.
     for (const v of [0, 0.25, 0.5, 0.99]) {

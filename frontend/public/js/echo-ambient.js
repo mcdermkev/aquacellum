@@ -196,28 +196,82 @@
     });
 
     /**
-     * Point her at an element.
+     * ─── Gaze ───────────────────────────────────────────────────────────────
      *
-     * The DOM measuring is the only part of gaze that could not live in the core.
-     * She looks at the CENTRE of the target relative to her own centre, so an
-     * off-screen or zero-size element yields a zero offset rather than a wild
-     * tilt.
+     * Mirrors `src/services/echoGaze.js attachGazeTracking()`. Same protocol as
+     * the React app: a page names an element, the MOUNT does the geometry,
+     * because only the mount knows where Echo is and she drifts.
+     *
+     * The arithmetic itself is `EB.offsetBetweenRects`, shared with the app and
+     * parity-tested, so the two surfaces cannot disagree about where she looks.
      */
+    var target = null;
+    var frame = null;
+    // See src/services/echoGaze.js for why this is tracked separately from the
+    // rAF handle: `frame = requestAnimationFrame(fn)` assigns only after the
+    // callback returns, so guarding on `frame` alone breaks under any synchronous
+    // scheduler and silently skips every re-measure after the first.
+    var pending = false;
+
+    function measureGaze() {
+      pending = false;
+      frame = null;
+
+      // Element gone — a closed popup, a re-rendered card. Let go rather than
+      // keep staring at a position that no longer means anything.
+      if (!target || !target.isConnected) {
+        if (target) {
+          target = null;
+          send(EB.ECHO_EVENT.RELEASE);
+        }
+        return;
+      }
+
+      var offset = EB.offsetBetweenRects(
+        target.getBoundingClientRect(),
+        wrap.getBoundingClientRect()
+      );
+      // Null means "not worth looking at" — leave her gaze where it was rather
+      // than snapping to the viewport corner.
+      if (offset) send(EB.ECHO_EVENT.ATTEND, { dx: offset.dx, dy: offset.dy });
+    }
+
+    // rAF-coalesced: scroll fires far more often than a layout settles, and
+    // measuring per event means a forced reflow per scroll tick for a decorative
+    // fish.
+    function scheduleGaze() {
+      if (pending) return;
+      pending = true;
+      frame = requestAnimationFrame(measureGaze);
+    }
+
     function attend(element) {
-      if (!element || !element.getBoundingClientRect) return;
-      var t = element.getBoundingClientRect();
-      if (t.width === 0 && t.height === 0) return;
-      var me = wrap.getBoundingClientRect();
-      send(EB.ECHO_EVENT.ATTEND, {
-        dx: t.left + t.width / 2 - (me.left + me.width / 2),
-        dy: t.top + t.height / 2 - (me.top + me.height / 2),
-      });
+      if (!element || typeof element.getBoundingClientRect !== "function") return;
+      target = element;
+      measureGaze();
     }
 
     function release() {
+      if (!target) return;
+      target = null;
       send(EB.ECHO_EVENT.RELEASE);
     }
 
+    window.addEventListener("scroll", scheduleGaze, { passive: true, capture: true });
+    window.addEventListener("resize", scheduleGaze, { passive: true });
+
+    // The same two events the React app uses, so a page can talk to whichever
+    // Echo happens to be mounted without knowing which one it is.
+    window.addEventListener("echo:attend", function (e) {
+      attend(e && e.detail && e.detail.target);
+    });
+    window.addEventListener("echo:release", release);
+
+    /**
+     * Convenience API for static pages, which have no import system.
+     * `window.AquadexEcho?.attend(el)` reads better inline than constructing a
+     * CustomEvent, and it dispatches nothing extra — it is the same two calls.
+     */
     window.AquadexEcho = {
       attend: attend,
       release: release,

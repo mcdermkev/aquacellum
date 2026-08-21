@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { handlePoseidonAction } from "../utils/poseidonBridge";
 import { requiresConfirmation, actionLabel, actionConfirmLabel } from "../utils/poseidonActions";
+import { useEchoAttend } from "../hooks/useEchoAttend";
 import { usePoseidon } from "../hooks/usePoseidon";
 
 // The local `formatActionLabel` map that used to live here was the third copy of
@@ -17,6 +18,11 @@ import { usePoseidon } from "../hooks/usePoseidon";
  * with the local Web Worker as offline fallback.
  */
 export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, seedPrompt = null, onClose }) {
+  // Echo turns toward the console for as long as it is mounted. This one is
+  // rendered conditionally by its parents rather than holding an `isOpen`, so its
+  // lifetime IS the open state. See docs/ECHO_CHARACTER_SPEC.md §4 rule 1.
+  const panelRef = useRef(null);
+  useEchoAttend(panelRef, true);
   const mode = casualModeActive ? "casual" : "pro";
   const {
     messages,
@@ -134,6 +140,7 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
   // The ≤768px rule in index.css still promotes this to a full-screen sheet.
   return createPortal(
     <div
+      ref={panelRef}
       className="poseidon-chat-panel glass-card"
       style={{
         position: "fixed",
