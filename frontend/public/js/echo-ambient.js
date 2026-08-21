@@ -88,11 +88,12 @@
     inner.style.width = "100%";
     inner.style.height = "100%";
 
-    var art = document.createElement("img");
+    // Same bytes the React renderer injects, straight from the core, so the app
+    // and this page cannot show two different fish. Static literal from our own
+    // source — no interpolation, no user input, nothing injectable.
+    var art = document.createElement("div");
     art.className = "echo-art";
-    art.src = EB.ECHO_ART;
-    art.alt = "";
-    art.draggable = false;
+    art.innerHTML = EB.ECHO_SVG;
 
     inner.appendChild(art);
     wrap.appendChild(inner);

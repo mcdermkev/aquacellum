@@ -75,23 +75,72 @@ export const ECHO_EVENT = Object.freeze({
 });
 
 /**
- * The art. One constant, one character, every surface.
+ * Echo, as vector art. One constant, one character, every surface.
  *
- * ⚠️ PLACEHOLDER — still one of the old stage PNGs so Echo stays visible through
- * the rework. Step 7 replaces it with the real stylised set. It lives in the CORE
- * rather than in a renderer precisely so that swap is one line and cannot be done
- * for the app while leaving `database.html` on the old art.
+ * Step 7 of docs/ECHO_CHARACTER_SPEC.md, and what `docs/BRAND_KIT.md` asked for
+ * all along: *"Animated SVG with brand teal/violet palette… playful, organic
+ * shapes — intentionally 'gamey'"*. The old implementation was a 2 MB photographic
+ * PNG, which is neither of those things.
  *
- * Downscaled from 896×1280 / 2.01 MB to 256×366 / 104 KB when she started
- * appearing on `database.html`. A 2 MB asset rendered at 56 px was tolerable while
- * she was app-only; on a public page it is a real cost for a decorative fish. 256
- * px is still 2.5× the largest place she is drawn (the 100 px profile header). The
- * original is in git history if step 7 wants it as reference.
+ * WHY A STRING IN THE CORE, and not an .svg file or a JSX component:
  *
- * The `?v` suffix busts the service-worker cache — bump it whenever the file
- * changes, or returning users keep the old bytes.
+ *   - An `<img src="echo.svg">` is opaque to CSS, so expressions would need one
+ *     file per state and we would be back to seven images.
+ *   - A JSX component cannot be used by `database.html`, and duplicating it in the
+ *     vanilla mount is the second-renderer trap (spec §8) in its purest form.
+ *   - As one string in the core, both mounts inject the SAME bytes. The parity
+ *     test asserts the app and the static page hold an identical string, so they
+ *     cannot drift into two characters.
+ *
+ * Safe to inject: this is a static literal with no interpolation and no user
+ * input, which is the one case where setting innerHTML is not a smell.
+ *
+ * EXPRESSIONS ARE CSS, NOT MARKUP. Every part carries a class, and
+ * `/css/echo.css` moves them per state using the `.echo-ambient--{state}` wrapper
+ * both mounts already set. So the six states in this module get six faces for
+ * free, with no extra plumbing and nothing to keep in sync — and a state added to
+ * the machine later needs only a CSS rule, not new art.
+ *
+ * Drawn facing RIGHT at 100×100; `artTransform()` mirrors her when she looks left.
  */
-export const ECHO_ART = "/echo-stages/stage-4-adult.png?v2";
+export const ECHO_SVG = `<svg class="echo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="presentation" focusable="false">
+<defs>
+<radialGradient id="echoBody" cx="62%" cy="40%" r="70%">
+<stop offset="0%" stop-color="#7ff3e4"/><stop offset="52%" stop-color="#2dd4bf"/><stop offset="100%" stop-color="#0e9488"/>
+</radialGradient>
+<linearGradient id="echoFin" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" stop-color="#a78bfa" stop-opacity="0.78"/><stop offset="100%" stop-color="#22d3ee" stop-opacity="0.5"/>
+</linearGradient>
+<radialGradient id="echoAura" cx="50%" cy="50%" r="50%">
+<stop offset="55%" stop-color="#2dd4bf" stop-opacity="0"/><stop offset="100%" stop-color="#5eead4" stop-opacity="0.22"/>
+</radialGradient>
+</defs>
+<circle class="echo-aura" cx="50" cy="50" r="46" fill="url(#echoAura)"/>
+<g class="echo-tail">
+<path d="M6 25 C11 40 11 60 6 75 C14 66 21 57 28 50 C21 43 14 34 6 25 Z" fill="url(#echoFin)"/>
+</g>
+<g class="echo-fin-dorsal">
+<path d="M59 36 C55 22 46 14 37 17 C45 23 51 29 54 38 Z" fill="url(#echoFin)"/>
+</g>
+<g class="echo-fin-pectoral">
+<path d="M60 62 C56 74 48 83 39 80 C46 73 53 67 56 61 Z" fill="url(#echoFin)"/>
+</g>
+<path class="echo-body" d="M87 50 C86 43 80 36 68 32 C56 28 42 30 32 37 C26 41 22 46 22 50 C22 54 26 59 32 63 C42 70 56 72 68 68 C80 64 86 57 87 50 Z" fill="url(#echoBody)"/>
+<path class="echo-sheen" d="M40 38 C50 33 63 34 72 40 C62 37 50 37 41 40 Z" fill="#e8fffb" opacity="0.5"/>
+<g class="echo-spots" fill="#5eead4">
+<circle cx="44" cy="45" r="2.1" opacity="0.75"/>
+<circle cx="37" cy="52" r="1.7" opacity="0.6"/>
+<circle cx="47" cy="57" r="1.5" opacity="0.55"/>
+</g>
+<g class="echo-eye">
+<circle class="echo-eye-white" cx="70" cy="45" r="6.4" fill="#0b2b2f"/>
+<circle class="echo-eye-iris" cx="71" cy="45" r="4.2" fill="#5eead4"/>
+<circle class="echo-eye-pupil" cx="72" cy="45" r="2.2" fill="#04181b"/>
+<circle class="echo-eye-glint" cx="73.4" cy="43" r="1.2" fill="#ffffff" opacity="0.9"/>
+<circle class="echo-eye-lid" cx="70" cy="45" r="6.9" fill="#35d8c4"/>
+</g>
+<path class="echo-mouth" d="M83 54 C80 56 77 56 75 55" stroke="#0b2b2f" stroke-width="1.6" stroke-linecap="round" fill="none" opacity="0.55"/>
+</svg>`;
 
 // ─── Timing (spec §4 rules 2–5) ──────────────────────────────────────────────
 

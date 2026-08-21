@@ -55,15 +55,22 @@
   user-select: none;
 }
 
+/* The element carrying the facing flip and the gaze tilt. Was an <img>; it is now
+   a plain div with the vector injected into it, so `object-fit` is gone. */
 .echo-art {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
   /* The facing flip and gaze tilt are transforms set inline from
      `artTransform()`; this eases them so a turn is a turn and not a teleport. */
   transition: transform 900ms cubic-bezier(0.4, 0, 0.2, 1);
   will-change: transform;
+}
+
+.echo-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 /**
@@ -100,6 +107,202 @@
   }
 }
 
+/* ─── Expressions ──────────────────────────────────────────────────────────────
+ *
+ * Her face, one rule set per behaviour state.
+ *
+ * This is why the art is inline SVG and not an <img>: the parts are reachable, so
+ * six states cost six rules instead of six image files. Neither mount is involved
+ * — both already put `echo-ambient--{state}` on the wrapper, so adding a state to
+ * the machine later needs a rule here and nothing else.
+ *
+ * TWO GROUPS, AND THEY MUST NOT OVERLAP. Parts with a running keyframe animation
+ * (tail, pectoral fin) can only have their SPEED changed per state, because a
+ * running animation beats a declared `transform` and the posture would be silently
+ * ignored. Everything postured per state — eye, lid, mouth, dorsal fin, aura — has
+ * no animation on it. Keep it that way, or expressions will half-apply.
+ */
+
+.echo-svg .echo-eye,
+.echo-svg .echo-eye-iris,
+.echo-svg .echo-eye-pupil,
+.echo-svg .echo-eye-glint,
+.echo-svg .echo-eye-lid,
+.echo-svg .echo-mouth,
+.echo-svg .echo-fin-dorsal,
+.echo-svg .echo-fin-pectoral,
+.echo-svg .echo-tail,
+.echo-svg .echo-aura,
+.echo-svg .echo-spots {
+  /* Without fill-box, transform origins resolve against the whole SVG viewport and
+     every rotation swings from the wrong pivot. */
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    transform 380ms cubic-bezier(0.34, 1.4, 0.64, 1),
+    opacity 380ms ease;
+}
+
+/* Pivots where a part attaches to the body, so fins hinge instead of sliding. */
+.echo-svg .echo-tail {
+  transform-origin: right center;
+}
+.echo-svg .echo-fin-dorsal {
+  transform-origin: bottom center;
+}
+.echo-svg .echo-fin-pectoral {
+  transform-origin: top center;
+}
+/**
+ * The lid is a skin-coloured disc the size of the eye, collapsed to nothing and
+ * anchored at the brow, so scaling it down the Y axis slides it over the eye the
+ * way a real lid closes.
+ *
+ * It was a dark crescent path first, which rendered as a floating navy dome — it
+ * read as headwear, not as an eye shutting. Two things fixed it: matching her skin
+ * rather than contrasting with it, and never closing quite all the way, so the
+ * sliver of dark eye left underneath becomes the lash line that sells it.
+ */
+.echo-svg .echo-eye-lid {
+  transform-origin: top center;
+  transform: scaleY(0);
+}
+
+/* Continuous motion. Speed is the only thing states change here. */
+.echo-svg .echo-tail {
+  animation: echo-tail-sway 2.6s ease-in-out infinite;
+}
+.echo-svg .echo-fin-pectoral {
+  animation: echo-fin-flutter 1.9s ease-in-out infinite;
+}
+
+@keyframes echo-tail-sway {
+  0%,
+  100% {
+    transform: rotate(-7deg);
+  }
+  50% {
+    transform: rotate(7deg);
+  }
+}
+
+@keyframes echo-fin-flutter {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+}
+
+/* ATTENDING — locked on. Eye opens, pupil slides toward what she is looking at,
+   dorsal fin lifts. She is already turned to face the target by `artTransform()`. */
+.echo-ambient--attending .echo-eye {
+  transform: scale(1.1);
+}
+.echo-ambient--attending .echo-eye-iris {
+  transform: translateX(0.8px);
+}
+.echo-ambient--attending .echo-eye-pupil {
+  transform: translateX(1.5px);
+}
+.echo-ambient--attending .echo-fin-dorsal {
+  transform: rotate(-9deg);
+}
+
+/* SPEAKING — Poseidon is talking, so this is her LISTENING face, not a talking one.
+   He is the brain and has the words; she carries the reaction. Tail picks up. */
+.echo-ambient--speaking .echo-eye-pupil {
+  transform: translateX(0.8px);
+}
+.echo-ambient--speaking .echo-mouth {
+  /* The mouth is a stroked arc, so deepening it on the Y axis opens it. */
+  opacity: 0.85;
+  transform: translateY(0.8px) scale(1.05, 2.4);
+}
+.echo-ambient--speaking .echo-tail {
+  animation-duration: 1.5s;
+}
+.echo-ambient--speaking .echo-fin-pectoral {
+  animation-duration: 1.2s;
+}
+
+/* EXAMINING — vision is running. A squint: lid down a little, pupil dilated,
+   glint sharp, tail almost still. She is concentrating, not performing. */
+.echo-ambient--examining .echo-eye-lid {
+  transform: scaleY(0.4);
+}
+.echo-ambient--examining .echo-eye-pupil {
+  transform: scale(1.28);
+}
+.echo-ambient--examining .echo-eye-glint {
+  opacity: 1;
+}
+.echo-ambient--examining .echo-mouth {
+  opacity: 0.3;
+  transform: scaleX(0.85);
+}
+.echo-ambient--examining .echo-tail {
+  animation-duration: 3.8s;
+}
+
+/* REACTING — the brief startle. Eye wide, pupil contracted, fins flared, spots lit.
+   Duration and scale are the core's job (rule 4); this is only the face. */
+.echo-ambient--reacting .echo-eye {
+  transform: scale(1.18);
+}
+.echo-ambient--reacting .echo-eye-pupil {
+  transform: scale(0.68);
+}
+.echo-ambient--reacting .echo-eye-glint {
+  opacity: 1;
+  transform: scale(1.3);
+}
+.echo-ambient--reacting .echo-mouth {
+  opacity: 0.9;
+  transform: translateY(1.2px) scale(1.1, 2.8);
+}
+.echo-ambient--reacting .echo-fin-dorsal {
+  transform: rotate(-15deg) scale(1.07);
+}
+.echo-ambient--reacting .echo-aura {
+  transform: scale(1.1);
+}
+.echo-ambient--reacting .echo-spots {
+  opacity: 1;
+}
+.echo-ambient--reacting .echo-tail {
+  animation-duration: 1s;
+}
+
+/* RESTING — two minutes idle. Asleep: lid shut, glint gone, fins drooped, aura and
+   markings dimmed, tail barely moving. The one state that should read as absence. */
+.echo-ambient--resting .echo-eye-lid {
+  /* Not 1. The last sliver of dark eye below the lid is the closed-eye line. */
+  transform: scaleY(0.92);
+}
+.echo-ambient--resting .echo-eye-glint {
+  opacity: 0;
+}
+.echo-ambient--resting .echo-mouth {
+  opacity: 0.3;
+  transform: scaleX(0.9);
+}
+.echo-ambient--resting .echo-fin-dorsal {
+  transform: rotate(7deg) scaleY(0.9);
+}
+.echo-ambient--resting .echo-aura {
+  opacity: 0.6;
+  transform: scale(0.94);
+}
+.echo-ambient--resting .echo-spots {
+  opacity: 0.5;
+}
+.echo-ambient--resting .echo-tail {
+  animation-duration: 6.2s;
+}
+
 /* Below the mobile breakpoint the bottom-left corner is contested by the casual
    bottom nav, so she lifts clear of it. */
 @media (max-width: 768px) {
@@ -121,6 +324,28 @@
     animation: none;
   }
   .echo-art {
+    transition: none;
+  }
+
+  /* The looping tail and fin motion goes. The EXPRESSIONS stay — a closed eye or a
+     dilated pupil is a still pose, not motion, and it is how a user who has asked
+     for less movement can still tell resting from reacting. They just snap into
+     place instead of easing. */
+  .echo-svg .echo-tail,
+  .echo-svg .echo-fin-pectoral {
+    animation: none;
+  }
+  .echo-svg .echo-eye,
+  .echo-svg .echo-eye-iris,
+  .echo-svg .echo-eye-pupil,
+  .echo-svg .echo-eye-glint,
+  .echo-svg .echo-eye-lid,
+  .echo-svg .echo-mouth,
+  .echo-svg .echo-fin-dorsal,
+  .echo-svg .echo-fin-pectoral,
+  .echo-svg .echo-tail,
+  .echo-svg .echo-aura,
+  .echo-svg .echo-spots {
     transition: none;
   }
 }

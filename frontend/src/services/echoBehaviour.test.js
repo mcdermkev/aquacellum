@@ -27,7 +27,7 @@ import {
   reactionIntensity,
   gazeFromOffset,
   describe as describeEcho,
-  ECHO_ART,
+  ECHO_SVG,
   artTransform,
   wrapperVisuals,
   nextGlanceDelay,
@@ -377,8 +377,59 @@ describe("appearance is decided once, for both renderers", () => {
   // so the enforceable version is that NEITHER renderer decides anything: both
   // apply these two functions verbatim. If appearance logic reappears in a
   // component, the two surfaces can drift into two characters again.
-  it("names one art asset for every surface", () => {
-    expect(ECHO_ART).toContain("/echo-stages/");
+  it("holds one piece of art for every surface", () => {
+    // A single well-formed SVG, not a URL to a picture, so both mounts inject the
+    // same bytes and nobody can point one surface at a different file.
+    expect(ECHO_SVG.startsWith('<svg class="echo-svg"')).toBe(true);
+    expect(ECHO_SVG.endsWith("</svg>")).toBe(true);
+    expect(ECHO_SVG).not.toContain("<script");
+    // No leftover of the placeholder PNG era.
+    expect(ECHO_SVG).not.toContain("echo-stages");
+  });
+
+  it("is well-formed, because a stray tag renders as nothing at all", () => {
+    // She is injected as raw markup, so a hand edit that drops a closing tag fails
+    // silently — an empty corner, no console error, nothing to grep. Tests run in
+    // the node environment here, so there is no DOMParser; balancing the tags is
+    // the cheap check that catches the realistic mistake.
+    const stack = [];
+    for (const [, closing, name, , selfClosing] of ECHO_SVG.matchAll(
+      /<(\/?)([a-zA-Z][\w-]*)([^>]*?)(\/?)>/g,
+    )) {
+      if (selfClosing) continue;
+      if (closing) expect(stack.pop(), `unbalanced </${name}>`).toBe(name);
+      else stack.push(name);
+    }
+    expect(stack, "unclosed tags").toEqual([]);
+  });
+
+  it("keeps the parts CSS needs to build an expression out of", () => {
+    // Expressions live in echo.css and hook onto these class names. Renaming a part
+    // silently turns six faces back into one, and nothing else would catch it.
+    for (const part of [
+      "echo-eye",
+      "echo-eye-iris",
+      "echo-eye-pupil",
+      "echo-eye-glint",
+      "echo-eye-lid",
+      "echo-mouth",
+      "echo-fin-dorsal",
+      "echo-fin-pectoral",
+      "echo-tail",
+      "echo-aura",
+      "echo-spots",
+    ]) {
+      expect(ECHO_SVG, `missing part: ${part}`).toContain(`class="${part}"`);
+    }
+  });
+
+  it("draws her facing right, which is what artTransform() assumes", () => {
+    // `artTransform()` mirrors with scaleX(-1) to make her face left. That is only
+    // correct if the source art faces right; if the art were flipped, every gaze
+    // would point away from the target and the tilt would lean the wrong way.
+    const eye = /class="echo-eye-white" cx="([\d.]+)"/.exec(ECHO_SVG);
+    expect(eye).not.toBeNull();
+    expect(Number(eye[1])).toBeGreaterThan(50); // eye in the right half of a 100-wide box
   });
 
   it("mirrors before tilting, so a lean reads as toward the target", () => {
@@ -551,7 +602,9 @@ describe("public browser mirror stays in lockstep", () => {
     // React spreads `wrapperVisuals()` into a style prop; the vanilla mount
     // assigns the same keys onto `element.style`. If these ever disagree, the app
     // and database.html are showing different Echos.
-    expect(mirror.ECHO_ART).toBe(ECHO_ART);
+    // Byte-for-byte. Both mounts inject this string as markup, so a one-character
+    // difference here is literally two different Echos on the two surfaces.
+    expect(mirror.ECHO_SVG).toBe(ECHO_SVG);
     for (const seq of SEQUENCES) {
       const mine = seq.reduce((s, e) => reduce(s, e), createEchoState(0));
       const theirs = seq.reduce((s, e) => mirror.reduce(s, e), mirror.createEchoState(0));

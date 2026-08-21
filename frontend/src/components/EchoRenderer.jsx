@@ -1,5 +1,5 @@
 import React from "react";
-import { ECHO_ART, artTransform } from "../services/echoBehaviour";
+import { ECHO_SVG, artTransform } from "../services/echoBehaviour";
 
 /**
  * EchoRenderer — draws Echo.
@@ -7,7 +7,7 @@ import { ECHO_ART, artTransform } from "../services/echoBehaviour";
  * ONE character, identical for every user, and now identical on every surface.
  * See docs/ECHO_CHARACTER_SPEC.md §2.
  *
- * THIS COMPONENT DECIDES NOTHING, which is the whole point. The art path and the
+ * THIS COMPONENT DECIDES NOTHING, which is the whole point. The art itself and the
  * transform both come from `services/echoBehaviour.js`, the same module the
  * vanilla mount on `database.html` calls through its browser mirror. Spec §8
  * forbids a second renderer; a static page cannot use a React one, so the honest
@@ -44,12 +44,21 @@ export function EchoRenderer({ size = 64, animated = true, facingLeft = false, t
       // surfaces that mount her supply their own labels if she becomes interactive.
       aria-hidden="true"
     >
-      <img
+      {/*
+        Injected rather than written as JSX so this component and the vanilla mount
+        draw the SAME bytes from the core — see ECHO_SVG for the reasoning. The
+        content is a static literal in our own source with no interpolation and no
+        user input, so there is nothing here for anyone to inject.
+
+        The gradient ids inside are document-global, so two Echos on one page share
+        the first definition. They are identical, so it renders correctly; it would
+        only matter if a future change wanted per-instance colours, which the
+        one-character rule forbids anyway.
+      */}
+      <div
         className={animated ? "echo-art echo-art--animated" : "echo-art"}
-        src={ECHO_ART}
-        alt=""
-        draggable="false"
         style={{ transform: artTransform({ facingLeft, tiltDeg }) }}
+        dangerouslySetInnerHTML={{ __html: ECHO_SVG }}
       />
     </div>
   );
