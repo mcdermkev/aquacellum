@@ -196,6 +196,17 @@
       });
     });
 
+    // Vision (spec §6). `src/services/echoVision.js` brackets an identification
+    // request with these two, so she visibly concentrates while the model looks.
+    // Mirrored here so a static page that adds an identify button gets the same
+    // behaviour without a second implementation.
+    window.addEventListener("echo:vision-start", function () {
+      send(EB.ECHO_EVENT.VISION_START);
+    });
+    window.addEventListener("echo:vision-end", function () {
+      send(EB.ECHO_EVENT.VISION_END);
+    });
+
     /**
      * ─── Gaze ───────────────────────────────────────────────────────────────
      *

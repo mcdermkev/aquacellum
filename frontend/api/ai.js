@@ -6,9 +6,15 @@
  *
  * Routing:
  *   POST /api/ai?action=alt-text         → Generate accessible alt-text for photos
+ *   POST /api/ai?action=identify-fish    → Identify a fish from a photo (Echo's eyes)
  *   POST /api/ai?action=suggest-species  → Taxonomic verification via WoRMS + Gemini
  *   POST /api/ai?action=poseidon         → Poseidon AI gateway (Gemini + species RAG)
  *   GET  /api/ai?action=poseidon         → Poseidon health check (config + relayer balance)
+ *
+ * The two IMAGE actions (`alt-text`, `identify-fish`) require a signed-in account
+ * and carry a per-account daily quota — see `_lib/aiAccess.js`. The text actions
+ * keep their original per-IP limit. Vision costs materially more per call, and an
+ * anonymous caller cannot be told apart from a script.
  */
 
 import { vertexGenerateContent, isVertexConfigured } from './_lib/vertexClient.js';
@@ -16,15 +22,38 @@ import { modelFor, configuredModels, expiringModels, AI_TASKS } from './_lib/aiM
 import { handleCorsPreFlight, setCorsHeaders } from './_lib/cors.js';
 import { buildSpeciesContext } from './_lib/speciesIndex.js';
 import { checkRateLimit } from './_lib/rateLimiter.js';
+import { requireAccount, enforceAccountQuota, AI_QUOTAS } from './_lib/aiAccess.js';
+import { resolveImagePart } from './_lib/imageInput.js';
+import { groundCandidates } from './_lib/identifyGrounding.js';
 import { ethers } from 'ethers';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ALT-TEXT HANDLER
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/**
+ * POST /api/ai?action=alt-text — accessible alt text for an aquarium photo.
+ *
+ * REQUIRES A SIGNED-IN ACCOUNT. This is a paid Gemini vision call, and it used to
+ * be reachable anonymously with no quota at all — see `_lib/aiAccess.js` for why
+ * identity rather than an IP counter is the control. The only real caller is
+ * `services/mediaUpload.js`, which runs after a Supabase Storage upload and is
+ * therefore always authenticated, so the gate costs nothing legitimate.
+ *
+ * Image input goes through `_lib/imageInput.js`, which size-caps it and restricts
+ * the URL form to this project's own storage host.
+ */
 async function handleAltText(req, res) {
   if (handleCorsPreFlight(req, res, { methods: 'POST, OPTIONS' })) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+
+  const account = await requireAccount(req, res);
+  if (!account) return;
+  if (!enforceAccountQuota(res, {
+    userId: account.userId,
+    action: 'alt-text',
+    maxPerDay: AI_QUOTAS.ALT_TEXT_PER_DAY,
+  })) return;
 
   const { imageUrl, imageBase64 } = req.body || {};
 
@@ -37,33 +66,13 @@ async function handleAltText(req, res) {
   }
 
   try {
-    let imagePart;
-
-    if (imageBase64) {
-      const match = imageBase64.match(/^data:(image\/\w+);base64,(.+)$/);
-      if (match) {
-        imagePart = {
-          inlineData: { mimeType: match[1], data: match[2] }
-        };
-      } else {
-        imagePart = {
-          inlineData: { mimeType: "image/jpeg", data: imageBase64 }
-        };
-      }
-    } else {
-      const imgResponse = await fetch(imageUrl);
-      if (!imgResponse.ok) {
-        return res.status(200).json({ altText: "Aquarium photo", error: "Could not fetch image" });
-      }
-
-      const contentType = imgResponse.headers.get('content-type') || 'image/jpeg';
-      const buffer = await imgResponse.arrayBuffer();
-      const base64Data = Buffer.from(buffer).toString('base64');
-
-      imagePart = {
-        inlineData: { mimeType: contentType, data: base64Data }
-      };
+    const resolved = await resolveImagePart({ imageUrl, imageBase64 });
+    if (resolved.error) {
+      // A rejected image is the caller's mistake, not a degraded AI answer, so it
+      // keeps its real status code instead of the 200-with-fallback style below.
+      return res.status(resolved.status || 400).json({ altText: null, error: resolved.error });
     }
+    const imagePart = resolved.part;
 
     const prompt = {
       text: `Generate a concise, descriptive alt-text for this aquarium/fish photo. The alt-text should:
@@ -113,6 +122,175 @@ Respond with ONLY the alt-text string, nothing else.`
   } catch (err) {
     console.error('[Alt-text] Error:', err);
     return res.status(200).json({ altText: "Aquarium photo", error: err.message });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// IDENTIFY-FISH HANDLER — the vision half of Echo (ECHO_CHARACTER_SPEC §6)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * The grounding contract for identification.
+ *
+ * A database that means to be the accurate one cannot ship a feature that states a
+ * species with false confidence. An identification from a photo is a SUGGESTION —
+ * sexual dimorphism, juvenile colouration, line-bred morphs and hybrids all defeat
+ * it, and a confident wrong answer is worse than an honest "not sure" because the
+ * user may log it against a specimen and carry the error into a pedigree.
+ *
+ * Hence: numeric confidence per candidate, up to three ranked candidates rather
+ * than one verdict, an explicit `isFish` so a photo of a filter comes back as such,
+ * and a hard ban on health assessment (same rule Poseidon follows — no veterinary
+ * diagnosis, ever, and a fish photo is exactly where a model would volunteer one).
+ */
+const IDENTIFY_SYSTEM_PROMPT = `You identify freshwater aquarium fish from photographs for Aquacellum.
+
+## WHAT TO DO
+- Give up to 3 candidate species, most likely first, each with a confidence from 0.0 to 1.0.
+- Use the scientific name (Genus species) and the most common trade/common name.
+- Prefer FRESHWATER aquarium species. This platform is freshwater; say so in your observation if the subject is clearly marine.
+- Write one or two sentences of "observation": what visible features led you there — body shape, fin shape, colour, pattern, markings.
+
+## HONESTY RULES — these matter more than being helpful
+1. Confidence must be genuine. If the photo is blurry, cropped, badly lit, or the fish is partly hidden, say so and give LOW confidence (below 0.4). Do not round up.
+2. If you cannot tell the species but can tell the genus or family, give that as the candidate and explain the limit in the observation.
+3. If there is no fish in the image, set isFish to false, return an empty candidates array, and describe what you actually see.
+4. NEVER invent a species name. If nothing fits, return no candidates rather than a plausible-sounding guess.
+5. Many species cannot be told apart from a photo at all — sexual dimorphism, juveniles, and line-bred colour morphs especially. Say when that is the case.
+
+## HARD PROHIBITIONS
+- Do NOT assess the animal's health, condition, or welfare. No "looks healthy", no disease guesses, no treatment advice. If the user seems to be asking about a sick fish, the observation should recommend a qualified aquatic veterinarian and nothing more.
+- Do NOT estimate monetary value or grade quality.
+- Do NOT guess sex unless a species-specific, clearly visible dimorphic trait supports it, and then say which trait.`;
+
+/**
+ * POST /api/ai?action=identify-fish  { imageBase64 | imageUrl, mode? }
+ *
+ * Echo's EXAMINING state exists for exactly this call: the client dispatches
+ * VISION_START before it and VISION_END after, so she visibly concentrates while
+ * it runs. She is the body; this is the brain doing the looking.
+ *
+ * Every candidate is cross-checked against the real species catalog, so the
+ * response can tell the client "this one is in the database, here is its specCode"
+ * versus "the model named something we do not carry". That keeps an AI guess from
+ * masquerading as a catalog fact, and lets the UI link straight to the entry.
+ */
+async function handleIdentifyFish(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: 'POST, OPTIONS' })) return;
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+
+  const account = await requireAccount(req, res);
+  if (!account) return;
+  if (!enforceAccountQuota(res, {
+    userId: account.userId,
+    action: 'identify-fish',
+    maxPerDay: AI_QUOTAS.IDENTIFY_PER_DAY,
+  })) return;
+
+  const { imageUrl, imageBase64, mode } = req.body || {};
+
+  if (!imageUrl && !imageBase64) {
+    return res.status(400).json({ error: 'Provide imageUrl or imageBase64' });
+  }
+
+  if (!isVertexConfigured()) {
+    return res.status(200).json({
+      isFish: null,
+      candidates: [],
+      observation: null,
+      offline: true,
+      error: 'Visual identification is not configured right now.',
+    });
+  }
+
+  const resolved = await resolveImagePart({ imageUrl, imageBase64 });
+  if (resolved.error) {
+    return res.status(resolved.status || 400).json({ error: resolved.error });
+  }
+
+  const personaNote = mode === 'pro'
+    ? 'Write the observation in a terse, clinical, data-forward register. No emoji.'
+    : 'Write the observation in a warm, plain, encouraging register. No emoji.';
+
+  try {
+    const geminiResponse = await vertexGenerateContent(modelFor('VISION'), {
+      contents: [{
+        role: 'user',
+        parts: [resolved.part, { text: `${IDENTIFY_SYSTEM_PROMPT}\n\n${personaNote}` }],
+      }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: 'object',
+          properties: {
+            isFish: { type: 'boolean' },
+            observation: { type: 'string' },
+            candidates: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  scientificName: { type: 'string' },
+                  commonName: { type: 'string' },
+                  confidence: { type: 'number' },
+                },
+                required: ['scientificName', 'commonName', 'confidence'],
+              },
+            },
+          },
+          required: ['isFish', 'observation', 'candidates'],
+        },
+        // Low, because this is a determination and not a piece of writing.
+        temperature: 0.2,
+        maxOutputTokens: 700,
+      },
+      safetySettings: [
+        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+      ],
+    });
+
+    if (!geminiResponse.ok) {
+      const errText = await geminiResponse.text();
+      console.error('[Identify] Gemini error:', geminiResponse.status, errText);
+      return res.status(200).json({
+        isFish: null, candidates: [], observation: null,
+        error: 'Could not look at that photo right now — try again in a moment.',
+      });
+    }
+
+    const result = await geminiResponse.json();
+    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) {
+      return res.status(200).json({
+        isFish: null, candidates: [], observation: null, error: 'Empty response',
+      });
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(rawText);
+    } catch {
+      console.error('[Identify] Unparseable model JSON');
+      return res.status(200).json({
+        isFish: null, candidates: [], observation: null, error: 'Could not read the result',
+      });
+    }
+
+    return res.status(200).json({
+      isFish: parsed.isFish === true,
+      observation: typeof parsed.observation === 'string' ? parsed.observation.slice(0, 600) : null,
+      candidates: groundCandidates(parsed.candidates),
+      error: null,
+    });
+  } catch (err) {
+    console.error('[Identify] Error:', err);
+    return res.status(200).json({
+      isFish: null, candidates: [], observation: null,
+      error: 'Could not look at that photo right now — try again in a moment.',
+    });
   }
 }
 
@@ -268,12 +446,14 @@ export default async function handler(req, res) {
   switch (action) {
     case "alt-text":
       return handleAltText(req, res);
+    case "identify-fish":
+      return handleIdentifyFish(req, res);
     case "suggest-species":
       return handleSuggestSpecies(req, res);
     case "poseidon":
       return handlePoseidon(req, res);
     default:
-      return res.status(400).json({ error: `Unknown action: ${action}. Use ?action=alt-text, ?action=suggest-species, or ?action=poseidon` });
+      return res.status(400).json({ error: `Unknown action: ${action}. Use ?action=alt-text, ?action=identify-fish, ?action=suggest-species, or ?action=poseidon` });
   }
 }
 

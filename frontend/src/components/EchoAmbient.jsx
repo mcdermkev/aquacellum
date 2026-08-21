@@ -98,6 +98,33 @@ export function EchoAmbient({ visible = true, calm = false }) {
     return () => window.removeEventListener("poseidon:echo-reaction", onReaction);
   }, [visible, send]);
 
+  // ─── Vision (spec §6) ─────────────────────────────────────────────────────
+  //
+  // `services/echoVision.js` brackets an identification request with these two
+  // events, so she concentrates for exactly as long as the model is looking. The
+  // core has modelled EXAMINING since the rework with nothing to trigger it; this
+  // is the trigger.
+  //
+  // A DOM event rather than a prop or a context because the vanilla mount on
+  // `database.html` listens for the same two names — one protocol, both surfaces.
+  useEffect(() => {
+    if (!visible) return;
+
+    const onStart = () => send(ECHO_EVENT.VISION_START);
+    const onEnd = () => send(ECHO_EVENT.VISION_END);
+
+    window.addEventListener("echo:vision-start", onStart);
+    window.addEventListener("echo:vision-end", onEnd);
+    return () => {
+      window.removeEventListener("echo:vision-start", onStart);
+      window.removeEventListener("echo:vision-end", onEnd);
+      // Unmounting mid-request must not strand `examining: true` in a state that
+      // outlives this effect — the next mount reads a fresh state, but a remount
+      // while a request is in flight would otherwise miss the end event.
+      send(ECHO_EVENT.VISION_END);
+    };
+  }, [visible, send]);
+
   // ─── Gaze (rule 1) ────────────────────────────────────────────────────────
   //
   // Components ask via `useEchoAttend(ref, active)`, which dispatches

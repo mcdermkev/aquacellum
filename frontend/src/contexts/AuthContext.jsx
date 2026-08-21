@@ -41,6 +41,13 @@ import { setSessionTokenGetter as setListingPedigreeSessionTokenGetter } from ".
 // docs/SPECIES_SUGGESTION_APPROVAL_SPEC.md §8. Without this registration a
 // founder cannot approve anything.
 import { setSessionTokenGetter as setSpeciesCurationSessionTokenGetter } from "../services/speciesCurationApi";
+
+// The two paid Gemini VISION endpoints. Both require a signed-in account, so
+// without these registrations Echo cannot identify a fish and every Reef photo
+// silently loses its generated alt text — a quiet accessibility regression, since
+// altTextGenerator is built to fall back rather than surface an error.
+import { setSessionTokenGetter as setEchoVisionSessionTokenGetter } from "../services/echoVision";
+import { setSessionTokenGetter as setAltTextSessionTokenGetter } from "../utils/altTextGenerator";
 import { ensureProfile, updateProfile } from "../services/reefApi";
 import { identifyUser, resetAnalyticsIdentity, trackEvent } from "../services/analytics";
 import { isE2EMode, E2E_STUB_ACCOUNT } from "../utils/e2eMode";
@@ -453,6 +460,8 @@ function PrivyAuthProvider({ children }) {
       setPickupCoordinationSessionTokenGetter(getAccessToken);
       setListingPedigreeSessionTokenGetter(getAccessToken);
       setSpeciesCurationSessionTokenGetter(getAccessToken);
+      setEchoVisionSessionTokenGetter(getAccessToken);
+      setAltTextSessionTokenGetter(getAccessToken);
     } else {
       setSessionTokenGetter(null);
       setShippingSessionTokenGetter(null);
@@ -463,6 +472,8 @@ function PrivyAuthProvider({ children }) {
       setPickupCoordinationSessionTokenGetter(null);
       setListingPedigreeSessionTokenGetter(null);
       setSpeciesCurationSessionTokenGetter(null);
+      setEchoVisionSessionTokenGetter(null);
+      setAltTextSessionTokenGetter(null);
     }
     return () => {
       setSessionTokenGetter(null);
@@ -474,6 +485,8 @@ function PrivyAuthProvider({ children }) {
       setPickupCoordinationSessionTokenGetter(null);
       setListingPedigreeSessionTokenGetter(null);
       setSpeciesCurationSessionTokenGetter(null);
+      setEchoVisionSessionTokenGetter(null);
+      setAltTextSessionTokenGetter(null);
     };
   }, [privyAuthenticated, getAccessToken]);
 

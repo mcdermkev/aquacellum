@@ -4,6 +4,7 @@ import { handlePoseidonAction } from "../utils/poseidonBridge";
 import { requiresConfirmation, actionLabel, actionConfirmLabel } from "../utils/poseidonActions";
 import { useEchoAttend } from "../hooks/useEchoAttend";
 import { usePoseidon } from "../hooks/usePoseidon";
+import { FishIdentifier } from "./FishIdentifier";
 
 // The local `formatActionLabel` map that used to live here was the third copy of
 // the action list (prompt, bridge, this file) and it drifted: it labelled three
@@ -409,6 +410,15 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
           </button>
         </div>
       )}
+
+      {/* Visual identification (spec §6). Echo examines while Poseidon looks. */}
+      <FishIdentifier
+        mode={mode}
+        accentColor={accentColor}
+        borderColor={borderColor}
+        isPro={isPro}
+        onAskPoseidon={sendMessage}
+      />
 
       {/* Input Console Form */}
       <form

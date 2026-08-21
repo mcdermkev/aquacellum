@@ -10,6 +10,38 @@ const ALT_TEXT_API_URL = '/api/ai?action=alt-text';
 const ALT_TEXT_CACHE_PREFIX = 'aquadex_alt_text_';
 
 /**
+ * Session token bridge.
+ *
+ * The alt-text endpoint is a paid Gemini vision call and now requires a signed-in
+ * account, so these requests must carry Privy's access token. Same
+ * `setSessionTokenGetter` pattern as shipping.js / reviewsApi.js / parcelPresets.js,
+ * registered from AuthContext.
+ *
+ * WITHOUT the token every call 401s and every photo silently falls back to
+ * "Aquarium photo" — the failure mode is invisible, because this module is designed
+ * to degrade quietly. The real caller (`services/mediaUpload.js`) runs right after
+ * an authenticated Supabase upload, so a token is always available there.
+ */
+let _sessionTokenGetter = null;
+
+/** Register the session-token getter (e.g. Privy getAccessToken). Pass null to clear. */
+export function setSessionTokenGetter(getter) {
+  _sessionTokenGetter = typeof getter === 'function' ? getter : null;
+}
+
+async function authHeaders() {
+  const headers = { 'Content-Type': 'application/json' };
+  if (!_sessionTokenGetter) return headers;
+  try {
+    const token = await _sessionTokenGetter();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+  } catch (err) {
+    console.warn('[Alt-text] Could not resolve session token:', err.message);
+  }
+  return headers;
+}
+
+/**
  * Generate alt text for an uploaded image.
  * 
  * @param {string} imageUrl - The public CDN URL of the uploaded image
@@ -34,7 +66,7 @@ export async function generateAltText(imageUrl, context = {}) {
   try {
     const response = await fetch(ALT_TEXT_API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await authHeaders(),
       body: JSON.stringify({ imageUrl }),
     });
 
@@ -77,7 +109,7 @@ export async function generateAltTextFromBase64(base64Data, context = {}) {
   try {
     const response = await fetch(ALT_TEXT_API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await authHeaders(),
       body: JSON.stringify({ imageBase64: base64Data }),
     });
 
