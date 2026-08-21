@@ -23,6 +23,38 @@ function formatDuration(seconds) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+/** How many times to try recovering a fatal stream error before giving up. */
+const MAX_RECOVERIES = 2;
+
+/**
+ * Decide how to play an HLS stream.
+ *
+ * THIS FUNCTION EXISTS BECAUSE OF ONE BUG. The player used to ask
+ * `video.canPlayType("application/vnd.apple.mpegurl")` and take the native path if
+ * the answer was truthy, loading hls.js only in the `else`.
+ *
+ * `canPlayType` returns one of three strings: `""`, `"maybe"` or `"probably"`. Only
+ * the empty string is falsy. **Chrome answers `"maybe"` for HLS and then cannot
+ * play it** — measured, not assumed. So every Chrome user went down the native
+ * branch, got `video.src = "…m3u8"`, hit a decode error, and saw "Video
+ * unavailable" — while hls.js, installed and working, sat in a branch that never
+ * executed on the majority browser.
+ *
+ * The correct order is the reverse of what it was: use hls.js wherever it runs, and
+ * fall back to native only where it does not. That fallback is Safari and iOS, which
+ * have no MSE for hls.js to use and *genuinely* play HLS natively — so "cannot use
+ * hls.js" and "native actually works" are the same set of browsers.
+ *
+ * @param {{hlsSupported: boolean, nativeSupport: string}} env
+ * @returns {"hlsjs"|"native"|"unsupported"}
+ */
+export function pickPlaybackStrategy({ hlsSupported, nativeSupport }) {
+  if (hlsSupported) return "hlsjs";
+  // Last resort. A browser with neither MSE nor real HLS support cannot play this,
+  // and saying so beats a spinner that never resolves.
+  return nativeSupport === "probably" || nativeSupport === "maybe" ? "native" : "unsupported";
+}
+
 /**
  * Inline video player for Mux-hosted videos.
  * 
@@ -49,58 +81,104 @@ export function VideoPlayer({
   const [hasError, setHasError] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [showControls, setShowControls] = useState(false);
+  // Bumped by Retry. Part of the init effect's deps so a retry actually re-attaches
+  // a source rather than just hiding the error message.
+  const [attempt, setAttempt] = useState(0);
 
   const streamUrl = `https://stream.mux.com/${playbackId}.m3u8`;
   const posterUrl = thumbnailUrl || `https://image.mux.com/${playbackId}/thumbnail.webp?time=2`;
 
-  // ── Initialize HLS playback ──
+  // ── Initialize playback ──
+  //
+  // `attempt` is in the dependency list so Retry genuinely re-initialises. It used
+  // to only clear the error flag, which unmounted the error UI and remounted a
+  // <video> that nothing ever attached a source to — so Retry could never work,
+  // whatever was wrong.
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !playbackId) return;
 
-    let hls = null;
+    // The async import below resolves after this effect may have been torn down.
+    // Without this flag the late callback attaches a player to a detached element
+    // and the cleanup has nothing to destroy, because `hls` was still null when it
+    // ran. That leaked an instance per remount and produced errors from a player
+    // nobody could see.
+    let cancelled = false;
+    let recoveries = 0;
 
-    // Check if native HLS is supported (Safari/iOS)
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = streamUrl;
-    } else {
-      // Dynamically import hls.js for other browsers
-      import("hls.js").then(({ default: Hls }) => {
-        if (!Hls.isSupported()) {
-          // Final fallback: try direct source
-          video.src = streamUrl;
-          return;
-        }
-
-        hls = new Hls({
-          maxBufferLength: 10,
-          maxMaxBufferLength: 30,
-          startLevel: -1, // Auto quality selection
-        });
-
-        hls.loadSource(streamUrl);
-        hls.attachMedia(video);
-        hlsRef.current = hls;
-
-        hls.on(Hls.Events.ERROR, (_, data) => {
-          if (data.fatal) {
-            console.error("[VideoPlayer] Fatal HLS error:", data);
-            setHasError(true);
-          }
-        });
-      }).catch(() => {
-        // If hls.js fails to load, try direct playback
-        video.src = streamUrl;
-      });
-    }
-
-    return () => {
-      if (hls) {
-        hls.destroy();
+    const teardown = () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
         hlsRef.current = null;
       }
     };
-  }, [playbackId, streamUrl]);
+
+    (async () => {
+      let Hls = null;
+      try {
+        ({ default: Hls } = await import("hls.js"));
+      } catch {
+        // Chunk failed to load; fall through to whatever the browser can do.
+      }
+      if (cancelled) return;
+
+      const strategy = pickPlaybackStrategy({
+        hlsSupported: Boolean(Hls?.isSupported?.()),
+        nativeSupport: video.canPlayType("application/vnd.apple.mpegurl"),
+      });
+
+      if (strategy === "unsupported") {
+        setHasError(true);
+        return;
+      }
+
+      if (strategy === "native") {
+        video.src = streamUrl;
+        return;
+      }
+
+      const hls = new Hls({
+        maxBufferLength: 10,
+        maxMaxBufferLength: 30,
+        startLevel: -1, // Auto quality selection
+      });
+      hlsRef.current = hls;
+
+      // A "fatal" error in hls.js is not always terminal — a dropped segment
+      // request or a decode hiccup is recoverable, and hls.js exposes the two
+      // recoveries for exactly that. Only give up once they have been tried, since
+      // the alternative is an error screen for a stream that would have resumed.
+      hls.on(Hls.Events.ERROR, (_, data) => {
+        if (!data.fatal) return;
+
+        if (recoveries < MAX_RECOVERIES) {
+          recoveries += 1;
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            console.warn("[VideoPlayer] Network error, reloading stream:", data.details);
+            hls.startLoad();
+            return;
+          }
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            console.warn("[VideoPlayer] Media error, recovering:", data.details);
+            hls.recoverMediaError();
+            return;
+          }
+        }
+
+        console.error("[VideoPlayer] Unrecoverable HLS error:", data.type, data.details);
+        setHasError(true);
+        teardown();
+      });
+
+      hls.loadSource(streamUrl);
+      hls.attachMedia(video);
+    })();
+
+    return () => {
+      cancelled = true;
+      teardown();
+    };
+  }, [playbackId, streamUrl, attempt]);
 
   // ── Autoplay on scroll via IntersectionObserver ──
   useEffect(() => {
@@ -146,7 +224,14 @@ export function VideoPlayer({
     setIsPlaying(false);
     if (videoRef.current) videoRef.current.currentTime = 0;
   };
-  const handleError = () => setHasError(true);
+  // Only trust the element's own error when nothing else is managing the source.
+  // With hls.js attached, it owns error handling and can recover; letting this
+  // handler short-circuit that would put the error screen up before hls.js has had
+  // its two attempts.
+  const handleError = () => {
+    if (hlsRef.current) return;
+    setHasError(true);
+  };
 
   // ── User interaction: tap to unmute/pause ──
   const handleTap = useCallback(() => {
@@ -169,13 +254,12 @@ export function VideoPlayer({
     }
   }, [isMuted, isPlaying]);
 
+  // Re-runs the whole init effect via `attempt`. Calling `video.load()` here was
+  // pointless: the error UI had already unmounted the element, so the ref was null.
   const handleRetry = () => {
     setHasError(false);
     setIsLoading(true);
-    const video = videoRef.current;
-    if (video) {
-      video.load();
-    }
+    setAttempt((n) => n + 1);
   };
 
   // Show/hide controls on hover/touch

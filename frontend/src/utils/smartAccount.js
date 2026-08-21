@@ -26,11 +26,32 @@ import { ethers } from "ethers";
 export const BASE_SEPOLIA_CHAIN_ID = 84532;
 export const BASE_SEPOLIA_RPC_URL  = "https://base-sepolia-rpc.publicnode.com";
 
-// Fallback RPC endpoints in priority order (higher rate limits first)
+/**
+ * Fallback RPC endpoints, in priority order (higher rate limits first).
+ *
+ * ⚠️ EVERY ENTRY MUST SEND CORS HEADERS. These are called from the browser, so an
+ * endpoint without `Access-Control-Allow-Origin` cannot work here at all — no
+ * matter that it responds perfectly to curl or to a server-side call.
+ *
+ * This list used to include `base-sepolia.blockpi.network/v1/rpc/public`, which
+ * started returning 521 with no CORS headers. Because `getProvider()` builds a
+ * FallbackProvider with a 2s stall timeout, a dead entry is not skipped quietly —
+ * reads rotate onto it constantly, and each attempt logs a CORS failure plus an
+ * ERR_FAILED. One dead endpoint was producing dozens of console errors per page
+ * load while the app still worked, which is the worst kind of fault: loud, and
+ * easy to mistake for something else being broken.
+ *
+ * Verify before adding one, from a browser origin — not with curl:
+ *   curl -sI -X OPTIONS <url> -H 'Origin: https://aquacellum.com' \
+ *     -H 'Access-Control-Request-Method: POST' | grep -i access-control-allow-origin
+ * and confirm `eth_chainId` returns 0x14a34 (84532).
+ *
+ * Checked 2026-08-16: all three below return an ACAO header and chainId 84532.
+ */
 const RPC_ENDPOINTS = [
   "https://base-sepolia-rpc.publicnode.com",
-  "https://base-sepolia.blockpi.network/v1/rpc/public",
-  "https://sepolia.base.org",
+  "https://sepolia.base.org", // Base's own public endpoint
+  "https://base-sepolia.drpc.org",
 ];
 
 export const BASE_SEPOLIA_CHAIN_PARAMS = {
