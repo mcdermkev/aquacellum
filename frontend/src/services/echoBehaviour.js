@@ -81,8 +81,17 @@ export const ECHO_EVENT = Object.freeze({
  * the rework. Step 7 replaces it with the real stylised set. It lives in the CORE
  * rather than in a renderer precisely so that swap is one line and cannot be done
  * for the app while leaving `database.html` on the old art.
+ *
+ * Downscaled from 896×1280 / 2.01 MB to 256×366 / 104 KB when she started
+ * appearing on `database.html`. A 2 MB asset rendered at 56 px was tolerable while
+ * she was app-only; on a public page it is a real cost for a decorative fish. 256
+ * px is still 2.5× the largest place she is drawn (the 100 px profile header). The
+ * original is in git history if step 7 wants it as reference.
+ *
+ * The `?v` suffix busts the service-worker cache — bump it whenever the file
+ * changes, or returning users keep the old bytes.
  */
-export const ECHO_ART = "/echo-stages/stage-4-adult.png?v1";
+export const ECHO_ART = "/echo-stages/stage-4-adult.png?v2";
 
 // ─── Timing (spec §4 rules 2–5) ──────────────────────────────────────────────
 

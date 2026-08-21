@@ -51,7 +51,7 @@
 
   // Placeholder art until step 7. In the core so the swap cannot be done for the
   // app while leaving database.html on the old picture.
-  var ECHO_ART = "/echo-stages/stage-4-adult.png?v1";
+  var ECHO_ART = "/echo-stages/stage-4-adult.png?v2";
 
   var TIMING = {
     reactDelayMs: 250,
