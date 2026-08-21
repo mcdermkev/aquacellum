@@ -3,15 +3,17 @@ import { EchoRenderer } from "./EchoRenderer";
 import {
   ECHO_EVENT,
   ECHO_STATE,
-  TIMING,
   createEchoState,
   reduce,
   describe as describeEcho,
   nextTransitionAt,
   nextDriftDelay,
   nextDriftOffset,
+  nextGlanceDelay,
+  wrapperVisuals,
 } from "../services/echoBehaviour";
-import "./EchoAmbient.css";
+// Styling lives in /css/echo.css, linked from app.html — one stylesheet shared
+// with database.html so the two surfaces cannot style two different characters.
 
 /**
  * EchoAmbient — Echo's persistent presence.
@@ -121,8 +123,10 @@ export function EchoAmbient({ visible = true, calm = false }) {
   // Each leg schedules the next with its own jittered delay from the core. A
   // shared interval is the mechanical tell rule 2 is about.
   const driftTimer = useRef(null);
+  const glanceTimer = useRef(null);
   const observedState = describeEcho(behaviour, Date.now()).state;
-  const shouldDrift = visible && !calm && observedState !== ECHO_STATE.RESTING;
+  const idling = visible && observedState !== ECHO_STATE.RESTING;
+  const shouldDrift = idling && !calm;
 
   useEffect(() => {
     if (!shouldDrift) return;
@@ -141,26 +145,37 @@ export function EchoAmbient({ visible = true, calm = false }) {
     };
   }, [shouldDrift, send]);
 
+  // Idle glancing. Separate from drift because looking around is a smaller act
+  // than moving, and because it survives `calm` — a Pro Echo holds position but
+  // is not a statue.
+  useEffect(() => {
+    if (!idling) return;
+
+    const schedule = () => {
+      glanceTimer.current = setTimeout(() => {
+        send(ECHO_EVENT.GLANCE);
+        schedule();
+      }, nextGlanceDelay());
+    };
+    schedule();
+
+    return () => {
+      if (glanceTimer.current) clearTimeout(glanceTimer.current);
+    };
+  }, [idling, send]);
+
   if (!visible) return null;
 
   const view = describeEcho(behaviour, Date.now());
-  const reacting = view.state === ECHO_STATE.REACTING;
-  const resting = view.state === ECHO_STATE.RESTING;
 
   return (
     <div
       className={`echo-ambient echo-ambient--${view.state}`}
-      style={{
-        transform: `translate(${view.drift.x.toFixed(1)}px, ${view.drift.y.toFixed(1)}px)`,
-        opacity: resting ? 0.45 : 1,
-        // Rule 4: the reaction is scaled by the core's intensity rather than a
-        // fixed burst, so a water-change log and an easter egg no longer produce
-        // identical motion.
-        scale: reacting ? 1 + view.intensity * 0.09 : 1,
-        filter: reacting ? `brightness(${(1 + view.intensity * 0.18).toFixed(2)})` : "none",
-        // Rule 5: one settle duration, owned by the core.
-        transitionDuration: `${TIMING.settleMs}ms`,
-      }}
+      // Every value here comes from the core, including the reaction scale and
+      // brightness (rule 4: proportional to the news) and the settle duration
+      // (rule 5). The vanilla mount assigns the identical object onto
+      // `element.style`, which is what keeps the two renderers one character.
+      style={wrapperVisuals(view)}
       // Decorative and inert. Spec §3: she must never intercept a click she does
       // not own or take a tab stop.
       aria-hidden="true"

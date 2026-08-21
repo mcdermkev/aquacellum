@@ -13,6 +13,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/shared.css">
+  <!-- Echo's one stylesheet, shared with the app (see /css/echo.css). -->
+  <link rel="stylesheet" href="/css/echo.css">
 
   <style>
 
@@ -1139,6 +1141,13 @@
        eye. -->
   <script src="/js/sexing-guide.js"></script>
 
+  <!-- Echo. The behaviour core is the same module the React app imports (kept in
+       lockstep by src/services/echoBehaviour.test.js), so she is one character
+       rather than a lookalike. The mount must load after it.
+       She is decorative and pointer-events:none — see /css/echo.css. -->
+  <script src="/js/echo-behaviour.js"></script>
+  <script src="/js/echo-ambient.js"></script>
+
   <!-- ========== SCRIPT ========== -->
   <script>
     let allSpecies = [];
@@ -1716,6 +1725,13 @@
       // Show overlay
       document.getElementById('popupOverlay').classList.add('active');
       document.body.style.overflow = 'hidden';
+
+      // Echo looks at what you opened. This is the guide behaviour, and it is the
+      // cheapest version of it: orientation alone is the strongest believability
+      // cue there is (spec §4 rule 1), so pointing her at the card you are reading
+      // does more than any amount of animation. Optional-chained so the page works
+      // identically if Echo is switched off in Settings or fails to load.
+      window.AquadexEcho?.attend(document.getElementById('flipCardContainer'));
     }
 
     function flipCard() {
@@ -1728,6 +1744,10 @@
       document.body.style.overflow = '';
       isFlipped = false;
       document.getElementById('flipCard').classList.remove('flipped');
+
+      // Nothing to look at any more — she goes back to idle drifting rather than
+      // staring at a closed overlay.
+      window.AquadexEcho?.release();
     }
 
     // ---- Event Listeners ----

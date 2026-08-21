@@ -46,7 +46,12 @@
     ATTEND: "attend",
     RELEASE: "release",
     DRIFT: "drift",
+    GLANCE: "glance",
   };
+
+  // Placeholder art until step 7. In the core so the swap cannot be done for the
+  // app while leaving database.html on the old picture.
+  var ECHO_ART = "/echo-stages/stage-4-adult.png?v1";
 
   var TIMING = {
     reactDelayMs: 250,
@@ -54,6 +59,8 @@
     reactMaxMs: 2200,
     driftMinMs: 9000,
     driftJitterMs: 7000,
+    glanceMinMs: 5200,
+    glanceJitterMs: 4300,
     speakingGraceMs: 1400,
     restAfterMs: 2 * 60 * 1000,
     settleMs: 420,
@@ -74,6 +81,7 @@
       reactUntil: 0,
       reactIntensity: 0,
       gaze: null,
+      idleFacingLeft: false,
       drift: { x: 0, y: 0 },
     };
   }
@@ -155,6 +163,9 @@
           drift: { x: Number(event.x) || 0, y: Number(event.y) || 0 },
         });
 
+      case ECHO_EVENT.GLANCE:
+        return assign(state, { idleFacingLeft: !state.idleFacingLeft });
+
       default:
         return state;
     }
@@ -193,6 +204,11 @@
     return TIMING.driftMinMs + random() * TIMING.driftJitterMs;
   }
 
+  function nextGlanceDelay(random) {
+    random = random || Math.random;
+    return TIMING.glanceMinMs + random() * TIMING.glanceJitterMs;
+  }
+
   function nextDriftOffset(random, range) {
     random = random || Math.random;
     range = range === undefined ? 22 : range;
@@ -221,8 +237,34 @@
       intensity: observed === ECHO_STATE.REACTING ? state.reactIntensity : 0,
       animate: observed !== ECHO_STATE.RESTING,
       drift: (state && state.drift) || { x: 0, y: 0 },
-      facingLeft: gaze ? gaze.facingLeft : null,
+      facingLeft: gaze ? gaze.facingLeft : Boolean(state && state.idleFacingLeft),
       tiltDeg: gaze ? gaze.tiltDeg : 0,
+    };
+  }
+
+  function artTransform(view) {
+    view = view || {};
+    var parts = [];
+    if (view.facingLeft) parts.push("scaleX(-1)");
+    if (view.tiltDeg) parts.push("rotate(" + Number(view.tiltDeg).toFixed(1) + "deg)");
+    return parts.length ? parts.join(" ") : "none";
+  }
+
+  function wrapperVisuals(view) {
+    var v = view || {};
+    var reacting = v.state === ECHO_STATE.REACTING;
+    var resting = v.state === ECHO_STATE.RESTING;
+    var drift = v.drift || { x: 0, y: 0 };
+    var intensity = Number(v.intensity) || 0;
+
+    return {
+      transform:
+        "translate(" + (Number(drift.x) || 0).toFixed(1) + "px, " +
+        (Number(drift.y) || 0).toFixed(1) + "px)",
+      opacity: resting ? "0.45" : "1",
+      scale: reacting ? (1 + intensity * 0.09).toFixed(3) : "1",
+      filter: reacting ? "brightness(" + (1 + intensity * 0.18).toFixed(2) + ")" : "none",
+      transitionDuration: TIMING.settleMs + "ms",
     };
   }
 
@@ -230,6 +272,10 @@
     ECHO_STATE: ECHO_STATE,
     ECHO_EVENT: ECHO_EVENT,
     TIMING: TIMING,
+    ECHO_ART: ECHO_ART,
+    artTransform: artTransform,
+    wrapperVisuals: wrapperVisuals,
+    nextGlanceDelay: nextGlanceDelay,
     createEchoState: createEchoState,
     reduce: reduce,
     observe: observe,

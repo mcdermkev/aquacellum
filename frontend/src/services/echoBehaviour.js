@@ -71,7 +71,18 @@ export const ECHO_EVENT = Object.freeze({
   ATTEND: "attend",
   RELEASE: "release",
   DRIFT: "drift",
+  GLANCE: "glance",
 });
+
+/**
+ * The art. One constant, one character, every surface.
+ *
+ * ⚠️ PLACEHOLDER — still one of the old stage PNGs so Echo stays visible through
+ * the rework. Step 7 replaces it with the real stylised set. It lives in the CORE
+ * rather than in a renderer precisely so that swap is one line and cannot be done
+ * for the app while leaving `database.html` on the old art.
+ */
+export const ECHO_ART = "/echo-stages/stage-4-adult.png?v1";
 
 // ─── Timing (spec §4 rules 2–5) ──────────────────────────────────────────────
 
@@ -101,6 +112,10 @@ export const TIMING = Object.freeze({
   driftMinMs: 9000,
   driftJitterMs: 7000,
 
+  /** Idle glancing — smaller act than drifting, so more often and jitterier. */
+  glanceMinMs: 5200,
+  glanceJitterMs: 4300,
+
   /** How long she keeps "speaking" after the last output arrives. */
   speakingGraceMs: 1400,
 
@@ -127,6 +142,9 @@ export function createEchoState(now = 0) {
     reactUntil: 0,
     reactIntensity: 0,
     gaze: null,
+    // Which way she looks when nothing is being attended to. Owned here rather
+    // than by a renderer so both renderers stay dumb — see `describe()`.
+    idleFacingLeft: false,
     drift: { x: 0, y: 0 },
   });
 }
@@ -202,6 +220,11 @@ export function reduce(state, event) {
         drift: { x: Number(event.x) || 0, y: Number(event.y) || 0 },
       };
 
+    case ECHO_EVENT.GLANCE:
+      // Idle glancing. A binding schedules these on a jittered delay
+      // (`nextGlanceDelay`); the core decides what a glance means.
+      return { ...state, idleFacingLeft: !state.idleFacingLeft };
+
     default:
       return state;
   }
@@ -269,6 +292,14 @@ export function nextTransitionAt(state, now = 0) {
  */
 export function nextDriftDelay(random = Math.random) {
   return TIMING.driftMinMs + random() * TIMING.driftJitterMs;
+}
+
+/**
+ * Delay before the next idle glance. Shorter and jitterier than drift — looking
+ * around is a smaller act than moving.
+ */
+export function nextGlanceDelay(random = Math.random) {
+  return TIMING.glanceMinMs + random() * TIMING.glanceJitterMs;
 }
 
 /**
@@ -376,7 +407,58 @@ export function describe(state, now = 0) {
     // Rule 5: resting eases everything off rather than freezing mid-motion.
     animate: observed !== ECHO_STATE.RESTING,
     drift: state?.drift || { x: 0, y: 0 },
-    facingLeft: gaze ? gaze.facingLeft : null,
+    // GAZE WINS over idle glancing (rule 1). When she has a target she must not
+    // turn away from it on a timer. Always a boolean, never null: a renderer
+    // should never have to decide which way she faces.
+    facingLeft: gaze ? gaze.facingLeft : Boolean(state?.idleFacingLeft),
     tiltDeg: gaze ? gaze.tiltDeg : 0,
+  };
+}
+
+// ─── Appearance ──────────────────────────────────────────────────────────────
+//
+// Spec §8: "Do not build a second renderer." Mounting Echo on `database.html`
+// means a vanilla renderer alongside the React one, and the honest way to keep
+// that from becoming a second CHARACTER is to leave neither of them any decisions
+// to make. Both call these two functions and apply the result verbatim, so they
+// cannot drift on art, facing, tilt, or reaction size — the drift that produced
+// five Echos in the first place.
+
+/**
+ * Transform for the art itself.
+ *
+ * Mirror THEN tilt, in that order, so a lean reads as "toward the target" on both
+ * sides instead of inverting when she turns.
+ */
+export function artTransform({ facingLeft = false, tiltDeg = 0 } = {}) {
+  const parts = [];
+  if (facingLeft) parts.push("scaleX(-1)");
+  if (tiltDeg) parts.push(`rotate(${Number(tiltDeg).toFixed(1)}deg)`);
+  return parts.length ? parts.join(" ") : "none";
+}
+
+/**
+ * Styles for the wrapper, given a `describe()` result.
+ *
+ * Returned as plain CSS strings rather than a framework object so the vanilla
+ * mount can assign them straight onto `element.style` and React can spread them.
+ *
+ * The reaction scale and brightness are derived from `intensity` (rule 4), which
+ * is why they cannot live in a CSS class: a class can only express one size, and
+ * the whole point is that a water-change log and an easter egg look different.
+ */
+export function wrapperVisuals(view) {
+  const v = view || {};
+  const reacting = v.state === ECHO_STATE.REACTING;
+  const resting = v.state === ECHO_STATE.RESTING;
+  const drift = v.drift || { x: 0, y: 0 };
+  const intensity = Number(v.intensity) || 0;
+
+  return {
+    transform: `translate(${(Number(drift.x) || 0).toFixed(1)}px, ${(Number(drift.y) || 0).toFixed(1)}px)`,
+    opacity: resting ? "0.45" : "1",
+    scale: reacting ? (1 + intensity * 0.09).toFixed(3) : "1",
+    filter: reacting ? `brightness(${(1 + intensity * 0.18).toFixed(2)})` : "none",
+    transitionDuration: `${TIMING.settleMs}ms`,
   };
 }

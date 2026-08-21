@@ -1,0 +1,126 @@
+/**
+ * echo.css — Echo's one stylesheet.
+ *
+ * Linked by BOTH app.html and database.html, the same way /css/shared.css is
+ * shared across the static pages. Spec §8 says do not build a second renderer;
+ * two copies of a stylesheet is the same failure wearing different clothes, so
+ * there is one file and both consumers link it.
+ *
+ * WHAT IS NOT IN HERE. Anything derived from behaviour state — the reaction scale,
+ * the brightness, the drift translate, the settle duration — is set inline by
+ * whichever renderer is mounted, from `wrapperVisuals()` in the behaviour core.
+ * A CSS class can only express one size, and rule 4 requires the response to be
+ * proportional to the news. So this file holds only what is genuinely static:
+ * position, keyframes, and the reduced-motion escape.
+ */
+
+.echo-ambient {
+  position: fixed;
+
+  /* Bottom-LEFT deliberately. Poseidon's launcher is a draggable FAB on the
+     right and the mobile Quick Log FAB is also bottom-right, so the left corner
+     is the one place she cannot end up on top of a control. */
+  bottom: 1.25rem;
+  left: 1.25rem;
+
+  /* Above page content, below every interactive overlay — the species popup, the
+     Poseidon console, modals, toasts. She is never the thing on top. */
+  z-index: 40;
+
+  /* Spec §3: she must never intercept a click she does not own or take a tab
+     stop. Enforced here AND on the art below, because this is the rule that
+     turns a companion into a bug report. */
+  pointer-events: none;
+
+  /* Rule 5 — she eases, never snaps. `transition-duration` arrives inline from
+     TIMING.settleMs so the core owns the number. */
+  transition-property: transform, opacity, scale, filter;
+  transition-timing-function: cubic-bezier(0.34, 1.4, 0.64, 1);
+  will-change: transform, opacity, scale, filter;
+}
+
+/* Examining: she holds and sharpens rather than drifting off mid-look. */
+.echo-ambient--examining {
+  filter: brightness(1.06) saturate(1.08);
+}
+
+/* Speaking: a touch brighter, as if leaning into the delivery. */
+.echo-ambient--speaking {
+  filter: brightness(1.04);
+}
+
+.echo-renderer {
+  position: relative;
+  pointer-events: none;
+  user-select: none;
+}
+
+.echo-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* The facing flip and gaze tilt are transforms set inline from
+     `artTransform()`; this eases them so a turn is a turn and not a teleport. */
+  transition: transform 900ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+/**
+ * Idle motion.
+ *
+ * Two keyframes at non-multiple durations rather than one combined loop. A single
+ * cycle re-synchronises on every repeat, which is exactly the mechanical tell
+ * rule 2 is about; 4.3s against 7.1s means the bob and the sway drift in and out
+ * of phase instead of marching together.
+ */
+.echo-art--animated {
+  animation:
+    echo-bob 4.3s ease-in-out infinite,
+    echo-sway 7.1s ease-in-out infinite;
+}
+
+@keyframes echo-bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -6%;
+  }
+}
+
+@keyframes echo-sway {
+  0%,
+  100% {
+    rotate: -1.2deg;
+  }
+  50% {
+    rotate: 1.2deg;
+  }
+}
+
+/* Below the mobile breakpoint the bottom-left corner is contested by the casual
+   bottom nav, so she lifts clear of it. */
+@media (max-width: 768px) {
+  .echo-ambient {
+    bottom: 5.5rem;
+    left: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-ambient {
+    /* Drift and scale go; the brightness change survives because it conveys the
+       reaction without motion. */
+    transition-property: opacity, filter;
+    transform: none !important;
+    scale: 1 !important;
+  }
+  .echo-art--animated {
+    animation: none;
+  }
+  .echo-art {
+    transition: none;
+  }
+}

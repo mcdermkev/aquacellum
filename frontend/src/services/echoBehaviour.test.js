@@ -27,6 +27,10 @@ import {
   reactionIntensity,
   gazeFromOffset,
   describe as describeEcho,
+  ECHO_ART,
+  artTransform,
+  wrapperVisuals,
+  nextGlanceDelay,
 } from "./echoBehaviour.js";
 
 /** Apply a sequence of events, threading state through. */
@@ -206,10 +210,34 @@ describe("rule 1 — gaze is the highest-value cue", () => {
     const attending = run([{ type: ECHO_EVENT.ATTEND, now: 0, dx: -100, dy: -50 }]);
     expect(observe(attending, 0)).toBe(ECHO_STATE.ATTENDING);
     expect(describeEcho(attending, 0).facingLeft).toBe(true);
+    expect(describeEcho(attending, 0).tiltDeg).not.toBe(0);
 
     const released = reduce(attending, { type: ECHO_EVENT.RELEASE, now: 1 });
     expect(observe(released, 1)).toBe(ECHO_STATE.IDLE);
-    expect(describeEcho(released, 1).facingLeft).toBeNull();
+    // Falls back to the idle glance rather than null: a renderer must never have
+    // to decide which way she faces.
+    expect(typeof describeEcho(released, 1).facingLeft).toBe("boolean");
+    expect(describeEcho(released, 1).tiltDeg).toBe(0);
+  });
+
+  it("gaze overrides the idle glance", () => {
+    // THE RULE. If she has a target she must not turn away from it on a timer.
+    // Two glances would have flipped an unattended Echo back and forth; with a
+    // target the gaze answer has to win both times.
+    const glanced = run([
+      { type: ECHO_EVENT.GLANCE, now: 0 },
+      { type: ECHO_EVENT.ATTEND, now: 1, dx: 300, dy: 0 },
+    ]);
+    expect(describeEcho(glanced, 1).facingLeft).toBe(false); // target is right
+
+    const glancedAgain = reduce(glanced, { type: ECHO_EVENT.GLANCE, now: 2 });
+    expect(describeEcho(glancedAgain, 2).facingLeft).toBe(false); // still right
+  });
+
+  it("glancing flips her only while nothing is attended", () => {
+    const a = createEchoState(0);
+    const b = reduce(a, { type: ECHO_EVENT.GLANCE, now: 1 });
+    expect(describeEcho(b, 1).facingLeft).not.toBe(describeEcho(a, 1).facingLeft);
   });
 });
 
@@ -306,6 +334,53 @@ describe("nextTransitionAt keeps the React binding to one timer", () => {
   });
 });
 
+describe("appearance is decided once, for both renderers", () => {
+  // Spec §8 forbids a second renderer. `database.html` cannot use the React one,
+  // so the enforceable version is that NEITHER renderer decides anything: both
+  // apply these two functions verbatim. If appearance logic reappears in a
+  // component, the two surfaces can drift into two characters again.
+  it("names one art asset for every surface", () => {
+    expect(ECHO_ART).toContain("/echo-stages/");
+  });
+
+  it("mirrors before tilting, so a lean reads as toward the target", () => {
+    expect(artTransform({ facingLeft: false, tiltDeg: 0 })).toBe("none");
+    expect(artTransform({ facingLeft: true, tiltDeg: 0 })).toBe("scaleX(-1)");
+    expect(artTransform({ facingLeft: false, tiltDeg: 7 })).toBe("rotate(7.0deg)");
+    expect(artTransform({ facingLeft: true, tiltDeg: -7 })).toBe("scaleX(-1) rotate(-7.0deg)");
+  });
+
+  it("survives being handed nothing", () => {
+    expect(artTransform()).toBe("none");
+    expect(wrapperVisuals()).toBeTruthy();
+    expect(wrapperVisuals({}).scale).toBe("1");
+  });
+
+  it("scales the reaction by intensity, not by a fixed burst", () => {
+    const small = wrapperVisuals({ state: ECHO_STATE.REACTING, intensity: 0.4, drift: { x: 0, y: 0 } });
+    const big = wrapperVisuals({ state: ECHO_STATE.REACTING, intensity: 0.95, drift: { x: 0, y: 0 } });
+    expect(Number(big.scale)).toBeGreaterThan(Number(small.scale));
+    expect(big.filter).not.toBe(small.filter);
+  });
+
+  it("fades when resting and does not scale", () => {
+    const resting = wrapperVisuals({ state: ECHO_STATE.RESTING, intensity: 0, drift: { x: 0, y: 0 } });
+    expect(resting.opacity).toBe("0.45");
+    expect(resting.scale).toBe("1");
+    expect(resting.filter).toBe("none");
+  });
+
+  it("emits plain CSS strings so a vanilla mount can assign them directly", () => {
+    // The static-page mount does `element.style.transform = visuals.transform`,
+    // so a number here would silently do nothing.
+    const v = wrapperVisuals({ state: ECHO_STATE.IDLE, intensity: 0, drift: { x: 12.34, y: -5.6 } });
+    for (const [k, val] of Object.entries(v)) {
+      expect(typeof val, k).toBe("string");
+    }
+    expect(v.transform).toBe("translate(12.3px, -5.6px)");
+  });
+});
+
 describe("the reducer is pure and cheap", () => {
   it("returns the SAME reference for an unknown event", () => {
     // So a React binding can skip a render rather than re-rendering on stray
@@ -371,6 +446,9 @@ describe("public browser mirror stays in lockstep", () => {
     [{ type: ECHO_EVENT.ATTEND, now: 0, dx: 0, dy: 0 }],
     [{ type: ECHO_EVENT.ATTEND, now: 0, dx: 5, dy: 5 }, { type: ECHO_EVENT.RELEASE, now: 10 }],
     [{ type: ECHO_EVENT.DRIFT, now: 0, x: 12.5, y: -6.25 }],
+    [{ type: ECHO_EVENT.GLANCE, now: 0 }],
+    [{ type: ECHO_EVENT.GLANCE, now: 0 }, { type: ECHO_EVENT.GLANCE, now: 1 }],
+    [{ type: ECHO_EVENT.GLANCE, now: 0 }, { type: ECHO_EVENT.ATTEND, now: 1, dx: 300, dy: 0 }],
     [{ type: "nonsense", now: 0 }],
     [
       { type: ECHO_EVENT.VISION_START, now: 0 },
@@ -429,6 +507,26 @@ describe("public browser mirror stays in lockstep", () => {
     }
   });
 
+  it("agrees on appearance for every sequence — the two-renderers guard", () => {
+    if (!mirror) return;
+    // This is the assertion that makes "one character on two surfaces" a fact.
+    // React spreads `wrapperVisuals()` into a style prop; the vanilla mount
+    // assigns the same keys onto `element.style`. If these ever disagree, the app
+    // and database.html are showing different Echos.
+    expect(mirror.ECHO_ART).toBe(ECHO_ART);
+    for (const seq of SEQUENCES) {
+      const mine = seq.reduce((s, e) => reduce(s, e), createEchoState(0));
+      const theirs = seq.reduce((s, e) => mirror.reduce(s, e), mirror.createEchoState(0));
+      for (const now of PROBES) {
+        const a = describeEcho(mine, now);
+        const b = mirror.describe(theirs, now);
+        const where = `${JSON.stringify(seq)} @ ${now}`;
+        expect(mirror.artTransform(b), where).toBe(artTransform(a));
+        expect(mirror.wrapperVisuals(b), where).toEqual(wrapperVisuals(a));
+      }
+    }
+  });
+
   it("agrees on the pure derivations", () => {
     if (!mirror) return;
     for (const ms of [undefined, 0, -1, 50, 900, 12000, NaN]) {
@@ -443,6 +541,7 @@ describe("public browser mirror stays in lockstep", () => {
     // Injected randomness, so the jittered helpers are comparable at all.
     for (const v of [0, 0.25, 0.5, 0.99]) {
       expect(mirror.nextDriftDelay(() => v)).toBe(nextDriftDelay(() => v));
+      expect(mirror.nextGlanceDelay(() => v)).toBe(nextGlanceDelay(() => v));
       expect(mirror.nextDriftOffset(() => v, 22)).toEqual(nextDriftOffset(() => v, 22));
     }
   });
