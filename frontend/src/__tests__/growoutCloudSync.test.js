@@ -18,6 +18,11 @@ const upserts = [];
 
 vi.mock("../services/supabaseClient", () => ({
   isSupabaseConfigured: () => true,
+  // Every cloud write now waits for the JWT bridge, because the RLS policies on
+  // these tables are granted to the `authenticated` role only and an anon write is
+  // rejected with a 403. These tests are about the row SHAPE, so the bridge is
+  // reported live and the gate passes straight through.
+  waitForReefSession: async () => true,
   supabase: {
     from(table) {
       return {

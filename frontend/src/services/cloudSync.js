@@ -2,8 +2,20 @@
  * cloudSync.js
  *
  * Supabase cloud sync for tanks, specimens, and action logs.
- * Works in "anon" mode — no JWT bridge required. Data is scoped
- * by owner_address column, queried explicitly per user.
+ *
+ * ⚠️ THE JWT BRIDGE IS REQUIRED. This module's header used to say it "works in
+ * anon mode — no JWT bridge required", and that was true when it was written.
+ * It is not true now: the RLS audit replaced the permissive header policies with
+ * JWT ones, and every policy on aquadex_tanks / aquadex_specimens /
+ * aquadex_action_logs is granted to the `authenticated` role and matches
+ * `owner_address` against `auth.jwt() ->> 'wallet_address'`.
+ *
+ * A request in anon/header mode therefore has NO applicable policy: reads come
+ * back as an empty set and writes come back 403. Because every write here is
+ * fire-and-forget with a swallowed catch, that failed silently — cloud sync
+ * appeared to work while writing nothing, and local Dexie data kept rendering so
+ * nobody noticed. `pushService.js` already guarded on the bridge for this exact
+ * reason; see `awaitBridge()` below.
  *
  * Strategy:
  *   WRITE: after every local Dexie write, fire-and-forget upsert to Supabase.
@@ -14,7 +26,7 @@
  * they silently no-op so offline / unregistered users are unaffected.
  */
 
-import { supabase, isSupabaseConfigured } from "./supabaseClient";
+import { supabase, isSupabaseConfigured, waitForReefSession } from "./supabaseClient";
 import { resolveSpecimenPhoto } from "./tankMedia";
 import { setXpProfilePoints } from "../utils/xp";
 
@@ -27,6 +39,38 @@ function noop() {}
  * We store the full JSON blob in a `data` jsonb column so the schema
  * never needs to change as the tank object grows.
  */
+/**
+ * Gate for every write to a JWT-gated table.
+ *
+ * Waits for the bridge rather than checking once, because the mint genuinely
+ * races the first write — `AuthContext` mints in one async effect while `App.jsx`
+ * starts cloud sync from another. Returns false when the bridge never arrives,
+ * which is a real and legitimate state: a MetaMask-only session has no Privy
+ * token to mint from. In that case skipping is correct; retrying would just
+ * produce more 403s.
+ *
+ * Deliberately applied ONLY to the tables whose policies have been read
+ * (aquadex_tanks, aquadex_specimens, aquadex_action_logs, aquadex_spawn_growout).
+ * Gating a table whose policies allow anon would break something that currently
+ * works, so listings, spawns and the XP profile are left alone until their
+ * policies have been checked the same way.
+ */
+let _warnedNoBridge = false;
+async function awaitBridge() {
+  const ready = await waitForReefSession();
+  if (!ready && !_warnedNoBridge) {
+    _warnedNoBridge = true;
+    // Once per session, not per row: this fires from fire-and-forget callers all
+    // over relayer.js and would otherwise be its own wall of console noise.
+    console.warn(
+      "[CloudSync] Skipping cloud writes: the Supabase JWT bridge is not active, " +
+        "so row-level security would reject them. Sign in with Privy (email/Google) " +
+        "to enable cross-device sync."
+    );
+  }
+  return ready;
+}
+
 function tankToRow(tank) {
   return {
     id: String(tank.id),
@@ -131,6 +175,7 @@ function spawnToRow(spawn) {
  */
 export async function syncTankToCloud(tank) {
   if (!isSupabaseConfigured()) return;
+  if (!(await awaitBridge())) return;
   try {
     const { error } = await supabase
       .from("aquadex_tanks")
@@ -147,6 +192,7 @@ export async function syncTankToCloud(tank) {
  */
 export async function syncSpecimenToCloud(specimen) {
   if (!isSupabaseConfigured()) return;
+  if (!(await awaitBridge())) return;
   try {
     const { error } = await supabase
       .from("aquadex_specimens")
@@ -164,6 +210,7 @@ export async function syncSpecimenToCloud(specimen) {
  */
 export async function syncActionLogToCloud(log, ownerAddress) {
   if (!isSupabaseConfigured()) return;
+  if (!(await awaitBridge())) return;
   try {
     const { error } = await supabase
       .from("aquadex_action_logs")
@@ -206,6 +253,7 @@ export async function syncSpawnToCloud(spawn) {
  */
 export async function syncGrowoutCheckpointToCloud(checkpoint, ownerAddress = null) {
   if (!isSupabaseConfigured() || !checkpoint) return;
+  if (!(await awaitBridge())) return;
   try {
     const owner = (ownerAddress || (await resolveSpawnOwner(checkpoint.spawnId)) || "").toLowerCase();
     // An orphan checkpoint (no resolvable spawn) has nothing to scope it to.
@@ -229,6 +277,7 @@ export async function syncGrowoutCheckpointToCloud(checkpoint, ownerAddress = nu
  */
 export async function syncGrowoutCheckpointsToCloud(checkpoints, ownerAddress = null) {
   if (!isSupabaseConfigured() || !Array.isArray(checkpoints) || checkpoints.length === 0) return;
+  if (!(await awaitBridge())) return;
   try {
     const rows = [];
     for (const checkpoint of checkpoints) {
@@ -252,6 +301,7 @@ export async function syncGrowoutCheckpointsToCloud(checkpoints, ownerAddress = 
  */
 export async function deleteTankFromCloud(tankId) {
   if (!isSupabaseConfigured()) return;
+  if (!(await awaitBridge())) return;
   try {
     const { error } = await supabase
       .from("aquadex_tanks")
@@ -276,6 +326,13 @@ import { db } from "../db";
  */
 export async function pullCloudDataForWallet(walletAddress) {
   if (!isSupabaseConfigured() || !walletAddress) {
+    return { tanks: 0, specimens: 0, logs: 0, spawns: 0, growout: 0 };
+  }
+  // The SELECT policies are `authenticated`-only too, so an anon read does not
+  // error — it returns an empty set, which is indistinguishable from "this wallet
+  // has nothing in the cloud". Waiting for the bridge is what stops a first-login
+  // pull from concluding the account is empty and doing nothing.
+  if (!(await awaitBridge())) {
     return { tanks: 0, specimens: 0, logs: 0, spawns: 0, growout: 0 };
   }
 
@@ -461,15 +518,33 @@ export async function pullCloudDataForWallet(walletAddress) {
  */
 export async function pushAllLocalDataToCloud(walletAddress) {
   if (!isSupabaseConfigured() || !walletAddress) return;
+  if (!(await awaitBridge())) return;
   const addr = walletAddress.toLowerCase();
 
   try {
+    /**
+     * All three match on the LOWERCASED address, and none uses the index.
+     *
+     * `db.tanks.where("ownerAddress").equals(walletAddress)` was wrong: Dexie's
+     * `.equals()` is case-sensitive, `relayer.js` normalises every Dexie write to
+     * lowercase on purpose ("All Dexie writes go through this so there's never a
+     * casing mismatch"), and `walletAddress` arrives here as whatever Privy
+     * returned — checksummed for an embedded wallet. A checksummed needle against
+     * a lowercase haystack matches NOTHING, so the backfill pushed no tanks and no
+     * specimens and reported no error.
+     *
+     * `.filter()` also picks up any legacy row written before that normalisation
+     * existed, which an exact index lookup cannot. These are one user's own tanks
+     * and specimens, so the scan is cheap — and it is what the spawns line below
+     * has always done.
+     */
+    const mine = (row) => (row.ownerAddress || "").toLowerCase() === addr;
     const [localTanks, localSpecimens, localSpawns] = await Promise.all([
-      db.tanks.where("ownerAddress").equals(walletAddress).toArray(),
-      db.specimens.where("ownerAddress").equals(walletAddress).toArray(),
-      // `spawns` has no ownerAddress index (see db.js), so .where() would throw —
-      // use .filter() which works on any field without requiring one.
-      db.spawns.filter(s => (s.ownerAddress || "").toLowerCase() === addr).toArray(),
+      db.tanks.filter(mine).toArray(),
+      db.specimens.filter(mine).toArray(),
+      // `spawns` has no ownerAddress index (see db.js), so .where() would throw
+      // regardless.
+      db.spawns.filter(mine).toArray(),
     ]);
 
     // Batch upsert tanks
@@ -514,12 +589,30 @@ export async function pushAllLocalDataToCloud(walletAddress) {
       }
     }
 
-    // Push action logs (up to 500 most recent per user)
+    /**
+     * Push the 500 most recent action logs, attributed to the signed-in wallet.
+     *
+     * NOT filtered by owner, because `db.actionLogs` has no owner column — the
+     * local database is single-user by design, so "every local log belongs to
+     * whoever is signed in" is the only inference available here. Left as-is
+     * deliberately.
+     *
+     * The old comment said "server filters by owner", which is not what happens on
+     * a write: `owner_address` is asserted by the client and RLS only checks it
+     * equals the caller. So on a device where two different wallets have both been
+     * used, the second wallet's sync claims the first wallet's logs. Fixing that
+     * properly needs an owner on the local rows — a Dexie schema change — rather
+     * than a filter here.
+     *
+     * ⚠️ `onConflict: "local_id"` is worth revisiting for the same reason
+     * `aquadex_spawn_growout` uses a natural-key tuple instead: Dexie ids are
+     * per-device auto-increments, so two devices both produce 1, 2, 3… and the
+     * second device's log id 5 upserts over the first device's log id 5. Not
+     * changed here, because it depends on the table's actual unique constraint,
+     * which is not in this repo.
+     */
     const actionLogs = await db.actionLogs.toArray();
-    const userLogs = actionLogs.filter(l => {
-      // action logs don't have ownerAddress, so we push all (server filters by owner)
-      return true;
-    }).slice(-500);
+    const userLogs = actionLogs.slice(-500);
 
     if (userLogs.length > 0) {
       const rows = userLogs.map(l => actionLogToRow(l, addr));

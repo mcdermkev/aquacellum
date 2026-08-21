@@ -481,6 +481,60 @@ export function getMintedToken() {
  * Check if we have a fully authenticated Supabase session (JWT bridge active).
  * If false, the client is in anon mode and RLS won't enforce wallet-based policies.
  */
+/**
+ * Resolve once the JWT bridge is live, or false if it never arrives.
+ *
+ * WHY: every RLS policy on the cloud-sync tables is granted to the
+ * `authenticated` role and matches `owner_address` against
+ * `auth.jwt() ->> 'wallet_address'`. A request made in anon/header mode has no
+ * applicable policy at all, so reads come back as an empty set and writes come
+ * back 403. `pushService.js` already guards on `isFullyAuthenticated()` for this
+ * exact reason; `cloudSync.js` did not, and its writes are all fire-and-forget
+ * with a swallowed catch, so they failed silently.
+ *
+ * WAITING rather than checking once, because the bridge is genuinely slower than
+ * the first write: `AuthContext` mints inside an async effect while `App.jsx`
+ * starts cloud sync from another, and on mobile the `getAccessToken()` plus
+ * `/api/mint-session` round trip is slow enough to lose that race. Checking once
+ * would turn a race into a silent skip.
+ *
+ * Returns false rather than throwing when the bridge never comes — a
+ * MetaMask-only session has no Privy token to mint from and legitimately stays in
+ * header mode. Callers should skip cloud writes in that case, not retry.
+ *
+ * @param {{ timeoutMs?: number }} [options]
+ * @returns {Promise<boolean>}
+ */
+export function waitForReefSession({ timeoutMs = 12000 } = {}) {
+  if (_isAuthenticated) return Promise.resolve(true);
+  if (typeof window === "undefined") return Promise.resolve(false);
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener(REEF_SESSION_EVENT, onChange);
+      clearTimeout(timer);
+      resolve(value);
+    };
+
+    // The event fires on mint, re-mint, downgrade to header mode, and clear, so
+    // only treat "authenticated" as an answer — a downgrade should keep waiting in
+    // case a later mint succeeds, up to the timeout.
+    const onChange = (e) => {
+      if (e?.detail?.authenticated) finish(true);
+    };
+
+    const timer = setTimeout(() => finish(_isAuthenticated), timeoutMs);
+    window.addEventListener(REEF_SESSION_EVENT, onChange);
+
+    // Guard against the mint having landed between the check above and the
+    // listener being attached.
+    if (_isAuthenticated) finish(true);
+  });
+}
+
 export function isFullyAuthenticated() {
   return _isAuthenticated;
 }
