@@ -438,14 +438,27 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
         </div>
       )}
 
-      {/* ─── FLOATING ACTION BUTTON ─── */}
+      {/* ─── FLOATING ACTION BUTTON ───
+       *
+       * Sits ABOVE the Feedback + Poseidon stack, not beside it. Those two are
+       * global chrome pinned to the bottom-right corner — Poseidon at bottom:2rem
+       * (z-index 10000) and Feedback at bottom:5.5rem (z-index 9999). This "+"
+       * used to be at bottom:2rem too, i.e. the exact same spot as the Poseidon
+       * pill, with a far lower z-index — so it rendered completely hidden behind
+       * "Poseidon" and the welcome banner's "Hit the + button" pointed at
+       * something no one could see. Stacked to 9rem it clears both pills.
+       *
+       * `bottom` is inline here (overriding the class) because the class carries
+       * only the mobile size override; the position lives with the component that
+       * knows about the corner it shares.
+       */}
       {walletAddress && (
         <button
           onClick={() => setComposerOpen(true)}
           className="reef-fab"
           style={{
             position: "fixed",
-            bottom: "2rem",
+            bottom: "9rem",
             right: "2rem",
             width: "56px",
             height: "56px",
