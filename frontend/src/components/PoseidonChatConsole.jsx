@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { handlePoseidonAction } from "../utils/poseidonBridge";
-import { requiresConfirmation, actionLabel, actionConfirmLabel } from "../utils/poseidonActions";
+import { handlePoseidonAction, handlePoseidonActions } from "../utils/poseidonBridge";
+import { requiresConfirmation, actionLabel, actionConfirmLabel, normalizeActions } from "../utils/poseidonActions";
 import { useEchoAttend } from "../hooks/useEchoAttend";
 import { usePoseidon } from "../hooks/usePoseidon";
 import { FishIdentifier } from "./FishIdentifier";
@@ -68,10 +68,15 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
     // Gated on `requiresConfirmation`, not on `type !== "NONE"`: the informational
     // types (QUERY_COMPATIBILITY, SUGGEST_SPECIES) used to raise a bar whose
     // Confirm button ran nothing at all.
-    if (lastMsg.action && requiresConfirmation(lastMsg.action.type)) {
+    // Prefer actions[] when the response has it so one confirm chip lists every
+    // WRITE and they commit in one Dexie tx. Singular `action` stays the fallback.
+    const queued = normalizeActions(lastMsg).filter((a) => a && requiresConfirmation(a.type));
+    if (queued.length) {
       setPendingAction({
-        type: lastMsg.action.type,
-        payload: lastMsg.action.payload || {},
+        type: queued[0].type,
+        payload: queued[0].payload || {},
+        actions: queued,
+        useBatch: Array.isArray(lastMsg.actions) && lastMsg.actions.length > 0,
         msgId: lastMsg.id,
       });
     }
@@ -89,12 +94,15 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
   // Confirm and execute the pending action
   const confirmAction = () => {
     if (!pendingAction) return;
-    handlePoseidonAction({
-      type: pendingAction.type,
-      payload: pendingAction.payload,
-      tankId,
-      walletAddress: walletAccount,
-    });
+    const stamp = (a) => ({ ...a, tankId, walletAddress: walletAccount });
+    if (pendingAction.useBatch) {
+      handlePoseidonActions({ actions: (pendingAction.actions || []).map(stamp) });
+    } else {
+      handlePoseidonAction(stamp({
+        type: pendingAction.type,
+        payload: pendingAction.payload,
+      }));
+    }
     setPendingAction(null);
   };
 
@@ -372,8 +380,8 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
           <span style={{ fontSize: "0.9rem" }}>⚡</span>
           <span style={{ fontSize: "0.72rem", color: casualModeActive ? "#fbbf24" : "#c084fc", flex: 1, minWidth: 0 }}>
             {casualModeActive
-              ? `Poseidon wants to: ${actionLabel(pendingAction.type, { casual: true })}`
-              : `ACTION: ${pendingAction.type}`}
+              ? `Poseidon wants to: ${(pendingAction.actions || [pendingAction]).map((a) => actionLabel(a.type, { casual: true })).join(" and ")}`
+              : `ACTION: ${(pendingAction.actions || [pendingAction]).map((a) => a.type).join(", ")}`}
           </span>
           <button
             type="button"
@@ -390,7 +398,9 @@ export function PoseidonChatConsole({ tankId, casualModeActive, walletAccount, s
               whiteSpace: "nowrap",
             }}
           >
-            {actionConfirmLabel(pendingAction.type, { casual: casualModeActive })}
+            {(pendingAction.actions || [pendingAction]).length === 1
+              ? actionConfirmLabel(pendingAction.type, { casual: casualModeActive })
+              : (casualModeActive ? "Do it" : "EXEC")}
           </button>
           <button
             type="button"

@@ -12,7 +12,9 @@ import {
   actionLabel,
   actionConfirmLabel,
   allActionCopy,
+  normalizeActions,
 } from "../utils/poseidonActions";
+import { echoReactionForMood } from "../utils/echoReaction";
 import { PROHIBITED_TERMS } from "../services/orderCopy";
 
 const SRC = fileURLToPath(new URL("../", import.meta.url));
@@ -39,7 +41,7 @@ vi.mock("../db", () => ({
   },
 }));
 
-const { handlePoseidonAction } = await import("../utils/poseidonBridge");
+const { handlePoseidonAction, handlePoseidonActions } = await import("../utils/poseidonBridge");
 
 beforeEach(() => {
   tanks = new Map();
@@ -65,6 +67,15 @@ describe("the action registry is the single source of truth", () => {
     const declared = [...block.matchAll(/^-\s*([A-Z_]{3,}):/gm)].map((m) => m[1]);
 
     expect(declared.length, "could not scrape the prompt's action list").toBeGreaterThanOrEqual(5);
+    expect(declared).toEqual(expect.arrayContaining([
+      "CREATE_TANK", "LOG_HUSBANDRY", "LOG_WATER_PARAMS", "NAVIGATE",
+      "QUERY_COMPATIBILITY", "SUGGEST_SPECIES", "NONE",
+    ]));
+    expect(declared).not.toContain("LOG_FEEDING");
+    expect(KNOWN_ACTION_TYPES).toEqual([
+      "CREATE_TANK", "LOG_HUSBANDRY", "LOG_WATER_PARAMS", "NAVIGATE",
+      "QUERY_COMPATIBILITY", "SUGGEST_SPECIES", "NONE",
+    ]);
     for (const type of declared) {
       expect(KNOWN_ACTION_TYPES, `prompt advertises "${type}" but the registry doesn't declare it`).toContain(type);
     }
@@ -284,5 +295,138 @@ describe("informational actions", () => {
   it("returns a clear result for a missing action", async () => {
     expect((await handlePoseidonAction(null)).ok).toBe(false);
     expect((await handlePoseidonAction({})).ok).toBe(false);
+  });
+});
+
+describe("normalizeActions", () => {
+  it("prefers actions[] when present and non-empty", () => {
+    const husbandry = { type: "LOG_HUSBANDRY", payload: { logs: [{ actionType: "Feed" }] } };
+    const params = { type: "LOG_WATER_PARAMS", payload: { temp: 25.5 } };
+    expect(normalizeActions({
+      action: { type: "NONE", payload: {} },
+      actions: [husbandry, params],
+    })).toEqual([husbandry, params]);
+  });
+
+  it("falls back to [action] when actions is missing or empty", () => {
+    const nav = { type: "NAVIGATE", payload: { tab: "tanks" } };
+    expect(normalizeActions({ action: nav })).toEqual([nav]);
+    expect(normalizeActions({ action: { type: "NONE" }, actions: [] })).toEqual([{ type: "NONE" }]);
+  });
+
+  it("wraps a bare action that already has .type", () => {
+    const self = { type: "CREATE_TANK", payload: {} };
+    expect(normalizeActions(self)).toEqual([self]);
+  });
+
+  it("returns [] for empty / unknown input", () => {
+    expect(normalizeActions(null)).toEqual([]);
+    expect(normalizeActions(undefined)).toEqual([]);
+    expect(normalizeActions({})).toEqual([]);
+  });
+});
+
+describe("LOG_HUSBANDRY rawQuery fallback", () => {
+  beforeEach(() => {
+    tanks.set(7, { id: 7, name: "Community", logs: [] });
+  });
+
+  it('maps "water change" and "wc" to Water Change', async () => {
+    await handlePoseidonAction({
+      type: POSEIDON_ACTION.LOG_HUSBANDRY,
+      tankId: 7,
+      payload: { rawQuery: "did a water change" },
+    });
+    expect(actionLogs[0].actionType).toBe("Water Change");
+
+    actionLogs = [];
+    await handlePoseidonAction({
+      type: POSEIDON_ACTION.LOG_HUSBANDRY,
+      tankId: 7,
+      payload: { rawQuery: "wc this morning" },
+    });
+    expect(actionLogs[0].actionType).toBe("Water Change");
+  });
+
+  it("keeps Feed / Scraped Algae / Quick Water Test", async () => {
+    await handlePoseidonAction({
+      type: POSEIDON_ACTION.LOG_HUSBANDRY,
+      tankId: 7,
+      payload: { rawQuery: "fed the tetras" },
+    });
+    expect(actionLogs.at(-1).actionType).toBe("Feed");
+
+    await handlePoseidonAction({
+      type: POSEIDON_ACTION.LOG_HUSBANDRY,
+      tankId: 7,
+      payload: { rawQuery: "scraped the glass" },
+    });
+    expect(actionLogs.at(-1).actionType).toBe("Scraped Algae");
+
+    await handlePoseidonAction({
+      type: POSEIDON_ACTION.LOG_HUSBANDRY,
+      tankId: 7,
+      payload: { rawQuery: "ran a parameter test, ph looks fine" },
+    });
+    expect(actionLogs.at(-1).actionType).toBe("Quick Water Test");
+  });
+});
+
+describe("takeScaled", () => {
+  beforeEach(() => {
+    tanks.set(7, { id: 7, name: "Community", logs: [] });
+  });
+
+  it("uses already-scaled *X10 as-is rather than multiplying again", async () => {
+    await handlePoseidonAction({
+      type: POSEIDON_ACTION.LOG_WATER_PARAMS,
+      tankId: 7,
+      payload: { tempCelsiusX10: 255, temp: 25.5 },
+    });
+    expect(tanks.get(7).logs[0].tempCelsiusX10).toBe(255);
+  });
+
+  it("scales decimals when scaled fields are absent (temp: 25.5 → 255)", async () => {
+    await handlePoseidonAction({
+      type: POSEIDON_ACTION.LOG_WATER_PARAMS,
+      tankId: 7,
+      payload: { temp: 25.5 },
+    });
+    expect(tanks.get(7).logs[0].tempCelsiusX10).toBe(255);
+  });
+});
+
+describe("handlePoseidonActions mixed envelope", () => {
+  beforeEach(() => {
+    tanks.set(1, { id: 1, name: "Tetras", logs: [] });
+  });
+
+  it("runs LOG_HUSBANDRY + LOG_WATER_PARAMS in one call", async () => {
+    const res = await handlePoseidonActions({
+      action: { type: "NONE", payload: {} },
+      actions: [
+        { type: "LOG_HUSBANDRY", tankId: 1, payload: { logs: [{ tankId: 1, actionType: "Feed", details: "fed the tetras" }] } },
+        { type: "LOG_WATER_PARAMS", tankId: 1, payload: { temp: 25.5 } },
+      ],
+    });
+    expect(res.ok).toBe(true);
+    expect(res.ran).toBe(true);
+    expect(actionLogs.some((l) => l.actionType === "Feed")).toBe(true);
+    expect(tanks.get(1).logs[0].tempCelsiusX10).toBe(255);
+  });
+});
+
+describe("echoReactionForMood", () => {
+  it("is a closed set of five moods", () => {
+    for (const mood of ["happy", "excited", "calm", "confused", "alert"]) {
+      expect(echoReactionForMood(mood).mood).toBe(mood);
+    }
+  });
+
+  it("falls unknown moods back to calm and does not remap happy", () => {
+    expect(echoReactionForMood("reflective").mood).toBe("calm");
+    expect(echoReactionForMood("joyful").mood).toBe("calm");
+    expect(echoReactionForMood("happy").mood).toBe("happy");
+    expect(echoReactionForMood("paired_swimming").mood).toBe("calm");
   });
 });

@@ -20,6 +20,10 @@
  * confirming, and its copy. `poseidonActions.test.js` asserts this registry
  * against the prompt's declared list and against the bridge's implementation, so
  * the three-way drift cannot silently return.
+ *
+ * Spec v0.2: the registry is these seven live types only. Mapping is payload
+ * actionType (Feed, Water Change, …), not extra enum keys. Do not add a
+ * fourth list of types, including as aliases on the registry.
  */
 
 /** Canonical action type names. These strings cross the wire from the model. */
@@ -102,6 +106,26 @@ export const POSEIDON_ACTIONS = Object.freeze({
 
 /** Every action type the app recognises. */
 export const KNOWN_ACTION_TYPES = Object.freeze(Object.keys(POSEIDON_ACTIONS));
+
+/**
+ * Accept optional `actions: []` alongside the existing singular `action`.
+ * Returns actions[] if present and non-empty, else [action], else [self] if
+ * the value is already an action with .type. Empty / unknown → [].
+ *
+ * One confirm chip lists every WRITE; the bridge runs them in one Dexie tx.
+ * Ambiguous tank is NONE (ask in message) — there is no needs_confirm field.
+ */
+export function normalizeActions(responseOrAction) {
+  if (!responseOrAction) return [];
+  if (Array.isArray(responseOrAction.actions) && responseOrAction.actions.length) {
+    return responseOrAction.actions;
+  }
+  if (responseOrAction.action && responseOrAction.action.type) {
+    return [responseOrAction.action];
+  }
+  if (responseOrAction.type) return [responseOrAction];
+  return [];
+}
 
 /** Class of an action type. Unknown types are treated as NONE — fail closed. */
 export function actionClass(type) {
