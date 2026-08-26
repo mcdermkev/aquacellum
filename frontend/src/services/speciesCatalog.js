@@ -35,11 +35,11 @@
  *      page treats a missing difficulty as "Unknown". `toCatalogEntry` keeps
  *      the app's "easy" default; `normalizeDifficulty` (used by the web mirror)
  *      keeps the "Unknown" behavior.
- *   2. Display range fallbacks are fabricated. `toCatalogEntry` still emits the
- *      legacy 22–28°C / pH 6.5–7.5 display fallbacks when a species has no
- *      range, for card parity. The *honest* ranges (null when unknown) are
- *      exposed separately on `entry.profile` (via `normalizeSpeciesProfile`) so
- *      the compatibility engine never scores against fabricated data.
+ *   2. Display ranges are honest. `toCatalogEntry` used to emit fabricated
+ *      22–28°C / pH 6.5–7.5 fallbacks when a species had no range (card parity
+ *      with the old globalRefList). Spec-Dex now hides a param when it is null
+ *      rather than printing an em dash or a made-up band, so missing ranges
+ *      stay null on both `minTemp`/`maxTemp`/`minPh`/`maxPh` and `entry.profile`.
  *
  * Pure and dependency-light (only composes the Tier-A `normalizeSpeciesProfile`).
  */
@@ -144,10 +144,8 @@ export const CARE_BADGE_CLASS = Object.freeze(["easy", "medium", "hard", "expert
 
 // ─── Global catalog projection ───────────────────────────────────────────────
 
-// Legacy display fallbacks used when a species has no curated range. These are
-// fabricated for card display ONLY; `entry.profile` carries the honest nulls.
-const DISPLAY_TEMP_FALLBACK = Object.freeze([22.0, 28.0]);
-const DISPLAY_PH_FALLBACK = Object.freeze([6.5, 7.5]);
+// Missing ranges stay null. Callers (Spec-Dex cards, flip-back params) hide
+// the chip rather than printing an em dash or a fabricated 22–28°C / 6.5–7.5.
 
 /**
  * Project one curated catalog record (fishbase_master.json shape) into the
@@ -174,10 +172,10 @@ export function toCatalogEntry(record = {}) {
     commonName: record.commonName,
     canonicalIpfsUri: "ipfs://placeholder",
     careLevel: difficultyToCareLevel(rawDifficulty),
-    minTemp: tm.tempRangeCelsius?.[0] ?? DISPLAY_TEMP_FALLBACK[0],
-    maxTemp: tm.tempRangeCelsius?.[1] ?? DISPLAY_TEMP_FALLBACK[1],
-    minPh: tm.phRange?.[0] ?? DISPLAY_PH_FALLBACK[0],
-    maxPh: tm.phRange?.[1] ?? DISPLAY_PH_FALLBACK[1],
+    minTemp: tm.tempRangeCelsius?.[0] ?? null,
+    maxTemp: tm.tempRangeCelsius?.[1] ?? null,
+    minPh: tm.phRange?.[0] ?? null,
+    maxPh: tm.phRange?.[1] ?? null,
     specimenCount: 0,
     isGlobal: true,
     // ── New, non-breaking ──────────────────────────────────────────────────
