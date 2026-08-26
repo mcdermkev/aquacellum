@@ -29,7 +29,7 @@ export function ExpertAuditForm({ recipientWallet, targetCurrentId, targetTankId
 
   const createAuditMutation = useCreateAudit();
 
-  // XP gate — user must be Abyssal tier to give audits
+  // Granted-authority gate — the server independently rechecks founder/steward.
   const auditGate = useUnlockGate("canGiveAudits");
 
   if (!auditGate.hasAccess) {
@@ -64,7 +64,7 @@ export function ExpertAuditForm({ recipientWallet, targetCurrentId, targetTankId
     });
 
     if (result.error) {
-      setError(result.error.message || "Failed to submit audit.");
+      setError(typeof result.error === "string" ? result.error : result.error.message || "Failed to submit audit.");
     } else {
       onSubmitted?.(result.data);
       onClose?.();

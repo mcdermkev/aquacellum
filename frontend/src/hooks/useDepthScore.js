@@ -5,7 +5,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import { getDepthScore, getDepthScoreHistory, getDepthLeaderboard, getTierPrivileges } from "../services/depthScoreApi";
+import { getDepthScore, getDepthScoreHistory, getDepthLeaderboard } from "../services/depthScoreApi";
 import { getCurrentWallet, isSupabaseConfigured } from "../services/supabaseClient";
 import { unwrap } from "../utils/unwrapEnvelope";
 
@@ -47,12 +47,4 @@ export function useDepthLeaderboard({ limit = 20 } = {}) {
     enabled: isSupabaseConfigured(),
     staleTime: 5 * 60 * 1000,
   });
-}
-
-/**
- * Get the current user's tier privileges.
- */
-export function useDepthPrivileges(walletAddress) {
-  const { data } = useDepthScore(walletAddress);
-  return getTierPrivileges(data?.depth_tier || "Shallow");
 }

@@ -27,6 +27,10 @@ import { setSessionTokenGetter } from "../services/stripePayments";
 import { setSessionTokenGetter as setShippingSessionTokenGetter } from "../services/shipping";
 import { setSessionTokenGetter as setParcelPresetsSessionTokenGetter } from "../services/parcelPresets";
 import { setSessionTokenGetter as setReviewsSessionTokenGetter } from "../services/reviewsApi";
+import {
+  setSessionTokenGetter as setReefTrustSessionTokenGetter,
+  setWalletSignerGetter as setReefTrustWalletSignerGetter,
+} from "../services/reefTrustApi";
 import { setSessionTokenGetter as setMerchandisingSessionTokenGetter } from "../services/storeMerchandisingApi";
 import { setSessionTokenGetter as setPromotionsSessionTokenGetter } from "../services/promotionsApi";
 import { setSessionTokenGetter as setPickupCoordinationSessionTokenGetter } from "../services/pickupCoordinationApi";
@@ -445,6 +449,36 @@ function PrivyAuthProvider({ children }) {
     return () => clearUserSigner();
   }, [account, wallets, loginMethod]);
 
+  // Get a signer for transactions and signed Reef trust requests. This must be
+  // declared before the token-registration effect because it is a dependency.
+  const getSigner = useCallback(async () => {
+    if (loginMethod === "privy" && wallets?.length) {
+      const embeddedWallet = wallets.find(w => w.walletClientType === "privy") || wallets[0];
+      if (embeddedWallet) {
+        try {
+          await embeddedWallet.switchChain(BASE_SEPOLIA_CHAIN_ID);
+        } catch {
+          // Continue — chain may already be correct.
+        }
+        const provider = await embeddedWallet.getEthersProvider();
+        return provider.getSigner();
+      }
+    }
+
+    if (loginMethod === "metamask") {
+      if (!window.ethereum) throw new Error("No wallet detected.");
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const network = await provider.getNetwork();
+      if (Number(network.chainId) !== BASE_SEPOLIA_CHAIN_ID) {
+        await switchToBaseSepolia();
+        return new ethers.providers.Web3Provider(window.ethereum).getSigner();
+      }
+      return provider.getSigner();
+    }
+
+    throw new Error("Not connected. Please log in first.");
+  }, [loginMethod, wallets]);
+
   // Register the Privy session-token getter with the payments service so
   // checkout + release can authorize from the logged-in session (no wallet
   // signature popup). Cleared when the user isn't Privy-authenticated, so
@@ -455,6 +489,8 @@ function PrivyAuthProvider({ children }) {
       setShippingSessionTokenGetter(getAccessToken);
       setParcelPresetsSessionTokenGetter(getAccessToken);
       setReviewsSessionTokenGetter(getAccessToken);
+      setReefTrustSessionTokenGetter(getAccessToken);
+      setReefTrustWalletSignerGetter(getSigner);
       setMerchandisingSessionTokenGetter(getAccessToken);
       setPromotionsSessionTokenGetter(getAccessToken);
       setPickupCoordinationSessionTokenGetter(getAccessToken);
@@ -467,6 +503,8 @@ function PrivyAuthProvider({ children }) {
       setShippingSessionTokenGetter(null);
       setParcelPresetsSessionTokenGetter(null);
       setReviewsSessionTokenGetter(null);
+      setReefTrustSessionTokenGetter(null);
+      setReefTrustWalletSignerGetter(null);
       setMerchandisingSessionTokenGetter(null);
       setPromotionsSessionTokenGetter(null);
       setPickupCoordinationSessionTokenGetter(null);
@@ -480,6 +518,8 @@ function PrivyAuthProvider({ children }) {
       setShippingSessionTokenGetter(null);
       setParcelPresetsSessionTokenGetter(null);
       setReviewsSessionTokenGetter(null);
+      setReefTrustSessionTokenGetter(null);
+      setReefTrustWalletSignerGetter(null);
       setMerchandisingSessionTokenGetter(null);
       setPromotionsSessionTokenGetter(null);
       setPickupCoordinationSessionTokenGetter(null);
@@ -488,7 +528,7 @@ function PrivyAuthProvider({ children }) {
       setEchoVisionSessionTokenGetter(null);
       setAltTextSessionTokenGetter(null);
     };
-  }, [privyAuthenticated, getAccessToken]);
+  }, [privyAuthenticated, getAccessToken, getSigner]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // METAMASK PATH: Direct injected wallet connection
@@ -621,37 +661,6 @@ function PrivyAuthProvider({ children }) {
     setWrongNetwork(false);
     setError(null);
   }, [loginMethod, privyLogout]);
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // Get a signer for transactions
-  // ─────────────────────────────────────────────────────────────────────────
-  const getSigner = useCallback(async () => {
-    if (loginMethod === "privy" && wallets?.length) {
-      const embeddedWallet = wallets.find(w => w.walletClientType === "privy") || wallets[0];
-      if (embeddedWallet) {
-        try {
-          await embeddedWallet.switchChain(BASE_SEPOLIA_CHAIN_ID);
-        } catch (err) {
-          // Continue — chain may already be correct
-        }
-        const provider = await embeddedWallet.getEthersProvider();
-        return provider.getSigner();
-      }
-    }
-
-    if (loginMethod === "metamask") {
-      if (!window.ethereum) throw new Error("No wallet detected.");
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const network = await provider.getNetwork();
-      if (Number(network.chainId) !== BASE_SEPOLIA_CHAIN_ID) {
-        await switchToBaseSepolia();
-        return new ethers.providers.Web3Provider(window.ethereum).getSigner();
-      }
-      return provider.getSigner();
-    }
-
-    throw new Error("Not connected. Please log in first.");
-  }, [loginMethod, wallets]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Switch network

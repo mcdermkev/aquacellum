@@ -80,9 +80,12 @@ describe("SellerReputation — composes reviewAggregation, never gates view_repu
     expect(REPUTATION_SOURCE).not.toMatch(/deep_reputation_insights/);
   });
 
-  it("report/respond actions call reviewsApi functions, not a raw fetch", () => {
+  it("report/respond actions use authenticated service clients, not raw fetch", () => {
     expect(REPUTATION_SOURCE).toContain(
-      'import { fetchSellerReviews, reportReview, respondToReview } from "../../services/reviewsApi"'
+      'import { fetchSellerReviews, respondToReview } from "../../services/reviewsApi"'
+    );
+    expect(REPUTATION_SOURCE).toContain(
+      'import { reportReview } from "../../services/reefTrustApi"'
     );
     expect(REPUTATION_SOURCE).not.toMatch(/fetch\(/);
   });
@@ -100,9 +103,11 @@ describe("SellerReputation — composes reviewAggregation, never gates view_repu
 // ─── ReviewModerationPanel — composes the ModerationPanel pattern ───────────
 
 describe("ReviewModerationPanel — composes the review_reports moderation flow via reviewsApi", () => {
-  it("calls reviewsApi.moderateReview rather than writing to Supabase directly for the moderation action", () => {
-    expect(MODERATION_SOURCE).toContain('import { moderateReview } from "../../services/reviewsApi"');
+  it("loads and moderates through the signed Reef trust client rather than direct browser Supabase", () => {
+    expect(MODERATION_SOURCE).toContain('import { fetchReviewReports, moderateReview } from "../../services/reefTrustApi"');
+    expect(MODERATION_SOURCE).toContain("await fetchReviewReports(filter)");
     expect(MODERATION_SOURCE).toContain("await moderateReview(reportId, action)");
+    expect(MODERATION_SOURCE).not.toMatch(/\.from\(["']review_reports["']\)/);
   });
 
   it("offers only hide|dismiss actions (no mute/ban) — matching ?action=moderate-review's contract", () => {

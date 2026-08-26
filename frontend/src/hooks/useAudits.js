@@ -18,6 +18,7 @@ import {
   cancelAuditRequest,
   requestMentorship,
   acceptMentorship,
+  declineMentorship,
   endMentorship,
   getMentorships,
   toggleAcceptingMentees,
@@ -198,6 +199,18 @@ export function useAcceptMentorship() {
 
   return useMutation({
     mutationFn: acceptMentorship,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["mentorships"] });
+    },
+  });
+}
+
+/** Mutation: Decline a pending mentorship (mentor only). */
+export function useDeclineMentorship() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: declineMentorship,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["mentorships"] });
     },

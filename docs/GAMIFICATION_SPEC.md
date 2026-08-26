@@ -1,19 +1,23 @@
-# Aquacellum Unified Gamification Spec
+# Aquacellum Gamification and Reputation Spec
 
-> Single source of truth for XP, Loyalty Points, tiers, leaderboards, and rewards across both the Hobbyist and Breeder personas.
+> Source of truth for XP, loyalty points, tiers, leaderboards, rewards, and the separate Depth reputation ledger.
 
 ---
 
-## 1. Core Principle: One Pool, Two Lenses
+## 1. Core Principle: One XP Pool, Two Lenses
 
-There is **one universal point balance per user** stored as `totalXp`. The two personas are cosmetic lenses applied to the same underlying number:
+There is **one universal activity-point balance per user** stored as `totalXp`. The two personas are cosmetic lenses applied to the same underlying XP number:
 
 | Mode | Display Name | Currency Label | UI Tone |
 |------|-------------|----------------|---------|
 | Casual Hobbyist | "Loyalty Points" | "pts" | Warm, care-oriented, gamified |
 | Pro Breeder | "Reputation XP" | "XP" | Operational, clinical, de-gamified |
 
-**A user who switches modes does not lose or reset anything.** Their point balance, tier, companion state, and zone position all persist. Only the language and visual treatment changes.
+**A user who switches modes does not lose or reset anything.** Their XP balance, XP tier, companion state, and zone position all persist. Only the language and visual treatment changes.
+
+### Depth is not XP
+
+Reef profiles also carry a separate `depth_score` and `depth_tier`. Depth is a community-trust ledger for verified contributions; it is not copied from `totalXp`, does not determine the companion tier, and uses smaller thresholds (Shallow 0, Coastal 100, Pelagic 500, Abyssal 1,500, Hadal 5,000). A keeper can therefore be Pelagic in XP while still Shallow in Depth. The UI must label these as **XP Tier** and **Depth Reputation** rather than presenting them as one level.
 
 ### Why unified?
 
@@ -92,22 +96,21 @@ One ladder for all users. Labels change per mode.
 | 4 | 5,000 – 9,999 | Master Keeper | Abyssal Operator | Evolved deep form | 💎 |
 | 5 | 10,000+ | God-Tier Champion | Hadal Champion | Legendary golden koi | 👑 |
 
-### 3.2 Tier Privileges
+### 3.2 XP Tier Privileges
 
-Privileges unlock based on tier regardless of mode:
+Ordinary feature progression can use XP tier. **Social authority does not:** giving audits, mentoring, hosting Tides, and moderation require an active founder/steward grant in `user_roles`; users cannot grind XP or Depth into authority.
 
-| Privilege | Tier Required |
-|-----------|--------------|
+| Privilege | Requirement |
+|-----------|-------------|
 | Post Tank Currents (social feed) | Bronze (all) |
 | Join Schools | Bronze (all) |
-| Create Schools | Silver |
+| Create Schools | Founder/steward grant |
 | Request Pedigree Audits | Silver |
-| Give Pedigree Audits (expert) | Master |
-| Mentor other users | Master |
-| Host Virtual Tides (online events) | Master |
-| Host Expo Tides (physical events) | Hadal |
-| Community moderation tools | Hadal |
-| Eligible for God-Tier zone champion | Hadal (10,000+ pts) |
+| Give Pedigree Audits (expert) | Founder/steward grant |
+| Mentor other users | Founder/steward grant + mentor opt-in |
+| Host Virtual or Expo Tides | Founder/steward grant |
+| Community moderation tools | Founder/steward grant |
+| Eligible for zone champion | Hadal XP tier (10,000+ pts) |
 
 ### 3.3 Demotion Policy
 

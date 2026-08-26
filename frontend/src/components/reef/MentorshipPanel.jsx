@@ -2,9 +2,9 @@
  * MentorshipPanel.jsx
  * 
  * Mentor/Mentee pairing interface.
- * - Master+ tier profiles show "Accepting Mentees" toggle
+ * - Granted founders/stewards can opt in or out as mentors
  * - Mentee request flow with message
- * - Active pairings display
+ * - Server-authorized relationship transitions and active pairing display
  */
 
 import React, { useState } from "react";
@@ -13,6 +13,7 @@ import {
   useAvailableMentors,
   useRequestMentorship,
   useAcceptMentorship,
+  useDeclineMentorship,
   useEndMentorship,
   useToggleAcceptingMentees,
 } from "../../hooks/useAudits";
@@ -20,19 +21,19 @@ import { getCurrentWallet } from "../../services/supabaseClient";
 import { sameWallet } from "../../utils/wallet";
 import { UnlockPrompt, useUnlockGate } from "./UnlockPrompt";
 
-export function MentorshipPanel({ walletAddress, companionTier, onViewProfile, casualModeActive = false }) {
+export function MentorshipPanel({ walletAddress, acceptingMentees = false, onViewProfile, casualModeActive = false }) {
   const currentWallet = getCurrentWallet();
   const isOwnProfile = sameWallet(currentWallet, walletAddress);
-  const isMasterPlus = companionTier === "Master" || companionTier === "God-Tier";
 
-  // XP unlock gate for mentor features
+  // Mentoring is granted community authority, never an XP/Depth tier unlock.
   const mentorGate = useUnlockGate("canMentor");
 
-  const { data: mentorshipsResult } = useMentorships(walletAddress);
-  const { data: mentorsResult } = useAvailableMentors(!isMasterPlus);
+  const { data: mentorshipsResult } = useMentorships(walletAddress, isOwnProfile);
+  const { data: mentorsResult } = useAvailableMentors(isOwnProfile);
   
   const requestMentorshipMutation = useRequestMentorship();
   const acceptMentorshipMutation = useAcceptMentorship();
+  const declineMentorshipMutation = useDeclineMentorship();
   const endMentorshipMutation = useEndMentorship();
   const toggleMenteesMutation = useToggleAcceptingMentees();
 
@@ -50,16 +51,29 @@ export function MentorshipPanel({ walletAddress, companionTier, onViewProfile, c
 
   const handleRequestMentorship = async () => {
     if (!requestingMentor) return;
-    await requestMentorshipMutation.mutateAsync({
-      mentorWallet: requestingMentor,
-      message: requestMessage,
-    });
-    setRequestingMentor(null);
-    setRequestMessage("");
+    try {
+      await requestMentorshipMutation.mutateAsync({
+        mentorWallet: requestingMentor,
+        message: requestMessage,
+      });
+      setRequestingMentor(null);
+      setRequestMessage("");
+    } catch {
+      // React Query retains the error; the panel renders it below.
+    }
   };
+
+  const panelError = mentorshipsResult?.error || mentorsResult?.error || [
+    requestMentorshipMutation,
+    acceptMentorshipMutation,
+    declineMentorshipMutation,
+    endMentorshipMutation,
+    toggleMenteesMutation,
+  ].find((mutation) => mutation.error)?.error?.message;
 
   return (
     <div className="mentorship-panel" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+      {panelError && <p role="alert" style={{ margin: 0, color: "var(--accent-red)", fontSize: "0.72rem" }}>{panelError}</p>}
       {/* XP Unlock Prompt */}
       {mentorGate.showPrompt && (
         <UnlockPrompt
@@ -69,8 +83,8 @@ export function MentorshipPanel({ walletAddress, companionTier, onViewProfile, c
         />
       )}
 
-      {/* Accepting Mentees Toggle (Master+ only, own profile) */}
-      {isOwnProfile && isMasterPlus && mentorGate.hasAccess && (
+      {/* Accepting Mentees Toggle (granted mentors, own profile) */}
+      {isOwnProfile && mentorGate.hasAccess && (
         <div className="glass-card" style={{
           padding: "1rem 1.25rem",
           borderRadius: "var(--radius-sm)",
@@ -88,19 +102,21 @@ export function MentorshipPanel({ walletAddress, companionTier, onViewProfile, c
             </div>
           </div>
           <button
-            onClick={() => toggleMenteesMutation.mutate(true)}
+            onClick={() => toggleMenteesMutation.mutate(!acceptingMentees)}
+            disabled={toggleMenteesMutation.isPending}
             style={{
               width: "44px",
               height: "24px",
               borderRadius: "12px",
               border: "none",
-              background: "rgba(168, 85, 247, 0.4)",
+              background: acceptingMentees ? "rgba(168, 85, 247, 0.4)" : "rgba(255,255,255,0.12)",
               cursor: "pointer",
               position: "relative",
               transition: "background 0.2s ease",
             }}
             role="switch"
-            aria-checked="true"
+            aria-checked={acceptingMentees}
+            aria-label={acceptingMentees ? "Stop accepting mentees" : "Start accepting mentees"}
           >
             <div style={{
               width: "18px",
@@ -109,7 +125,7 @@ export function MentorshipPanel({ walletAddress, companionTier, onViewProfile, c
               background: "#fff",
               position: "absolute",
               top: "3px",
-              left: "23px",
+              left: acceptingMentees ? "23px" : "3px",
               transition: "left 0.2s ease",
             }} />
           </button>
@@ -130,8 +146,8 @@ export function MentorshipPanel({ walletAddress, companionTier, onViewProfile, c
           </p>
           <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", margin: "0 0 0.75rem", lineHeight: 1.4 }}>
             {casualModeActive
-              ? "Help newer fishkeepers by sharing your experience. Keep leveling up to unlock this!"
-              : "Abyssal tier operators can accept mentees. Continue earning Depth to qualify."
+              ? "Mentors are trusted community volunteers selected by the Aquacellum team."
+              : "Mentoring is granted to founders and stewards; it is not unlocked by XP or Depth."
             }
           </p>
           <button
@@ -200,7 +216,7 @@ export function MentorshipPanel({ walletAddress, companionTier, onViewProfile, c
                     Accept
                   </button>
                   <button
-                    onClick={() => endMentorshipMutation.mutate(m.id)}
+                    onClick={() => declineMentorshipMutation.mutate(m.id)}
                     className="btn-secondary"
                     style={{ padding: "0.3rem 0.6rem", fontSize: "0.65rem" }}
                   >
@@ -270,7 +286,7 @@ export function MentorshipPanel({ walletAddress, companionTier, onViewProfile, c
       )}
 
       {/* Find a Mentor Button */}
-      {isOwnProfile && !isMasterPlus && activeMenteePairings.length === 0 && (
+      {isOwnProfile && activeMenteePairings.length === 0 && (
         <div>
           <button
             onClick={() => setShowMentorList(!showMentorList)}

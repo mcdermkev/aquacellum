@@ -106,24 +106,3 @@ export async function submitReview(params) {
 export async function respondToReview(reviewId, response) {
   return request("respond-review", { method: "POST", body: { reviewId, response }, auth: true });
 }
-
-/**
- * Report a review for moderation.
- * @param {string} reviewId
- * @param {('spam'|'inappropriate'|'misinformation'|'harassment'|'other')} reason
- * @param {string} [details]
- * @returns {Promise<{success:boolean, error?:string}>}
- */
-export async function reportReview(reviewId, reason, details) {
-  return request("report-review", { method: "POST", body: { reviewId, reason, details }, auth: true });
-}
-
-/**
- * Curator-only: hide a reported review, or dismiss the report.
- * @param {string} reportId
- * @param {('hide'|'dismiss')} action
- * @returns {Promise<{success:boolean, error?:string}>}
- */
-export async function moderateReview(reportId, action) {
-  return request("moderate-review", { method: "POST", body: { reportId, action }, auth: true });
-}

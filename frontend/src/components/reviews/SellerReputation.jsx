@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { SealCheck, ChatCircleDots, Flag } from "@phosphor-icons/react";
-import { fetchSellerReviews, reportReview, respondToReview } from "../../services/reviewsApi";
+import { fetchSellerReviews, respondToReview } from "../../services/reviewsApi";
+import { reportReview } from "../../services/reefTrustApi";
 import { aggregateReviews, reputationSummary } from "../../services/reviewAggregation";
 import { canRespondToReview } from "../../services/reviewEligibility";
 import { ReviewStars } from "./ReviewStars";

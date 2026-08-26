@@ -19,8 +19,7 @@
  * calling it with an unauthorized session simply gets a 403.
  */
 import { useState, useEffect } from "react";
-import { supabase, isSupabaseConfigured } from "../../services/supabaseClient";
-import { moderateReview } from "../../services/reviewsApi";
+import { fetchReviewReports, moderateReview } from "../../services/reefTrustApi";
 import { ReviewStars } from "./ReviewStars";
 
 const ACTION_LABELS = {
@@ -127,6 +126,7 @@ function ReportedReviewCard({ item, onAction }) {
 export function ReviewModerationPanel({ onBack }) {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filter, setFilter] = useState("pending"); // pending | resolved | all
   const [stats, setStats] = useState({ pending: 0, resolved: 0 });
 
@@ -135,47 +135,26 @@ export function ReviewModerationPanel({ onBack }) {
   }, [filter]);
 
   async function loadReports() {
-    if (!isSupabaseConfigured()) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
-
-    let query = supabase
-      .from("review_reports")
-      .select(`*, review:review_id ( id, overall, body, status )`)
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    if (filter === "pending") {
-      query = query.eq("status", "pending");
-    } else if (filter === "resolved") {
-      query = query.neq("status", "pending");
+    setError(null);
+    const result = await fetchReviewReports(filter);
+    if (!result.success) {
+      setReports([]);
+      setError(result.error || "Could not load review reports");
+    } else {
+      setReports(result.reports || []);
+      setStats(result.stats || { pending: 0, resolved: 0 });
     }
-
-    const { data, error } = await query;
-    if (!error) setReports(data || []);
-
-    const { count: pendingCount } = await supabase
-      .from("review_reports")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "pending");
-    const { count: resolvedCount } = await supabase
-      .from("review_reports")
-      .select("*", { count: "exact", head: true })
-      .neq("status", "pending");
-
-    setStats({ pending: pendingCount || 0, resolved: resolvedCount || 0 });
     setLoading(false);
   }
 
   async function handleAction(reportId, action) {
     const res = await moderateReview(reportId, action);
     if (!res.success) {
-      console.error("[ReviewModerationPanel] Action failed:", res.error);
+      setError(res.error || "Could not moderate review");
       return;
     }
-    loadReports();
+    await loadReports();
   }
 
   return (
@@ -242,6 +221,10 @@ export function ReviewModerationPanel({ onBack }) {
 
       {loading ? (
         <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>Loading reported reviews...</div>
+      ) : error ? (
+        <div role="alert" style={{ textAlign: "center", padding: "1.25rem", color: "var(--accent-red)" }}>
+          {error}. The queue count was not treated as zero.
+        </div>
       ) : reports.length === 0 ? (
         <div style={{ textAlign: "center", padding: "3rem", borderRadius: "12px", background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.05)" }}>
           <p style={{ fontSize: "2rem", margin: "0 0 0.5rem" }}>✅</p>

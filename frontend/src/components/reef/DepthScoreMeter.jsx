@@ -13,7 +13,7 @@ import { useDepthScore, useDepthScoreHistory } from "../../hooks/useDepthScore";
 import { DEPTH_TIERS } from "../../services/depthScoreApi";
 
 /**
- * Derive tier key from a raw XP score using DEPTH_TIERS thresholds.
+ * Derive a Depth tier key from a raw reputation score.
  */
 function deriveTierFromScore(score) {
   for (let i = DEPTH_TIERS.length - 1; i >= 0; i--) {
@@ -42,7 +42,8 @@ export function DepthScoreMeter({ walletAddress, compact = false, casualModeActi
   const [showDetails, setShowDetails] = useState(false);
   const { data: history = [] } = useDepthScoreHistory(walletAddress, { limit: 10 });
 
-  // Use Supabase depth_score if available, otherwise fall back to profile xp_total
+  // Profile Depth fields are an initial rendering fallback only. XP is never
+  // substituted here because it is a separate activity ledger.
   const resolvedScore = scoreData?.depth_score ?? fallbackScore ?? 0;
   const resolvedTier = scoreData?.depth_tier ?? fallbackTier ?? deriveTierFromScore(resolvedScore);
 
@@ -64,7 +65,7 @@ export function DepthScoreMeter({ walletAddress, compact = false, casualModeActi
   // Calculate progress within current tier
   const tierMin = currentTierInfo.min;
   const tierMax = nextTier ? nextTier.min : currentTierInfo.min + 1000;
-  const progress = Math.min(((score - tierMin) / (tierMax - tierMin)) * 100, 100);
+  const progress = Math.max(0, Math.min(((score - tierMin) / (tierMax - tierMin)) * 100, 100));
 
   if (compact) {
     return (
@@ -72,7 +73,7 @@ export function DepthScoreMeter({ walletAddress, compact = false, casualModeActi
         className="depth-meter-compact"
         style={{ color: currentTierInfo.color }}
         title={casualModeActive
-          ? `Level: ${currentTierInfo.hobbyistLabel || tier} (${score} XP)`
+          ? `Community reputation: ${currentTierInfo.hobbyistLabel || tier} (${score} Depth points)`
           : `Depth Score: ${score} (${tier})`
         }
       >
@@ -111,7 +112,7 @@ export function DepthScoreMeter({ walletAddress, compact = false, casualModeActi
         {nextTier && (
           <span className="depth-meter__next">
             {nextTier.icon} {casualModeActive
-              ? `Next: ${nextTier.hobbyistLabel || nextTier.label} at ${nextTier.min} XP`
+              ? `Next reputation tier: ${nextTier.hobbyistLabel || nextTier.label} at ${nextTier.min} Depth points`
               : `${nextTier.label} at ${nextTier.min}`
             }
           </span>
@@ -126,8 +127,8 @@ export function DepthScoreMeter({ walletAddress, compact = false, casualModeActi
         lineHeight: 1.4,
       }}>
         {casualModeActive
-          ? "💡 Post updates, join groups, give reviews, and help others to earn XP and unlock features."
-          : "💡 Earn Depth by posting Currents, giving Audits, breeding success, and mentoring."}
+          ? "💡 Depth is community trust, separate from activity points. Verified helpful contributions build it."
+          : "💡 Depth is separate from XP. Verified Expert Audits build community trust."}
       </p>
 
       {/* Expandable details */}
@@ -148,9 +149,9 @@ export function DepthScoreMeter({ walletAddress, compact = false, casualModeActi
           <details className="depth-meter__explainer">
             <summary>What is Depth Score?</summary>
             <p>
-              Depth Score measures your quality and trust in the community.
-              Unlike XP (which tracks volume), Depth rewards meaningful contributions:
-              Expert Audits, helpful Species Insights, spawn success, and mentoring others.
+              Depth Score measures verified quality and trust in the community.
+              It is separate from XP, which tracks activity. Depth currently rewards
+              verified Expert Audits and can decrease after confirmed moderation.
             </p>
             <div className="depth-meter__tiers-list">
               {DEPTH_TIERS.map((t) => (

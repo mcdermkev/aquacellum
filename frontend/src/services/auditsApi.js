@@ -6,6 +6,16 @@
  */
 
 import { supabase, getCurrentWallet, isSupabaseConfigured, resolveProfileWallet } from "./supabaseClient";
+import {
+  fetchMentorships,
+  fetchAvailableMentors,
+  createExpertAuditOnServer,
+  requestMentorshipFromServer,
+  acceptMentorshipOnServer,
+  declineMentorshipOnServer,
+  endMentorshipOnServer,
+  setAcceptingMenteesOnServer,
+} from "./reefTrustApi";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EXPERT AUDITS
@@ -14,7 +24,7 @@ import { supabase, getCurrentWallet, isSupabaseConfigured, resolveProfileWallet 
 /**
  * Create an Expert Audit (scorecard submission).
  */
-export async function createAudit({
+export function createAudit({
   recipientWallet,
   targetTankId,
   targetCurrentId,
@@ -25,43 +35,17 @@ export async function createAudit({
   commentary,
   photos = [],
 }) {
-  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
-
-  const walletAddress = getCurrentWallet();
-  if (!walletAddress) return { data: null, error: "Not connected" };
-
-  const { data, error } = await supabase
-    .from("expert_audits")
-    .insert({
-      auditor_wallet: await resolveProfileWallet(walletAddress),
-      recipient_wallet: await resolveProfileWallet(recipientWallet),
-      target_tank_id: targetTankId || null,
-      target_current_id: targetCurrentId || null,
-      water_quality_score: waterQualityScore,
-      stocking_score: stockingScore,
-      husbandry_score: husbandryScore,
-      aesthetics_score: aestheticsScore,
-      commentary: commentary || null,
-      photos,
-    })
-    .select(`
-      *,
-      auditor:auditor_wallet (
-        wallet_address,
-        display_name,
-        avatar_url,
-        companion_tier
-      ),
-      recipient:recipient_wallet (
-        wallet_address,
-        display_name,
-        avatar_url,
-        companion_tier
-      )
-    `)
-    .single();
-
-  return { data, error };
+  return createExpertAuditOnServer({
+    recipientWallet,
+    targetTankId,
+    targetCurrentId,
+    waterQualityScore,
+    stockingScore,
+    husbandryScore,
+    aestheticsScore,
+    commentary,
+    photos,
+  });
 }
 
 /**
@@ -273,135 +257,37 @@ export async function cancelAuditRequest(requestId) {
 // MENTORSHIP
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Request mentorship from a Master+ tier breeder.
- */
-export async function requestMentorship(mentorWallet, message = "") {
-  if (!isSupabaseConfigured()) return { data: null, error: "Not configured" };
-
-  const walletAddress = getCurrentWallet();
-  if (!walletAddress) return { data: null, error: "Not connected" };
-
-  const { data, error } = await supabase
-    .from("mentorships")
-    .insert({
-      mentor_wallet: await resolveProfileWallet(mentorWallet),
-      mentee_wallet: await resolveProfileWallet(walletAddress),
-      message: message || null,
-    })
-    .select()
-    .single();
-
-  return { data, error };
+/** Request mentorship from a server-authorized, opted-in mentor. */
+export function requestMentorship(mentorWallet, message = "") {
+  return requestMentorshipFromServer(mentorWallet, message);
 }
 
-/**
- * Accept a mentorship request (mentor action).
- */
-export async function acceptMentorship(mentorshipId) {
-  if (!isSupabaseConfigured()) return { error: "Not configured" };
-
-  const { error } = await supabase
-    .from("mentorships")
-    .update({ status: "active" })
-    .eq("id", mentorshipId);
-
-  return { error };
+/** Accept a pending request. The server requires the caller to be its mentor. */
+export function acceptMentorship(mentorshipId) {
+  return acceptMentorshipOnServer(mentorshipId);
 }
 
-/**
- * End a mentorship (either party).
- */
-export async function endMentorship(mentorshipId) {
-  if (!isSupabaseConfigured()) return { error: "Not configured" };
-
-  const { error } = await supabase
-    .from("mentorships")
-    .update({ status: "ended" })
-    .eq("id", mentorshipId);
-
-  return { error };
+/** Decline a pending request. The server requires the caller to be its mentor. */
+export function declineMentorship(mentorshipId) {
+  return declineMentorshipOnServer(mentorshipId);
 }
 
-/**
- * Get active mentorships for a user (as mentor or mentee).
- */
-export async function getMentorships(walletAddress) {
-  if (!isSupabaseConfigured()) return { data: { asMentor: [], asMentee: [] }, error: "Not configured" };
-
-  // As mentor
-  const { data: asMentor, error: mentorError } = await supabase
-    .from("mentorships")
-    .select(`
-      *,
-      mentee:mentee_wallet (
-        wallet_address,
-        display_name,
-        avatar_url,
-        companion_tier,
-        xp_total
-      )
-    `)
-    .ilike("mentor_wallet", (walletAddress || "").toLowerCase())
-    .in("status", ["pending", "active"])
-    .order("created_at", { ascending: false });
-
-  // As mentee
-  const { data: asMentee, error: menteeError } = await supabase
-    .from("mentorships")
-    .select(`
-      *,
-      mentor:mentor_wallet (
-        wallet_address,
-        display_name,
-        avatar_url,
-        companion_tier,
-        xp_total
-      )
-    `)
-    .ilike("mentee_wallet", (walletAddress || "").toLowerCase())
-    .in("status", ["pending", "active"])
-    .order("created_at", { ascending: false });
-
-  return {
-    data: {
-      asMentor: asMentor || [],
-      asMentee: asMentee || [],
-    },
-    error: mentorError || menteeError,
-  };
+/** End an active pairing. The server requires the caller to be one party. */
+export function endMentorship(mentorshipId) {
+  return endMentorshipOnServer(mentorshipId);
 }
 
-/**
- * Toggle accepting_mentees flag on profile.
- */
-export async function toggleAcceptingMentees(accepting) {
-  if (!isSupabaseConfigured()) return { error: "Not configured" };
-
-  const walletAddress = getCurrentWallet();
-  if (!walletAddress) return { error: "Not connected" };
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ accepting_mentees: accepting })
-    .ilike("wallet_address", walletAddress.toLowerCase());
-
-  return { error };
+/** Load only the signed-in user's private mentorship relationships. */
+export function getMentorships() {
+  return fetchMentorships();
 }
 
-/**
- * Get available mentors (Master+ tier, accepting mentees).
- */
-export async function getAvailableMentors({ limit = 20 } = {}) {
-  if (!isSupabaseConfigured()) return { data: [], error: "Not configured" };
+/** Opt in or out. The server requires an active founder/steward grant. */
+export function toggleAcceptingMentees(accepting) {
+  return setAcceptingMenteesOnServer(accepting);
+}
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("wallet_address, display_name, avatar_url, companion_tier, xp_total, bio")
-    .eq("accepting_mentees", true)
-    .in("companion_tier", ["Master", "God-Tier"])
-    .order("xp_total", { ascending: false })
-    .limit(limit);
-
-  return { data: data || [], error };
+/** Discover opted-in mentors from the server-authoritative keeper-role grants. */
+export function getAvailableMentors() {
+  return fetchAvailableMentors();
 }

@@ -716,7 +716,7 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
               {profile.companion_tier}
             </p>
             <p style={{ margin: 0, fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              👑 Tier
+              👑 XP Tier
             </p>
           </div>
         </div>
@@ -757,16 +757,16 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
         />
       </div>
 
-      {/* Depth Score / Reputation Meter */}
+      {/* Depth reputation is a separate verified-contribution ledger, not XP. */}
       <div style={{ marginBottom: "1.5rem" }}>
         <h3 style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "0.6rem" }}>
-          {casualModeActive ? "⭐ Level & Reputation" : "⭐ Depth Score"}
+          {casualModeActive ? "⭐ Community Reputation" : "⭐ Depth Reputation"}
         </h3>
         <DepthScoreMeter
           walletAddress={walletAddress}
           casualModeActive={casualModeActive}
-          fallbackScore={profile.depth_score ?? profile.xp_total ?? 0}
-          fallbackTier={profile.depth_tier ?? profile.companion_tier ?? "Shallow"}
+          fallbackScore={profile.depth_score ?? 0}
+          fallbackTier={profile.depth_tier ?? undefined}
         />
       </div>
 
@@ -800,7 +800,7 @@ export function PublicProfile({ walletAddress, onBack, onNavigateProfile, casual
         </h3>
         <MentorshipPanel
           walletAddress={walletAddress}
-          companionTier={profile.companion_tier || "Shallow"}
+          acceptingMentees={profile.accepting_mentees === true}
           onViewProfile={onNavigateProfile}
           casualModeActive={casualModeActive}
         />

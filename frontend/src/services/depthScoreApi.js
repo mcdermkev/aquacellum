@@ -6,6 +6,7 @@
  */
 
 import { supabase, getCurrentWallet, isSupabaseConfigured } from "./supabaseClient";
+import { submitContentReport } from "./reefTrustApi";
 
 /**
  * Get the current user's depth score and tier.
@@ -61,148 +62,27 @@ export async function getDepthLeaderboard({ limit = 20 } = {}) {
 }
 
 /**
- * Manually award depth score (for client-side triggers like spawn success).
- * In production, most scores are awarded via server-side triggers.
- */
-export async function awardDepthScore({ walletAddress, delta, reason, sourceType, sourceId }) {
-  if (!isSupabaseConfigured()) return { error: "Not configured" };
-
-  const wallet = walletAddress || getCurrentWallet();
-  if (!wallet) return { error: "Not connected" };
-
-  const { error } = await supabase
-    .from("depth_score_events")
-    .insert({
-      wallet_address: wallet,
-      delta,
-      reason,
-      source_type: sourceType,
-      source_id: sourceId || null,
-    });
-
-  return { error };
-}
-
-/**
  * Report content (creates a moderation flag).
  */
-export async function reportContent({ targetType, targetId, targetWallet, reason, details }) {
-  if (!isSupabaseConfigured()) return { error: "Not configured" };
-
-  const wallet = getCurrentWallet();
-  if (!wallet) return { error: "Not connected" };
-
-  const { error } = await supabase
-    .from("moderation_flags")
-    .insert({
-      reporter_wallet: wallet,
-      target_type: targetType,
-      target_id: targetId || null,
-      // The flagged user (author of the content). Lets curators mute/ban from
-      // the queue without a separate author lookup.
-      target_wallet: targetWallet ? targetWallet.toLowerCase() : null,
-      reason,
-      details: details || null,
-    });
-
-  return { error };
+export function reportContent({ targetType, targetId, targetWallet, reason, details }) {
+  return submitContentReport({ targetType, targetId, targetWallet, reason, details });
 }
 
 /**
- * Check privileges based on depth tier.
- * Aligned with GAMIFICATION_SPEC.md section 3.2.
- * 
- * Tier privilege unlocks:
- *   Shallow (Bronze):  Post currents, join schools
- *   Coastal (Silver):  + Create schools, request audits
- *   Pelagic (Gold):    + Post insights (inherits all below)
- *   Abyssal (Master):  + Give audits, mentor, host virtual Tides
- *   Hadal (Champion):  + Host expo Tides, moderate
- */
-export function getTierPrivileges(tier) {
-  const privileges = {
-    Shallow: {
-      canPostCurrents: true,
-      canPostInsights: false,
-      canJoinSchools: true,
-      canCreateSchools: false,
-      canRequestAudits: false,
-      canGiveAudits: false,
-      canMentor: false,
-      canHostVirtualTides: false,
-      canHostExpoTides: false,
-      canModerate: false,
-    },
-    Coastal: {
-      canPostCurrents: true,
-      canPostInsights: true,
-      canJoinSchools: true,
-      canCreateSchools: true,
-      canRequestAudits: true,
-      canGiveAudits: false,
-      canMentor: false,
-      canHostVirtualTides: false,
-      canHostExpoTides: false,
-      canModerate: false,
-    },
-    Pelagic: {
-      canPostCurrents: true,
-      canPostInsights: true,
-      canJoinSchools: true,
-      canCreateSchools: true,
-      canRequestAudits: true,
-      canGiveAudits: false,
-      canMentor: false,
-      canHostVirtualTides: false,
-      canHostExpoTides: false,
-      canModerate: false,
-    },
-    Abyssal: {
-      canPostCurrents: true,
-      canPostInsights: true,
-      canJoinSchools: true,
-      canCreateSchools: true,
-      canRequestAudits: true,
-      canGiveAudits: true,
-      canMentor: true,
-      canHostVirtualTides: true,
-      canHostExpoTides: false,
-      canModerate: false,
-    },
-    Hadal: {
-      canPostCurrents: true,
-      canPostInsights: true,
-      canJoinSchools: true,
-      canCreateSchools: true,
-      canRequestAudits: true,
-      canGiveAudits: true,
-      canMentor: true,
-      canHostVirtualTides: true,
-      canHostExpoTides: true,
-      canModerate: true,
-    },
-  };
-
-  // Normalize "Hadal-Champion" to "Hadal" for privilege lookup
-  const normalizedTier = tier === "Hadal-Champion" ? "Hadal" : tier;
-  return privileges[normalizedTier] || privileges.Shallow;
-}
-
-/**
- * Canonical tier metadata (icons, colors, thresholds).
- * Aligned with GAMIFICATION_SPEC.md section 3.1 and xp.js TIER_LADDER.
- * 
+ * Depth reputation metadata. This is intentionally NOT the XP ladder: Depth
+ * is awarded in smaller increments for verified contributions.
+ *
  * Thresholds:
- *   Shallow:  0 – 1,499
- *   Coastal:  1,500 – 2,499
- *   Pelagic:  2,500 – 4,999
- *   Abyssal:  5,000 – 9,999
- *   Hadal:    10,000+
+ *   Shallow:  0 – 99
+ *   Coastal:  100 – 499
+ *   Pelagic:  500 – 1,499
+ *   Abyssal:  1,500 – 4,999
+ *   Hadal:    5,000+
  */
 export const DEPTH_TIERS = [
-  { key: "Shallow", label: "Shallow", hobbyistLabel: "Bronze Fry", icon: "🥚", color: "#94a3b8", min: 0, max: 1499 },
-  { key: "Coastal", label: "Coastal", hobbyistLabel: "Silver Keeper", icon: "🥈", color: "#38bdf8", min: 1500, max: 2499 },
-  { key: "Pelagic", label: "Pelagic", hobbyistLabel: "Gold Aquarist", icon: "🥇", color: "#fbbf24", min: 2500, max: 4999 },
-  { key: "Abyssal", label: "Abyssal", hobbyistLabel: "Master Keeper", icon: "💎", color: "#a855f7", min: 5000, max: 9999 },
-  { key: "Hadal", label: "Hadal", hobbyistLabel: "God-Tier Champion", icon: "👑", color: "#f59e0b", min: 10000, max: Infinity },
+  { key: "Shallow", label: "Shallow", hobbyistLabel: "New Voice", icon: "🥚", color: "#94a3b8", min: 0, max: 99 },
+  { key: "Coastal", label: "Coastal", hobbyistLabel: "Contributor", icon: "🥈", color: "#38bdf8", min: 100, max: 499 },
+  { key: "Pelagic", label: "Pelagic", hobbyistLabel: "Trusted Contributor", icon: "🥇", color: "#fbbf24", min: 500, max: 1499 },
+  { key: "Abyssal", label: "Abyssal", hobbyistLabel: "Community Expert", icon: "💎", color: "#a855f7", min: 1500, max: 4999 },
+  { key: "Hadal", label: "Hadal", hobbyistLabel: "Community Pillar", icon: "👑", color: "#f59e0b", min: 5000, max: Infinity },
 ];

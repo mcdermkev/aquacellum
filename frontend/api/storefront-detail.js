@@ -75,8 +75,10 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { ethers } from "ethers";
 import { setCorsHeaders, handleCorsPreFlight } from "./_lib/cors.js";
 import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
+import { buildReefTrustMessage, REEF_TRUST_MAX_AGE_MS } from "../src/services/reefTrustProof.js";
 import {
   isOrderReviewable,
   applicableRatingDimensions,
@@ -134,8 +136,21 @@ export default async function handler(req, res) {
       return handleRespondReview(req, res);
     case "report-review":
       return handleReportReview(req, res);
+    case "review-reports":
+      return handleReviewReports(req, res);
     case "moderate-review":
       return handleModerateReview(req, res);
+    // ── Reef trust: mentorship + community moderation ──
+    case "mentors":
+      return handleAvailableMentors(req, res);
+    case "mentorships":
+      return handleMentorships(req, res);
+    case "expert-audits":
+      return handleExpertAudits(req, res);
+    case "reef-report":
+      return handleReefReport(req, res);
+    case "reef-moderation":
+      return handleReefModeration(req, res);
     // ── Task 21A: Storefront Merchandising (sections) ──
     case "sections":
       return handleSections(req, res);
@@ -670,6 +685,372 @@ async function handleSetup(req, res) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// REEF TRUST: KEEPER AUTHORITY, MENTORSHIP, AND COMMUNITY MODERATION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const KEEPER_AUTHORITY_ROLES = ["founder", "steward"];
+const MENTORSHIP_PROFILE_SELECT = `
+  *,
+  mentee:mentee_wallet (
+    wallet_address, display_name, avatar_url, companion_tier, xp_total
+  ),
+  mentor:mentor_wallet (
+    wallet_address, display_name, avatar_url, companion_tier, xp_total
+  )
+`;
+
+async function resolveReefActor(req) {
+  const { verified, userId, error } = await verifyPrivyToken(req);
+  if (!verified || !userId) {
+    return { ok: false, status: 401, error: error || "Missing or invalid authentication" };
+  }
+
+  const claimedWallet = String(req.headers["x-reef-wallet"] || "").toLowerCase();
+  const signature = String(req.headers["x-reef-signature"] || "");
+  const timestamp = Number(req.headers["x-reef-timestamp"]);
+  if (!/^0x[0-9a-f]{40}$/.test(claimedWallet) || !signature || !Number.isFinite(timestamp)) {
+    return { ok: false, status: 401, error: "Connected-wallet proof is required" };
+  }
+  if (Math.abs(Date.now() - timestamp) > REEF_TRUST_MAX_AGE_MS) {
+    return { ok: false, status: 401, error: "Connected-wallet proof expired; retry the request" };
+  }
+
+  try {
+    const recovered = ethers.utils.verifyMessage(buildReefTrustMessage({
+      action: req.query.action,
+      method: req.method,
+      timestamp,
+      body: req.body,
+    }), signature).toLowerCase();
+    if (recovered !== claimedWallet) {
+      return { ok: false, status: 401, error: "Connected-wallet proof does not match" };
+    }
+  } catch {
+    return { ok: false, status: 401, error: "Connected-wallet proof is invalid" };
+  }
+
+  return { ok: true, wallet: claimedWallet, userId };
+}
+
+async function authorizeKeeperAuthority(req, { allowCron = false } = {}) {
+  const authHeader = req.headers["authorization"] || req.headers["Authorization"] || "";
+  if (allowCron && process.env.CRON_SECRET && authHeader === `Bearer ${process.env.CRON_SECRET}`) {
+    return { ok: true, wallet: "cron", via: "cron" };
+  }
+
+  const actor = await resolveReefActor(req);
+  if (!actor.ok) return actor;
+
+  const { data: role, error: roleError } = await supabase
+    .from("user_roles")
+    .select("role, wallet_address")
+    .ilike("wallet_address", actor.wallet)
+    .eq("active", true)
+    .in("role", KEEPER_AUTHORITY_ROLES)
+    .limit(1)
+    .maybeSingle();
+
+  if (roleError) {
+    console.error("[reef-trust] role lookup failed:", roleError);
+    return { ok: false, status: 500, error: "Could not verify keeper authority" };
+  }
+  if (!role) return { ok: false, status: 403, error: "Founder or steward authority required" };
+  return { ...actor, profileWallet: role.wallet_address, via: "keeper-role", role: role.role };
+}
+
+async function requireReefWallet(req, res) {
+  const actor = await resolveReefActor(req);
+  if (!actor.ok) {
+    res.status(actor.status).json({ error: actor.error });
+    return null;
+  }
+  return actor.wallet;
+}
+
+async function handleExpertAudits(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization, X-Reef-Wallet, X-Reef-Timestamp, X-Reef-Signature" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed. Use POST." });
+
+  const authority = await authorizeKeeperAuthority(req);
+  if (!authority.ok) return res.status(authority.status).json({ error: authority.error });
+
+  const body = req.body || {};
+  const recipientWallet = String(body.recipientWallet || "").toLowerCase();
+  const scores = [body.waterQualityScore, body.stockingScore, body.husbandryScore, body.aestheticsScore]
+    .map(Number);
+  if (!/^0x[0-9a-f]{40}$/.test(recipientWallet) || recipientWallet === authority.wallet) {
+    return res.status(400).json({ error: "Choose a valid audit recipient" });
+  }
+  const { data: recipientProfile } = await supabase.from("profiles").select("wallet_address")
+    .ilike("wallet_address", recipientWallet).maybeSingle();
+  if (!recipientProfile) return res.status(404).json({ error: "Audit recipient not found" });
+  if (scores.some((score) => !Number.isInteger(score) || score < 1 || score > 5)) {
+    return res.status(400).json({ error: "Every audit score must be an integer from 1 to 5" });
+  }
+
+  const photos = Array.isArray(body.photos)
+    ? body.photos.filter((photo) => typeof photo === "string").slice(0, 10)
+    : [];
+  const row = {
+    auditor_wallet: authority.profileWallet,
+    recipient_wallet: recipientProfile.wallet_address,
+    target_tank_id: body.targetTankId ? String(body.targetTankId).slice(0, 200) : null,
+    target_current_id: body.targetCurrentId || null,
+    water_quality_score: scores[0],
+    stocking_score: scores[1],
+    husbandry_score: scores[2],
+    aesthetics_score: scores[3],
+    commentary: body.commentary ? String(body.commentary).trim().slice(0, 4000) : null,
+    photos,
+  };
+  const { data, error } = await supabase.from("expert_audits").insert(row).select(`
+    *,
+    auditor:auditor_wallet (wallet_address, display_name, avatar_url, companion_tier),
+    recipient:recipient_wallet (wallet_address, display_name, avatar_url, companion_tier)
+  `).single();
+  if (error) {
+    console.error("[expert-audits] create failed:", error);
+    return res.status(500).json({ error: "Could not save the Expert Audit" });
+  }
+  return res.status(201).json({ audit: data });
+}
+
+async function handleAvailableMentors(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "GET, OPTIONS", headers: "Content-Type, Authorization, X-Reef-Wallet, X-Reef-Timestamp, X-Reef-Signature" })) return;
+  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed. Use GET." });
+
+  const wallet = await requireReefWallet(req, res);
+  if (!wallet) return;
+
+  const { data: roleRows, error: rolesError } = await supabase
+    .from("user_roles")
+    .select("wallet_address")
+    .eq("active", true)
+    .in("role", KEEPER_AUTHORITY_ROLES);
+  if (rolesError) return res.status(500).json({ error: "Could not load available mentors" });
+
+  const mentorWallets = [...new Set((roleRows || []).map((row) => row.wallet_address))]
+    .filter((candidate) => candidate.toLowerCase() !== wallet);
+  if (mentorWallets.length === 0) return res.status(200).json({ mentors: [] });
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("wallet_address, display_name, avatar_url, companion_tier, xp_total, bio")
+    .eq("accepting_mentees", true)
+    .in("wallet_address", mentorWallets)
+    .order("xp_total", { ascending: false })
+    .limit(20);
+  if (error) return res.status(500).json({ error: "Could not load available mentors" });
+  return res.status(200).json({ mentors: data || [] });
+}
+
+async function handleMentorships(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "GET, POST, OPTIONS", headers: "Content-Type, Authorization, X-Reef-Wallet, X-Reef-Timestamp, X-Reef-Signature" })) return;
+  if (!["GET", "POST"].includes(req.method)) {
+    return res.status(405).json({ error: "Method not allowed. Use GET or POST." });
+  }
+
+  const wallet = await requireReefWallet(req, res);
+  if (!wallet) return;
+  const { data: actorProfile } = await supabase.from("profiles").select("wallet_address")
+    .ilike("wallet_address", wallet).maybeSingle();
+  if (!actorProfile) return res.status(404).json({ error: "Create your Reef profile before using mentorship" });
+  const profileWallet = actorProfile.wallet_address;
+
+  if (req.method === "GET") {
+    const [mentorResult, menteeResult] = await Promise.all([
+      supabase.from("mentorships").select(MENTORSHIP_PROFILE_SELECT)
+        .eq("mentor_wallet", profileWallet).in("status", ["pending", "active"]).order("created_at", { ascending: false }),
+      supabase.from("mentorships").select(MENTORSHIP_PROFILE_SELECT)
+        .eq("mentee_wallet", profileWallet).in("status", ["pending", "active"]).order("created_at", { ascending: false }),
+    ]);
+    if (mentorResult.error || menteeResult.error) {
+      console.error("[mentorships] list failed:", mentorResult.error || menteeResult.error);
+      return res.status(500).json({ error: "Could not load mentorships" });
+    }
+    return res.status(200).json({
+      mentorships: { asMentor: mentorResult.data || [], asMentee: menteeResult.data || [] },
+    });
+  }
+
+  const { action, mentorshipId } = req.body || {};
+  if (action === "toggle") {
+    const authority = await authorizeKeeperAuthority(req);
+    if (!authority.ok) return res.status(authority.status).json({ error: authority.error });
+    const { data, error } = await supabase.from("profiles")
+      .update({ accepting_mentees: req.body.accepting === true })
+      .eq("wallet_address", profileWallet)
+      .select("wallet_address, accepting_mentees")
+      .single();
+    if (error) return res.status(500).json({ error: "Could not update mentor availability" });
+    return res.status(200).json({ profile: data });
+  }
+
+  if (action === "request") {
+    const mentorWallet = String(req.body.mentorWallet || "").toLowerCase();
+    const message = String(req.body.message || "").trim().slice(0, 300);
+    if (!/^0x[0-9a-f]{40}$/.test(mentorWallet) || mentorWallet === wallet) {
+      return res.status(400).json({ error: "Choose a valid mentor" });
+    }
+
+    const [{ data: mentor }, { data: mentorRole }] = await Promise.all([
+      supabase.from("profiles").select("wallet_address, accepting_mentees")
+        .ilike("wallet_address", mentorWallet).eq("accepting_mentees", true).maybeSingle(),
+      supabase.from("user_roles").select("role").ilike("wallet_address", mentorWallet)
+        .eq("active", true).in("role", KEEPER_AUTHORITY_ROLES).limit(1).maybeSingle(),
+    ]);
+    if (!mentor || !mentorRole) return res.status(409).json({ error: "That mentor is not accepting requests" });
+
+    const { data: existing, error: existingError } = await supabase.from("mentorships")
+      .select("id, status").eq("mentor_wallet", mentor.wallet_address).eq("mentee_wallet", profileWallet).maybeSingle();
+    if (existingError) return res.status(500).json({ error: "Could not check mentorship status" });
+    if (existing && existing.status !== "ended") {
+      return res.status(409).json({ error: "A pending or active mentorship already exists" });
+    }
+
+    const mutation = existing
+      ? supabase.from("mentorships").update({ status: "pending", message, created_at: new Date().toISOString() })
+          .eq("id", existing.id).eq("status", "ended").select(MENTORSHIP_PROFILE_SELECT).single()
+      : supabase.from("mentorships").insert({ mentor_wallet: mentor.wallet_address, mentee_wallet: profileWallet, message })
+          .select(MENTORSHIP_PROFILE_SELECT).single();
+    const { data, error } = await mutation;
+    if (error) return res.status(500).json({ error: "Could not request mentorship" });
+    return res.status(201).json({ mentorship: data });
+  }
+
+  if (!mentorshipId || !["accept", "decline", "end"].includes(action)) {
+    return res.status(400).json({ error: "Invalid mentorship action" });
+  }
+
+  const { data, error } = await supabase.rpc("transition_mentorship", {
+    p_mentorship_id: mentorshipId,
+    p_action: action,
+    p_actor_wallet: wallet,
+  });
+  if (error) {
+    console.error("[mentorships] transition failed:", error);
+    return res.status(403).json({ error: error.message || "You cannot perform that mentorship transition" });
+  }
+  return res.status(200).json({ mentorship: data });
+}
+
+async function handleReefReport(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization, X-Reef-Wallet, X-Reef-Timestamp, X-Reef-Signature" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed. Use POST." });
+
+  const reporterWallet = await requireReefWallet(req, res);
+  if (!reporterWallet) return;
+  const { data: reporterProfile } = await supabase.from("profiles").select("wallet_address")
+    .ilike("wallet_address", reporterWallet).maybeSingle();
+  if (!reporterProfile) return res.status(404).json({ error: "Create your Reef profile before reporting content" });
+
+  const body = req.body || {};
+  const targetType = String(body.targetType || "");
+  const reason = String(body.reason || "");
+  const allowedReasons = ["spam", "inappropriate", "misinformation", "harassment", "other"];
+  const contentTables = {
+    current: "currents",
+    comment: "comments",
+    insight: "species_insights",
+    school_chat: "school_chat",
+    tide_chat: "tide_chat",
+  };
+  if (![...Object.keys(contentTables), "profile"].includes(targetType) || !allowedReasons.includes(reason)) {
+    return res.status(400).json({ error: "Invalid report target or reason" });
+  }
+
+  let targetId = body.targetId || null;
+  let targetWallet;
+  if (targetType === "profile") {
+    const requestedWallet = String(body.targetWallet || "").toLowerCase();
+    if (!/^0x[0-9a-f]{40}$/.test(requestedWallet)) {
+      return res.status(400).json({ error: "A valid profile target is required" });
+    }
+    const { data: profile } = await supabase.from("profiles").select("wallet_address")
+      .ilike("wallet_address", requestedWallet).maybeSingle();
+    if (!profile) return res.status(404).json({ error: "Reported profile not found" });
+    targetWallet = profile.wallet_address;
+    targetId = null;
+  } else {
+    if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(String(targetId || ""))) {
+      return res.status(400).json({ error: "A valid content target is required" });
+    }
+    const { data: content } = await supabase.from(contentTables[targetType])
+      .select("author_wallet").eq("id", targetId).maybeSingle();
+    if (!content) return res.status(404).json({ error: "Reported content not found" });
+    targetWallet = content.author_wallet;
+  }
+  if (String(targetWallet).toLowerCase() === reporterWallet) {
+    return res.status(400).json({ error: "You cannot report your own account or content" });
+  }
+
+  const { data, error } = await supabase.from("moderation_flags").insert({
+    reporter_wallet: reporterProfile.wallet_address,
+    target_type: targetType,
+    target_id: targetId,
+    target_wallet: targetWallet,
+    reason,
+    details: body.details ? String(body.details).trim().slice(0, 1000) : null,
+  }).select("id, status, created_at").single();
+  if (error) {
+    console.error("[reef-report] create failed:", error);
+    return res.status(500).json({ error: "Could not submit report" });
+  }
+  return res.status(201).json({ report: data });
+}
+
+async function handleReefModeration(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "GET, POST, OPTIONS", headers: "Content-Type, Authorization, X-Reef-Wallet, X-Reef-Timestamp, X-Reef-Signature" })) return;
+  if (!["GET", "POST"].includes(req.method)) {
+    return res.status(405).json({ error: "Method not allowed. Use GET or POST." });
+  }
+
+  const authority = await authorizeKeeperAuthority(req);
+  if (!authority.ok) return res.status(authority.status).json({ error: authority.error });
+
+  if (req.method === "GET") {
+    const filter = ["pending", "resolved", "all"].includes(req.query.filter) ? req.query.filter : "pending";
+    let query = supabase.from("moderation_flags").select(`
+      *, reporter_profile:reporter_wallet (
+        wallet_address, display_name, avatar_url, companion_tier
+      )
+    `).order("created_at", { ascending: false }).limit(50);
+    if (filter === "pending") query = query.eq("status", "pending");
+    if (filter === "resolved") query = query.neq("status", "pending");
+
+    const [flagsResult, pendingResult, resolvedResult] = await Promise.all([
+      query,
+      supabase.from("moderation_flags").select("*", { count: "exact", head: true }).eq("status", "pending"),
+      supabase.from("moderation_flags").select("*", { count: "exact", head: true }).neq("status", "pending"),
+    ]);
+    const error = flagsResult.error || pendingResult.error || resolvedResult.error;
+    if (error) {
+      console.error("[reef-moderation] queue failed:", error);
+      return res.status(500).json({ error: "Could not load the moderation queue" });
+    }
+    return res.status(200).json({
+      flags: flagsResult.data || [],
+      stats: { pending: pendingResult.count || 0, resolved: resolvedResult.count || 0 },
+    });
+  }
+
+  const { flagId, action } = req.body || {};
+  if (!flagId || !["dismiss", "hide", "warn", "mute_24h", "mute_7d", "ban"].includes(action)) {
+    return res.status(400).json({ error: "Missing flagId or invalid moderation action" });
+  }
+  const { data, error } = await supabase.rpc("moderate_reef_flag", {
+    p_flag_id: flagId,
+    p_action: action,
+    p_reviewer_wallet: authority.wallet,
+  });
+  if (error) {
+    console.error("[reef-moderation] action failed:", error);
+    return res.status(409).json({ error: error.message || "Could not apply moderation action" });
+  }
+  return res.status(200).json({ success: true, flag: data });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // TASK 20: VERIFIED STRUCTURED REVIEWS
 // ═══════════════════════════════════════════════════════════════════════════════
 //
@@ -849,7 +1230,7 @@ async function handleGetReviewForOrder(req, res) {
  * the order hasn't reached a verified completed state.
  */
 async function handleSubmitReview(req, res) {
-  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization, X-Reef-Wallet, X-Reef-Timestamp, X-Reef-Signature" })) return;
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed. Use POST." });
 
   const wallet = await requireReviewerWallet(req, res);
@@ -943,7 +1324,7 @@ function clampRating(value) {
  * response to a review on their own order.
  */
 async function handleRespondReview(req, res) {
-  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization, X-Reef-Wallet, X-Reef-Timestamp, X-Reef-Signature" })) return;
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed. Use POST." });
 
   const wallet = await requireReviewerWallet(req, res);
@@ -993,10 +1374,10 @@ async function handleRespondReview(req, res) {
  * POST ?action=report-review — any authenticated user reports a review.
  */
 async function handleReportReview(req, res) {
-  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization, X-Reef-Wallet, X-Reef-Timestamp, X-Reef-Signature" })) return;
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed. Use POST." });
 
-  const wallet = await requireReviewerWallet(req, res);
+  const wallet = await requireReefWallet(req, res);
   if (!wallet) return;
 
   const { reviewId, reason, details } = req.body || {};
@@ -1026,41 +1407,52 @@ async function handleReportReview(req, res) {
 }
 
 /**
- * Authorize a curator (or the CRON_SECRET backend) exactly like
- * api/stripe.js's authorizeAdminOrCurator — duplicated here in miniature
- * rather than importing across the two Vercel functions (each function is
- * bundled independently; importing api/stripe.js into api/storefront-
- * detail.js would pull in the entire Stripe SDK for no reason).
+ * Review moderation uses the same founder/steward grant that exposes the UI.
+ * CRON_SECRET remains available for backend maintenance, but browser callers
+ * must present a verified Privy token whose wallet has an active keeper role.
  */
 async function authorizeCuratorForReviews(req) {
-  const authHeader = req.headers["authorization"] || req.headers["Authorization"] || "";
-  const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
-    return { ok: true, via: "cron" };
+  return authorizeKeeperAuthority(req, { allowCron: true });
+}
+
+/** GET ?action=review-reports — authorized global report queue + real counts. */
+async function handleReviewReports(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "GET, OPTIONS", headers: "Content-Type, Authorization, X-Reef-Wallet, X-Reef-Timestamp, X-Reef-Signature" })) return;
+  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed. Use GET." });
+
+  const auth = await authorizeCuratorForReviews(req);
+  if (!auth.ok) return res.status(auth.status || 403).json({ error: auth.error });
+
+  const filter = ["pending", "resolved", "all"].includes(req.query.filter) ? req.query.filter : "pending";
+  let query = supabase.from("review_reports")
+    .select("*, review:review_id ( id, overall, body, status )")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (filter === "pending") query = query.eq("status", "pending");
+  if (filter === "resolved") query = query.neq("status", "pending");
+
+  const [reportsResult, pendingResult, resolvedResult] = await Promise.all([
+    query,
+    supabase.from("review_reports").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("review_reports").select("*", { count: "exact", head: true }).neq("status", "pending"),
+  ]);
+  const error = reportsResult.error || pendingResult.error || resolvedResult.error;
+  if (error) {
+    console.error("[reviews] report queue failed:", error);
+    return res.status(500).json({ error: "Could not load review reports" });
   }
-  const curatorWallet = (process.env.CURATOR_WALLET || "").toLowerCase();
-  if (authHeader.startsWith("Bearer ") && curatorWallet) {
-    try {
-      const { verified, walletAddress } = await verifyPrivyToken(req);
-      if (verified && walletAddress && walletAddress.toLowerCase() === curatorWallet) {
-        return { ok: true, via: "curator" };
-      }
-    } catch (e) {
-      // fall through to unauthorized
-    }
-  }
-  return { ok: false, status: 403, error: "Not authorized" };
+  return res.status(200).json({
+    reports: reportsResult.data || [],
+    stats: { pending: pendingResult.count || 0, resolved: resolvedResult.count || 0 },
+  });
 }
 
 /**
- * POST ?action=moderate-review — curator-only: hide a review (and mark its
- * report actioned) or dismiss a report. Composes the same
- * ModerationPanel.jsx action shape (status/reviewer_wallet/reviewed_at) so
- * the curator UI is a thin extra tab on that existing pattern, not a new
- * moderation system.
+ * POST ?action=moderate-review — founder/steward only: atomically hide a
+ * review and action its report, or dismiss the report.
  */
 async function handleModerateReview(req, res) {
-  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization, X-Reef-Wallet, X-Reef-Timestamp, X-Reef-Signature" })) return;
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed. Use POST." });
 
   const auth = await authorizeCuratorForReviews(req);
@@ -1072,41 +1464,16 @@ async function handleModerateReview(req, res) {
   }
 
   try {
-    const { data: report } = await supabase
-      .from("review_reports")
-      .select("*")
-      .eq("id", reportId)
-      .maybeSingle();
-    if (!report) return res.status(404).json({ error: "Report not found" });
-
-    const reviewerWallet = auth.via === "curator" ? (process.env.CURATOR_WALLET || "").toLowerCase() : "cron";
-
-    const { error: reportError } = await supabase
-      .from("review_reports")
-      .update({
-        status: modAction === "hide" ? "actioned" : "dismissed",
-        reviewer_wallet: reviewerWallet,
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq("id", reportId);
-
-    if (reportError) {
-      console.error("[reviews] moderate-review report update failed:", reportError);
-      return res.status(500).json({ error: "Could not update report" });
+    const { data, error } = await supabase.rpc("moderate_review_report", {
+      p_report_id: reportId,
+      p_action: modAction,
+      p_reviewer_wallet: auth.wallet,
+    });
+    if (error) {
+      console.error("[reviews] moderate-review failed:", error);
+      return res.status(409).json({ error: error.message || "Could not moderate review" });
     }
-
-    if (modAction === "hide") {
-      const { error: reviewError } = await supabase
-        .from("marketplace_reviews")
-        .update({ status: "hidden" })
-        .eq("id", report.review_id);
-      if (reviewError) {
-        console.error("[reviews] moderate-review hide failed:", reviewError);
-        return res.status(500).json({ error: "Could not hide review" });
-      }
-    }
-
-    return res.status(200).json({ success: true });
+    return res.status(200).json({ success: true, report: data });
   } catch (err) {
     console.error("[reviews] moderate-review error:", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -1157,7 +1524,7 @@ function sectionRowToClient(row) {
  * sections. Owner wallet comes ONLY from the verified session token.
  */
 async function handleSections(req, res) {
-  if (handleCorsPreFlight(req, res, { methods: "GET, POST, PUT, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (handleCorsPreFlight(req, res, { methods: "GET, POST, PUT, OPTIONS", headers: "Content-Type, Authorization, X-Reef-Wallet, X-Reef-Timestamp, X-Reef-Signature" })) return;
 
   if (req.method === "GET") {
     const seller = (req.query.seller || "").toLowerCase();
@@ -1282,7 +1649,7 @@ function promotionRowToClient(row) {
  * that wallet before writing.
  */
 async function handlePromotions(req, res) {
-  if (handleCorsPreFlight(req, res, { methods: "GET, POST, PUT, DELETE, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (handleCorsPreFlight(req, res, { methods: "GET, POST, PUT, DELETE, OPTIONS", headers: "Content-Type, Authorization, X-Reef-Wallet, X-Reef-Timestamp, X-Reef-Signature" })) return;
 
   const wallet = await requireWalletFromSession(req, res);
   if (!wallet) return;
@@ -1436,7 +1803,7 @@ function promotionDraftToRow(draft, wallet) {
  * alias-only summaries by construction.
  */
 async function handleSegments(req, res) {
-  if (handleCorsPreFlight(req, res, { methods: "GET, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (handleCorsPreFlight(req, res, { methods: "GET, OPTIONS", headers: "Content-Type, Authorization, X-Reef-Wallet, X-Reef-Timestamp, X-Reef-Signature" })) return;
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed. Use GET." });
 
   const wallet = await requireWalletFromSession(req, res);
@@ -1525,7 +1892,7 @@ function arrangementRowToClient(row) {
  *   DELETE → remove one of the caller's spots (?id=... or body.id)
  */
 async function handlePickupLocations(req, res) {
-  if (handleCorsPreFlight(req, res, { methods: "GET, POST, PUT, DELETE, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (handleCorsPreFlight(req, res, { methods: "GET, POST, PUT, DELETE, OPTIONS", headers: "Content-Type, Authorization, X-Reef-Wallet, X-Reef-Timestamp, X-Reef-Signature" })) return;
 
   const wallet = await requireWalletFromSession(req, res);
   if (!wallet) return;
@@ -1667,7 +2034,7 @@ function pickupLocationDraftToRow(draft, wallet) {
  * that specific order (Guardrail 2/3 — the reveal gate).
  */
 async function handlePickupForOrder(req, res) {
-  if (handleCorsPreFlight(req, res, { methods: "GET, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (handleCorsPreFlight(req, res, { methods: "GET, OPTIONS", headers: "Content-Type, Authorization, X-Reef-Wallet, X-Reef-Timestamp, X-Reef-Signature" })) return;
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed. Use GET." });
 
   const wallet = await requireWalletFromSession(req, res);
@@ -1732,7 +2099,7 @@ async function handlePickupForOrder(req, res) {
  * client-side check). Upserts the single arrangement row for this order.
  */
 async function handlePickupArrange(req, res) {
-  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization, X-Reef-Wallet, X-Reef-Timestamp, X-Reef-Signature" })) return;
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed. Use POST." });
 
   const wallet = await requireWalletFromSession(req, res);
@@ -1822,7 +2189,7 @@ async function handlePickupArrange(req, res) {
  * a buyer proposal (a seller's counter must still land in a real window).
  */
 async function handlePickupConfirm(req, res) {
-  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization, X-Reef-Wallet, X-Reef-Timestamp, X-Reef-Signature" })) return;
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed. Use POST." });
 
   const wallet = await requireWalletFromSession(req, res);

@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { supabase, getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseClient";
+import { fetchModerationQueue, moderateFlag } from "../../services/reefTrustApi";
 import { ProfileCard } from "./ProfileCard";
 
 const ACTION_LABELS = {
@@ -127,7 +127,9 @@ function FlaggedItemCard({ item, onAction }) {
 
       {/* Actions */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
-        {Object.entries(ACTION_LABELS).map(([key, { label, icon, color }]) => (
+        {Object.entries(ACTION_LABELS)
+          .filter(([key]) => key !== "hide" || ["current", "comment"].includes(item.target_type))
+          .map(([key, { label, icon, color }]) => (
           <button
             key={key}
             onClick={() => handleAction(key)}
@@ -186,6 +188,7 @@ function FlaggedItemCard({ item, onAction }) {
 export function ModerationPanel({ onBack }) {
   const [flags, setFlags] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filter, setFilter] = useState("pending"); // pending | resolved | all
   const [stats, setStats] = useState({ pending: 0, resolved: 0 });
 
@@ -194,101 +197,26 @@ export function ModerationPanel({ onBack }) {
   }, [filter]);
 
   async function loadFlags() {
-    if (!isSupabaseConfigured()) {
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
-
-    let query = supabase
-      .from("moderation_flags")
-      .select(`
-        *,
-        reporter_profile:reporter_wallet (
-          wallet_address, display_name, avatar_url, companion_tier
-        )
-      `)
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    if (filter === "pending") {
-      query = query.eq("status", "pending");
-    } else if (filter === "resolved") {
-      query = query.neq("status", "pending");
+    setError(null);
+    const result = await fetchModerationQueue(filter);
+    if (!result.success) {
+      setFlags([]);
+      setError(result.error || "Could not load the moderation queue");
+    } else {
+      setFlags(result.flags || []);
+      setStats(result.stats || { pending: 0, resolved: 0 });
     }
-
-    const { data, error } = await query;
-
-    if (!error) {
-      setFlags(data || []);
-    }
-
-    // Get counts
-    const { count: pendingCount } = await supabase
-      .from("moderation_flags")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "pending");
-
-    const { count: resolvedCount } = await supabase
-      .from("moderation_flags")
-      .select("*", { count: "exact", head: true })
-      .neq("status", "pending");
-
-    setStats({ pending: pendingCount || 0, resolved: resolvedCount || 0 });
     setLoading(false);
   }
 
-  async function handleAction(flagId, action, item) {
-    if (!isSupabaseConfigured()) return;
-
-    const wallet = getCurrentWallet();
-
-    // Update the flag status (real columns: reviewer_wallet / action_taken / reviewed_at)
-    const { error } = await supabase
-      .from("moderation_flags")
-      .update({
-        status: action === "dismiss" ? "dismissed" : "actioned",
-        reviewer_wallet: wallet,
-        reviewed_at: new Date().toISOString(),
-        action_taken: action,
-      })
-      .eq("id", flagId);
-
-    if (error) {
-      console.error("[Moderation] Action failed:", error);
+  async function handleAction(flagId, action) {
+    const result = await moderateFlag(flagId, action);
+    if (!result.success) {
+      setError(result.error || "Could not apply moderation action");
       return;
     }
-
-    // Hide content: currents use an `is_hidden` boolean (the visibility enum
-    // does not include "hidden"). The flagged content id is target_id.
-    if (action === "hide" && item.target_type === "current" && item.target_id) {
-      await supabase
-        .from("currents")
-        .update({ is_hidden: true })
-        .eq("id", item.target_id);
-    }
-
-    // Mute/ban act on the flagged user (target_wallet).
-    if ((action === "mute_24h" || action === "mute_7d") && item.target_wallet) {
-      const muteUntil = new Date();
-      muteUntil.setHours(muteUntil.getHours() + (action === "mute_24h" ? 24 : 168));
-
-      await supabase
-        .from("profiles")
-        .update({ muted_until: muteUntil.toISOString() })
-        .eq("wallet_address", item.target_wallet);
-    }
-
-    if (action === "ban" && item.target_wallet) {
-      await supabase
-        .from("profiles")
-        .update({ is_banned: true, banned_at: new Date().toISOString() })
-        .eq("wallet_address", item.target_wallet);
-    }
-
-    // Refresh the list
-    loadFlags();
+    await loadFlags();
   }
 
   return (
@@ -357,6 +285,10 @@ export function ModerationPanel({ onBack }) {
       {loading ? (
         <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)" }}>
           Loading flagged content...
+        </div>
+      ) : error ? (
+        <div role="alert" style={{ textAlign: "center", padding: "1.25rem", color: "var(--accent-red)" }}>
+          {error}. The queue count was not treated as zero.
         </div>
       ) : flags.length === 0 ? (
         <div style={{

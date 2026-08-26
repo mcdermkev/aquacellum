@@ -35,6 +35,7 @@ describe("review actions — registered distinctly from the existing storefront 
       ["submit-review", "handleSubmitReview"],
       ["respond-review", "handleRespondReview"],
       ["report-review", "handleReportReview"],
+      ["review-reports", "handleReviewReports"],
       ["moderate-review", "handleModerateReview"],
     ]) {
       expect(SOURCE).toContain(`case "${action}":`);
@@ -93,21 +94,31 @@ describe("respond-review — seller-response eligibility decided by canRespondTo
   });
 });
 
-describe("moderate-review — curator-only, mirrors api/stripe.js's authorizeAdminOrCurator pattern", () => {
-  it("handleModerateReview requires authorizeCuratorForReviews before touching the database", () => {
-    const idx = SOURCE.indexOf("async function handleModerateReview(req, res) {");
-    expect(idx).toBeGreaterThan(-1);
-    const block = SOURCE.slice(idx, idx + 500);
-    expect(block).toContain("await authorizeCuratorForReviews(req)");
+describe("review moderation — founder/steward authority matches the UI grant", () => {
+  it("list and action handlers require the same server-side keeper-role check", () => {
+    for (const handler of ["handleReviewReports", "handleModerateReview"]) {
+      const idx = SOURCE.indexOf(`async function ${handler}(req, res) {`);
+      expect(idx).toBeGreaterThan(-1);
+      const block = SOURCE.slice(idx, idx + 1000);
+      expect(block).toContain("await authorizeCuratorForReviews(req)");
+    }
   });
 
-  it("authorizeCuratorForReviews checks CRON_SECRET or a verified curator wallet, matching the CURATOR_WALLET env pattern", () => {
-    const idx = SOURCE.indexOf("async function authorizeCuratorForReviews(req) {");
-    expect(idx).toBeGreaterThan(-1);
-    const block = SOURCE.slice(idx, idx + 900);
-    expect(block).toContain("process.env.CRON_SECRET");
-    expect(block).toContain("process.env.CURATOR_WALLET");
-    expect(block).toContain("verifyPrivyToken(req)");
+  it("keeper authorization consumes a signed actor and checks active founder/steward roles", () => {
+    const helperIdx = SOURCE.indexOf("async function authorizeKeeperAuthority(req");
+    expect(helperIdx).toBeGreaterThan(-1);
+    const block = SOURCE.slice(helperIdx, helperIdx + 1700);
+    expect(block).toContain("resolveReefActor(req)");
+    expect(block).toContain('from("user_roles")');
+    expect(block).toContain('eq("active", true)');
+    expect(block).toContain("KEEPER_AUTHORITY_ROLES");
+  });
+
+  it("review resolution uses one atomic service-role RPC", () => {
+    const idx = SOURCE.indexOf("async function handleModerateReview(req, res) {");
+    const block = SOURCE.slice(idx, idx + 1400);
+    expect(block).toContain('supabase.rpc("moderate_review_report"');
+    expect(block).not.toContain('.from("review_reports").update');
   });
 });
 
