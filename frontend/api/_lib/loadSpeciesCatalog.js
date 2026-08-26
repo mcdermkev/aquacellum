@@ -49,6 +49,28 @@ function aliasesOf(value) {
 }
 
 /**
+ * Card <img> reads masterPhotoUrl. Live profiles store it on the JSON blob
+ * (gold-standard Betta splendens 4768: /species-images/wikimedia-resized/betta-splendens.png).
+ * Collapse our own absolute origins so preview/prod hit the same static asset.
+ */
+export function normalizeMasterPhotoUrl(profile, row) {
+  const raw =
+    (profile && profile.masterPhotoUrl) ||
+    (profile && profile.imageUrl) ||
+    row?.master_photo_url ||
+    row?.image_url ||
+    "";
+  if (typeof raw !== "string") return "";
+  let url = raw.trim();
+  if (!url || url === "null" || url === "undefined") return "";
+  url = url.replace(
+    /^https?:\/\/(www\.)?(aquadex\.fish|aquacellum\.com|aquacellum\.vercel\.app)/i,
+    ""
+  );
+  return url;
+}
+
+/**
  * Shape a published profile row + optional species_living row into the catalog
  * record the Spec-Dex pages already consume (fishbase_master.json paths), plus
  * living / alias / card_kind fields. Identity columns on the row always win
@@ -66,6 +88,7 @@ export function rowToCatalogEntry(row, living = null) {
     specCode: row?.spec_code ?? profile.specCode ?? null,
     scientificName: row?.scientific_name || profile.scientificName || null,
     commonName: row?.common_name || profile.commonName || null,
+    masterPhotoUrl: normalizeMasterPhotoUrl(profile, row),
     commonAliases: aliases,
     conservationStatus: row?.conservation_status ?? live.conservation_status ?? null,
     cardKind: row?.card_kind || live.card_kind || inferCardKind(profile),
@@ -82,6 +105,7 @@ export function rowToCatalogEntry(row, living = null) {
 function annotateJsonRecord(sp) {
   return {
     ...sp,
+    masterPhotoUrl: normalizeMasterPhotoUrl(sp, sp),
     commonAliases: aliasesOf(sp.commonAliases || sp.common_aliases),
     conservationStatus: sp.conservationStatus ?? sp.conservation_status ?? null,
     cardKind: inferCardKind(sp),
