@@ -280,8 +280,8 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
         id: `pos-${Date.now()}`,
         sender: 'poseidon',
         text: mode === 'pro'
-          ? '[RATE LIMIT] Query quota exceeded (20/hr). Retry after cooldown.'
-          : '🌊 I need a breather! You\'ve hit the hourly limit (20 questions). Try again in a bit.',
+          ? '[RATE LIMIT] Query quota exceeded (30/hr). Retry after cooldown.'
+          : '🌊 I need a breather! You\'ve hit the hourly limit (30 questions). Try again in a bit.',
         timestamp: Date.now(),
         intent: 'rate_limited',
         action: { type: 'NONE', payload: {} },
@@ -341,6 +341,7 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
         timestamp: Date.now(),
         intent: data.intent,
         action: data.action,
+        actions: data.actions,
         echoReaction: data.echoReaction,
         confidence: data.confidence,
         sources: data.sources,

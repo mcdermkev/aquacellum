@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { usePoseidon } from "../hooks/usePoseidon";
-import { handlePoseidonAction } from "../utils/poseidonBridge";
-import { requiresConfirmation, actionLabel, actionConfirmLabel } from "../utils/poseidonActions";
+import { handlePoseidonAction, handlePoseidonActions } from "../utils/poseidonBridge";
+import { requiresConfirmation, actionLabel, actionConfirmLabel, normalizeActions } from "../utils/poseidonActions";
 import { parsePoseidonMessage } from "../utils/poseidonDeepLinks";
 import { useEchoAttend } from "../hooks/useEchoAttend";
 
@@ -198,10 +198,13 @@ export function PoseidonGlobalWidget({ walletAddress, casualModeActive = true, a
 
     // See the note in PoseidonChatConsole: gated on whether the action will
     // actually do something, not merely on it not being NONE.
-    if (lastMsg.action && requiresConfirmation(lastMsg.action.type)) {
+    const queued = normalizeActions(lastMsg).filter((a) => a && requiresConfirmation(a.type));
+    if (queued.length) {
       setPendingAction({
-        type: lastMsg.action.type,
-        payload: lastMsg.action.payload || {},
+        type: queued[0].type,
+        payload: queued[0].payload || {},
+        actions: queued,
+        useBatch: Array.isArray(lastMsg.actions) && lastMsg.actions.length > 0,
         msgId: lastMsg.id,
       });
     }
@@ -216,11 +219,15 @@ export function PoseidonGlobalWidget({ walletAddress, casualModeActive = true, a
 
   const confirmAction = () => {
     if (!pendingAction) return;
-    handlePoseidonAction({
-      type: pendingAction.type,
-      payload: pendingAction.payload,
-      walletAddress,
-    });
+    const stamp = (a) => ({ ...a, walletAddress });
+    if (pendingAction.useBatch) {
+      handlePoseidonActions({ actions: (pendingAction.actions || []).map(stamp) });
+    } else {
+      handlePoseidonAction(stamp({
+        type: pendingAction.type,
+        payload: pendingAction.payload,
+      }));
+    }
     setPendingAction(null);
   };
 
@@ -465,11 +472,13 @@ export function PoseidonGlobalWidget({ walletAddress, casualModeActive = true, a
                 <span className="poseidon-global-panel__action-icon">⚡</span>
                 <span className="poseidon-global-panel__action-text">
                   {casualModeActive
-                    ? `Poseidon wants to: ${actionLabel(pendingAction.type, { casual: true })}`
-                    : `ACTION: ${pendingAction.type}`}
+                    ? `Poseidon wants to: ${(pendingAction.actions || [pendingAction]).map((a) => actionLabel(a.type, { casual: true })).join(" and ")}`
+                    : `ACTION: ${(pendingAction.actions || [pendingAction]).map((a) => a.type).join(", ")}`}
                 </span>
                 <button onClick={confirmAction} className="poseidon-global-panel__action-btn poseidon-global-panel__action-btn--confirm">
-                  {actionConfirmLabel(pendingAction.type, { casual: casualModeActive })}
+                  {(pendingAction.actions || [pendingAction]).length === 1
+                    ? actionConfirmLabel(pendingAction.type, { casual: casualModeActive })
+                    : (casualModeActive ? "Do it" : "EXEC")}
                 </button>
                 <button onClick={dismissAction} className="poseidon-global-panel__action-btn poseidon-global-panel__action-btn--dismiss">
                   {casualModeActive ? "Nah" : "SKIP"}
