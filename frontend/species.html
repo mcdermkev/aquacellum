@@ -255,9 +255,15 @@
     .color-chip { display: inline-flex; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 500; background: rgba(34,211,238,0.06); border: 1px solid rgba(34,211,238,0.12); color: var(--cyan-300); margin: 3px; }
     .country-chip { display: inline-flex; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 500; background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.12); color: var(--emerald-400); margin: 3px; }
     .iucn-badge { display: inline-flex; padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
-    .iucn-vu { background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3); color: #fbbf24; }
     .iucn-lc { background: rgba(52,211,153,0.15); border: 1px solid rgba(52,211,153,0.3); color: #34d399; }
+    .iucn-nt { background: rgba(163,230,53,0.15); border: 1px solid rgba(163,230,53,0.3); color: #a3e635; }
+    .iucn-vu { background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3); color: #fbbf24; }
     .iucn-en { background: rgba(251,113,133,0.15); border: 1px solid rgba(251,113,133,0.3); color: #fb7185; }
+    .iucn-cr { background: rgba(244,63,94,0.18); border: 1px solid rgba(244,63,94,0.35); color: #fb7185; }
+    .iucn-ew { background: rgba(244,114,182,0.15); border: 1px solid rgba(244,114,182,0.3); color: #f472b6; }
+    .iucn-ex { background: rgba(148,163,184,0.18); border: 1px solid rgba(148,163,184,0.3); color: #cbd5e1; }
+    .iucn-dd { background: rgba(148,163,184,0.12); border: 1px solid rgba(148,163,184,0.25); color: #94a3b8; }
+    .iucn-ne { background: rgba(148,163,184,0.12); border: 1px solid rgba(148,163,184,0.25); color: #94a3b8; }
     .sex-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
     .sex-col { padding: 16px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); }
     .sex-col-title { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
@@ -471,6 +477,7 @@
   <!-- Loaded before the inline script below so AquadexPublicListings is defined
        when the listing/breeder sections fetch (Fish Finder T14). -->
   <script src="/js/public-listings.js"></script>
+  <script src="/js/species-videos.js"></script>
   <script>
     // Utility: generate slug from scientific name
     function toSlug(name) {
@@ -490,7 +497,46 @@
 
     // Utility: check for placeholder values
     function real(val) {
-      return val && val !== 'Information arriving soon' && val !== 'Generic Biotope Details' ? val : null;
+      return val && val !== 'Information arriving soon' && val !== 'Generic Biotope Details' && val !== '—' && val !== 'TODO' ? val : null;
+    }
+
+    function iucnBadgeClass(status) {
+      if (!status) return null;
+      const s = String(status).toLowerCase().replace(/[\s_\-]+/g, '');
+      const map = {
+        leastdconcern: 'iucn-lc', lc: 'iucn-lc',
+        nearthreatened: 'iucn-nt', nt: 'iucn-nt',
+        vulnerable: 'iucn-vu', vu: 'iucn-vu',
+        endangered: 'iucn-en', en: 'iucn-en',
+        criticallyendangered: 'iucn-cr', cr: 'iucn-cr',
+        extinctinwild: 'iucn-ew', ew: 'iucn-ew',
+        extinct: 'iucn-ex', ex: 'iucn-ex',
+        datadeficient: 'iucn-dd', dd: 'iucn-dd',
+        notevaluated: 'iucn-ne', ne: 'iucn-ne'
+      };
+      return map[s] || null; // never fall through to LC
+    }
+
+    function formatUnixSeconds(raw) {
+      if (raw == null || raw === '') return null;
+      const n = Number(raw);
+      if (!n) return null;
+      const d = new Date(n < 1e12 ? n * 1000 : n);
+      if (Number.isNaN(d.getTime())) return null;
+      return d.toLocaleDateString();
+    }
+
+    async function fetchSpeciesCatalog() {
+      try {
+        const res = await fetch('/api/species?catalog=true');
+        if (res.ok) {
+          const json = await res.json();
+          if (Array.isArray(json.data) && json.data.length) return json.data;
+        }
+      } catch (e) { /* JSON cache */ }
+      const res = await fetch('/fishbase_master.json?v=2');
+      if (!res.ok) throw new Error('Failed to load species data');
+      return res.json();
     }
 
     // Gauge helper: map a value range to percentage within an absolute scale
@@ -515,13 +561,13 @@
       }
 
       try {
-        const res = await fetch('/fishbase_master.json?v=2');
-        if (!res.ok) throw new Error('Failed to load species data');
-        allSpecies = await res.json();
+        allSpecies = await fetchSpeciesCatalog();
 
-        // Find species by slug match on scientific name or common name
+        // Find species by slug match on scientific name, common name, or aliases
         const species = allSpecies.find(sp => {
-          return toSlug(sp.scientificName) === slug || toSlug(sp.commonName || '') === slug;
+          if (toSlug(sp.scientificName) === slug || toSlug(sp.commonName || '') === slug) return true;
+          const aliases = Array.isArray(sp.commonAliases) ? sp.commonAliases : [];
+          return aliases.some(a => toSlug(a) === slug);
         });
 
         if (!species) {
@@ -572,12 +618,14 @@
       const hasImage = sp.masterPhotoUrl && sp.masterPhotoUrl !== '';
       const temp = sp.tankMetrics?.tempRangeCelsius;
       const ph = sp.tankMetrics?.phRange;
-      const videoSlug = sp.scientificName.toLowerCase().replace(/\s+/g, '-');
-      const videoPath = `/videos/species/${videoSlug}.mp4`;
+      const videoPath = (window.AquadexSpeciesVideos && window.AquadexSpeciesVideos.src(sp.scientificName)) || null;
 
-      // Build the hero image
+      // Build the hero image. Empty state: NEVER inject a missing video src.
+      const videoHtml = videoPath
+        ? `<video class="hero-video" src="${videoPath}" muted loop playsinline preload="metadata"></video>`
+        : '';
       const imageHtml = hasImage
-        ? `<img src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="eager"><video class="hero-video" src="${videoPath}" muted loop playsinline preload="metadata"></video>`
+        ? `<img src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="eager">${videoHtml}`
         : `<div class="placeholder-icon">🐟</div>`;
 
       // Vibe line
@@ -609,9 +657,8 @@
             <h1 class="hero-common-name">${sp.commonName || 'Unknown Species'}</h1>
             <p class="hero-sci-name">${sp.scientificName}</p>
             <div class="hero-taxonomy">
-              <span><strong>Family:</strong> ${sp.family || '—'}</span>
-              <span><strong>Genus:</strong> ${sp.genus || '—'}</span>
-              <span><strong>SpecCode:</strong> ${sp.specCode || '—'}</span>
+              ${sp.family ? `<span><strong>Family:</strong> ${sp.family}</span>` : ''}
+              ${sp.genus ? `<span><strong>Genus:</strong> ${sp.genus}</span>` : ''}
             </div>
             ${vibe ? `<blockquote class="hero-vibe">${vibe}</blockquote>` : ''}
             <div class="hero-quick-stats">
@@ -621,6 +668,17 @@
                   <span class="quick-stat-value">${s.value}</span>
                 </div>`).join('')}
             </div>
+            ${(() => {
+              const chips = [];
+              const keepers = Number(sp.keepersRunning);
+              const specimens = Number(sp.specimensKept);
+              const tanks = Number(sp.tanksKeeping);
+              if (keepers > 0) chips.push(keepers + ' keeper' + (keepers === 1 ? '' : 's'));
+              if (specimens > 0) chips.push(specimens + ' kept');
+              if (tanks > 0) chips.push(tanks + ' tank' + (tanks === 1 ? '' : 's'));
+              if (!chips.length) return '';
+              return `<div class="hero-living" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">${chips.map(c => `<span style="font-size:0.72rem;font-weight:700;color:#a7f3d0;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.22);border-radius:20px;padding:3px 10px;">${c}</span>`).join('')}</div>`;
+            })()}
           </div>
         </section>
       `;
@@ -629,7 +687,7 @@
       html += `<div class="content-sections"><div class="section-grid">`;
 
       // 1. Tank Parameters with gauges
-      if (temp || ph || sp.ecology?.hardnessRange) {
+      if (temp || ph || real(sp.ecology?.hardnessRange)) {
         html += `
           <div class="section-card">
             <h2 class="section-title"><span class="icon">🌡️</span> Tank Parameters</h2>
@@ -833,9 +891,10 @@
           if (sp.origin.habitat) {
             html += `<p style="margin-top:10px;"><strong>Wild Habitat:</strong> ${sp.origin.habitat}</p>`;
           }
-          if (sp.origin.iucnStatus) {
-            const iucnClass = sp.origin.iucnStatus === 'Vulnerable' ? 'iucn-vu' : sp.origin.iucnStatus === 'Endangered' ? 'iucn-en' : 'iucn-lc';
-            html += `<div style="margin-top:12px;"><span class="iucn-badge ${iucnClass}">IUCN: ${sp.origin.iucnStatus}</span></div>`;
+          const iucnStatus = real(sp.origin.iucnStatus) || real(sp.conservationStatus);
+          const iucnClass = iucnBadgeClass(iucnStatus);
+          if (iucnStatus && iucnClass) {
+            html += `<div style="margin-top:12px;"><span class="iucn-badge ${iucnClass}">IUCN: ${iucnStatus}</span></div>`;
           }
           html += inlineVideo('origin');
           html += `</div></div>`;
@@ -1448,17 +1507,27 @@
         lastEl = note;
       }
 
-      const spawnsTotal = Number(stats.spawns_total) || 0;
-      if (spawnsTotal > 0) {
-        const spawns30d = Number(stats.spawns_30d) || 0;
-        const avgOffspring = stats.avg_offspring_count == null ? null : Number(stats.avg_offspring_count);
-        const parts = [`${spawnsTotal} spawn${spawnsTotal === 1 ? '' : 's'} logged by breeders`];
-        if (spawns30d > 0) parts.push(`${spawns30d} in the last 30 days`);
-        if (avgOffspring != null) parts.push(`avg ${Math.round(avgOffspring)} fry per spawn`);
+      // Living spawn chip comes from species_living.last_spawn_at (unix seconds).
+      // Hide when null — never print "never spawned" or use spawns_total / spawns_30d.
+      let lastSpawnAt = sp.lastSpawnAt ?? sp.last_spawn_at ?? null;
+      if (lastSpawnAt == null && sp.specCode) {
+        try {
+          const liveRes = await fetch(`${SB_URL}/rest/v1/species_living?spec_code=eq.${sp.specCode}&select=last_spawn_at,keepers_running,specimens_kept,tanks_keeping`, {
+            headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
+          });
+          if (liveRes.ok) {
+            const liveRows = await liveRes.json();
+            const live = Array.isArray(liveRows) ? liveRows[0] : liveRows;
+            if (live) lastSpawnAt = live.last_spawn_at;
+          }
+        } catch (e) { /* silent */ }
+      }
+      const spawnWhen = formatUnixSeconds(lastSpawnAt);
+      if (spawnWhen) {
         const spawnNote = document.createElement('div');
         spawnNote.className = 'gauge-real-note';
         spawnNote.style.marginTop = '6px';
-        spawnNote.innerHTML = `<span class="dot spawn"></span> ${parts.join(' · ')}`;
+        spawnNote.innerHTML = `<span class="dot spawn"></span> Last spawn logged ${spawnWhen}`;
         lastEl.insertAdjacentElement('afterend', spawnNote);
         lastEl = spawnNote;
       }

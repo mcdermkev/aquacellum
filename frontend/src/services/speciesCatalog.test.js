@@ -103,8 +103,8 @@ const CONVICT = {
   diet: { trophicLevel: "Omnivore" },
 };
 
-// A record with no tankMetrics at all — exercises the fabricated display
-// fallbacks and the "missing difficulty → easy" app quirk.
+// A record with no tankMetrics at all — missing difficulty still defaults to
+// "easy" for app careLevel; ranges stay null (no fabricated 22–28 / 6.5–7.5).
 const SPARSE = {
   specCode: 999,
   scientificName: "Mysteryus incognitus",
@@ -181,21 +181,22 @@ describe("toCatalogEntry — byte-parity with globalRefList", () => {
     expect(pickLegacy(toCatalogEntry(CONVICT))).toEqual(legacy);
   });
 
-  it("reproduces the legacy fabricated fallbacks + 'easy' default for a sparse record", () => {
+  it("keeps the 'easy' careLevel default but does not fabricate temp/pH for a sparse record", () => {
     const [legacy] = legacyGlobalRefList([SPARSE]);
     const entry = toCatalogEntry(SPARSE);
-    expect(pickLegacy(entry)).toEqual(legacy);
-    // explicit: sparse record → careLevel 0 (easy), 22–28°C / pH 6.5–7.5 display
     expect(entry.careLevel).toBe(0);
-    expect([entry.minTemp, entry.maxTemp, entry.minPh, entry.maxPh]).toEqual([22, 28, 6.5, 7.5]);
+    expect(entry.careLevel).toBe(legacy.careLevel);
+    expect([entry.minTemp, entry.maxTemp, entry.minPh, entry.maxPh]).toEqual([null, null, null, null]);
+    // Legacy globalRefList invented 22–28 / 6.5–7.5; Spec-Dex no longer does.
+    expect([legacy.minTemp, legacy.maxTemp, legacy.minPh, legacy.maxPh]).toEqual([22, 28, 6.5, 7.5]);
   });
 
-  it("adds an honest profile (null ranges when unknown) alongside display fallbacks", () => {
+  it("keeps honest null ranges on both display fields and profile when unknown", () => {
     const entry = toCatalogEntry(SPARSE);
     expect(entry.profile.tempRange).toBeNull();
     expect(entry.profile.phRange).toBeNull();
-    // The display fields still show the fabricated range — the two are decoupled.
-    expect(entry.minTemp).toBe(22);
+    expect(entry.minTemp).toBeNull();
+    expect(entry.minPh).toBeNull();
   });
 
   it("adds the canonical difficulty descriptor", () => {
