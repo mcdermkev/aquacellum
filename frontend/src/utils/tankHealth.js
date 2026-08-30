@@ -57,11 +57,20 @@ export function normalizeReading(reading) {
     : reading.nitritePpmX100 !== undefined ? num(reading.nitritePpmX100) / 100 : undefined;
   const nitrate = reading.nitrate !== undefined ? num(reading.nitrate)
     : reading.nitratePpmX100 !== undefined ? num(reading.nitratePpmX100) / 100 : undefined;
+  // Hardness (dGH/dKH, scaled ×10) and total alkalinity (ppm, whole). Local-only
+  // fields — normalized here so charts, scoring and history treat them like the
+  // rest of the water panel.
+  const gh = reading.gh !== undefined ? num(reading.gh)
+    : reading.ghX10 !== undefined ? num(reading.ghX10) / 10 : undefined;
+  const kh = reading.kh !== undefined ? num(reading.kh)
+    : reading.khX10 !== undefined ? num(reading.khX10) / 10 : undefined;
+  const tal = reading.tal !== undefined ? num(reading.tal)
+    : reading.talPpm !== undefined ? num(reading.talPpm) : undefined;
 
   const timestamp = num(reading.timestamp);
 
-  if ([temp, ph, ammonia, nitrite, nitrate].every((v) => v === undefined)) return null;
-  return { temp, ph, ammonia, nitrite, nitrate, timestamp };
+  if ([temp, ph, ammonia, nitrite, nitrate, gh, kh, tal].every((v) => v === undefined)) return null;
+  return { temp, ph, ammonia, nitrite, nitrate, gh, kh, tal, timestamp };
 }
 
 /**
