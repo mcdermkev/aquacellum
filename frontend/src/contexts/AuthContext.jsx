@@ -24,6 +24,7 @@ import {
 import { authenticateWithWallet, clearReefSession, refreshSession, sessionNeedsRefresh, isSupabaseConfigured } from "../services/supabaseClient";
 import { setUserSigner, clearUserSigner } from "../services/smartAccountClient";
 import { setSessionTokenGetter } from "../services/stripePayments";
+import { setSessionTokenGetter as setCartSessionTokenGetter } from "../services/cartStore";
 import { setSessionTokenGetter as setShippingSessionTokenGetter } from "../services/shipping";
 import { setSessionTokenGetter as setParcelPresetsSessionTokenGetter } from "../services/parcelPresets";
 import { setSessionTokenGetter as setReviewsSessionTokenGetter } from "../services/reviewsApi";
@@ -45,6 +46,10 @@ import { setSessionTokenGetter as setListingPedigreeSessionTokenGetter } from ".
 // docs/SPECIES_SUGGESTION_APPROVAL_SPEC.md §8. Without this registration a
 // founder cannot approve anything.
 import { setSessionTokenGetter as setSpeciesCurationSessionTokenGetter } from "../services/speciesCurationApi";
+// Morph curation (review / promote-to-sub-species / notify) authorizes the acting
+// wallet from this Privy token, never the request body. See
+// docs/MORPH_SUBSPECIES_PROMOTION_SPEC.md §4.
+import { setSessionTokenGetter as setMorphSessionTokenGetter } from "../services/morphSubmissionsApi";
 
 // The two paid Gemini VISION endpoints. Both require a signed-in account, so
 // without these registrations Echo cannot identify a fish and every Reef photo
@@ -101,6 +106,7 @@ function NoPrivyAuthProvider({ children }) {
     wrongNetwork: false,
     ready: true,
     authenticated: e2eMode,
+    sessionBridgeReady: false,
     connectPrivy: unavailable,
     connectMetaMask: unavailable,
     disconnect,
@@ -138,6 +144,7 @@ function PrivyAuthProvider({ children }) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState(null);
   const [wrongNetwork, setWrongNetwork] = useState(false);
+  const [sessionBridgeReady, setSessionBridgeReady] = useState(false);
 
   // ─────────────────────────────────────────────────────────────────────────
   // PRIVY PATH: Embedded wallet via email/Google
@@ -486,6 +493,7 @@ function PrivyAuthProvider({ children }) {
   useEffect(() => {
     if (privyAuthenticated && typeof getAccessToken === "function") {
       setSessionTokenGetter(getAccessToken);
+      setCartSessionTokenGetter(getAccessToken);
       setShippingSessionTokenGetter(getAccessToken);
       setParcelPresetsSessionTokenGetter(getAccessToken);
       setReviewsSessionTokenGetter(getAccessToken);
@@ -496,10 +504,13 @@ function PrivyAuthProvider({ children }) {
       setPickupCoordinationSessionTokenGetter(getAccessToken);
       setListingPedigreeSessionTokenGetter(getAccessToken);
       setSpeciesCurationSessionTokenGetter(getAccessToken);
+      setMorphSessionTokenGetter(getAccessToken);
       setEchoVisionSessionTokenGetter(getAccessToken);
       setAltTextSessionTokenGetter(getAccessToken);
+      setSessionBridgeReady(true);
     } else {
       setSessionTokenGetter(null);
+      setCartSessionTokenGetter(null);
       setShippingSessionTokenGetter(null);
       setParcelPresetsSessionTokenGetter(null);
       setReviewsSessionTokenGetter(null);
@@ -510,11 +521,14 @@ function PrivyAuthProvider({ children }) {
       setPickupCoordinationSessionTokenGetter(null);
       setListingPedigreeSessionTokenGetter(null);
       setSpeciesCurationSessionTokenGetter(null);
+      setMorphSessionTokenGetter(null);
       setEchoVisionSessionTokenGetter(null);
       setAltTextSessionTokenGetter(null);
+      setSessionBridgeReady(false);
     }
     return () => {
       setSessionTokenGetter(null);
+      setCartSessionTokenGetter(null);
       setShippingSessionTokenGetter(null);
       setParcelPresetsSessionTokenGetter(null);
       setReviewsSessionTokenGetter(null);
@@ -525,6 +539,7 @@ function PrivyAuthProvider({ children }) {
       setPickupCoordinationSessionTokenGetter(null);
       setListingPedigreeSessionTokenGetter(null);
       setSpeciesCurationSessionTokenGetter(null);
+      setMorphSessionTokenGetter(null);
       setEchoVisionSessionTokenGetter(null);
       setAltTextSessionTokenGetter(null);
     };
@@ -691,6 +706,7 @@ function PrivyAuthProvider({ children }) {
     // (onboarding, enteredDashboard, etc.) behave exactly as a logged-in user.
     ready: e2eMode ? true : privyReady,
     authenticated: e2eMode ? true : privyAuthenticated,
+    sessionBridgeReady: e2eMode ? false : sessionBridgeReady,
 
     // Actions
     connectPrivy,

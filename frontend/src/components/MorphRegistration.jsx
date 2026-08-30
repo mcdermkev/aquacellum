@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Contract } from "ethers";
-import aquadexAbi from "../abi/AquadexManager.json";
-import { getProvider } from "../utils/smartAccount";
 import { awardXp } from "../utils/xp";
 import { isSupabaseConfigured } from "../services/supabaseClient";
+import { useUserRoles } from "../hooks/useUserRoles";
 import {
   createMorphSubmission,
   getMyMorphSubmissions,
   getAllMorphSubmissions,
   reviewMorphSubmission,
+  promoteMorphSubmission,
+  notifyMorphSubmitted,
 } from "../services/morphSubmissionsApi";
 
 /**
@@ -16,10 +16,13 @@ import {
  * morph / fin type / pattern for curator verification.
  *
  * Submissions persist to Supabase (table: morph_submissions). Anyone can read
- * the queue; inserts are client-side; status flips (pending → verified/rejected)
- * go through the service-role route /api/update-morph-status, which verifies the
- * caller is the on-chain curator. The review panel below is only shown to the
- * curator (detected via contract.curator()).
+ * the queue; inserts are client-side. Review (verify/reject) and promotion to a
+ * sub-species go through the service-role routes /api/validate-xp?action=
+ * review-morph|promote-morph, which authorize the caller by curation role
+ * (founder/curator) via a Privy token. The review panel is shown to holders of
+ * that role — read from the server-authoritative user_roles table, NOT the
+ * single on-chain curator() address (which only ever matches the deployer).
+ * See docs/MORPH_SUBSPECIES_PROMOTION_SPEC.md.
  */
 
 const TRAIT_TYPES = [
@@ -33,6 +36,7 @@ const TRAIT_TYPES = [
 const STATUS_BADGES = {
   pending: { label: "Pending review", color: "var(--accent-amber, #fbbf24)", bg: "rgba(251,191,36,0.12)", border: "rgba(251,191,36,0.3)" },
   verified: { label: "Verified", color: "var(--accent-green, #34d399)", bg: "rgba(52,211,153,0.12)", border: "rgba(52,211,153,0.3)" },
+  promoted: { label: "Sub-species", color: "var(--accent-cyan, #22d3ee)", bg: "rgba(34,211,238,0.12)", border: "rgba(34,211,238,0.3)" },
   rejected: { label: "Not accepted", color: "var(--accent-red, #f87171)", bg: "rgba(248,113,113,0.12)", border: "rgba(248,113,113,0.3)" },
 };
 
@@ -86,25 +90,14 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
     loadMine();
   }, [loadMine]);
 
-  // Detect on-chain curator role (same pattern as BreedGallery / CheckoutSummary).
+  // Curator reviewers are holders of a curation role (founder/curator) in the
+  // server-authoritative user_roles table — NOT the single on-chain curator()
+  // address, which only ever matches the deployer. This is what lets both
+  // reviewers (Kevin + Steve) see the panel. See spec §4/§8.
+  const { data: myRoles = [] } = useUserRoles(walletAccount);
   useEffect(() => {
-    let active = true;
-    (async () => {
-      if (!contractAddress || !walletAccount) {
-        if (active) setIsCurator(false);
-        return;
-      }
-      try {
-        const provider = getProvider();
-        const contract = new Contract(contractAddress, aquadexAbi, provider);
-        const curatorAddr = await contract.curator();
-        if (active) setIsCurator(String(curatorAddr).toLowerCase() === walletAccount.toLowerCase());
-      } catch (e) {
-        if (active) setIsCurator(false);
-      }
-    })();
-    return () => { active = false; };
-  }, [contractAddress, walletAccount]);
+    setIsCurator((myRoles || []).some((r) => r === "founder" || r === "curator"));
+  }, [myRoles]);
 
   const loadReviewQueue = useCallback(async () => {
     if (!configured || !isCurator) return;
@@ -183,7 +176,7 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
         }
       }
 
-      const { error: err } = await createMorphSubmission({
+      const { data: created, error: err } = await createMorphSubmission({
         baseSpecies,
         morphName,
         traitType: form.traitType,
@@ -191,6 +184,10 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
         proofUrl: finalProofUrl,
       });
       if (err) throw new Error(err.message || err);
+
+      // Best-effort: email the curators there's something to review. The in-app
+      // bell fires from a DB trigger regardless; this never blocks submission.
+      if (created?.id) notifyMorphSubmitted(created.id);
 
       // MORPH_REGISTERED was missing from the server's action table entirely, so
       // this award was rejected as an "Invalid action_type" and clawed back every
@@ -218,12 +215,31 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
     setReviewError(null);
     setReviewBusyId(id);
     try {
-      const { error: err } = await reviewMorphSubmission({ id, status, callerWallet: walletAccount });
+      const { error: err } = await reviewMorphSubmission({ id, status });
       if (err) throw new Error(err.message || err);
       await loadReviewQueue();
       await loadMine();
     } catch (err) {
       setReviewError(err.message || "Failed to update status.");
+    } finally {
+      setReviewBusyId(null);
+    }
+  };
+
+  // Promote a VERIFIED morph into an on-chain sub-species/strain. Single-approval:
+  // any curator can do this once the morph is verified. The server signs
+  // addSpecies with the curator key and records the base→strain parent link.
+  const handlePromote = async (id) => {
+    setReviewError(null);
+    setReviewBusyId(id);
+    try {
+      const { data, error: err } = await promoteMorphSubmission({ id });
+      if (err) throw new Error(err.message || err);
+      await loadReviewQueue();
+      await loadMine();
+      return data;
+    } catch (err) {
+      setReviewError(err.message || "Failed to promote to sub-species.");
     } finally {
       setReviewBusyId(null);
     }
@@ -326,6 +342,20 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
               ✕ Reject
             </button>
           </div>
+        ) : actions && m.status === "verified" ? (
+          <button
+            type="button"
+            onClick={() => handlePromote(m.id)}
+            disabled={reviewBusyId === m.id}
+            title="Publish as a registered sub-species/strain of the base species"
+            style={{
+              fontSize: "0.7rem", padding: "0.3rem 0.7rem", borderRadius: "8px", cursor: "pointer",
+              background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.4)", color: "var(--accent-cyan, #22d3ee)",
+              opacity: reviewBusyId === m.id ? 0.6 : 1, whiteSpace: "nowrap",
+            }}
+          >
+            {reviewBusyId === m.id ? "…" : "🐟 Promote to sub-species"}
+          </button>
         ) : (
           <span
             style={{
