@@ -22337,5 +22337,905 @@
         "pro": "Epiplatys bifasciatus; non-seasonal West African killi with brood-hider reproductive guild reported in FishBase. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
       }
     }
+  },
+  {
+    "specCode": 46229,
+    "scientificName": "Corydoras simulatus",
+    "genus": "Corydoras",
+    "species": "simulatus",
+    "commonName": "Olga cory",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 4.9,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Corydoras-simulatus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Prefers clean, clear water with current."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: nonguarders; brood hiders.",
+      "layoutRequirement": "FishBase identifies a brood-hider reproductive guild; confirm the species-specific egg-deposition setup with specialist breeder guidance.",
+      "comments": "Reproductive mode: dioecism. Fertilization: in brood pouch or similar structure. Guild: nonguarders; brood hiders. Spawning area: Aquarium. Recorded fecundity: 50–—."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The Olga cory is a small current-loving bottom explorer.",
+        "pro": "Corydoras simulatus; FishBase reports clean, clear flowing water preference and an aquarium spawning observation."
+      },
+      "flavorText": {
+        "casual": "The Olga cory is a small current-loving bottom explorer. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Corydoras simulatus; FishBase reports clean, clear flowing water preference and an aquarium spawning observation. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12160,
+    "scientificName": "Corydoras axelrodi",
+    "genus": "Corydoras",
+    "species": "axelrodi",
+    "commonName": "Pink corydoras",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 4.2,
+    "masterPhotoUrl": "/species-images/corydoras-axelrodi.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Corydoras-axelrodi.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Omnivorous."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Omnivorous.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: nonguarders; brood hiders.",
+      "layoutRequirement": "FishBase identifies a brood-hider reproductive guild; confirm the species-specific egg-deposition setup with specialist breeder guidance.",
+      "comments": "Reproductive mode: dioecism. Fertilization: in brood pouch or similar structure. Guild: nonguarders; brood hiders."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A pink cory with a gentle community-tank rhythm.",
+        "pro": "Corydoras axelrodi; compact commercial cory with FishBase brood-hider reproductive data."
+      },
+      "flavorText": {
+        "casual": "A pink cory with a gentle community-tank rhythm. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Corydoras axelrodi; compact commercial cory with FishBase brood-hider reproductive data. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 46046,
+    "scientificName": "Corydoras baderi",
+    "genus": "Corydoras",
+    "species": "baderi",
+    "commonName": "Road cory",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 4.7,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Corydoras-baderi.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Captured in the upper reaches of rivers. No information is available on the biology of this fish (Ref. 35381)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: nonguarders; brood hiders.",
+      "layoutRequirement": "FishBase identifies a brood-hider reproductive guild; confirm the species-specific egg-deposition setup with specialist breeder guidance.",
+      "comments": "Reproductive mode: dioecism. Fertilization: in brood pouch or similar structure. Guild: nonguarders; brood hiders."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The Road cory is a quiet specialist from the upper reaches of rivers.",
+        "pro": "Corydoras baderi; commercial freshwater cory with limited biology notes but a FishBase reproductive record."
+      },
+      "flavorText": {
+        "casual": "The Road cory is a quiet specialist from the upper reaches of rivers. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Corydoras baderi; commercial freshwater cory with limited biology notes but a FishBase reproductive record. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 46059,
+    "scientificName": "Corydoras ehrhardti",
+    "genus": "Corydoras",
+    "species": "ehrhardti",
+    "commonName": "Olive cory",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 4.68,
+    "masterPhotoUrl": "/species-images/corydoras-ehrhardti.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Corydoras-ehrhardti.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Feeds on insect larvae."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "unspecified insect larvae",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: nonguarders; brood hiders.",
+      "layoutRequirement": "FishBase identifies a brood-hider reproductive guild; confirm the species-specific egg-deposition setup with specialist breeder guidance.",
+      "comments": "Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; brood hiders."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "An olive cory that hunts tiny insect larvae along the bottom.",
+        "pro": "Corydoras ehrhardti; small freshwater cory with insect-larva feeding noted in FishBase."
+      },
+      "flavorText": {
+        "casual": "An olive cory that hunts tiny insect larvae along the bottom. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Corydoras ehrhardti; small freshwater cory with insect-larva feeding noted in FishBase. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 10924,
+    "scientificName": "Corydoras melanistius",
+    "genus": "Corydoras",
+    "species": "melanistius",
+    "commonName": "Bluespotted corydoras",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 5.1,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Corydoras-melanistius.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Feeds on worms, crustaceans, insects and plant matter (Ref. 7020)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Feeds on worms, crustaceans, insects and plant matter (Ref.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: nonguarders; brood hiders.",
+      "layoutRequirement": "FishBase identifies a brood-hider reproductive guild; confirm the species-specific egg-deposition setup with specialist breeder guidance.",
+      "comments": "Reproductive mode: dioecism. Fertilization: in brood pouch or similar structure. Guild: nonguarders; brood hiders. FishBase aquarium-breeding rating: High."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The bluespotted cory brings a classic armored-catfish look to the group.",
+        "pro": "Corydoras melanistius; commercial cory with explicit diet, brood-hider guild, and high aquarium-breeding rating."
+      },
+      "flavorText": {
+        "casual": "The bluespotted cory brings a classic armored-catfish look to the group. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Corydoras melanistius; commercial cory with explicit diet, brood-hider guild, and high aquarium-breeding rating. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 46157,
+    "scientificName": "Corydoras nanus",
+    "genus": "Corydoras",
+    "species": "nanus",
+    "commonName": "Little corydoras",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 4.5,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Corydoras-nanus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "So far, only about ten specimens have been collected of this rare species. Two were from a creek with moderate current, 0.5 to 3 m wide, shallow (20-50 cm depth) with sandy to sandy-muddy bottom and not so brightly illuminated (Ref. 35381)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: nonguarders; brood hiders.",
+      "layoutRequirement": "FishBase identifies a brood-hider reproductive guild; confirm the species-specific egg-deposition setup with specialist breeder guidance.",
+      "comments": "Reproductive mode: dioecism. Fertilization: in brood pouch or similar structure. Guild: nonguarders; brood hiders."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A rare little cory for keepers who enjoy the edges of the catalog.",
+        "pro": "Corydoras nanus; compact commercial cory with a documented shallow, sandy creek habitat."
+      },
+      "flavorText": {
+        "casual": "A rare little cory for keepers who enjoy the edges of the catalog. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Corydoras nanus; compact commercial cory with a documented shallow, sandy creek habitat. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12193,
+    "scientificName": "Corydoras punctatus",
+    "genus": "Corydoras",
+    "species": "punctatus",
+    "commonName": "Spotfin corydoras",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 6.6,
+    "masterPhotoUrl": "/species-images/corydoras-punctatus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Corydoras-punctatus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs upstream. Prefers to live in small, moderately sunny and shallow creeks with sandy to sandy-muddy bottoms. Also occurs on the edges of stagnant zones of flooded forests (dams, lakes). Populations living on darker substrates have more and larger spots. Sexual dimorphism is well marked, the pectoral fins in the male are markedly longer and thicker due to the presence of a number of spikelets (Ref. 35381)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: nonguarders; brood hiders.",
+      "layoutRequirement": "FishBase identifies a brood-hider reproductive guild; confirm the species-specific egg-deposition setup with specialist breeder guidance.",
+      "comments": "Reproductive mode: dioecism. Fertilization: in brood pouch or similar structure. Guild: nonguarders; brood hiders."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The Spotfin cory wears its habitat on its pattern: darker bottoms, more spots.",
+        "pro": "Corydoras punctatus; commercial cory with source-backed substrate variation and marked male fin dimorphism."
+      },
+      "flavorText": {
+        "casual": "The Spotfin cory wears its habitat on its pattern: darker bottoms, more spots. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Corydoras punctatus; commercial cory with source-backed substrate variation and marked male fin dimorphism. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 10927,
+    "scientificName": "Corydoras reticulatus",
+    "genus": "Corydoras",
+    "species": "reticulatus",
+    "commonName": "Reticulated corydoras",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 6.1,
+    "masterPhotoUrl": "/species-images/corydoras-reticulatus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Corydoras-reticulatus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Feeds on worms, crustaceans, insects and plant matter (Ref. 7020)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "unspecified plant matter, unspecified insects, unspecified crustaceans, unspecified worms",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: nonguarders; brood hiders.",
+      "layoutRequirement": "FishBase identifies a brood-hider reproductive guild; confirm the species-specific egg-deposition setup with specialist breeder guidance.",
+      "comments": "Reproductive mode: dioecism. Fertilization: in brood pouch or similar structure. Guild: nonguarders; brood hiders. FishBase aquarium-breeding rating: High."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The reticulated cory is a patterned forager with a well-documented aquarium breeding flag.",
+        "pro": "Corydoras reticulatus; commercial cory with explicit omnivorous diet and high aquarium-breeding rating in FishBase."
+      },
+      "flavorText": {
+        "casual": "The reticulated cory is a patterned forager with a well-documented aquarium breeding flag. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Corydoras reticulatus; commercial cory with explicit omnivorous diet and high aquarium-breeding rating in FishBase. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 46227,
+    "scientificName": "Corydoras septentrionalis",
+    "genus": "Corydoras",
+    "species": "septentrionalis",
+    "commonName": "Northern kongnose cory",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 4.9,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Corydoras-septentrionalis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Inhabits spring with water current."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: nonguarders; brood hiders.",
+      "layoutRequirement": "FishBase identifies a brood-hider reproductive guild; confirm the species-specific egg-deposition setup with specialist breeder guidance.",
+      "comments": "Reproductive mode: dioecism. Fertilization: in brood pouch or similar structure. Guild: nonguarders; brood hiders."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A spring-water cory for a carefully researched specialist setup.",
+        "pro": "Corydoras septentrionalis; freshwater cory associated with flowing spring habitat and a FishBase brood-hider guild."
+      },
+      "flavorText": {
+        "casual": "A spring-water cory for a carefully researched specialist setup. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Corydoras septentrionalis; freshwater cory associated with flowing spring habitat and a FishBase brood-hider guild. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12154,
+    "scientificName": "Corydoras splendens",
+    "genus": "Corydoras",
+    "species": "splendens",
+    "commonName": "Emerald catfish",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 9.9,
+    "masterPhotoUrl": "/species-images/corydoras-splendens.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Corydoras-splendens.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Inhabits sluggish waters with dense vegetation. Occurs in shallow muddy waters. Feeds on insect larvae, worms and small crustaceans (Ref. 6868)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Feeds on insect larvae, worms and small crustaceans (Ref.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: nonguarders; brood hiders.",
+      "layoutRequirement": "FishBase identifies a brood-hider reproductive guild; confirm the species-specific egg-deposition setup with specialist breeder guidance.",
+      "comments": "Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; brood hiders."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The Emerald catfish is the large, planted-water showpiece of this batch.",
+        "pro": "Corydoras splendens; large commercial cory from sluggish, vegetated waters with insect-larva and crustacean feeding recorded."
+      },
+      "flavorText": {
+        "casual": "The Emerald catfish is the large, planted-water showpiece of this batch. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Corydoras splendens; large commercial cory from sluggish, vegetated waters with insect-larva and crustacean feeding recorded. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 46110,
+    "scientificName": "Corydoras melanotaenia",
+    "genus": "Corydoras",
+    "species": "melanotaenia",
+    "commonName": "Green gold catfish",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 5.8,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Corydoras-melanotaenia.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "FishBase has limited ecology notes for this species."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: nonguarders; brood hiders.",
+      "layoutRequirement": "FishBase identifies a brood-hider reproductive guild; confirm the species-specific egg-deposition setup with specialist breeder guidance.",
+      "comments": "Reproductive mode: dioecism. Fertilization: in brood pouch or similar structure. Guild: nonguarders; brood hiders. Spawning area: aquarium observation. Recorded spawning temperature: 23–25°C. Recorded fecundity: 150–180."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The Green gold catfish comes with an unusually useful spawning observation.",
+        "pro": "Corydoras melanotaenia; commercial cory with FishBase aquarium spawning observation at 23–25°C and recorded fecundity."
+      },
+      "flavorText": {
+        "casual": "The Green gold catfish comes with an unusually useful spawning observation. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Corydoras melanotaenia; commercial cory with FishBase aquarium spawning observation at 23–25°C and recorded fecundity. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12155,
+    "scientificName": "Corydoras acrensis",
+    "genus": "Corydoras",
+    "species": "acrensis",
+    "commonName": "Acre corydoras",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 3,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Corydoras-acrensis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "FishBase has limited ecology notes for this species."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: nonguarders; brood hiders.",
+      "layoutRequirement": "FishBase identifies a brood-hider reproductive guild; confirm the species-specific egg-deposition setup with specialist breeder guidance.",
+      "comments": "Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; brood hiders."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A tiny Acre cory that keeps the bottom layer busy without taking over the tank.",
+        "pro": "Corydoras acrensis; small commercial cory with FishBase freshwater and brood-hider reproductive data."
+      },
+      "flavorText": {
+        "casual": "A tiny Acre cory that keeps the bottom layer busy without taking over the tank. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Corydoras acrensis; small commercial cory with FishBase freshwater and brood-hider reproductive data. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12156,
+    "scientificName": "Corydoras acutus",
+    "genus": "Corydoras",
+    "species": "acutus",
+    "commonName": "Blacktop corydoras",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 5.48,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Corydoras-acutus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "FishBase has limited ecology notes for this species."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: nonguarders; brood hiders.",
+      "layoutRequirement": "FishBase identifies a brood-hider reproductive guild; confirm the species-specific egg-deposition setup with specialist breeder guidance.",
+      "comments": "Reproductive mode: dioecism. Fertilization: in brood pouch or similar structure. Guild: nonguarders; brood hiders."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The Blacktop cory is a compact, commercial species for a carefully chosen group.",
+        "pro": "Corydoras acutus; commercial Corydoras with FishBase brood-hider reproductive data and limited additional notes."
+      },
+      "flavorText": {
+        "casual": "The Blacktop cory is a compact, commercial species for a carefully chosen group. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Corydoras acutus; commercial Corydoras with FishBase brood-hider reproductive data and limited additional notes. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12157,
+    "scientificName": "Corydoras amapaensis",
+    "genus": "Corydoras",
+    "species": "amapaensis",
+    "commonName": "Amapa corydoras",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 7,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Corydoras-amapaensis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Found in small creeks with flowing water and sandy bottom, in the upper reaches of rivers, upstream of the first rapids (Ref. 35381). Sympatric with C. solox . Omnivorous."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Omnivorous.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are not reported in the local FishBase extract; manual specialist review is required.",
+      "layoutRequirement": "Species-specific spawning layout is not reported in the local extract; specialist review is required before presenting a breeding setup.",
+      "comments": "FishBase has limited breeding notes for this species."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The Amapa cory comes from flowing sandy creeks above the rapids.",
+        "pro": "Corydoras amapaensis; commercial freshwater cory with source-backed flowing-creek habitat and omnivory notes."
+      },
+      "flavorText": {
+        "casual": "The Amapa cory comes from flowing sandy creeks above the rapids. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Corydoras amapaensis; commercial freshwater cory with source-backed flowing-creek habitat and omnivory notes. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 69174,
+    "scientificName": "Corydoras benattii",
+    "genus": "Corydoras",
+    "species": "benattii",
+    "commonName": "Speckled xingu cory",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 3.09,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Corydoras-benattii.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in lotic habitats that have muddy-brown water with clay and sandy substrata. Most specimens were captured in the small forest streams of black or clearwater, or in marginal ponds (Ref. 122129)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are not reported in the local FishBase extract; manual specialist review is required.",
+      "layoutRequirement": "Species-specific spawning layout is not reported in the local extract; specialist review is required before presenting a breeding setup.",
+      "comments": "FishBase has limited breeding notes for this species."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A tiny Speckled xingu cory from muddy-brown forest streams and marginal ponds.",
+        "pro": "Corydoras benattii; recently catalogued specialist cory with a source-backed lotic and blackwater habitat profile."
+      },
+      "flavorText": {
+        "casual": "A tiny Speckled xingu cory from muddy-brown forest streams and marginal ponds. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Corydoras benattii; recently catalogued specialist cory with a source-backed lotic and blackwater habitat profile. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 46248,
+    "scientificName": "Aspidoras albater",
+    "genus": "Aspidoras",
+    "species": "albater",
+    "commonName": "False macropterus",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 3.56,
+    "masterPhotoUrl": "/species-images/aspidoras-albater.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Aspidoras-albater.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Principally active during the day."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase records dioecism with external fertilization.",
+      "layoutRequirement": "Species-specific spawning layout is not reported in the local extract; specialist review is required before presenting a breeding setup.",
+      "comments": "Reproductive mode: dioecism. Fertilization: external."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The False macropterus is a daytime-active mini catfish for the specialist list.",
+        "pro": "Aspidoras albater; commercial freshwater Aspidoras with diurnal activity and external fertilization recorded in FishBase."
+      },
+      "flavorText": {
+        "casual": "The False macropterus is a daytime-active mini catfish for the specialist list. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Aspidoras albater; commercial freshwater Aspidoras with diurnal activity and external fertilization recorded in FishBase. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 46253,
+    "scientificName": "Aspidoras fuscoguttatus",
+    "genus": "Aspidoras",
+    "species": "fuscoguttatus",
+    "commonName": "Darkspotted catfish",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 3.8,
+    "masterPhotoUrl": "/species-images/aspidoras-fuscoguttatus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Aspidoras-fuscoguttatus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Diurnal."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are not reported in the local FishBase extract; manual specialist review is required.",
+      "layoutRequirement": "Species-specific spawning layout is not reported in the local extract; specialist review is required before presenting a breeding setup.",
+      "comments": "FishBase has limited breeding notes for this species."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The Darkspotted catfish is a small, uncommon daytime bottom dweller.",
+        "pro": "Aspidoras fuscoguttatus; rare freshwater Aspidoras with FishBase diurnal behavior and limited breeding data."
+      },
+      "flavorText": {
+        "casual": "The Darkspotted catfish is a small, uncommon daytime bottom dweller. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Aspidoras fuscoguttatus; rare freshwater Aspidoras with FishBase diurnal behavior and limited breeding data. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12190,
+    "scientificName": "Aspidoras pauciradiatus",
+    "genus": "Aspidoras",
+    "species": "pauciradiatus",
+    "commonName": "Sixray corydoras",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 2.9,
+    "masterPhotoUrl": "/species-images/aspidoras-pauciradiatus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Aspidoras-pauciradiatus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Forms schools."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are not reported in the local FishBase extract; manual specialist review is required.",
+      "layoutRequirement": "Species-specific spawning layout is not reported in the local extract; specialist review is required before presenting a breeding setup.",
+      "comments": "FishBase has limited breeding notes for this species."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The Sixray corydoras proves a schooling catfish can stay truly tiny.",
+        "pro": "Aspidoras pauciradiatus; commercial nano-sized Aspidoras with schooling behavior recorded in FishBase."
+      },
+      "flavorText": {
+        "casual": "The Sixray corydoras proves a schooling catfish can stay truly tiny. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Aspidoras pauciradiatus; commercial nano-sized Aspidoras with schooling behavior recorded in FishBase. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 46265,
+    "scientificName": "Aspidoras raimundi",
+    "genus": "Aspidoras",
+    "species": "raimundi",
+    "commonName": "Ceara bulldog cory",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 3.26,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Aspidoras-raimundi.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Found in creeks."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are not reported in the local FishBase extract; manual specialist review is required.",
+      "layoutRequirement": "Species-specific spawning layout is not reported in the local extract; specialist review is required before presenting a breeding setup.",
+      "comments": "FishBase has limited breeding notes for this species."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The Ceara bulldog cory is a small creek specialist with a memorable silhouette.",
+        "pro": "Aspidoras raimundi; rare freshwater Aspidoras recorded from creeks with limited local breeding data."
+      },
+      "flavorText": {
+        "casual": "The Ceara bulldog cory is a small creek specialist with a memorable silhouette. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Aspidoras raimundi; rare freshwater Aspidoras recorded from creeks with limited local breeding data. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12161,
+    "scientificName": "Scleromystax barbatus",
+    "genus": "Scleromystax",
+    "species": "barbatus",
+    "commonName": "Banded corydoras",
+    "family": "Callichthyidae",
+    "type": "fish",
+    "maxLengthCm": 9.8,
+    "masterPhotoUrl": "/species-images/scleromystax-barbatus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Scleromystax-barbatus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "FishBase has limited ecology notes for this species."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: nonguarders; brood hiders.",
+      "layoutRequirement": "FishBase identifies a brood-hider reproductive guild; confirm the species-specific egg-deposition setup with specialist breeder guidance.",
+      "comments": "Reproductive mode: dioecism. Fertilization: in brood pouch or similar structure. Guild: nonguarders; brood hiders."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The Banded corydoras is the big, whiskered anchor of this Callichthyidae batch.",
+        "pro": "Scleromystax barbatus; large commercial Callichthyid with FishBase brood-hider reproductive data."
+      },
+      "flavorText": {
+        "casual": "The Banded corydoras is the big, whiskered anchor of this Callichthyidae batch. Start with smooth substrate, stable water, and a species-specific plan before attempting breeding.",
+        "pro": "Scleromystax barbatus; large commercial Callichthyid with FishBase brood-hider reproductive data. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
   }
 ]
