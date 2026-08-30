@@ -19642,5 +19642,1800 @@
       "layoutRequirement": "",
       "comments": ""
     }
+  },
+  {
+    "specCode": 4592,
+    "scientificName": "Oryzias setnai",
+    "genus": "Oryzias",
+    "species": "setnai",
+    "commonName": "Malabar ricefish",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 3,
+    "masterPhotoUrl": "/species-images/oryzias-setnai.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-setnai.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "The coastal ricefish that is comfortable where fresh and brackish water meet.",
+        "pro": "Estuarine ricefish with documented year-round breeding and broad salinity tolerance."
+      },
+      "flavorText": {
+        "casual": "The coastal ricefish that is comfortable where fresh and brackish water meet. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Estuarine ricefish with documented year-round breeding and broad salinity tolerance. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Oviparous; FishBase records dioecism reproduction, with species-specific spawning details limited.",
+      "layoutRequirement": "",
+      "comments": "Found in estuaries, but can live temporarily in freshwater. Inhabits quiet rocks and corners of creeks and backwaters. Can withstand a wide range of salinity varying from 4.36 to 1.35% (Ref. 48443). Breeds easily throughout the year peak period during July and August. Larvicidal fish and eats mosquito larvae at the early instar stages. A suitable fish in malaria infected areas (Ref. 48443)."
+    },
+    "ecology": {
+      "comments": "Found in estuaries, but can live temporarily in freshwater. Inhabits quiet rocks and corners of creeks and backwaters. Can withstand a wide range of salinity varying from 4.36 to 1.35% (Ref. 48443). Breeds easily throughout the year peak period during July and August. Larvicidal fish and eats mosquito larvae at the early instar stages. A suitable fish in malaria infected areas (Ref. 48443)."
+    },
+    "diet": {
+      "trophicLevel": "Herbivore / Detritivore",
+      "fooditems": "debris, pieces of grass/leaves, unidentified diatoms, unidentified copepods, unidentified crustacean",
+      "feedingPlaybook": ""
+    }
+  },
+  {
+    "specCode": 4669,
+    "scientificName": "Oryzias latipes",
+    "genus": "Oryzias",
+    "species": "latipes",
+    "commonName": "Japanese rice fish",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 4,
+    "masterPhotoUrl": "/species-images/oryzias-latipes.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-latipes.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "The classic medaka: small, hardy, and endlessly interesting to watch.",
+        "pro": "Japanese ricefish and established laboratory model; a surface-oriented, non-annual breeder."
+      },
+      "flavorText": {
+        "casual": "The classic medaka: small, hardy, and endlessly interesting to watch. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Japanese ricefish and established laboratory model; a surface-oriented, non-annual breeder. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Non-annual breeder; detailed captive spawning guidance remains limited in FishBase.",
+      "layoutRequirement": "",
+      "comments": "Adults occur in ponds, marshes, paddy fields and small flows of plains (Ref. 41299). They prefer slow-moving streams. Inhabit mainly waters of lowlands and brackish water, and also known to inhabit tide pools of coasts of certain regions in Japan and Korea. They can withstand a wide range of salinity (Ref. 58933). Omnivorous (Ref. 58933). For indoor culture, a diluted sea water is rather better than the freshwater , and the use of a balanced salt solution is recommended, if the tap water proves to be unsuitable (Ref. 58933). Used in experimental research (Ref. 4537). Non-annual breeders. Are easy to maintain in the aquarium (Ref. 27139). A fluorescent ornamental variety (genetically modified fish), a product of fluorescent protein extracted from jellyfish and attaching to DNA in embryonic fish of this is now being sold in the aquarium trade (Ref. 48573). FishBase spawning area: Japan. Recorded spawning temperature: 28–30°C."
+    },
+    "ecology": {
+      "comments": "Adults occur in ponds, marshes, paddy fields and small flows of plains (Ref. 41299). They prefer slow-moving streams. Inhabit mainly waters of lowlands and brackish water, and also known to inhabit tide pools of coasts of certain regions in Japan and Korea. They can withstand a wide range of salinity (Ref. 58933). Omnivorous (Ref. 58933). For indoor culture, a diluted sea water is rather better than the freshwater , and the use of a balanced salt solution is recommended, if the tap water proves to be unsuitable (Ref. 58933). Used in experimental research (Ref. 4537). Non-annual breeders. Are easy to maintain in the aquarium (Ref. 27139). A fluorescent ornamental variety (genetically modified fish), a product of fluorescent protein extracted from jellyfish and attaching to DNA in embryonic fish of this is now being sold in the aquarium trade (Ref. 48573)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "unidentified",
+      "feedingPlaybook": ""
+    }
+  },
+  {
+    "specCode": 5162,
+    "scientificName": "Oryzias luzonensis",
+    "genus": "Oryzias",
+    "species": "luzonensis",
+    "commonName": "Ricefish (Oryzias luzonensis)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 4,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-luzonensis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A quiet island medaka for keepers who enjoy the less-traveled branch of the hobby.",
+        "pro": "Luzon ricefish; a small Oryzias with limited aquarium and breeding data in the local source."
+      },
+      "flavorText": {
+        "casual": "A quiet island medaka for keepers who enjoy the less-traveled branch of the hobby. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Luzon ricefish; a small Oryzias with limited aquarium and breeding data in the local source. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Non-annual breeder; detailed captive spawning guidance remains limited in FishBase.",
+      "layoutRequirement": "",
+      "comments": "Non-annual breeder. Is difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "ecology": {
+      "comments": "Non-annual breeder. Is difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": null,
+      "fooditems": "",
+      "feedingPlaybook": ""
+    }
+  },
+  {
+    "specCode": 6261,
+    "scientificName": "Adrianichthys kruyti",
+    "genus": "Adrianichthys",
+    "species": "kruyti",
+    "commonName": "Duckbilled buntingi",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 16,
+    "masterPhotoUrl": "/species-images/adrianichthys-kruyti.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Adrianichthys-kruyti.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A rare, long-bodied buntingi for a specialist collection rather than a casual community tank.",
+        "pro": "Adrianichthys kruyti; a large-bodied Adrianichthyid requiring species-specific research before acquisition."
+      },
+      "flavorText": {
+        "casual": "A rare, long-bodied buntingi for a specialist collection rather than a casual community tank. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Adrianichthys kruyti; a large-bodied Adrianichthyid requiring species-specific research before acquisition. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Oviparous; FishBase records dioecism reproduction, with species-specific spawning details limited.",
+      "layoutRequirement": "",
+      "comments": "FishBase has limited breeding notes for this species."
+    }
+  },
+  {
+    "specCode": 6262,
+    "scientificName": "Adrianichthys oophorus",
+    "genus": "Adrianichthys",
+    "species": "oophorus",
+    "commonName": "Eggcarrying buntingi",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 8.5,
+    "masterPhotoUrl": "/species-images/adrianichthys-oophorus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Adrianichthys-oophorus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "The egg-carrying buntingi makes parental investment impossible to miss.",
+        "pro": "Adrianichthys oophorus; eggs are carried between the pelvic fins on attaching filaments."
+      },
+      "flavorText": {
+        "casual": "The egg-carrying buntingi makes parental investment impossible to miss. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Adrianichthys oophorus; eggs are carried between the pelvic fins on attaching filaments. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Pelvic brooder; the female carries an egg cluster until hatching.",
+      "layoutRequirement": "",
+      "comments": "The eggs are carried between the pelvic fins with each egg attached to the body by 10-20 filaments (Ref. 7050)."
+    },
+    "ecology": {
+      "comments": "The eggs are carried between the pelvic fins with each egg attached to the body by 10-20 filaments (Ref. 7050)."
+    }
+  },
+  {
+    "specCode": 6263,
+    "scientificName": "Adrianichthys poptae",
+    "genus": "Adrianichthys",
+    "species": "poptae",
+    "commonName": "Popta's buntingi",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 17.1,
+    "masterPhotoUrl": "/species-images/adrianichthys-poptae.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Adrianichthys-poptae.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A mysterious buntingi whose eggs stay with the parent instead of disappearing into the plants.",
+        "pro": "Adrianichthys poptae; FishBase records maternal egg attachment between the pelvic fins."
+      },
+      "flavorText": {
+        "casual": "A mysterious buntingi whose eggs stay with the parent instead of disappearing into the plants. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Adrianichthys poptae; FishBase records maternal egg attachment between the pelvic fins. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Pelvic brooder; the female carries an egg cluster until hatching.",
+      "layoutRequirement": "",
+      "comments": "Eggs are attached to the body, between the pelvic fins (Ref. 31267)."
+    },
+    "ecology": {
+      "comments": "Eggs are attached to the body, between the pelvic fins (Ref. 31267)."
+    }
+  },
+  {
+    "specCode": 6264,
+    "scientificName": "Oryzias sarasinorum",
+    "genus": "Oryzias",
+    "species": "sarasinorum",
+    "commonName": "Sarasins minnow",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 8,
+    "masterPhotoUrl": "/species-images/oryzias-sarasinorum.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-sarasinorum.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A rare medaka with a remarkable habit: the female carries the egg cluster.",
+        "pro": "Oryzias sarasinorum; maternal pelvic brooder with eggs attached between the pelvic fins."
+      },
+      "flavorText": {
+        "casual": "A rare medaka with a remarkable habit: the female carries the egg cluster. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias sarasinorum; maternal pelvic brooder with eggs attached between the pelvic fins. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Pelvic brooder; the female carries an egg cluster until hatching.",
+      "layoutRequirement": "",
+      "comments": "Oviparous (Ref. 84729). A pelvic-brooder, in which females carry an egg cluster until hatching (Ref. 126777). The eggs are carried between the pelvic fins with each egg attached to the body by 10-20 filaments (Ref. 7050)."
+    },
+    "ecology": {
+      "comments": "Oviparous (Ref. 84729). A pelvic-brooder, in which females carry an egg cluster until hatching (Ref. 126777). The eggs are carried between the pelvic fins with each egg attached to the body by 10-20 filaments (Ref. 7050)."
+    }
+  },
+  {
+    "specCode": 6265,
+    "scientificName": "Oryzias marmoratus",
+    "genus": "Oryzias",
+    "species": "marmoratus",
+    "commonName": "Marmorated medaka",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 4.09,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-marmoratus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "Lake-born medaka with a marbled name and a specialist-only reputation.",
+        "pro": "Oryzias marmoratus; Sulawesi lake endemic with maternal egg-carrying biology and difficult aquarium history."
+      },
+      "flavorText": {
+        "casual": "Lake-born medaka with a marbled name and a specialist-only reputation. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias marmoratus; Sulawesi lake endemic with maternal egg-carrying biology and difficult aquarium history. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Pelvic brooder; the female carries an egg cluster until hatching.",
+      "layoutRequirement": "",
+      "comments": "Non-annual breeder. Is very difficult to maintain in aquarium (Ref. 27139). In 2013 and 2018, the collected and observed specimens were only during the day and at TanjungTimbala, slightly south of the type locality, and at Lengkona in Lake Towuti. This species is collected with O. loxolepis and O. profundicola that form schools in gently sloping, shallow ( Paratherina spp., Glossogobius flavipinnis, G. intermedius, Glossogobius sp., Mugilogobius rexi, M. latifrons , and Nomorhamphus megarrhamphus . In Lake Lantoa, it inhabits gently sloping, shallow shores (1 m depth) with a large area of plants on a muddy substratum. It swims in schools and was collected in association with Telmatherina celebensis and Glossogobius sp. (an undescribed lake endemic: HK, pers. obsv.). Some individuals were infested with parasitic copepods. In Lake Mahalona, it also inhabits gently sloping, shallow shores (1 m depth) with large boulders over a sand and gravel substratum, covered with aquatic vegetation. Often, it also forms schools and co-occurring with Tominanga aurea , Glossogobius sp. (as for Lake Towuti), Glossogobius mahalonensis, G. intermedius, M. rexi , and Mugilogobius cf. hitam (Ref. 133093)."
+    },
+    "ecology": {
+      "comments": "Non-annual breeder. Is very difficult to maintain in aquarium (Ref. 27139). In 2013 and 2018, the collected and observed specimens were only during the day and at TanjungTimbala, slightly south of the type locality, and at Lengkona in Lake Towuti. This species is collected with O. loxolepis and O. profundicola that form schools in gently sloping, shallow ( Paratherina spp., Glossogobius flavipinnis, G. intermedius, Glossogobius sp., Mugilogobius rexi, M. latifrons , and Nomorhamphus megarrhamphus . In Lake Lantoa, it inhabits gently sloping, shallow shores (1 m depth) with a large area of plants on a muddy substratum. It swims in schools and was collected in association with Telmatherina celebensis and Glossogobius sp. (an undescribed lake endemic: HK, pers. obsv.). Some individuals were infested with parasitic copepods. In Lake Mahalona, it also inhabits gently sloping, shallow shores (1 m depth) with large boulders over a sand and gravel substratum, covered with aquatic vegetation. Often, it also forms schools and co-occurring with Tominanga aurea , Glossogobius sp. (as for Lake Towuti), Glossogobius mahalonensis, G. intermedius, M. rexi , and Mugilogobius cf. hitam (Ref. 133093)."
+    }
+  },
+  {
+    "specCode": 6266,
+    "scientificName": "Oryzias matanensis",
+    "genus": "Oryzias",
+    "species": "matanensis",
+    "commonName": "Matano medaka",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 5.5,
+    "masterPhotoUrl": "/species-images/oryzias-matanensis.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-matanensis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A lake medaka that rewards patient observation more than impulse buying.",
+        "pro": "Oryzias matanensis; Sulawesi lake species with maternal care recorded and limited aquarium suitability."
+      },
+      "flavorText": {
+        "casual": "A lake medaka that rewards patient observation more than impulse buying. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias matanensis; Sulawesi lake species with maternal care recorded and limited aquarium suitability. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Pelvic brooder; the female carries an egg cluster until hatching.",
+      "layoutRequirement": "",
+      "comments": "Non-annual breeder. Is very difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "ecology": {
+      "comments": "Non-annual breeder. Is very difficult to maintain in aquarium (Ref. 27139)."
+    }
+  },
+  {
+    "specCode": 6267,
+    "scientificName": "Oryzias nigrimas",
+    "genus": "Oryzias",
+    "species": "nigrimas",
+    "commonName": "Black buntingi",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 4.72,
+    "masterPhotoUrl": "/species-images/oryzias-nigrimas.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-nigrimas.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "The black buntingi is a shadowy little specialist from the medaka family.",
+        "pro": "Oryzias nigrimas; a non-annual Adrianichthyid breeder with limited captive-care documentation."
+      },
+      "flavorText": {
+        "casual": "The black buntingi is a shadowy little specialist from the medaka family. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias nigrimas; a non-annual Adrianichthyid breeder with limited captive-care documentation. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Non-annual breeder; detailed captive spawning guidance remains limited in FishBase.",
+      "layoutRequirement": "",
+      "comments": "Non-annual breeder. Is difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "ecology": {
+      "comments": "Non-annual breeder. Is difficult to maintain in aquarium (Ref. 27139)."
+    }
+  },
+  {
+    "specCode": 6268,
+    "scientificName": "Oryzias orthognathus",
+    "genus": "Oryzias",
+    "species": "orthognathus",
+    "commonName": "Sharpjawed buntingi",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 6.5,
+    "masterPhotoUrl": "/species-images/oryzias-orthognathus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-orthognathus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "Sharp-jawed and unusual, this buntingi is one for the species-list devotee.",
+        "pro": "Oryzias orthognathus; a specialist Adrianichthyid with limited aquarium breeding information."
+      },
+      "flavorText": {
+        "casual": "Sharp-jawed and unusual, this buntingi is one for the species-list devotee. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias orthognathus; a specialist Adrianichthyid with limited aquarium breeding information. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Non-annual breeder; detailed captive spawning guidance remains limited in FishBase.",
+      "layoutRequirement": "",
+      "comments": "Non-annual breeder. Is very difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "ecology": {
+      "comments": "Non-annual breeder. Is very difficult to maintain in aquarium (Ref. 27139)."
+    }
+  },
+  {
+    "specCode": 6269,
+    "scientificName": "Oryzias profundicola",
+    "genus": "Oryzias",
+    "species": "profundicola",
+    "commonName": "Yellow finned medaka",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 6,
+    "masterPhotoUrl": "/species-images/oryzias-profundicola.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-profundicola.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A yellow-finned medaka built for quiet lake shores and close looking.",
+        "pro": "Oryzias profundicola; a shallow-littoral Sulawesi species with maternal care recorded in FishBase."
+      },
+      "flavorText": {
+        "casual": "A yellow-finned medaka built for quiet lake shores and close looking. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias profundicola; a shallow-littoral Sulawesi species with maternal care recorded in FishBase. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Pelvic brooder; the female carries an egg cluster until hatching.",
+      "layoutRequirement": "",
+      "comments": "Adults occur along gently sloping shores with large boulders on sand and pebble bottom (Ref. 26687). Found only below 1.5 m and in small groups of 2-20 individuals (Ref. 26687). Non-annual breeders (Ref. 27139)."
+    },
+    "ecology": {
+      "comments": "Adults occur along gently sloping shores with large boulders on sand and pebble bottom (Ref. 26687). Found only below 1.5 m and in small groups of 2-20 individuals (Ref. 26687). Non-annual breeders (Ref. 27139)."
+    }
+  },
+  {
+    "specCode": 12252,
+    "scientificName": "Oryzias celebensis",
+    "genus": "Oryzias",
+    "species": "celebensis",
+    "commonName": "Celebes medaka",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 4.5,
+    "masterPhotoUrl": "/species-images/oryzias-celebensis.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-celebensis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "The Celebes medaka brings island-lake character in a very small package.",
+        "pro": "Oryzias celebensis; a research-used, non-annual breeder with difficult aquarium maintenance noted."
+      },
+      "flavorText": {
+        "casual": "The Celebes medaka brings island-lake character in a very small package. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias celebensis; a research-used, non-annual breeder with difficult aquarium maintenance noted. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Non-annual breeder; detailed captive spawning guidance remains limited in FishBase.",
+      "layoutRequirement": "",
+      "comments": "Used in experimental research (Ref. 4537). Non-annual breeder. Is difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "ecology": {
+      "comments": "Used in experimental research (Ref. 4537). Non-annual breeder. Is difficult to maintain in aquarium (Ref. 27139)."
+    }
+  },
+  {
+    "specCode": 12254,
+    "scientificName": "Oryzias javanicus",
+    "genus": "Oryzias",
+    "species": "javanicus",
+    "commonName": "Javanese ricefish",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 4.5,
+    "masterPhotoUrl": "/species-images/oryzias-javanicus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-javanicus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "The Javanese ricefish is a surface hunter that turns plant cover into a living stage.",
+        "pro": "Oryzias javanicus; surface-associated ricefish feeding on small crustaceans, insects, and protozoans."
+      },
+      "flavorText": {
+        "casual": "The Javanese ricefish is a surface hunter that turns plant cover into a living stage. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias javanicus; surface-associated ricefish feeding on small crustaceans, insects, and protozoans. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Non-annual breeder; detailed captive spawning guidance remains limited in FishBase.",
+      "layoutRequirement": "",
+      "comments": "Found in ditches, canals, ponds. Occurs at the surface in habitats with dense growth of aquatic plants. Feeds on small crustaceans, insects and protozoans (Ref. 12693). Non-annual breeder. Is very difficult to maintain in aquarium (Ref. 27139). Not seen in markets (Ref. 12693)."
+    },
+    "ecology": {
+      "comments": "Found in ditches, canals, ponds. Occurs at the surface in habitats with dense growth of aquatic plants. Feeds on small crustaceans, insects and protozoans (Ref. 12693). Non-annual breeder. Is very difficult to maintain in aquarium (Ref. 27139). Not seen in markets (Ref. 12693)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "unidentified",
+      "feedingPlaybook": ""
+    }
+  },
+  {
+    "specCode": 26794,
+    "scientificName": "Oryzias mekongensis",
+    "genus": "Oryzias",
+    "species": "mekongensis",
+    "commonName": "Ricefish (Oryzias mekongensis)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 3,
+    "masterPhotoUrl": "/species-images/oryzias-mekongensis.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-mekongensis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A tiny canal-and-pond ricefish that disappears into fine aquatic vegetation.",
+        "pro": "Oryzias mekongensis; plankton-feeding non-annual breeder from shallow standing waters."
+      },
+      "flavorText": {
+        "casual": "A tiny canal-and-pond ricefish that disappears into fine aquatic vegetation. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias mekongensis; plankton-feeding non-annual breeder from shallow standing waters. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Non-annual breeder; detailed captive spawning guidance remains limited in FishBase.",
+      "layoutRequirement": "",
+      "comments": "Inhabits shallow permanent standing water of ditches, canals and ponds. Most commonly found in water that has dense growth of submerged aquatic macrophytes with finely divided leaves. Feeds on plankton. Caught only with fine-meshed nets or when larger nets pull out large amounts of plants, trapping the fishes in them. Not seen in the markets (Ref. 12693). Non-annual breeder. Is very difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "ecology": {
+      "comments": "Inhabits shallow permanent standing water of ditches, canals and ponds. Most commonly found in water that has dense growth of submerged aquatic macrophytes with finely divided leaves. Feeds on plankton. Caught only with fine-meshed nets or when larger nets pull out large amounts of plants, trapping the fishes in them. Not seen in the markets (Ref. 12693). Non-annual breeder. Is very difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "unidentified",
+      "feedingPlaybook": ""
+    }
+  },
+  {
+    "specCode": 26983,
+    "scientificName": "Oryzias minutillus",
+    "genus": "Oryzias",
+    "species": "minutillus",
+    "commonName": "Dwarf medaka",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 2,
+    "masterPhotoUrl": "/species-images/oryzias-minutillus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-minutillus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "The dwarf medaka proves that a small fish can still have a full natural history.",
+        "pro": "Oryzias minutillus; a very small Oryzias from clear-water swamps with non-annual breeding recorded."
+      },
+      "flavorText": {
+        "casual": "The dwarf medaka proves that a small fish can still have a full natural history. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias minutillus; a very small Oryzias from clear-water swamps with non-annual breeding recorded. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Non-annual breeder; detailed captive spawning guidance remains limited in FishBase.",
+      "layoutRequirement": "",
+      "comments": "Inhabits clear water swamps (Ref. 43281). Non-annual breeder (Ref. 27139)."
+    },
+    "ecology": {
+      "comments": "Inhabits clear water swamps (Ref. 43281). Non-annual breeder (Ref. 27139)."
+    }
+  },
+  {
+    "specCode": 49577,
+    "scientificName": "Oryzias curvinotus",
+    "genus": "Oryzias",
+    "species": "curvinotus",
+    "commonName": "Ricefish (Oryzias curvinotus)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 4,
+    "masterPhotoUrl": "/species-images/oryzias-curvinotus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-curvinotus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A compact medaka for the keeper drawn to uncommon names and smaller fish.",
+        "pro": "Oryzias curvinotus; a small Oryzias with limited breeding documentation in the local FishBase tables."
+      },
+      "flavorText": {
+        "casual": "A compact medaka for the keeper drawn to uncommon names and smaller fish. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias curvinotus; a small Oryzias with limited breeding documentation in the local FishBase tables. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Non-annual breeder; detailed captive spawning guidance remains limited in FishBase.",
+      "layoutRequirement": "",
+      "comments": "Non-annual breeder. Is very difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "ecology": {
+      "comments": "Non-annual breeder. Is very difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": null,
+      "fooditems": "",
+      "feedingPlaybook": ""
+    }
+  },
+  {
+    "specCode": 49578,
+    "scientificName": "Oryzias timorensis",
+    "genus": "Oryzias",
+    "species": "timorensis",
+    "commonName": "Ricefish (Oryzias timorensis)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 4,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-timorensis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "Timor ricefish is a quiet specialist waiting for better-known company to catch up.",
+        "pro": "Oryzias timorensis; a small Adrianichthyid with limited captive-breeding documentation."
+      },
+      "flavorText": {
+        "casual": "Timor ricefish is a quiet specialist waiting for better-known company to catch up. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias timorensis; a small Adrianichthyid with limited captive-breeding documentation. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Non-annual breeder; detailed captive spawning guidance remains limited in FishBase.",
+      "layoutRequirement": "",
+      "comments": "Non-annual breeder. Is difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "ecology": {
+      "comments": "Non-annual breeder. Is difficult to maintain in aquarium (Ref. 27139)."
+    }
+  },
+  {
+    "specCode": 50265,
+    "scientificName": "Oryzias dancena",
+    "genus": "Oryzias",
+    "species": "dancena",
+    "commonName": "Indian blue ricefish",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 3.12,
+    "masterPhotoUrl": "/species-images/oryzias-dancena.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-dancena.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "The Indian blue ricefish adds a flash of color to the ricefish family tree.",
+        "pro": "Oryzias dancena; coastal freshwater-to-brackish ricefish with broad habitat tolerance."
+      },
+      "flavorText": {
+        "casual": "The Indian blue ricefish adds a flash of color to the ricefish family tree. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias dancena; coastal freshwater-to-brackish ricefish with broad habitat tolerance. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are limited in FishBase; preserve the species-specific field notes for review.",
+      "layoutRequirement": "",
+      "comments": "Usually occurs near the coast, but may live in freshwater as well as in brackish habitats."
+    },
+    "ecology": {
+      "comments": "Usually occurs near the coast, but may live in freshwater as well as in brackish habitats."
+    },
+    "diet": {
+      "trophicLevel": null,
+      "fooditems": "",
+      "feedingPlaybook": ""
+    }
+  },
+  {
+    "specCode": 50267,
+    "scientificName": "Oryzias carnaticus",
+    "genus": "Oryzias",
+    "species": "carnaticus",
+    "commonName": "Spotted ricefish",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 3,
+    "masterPhotoUrl": "/species-images/oryzias-carnaticus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-carnaticus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A spotted ricefish with a taste for the boundary between fresh and salt water.",
+        "pro": "Oryzias carnaticus; estuarine-associated Oryzias that can also occupy freshwater."
+      },
+      "flavorText": {
+        "casual": "A spotted ricefish with a taste for the boundary between fresh and salt water. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias carnaticus; estuarine-associated Oryzias that can also occupy freshwater. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are limited in FishBase; preserve the species-specific field notes for review.",
+      "layoutRequirement": "",
+      "comments": "Usually occurs near the coast but may live in fresh water as well as in brackish habitats (Ref. 27658)."
+    },
+    "ecology": {
+      "comments": "Usually occurs near the coast but may live in fresh water as well as in brackish habitats (Ref. 27658)."
+    },
+    "diet": {
+      "trophicLevel": null,
+      "fooditems": "",
+      "feedingPlaybook": ""
+    }
+  },
+  {
+    "specCode": 50269,
+    "scientificName": "Oryzias uwai",
+    "genus": "Oryzias",
+    "species": "uwai",
+    "commonName": "Ricefish (Oryzias uwai)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 1.61,
+    "masterPhotoUrl": "/species-images/oryzias-uwai.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-uwai.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A tiny ricefish whose rarity is part of the appeal.",
+        "pro": "Oryzias uwai; a small Adrianichthyid requiring specialist husbandry research."
+      },
+      "flavorText": {
+        "casual": "A tiny ricefish whose rarity is part of the appeal. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias uwai; a small Adrianichthyid requiring specialist husbandry research. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are not reported in the local FishBase extract; manual specialist review is required.",
+      "layoutRequirement": "",
+      "comments": "FishBase has limited breeding notes for this species."
+    }
+  },
+  {
+    "specCode": 50270,
+    "scientificName": "Oryzias pectoralis",
+    "genus": "Oryzias",
+    "species": "pectoralis",
+    "commonName": "Ricefish (Oryzias pectoralis)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 2.23,
+    "masterPhotoUrl": "/species-images/oryzias-pectoralis.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-pectoralis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A rice-paddy fish with a name that sounds tougher than its tiny size.",
+        "pro": "Oryzias pectoralis; small ricefish recorded from paddies, swamps, and sheltered slow rivers."
+      },
+      "flavorText": {
+        "casual": "A rice-paddy fish with a name that sounds tougher than its tiny size. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias pectoralis; small ricefish recorded from paddies, swamps, and sheltered slow rivers. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Oviparous; FishBase records dioecism reproduction, with species-specific spawning details limited.",
+      "layoutRequirement": "",
+      "comments": "Found in rice paddies (Ref. 27658), swamps and sheltered areas of slow flowing rivers (Ref. 43281)."
+    },
+    "ecology": {
+      "comments": "Found in rice paddies (Ref. 27658), swamps and sheltered areas of slow flowing rivers (Ref. 43281)."
+    },
+    "diet": {
+      "trophicLevel": null,
+      "fooditems": "",
+      "feedingPlaybook": ""
+    }
+  },
+  {
+    "specCode": 50271,
+    "scientificName": "Oryzias haugiangensis",
+    "genus": "Oryzias",
+    "species": "haugiangensis",
+    "commonName": "Ricefish (Oryzias haugiangensis)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 2.08,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-haugiangensis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A little ricefish shaped by tides and changing water.",
+        "pro": "Oryzias haugiangensis; tidal-influenced Oryzias with limited captive data."
+      },
+      "flavorText": {
+        "casual": "A little ricefish shaped by tides and changing water. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias haugiangensis; tidal-influenced Oryzias with limited captive data. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are limited in FishBase; preserve the species-specific field notes for review.",
+      "layoutRequirement": "",
+      "comments": "Found in habitats strongly influenced by tides."
+    },
+    "ecology": {
+      "comments": "Found in habitats strongly influenced by tides."
+    }
+  },
+  {
+    "specCode": 50272,
+    "scientificName": "Oryzias hubbsi",
+    "genus": "Oryzias",
+    "species": "hubbsi",
+    "commonName": "Ricefish (Oryzias hubbsi)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 2.13,
+    "masterPhotoUrl": "/species-images/oryzias-hubbsi.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-hubbsi.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A small hill-country ricefish for collectors who like the obscure corners of FishBase.",
+        "pro": "Oryzias hubbsi; upland-associated Adrianichthyid with limited aquarium documentation."
+      },
+      "flavorText": {
+        "casual": "A small hill-country ricefish for collectors who like the obscure corners of FishBase. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias hubbsi; upland-associated Adrianichthyid with limited aquarium documentation. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are limited in FishBase; preserve the species-specific field notes for review.",
+      "layoutRequirement": "",
+      "comments": "Found in low hilly area at elevations of 700 to 1000 m."
+    },
+    "ecology": {
+      "comments": "Found in low hilly area at elevations of 700 to 1000 m."
+    }
+  },
+  {
+    "specCode": 52632,
+    "scientificName": "Oryzias sinensis",
+    "genus": "Oryzias",
+    "species": "sinensis",
+    "commonName": "Ricefish (Oryzias sinensis)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 3.1,
+    "masterPhotoUrl": "/species-images/oryzias-sinensis.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-sinensis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "The Chinese ricefish is a tiny survivor with a surprisingly wide temperature story.",
+        "pro": "Oryzias sinensis; seasonal breeder from East Asian wetlands, rice fields, and shallow lake margins."
+      },
+      "flavorText": {
+        "casual": "The Chinese ricefish is a tiny survivor with a surprisingly wide temperature story. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias sinensis; seasonal breeder from East Asian wetlands, rice fields, and shallow lake margins. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase spawning pattern: one clear seasonal peak per year.",
+      "layoutRequirement": "",
+      "comments": "Adults occur in swamps, marshes, rice fields, backwaters, stream stretches with stagnant water and dense vegetation (Ref. 59043). In Fuxian Lake, China, they are found in upper and middle layers of shallow coastal waters (Ref. 26717). Adults feed mainly on filamentous algae and zooplankton (Ref. 26717). They mature in 3 months time. Spawning occurs between April and September when temperature rises above 26°C. Can tolerate temperatures from 0 to 42°C, surviving winter under ice (Ref. 59043). FishBase spawning area: East Asia. Recorded spawning temperature: 26–—°C."
+    },
+    "ecology": {
+      "comments": "Adults occur in swamps, marshes, rice fields, backwaters, stream stretches with stagnant water and dense vegetation (Ref. 59043). In Fuxian Lake, China, they are found in upper and middle layers of shallow coastal waters (Ref. 26717). Adults feed mainly on filamentous algae and zooplankton (Ref. 26717). They mature in 3 months time. Spawning occurs between April and September when temperature rises above 26°C. Can tolerate temperatures from 0 to 42°C, surviving winter under ice (Ref. 59043)."
+    },
+    "diet": {
+      "trophicLevel": "Herbivore / Detritivore",
+      "fooditems": "unspecified algae, unspecified zooplankton",
+      "feedingPlaybook": ""
+    }
+  },
+  {
+    "specCode": 62166,
+    "scientificName": "Adrianichthys roseni",
+    "genus": "Adrianichthys",
+    "species": "roseni",
+    "commonName": "Ricefish (Adrianichthys roseni)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 9,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Adrianichthys-roseni.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A rare buntingi with open-water mystery written into its natural history.",
+        "pro": "Adrianichthys roseni; pelagic tendency is noted by FishBase, while captive care remains specialist territory."
+      },
+      "flavorText": {
+        "casual": "A rare buntingi with open-water mystery written into its natural history. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Adrianichthys roseni; pelagic tendency is noted by FishBase, while captive care remains specialist territory. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are limited in FishBase; preserve the species-specific field notes for review.",
+      "layoutRequirement": "",
+      "comments": "This species is likely to be pelagic (Ref. 54508)."
+    },
+    "ecology": {
+      "comments": "This species is likely to be pelagic (Ref. 54508)."
+    }
+  },
+  {
+    "specCode": 62167,
+    "scientificName": "Oryzias nebulosus",
+    "genus": "Oryzias",
+    "species": "nebulosus",
+    "commonName": "Ricefish (Oryzias nebulosus)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 3.3,
+    "masterPhotoUrl": "/species-images/oryzias-nebulosus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-nebulosus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A cloudy-named medaka from clear lake shores and quiet tributaries.",
+        "pro": "Oryzias nebulosus; lake-associated Oryzias with limited captive breeding data."
+      },
+      "flavorText": {
+        "casual": "A cloudy-named medaka from clear lake shores and quiet tributaries. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias nebulosus; lake-associated Oryzias with limited captive breeding data. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are limited in FishBase; preserve the species-specific field notes for review.",
+      "layoutRequirement": "",
+      "comments": "Collected in the morning in clear water over a bottom of sand, pebbles and fallen branches and during night time from a boat traveling along the lake shore, including the mouth of the tributary stream (Ref. 54508). Infested with parasitic copepods, Lernaea sp. (Ref. 54508)."
+    },
+    "ecology": {
+      "comments": "Collected in the morning in clear water over a bottom of sand, pebbles and fallen branches and during night time from a boat traveling along the lake shore, including the mouth of the tributary stream (Ref. 54508). Infested with parasitic copepods, Lernaea sp. (Ref. 54508)."
+    }
+  },
+  {
+    "specCode": 64642,
+    "scientificName": "Oryzias melastigma",
+    "genus": "Oryzias",
+    "species": "melastigma",
+    "commonName": "Ricefish (Oryzias melastigma)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 4,
+    "masterPhotoUrl": "/species-images/oryzias-melastigma.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-melastigma.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "The brackish-edge ricefish that keeps one fin in the sea and one in fresh water.",
+        "pro": "Oryzias melastigma; estuarine and mangrove-associated species that readily adapts to freshwater."
+      },
+      "flavorText": {
+        "casual": "The brackish-edge ricefish that keeps one fin in the sea and one in fresh water. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias melastigma; estuarine and mangrove-associated species that readily adapts to freshwater. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are limited in FishBase; preserve the species-specific field notes for review.",
+      "layoutRequirement": "",
+      "comments": "Occurs in brackish waters and estuaries, usually in shallow lagoons and swamps among roots and mangroves along the margins of waters, and readily adapts to freshwater conditions and even spawns in freshwater (Ref. 41236)."
+    },
+    "ecology": {
+      "comments": "Occurs in brackish waters and estuaries, usually in shallow lagoons and swamps among roots and mangroves along the margins of waters, and readily adapts to freshwater conditions and even spawns in freshwater (Ref. 41236)."
+    }
+  },
+  {
+    "specCode": 64835,
+    "scientificName": "Oryzias bonneorum",
+    "genus": "Oryzias",
+    "species": "bonneorum",
+    "commonName": "Ricefish (Oryzias bonneorum)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "masterPhotoUrl": "/species-images/oryzias-bonneorum.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-bonneorum.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A little-known medaka with a big biological twist: the female carries the egg cluster.",
+        "pro": "Oryzias bonneorum; pelvic brooder with maternal egg carrying recorded in FishBase."
+      },
+      "flavorText": {
+        "casual": "A little-known medaka with a big biological twist: the female carries the egg cluster. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias bonneorum; pelvic brooder with maternal egg carrying recorded in FishBase. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Pelvic brooder; the female carries an egg cluster until hatching.",
+      "layoutRequirement": "",
+      "comments": "A pelvic-brooder, in which females carry an egg cluster until hatching (Ref. 126777)."
+    },
+    "ecology": {
+      "comments": "A pelvic-brooder, in which females carry an egg cluster until hatching (Ref. 126777)."
+    }
+  },
+  {
+    "specCode": 65542,
+    "scientificName": "Oryzias woworae",
+    "genus": "Oryzias",
+    "species": "woworae",
+    "commonName": "Ricefish (Oryzias woworae)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 2.8,
+    "masterPhotoUrl": "/species-images/oryzias-woworae.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-woworae.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A tiny island ricefish that deserves a closer look than its size suggests.",
+        "pro": "Oryzias woworae; small Adrianichthyid with limited source-backed aquarium data."
+      },
+      "flavorText": {
+        "casual": "A tiny island ricefish that deserves a closer look than its size suggests. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias woworae; small Adrianichthyid with limited source-backed aquarium data. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are not reported in the local FishBase extract; manual specialist review is required.",
+      "layoutRequirement": "",
+      "comments": "FishBase has limited breeding notes for this species."
+    }
+  },
+  {
+    "specCode": 65577,
+    "scientificName": "Oryzias songkhramensis",
+    "genus": "Oryzias",
+    "species": "songkhramensis",
+    "commonName": "Ricefish (Oryzias songkhramensis)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 1.9,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-songkhramensis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A paddy-field ricefish from clear ditches and warm, planted shallows.",
+        "pro": "Oryzias songkhramensis; Mekong-basin ditch and paddy-field species with documented water observations."
+      },
+      "flavorText": {
+        "casual": "A paddy-field ricefish from clear ditches and warm, planted shallows. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias songkhramensis; Mekong-basin ditch and paddy-field species with documented water observations. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are limited in FishBase; preserve the species-specific field notes for review.",
+      "layoutRequirement": "",
+      "comments": "The species was collected in clear water from ditches and paddy fields by dip nets in the Songkhram and Mekong River basins. The area of collection is a small ditch, 3-6 m wide and 0.5 to 2 m deep, Substrate ranges from sand to detritus or mud. Associated species include Trichogaster trichopterus , Trichopsis vittatus , Rasbora rubrodorsalis , Channa striata and Machrobrachium lanchesteri ; aquatic plants Nymphaea lotus , Jussiaea repens and Hydrilla verticillata . Water quality in the area: 27.5-28.7 ºC, conductivity 41.5-124.4 μm/l, dissolved oxygen 2.05-3.97 mg/l, pH 7.1-7.9 and salinity 0.1 ppt (Ref. 84389)."
+    },
+    "ecology": {
+      "comments": "The species was collected in clear water from ditches and paddy fields by dip nets in the Songkhram and Mekong River basins. The area of collection is a small ditch, 3-6 m wide and 0.5 to 2 m deep, Substrate ranges from sand to detritus or mud. Associated species include Trichogaster trichopterus , Trichopsis vittatus , Rasbora rubrodorsalis , Channa striata and Machrobrachium lanchesteri ; aquatic plants Nymphaea lotus , Jussiaea repens and Hydrilla verticillata . Water quality in the area: 27.5-28.7 ºC, conductivity 41.5-124.4 μm/l, dissolved oxygen 2.05-3.97 mg/l, pH 7.1-7.9 and salinity 0.1 ppt (Ref. 84389)."
+    }
+  },
+  {
+    "specCode": 65776,
+    "scientificName": "Oryzias hadiatyae",
+    "genus": "Oryzias",
+    "species": "hadiatyae",
+    "commonName": "Ricefish (Oryzias hadiatyae)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 4.03,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-hadiatyae.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A blackwater lake medaka with a quiet, forested personality.",
+        "pro": "Oryzias hadiatyae; blackwater-lake Oryzias whose habitat is vulnerable to predation pressure."
+      },
+      "flavorText": {
+        "casual": "A blackwater lake medaka with a quiet, forested personality. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias hadiatyae; blackwater-lake Oryzias whose habitat is vulnerable to predation pressure. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are limited in FishBase; preserve the species-specific field notes for review.",
+      "layoutRequirement": "",
+      "comments": "Inhabits blackwater lake which is almost circular and only a few meters deep, surrounded by rain forest. The introduced predatory snakehead, Channa striata , occupies the same shallow shoreline habitats of this species and appears likely to cause threats (Ref. 85098)."
+    },
+    "ecology": {
+      "comments": "Inhabits blackwater lake which is almost circular and only a few meters deep, surrounded by rain forest. The introduced predatory snakehead, Channa striata , occupies the same shallow shoreline habitats of this species and appears likely to cause threats (Ref. 85098)."
+    }
+  },
+  {
+    "specCode": 66418,
+    "scientificName": "Oryzias sakaizumii",
+    "genus": "Oryzias",
+    "species": "sakaizumii",
+    "commonName": "Northern medaka",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 3.67,
+    "masterPhotoUrl": "/species-images/oryzias-sakaizumii.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-sakaizumii.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "The northern medaka brings floodplain wetlands and paddy canals into the aquarium conversation.",
+        "pro": "Oryzias sakaizumii; wetland-adapted ricefish from ponds, marshes, and irrigation canals."
+      },
+      "flavorText": {
+        "casual": "The northern medaka brings floodplain wetlands and paddy canals into the aquarium conversation. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias sakaizumii; wetland-adapted ricefish from ponds, marshes, and irrigation canals. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are limited in FishBase; preserve the species-specific field notes for review.",
+      "layoutRequirement": "",
+      "comments": "Occurs in ponds, marshes, and streams, such as irrigation canals amid paddy fields in flat alluvial lowlands. Well adapted to aquatic life on temporary floodplain wetlands (Ref. 89067)."
+    },
+    "ecology": {
+      "comments": "Occurs in ponds, marshes, and streams, such as irrigation canals amid paddy fields in flat alluvial lowlands. Well adapted to aquatic life on temporary floodplain wetlands (Ref. 89067)."
+    }
+  },
+  {
+    "specCode": 66685,
+    "scientificName": "Oryzias eversi",
+    "genus": "Oryzias",
+    "species": "eversi",
+    "commonName": "Ricefish (Oryzias eversi)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 3.62,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-eversi.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A karst-pond medaka with crystal water and a very unusual maternal routine.",
+        "pro": "Oryzias eversi; pelvic brooder from a Sulawesi karst pond, with maternal egg carrying recorded."
+      },
+      "flavorText": {
+        "casual": "A karst-pond medaka with crystal water and a very unusual maternal routine. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias eversi; pelvic brooder from a Sulawesi karst pond, with maternal egg carrying recorded. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Pelvic brooder; the female carries an egg cluster until hatching.",
+      "layoutRequirement": "",
+      "comments": "The type locality where the species occurs is a karst pond of 30-40 m length, up to 10 m width and approximately up to 4 m depth, with calm and crystal clear water, with single in- and outflow and surrounded by rain forest. The pond is used by local people as a natural swimming pool (Ref. 91779). A pelvic-brooder, in which females carry an egg cluster until hatching (Ref. 126777)."
+    },
+    "ecology": {
+      "comments": "The type locality where the species occurs is a karst pond of 30-40 m length, up to 10 m width and approximately up to 4 m depth, with calm and crystal clear water, with single in- and outflow and surrounded by rain forest. The pond is used by local people as a natural swimming pool (Ref. 91779). A pelvic-brooder, in which females carry an egg cluster until hatching (Ref. 126777)."
+    }
+  },
+  {
+    "specCode": 67150,
+    "scientificName": "Oryzias asinua",
+    "genus": "Oryzias",
+    "species": "asinua",
+    "commonName": "Ricefish (Oryzias asinua)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 2.68,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-asinua.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A small floodplain ricefish that handles both slow pools and moving water.",
+        "pro": "Oryzias asinua; freshwater floodplain species with field records near 26°C."
+      },
+      "flavorText": {
+        "casual": "A small floodplain ricefish that handles both slow pools and moving water. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias asinua; freshwater floodplain species with field records near 26°C. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are limited in FishBase; preserve the species-specific field notes for review.",
+      "layoutRequirement": "",
+      "comments": "Found in small pools and along the shore that was an extensive floodplain with clear water, slow to swift current and temperature of 26°C. Lives with a native species of halfbeak, Nomorhamphus sp., a possibly native Clarias sp., and the exotics Puntius binotatus , Trichopodus trichopterus , and Oreochromis sp. (Ref. 94271)."
+    },
+    "ecology": {
+      "comments": "Found in small pools and along the shore that was an extensive floodplain with clear water, slow to swift current and temperature of 26°C. Lives with a native species of halfbeak, Nomorhamphus sp., a possibly native Clarias sp., and the exotics Puntius binotatus , Trichopodus trichopterus , and Oreochromis sp. (Ref. 94271)."
+    }
+  },
+  {
+    "specCode": 67151,
+    "scientificName": "Oryzias wolasi",
+    "genus": "Oryzias",
+    "species": "wolasi",
+    "commonName": "Ricefish (Oryzias wolasi)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 2.86,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-wolasi.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A stream-loving ricefish that can handle both cool falls and warmer springs.",
+        "pro": "Oryzias wolasi; stream-associated Oryzias recorded across approximately 24–26°C waters."
+      },
+      "flavorText": {
+        "casual": "A stream-loving ricefish that can handle both cool falls and warmer springs. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias wolasi; stream-associated Oryzias recorded across approximately 24–26°C waters. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are limited in FishBase; preserve the species-specific field notes for review.",
+      "layoutRequirement": "",
+      "comments": "Inhabits slow to swift-flowing freshwater stream with a substrate of mud, small rocks, and plant debris with emergent grasses and a shore of mud, rocks and grass. Also found in a relatively cool (24°C), swift-flowing stream along Sumbersari Falls and a warmer (26°C), springfed coastal stream (Ref. 94271)."
+    },
+    "ecology": {
+      "comments": "Inhabits slow to swift-flowing freshwater stream with a substrate of mud, small rocks, and plant debris with emergent grasses and a shore of mud, rocks and grass. Also found in a relatively cool (24°C), swift-flowing stream along Sumbersari Falls and a warmer (26°C), springfed coastal stream (Ref. 94271)."
+    }
+  },
+  {
+    "specCode": 67765,
+    "scientificName": "Oryzias soerotoi",
+    "genus": "Oryzias",
+    "species": "soerotoi",
+    "commonName": "Ricefish (Oryzias soerotoi)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 2.87,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-soerotoi.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A dark-lake ricefish surrounded by forest, plants, and quiet water.",
+        "pro": "Oryzias soerotoi; Lake Tiu species associated with shallow vegetated habitats."
+      },
+      "flavorText": {
+        "casual": "A dark-lake ricefish surrounded by forest, plants, and quiet water. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias soerotoi; Lake Tiu species associated with shallow vegetated habitats. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Oviparous; FishBase records dioecism reproduction, with species-specific spawning details limited.",
+      "layoutRequirement": "",
+      "comments": "The type locality, Lake Tiu in central Sulawesi, is surrounded by trees and mountains and is characterized by a muddy substrate, and calm and transparent water, but darkly stained by decaying vegetation. Juveniles and young fish occurs in shallow habitats with dense vegetation (Ref. 103734)."
+    },
+    "ecology": {
+      "comments": "The type locality, Lake Tiu in central Sulawesi, is surrounded by trees and mountains and is characterized by a muddy substrate, and calm and transparent water, but darkly stained by decaying vegetation. Juveniles and young fish occurs in shallow habitats with dense vegetation (Ref. 103734)."
+    },
+    "diet": {
+      "trophicLevel": null,
+      "fooditems": "",
+      "feedingPlaybook": ""
+    }
+  },
+  {
+    "specCode": 69786,
+    "scientificName": "Oryzias kalimpaaensis",
+    "genus": "Oryzias",
+    "species": "kalimpaaensis",
+    "commonName": "Lake Kalimpa'a ricefish",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 5.28,
+    "masterPhotoUrl": "/species-images/oryzias-kalimpaaensis.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-kalimpaaensis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "The Lake Kalimpa’a ricefish comes with a lake, a story, and a remarkable breeding strategy.",
+        "pro": "Oryzias kalimpaaensis; pelvic brooder from a cool, acidic lake environment."
+      },
+      "flavorText": {
+        "casual": "The Lake Kalimpa’a ricefish comes with a lake, a story, and a remarkable breeding strategy. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias kalimpaaensis; pelvic brooder from a cool, acidic lake environment. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Pelvic brooder; the female carries an egg cluster until hatching.",
+      "layoutRequirement": "",
+      "comments": "Lake Kalimpa’a, where the species was collected, is characterized by calm water with sandy and muddy substrate, the vegetation was dominated by the weed Phragmites karka (Cyperales: Poaceae) and reported depth is about 11 meters with and water temperature 22 °C with pH 5–6.5 and DO 13.9 Mg/L, when measured during daytime. Other species present in the lake were introduced African tilapia Oreochromis sp., the snakeskin gourami Trichopodus pectoralis , and a native eel Anguilla species. This species is a pelvic-brooder, where females carry an egg cluster until hatching (Ref. 126777)."
+    },
+    "ecology": {
+      "comments": "Lake Kalimpa’a, where the species was collected, is characterized by calm water with sandy and muddy substrate, the vegetation was dominated by the weed Phragmites karka (Cyperales: Poaceae) and reported depth is about 11 meters with and water temperature 22 °C with pH 5–6.5 and DO 13.9 Mg/L, when measured during daytime. Other species present in the lake were introduced African tilapia Oreochromis sp., the snakeskin gourami Trichopodus pectoralis , and a native eel Anguilla species. This species is a pelvic-brooder, where females carry an egg cluster until hatching (Ref. 126777)."
+    }
+  },
+  {
+    "specCode": 70934,
+    "scientificName": "Oryzias polylepis",
+    "genus": "Oryzias",
+    "species": "polylepis",
+    "commonName": "Ricefish (Oryzias polylepis)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 5.25,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-polylepis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A newly catalogued ricefish for keepers who prefer discovery over familiarity.",
+        "pro": "Oryzias polylepis; Adrianichthyid reference species with limited local husbandry data."
+      },
+      "flavorText": {
+        "casual": "A newly catalogued ricefish for keepers who prefer discovery over familiarity. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias polylepis; Adrianichthyid reference species with limited local husbandry data. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are not reported in the local FishBase extract; manual specialist review is required.",
+      "layoutRequirement": "",
+      "comments": "FishBase has limited breeding notes for this species."
+    }
+  },
+  {
+    "specCode": 70964,
+    "scientificName": "Oryzias chenglongensis",
+    "genus": "Oryzias",
+    "species": "chenglongensis",
+    "commonName": "Ricefish (Oryzias chenglongensis)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 2.48,
+    "masterPhotoUrl": "/species-images/oryzias-chenglongensis.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-chenglongensis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A tidal-edge ricefish that can still settle into fresh water.",
+        "pro": "Oryzias chenglongensis; wetland and estuarine Oryzias documented to survive freshwater conditions."
+      },
+      "flavorText": {
+        "casual": "A tidal-edge ricefish that can still settle into fresh water. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias chenglongensis; wetland and estuarine Oryzias documented to survive freshwater conditions. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are limited in FishBase; preserve the species-specific field notes for review.",
+      "layoutRequirement": "",
+      "comments": "This fish was collected from brackish habitat around 20-30 for salinity and recorded localities are also brackish habitats of wetlands and estuaries. In its breeding experiment, this fish can also survive well in fresh water, that it might be more widely distributed around the lowland freshwater to brackish region around Taiwan (Ref. 133052)."
+    },
+    "ecology": {
+      "comments": "This fish was collected from brackish habitat around 20-30 for salinity and recorded localities are also brackish habitats of wetlands and estuaries. In its breeding experiment, this fish can also survive well in fresh water, that it might be more widely distributed around the lowland freshwater to brackish region around Taiwan (Ref. 133052)."
+    }
+  },
+  {
+    "specCode": 70970,
+    "scientificName": "Oryzias dopingdopingensis",
+    "genus": "Oryzias",
+    "species": "dopingdopingensis",
+    "commonName": "Doping-doping ricefish",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 3.58,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-dopingdopingensis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A river ricefish with a name as memorable as its sandy, moderate-flow habitat.",
+        "pro": "Oryzias dopingdopingensis; middle-river species associated with moderate current and sand-gravel substrate."
+      },
+      "flavorText": {
+        "casual": "A river ricefish with a name as memorable as its sandy, moderate-flow habitat. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias dopingdopingensis; middle-river species associated with moderate current and sand-gravel substrate. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are limited in FishBase; preserve the species-specific field notes for review.",
+      "layoutRequirement": "",
+      "comments": "This specis inhabits the middle reaches of Doping-doping River, where water currents are moderate and the substrates are sand and gravel. A Nomorhamphus sp. was collected together with this new species (Ref. 119418)."
+    },
+    "ecology": {
+      "comments": "This specis inhabits the middle reaches of Doping-doping River, where water currents are moderate and the substrates are sand and gravel. A Nomorhamphus sp. was collected together with this new species (Ref. 119418)."
+    }
+  },
+  {
+    "specCode": 70974,
+    "scientificName": "Oryzias landangiensis",
+    "genus": "Oryzias",
+    "species": "landangiensis",
+    "commonName": "Landangi ricefish",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 3.42,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-landangiensis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A newly catalogued ricefish for the patient specialist.",
+        "pro": "Oryzias landangiensis; FishBase reference record with limited additional captive data."
+      },
+      "flavorText": {
+        "casual": "A newly catalogued ricefish for the patient specialist. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias landangiensis; FishBase reference record with limited additional captive data. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are not reported in the local FishBase extract; manual specialist review is required.",
+      "layoutRequirement": "",
+      "comments": "FishBase has limited breeding notes for this species."
+    }
+  },
+  {
+    "specCode": 70975,
+    "scientificName": "Oryzias loxolepis",
+    "genus": "Oryzias",
+    "species": "loxolepis",
+    "commonName": "Towuti ricefish",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "maxLengthCm": 4.02,
+    "masterPhotoUrl": "/species-images/oryzias-loxolepis.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-loxolepis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "The Towuti ricefish schools along shallow boulder-strewn shores.",
+        "pro": "Oryzias loxolepis; Lake Towuti littoral species observed schooling with other endemic Oryzias."
+      },
+      "flavorText": {
+        "casual": "The Towuti ricefish schools along shallow boulder-strewn shores. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias loxolepis; Lake Towuti littoral species observed schooling with other endemic Oryzias. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are limited in FishBase; preserve the species-specific field notes for review.",
+      "layoutRequirement": "",
+      "comments": "ll specimens were collected and observed at daytime and this species occurs on gently sloping, shallow shores (1.5 m depth) with large boulders and submerged woods over sand and gravel. It often schools with O. profundicola and O. marmoratus and associated with Paratherina spp., Glossogobius sp., G. favipinnis, G. intermedius, Mugilogobius rexi, M. latifrons , and Nomorhamphus megarrhamphus (Ref. 133090)."
+    },
+    "ecology": {
+      "comments": "ll specimens were collected and observed at daytime and this species occurs on gently sloping, shallow shores (1.5 m depth) with large boulders and submerged woods over sand and gravel. It often schools with O. profundicola and O. marmoratus and associated with Paratherina spp., Glossogobius sp., G. favipinnis, G. intermedius, Mugilogobius rexi, M. latifrons , and Nomorhamphus megarrhamphus (Ref. 133090)."
+    }
+  },
+  {
+    "specCode": 70976,
+    "scientificName": "Oryzias moramoensis",
+    "genus": "Oryzias",
+    "species": "moramoensis",
+    "commonName": "Ricefish (Oryzias moramoensis)",
+    "family": "Adrianichthyidae",
+    "type": "fish",
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-moramoensis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "personality": {
+      "vibeLine": {
+        "casual": "A little-known ricefish that keeps the discovery list growing.",
+        "pro": "Oryzias moramoensis; Adrianichthyid reference record awaiting deeper captive-breeding documentation."
+      },
+      "flavorText": {
+        "casual": "A little-known ricefish that keeps the discovery list growing. Start with stable water, gentle observation, and a careful species-specific plan.",
+        "pro": "Oryzias moramoensis; Adrianichthyid reference record awaiting deeper captive-breeding documentation. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+      }
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are not reported in the local FishBase extract; manual specialist review is required.",
+      "layoutRequirement": "",
+      "comments": "FishBase has limited breeding notes for this species."
+    }
   }
 ]

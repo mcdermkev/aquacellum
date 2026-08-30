@@ -23,6 +23,7 @@ const { URL } = require('url');
 
 // ---- Config ----
 const FISHBASE_PATH = path.resolve(__dirname, '../frontend/public/fishbase_master.json');
+const ROOT_FISHBASE_PATH = path.resolve(__dirname, '../frontend/fishbase_master.json');
 const IMAGES_DIR = path.resolve(__dirname, '../frontend/public/species-images');
 const RATE_LIMIT_MS = 1200; // Be polite to APIs — ~1 req/sec
 
@@ -32,6 +33,8 @@ const dryRun = args.includes('--dry-run');
 const skipUpdate = args.includes('--skip-update');
 const limitIdx = args.indexOf('--limit');
 const limit = limitIdx !== -1 ? parseInt(args[limitIdx + 1], 10) : Infinity;
+const familyIdx = args.indexOf('--family');
+const familyFilter = familyIdx !== -1 ? args[familyIdx + 1] : null;
 
 // ---- Helpers ----
 function sleep(ms) {
@@ -202,7 +205,10 @@ async function main() {
 
   // Load database
   const fishbase = JSON.parse(fs.readFileSync(FISHBASE_PATH, 'utf-8'));
-  const missing = fishbase.filter(sp => !sp.masterPhotoUrl || sp.masterPhotoUrl === '');
+  const missing = fishbase.filter(sp =>
+    (!sp.masterPhotoUrl || sp.masterPhotoUrl === '') &&
+    (!familyFilter || sp.family === familyFilter)
+  );
 
   console.log(`Total species: ${fishbase.length}`);
   console.log(`Missing images: ${missing.length}`);
@@ -285,10 +291,13 @@ async function main() {
     await sleep(RATE_LIMIT_MS);
   }
 
-  // Save updated fishbase
+  // Save updated fishbase catalogs. The project keeps a root mirror for scripts
+  // while the public copy is the runtime source; update both together.
   if (!dryRun && !skipUpdate && results.success > 0) {
-    fs.writeFileSync(FISHBASE_PATH, JSON.stringify(fishbase, null, 2), 'utf-8');
-    console.log(`\n✓ Updated fishbase_master.json`);
+    const serialized = JSON.stringify(fishbase, null, 2);
+    fs.writeFileSync(FISHBASE_PATH, serialized, 'utf-8');
+    fs.writeFileSync(ROOT_FISHBASE_PATH, serialized, 'utf-8');
+    console.log(`\n✓ Updated both fishbase_master.json copies`);
   }
 
   // Save attributions log
