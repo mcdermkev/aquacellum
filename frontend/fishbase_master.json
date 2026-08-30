@@ -24137,5 +24137,905 @@
         "pro": "Betta raja; specialist wild Betta with source-backed natural-history data and captive methods requiring review. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
       }
     }
+  },
+  {
+    "specCode": 10649,
+    "scientificName": "Holopristis pulchra",
+    "genus": "Holopristis",
+    "species": "pulchra",
+    "commonName": "Garnet tetra",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 3.28,
+    "masterPhotoUrl": "/species-images/holopristis-pulchra.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Holopristis-pulchra.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Feeds on worms, small crustaceans and plants. In captivity, spawning takes place among plants and eggs usually hatch in 20 to 24 hours (Ref. 7020). Maximum length reported to reach 4.5 cm TL (Ref. 7020). Aquarium keeping: in groups of 5 or more individuals; minimum aquarium size 60 cm (Ref. 51539)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "unspecified plants, unspecified small crustaceans, unspecified worms",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: external nonguarder open-water/substratum egg scatterer.",
+      "layoutRequirement": "FishBase identifies open-water or substratum egg scattering; confirm the species-specific spawning medium and egg-protection method with specialist breeder guidance.",
+      "comments": "Feeds on worms, small crustaceans and plants. In captivity, spawning takes place among plants and eggs usually hatch in 20 to 24 hours (Ref. 7020). Maximum length reported to reach 4.5 cm TL (Ref. 7020). Aquarium keeping: in groups of 5 or more individuals; minimum aquarium size 60 cm (Ref. 51539). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none. FishBase aquarium-breeding rating: Medium."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The garnet tetra is a tiny red schooling fish with a documented plant-spawning story.",
+        "pro": "Holopristis pulchra; highly commercial Characidae with plant-associated spawning, 20–24 hour hatching, and medium aquarium-breeding evidence."
+      },
+      "flavorText": {
+        "casual": "The garnet tetra is a tiny red schooling fish with a documented plant-spawning story. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Holopristis pulchra; highly commercial Characidae with plant-associated spawning, 20–24 hour hatching, and medium aquarium-breeding evidence. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 10695,
+    "scientificName": "Petitella georgiae",
+    "genus": "Petitella",
+    "species": "georgiae",
+    "commonName": "False rummynose tetra",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 3.86,
+    "masterPhotoUrl": "/species-images/petitella-georgiae.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Petitella-georgiae.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Feeds on worms, small crustaceans and plant matter (Ref. 7020). Aquarium keeping: in groups of 5 or more individuals; minimum aquarium size 80 cm (Ref. 51539)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "unspecified plant matter, unspecified small crustaceans, unspecified worms",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: external nonguarder open-water/substratum egg scatterer.",
+      "layoutRequirement": "FishBase identifies open-water or substratum egg scattering; confirm the species-specific spawning medium and egg-protection method with specialist breeder guidance.",
+      "comments": "Feeds on worms, small crustaceans and plant matter (Ref. 7020). Aquarium keeping: in groups of 5 or more individuals; minimum aquarium size 80 cm (Ref. 51539). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none. FishBase aquarium-breeding rating: Medium."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The false rummynose brings a tight-schooling rhythm without pretending to be the true rummy-nose.",
+        "pro": "Petitella georgiae; gregarious false rummynose tetra with external egg scattering and source-backed aquarium reproduction."
+      },
+      "flavorText": {
+        "casual": "The false rummynose brings a tight-schooling rhythm without pretending to be the true rummy-nose. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Petitella georgiae; gregarious false rummynose tetra with external egg scattering and source-backed aquarium reproduction. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 10645,
+    "scientificName": "Holopristis ocellifera",
+    "genus": "Holopristis",
+    "species": "ocellifera",
+    "commonName": "Head-and-taillight tetra",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 4.9,
+    "masterPhotoUrl": "/species-images/holopristis-ocellifera.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Holopristis-ocellifera.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs along the coastal zone and prefers water bodies with little current. Lives in groups. Feeds on worms, small insects, crustaceans and plants (Ref. 7020). The males are generally very much smaller and more svelte than the females. It is a very prolific species and its reproduction can easily be carried out in the aquarium (Ref. 12225). With an incubation temperature of 26°C, hatching of the eggs occurs within 48 to 60 hours (Ref. 27188). Maximum length questionable (Ref. 38376). Aquarium keeping: in groups of 5 or more individuals; minimum aquarium size 60 cm (Ref. 51539)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "terrestrial invertebrates, unidentified small crustacea, unidentified insect larvae",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: external nonguarder open-water/substratum egg scatterer.",
+      "layoutRequirement": "FishBase identifies open-water or substratum egg scattering; confirm the species-specific spawning medium and egg-protection method with specialist breeder guidance.",
+      "comments": "Occurs along the coastal zone and prefers water bodies with little current. Lives in groups. Feeds on worms, small insects, crustaceans and plants (Ref. 7020). The males are generally very much smaller and more svelte than the females. It is a very prolific species and its reproduction can easily be carried out in the aquarium (Ref. 12225). With an incubation temperature of 26°C, hatching of the eggs occurs within 48 to 60 hours (Ref. 27188). Maximum length questionable (Ref. 38376). Aquarium keeping: in groups of 5 or more individuals; minimum aquarium size 60 cm (Ref. 51539). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none. FishBase aquarium-breeding rating: Medium."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The head-and-taillight tetra turns a familiar pattern into a small breeding project.",
+        "pro": "Holopristis ocellifera; prolific commercial tetra with reported aquarium breeding and 48–60 hour hatching."
+      },
+      "flavorText": {
+        "casual": "The head-and-taillight tetra turns a familiar pattern into a small breeding project. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Holopristis ocellifera; prolific commercial tetra with reported aquarium breeding and 48–60 hour hatching. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12391,
+    "scientificName": "Bario oligolepis",
+    "genus": "Bario",
+    "species": "oligolepis",
+    "commonName": "Glass tetra",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 10,
+    "masterPhotoUrl": "/species-images/bario-oligolepis.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Bario-oligolepis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "A gregarious species which prefers the counter current zones of small creeks. Omnivorous. It is very prolific and reproduction in the aquarium is very easy to carry out (Ref. 12225). Oviparous (Ref. 205)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "unidentified terrestrial insects, unidentified small crustacean, unidentified insect larvae",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: external nonguarder open-water/substratum egg scatterer.",
+      "layoutRequirement": "FishBase identifies open-water or substratum egg scattering; confirm the species-specific spawning medium and egg-protection method with specialist breeder guidance.",
+      "comments": "A gregarious species which prefers the counter current zones of small creeks. Omnivorous. It is very prolific and reproduction in the aquarium is very easy to carry out (Ref. 12225). Oviparous (Ref. 205). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The glass tetra is the large, counter-current characin in this otherwise tetra-shaped set.",
+        "pro": "Bario oligolepis; commercial, gregarious creek fish with source-backed external spawning and easy aquarium reproduction notes."
+      },
+      "flavorText": {
+        "casual": "The glass tetra is the large, counter-current characin in this otherwise tetra-shaped set. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Bario oligolepis; commercial, gregarious creek fish with source-backed external spawning and easy aquarium reproduction notes. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 10693,
+    "scientificName": "Brachychalcinus orbicularis",
+    "genus": "Brachychalcinus",
+    "species": "orbicularis",
+    "commonName": "Discus tetra",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 9,
+    "masterPhotoUrl": "/species-images/brachychalcinus-orbicularis.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Brachychalcinus-orbicularis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Feeds on worms, insects, crustaceans and plant matter (Ref. 7020)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "unspecified plant matter, unspecified insects, unspecified crustaceans, unspecified worms",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: external nonguarder open-water/substratum egg scatterer.",
+      "layoutRequirement": "FishBase identifies open-water or substratum egg scattering; confirm the species-specific spawning medium and egg-protection method with specialist breeder guidance.",
+      "comments": "Feeds on worms, insects, crustaceans and plant matter (Ref. 7020). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none. FishBase aquarium-breeding rating: Medium."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The discus tetra has a round profile and a larger-than-nano presence.",
+        "pro": "Brachychalcinus orbicularis; commercial 9 cm characin with omnivorous evidence and external egg scattering."
+      },
+      "flavorText": {
+        "casual": "The discus tetra has a round profile and a larger-than-nano presence. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Brachychalcinus orbicularis; commercial 9 cm characin with omnivorous evidence and external egg scattering. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 10629,
+    "scientificName": "Ctenobrycon spilurus",
+    "genus": "Ctenobrycon",
+    "species": "spilurus",
+    "commonName": "Silver tetra",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 8,
+    "masterPhotoUrl": "/species-images/ctenobrycon-spilurus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Ctenobrycon-spilurus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "A voracious species. Inhabits calm waters. In nature, it feeds mainly on zooplankton but it also consume plants, worms, insects and crustaceans (Ref. 7020). An adult female produces around 2,000 eggs which is incubated for a period of 50 to 70 hours. After the third day, the fish search actively for food (Ref. 12225)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "unspecified plants, unspecified insects, unspecified crustaceans, unspecified worms, unspecified zooplankton",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: nonguarders.",
+      "layoutRequirement": "Species-specific spawning layout is not reported in the local extract; specialist review is required before presenting a breeding setup.",
+      "comments": "A voracious species. Inhabits calm waters. In nature, it feeds mainly on zooplankton but it also consume plants, worms, insects and crustaceans (Ref. 7020). An adult female produces around 2,000 eggs which is incubated for a period of 50 to 70 hours. After the third day, the fish search actively for food (Ref. 12225). Guild: nonguarders. FishBase aquarium-breeding rating: Low."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The silver tetra is a substantial open-water fish with a surprisingly large reported spawn.",
+        "pro": "Ctenobrycon spilurus; commercial characin with approximately 2,000 eggs per female and nonguarding reproduction reported in FishBase."
+      },
+      "flavorText": {
+        "casual": "The silver tetra is a substantial open-water fish with a surprisingly large reported spawn. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Ctenobrycon spilurus; commercial characin with approximately 2,000 eggs per female and nonguarding reproduction reported in FishBase. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12371,
+    "scientificName": "Hemigrammus unilineatus",
+    "genus": "Hemigrammus",
+    "species": "unilineatus",
+    "commonName": "Featherfin tetra",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 5.3,
+    "masterPhotoUrl": "/species-images/hemigrammus-unilineatus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Hemigrammus-unilineatus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Usually found in ponds, ditches, slow flowing streams, both clear and turbid, in both open and shaded areas. A voracious species which feeds on small crustaceans, insects and mollusks (Ref. 12225). Gregarious and non-aggressive, it is reputedly easy to rear and to reproduce in the aquarium (Ref. 27188). Maximum length questionable (Ref. 38376)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "terrestrial insects, unidentified small crustaceans, unidentified insect larvae",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: external nonguarder open-water/substratum egg scatterer.",
+      "layoutRequirement": "FishBase identifies open-water or substratum egg scattering; confirm the species-specific spawning medium and egg-protection method with specialist breeder guidance.",
+      "comments": "Usually found in ponds, ditches, slow flowing streams, both clear and turbid, in both open and shaded areas. A voracious species which feeds on small crustaceans, insects and mollusks (Ref. 12225). Gregarious and non-aggressive, it is reputedly easy to rear and to reproduce in the aquarium (Ref. 27188). Maximum length questionable (Ref. 38376). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The featherfin tetra is a peaceful, gregarious fish for the planted midwater.",
+        "pro": "Hemigrammus unilineatus; commercial schooling tetra with slow-water habitat, easy-rearing notes, and external egg scattering."
+      },
+      "flavorText": {
+        "casual": "The featherfin tetra is a peaceful, gregarious fish for the planted midwater. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Hemigrammus unilineatus; commercial schooling tetra with slow-water habitat, easy-rearing notes, and external egg scattering. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 10652,
+    "scientificName": "Hyphessobrycon flammeus",
+    "genus": "Hyphessobrycon",
+    "species": "flammeus",
+    "commonName": "Flame tetra",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 2.61,
+    "masterPhotoUrl": "/species-images/hyphessobrycon-flammeus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Hyphessobrycon-flammeus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Inhabits small streams of slow flowing, dark-brown or clear water, shaded by small forests. Occurs also in small streams with clear water and sandy bottom. Prefers habitats with vegetation and streams with slow flowing water, living in depths not superior to 50 c and water temperature from 22°-28°C. Forms relatively numerous schools with agonistic interaction among alpha males. Feeds on small insects, worms and plants. Female lays around 200 to 330 oocytes on rocks, plants, or submerged debris; after that, the male releases the sperm for fertilization. The eggs hatch in about 2-3 days. Longevity is around four years (Ref. 96863). In tank, female lays 200 to 300 eggs which hatch in 2 to 3 days (Ref. 7020). Aquarium keeping: in groups of 5 or more individuals; minimum aquarium size 60 cm (Ref. 51539)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "unspecified plant matter, unspecified crustaceans, unspecified worms",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: external nonguarder open-water/substratum egg scatterer.",
+      "layoutRequirement": "FishBase identifies open-water or substratum egg scattering; confirm the species-specific spawning medium and egg-protection method with specialist breeder guidance.",
+      "comments": "Inhabits small streams of slow flowing, dark-brown or clear water, shaded by small forests. Occurs also in small streams with clear water and sandy bottom. Prefers habitats with vegetation and streams with slow flowing water, living in depths not superior to 50 c and water temperature from 22°-28°C. Forms relatively numerous schools with agonistic interaction among alpha males. Feeds on small insects, worms and plants. Female lays around 200 to 330 oocytes on rocks, plants, or submerged debris; after that, the male releases the sperm for fertilization. The eggs hatch in about 2-3 days. Longevity is around four years (Ref. 96863). In tank, female lays 200 to 300 eggs which hatch in 2 to 3 days (Ref. 7020). Aquarium keeping: in groups of 5 or more individuals; minimum aquarium size 60 cm (Ref. 51539). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none. FishBase aquarium-breeding rating: Medium."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The flame tetra is a small ember of color for a shaded, planted school.",
+        "pro": "Hyphessobrycon flammeus; commercial blackwater-associated tetra with reported aquarium egg counts and two-to-three-day hatching."
+      },
+      "flavorText": {
+        "casual": "The flame tetra is a small ember of color for a shaded, planted school. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Hyphessobrycon flammeus; commercial blackwater-associated tetra with reported aquarium egg counts and two-to-three-day hatching. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 10653,
+    "scientificName": "Hyphessobrycon griemi",
+    "genus": "Hyphessobrycon",
+    "species": "griemi",
+    "commonName": "Goldspotted tetra",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 2.92,
+    "masterPhotoUrl": "/species-images/hyphessobrycon-griemi.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Hyphessobrycon-griemi.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Feeds on worms, crustaceans and plant matter (Ref. 7020)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "unspecified plant matter, unspecified crustaceans, unspecified worms",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: external nonguarder open-water/substratum egg scatterer.",
+      "layoutRequirement": "FishBase identifies open-water or substratum egg scattering; confirm the species-specific spawning medium and egg-protection method with specialist breeder guidance.",
+      "comments": "Feeds on worms, crustaceans and plant matter (Ref. 7020). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none. FishBase aquarium-breeding rating: High."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The goldspotted tetra is a tiny schooling characin with strong aquarium-breeding evidence.",
+        "pro": "Hyphessobrycon griemi; commercial tetra with external egg scattering and a high FishBase aquarium-breeding rating."
+      },
+      "flavorText": {
+        "casual": "The goldspotted tetra is a tiny schooling characin with strong aquarium-breeding evidence. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Hyphessobrycon griemi; commercial tetra with external egg scattering and a high FishBase aquarium-breeding rating. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 10655,
+    "scientificName": "Hyphessobrycon heterorhabdus",
+    "genus": "Hyphessobrycon",
+    "species": "heterorhabdus",
+    "commonName": "Flag tetra",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 3.56,
+    "masterPhotoUrl": "/species-images/hyphessobrycon-heterorhabdus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Hyphessobrycon-heterorhabdus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Feeds on worms, crustaceans and plant matter (Ref. 7020)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "unspecified plant matter, unspecified crustaceans, unspecified worms",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: external nonguarder open-water/substratum egg scatterer.",
+      "layoutRequirement": "FishBase identifies open-water or substratum egg scattering; confirm the species-specific spawning medium and egg-protection method with specialist breeder guidance.",
+      "comments": "Feeds on worms, crustaceans and plant matter (Ref. 7020). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none. FishBase aquarium-breeding rating: Low."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The flag tetra carries a fine lateral mark through a compact schooling body.",
+        "pro": "Hyphessobrycon heterorhabdus; commercial tetra with source-backed external nonguarding egg scattering."
+      },
+      "flavorText": {
+        "casual": "The flag tetra carries a fine lateral mark through a compact schooling body. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Hyphessobrycon heterorhabdus; commercial tetra with source-backed external nonguarding egg scattering. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 10657,
+    "scientificName": "Hyphessobrycon scholzei",
+    "genus": "Hyphessobrycon",
+    "species": "scholzei",
+    "commonName": "Blackline tetra",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 4,
+    "masterPhotoUrl": "/species-images/hyphessobrycon-scholzei.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Hyphessobrycon-scholzei.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Feeds on worms, small crustaceans and plant matter (Ref. 7020)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "unspecified plant matter, unspecified small crustaceans, unspecified worms",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: external nonguarder open-water/substratum egg scatterer.",
+      "layoutRequirement": "FishBase identifies open-water or substratum egg scattering; confirm the species-specific spawning medium and egg-protection method with specialist breeder guidance.",
+      "comments": "Feeds on worms, small crustaceans and plant matter (Ref. 7020). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none. FishBase aquarium-breeding rating: High."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The blackline tetra is a subtle schooler for keepers who enjoy pattern over flash.",
+        "pro": "Hyphessobrycon scholzei; commercial tetra with high FishBase aquarium-breeding evidence and external egg scattering."
+      },
+      "flavorText": {
+        "casual": "The blackline tetra is a subtle schooler for keepers who enjoy pattern over flash. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Hyphessobrycon scholzei; commercial tetra with high FishBase aquarium-breeding evidence and external egg scattering. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 10697,
+    "scientificName": "Pristella maxillaris",
+    "genus": "Pristella",
+    "species": "maxillaris",
+    "commonName": "X-ray tetra",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 4.5,
+    "masterPhotoUrl": "/species-images/pristella-maxillaris.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Pristella-maxillaris.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Gregarious and non-aggressive. Occur in calm coastal waters (Ref. 27188); in densely vegetated swamps. Feed on worms, small crustaceans and insects (Ref. 7020). Are popular among aquarists because of their robustness, peaceful character, and delicate colors (Ref. 12225). Reproduction is easily carried out, 300 to 400 eggs are obtained per spawn (Ref. 27188). Aquarium keeping: in groups of 5 or more individuals; minimum aquarium size 60 cm (Ref. 51539)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "unidentified small crustaceans, unidentified insect larvae",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: nonguarders.",
+      "layoutRequirement": "Species-specific spawning layout is not reported in the local extract; specialist review is required before presenting a breeding setup.",
+      "comments": "Gregarious and non-aggressive. Occur in calm coastal waters (Ref. 27188); in densely vegetated swamps. Feed on worms, small crustaceans and insects (Ref. 7020). Are popular among aquarists because of their robustness, peaceful character, and delicate colors (Ref. 12225). Reproduction is easily carried out, 300 to 400 eggs are obtained per spawn (Ref. 27188). Aquarium keeping: in groups of 5 or more individuals; minimum aquarium size 60 cm (Ref. 51539). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders. FishBase aquarium-breeding rating: Medium."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The X-ray tetra is transparent-looking, sturdy, and happiest as part of a real group.",
+        "pro": "Pristella maxillaris; robust commercial schooling tetra with easy reproduction notes and a reported 300–400 eggs per spawn."
+      },
+      "flavorText": {
+        "casual": "The X-ray tetra is transparent-looking, sturdy, and happiest as part of a real group. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Pristella maxillaris; robust commercial schooling tetra with easy reproduction notes and a reported 300–400 eggs per spawn. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 6183,
+    "scientificName": "Gymnocharacinus bergii",
+    "genus": "Gymnocharacinus",
+    "species": "bergii",
+    "commonName": "Naked characin",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 7.5,
+    "masterPhotoUrl": "/species-images/gymnocharacinus-bergii.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Gymnocharacinus-bergii.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Medium sized fish considered to be the most southern characid living in temperate waters. Young with very tiny soft and delicate scales which are reabsorbed into the skin making the skin greasy and often with granulated or spongy appearance (Ref. 7252)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Periphytic algae",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: external nonguarder brood hider.",
+      "layoutRequirement": "FishBase identifies a brood-hider guild; confirm the species-specific egg-deposition setup with specialist breeder guidance.",
+      "comments": "Medium sized fish considered to be the most southern characid living in temperate waters. Young with very tiny soft and delicate scales which are reabsorbed into the skin making the skin greasy and often with granulated or spongy appearance (Ref. 7252). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; brood hiders. Spawning area: Valcheta. Recorded fecundity: —–200."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The naked characin is the unusual temperate specialist of this batch.",
+        "pro": "Gymnocharacinus bergii; rare scale-reducing characin with periphytic-algae evidence and a riverine spawning record."
+      },
+      "flavorText": {
+        "casual": "The naked characin is the unusual temperate specialist of this batch. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Gymnocharacinus bergii; rare scale-reducing characin with periphytic-algae evidence and a riverine spawning record. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12367,
+    "scientificName": "Hemigrammus hyanuary",
+    "genus": "Hemigrammus",
+    "species": "hyanuary",
+    "commonName": "January tetra",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 4.4,
+    "masterPhotoUrl": "/species-images/hemigrammus-hyanuary.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Hemigrammus-hyanuary.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Maximum length questionable (Ref. 38376)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: external nonguarder open-water/substratum egg scatterer.",
+      "layoutRequirement": "FishBase identifies open-water or substratum egg scattering; confirm the species-specific spawning medium and egg-protection method with specialist breeder guidance.",
+      "comments": "Maximum length questionable (Ref. 38376). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The January tetra is a quieter catalog find for a keeper building beyond the usual shortlist.",
+        "pro": "Hemigrammus hyanuary; commercial tetra with source-backed external nonguarding reproduction and limited additional local notes."
+      },
+      "flavorText": {
+        "casual": "The January tetra is a quieter catalog find for a keeper building beyond the usual shortlist. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Hemigrammus hyanuary; commercial tetra with source-backed external nonguarding reproduction and limited additional local notes. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12378,
+    "scientificName": "Megalamphodus bentosi",
+    "genus": "Megalamphodus",
+    "species": "bentosi",
+    "commonName": "Ornate tetra",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 4.32,
+    "masterPhotoUrl": "/species-images/megalamphodus-bentosi.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Megalamphodus-bentosi.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Aquarium keeping: in groups of 5 or more individuals; minimum aquarium size 60 cm (Ref. 51539)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: external nonguarder open-water/substratum egg scatterer.",
+      "layoutRequirement": "FishBase identifies open-water or substratum egg scattering; confirm the species-specific spawning medium and egg-protection method with specialist breeder guidance.",
+      "comments": "Aquarium keeping: in groups of 5 or more individuals; minimum aquarium size 60 cm (Ref. 51539). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The ornate tetra is a softly patterned schooler whose accepted genus deserves careful labeling.",
+        "pro": "Megalamphodus bentosi; FishBase-accepted commercial characin with group-keeping and external egg-scattering records."
+      },
+      "flavorText": {
+        "casual": "The ornate tetra is a softly patterned schooler whose accepted genus deserves careful labeling. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Megalamphodus bentosi; FishBase-accepted commercial characin with group-keeping and external egg-scattering records. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12383,
+    "scientificName": "Megalamphodus rosaceus",
+    "genus": "Megalamphodus",
+    "species": "rosaceus",
+    "commonName": "Rosy tetra",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 3.42,
+    "masterPhotoUrl": "/species-images/megalamphodus-rosaceus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Megalamphodus-rosaceus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Oviparous (Ref. 205)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: external nonguarder open-water/substratum egg scatterer.",
+      "layoutRequirement": "FishBase identifies open-water or substratum egg scattering; confirm the species-specific spawning medium and egg-protection method with specialist breeder guidance.",
+      "comments": "Oviparous (Ref. 205). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The rosy tetra brings a restrained pink tone to the specialist characin list.",
+        "pro": "Megalamphodus rosaceus; commercial oviparous characin with external nonguarding egg-scattering data."
+      },
+      "flavorText": {
+        "casual": "The rosy tetra brings a restrained pink tone to the specialist characin list. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Megalamphodus rosaceus; commercial oviparous characin with external nonguarding egg-scattering data. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12401,
+    "scientificName": "Thayeria obliqua",
+    "genus": "Thayeria",
+    "species": "obliqua",
+    "commonName": "Penguinfish",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 7.6,
+    "masterPhotoUrl": "/species-images/thayeria-obliqua.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Thayeria-obliqua.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Maximum length reported to reach 8 cm TL (Ref. 1672). Oviparous (Ref. 205)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: external nonguarder open-water/substratum egg scatterer.",
+      "layoutRequirement": "FishBase identifies open-water or substratum egg scattering; confirm the species-specific spawning medium and egg-protection method with specialist breeder guidance.",
+      "comments": "Maximum length reported to reach 8 cm TL (Ref. 1672). Oviparous (Ref. 205). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The penguinfish is the longer-bodied, diagonally poised schooler of this batch.",
+        "pro": "Thayeria obliqua; commercial 7.6 cm characin with external nonguarding egg-scattering evidence."
+      },
+      "flavorText": {
+        "casual": "The penguinfish is the longer-bodied, diagonally poised schooler of this batch. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Thayeria obliqua; commercial 7.6 cm characin with external nonguarding egg-scattering evidence. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 2740,
+    "scientificName": "Astyanax mexicanus",
+    "genus": "Astyanax",
+    "species": "mexicanus",
+    "commonName": "Mexican tetra",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 12,
+    "masterPhotoUrl": "/species-images/astyanax-mexicanus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Astyanax-mexicanus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Inhabits rocky and sandy bottoms of pools and backwaters of creeks and small to large rivers, and springs. Feeds on insects, crustaceans and worms (Ref. 7020). Migrates during winter to warmer areas (Ref. 47195)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Feeds on insects, crustaceans and worms (Ref.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: external nonguarder brood hider.",
+      "layoutRequirement": "FishBase identifies a brood-hider guild; confirm the species-specific egg-deposition setup with specialist breeder guidance.",
+      "comments": "Inhabits rocky and sandy bottoms of pools and backwaters of creeks and small to large rivers, and springs. Feeds on insects, crustaceans and worms (Ref. 7020). Migrates during winter to warmer areas (Ref. 47195). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; brood hiders. FishBase aquarium-breeding rating: Medium."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The Mexican tetra has a larger body and a remarkable surface-and-cave natural-history story.",
+        "pro": "Astyanax mexicanus; commercial characin with external brood-hider reproduction and a complex surface/cave lineage that needs careful catalog framing."
+      },
+      "flavorText": {
+        "casual": "The Mexican tetra has a larger body and a remarkable surface-and-cave natural-history story. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Astyanax mexicanus; commercial characin with external brood-hider reproduction and a complex surface/cave lineage that needs careful catalog framing. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 4475,
+    "scientificName": "Astyanax bimaculatus",
+    "genus": "Astyanax",
+    "species": "bimaculatus",
+    "commonName": "Twospot astyanax",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 17.5,
+    "masterPhotoUrl": "/species-images/astyanax-bimaculatus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Astyanax-bimaculatus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Inhabits large free flowing clear rivers, small streams, drainage ditches and artificial ponds and impoundments (Ref. 11225). Feeds on zooplankton, detritus, higher plants and sometimes on the scales of fish. Gametogenesis takes place during the dry season in time for reproduction to begin during the rainy season (Ref. 12225). Reproduction could be carried out in captivity (Ref. 27188)."
+    },
+    "diet": {
+      "trophicLevel": "Herbivore / Detritivore",
+      "fooditems": "unidentified fish, unidentified terrestrial coleopterans, unidentified chironomid insects, terrestrial Formicidae, unidentified arachnids, unidentified terrestrial thysanopterans, unidentified algae, unidentified vegetal matter, Collembola, unidentified small crustaceans, unidentified ostracods, unidentified Acarina, unidentified Conchostraca, unidentified nematodes, unidentified coleopterans, Chaoboridae, Culicidae, unidentified chironomid larvae, unidentified lepidopterans, unidentified corixid nymphs, unidentified mayflies, unidentified hemipterans, unidentified Odonata, unidentified chironomid pupae, unidentified Diptera, Sarcodina, unidentified rotifers, unidentified zooplankton, unidentified cladocerans",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are not reported in the local FishBase extract; manual specialist review is required.",
+      "layoutRequirement": "Species-specific spawning layout is not reported in the local extract; specialist review is required before presenting a breeding setup.",
+      "comments": "Inhabits large free flowing clear rivers, small streams, drainage ditches and artificial ponds and impoundments (Ref. 11225). Feeds on zooplankton, detritus, higher plants and sometimes on the scales of fish. Gametogenesis takes place during the dry season in time for reproduction to begin during the rainy season (Ref. 12225). Reproduction could be carried out in captivity (Ref. 27188)."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The twospot astyanax is a substantial characin, not a nano tetra in disguise.",
+        "pro": "Astyanax bimaculatus; commercial 17.5 cm characin with seasonal reproductive evidence and broad omnivorous feeding records."
+      },
+      "flavorText": {
+        "casual": "The twospot astyanax is a substantial characin, not a nano tetra in disguise. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Astyanax bimaculatus; commercial 17.5 cm characin with seasonal reproductive evidence and broad omnivorous feeding records. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 26473,
+    "scientificName": "Hemigrammus collettii",
+    "genus": "Hemigrammus",
+    "species": "collettii",
+    "commonName": "Common name not supplied by FishBase (Hemigrammus collettii)",
+    "family": "Characidae",
+    "type": "fish",
+    "maxLengthCm": 6.4,
+    "masterPhotoUrl": "/species-images/hemigrammus-collettii.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Hemigrammus-collettii.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in slow flowing areas of the main stream, over muddy bottoms (Ref. 12225). Considered gregarious and peaceful. Its reproduction in captivity would have been carried out for the first time in 1988 (Ref. 27188)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "terrestrial invertebrates, unidentified small crustacean, unidentified insect larvae",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: external nonguarder open-water/substratum egg scatterer.",
+      "layoutRequirement": "FishBase identifies open-water or substratum egg scattering; confirm the species-specific spawning medium and egg-protection method with specialist breeder guidance.",
+      "comments": "Occurs in slow flowing areas of the main stream, over muddy bottoms (Ref. 12225). Considered gregarious and peaceful. Its reproduction in captivity would have been carried out for the first time in 1988 (Ref. 27188). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A peaceful schooling characin whose common name is intentionally left to FishBase rather than invented.",
+        "pro": "Hemigrammus collettii; commercial Characidae with FishBase common name not supplied, food-item records, and external nonguarding egg scattering."
+      },
+      "flavorText": {
+        "casual": "A peaceful schooling characin whose common name is intentionally left to FishBase rather than invented. Start with a proper group, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Hemigrammus collettii; commercial Characidae with FishBase common name not supplied, food-item records, and external nonguarding egg scattering. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
   }
 ]
