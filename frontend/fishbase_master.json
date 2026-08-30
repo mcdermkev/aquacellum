@@ -23237,5 +23237,905 @@
         "pro": "Scleromystax barbatus; large commercial Callichthyid with FishBase brood-hider reproductive data. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
       }
     }
+  },
+  {
+    "specCode": 12033,
+    "scientificName": "Betta akarensis",
+    "genus": "Betta",
+    "species": "akarensis",
+    "commonName": "Akar betta",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 14,
+    "masterPhotoUrl": "/species-images/betta-akarensis.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Betta-akarensis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in habitats ranging from peat swamp forest to acid water swamp forest (Ref. 55025). Normally found in a more stagnant sections of streams among the submerged leaf litter and overhanging bank vegetation (Ref. 55025). Mouth brooder (Ref. 55025)"
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Mouthbrooder; FishBase source text identifies oral egg or fry incubation.",
+      "layoutRequirement": "Provide secure cover and low-stress structure for the holding parent; confirm the species-specific mouthbrooding protocol with specialist breeder guidance.",
+      "comments": "Occurs in habitats ranging from peat swamp forest to acid water swamp forest (Ref. 55025). Normally found in a more stagnant sections of streams among the submerged leaf litter and overhanging bank vegetation (Ref. 55025). Mouth brooder (Ref. 55025) Guild: bearers; external brooders."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A forest-stream mouthbrooder with a quiet, watchful presence.",
+        "pro": "Betta akarensis; source-backed paternal mouthbrooder from flowing Bornean forest waters."
+      },
+      "flavorText": {
+        "casual": "A forest-stream mouthbrooder with a quiet, watchful presence. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Betta akarensis; source-backed paternal mouthbrooder from flowing Bornean forest waters. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12035,
+    "scientificName": "Betta bellica",
+    "genus": "Betta",
+    "species": "bellica",
+    "commonName": "Slim betta",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 10,
+    "masterPhotoUrl": "/species-images/betta-bellica.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Betta-bellica.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Usually occurs in peat swamps. Also found in swamp forest habitats (Ref. 56613). A bubble nest builder (Ref. 56613)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "beetle, young midge larvae, unidentified larvae",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Bubble nester; FishBase source text identifies surface bubble-nest reproduction.",
+      "layoutRequirement": "Provide calm surface access and floating or overhanging cover; confirm the species-specific nest and fry protocol with specialist breeder guidance.",
+      "comments": "Usually occurs in peat swamps. Also found in swamp forest habitats (Ref. 56613). A bubble nest builder (Ref. 56613). Reproductive mode: dioecism. Fertilization: external. Guild: guarders; nesters."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The slender giant betta is a surface-cover specialist with bubble-nesting roots.",
+        "pro": "Betta bellica; large bubble-nesting Betta with specialist habitat and breeding needs."
+      },
+      "flavorText": {
+        "casual": "The slender giant betta is a surface-cover specialist with bubble-nesting roots. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Betta bellica; large bubble-nesting Betta with specialist habitat and breeding needs. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 4772,
+    "scientificName": "Trichogaster labiosa",
+    "genus": "Trichogaster",
+    "species": "labiosa",
+    "commonName": "Thick lipped gourami",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 9,
+    "masterPhotoUrl": "/species-images/trichogaster-labiosa.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Trichogaster-labiosa.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Found in rivers. Aquarium keeping: minimum aquarium size 100 cm (Ref. 51539)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Parental care or guarding is reported; FishBase reproductive guild: guarders; nesters.",
+      "layoutRequirement": "Provide sheltered structure and minimize disturbance around the breeding site; exact captive layout requires specialist review.",
+      "comments": "Found in rivers. Aquarium keeping: minimum aquarium size 100 cm (Ref. 51539). Reproductive mode: dioecism. Fertilization: external. Guild: guarders; nesters. FishBase aquarium-breeding rating: Medium."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A banded gourami with a patient surface-level breeding story.",
+        "pro": "Trichogaster labiosa; bubble nester with FishBase aquarium reproduction and a reported 500–600 egg range."
+      },
+      "flavorText": {
+        "casual": "A banded gourami with a patient surface-level breeding story. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Trichogaster labiosa; bubble nester with FishBase aquarium reproduction and a reported 500–600 egg range. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 4675,
+    "scientificName": "Trichopodus trichopterus",
+    "genus": "Trichopodus",
+    "species": "trichopterus",
+    "commonName": "Three spot gourami",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 15,
+    "masterPhotoUrl": "/species-images/trichopodus-trichopterus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Trichopodus-trichopterus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Lives in lowland wetlands (Ref. 57235). Found in marshes, swamps and canals (Ref. 43281). Inhabits shallow sluggish or standing-water with a lot of aquatic vegetation. Occurs in seasonally flooded forests throughout the middle and lower Mekong (Ref. 12693). Undertakes lateral migrations from the Mekong mainstream, or other permanent water bodies, to flooded areas during the flood season and returns to the permanent water bodies at the onset of the dry season (Ref. 37770). An air-breathing species (Ref. 118402). Feeds on zooplankton, crustaceans and insect larvae. Processed into salted, dried fish in Java (Ref. 4929). Also marketed fresh and commonly seen in the aquarium fish trade (Ref. 12693). Aquarium keeping: minimum aquarium size 100 cm (Ref. 51539)."
+    },
+    "diet": {
+      "trophicLevel": "Herbivore / Detritivore",
+      "fooditems": "bits of vegetation, filamentous algae, Ipomoea sp., Lemna sp., diatoms, unidentified larvae, planktonic organisms, unidentified cladocerans, unidentified copepods",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Parental care or guarding is reported; FishBase reproductive guild: guarders; nesters.",
+      "layoutRequirement": "Provide sheltered structure and minimize disturbance around the breeding site; exact captive layout requires specialist review.",
+      "comments": "Lives in lowland wetlands (Ref. 57235). Found in marshes, swamps and canals (Ref. 43281). Inhabits shallow sluggish or standing-water with a lot of aquatic vegetation. Occurs in seasonally flooded forests throughout the middle and lower Mekong (Ref. 12693). Undertakes lateral migrations from the Mekong mainstream, or other permanent water bodies, to flooded areas during the flood season and returns to the permanent water bodies at the onset of the dry season (Ref. 37770). An air-breathing species (Ref. 118402). Feeds on zooplankton, crustaceans and insect larvae. Processed into salted, dried fish in Java (Ref. 4929). Also marketed fresh and commonly seen in the aquarium fish trade (Ref. 12693). Aquarium keeping: minimum aquarium size 100 cm (Ref. 51539). Reproductive mode: dioecism. Fertilization: external. Guild: guarders; nesters. FishBase aquarium-breeding rating: Medium. Spawning area: Mekong basin at Can Tho Province."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The three-spot gourami brings familiar labyrinth-fish character in several wild forms.",
+        "pro": "Trichopodus trichopterus; bubble-nesting gourami with source-backed surface breeding behavior."
+      },
+      "flavorText": {
+        "casual": "The three-spot gourami brings familiar labyrinth-fish character in several wild forms. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Trichopodus trichopterus; bubble-nesting gourami with source-backed surface breeding behavior. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12034,
+    "scientificName": "Betta anabatoides",
+    "genus": "Betta",
+    "species": "anabatoides",
+    "commonName": "Giant betta",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 8.22,
+    "masterPhotoUrl": "/species-images/betta-anabatoides.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Betta-anabatoides.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Found in a murky stream, up to 1.2 m deep and pH 7.5. The stream water was sluggish and drained from cultivated area upstream (Ref. 81926). Seen only in local markets. Mouth brooder (Ref. 4537)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Mouthbrooder; FishBase source text identifies oral egg or fry incubation.",
+      "layoutRequirement": "Provide secure cover and low-stress structure for the holding parent; confirm the species-specific mouthbrooding protocol with specialist breeder guidance.",
+      "comments": "Found in a murky stream, up to 1.2 m deep and pH 7.5. The stream water was sluggish and drained from cultivated area upstream (Ref. 81926). Seen only in local markets. Mouth brooder (Ref. 4537). Reproductive mode: dioecism. Fertilization: in brood pouch or similar structure. Guild: bearers; external brooders."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A large-bodied mouthbrooder for keepers drawn to understated wild bettas.",
+        "pro": "Betta anabatoides; paternal mouthbrooder with source-backed reproductive records."
+      },
+      "flavorText": {
+        "casual": "A large-bodied mouthbrooder for keepers drawn to understated wild bettas. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Betta anabatoides; paternal mouthbrooder with source-backed reproductive records. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 25132,
+    "scientificName": "Betta coccina",
+    "genus": "Betta",
+    "species": "coccina",
+    "commonName": "Labyrinth fish (Betta coccina)",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 5.6,
+    "masterPhotoUrl": "/species-images/betta-coccina.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Betta-coccina.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "FishBase has limited ecology notes for this species."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Parental care or guarding is reported; FishBase reproductive guild: guarders; nesters.",
+      "layoutRequirement": "Provide sheltered structure and minimize disturbance around the breeding site; exact captive layout requires specialist review.",
+      "comments": "Reproductive mode: dioecism. Fertilization: external. Guild: guarders; nesters."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The scarlet badis-like betta is tiny, vivid, and built for a carefully structured setup.",
+        "pro": "Betta coccina; small bubble-nesting Betta with specialist soft-water requirements to verify."
+      },
+      "flavorText": {
+        "casual": "The scarlet badis-like betta is tiny, vivid, and built for a carefully structured setup. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Betta coccina; small bubble-nesting Betta with specialist soft-water requirements to verify. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 15896,
+    "scientificName": "Betta edithae",
+    "genus": "Betta",
+    "species": "edithae",
+    "commonName": "Labyrinth fish (Betta edithae)",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 8.2,
+    "masterPhotoUrl": "/species-images/betta-edithae.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Betta-edithae.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occasionally in the ornamental trade."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "FishBase reproductive guild: bearers; external brooders.",
+      "layoutRequirement": "Species-specific spawning layout is not reported in the local extract; specialist review is required before presenting a breeding setup.",
+      "comments": "Occasionally in the ornamental trade. Reproductive mode: dioecism. Fertilization: in brood pouch or similar structure. Guild: bearers; external brooders."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A quiet mouthbrooder whose natural-history details reward close observation.",
+        "pro": "Betta edithae; source-backed mouthbrooding Betta with species-specific captive methods requiring review."
+      },
+      "flavorText": {
+        "casual": "A quiet mouthbrooder whose natural-history details reward close observation. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Betta edithae; source-backed mouthbrooding Betta with species-specific captive methods requiring review. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 15897,
+    "scientificName": "Betta foerschi",
+    "genus": "Betta",
+    "species": "foerschi",
+    "commonName": "Labyrinth fish (Betta foerschi)",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 7,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Betta-foerschi.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "In rain forest creek."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Parental care or guarding is reported; FishBase reproductive guild: guarders; nesters.",
+      "layoutRequirement": "Provide sheltered structure and minimize disturbance around the breeding site; exact captive layout requires specialist review.",
+      "comments": "In rain forest creek. Reproductive mode: dioecism. Fertilization: external. Guild: guarders; nesters."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A dark, iridescent wild betta with a bubble nest beneath the surface cover.",
+        "pro": "Betta foerschi; bubble-nesting Betta with conservative care and breeding guidance required."
+      },
+      "flavorText": {
+        "casual": "A dark, iridescent wild betta with a bubble nest beneath the surface cover. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Betta foerschi; bubble-nesting Betta with conservative care and breeding guidance required. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12078,
+    "scientificName": "Parosphromenus deissneri",
+    "genus": "Parosphromenus",
+    "species": "deissneri",
+    "commonName": "Licorice gourami",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 2.96,
+    "masterPhotoUrl": "/species-images/parosphromenus-deissneri.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Parosphromenus-deissneri.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Inhabits slow flowing creeks among vegetation."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Parental care or guarding is reported; FishBase reproductive guild: guarders; clutch tenders.",
+      "layoutRequirement": "Provide sheltered structure and minimize disturbance around the breeding site; exact captive layout requires specialist review.",
+      "comments": "Inhabits slow flowing creeks among vegetation. Reproductive mode: dioecism. Fertilization: external. Guild: guarders; clutch tenders."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A licorice gourami for the aquarist who enjoys blackwater precision.",
+        "pro": "Parosphromenus deissneri; cave-associated and guarding breeder from specialist blackwater habitat."
+      },
+      "flavorText": {
+        "casual": "A licorice gourami for the aquarist who enjoys blackwater precision. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Parosphromenus deissneri; cave-associated and guarding breeder from specialist blackwater habitat. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12079,
+    "scientificName": "Parosphromenus filamentosus",
+    "genus": "Parosphromenus",
+    "species": "filamentosus",
+    "commonName": "Spiketail gourami",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 4,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Parosphromenus-filamentosus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "FishBase has limited ecology notes for this species."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Parental care or guarding is reported; FishBase reproductive guild: guarders; nesters.",
+      "layoutRequirement": "Provide sheltered structure and minimize disturbance around the breeding site; exact captive layout requires specialist review.",
+      "comments": "Reproductive mode: dioecism. Fertilization: external. Guild: guarders; nesters."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A threadfin licorice gourami that turns a shaded nano tank into a behavior study.",
+        "pro": "Parosphromenus filamentosus; bubble-nesting specialist with source-backed reproductive data."
+      },
+      "flavorText": {
+        "casual": "A threadfin licorice gourami that turns a shaded nano tank into a behavior study. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Parosphromenus filamentosus; bubble-nesting specialist with source-backed reproductive data. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 4729,
+    "scientificName": "Trichopodus microlepis",
+    "genus": "Trichopodus",
+    "species": "microlepis",
+    "commonName": "Moonlight gourami",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 14,
+    "masterPhotoUrl": "/species-images/trichopodus-microlepis.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Trichopodus-microlepis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Found in ponds and swamps (Ref. 43281). Occurs in shallow sluggish or standing water habitats with a lot of aquatic vegetation. Common in the floodplain of the lower Mekong. Feeds on zooplankton, crustaceans and aquatic insects (Ref. 12693). An air-breathing species (Ref. 118402). Marketed fresh (Ref. 12693)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Feeds on zooplankton, crustaceans and aquatic insects (Ref.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Parental care or guarding is reported; FishBase reproductive guild: guarders; nesters.",
+      "layoutRequirement": "Provide sheltered structure and minimize disturbance around the breeding site; exact captive layout requires specialist review.",
+      "comments": "Found in ponds and swamps (Ref. 43281). Occurs in shallow sluggish or standing water habitats with a lot of aquatic vegetation. Common in the floodplain of the lower Mekong. Feeds on zooplankton, crustaceans and aquatic insects (Ref. 12693). An air-breathing species (Ref. 118402). Marketed fresh (Ref. 12693). Reproductive mode: dioecism. Fertilization: external. Guild: guarders; nesters. FishBase aquarium-breeding rating: Medium."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The moonlight gourami is a calm, pale presence with a substantial bubble nest.",
+        "pro": "Trichopodus microlepis; bubble nester with FishBase aquarium reproduction and a reported 500–1,000 egg range."
+      },
+      "flavorText": {
+        "casual": "The moonlight gourami is a calm, pale presence with a substantial bubble nest. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Trichopodus microlepis; bubble nester with FishBase aquarium reproduction and a reported 500–1,000 egg range. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12044,
+    "scientificName": "Betta rubra",
+    "genus": "Betta",
+    "species": "rubra",
+    "commonName": "Toba betta",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 5,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Betta-rubra.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Found in peat swamps (Ref. 93059). Bubble nest builder (Ref. 4537)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Bubble nester; FishBase source text identifies surface bubble-nest reproduction.",
+      "layoutRequirement": "Provide calm surface access and floating or overhanging cover; confirm the species-specific nest and fry protocol with specialist breeder guidance.",
+      "comments": "Found in peat swamps (Ref. 93059). Bubble nest builder (Ref. 4537). Reproductive mode: dioecism. Fertilization: external. Guild: guarders; external brooders. Parental care: paternal."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A red wild betta whose small scale makes every detail easy to notice.",
+        "pro": "Betta rubra; bubble-nesting Betta with species-specific captive breeding guidance requiring review."
+      },
+      "flavorText": {
+        "casual": "A red wild betta whose small scale makes every detail easy to notice. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Betta rubra; bubble-nesting Betta with species-specific captive breeding guidance requiring review. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12037,
+    "scientificName": "Betta fusca",
+    "genus": "Betta",
+    "species": "fusca",
+    "commonName": "Dusky betta",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 8.2,
+    "masterPhotoUrl": "/species-images/betta-fusca.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Betta-fusca.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Mouth brooder (Ref. 4537)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Mouthbrooder; FishBase source text identifies oral egg or fry incubation.",
+      "layoutRequirement": "Provide secure cover and low-stress structure for the holding parent; confirm the species-specific mouthbrooding protocol with specialist breeder guidance.",
+      "comments": "Mouth brooder (Ref. 4537)."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A muted forest betta with a paternal mouthbrooding strategy.",
+        "pro": "Betta fusca; source-backed mouthbrooder with specialist habitat and water requirements."
+      },
+      "flavorText": {
+        "casual": "A muted forest betta with a paternal mouthbrooding strategy. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Betta fusca; source-backed mouthbrooder with specialist habitat and water requirements. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 12048,
+    "scientificName": "Betta taeniata",
+    "genus": "Betta",
+    "species": "taeniata",
+    "commonName": "Borneo betta",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 5.49,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Betta-taeniata.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs mostly in fast flowing clear water hill stream (Ref. 56613). Found in the more stagnant stretches of the stream, among the submerged leaf litter, tree root and overhanging bank vegetation (Ref. 56613). A mouth brooder (Ref. 56613)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Mouthbrooder; FishBase source text identifies oral egg or fry incubation.",
+      "layoutRequirement": "Provide secure cover and low-stress structure for the holding parent; confirm the species-specific mouthbrooding protocol with specialist breeder guidance.",
+      "comments": "Occurs mostly in fast flowing clear water hill stream (Ref. 56613). Found in the more stagnant stretches of the stream, among the submerged leaf litter, tree root and overhanging bank vegetation (Ref. 56613). A mouth brooder (Ref. 56613)."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A striped mouthbrooder that favors the subtle side of the Betta palette.",
+        "pro": "Betta taeniata; source-backed paternal mouthbrooder requiring conservative specialist care."
+      },
+      "flavorText": {
+        "casual": "A striped mouthbrooder that favors the subtle side of the Betta palette. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Betta taeniata; source-backed paternal mouthbrooder requiring conservative specialist care. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 5440,
+    "scientificName": "Betta unimaculata",
+    "genus": "Betta",
+    "species": "unimaculata",
+    "commonName": "Howong betta",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 12.6,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Betta-unimaculata.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Mouth brooder (Ref. 4537)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Mouthbrooder; FishBase source text identifies oral egg or fry incubation.",
+      "layoutRequirement": "Provide secure cover and low-stress structure for the holding parent; confirm the species-specific mouthbrooding protocol with specialist breeder guidance.",
+      "comments": "Mouth brooder (Ref. 4537)."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The slender one-spot betta is a long-bodied mouthbrooder with a distinctive silhouette.",
+        "pro": "Betta unimaculata; large, slender paternal mouthbrooder with specialist breeding needs."
+      },
+      "flavorText": {
+        "casual": "The slender one-spot betta is a long-bodied mouthbrooder with a distinctive silhouette. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Betta unimaculata; large, slender paternal mouthbrooder with specialist breeding needs. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 62587,
+    "scientificName": "Parosphromenus sumatranus",
+    "genus": "Parosphromenus",
+    "species": "sumatranus",
+    "commonName": "Labyrinth fish (Parosphromenus sumatranus)",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 2.28,
+    "masterPhotoUrl": "/species-images/parosphromenus-sumatranus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Parosphromenus-sumatranus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Has been exported for the aquarium trade as Parosphromenus deissneri ."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are not reported in the local FishBase extract; manual specialist review is required.",
+      "layoutRequirement": "Species-specific spawning layout is not reported in the local extract; specialist review is required before presenting a breeding setup.",
+      "comments": "Has been exported for the aquarium trade as Parosphromenus deissneri ."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A Sumatran licorice gourami for a quiet, botanical blackwater project.",
+        "pro": "Parosphromenus sumatranus; specialist blackwater labyrinth fish with reproductive details requiring review."
+      },
+      "flavorText": {
+        "casual": "A Sumatran licorice gourami for a quiet, botanical blackwater project. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Parosphromenus sumatranus; specialist blackwater labyrinth fish with reproductive details requiring review. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 15895,
+    "scientificName": "Parosphromenus nagyi",
+    "genus": "Parosphromenus",
+    "species": "nagyi",
+    "commonName": "Labyrinth fish (Parosphromenus nagyi)",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 4,
+    "masterPhotoUrl": "/species-images/parosphromenus-nagyi.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Parosphromenus-nagyi.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Recorded from peat-swamp forests (Ref. 84801). In the deeper part of creeks. Males build bubble nests in caves, using atmospheric air."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Bubble nester; FishBase source text identifies surface bubble-nest reproduction.",
+      "layoutRequirement": "Provide calm surface access and floating or overhanging cover; confirm the species-specific nest and fry protocol with specialist breeder guidance.",
+      "comments": "Recorded from peat-swamp forests (Ref. 84801). In the deeper part of creeks. Males build bubble nests in caves, using atmospheric air."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A tiny licorice gourami whose cave-guarding behavior rewards a deliberate setup.",
+        "pro": "Parosphromenus nagyi; cave-associated guarding breeder with source-backed specialist behavior."
+      },
+      "flavorText": {
+        "casual": "A tiny licorice gourami whose cave-guarding behavior rewards a deliberate setup. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Parosphromenus nagyi; cave-associated guarding breeder with source-backed specialist behavior. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 499,
+    "scientificName": "Trichopodus pectoralis",
+    "genus": "Trichopodus",
+    "species": "pectoralis",
+    "commonName": "Snakeskin gourami",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 25,
+    "masterPhotoUrl": "/species-images/trichopodus-pectoralis.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Trichopodus-pectoralis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Found in shallow sluggish or standing-water habitats with a lot of aquatic vegetation. Occurs in flooded forests of the lower Mekong and gradually moves back to rivers and Great Lake as floodwaters recede (Ref. 12693, 57235). Generally feeds on aquatic plants. Can breathe air directly, as well as absorb oxygen from water through its gills (Ref. 9987). The flesh is of good quality; may be grilled or used for fish soup. In Thailand there is a trade of dried pla salid for the benefit of people in areas where it is not caught (Ref 2686). Cultured both for food and for export as aquarium fish (Ref. 9987). Marketed fresh (Ref. 12693). Highly economic species; both by capture and culture includes in the peat areas (Ref. 57235)."
+    },
+    "diet": {
+      "trophicLevel": "Herbivore / Detritivore",
+      "fooditems": "debris, unidentified plankton, unidentified algae, Ipomoea sp., Lemna sp., diatoms, unidentified slugs, unidentified spiders, insect larvae",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Parental care or guarding is reported; FishBase reproductive guild: guarders; nesters.",
+      "layoutRequirement": "Provide sheltered structure and minimize disturbance around the breeding site; exact captive layout requires specialist review.",
+      "comments": "Found in shallow sluggish or standing-water habitats with a lot of aquatic vegetation. Occurs in flooded forests of the lower Mekong and gradually moves back to rivers and Great Lake as floodwaters recede (Ref. 12693, 57235). Generally feeds on aquatic plants. Can breathe air directly, as well as absorb oxygen from water through its gills (Ref. 9987). The flesh is of good quality; may be grilled or used for fish soup. In Thailand there is a trade of dried pla salid for the benefit of people in areas where it is not caught (Ref 2686). Cultured both for food and for export as aquarium fish (Ref. 9987). Marketed fresh (Ref. 12693). Highly economic species; both by capture and culture includes in the peat areas (Ref. 57235). Reproductive mode: dioecism. Fertilization: external. Guild: guarders; nesters. FishBase aquarium-breeding rating: Medium. Spawning area: Thailand. Recorded fecundity: 1000–10000."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The snakeskin gourami is the broad-bodied, nest-guarding anchor of this batch.",
+        "pro": "Trichopodus pectoralis; male bubble-nest builder with egg collection and guarding reported in FishBase."
+      },
+      "flavorText": {
+        "casual": "The snakeskin gourami is the broad-bodied, nest-guarding anchor of this batch. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Trichopodus pectoralis; male bubble-nest builder with egg collection and guarding reported in FishBase. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 4795,
+    "scientificName": "Macropodus ocellatus",
+    "genus": "Macropodus",
+    "species": "ocellatus",
+    "commonName": "Round tail paradisefish",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 8.6,
+    "masterPhotoUrl": "/species-images/macropodus-ocellatus.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Macropodus-ocellatus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Biology similar to Macropodus opercularis . Reported to be well-adapted to low winter temperatures (4-25°C); adults and juveniles (about 1.5 cm SL), are sometimes active under ice cover (E. Willems pes.comm. 11/12)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are not reported in the local FishBase extract; manual specialist review is required.",
+      "layoutRequirement": "Species-specific spawning layout is not reported in the local extract; specialist review is required before presenting a breeding setup.",
+      "comments": "Biology similar to Macropodus opercularis . Reported to be well-adapted to low winter temperatures (4-25°C); adults and juveniles (about 1.5 cm SL), are sometimes active under ice cover (E. Willems pes.comm. 11/12)."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The roundtail paradise fish carries cool-water labyrinth-fish character and old-world form.",
+        "pro": "Macropodus ocellatus; temperate paradise fish with species-specific breeding and housing details requiring review."
+      },
+      "flavorText": {
+        "casual": "The roundtail paradise fish carries cool-water labyrinth-fish character and old-world form. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Macropodus ocellatus; temperate paradise fish with species-specific breeding and housing details requiring review. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 63050,
+    "scientificName": "Betta raja",
+    "genus": "Betta",
+    "species": "raja",
+    "commonName": "Labyrinth fish (Betta raja)",
+    "family": "Osphronemidae",
+    "type": "fish",
+    "maxLengthCm": 6.38,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Betta-raja.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Inhabits lowland swamp forests (Ref. 56386)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Breeding details are not reported in the local FishBase extract; manual specialist review is required.",
+      "layoutRequirement": "Species-specific spawning layout is not reported in the local extract; specialist review is required before presenting a breeding setup.",
+      "comments": "Inhabits lowland swamp forests (Ref. 56386)."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A royal wild betta for the aquarist who prefers research-led restraint.",
+        "pro": "Betta raja; specialist wild Betta with source-backed natural-history data and captive methods requiring review."
+      },
+      "flavorText": {
+        "casual": "A royal wild betta for the aquarist who prefers research-led restraint. Start with stable water, secure surface access, and species-specific research before attempting a breeding setup.",
+        "pro": "Betta raja; specialist wild Betta with source-backed natural-history data and captive methods requiring review. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
   }
 ]

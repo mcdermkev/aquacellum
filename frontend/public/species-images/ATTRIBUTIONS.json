@@ -1768,5 +1768,89 @@
     "source": "inaturalist",
     "license": "cc-by-sa",
     "attribution": "(c) Henrique Bitencourt, some rights reserved (CC BY-SA)"
+  },
+  {
+    "species": "Betta akarensis",
+    "source": "wikimedia",
+    "license": "CC BY-SA 4.0",
+    "attribution": "Florida Museum of Natural History Ichthyology"
+  },
+  {
+    "species": "Betta bellica",
+    "source": "wikimedia",
+    "license": "CC BY-SA 3.0",
+    "attribution": "Wikimedia Commons"
+  },
+  {
+    "species": "Trichogaster labiosa",
+    "source": "wikimedia",
+    "license": "Public domain",
+    "attribution": "<bdi><a href=\"https://en.wikipedia.org/wiki/en:George_Henry_Ford\" class=\"extiw\" title=\"w:en:George Henry Ford\"><span title=\"South African artist 1808/9–1876)\">George Henry Ford</span></a></bdi>"
+  },
+  {
+    "species": "Trichopodus trichopterus",
+    "source": "wikimedia",
+    "license": "CC BY 4.0",
+    "attribution": "<a rel=\"nofollow\" class=\"external text\" href=\"https://www.inaturalist.org/users/2050487\">Christopher</a>"
+  },
+  {
+    "species": "Betta anabatoides",
+    "source": "inaturalist",
+    "license": "cc0",
+    "attribution": "no rights reserved"
+  },
+  {
+    "species": "Betta coccina",
+    "source": "inaturalist",
+    "license": "cc-by",
+    "attribution": "(c) Zakqary Roy, some rights reserved (CC BY)"
+  },
+  {
+    "species": "Betta edithae",
+    "source": "inaturalist",
+    "license": "cc0",
+    "attribution": "no rights reserved"
+  },
+  {
+    "species": "Parosphromenus deissneri",
+    "source": "wikimedia",
+    "license": "CC BY-SA 4.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:YIE_BABEL&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:YIE BABEL (page does not exist)\">YIE BABEL</a>"
+  },
+  {
+    "species": "Trichopodus microlepis",
+    "source": "wikimedia",
+    "license": "CC BY-SA 3.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/wiki/User:Llez\" title=\"User:Llez\">H. Zell</a>"
+  },
+  {
+    "species": "Betta fusca",
+    "source": "wikimedia",
+    "license": "CC BY-SA 3.0",
+    "attribution": "R.J. Blach"
+  },
+  {
+    "species": "Parosphromenus sumatranus",
+    "source": "wikimedia",
+    "license": "CC BY-SA 4.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:YIE_BABEL&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:YIE BABEL (page does not exist)\">YIE BABEL</a>"
+  },
+  {
+    "species": "Parosphromenus nagyi",
+    "source": "inaturalist",
+    "license": "cc-by",
+    "attribution": "(c) Zakqary Roy, some rights reserved (CC BY)"
+  },
+  {
+    "species": "Trichopodus pectoralis",
+    "source": "wikimedia",
+    "license": "CC BY-SA 4.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Baitoeytnt&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:Baitoeytnt (page does not exist)\">BEDO (Thailand)</a>]"
+  },
+  {
+    "species": "Macropodus ocellatus",
+    "source": "wikimedia",
+    "license": "CC BY 3.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Joris_Raats&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:Joris Raats (page does not exist)\">Joris Raats</a>"
   }
 ]
