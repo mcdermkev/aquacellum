@@ -1390,5 +1390,281 @@
     "source": "inaturalist",
     "license": "cc-by-nc",
     "attribution": "(c) Aniekan-Abasi Uwatt, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias setnai",
+    "source": "wikimedia",
+    "license": "CC BY-SA 4.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Beta_Mahatvaraj&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:Beta Mahatvaraj (page does not exist)\">Beta Mahatvaraj</a>"
+  },
+  {
+    "species": "Oryzias latipes",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) Peter Kulyk, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Adrianichthys kruyti",
+    "source": "wikimedia",
+    "license": "Public domain",
+    "attribution": "Max Weber; L. F. de Beaufort"
+  },
+  {
+    "species": "Adrianichthys oophorus",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) fachrynurmallojr, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Adrianichthys poptae",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) fachrynurmallojr, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias sarasinorum",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) fachrynurmallojr, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias matanensis",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) fachrynurmallojr, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias nigrimas",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) Tse Chung Yi, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias orthognathus",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) fachrynurmallojr, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias profundicola",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) Tse Chung Yi, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias celebensis",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) Rian Arisandy, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias javanicus",
+    "source": "inaturalist",
+    "license": "CC-BY-NC",
+    "attribution": "(c) Andaman Kaosung, all rights reserved"
+  },
+  {
+    "species": "Oryzias mekongensis",
+    "source": "wikimedia",
+    "license": "CC BY-SA 4.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/wiki/User:Andrewbogott\" title=\"User:Andrewbogott\">Andrewbogott</a>"
+  },
+  {
+    "species": "Oryzias minutillus",
+    "source": "inaturalist",
+    "license": "CC-BY-NC",
+    "attribution": "(c) Thadoe Wai, all rights reserved"
+  },
+  {
+    "species": "Oryzias curvinotus",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) H.T.Cheng, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias dancena",
+    "source": "inaturalist",
+    "license": "CC-BY-NC",
+    "attribution": "(c) Andaman Kaosung, all rights reserved"
+  },
+  {
+    "species": "Oryzias carnaticus",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) V.Arun, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias uwai",
+    "source": "inaturalist",
+    "license": "CC-BY-NC",
+    "attribution": "(c) Nyi Min Htet, all rights reserved"
+  },
+  {
+    "species": "Oryzias pectoralis",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) p_concolor, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias hubbsi",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) Ahsan al hidayat, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias sinensis",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) Peter Kulyk, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias nebulosus",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) fachrynurmallojr, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias melastigma",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) V.Arun, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias bonneorum",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) fachrynurmallojr, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias woworae",
+    "source": "wikimedia",
+    "license": "CC BY-SA 3.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:The_Last_99&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:The Last 99 (page does not exist)\">The Last 99</a>"
+  },
+  {
+    "species": "Oryzias sakaizumii",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) r-fujii, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias kalimpaaensis",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) Ariyo Prasetyo, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias chenglongensis",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) lubukun, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias loxolepis",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) adryan_ryalisar, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias mekongensis",
+    "source": "wikimedia",
+    "license": "CC BY-SA 4.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/wiki/User:Andrewbogott\" title=\"User:Andrewbogott\">Andrewbogott</a>"
+  },
+  {
+    "species": "Oryzias minutillus",
+    "source": "inaturalist",
+    "license": "CC-BY-NC",
+    "attribution": "(c) Thadoe Wai, all rights reserved"
+  },
+  {
+    "species": "Oryzias curvinotus",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) H.T.Cheng, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias dancena",
+    "source": "inaturalist",
+    "license": "CC-BY-NC",
+    "attribution": "(c) Andaman Kaosung, all rights reserved"
+  },
+  {
+    "species": "Oryzias carnaticus",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) V.Arun, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias uwai",
+    "source": "inaturalist",
+    "license": "CC-BY-NC",
+    "attribution": "(c) Nyi Min Htet, all rights reserved"
+  },
+  {
+    "species": "Oryzias pectoralis",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) p_concolor, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias hubbsi",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) Ahsan al hidayat, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias sinensis",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) Peter Kulyk, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias nebulosus",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) fachrynurmallojr, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias melastigma",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) V.Arun, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias bonneorum",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) fachrynurmallojr, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias woworae",
+    "source": "wikimedia",
+    "license": "CC BY-SA 3.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:The_Last_99&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:The Last 99 (page does not exist)\">The Last 99</a>"
+  },
+  {
+    "species": "Oryzias sakaizumii",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) r-fujii, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias kalimpaaensis",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) Ariyo Prasetyo, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias chenglongensis",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) lubukun, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Oryzias loxolepis",
+    "source": "inaturalist",
+    "license": "cc-by-nc",
+    "attribution": "(c) adryan_ryalisar, some rights reserved (CC BY-NC)"
   }
 ]
