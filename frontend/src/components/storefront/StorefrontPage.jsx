@@ -18,6 +18,11 @@ import { StorefrontSkeleton } from "./StorefrontSkeleton";
 import { SellerReputation } from "../reviews/SellerReputation";
 import { useStorefront, useStorefrontCache } from "../../hooks/useStorefront";
 import { WifiSlash, ArrowClockwise, Storefront as StorefrontIcon } from "@phosphor-icons/react";
+import { getListingKey, getCanonicalListingKey } from "../../services/catalogQuery";
+import { useMarketplaceListings } from "../../hooks/useMarketplaceListings";
+import { CONTRACT_ADDRESS, MARKETPLACE_ADDRESS } from "../../config/appConfig";
+import { sameWallet } from "../../utils/wallet";
+import "../../styles/storefront.css";
 
 // Self-contained QueryClient for the standalone storefront page
 const storefrontQueryClient = new QueryClient({
@@ -174,13 +179,14 @@ const DEMO_STOREFRONT_DATA = {
   fetchedAt: Date.now(),
 };
 
-function StorefrontContent() {
-  // Extract identifier from URL path: /store/{slug-or-wallet}
-  const identifier = useMemo(() => {
-    const path = window.location.pathname;
-    const match = path.match(/\/store\/([^/?#]+)/);
+export function StorefrontContent({ identifier: explicitIdentifier = null, onOpenListing, embedded = false }) {
+  // Standalone pages derive the slug from /store/:slug. The app shell passes an
+  // explicit identifier so the same content renders under /app/store/:slug.
+  const pathIdentifier = useMemo(() => {
+    const match = window.location.pathname.match(/\/store\/([^/?#]+)/);
     return match ? decodeURIComponent(match[1]) : null;
   }, []);
+  const identifier = explicitIdentifier || pathIdentifier;
 
   // Demo mode: use sample data when visiting /store/demo
   const isDemo = identifier === "demo" || identifier === "coral-kings";
@@ -206,6 +212,12 @@ function StorefrontContent() {
 
   const { data: storefront, isLoading, error, refetch } = useStorefront(identifier, { enabled: !isDemo });
   const { data: cachedStorefront } = useStorefrontCache(identifier);
+  const {
+    data: sharedCatalog = [],
+    isAuthoritative: catalogAuthoritative,
+    authoritativeListingKeys,
+    isLoading: catalogLoading,
+  } = useMarketplaceListings(CONTRACT_ADDRESS, MARKETPLACE_ADDRESS);
 
   // Filters
   const [filterType, setFilterType] = useState("all");
@@ -224,13 +236,28 @@ function StorefrontContent() {
     };
   }, []);
 
-  // Determine what data to display (live, cached fallback, or demo)
+  // Profile/reputation may use the storefront cache for display, but listing
+  // commerce always comes from the shared catalog projection joined by the
+  // live profile's canonical wallet. A cached listing snapshot remains visibly
+  // useful offline but cannot open a transactional product route.
   const displayData = isDemo ? DEMO_STOREFRONT_DATA : (storefront || cachedStorefront);
+  const liveStoreWallet = storefront?.profile?.walletAddress || null;
+  const sharedStoreListings = useMemo(() => {
+    if (!liveStoreWallet) return [];
+    return sharedCatalog.filter((listing) => sameWallet(
+      listing.seller || listing.sellerAddress,
+      liveStoreWallet,
+    ));
+  }, [liveStoreWallet, sharedCatalog]);
+  const displayListings = isDemo
+    ? (DEMO_STOREFRONT_DATA.listings || [])
+    : liveStoreWallet && sharedStoreListings.length > 0
+      ? sharedStoreListings
+      : (displayData?.listings || []);
 
   // Filter + sort listings
   const filteredListings = useMemo(() => {
-    if (!displayData?.listings) return [];
-    let items = [...displayData.listings];
+    let items = [...displayListings];
 
     // Type filter
     if (filterType === "specimen") {
@@ -254,22 +281,42 @@ function StorefrontContent() {
     }
 
     return items;
-  }, [displayData, filterType, sortBy]);
+  }, [displayListings, filterType, sortBy]);
 
-  // Purchase handler — routes through existing checkout
-  const handleBuyNow = useCallback((listing) => {
-    const isBatch = listing.isBatch || listing.type === "batch";
-    // Navigate to the main app checkout flow
-    const baseUrl = window.location.origin;
-    const targetUrl = `${baseUrl}/app#directory`;
-    window.location.href = targetUrl;
-  }, []);
+  const isListingActionable = useCallback((listing) => {
+    if (isDemo || !catalogAuthoritative || !liveStoreWallet) return false;
+    const key = getCanonicalListingKey(listing);
+    return !!key
+      && authoritativeListingKeys.has(key)
+      && sharedStoreListings.some((candidate) => getCanonicalListingKey(candidate) === key);
+  }, [authoritativeListingKeys, catalogAuthoritative, isDemo, liveStoreWallet, sharedStoreListings]);
+
+  // Listing actions always preserve canonical listing identity. The standalone
+  // wrapper uses location navigation; the embedded app route supplies a router
+  // callback and stays inside the shared provider shell.
+  const handleOpenListing = useCallback((listing) => {
+    if (!isListingActionable(listing)) return;
+    const key = getCanonicalListingKey(listing) || getListingKey(listing);
+    if (onOpenListing) {
+      onOpenListing(key, listing);
+      return;
+    }
+    window.location.href = `${window.location.origin}/app/products/${encodeURIComponent(key)}`;
+  }, [isListingActionable, onOpenListing]);
+
+  useEffect(() => {
+    const previousTitle = document.title;
+    if (displayData?.profile?.displayName) {
+      document.title = `${displayData.profile.displayName} — Aquacellum Storefront`;
+    }
+    return () => { document.title = previousTitle; };
+  }, [displayData?.profile?.displayName]);
 
   // ─── Loading state ───────────────────────────────────────────────────────
   if (!isDemo && isLoading && !displayData) {
     return (
       <div className="sf-page">
-        <StorefrontNavbar />
+        {!embedded && <StorefrontNavbar />}
         <main className="sf-page__content">
           <StorefrontSkeleton />
         </main>
@@ -281,7 +328,7 @@ function StorefrontContent() {
   if (!isDemo && error && !displayData) {
     return (
       <div className="sf-page">
-        <StorefrontNavbar />
+        {!embedded && <StorefrontNavbar />}
         <main className="sf-page__content">
           <div className="sf-error glass-card">
             <StorefrontIcon weight="duotone" size={48} style={{ color: "var(--accent-blue)", opacity: 0.6 }} />
@@ -313,7 +360,7 @@ function StorefrontContent() {
   if (!identifier) {
     return (
       <div className="sf-page">
-        <StorefrontNavbar />
+        {!embedded && <StorefrontNavbar />}
         <main className="sf-page__content">
           <div className="sf-error glass-card">
             <StorefrontIcon weight="duotone" size={48} style={{ color: "var(--accent-blue)", opacity: 0.6 }} />
@@ -332,23 +379,22 @@ function StorefrontContent() {
 
   const { profile, stats, breedingHistory } = displayData;
 
-  // Update page title with breeder name
-  useEffect(() => {
-    if (profile?.displayName) {
-      document.title = `${profile.displayName} — Aquacellum Storefront`;
-    }
-  }, [profile]);
-
   return (
     <div className="sf-page" data-tier={profile.currentTier?.toLowerCase()}>
       <a href="#sf-main" className="sf-skip-link">Skip to content</a>
-      <StorefrontNavbar breederName={profile.displayName} />
+      {!embedded && <StorefrontNavbar breederName={profile.displayName} />}
 
       {/* Offline banner */}
       {!isOnline && (
         <div className="sf-offline-banner" role="alert">
           <WifiSlash weight="bold" size={16} />
           <span>Limited offline mode — showing cached data</span>
+        </div>
+      )}
+      {!isDemo && isOnline && (!catalogAuthoritative || catalogLoading) && (
+        <div className="sf-offline-banner" role="status">
+          <WifiSlash weight="bold" size={16} />
+          <span>Live listing verification is unavailable — storefront snapshots are view-only.</span>
         </div>
       )}
 
@@ -363,7 +409,7 @@ function StorefrontContent() {
         <section className="sf-listings" aria-label="Active listings">
           <h2 className="sf-section-title">Active Listings</h2>
 
-          {displayData.listings.length > 0 ? (
+          {displayListings.length > 0 ? (
             <>
               <StorefrontFilters
                 filterType={filterType}
@@ -375,9 +421,10 @@ function StorefrontContent() {
               <div className="sf-listings__grid">
                 {filteredListings.map((listing, idx) => (
                   <ListingCard
-                    key={listing.id || idx}
+                    key={getCanonicalListingKey(listing) || `display-${idx}`}
                     listing={listing}
-                    onBuyNow={handleBuyNow}
+                    onOpenListing={handleOpenListing}
+                    commerceDisabled={!isListingActionable(listing)}
                     style={{ animationDelay: `${idx * 50}ms` }}
                   />
                 ))}
@@ -408,12 +455,13 @@ function StorefrontContent() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="sf-footer">
-        <p>
-          Powered by <a href="/" className="sf-footer__link">Aquacellum</a> — All purchases buyer-protected
-        </p>
-      </footer>
+      {!embedded && (
+        <footer className="sf-footer">
+          <p>
+            Powered by <a href="/" className="sf-footer__link">Aquacellum</a>
+          </p>
+        </footer>
+      )}
     </div>
   );
 }
@@ -447,7 +495,7 @@ function StorefrontNavbar({ breederName }) {
 
       <div className="sf-nav__links">
         <a href="/marketplace">Marketplace</a>
-        <a href="/app#directory">Open App</a>
+        <a href="/app/directory">Open App</a>
       </div>
     </nav>
   );

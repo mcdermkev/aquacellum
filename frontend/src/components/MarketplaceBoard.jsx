@@ -30,6 +30,7 @@ import { hasEntitlement } from "../services/entitlements";
 import { EXPO_ANALYTICS_ENABLED } from "../config/liveEvents";
 import { ProductDetailModal } from "./ProductDetailModal";
 import { useCart } from "../contexts/CartContext";
+import { useAuth } from "../contexts/AuthContext.jsx";
 import { resolveSpecimenPhoto } from "../services/tankMedia";
 
 // Helper: detect if a fishbase record or specCode is a plant entry
@@ -132,6 +133,13 @@ export function MarketplaceBoard({
   onSelectCheckoutOrder,
   activeSellerFilter,
   setActiveSellerFilter,
+  routeListingKey = null,
+  routeView = "listings",
+  routeCollection = "all",
+  onOpenProduct,
+  onCloseProduct,
+  onNavigateMarketplace,
+  onRequireAuth,
   // A saved filter set handed in from Settings → Fish Finder, and the callback that
   // clears it once applied. Mirrors how `filterSpeciesId` / `activeSellerFilter`
   // already arrive from App.jsx.
@@ -151,7 +159,7 @@ export function MarketplaceBoard({
     catch { return new Set(); }
   });
   const [cardImageIndexMap, setCardImageIndexMap] = useState({});
-  const [activeSubTab, setActiveSubTab] = useState("listings"); // "listings" | "wanted" | "analytics"
+  const [activeSubTab, setActiveSubTab] = useState(routeView === "wanted" ? "wanted" : "listings"); // "listings" | "wanted" | "analytics"
   const [actionLoading, setActionLoading] = useState({});
   const [actionTxHash, setActionTxHash] = useState({});
   const [actionError, setActionError] = useState(null);
@@ -164,6 +172,8 @@ export function MarketplaceBoard({
   const [fishbaseData, setFishbaseData] = useState([]);
   const [checkoutQuantityMap, setCheckoutQuantityMap] = useState({});
   const { addItem: addToCart } = useCart();
+  const { authenticated } = useAuth();
+  const canProtectedWrite = !!walletAccount && !!authenticated;
 
   // ── Task 8: unified catalog query state (search/filter/facets) ───────────
   const [searchQuery, setSearchQuery] = useState("");
@@ -191,24 +201,78 @@ export function MarketplaceBoard({
     };
   }, []);
 
-  // Deep-linkable product detail overlay: ?listing=<listingKey>
+  // Product detail is route-owned when App supplies routeListingKey/callbacks.
+  // The legacy ?listing=<key> entry remains readable for old bookmarks.
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedProductListing, setSelectedProductListing] = useState(null);
   const [productNotFound, setProductNotFound] = useState(false);
 
   const openProductDetail = (item) => {
+    const key = getListingKey(item);
+    if (onOpenProduct) {
+      onOpenProduct(key);
+      return;
+    }
     const next = new URLSearchParams(searchParams);
-    next.set("listing", getListingKey(item));
+    next.set("listing", key);
     setSearchParams(next);
   };
 
   const closeProductDetail = () => {
+    if (onCloseProduct) {
+      onCloseProduct();
+      return;
+    }
     const next = new URLSearchParams(searchParams);
     next.delete("listing");
     setSearchParams(next);
     setSelectedProductListing(null);
     setProductNotFound(false);
   };
+
+  const requestAuthForListing = (item, action, quantity = 1) => {
+    openProductDetail(item);
+    onRequireAuth?.({ action, listingKey: getListingKey(item), quantity });
+  };
+
+  const clearProtectedActionMarker = useCallback(() => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("action");
+    next.delete("quantity");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  const openListingConversation = useCallback(async (item) => {
+    const seller = String(item?.seller || "").toLowerCase();
+    if (!seller || (walletAccount && seller === walletAccount.toLowerCase())) return;
+    if (!canProtectedWrite) {
+      onRequireAuth?.({
+        action: "message",
+        listingKey: getListingKey(item),
+        quantity: 1,
+      });
+      return;
+    }
+    try {
+      const { data, error: conversationError } = await getOrCreateConversation(seller);
+      if (conversationError || !data?.id) {
+        setActionError(conversationError?.message || conversationError || "Could not open this conversation.");
+        return;
+      }
+      clearProtectedActionMarker();
+      window.dispatchEvent(new CustomEvent("aquadex_open_conversation", {
+        detail: {
+          conversationId: data.id,
+          targetWallet: seller,
+          listingKey: getListingKey(item),
+          listingName: item.commonName || item.scientificName || "this listing",
+        },
+      }));
+    } catch (err) {
+      console.warn("[MarketplaceBoard] Ask the breeder failed:", err);
+      setActionError("Could not open this conversation.");
+    }
+  }, [canProtectedWrite, clearProtectedActionMarker, onRequireAuth, walletAccount]);
 
   // Local XP for the saved_search entitlement check (browsing itself is
   // REQUIRED and never gated — only the ability to persist a search).
@@ -299,10 +363,8 @@ export function MarketplaceBoard({
   }, [containerWidth]);
 
   useEffect(() => {
-    if (casualModeActive) {
-      setActiveSubTab("listings");
-    }
-  }, [casualModeActive]);
+    setActiveSubTab(routeView === "wanted" ? "wanted" : "listings");
+  }, [routeView]);
 
   useEffect(() => {
     if (cachedGlobalData) {
@@ -358,12 +420,10 @@ export function MarketplaceBoard({
     }
   }, [preselectedListSpecimen]);
 
-  // Deep-link route recovery: resolve ?listing=<listingKey> against the
-  // loaded listings once they're available. An id with no match (sold,
-  // removed, or just wrong) shows the not-found state rather than crashing
-  // or silently doing nothing.
+  // Resolve the canonical route key first, with ?listing retained as a legacy
+  // compatibility entry. Missing/sold ids use the existing not-found modal.
   useEffect(() => {
-    const listingKeyParam = searchParams.get("listing");
+    const listingKeyParam = routeListingKey || searchParams.get("listing");
     if (!listingKeyParam) {
       setSelectedProductListing(null);
       setProductNotFound(false);
@@ -378,7 +438,19 @@ export function MarketplaceBoard({
       setSelectedProductListing(null);
       setProductNotFound(true);
     }
-  }, [searchParams, listings, loading]);
+  }, [routeListingKey, searchParams, listings, loading]);
+
+  // A protected offer intent may reopen its confirmation surface after login,
+  // but never submits an amount or mutation automatically. Remove the action
+  // marker once consumed so closing the modal does not immediately reopen it.
+  useEffect(() => {
+    if (!walletAccount || !selectedProductListing || searchParams.get("action") !== "offer") return;
+    setOfferListing(selectedProductListing);
+    const next = new URLSearchParams(searchParams);
+    next.delete("action");
+    next.delete("quantity");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, selectedProductListing, setSearchParams, walletAccount]);
 
   const fetchListings = async () => {
     await refetchListings();
@@ -442,22 +514,30 @@ export function MarketplaceBoard({
     return BigInt(whole) * 1000000000000000000n + BigInt(fraction);
   };
 
-  // Watchlist toggle
+  // Watchlist migration: new writes use the catalog's canonical listing key.
+  // Legacy s-/b- keys remain readable and are removed alongside their canonical
+  // equivalent the next time a user unsaves that listing.
+  const legacyWatchlistKey = (item) => `${item.isBatch ? "b" : "s"}-${item.id || item.tokenId || item.listingId}`;
+
   const toggleSaveItem = (e, item) => {
     e.stopPropagation();
-    const key = `${item.isBatch ? 'b' : 's'}-${item.id || item.tokenId || item.listingId}`;
+    const key = getListingKey(item);
+    const legacyKey = legacyWatchlistKey(item);
     setSavedItems(prev => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+      if (next.has(key) || next.has(legacyKey)) {
+        next.delete(key);
+        next.delete(legacyKey);
+      } else {
+        next.add(key);
+      }
       localStorage.setItem('aquadex_watchlist', JSON.stringify([...next]));
       return next;
     });
   };
 
   const isItemSaved = (item) => {
-    const key = `${item.isBatch ? 'b' : 's'}-${item.id || item.tokenId || item.listingId}`;
-    return savedItems.has(key);
+    return savedItems.has(getListingKey(item)) || savedItems.has(legacyWatchlistKey(item));
   };
 
   // REMOVED: `breederReputation` — trust tiers derived from ACTIVE LISTING COUNT
@@ -498,23 +578,32 @@ export function MarketplaceBoard({
   const priceMinCents = priceMinInput.trim() !== "" ? Math.round(parseFloat(priceMinInput) * 100) : undefined;
   const priceMaxCents = priceMaxInput.trim() !== "" ? Math.round(parseFloat(priceMaxInput) * 100) : undefined;
 
+  const routeListingType = routeCollection === "batch" ? "batch" : undefined;
+  const routeFulfillment = routeCollection === "shipped"
+    ? FULFILLMENT_TYPES.SHIPPING
+    : routeCollection === "local"
+      ? FULFILLMENT_TYPES.PICKUP
+      : undefined;
+
   const { results: queriedListings, facets } = useMemo(() => {
     return applyCatalogQuery(listings, {
       search: searchQuery,
       family: familyFilter !== "all" ? familyFilter : undefined,
       familyLookup,
       careLevel: careLevelFilter !== "all" ? Number(careLevelFilter) : undefined,
-      fulfillment: fulfillmentFilter !== "all" ? fulfillmentFilter : undefined,
+      fulfillment: fulfillmentFilter !== "all" ? fulfillmentFilter : routeFulfillment,
+      listingType: routeListingType,
       priceMinCents: Number.isFinite(priceMinCents) ? priceMinCents : undefined,
       priceMaxCents: Number.isFinite(priceMaxCents) ? priceMaxCents : undefined,
       sort: catalogSort,
       displayTank,
       speciesLookup: fishbaseLookup,
     });
-  }, [listings, searchQuery, familyFilter, familyLookup, careLevelFilter, fulfillmentFilter, priceMinCents, priceMaxCents, catalogSort, displayTank, fishbaseLookup]);
+  }, [listings, searchQuery, familyFilter, familyLookup, careLevelFilter, fulfillmentFilter, routeFulfillment, routeListingType, priceMinCents, priceMaxCents, catalogSort, displayTank, fishbaseLookup]);
 
   const filteredAndSortedListings = queriedListings
     .filter((item) => {
+      if (routeView === "saved" && !isItemSaved(item)) return false;
       if (activeSellerFilter && item.seller) {
         if (item.seller.toLowerCase() !== activeSellerFilter.toLowerCase()) {
           return false;
@@ -616,17 +705,6 @@ export function MarketplaceBoard({
       }
     }
   }, [virtualItems, rowItems.length, visibleCount, filteredAndSortedListings.length]);
-
-  if (!walletAccount && listings.length === 0) {
-    return (
-      <div className="glass-card" style={{ padding: "3rem", textAlign: "center" }}>
-        <h2 style={{ marginBottom: "1rem", color: "var(--text-secondary)" }}>Not Connected</h2>
-        <p style={{ color: "var(--text-muted)", marginBottom: "1.5rem" }}>
-          Connect your account to view and manage marketplace listings.
-        </p>
-      </div>
-    );
-  }
 
   const renderEventAnalytics = () => {
     // 1. Calculate reactive velocity metrics
@@ -874,7 +952,7 @@ export function MarketplaceBoard({
           backdropFilter: "blur(12px)"
         }}>
           <button
-            onClick={() => setActiveSubTab("listings")}
+            onClick={() => onNavigateMarketplace ? onNavigateMarketplace("listings") : setActiveSubTab("listings")}
             style={{
               flex: 1,
               padding: "0.55rem",
@@ -891,7 +969,7 @@ export function MarketplaceBoard({
             🐟 Browse Store
           </button>
           <button
-            onClick={() => setActiveSubTab("wanted")}
+            onClick={() => onNavigateMarketplace ? onNavigateMarketplace("wanted") : setActiveSubTab("wanted")}
             style={{
               flex: 1,
               padding: "0.55rem",
@@ -923,7 +1001,7 @@ export function MarketplaceBoard({
           backdropFilter: "blur(12px)"
         }}>
           <button
-            onClick={() => setActiveSubTab("listings")}
+            onClick={() => onNavigateMarketplace ? onNavigateMarketplace("listings") : setActiveSubTab("listings")}
             style={{
               flex: 1,
               padding: "0.6rem",
@@ -941,7 +1019,7 @@ export function MarketplaceBoard({
             🗂️ Active Directory Listings
           </button>
           <button
-            onClick={() => setActiveSubTab("wanted")}
+            onClick={() => onNavigateMarketplace ? onNavigateMarketplace("wanted") : setActiveSubTab("wanted")}
             style={{
               flex: 1,
               padding: "0.6rem",
@@ -988,7 +1066,17 @@ export function MarketplaceBoard({
       {activeSubTab === "analytics" && EXPO_ANALYTICS_ENABLED ? (
         renderEventAnalytics()
       ) : activeSubTab === "wanted" ? (
-        <WantedBoard casualModeActive={casualModeActive} walletAccount={walletAccount} />
+        <WantedBoard
+          casualModeActive={casualModeActive}
+          walletAccount={walletAccount}
+          initialCompose={searchParams.get("action") === "wanted-post"}
+          onRequireAuth={onRequireAuth}
+          onIntentConsumed={() => {
+            const next = new URLSearchParams(searchParams);
+            next.delete("action");
+            setSearchParams(next, { replace: true });
+          }}
+        />
       ) : (
         <>
       {activeSellerFilter && (
@@ -2216,18 +2304,28 @@ export function MarketplaceBoard({
                                   className={casualModeActive ? "btn-primary" : "btn-primary-pro"} 
                                   onClick={(e) => {
                                     e.stopPropagation();
+                                    if (!walletAccount) {
+                                      requestAuthForListing(
+                                        item,
+                                        "buy",
+                                        item.isBatch ? (checkoutQuantityMap[item.listingId] || 1) : 1,
+                                      );
+                                      return;
+                                    }
                                     if (item.isBatch) {
-                                      handlePurchaseBatch(item.listingId, checkoutQuantityMap[item.listingId] || 1, item.price);
-                                    } else {
-                                      if (onSelectCheckoutOrder) {
-                                        onSelectCheckoutOrder("pending_purchase", item.tokenId);
-                                      }
+                                      handlePurchaseBatch(item.listingId, checkoutQuantityMap[item.listingId] || 1);
+                                    } else if (onSelectCheckoutOrder) {
+                                      onSelectCheckoutOrder("pending_purchase", item.tokenId);
                                     }
                                   }}
-                                  disabled={claiming || !walletAccount}
+                                  disabled={claiming}
                                   style={{ width: "100%", padding: "0.4rem 1rem", fontSize: "0.75rem", justifyContent: "center" }}
                                 >
-                                  {claiming ? (casualModeActive ? "Purchasing..." : "Securing...") : (casualModeActive ? "Buy Now" : "Secure Livestock")}
+                                  {claiming
+                                    ? (casualModeActive ? "Purchasing..." : "Securing...")
+                                    : !walletAccount
+                                      ? "Sign in to buy"
+                                      : (casualModeActive ? "Buy Now" : "Secure Livestock")}
                                 </button>
                                 <button
                                   className="btn-secondary"
@@ -2235,41 +2333,41 @@ export function MarketplaceBoard({
                                     e.stopPropagation();
                                     addToCart(item, item.isBatch ? (checkoutQuantityMap[item.listingId] || 1) : 1);
                                   }}
-                                  disabled={!walletAccount}
                                   style={{ width: "100%", padding: "0.35rem 1rem", fontSize: "0.7rem", justifyContent: "center" }}
                                 >
                                   🛒 Add to Cart
                                 </button>
                                 <button
                                   className="btn-secondary"
-                                  onClick={(e) => { e.stopPropagation(); setOfferListing(item); }}
-                                  disabled={!walletAccount}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!walletAccount) {
+                                      requestAuthForListing(item, "offer");
+                                      return;
+                                    }
+                                    setOfferListing(item);
+                                  }}
                                   style={{ width: "100%", padding: "0.35rem 1rem", fontSize: "0.7rem", justifyContent: "center" }}
                                 >
-                                  💬 Make an Offer
+                                  {walletAccount ? "💬 Make an Offer" : "💬 Sign in to make an offer"}
                                 </button>
                                 {/* Ask the breeder a question before buying — keeps the
                                     conversation (and the sale) on-platform. */}
-                                {walletAccount && item.seller &&
-                                  item.seller.toLowerCase() !== walletAccount.toLowerCase() && (
+                                {item.seller &&
+                                  (!walletAccount || item.seller.toLowerCase() !== walletAccount.toLowerCase()) && (
                                   <button
                                     className="btn-secondary"
                                     onClick={async (e) => {
                                       e.stopPropagation();
-                                      try {
-                                        const { data } = await getOrCreateConversation(item.seller);
-                                        if (data?.id) {
-                                          window.dispatchEvent(new CustomEvent("aquadex_open_conversation", {
-                                            detail: { conversationId: data.id, targetWallet: item.seller },
-                                          }));
-                                        }
-                                      } catch (err) {
-                                        console.warn("[MarketplaceBoard] Ask the breeder failed:", err);
+                                      if (!canProtectedWrite) {
+                                        requestAuthForListing(item, "message");
+                                        return;
                                       }
+                                      await openListingConversation(item);
                                     }}
                                     style={{ width: "100%", padding: "0.35rem 1rem", fontSize: "0.7rem", justifyContent: "center" }}
                                   >
-                                    🐟 Ask the breeder
+                                    {canProtectedWrite ? "🐟 Ask the breeder" : "🐟 Sign in to ask the breeder"}
                                   </button>
                                 )}
                                 {/* Consolidated-shipping nudge: same breeder, one box. */}
@@ -2499,7 +2597,18 @@ export function MarketplaceBoard({
         walletAccount={walletAccount}
         casualModeActive={casualModeActive}
         onClose={closeProductDetail}
+        messageIntent={canProtectedWrite && searchParams.get("action") === "message"}
+        onMessage={openListingConversation}
+        onCancelMessage={clearProtectedActionMarker}
         onBuyNow={(item) => {
+          if (!walletAccount) {
+            onRequireAuth?.({
+              action: "buy",
+              listingKey: getListingKey(item),
+              quantity: item.isBatch ? (checkoutQuantityMap[item.listingId] || 1) : 1,
+            });
+            return;
+          }
           closeProductDetail();
           if (!onSelectCheckoutOrder) return;
           if (item.isBatch) {

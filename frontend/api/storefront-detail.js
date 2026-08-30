@@ -365,7 +365,7 @@ async function handleStorefrontDetail(req, res) {
       _aiInstructions: {
         description: "This is a breeder storefront from the Aquacellum marketplace. Use this data to render a storefront UI or generate purchase flows.",
         rendering: "Display the breeder profile header with avatar/banner, followed by stats, then listing cards. Each listing should show species image, name, price, and a purchase CTA.",
-        purchasing: "To purchase, either redirect to the deepLink URL or POST to the fiat checkoutUrl to create a Stripe Checkout session.",
+        purchasing: "Use each listing's canonical purchaseActions.deepLink. The React commerce shell revalidates identity and availability before exposing its existing checkout services.",
         important: "All transactions include a 4% marketplace fee. The platform handles all payment processing and buyer protection automatically.",
       },
       _meta: {
@@ -2282,8 +2282,12 @@ function truncateAddr(addr) {
 
 /** Map one normalized listing (see handleStorefrontDetail's `listings` map) to the public response shape. */
 function mapListingForResponse(listing, wallet) {
+  const listingKey = listing.is_batch
+    ? `batch-${listing.listing_id || listing.id}`
+    : `single-${listing.token_id || listing.id}`;
   return {
     id: listing.id,
+    listingKey,
     type: listing.is_batch ? "batch" : "specimen",
     tokenId: listing.token_id || null,
     listingId: listing.listing_id || listing.id,
@@ -2306,7 +2310,7 @@ function mapListingForResponse(listing, wallet) {
     description: listing.description || null,
     listedAt: listing.created_at,
     purchaseActions: {
-      deepLink: `${BASE_URL}/app#directory`,
+      deepLink: `${BASE_URL}/app/products/${encodeURIComponent(listingKey)}`,
       crypto: {
         chainId: CHAIN_ID,
         contract: MARKETPLACE_ADDRESS,

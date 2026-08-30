@@ -229,6 +229,12 @@ describe("revalidateCart — never drops, never mutates input", () => {
     const b = revalidateCart(cart, live);
     expect(a).toEqual(b);
   });
+
+  it("preserves the snapshot-bound server revision used for the next CAS write", () => {
+    const { cart } = addToCart(emptyCart(), singleListing());
+    const revalidated = revalidateCart({ ...cart, serverRevision: 9 }, [singleListing()]);
+    expect(revalidated.cart.serverRevision).toBe(9);
+  });
 });
 
 // ─── Web2 language invariant (criterion 6) ──────────────────────────────────

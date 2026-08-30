@@ -18,7 +18,7 @@ const PEDIGREE_STYLES = {
   "F1-hybrid": { label: "F1 Hybrid", bg: "rgba(96,165,250,0.12)", border: "rgba(96,165,250,0.35)", color: "#60a5fa" },
 };
 
-export function ListingCard({ listing, onBuyNow, casualMode = true }) {
+export function ListingCard({ listing, onOpenListing, casualMode = true, commerceDisabled = false }) {
   const [isPressed, setIsPressed] = useState(false);
   const cardRef = useRef(null);
 
@@ -38,9 +38,10 @@ export function ListingCard({ listing, onBuyNow, casualMode = true }) {
 
   const handleBuyClick = (e) => {
     e.stopPropagation();
+    if (commerceDisabled) return;
     // Haptic feedback on mobile
     if (navigator.vibrate) navigator.vibrate(15);
-    onBuyNow?.(listing);
+    onOpenListing?.(listing);
   };
 
   return (
@@ -52,8 +53,9 @@ export function ListingCard({ listing, onBuyNow, casualMode = true }) {
       onPointerLeave={() => setIsPressed(false)}
       role="article"
       aria-label={`${listing.commonName || "Specimen"} listing, $${priceUsdDisplay}`}
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === "Enter") handleBuyClick(e); }}
+      tabIndex={commerceDisabled ? -1 : 0}
+      aria-disabled={commerceDisabled || undefined}
+      onKeyDown={(e) => { if (!commerceDisabled && e.key === "Enter") handleBuyClick(e); }}
     >
       {/* Image */}
       <div className="sf-listing-card__image">
@@ -94,13 +96,13 @@ export function ListingCard({ listing, onBuyNow, casualMode = true }) {
               {quantityRemaining} available
             </span>
           )}
-          {listing.shippingAvailable && (
+          {(listing.shippingAvailable || listing.isShipping) && (
             <span className="sf-listing-card__chip sf-listing-card__chip--ship">
               <Truck weight="bold" size={11} />
               Ships
             </span>
           )}
-          {listing.localPickup && (
+          {(listing.localPickup || listing.pickupAvailable !== false) && (
             <span className="sf-listing-card__chip sf-listing-card__chip--local">
               <MapPin weight="bold" size={11} />
               Local
@@ -108,14 +110,17 @@ export function ListingCard({ listing, onBuyNow, casualMode = true }) {
           )}
         </div>
 
-        {/* Buy Now button */}
+        {/* Canonical product-route handoff */}
         <button
           className="sf-listing-card__buy-btn"
           onClick={handleBuyClick}
-          aria-label={`Buy ${listing.commonName || "specimen"} for $${priceUsdDisplay}`}
+          disabled={commerceDisabled}
+          aria-label={commerceDisabled
+            ? `Live availability for ${listing.commonName || "this specimen"} is unavailable`
+            : `View ${listing.commonName || "specimen"} listing at $${priceUsdDisplay}`}
         >
           <ShoppingCart weight="bold" size={16} />
-          {isBatch ? "Buy Fish" : "Buy Now"}
+          {commerceDisabled ? "Live check unavailable" : "View listing"}
         </button>
       </div>
     </article>

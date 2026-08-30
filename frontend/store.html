@@ -308,7 +308,7 @@
     function listingUrl(item) {
       const id = item.isBatch ? (item.listingId ?? item.id) : (item.tokenId ?? item.id);
       const key = `${item.isBatch ? 'batch' : 'single'}-${id}`;
-      return `/app/marketplace?listing=${encodeURIComponent(key)}`;
+      return `/app/products/${encodeURIComponent(key)}`;
     }
 
     async function init() {

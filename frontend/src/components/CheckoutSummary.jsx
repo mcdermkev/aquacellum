@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ethers, Contract, formatEther, parseEther } from "ethers";
 import marketplaceAbi from "../abi/AquadexMarketplace.json";
@@ -44,6 +44,7 @@ import { NEXT_ACTION_KIND } from "../services/orderCopy";
 import { FULFILLMENT_METHODS } from "../services/marketplaceStateMachine";
 import { PickupCode } from "./marketplace/PickupCode";
 import { PickupPanel } from "./marketplace/PickupPanel";
+import { getCanonicalListingKey } from "../services/catalogQuery";
 
 /**
  * DisplayName — Resolves a wallet address to a human-readable display name.
@@ -191,6 +192,28 @@ export function CheckoutSummary({
   // preserves every cart row instead of silently dropping all but the first.
   const [pendingBatchCheckouts, setPendingBatchCheckout] = useState([]);
   const [allActiveListings, setAllActiveListings] = useState([]);
+  const [authoritativeCheckoutListings, setAuthoritativeCheckoutListings] = useState([]);
+  // Only the authoritative listing snapshots supplied by the current checkout
+  // revision may enter a payment or cash-handshake path. Directory/local rows
+  // remain useful for discovery below, but never widen checkout authority.
+  const checkoutListings = useMemo(() => {
+    const seen = new Set();
+    return authoritativeCheckoutListings.filter((listing) => {
+      const key = getCanonicalListingKey(listing);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [authoritativeCheckoutListings]);
+  const recommendationListings = useMemo(() => {
+    const seen = new Set();
+    return [...authoritativeCheckoutListings, ...allActiveListings].filter((listing) => {
+      const key = getCanonicalListingKey(listing);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [allActiveListings, authoritativeCheckoutListings]);
   const [fishbaseLookup, setFishbaseLookup] = useState({});
   const [fishbaseData, setFishbaseData] = useState([]);
 
@@ -235,52 +258,39 @@ export function CheckoutSummary({
 
   useEffect(() => {
     if (preselectedOrderForCheckout && !loading) {
-      const { type, id } = preselectedOrderForCheckout;
+      const { type, id, meta = {} } = preselectedOrderForCheckout;
       if (type === "pending_purchase") {
         const tokenIdNum = Number(id);
-        if (!pendingTokenIds.includes(tokenIdNum)) {
-          setPendingTokenIds(prev => [...prev, tokenIdNum]);
-        }
+        setPendingTokenIds([tokenIdNum]);
+        setPendingBatchCheckout([]);
+        setAuthoritativeCheckoutListings(meta.authoritativeListing ? [meta.authoritativeListing] : []);
       } else if (type === "shipping") {
         const match = shippingEscrows.find(o => Number(o.tokenId) === Number(id));
-        if (match) {
-          setSelectedOrder({ type: "shipping", data: match });
-        }
+        if (match) setSelectedOrder({ type: "shipping", data: match });
       } else if (type === "batch") {
         const match = purchases.find(o => Number(o.purchaseId) === Number(id));
-        if (match) {
-          setSelectedOrder({ type: "batch", data: match });
-        }
+        if (match) setSelectedOrder({ type: "batch", data: match });
       } else if (type === "pending_batch") {
-        const nextBatch = { listingId: Number(id), quantity: Number(preselectedOrderForCheckout?.meta?.quantity) || 1 };
-        setPendingBatchCheckout((previous) => {
-          const withoutListing = previous.filter((batch) => batch.listingId !== nextBatch.listingId);
-          return [...withoutListing, nextBatch];
-        });
+        setPendingTokenIds([]);
+        setPendingBatchCheckout([{ listingId: Number(id), quantity: Number(meta.quantity) || 1 }]);
+        setAuthoritativeCheckoutListings(meta.authoritativeListing ? [meta.authoritativeListing] : []);
       } else if (type === "pending_cart") {
-        // One batch listing maps to one Stripe/order group, while unique
-        // specimens retain their existing multi-item checkout group.
-        const items = Array.isArray(preselectedOrderForCheckout?.meta?.items) ? preselectedOrderForCheckout.meta.items : [];
-        const singleTokenIds = items.filter((item) => !item.isBatch && item.tokenId != null).map((item) => Number(item.tokenId));
-        const batchGroups = items
+        // A revalidated cart is a complete checkout revision. Replace, rather
+        // than append to, any selection retained by an earlier route visit.
+        const items = Array.isArray(meta.items) ? meta.items : [];
+        setPendingTokenIds(items
+          .filter((item) => !item.isBatch && item.tokenId != null)
+          .map((item) => Number(item.tokenId)));
+        setPendingBatchCheckout(items
           .filter((item) => item.isBatch && item.listingId != null)
-          .map((item) => ({ listingId: Number(item.listingId), quantity: Number(item.quantity) || 1 }));
-        if (singleTokenIds.length > 0) {
-          setPendingTokenIds((previous) => [...new Set([...previous, ...singleTokenIds])]);
-        }
-        if (batchGroups.length > 0) {
-          setPendingBatchCheckout((previous) => {
-            const merged = new Map(previous.map((batch) => [batch.listingId, batch]));
-            batchGroups.forEach((batch) => merged.set(batch.listingId, batch));
-            return [...merged.values()];
-          });
-        }
+          .map((item) => ({ listingId: Number(item.listingId), quantity: Number(item.quantity) || 1 })));
+        setAuthoritativeCheckoutListings(items
+          .map((item) => item.authoritativeListing)
+          .filter(Boolean));
       }
-      if (clearPreselectedOrder) {
-        clearPreselectedOrder();
-      }
+      clearPreselectedOrder?.();
     }
-  }, [preselectedOrderForCheckout, loading, shippingEscrows, purchases, clearPreselectedOrder, pendingTokenIds]);
+  }, [preselectedOrderForCheckout, loading, shippingEscrows, purchases, clearPreselectedOrder]);
 
   // A previewed promo is against a specific cart — clear it if the cart changes
   // so the displayed discount can't go stale (the server re-validates at
@@ -354,7 +364,7 @@ export function CheckoutSummary({
   // server-side against the seller's listing before the charge.
   const handleBatchCheckout = async (batch) => {
     if (!batch) return;
-    const listing = allActiveListings.find(
+    const listing = checkoutListings.find(
       (candidate) => candidate.isBatch && Number(candidate.listingId ?? candidate.id) === Number(batch.listingId)
     );
     if (!listing) {
@@ -368,7 +378,14 @@ export function CheckoutSummary({
         Number(listing.priceCentsUSD) ||
         Number(listing.pricePerFishCents) ||
         Math.round(parseFloat(listing.priceUsd ?? listing.price ?? "0") * 100);
-      const quantity = Math.max(1, Math.min(Number(listing.quantity) || 1, Number(batch.quantity) || 1));
+      const requestedQuantity = Number(batch.quantity);
+      const availableQuantity = Number(listing.quantityRemaining ?? listing.quantity);
+      if (!listing.seller || listing.isActive === false || !Number.isSafeInteger(requestedQuantity)
+          || requestedQuantity <= 0 || !Number.isFinite(availableQuantity)
+          || requestedQuantity > availableQuantity) {
+        throw new Error("Live batch availability changed. Return to your cart and review the quantity.");
+      }
+      const quantity = requestedQuantity;
       const result = await stripePurchaseBatch({
         listingId: Number(batch.listingId),
         commonName: listing.commonName,
@@ -400,13 +417,15 @@ export function CheckoutSummary({
 
     try {
       const firstId = pendingTokenIds[0];
-      const firstListing = allActiveListings.find(l => Number(l.tokenId) === firstId);
-      if (!firstListing) throw new Error("First listing not found in active listings");
+      const firstListing = checkoutListings.find(l => Number(l.tokenId) === firstId);
+      if (!firstListing || firstListing.active === false || !firstListing.seller) {
+        throw new Error("First listing is no longer active");
+      }
 
       const seller = firstListing.seller;
       for (const tid of pendingTokenIds) {
-        const item = allActiveListings.find(l => Number(l.tokenId) === tid);
-        if (!item) throw new Error(`Listing not found for token ${tid}`);
+        const item = checkoutListings.find(l => Number(l.tokenId) === tid);
+        if (!item || item.active === false || !item.seller) throw new Error(`Listing not found or inactive for token ${tid}`);
         if (item.seller.toLowerCase() !== seller.toLowerCase()) {
           throw new Error("All items in consolidated checkout must be from the same seller");
         }
@@ -450,7 +469,7 @@ export function CheckoutSummary({
         });
       } else {
         if (pendingTokenIds.some((tokenId) => {
-          const item = allActiveListings.find((candidate) => Number(candidate.tokenId) === tokenId);
+          const item = checkoutListings.find((candidate) => Number(candidate.tokenId) === tokenId);
           return !item?.isShipping;
         })) {
           throw new Error("Multiple-item checkout currently supports shipped listings only. Complete pickup items as separate orders.");
@@ -460,7 +479,7 @@ export function CheckoutSummary({
         const pedigreeDocuments = {};
         const pedigreeChains = {};
         const items = pendingTokenIds.map((tid) => {
-          const l = allActiveListings.find((x) => Number(x.tokenId) === tid);
+          const l = checkoutListings.find((x) => Number(x.tokenId) === tid);
           if (l.pedigreeDocument) {
             pedigreeDocuments[Number(l.tokenId)] = l.pedigreeDocument;
             pedigreeChains[Number(l.tokenId)] = l.pedigreeChain || [];
@@ -571,7 +590,7 @@ export function CheckoutSummary({
 
     try {
       const firstId = pendingTokenIds[0];
-      const firstListing = allActiveListings.find(l => Number(l.tokenId) === firstId);
+      const firstListing = checkoutListings.find(l => Number(l.tokenId) === firstId);
       if (!firstListing) throw new Error("First listing not found in active listings");
       const seller = firstListing.seller;
 
@@ -1161,7 +1180,7 @@ export function CheckoutSummary({
     );
   }
 
-  const cartItems = pendingTokenIds.map(tid => allActiveListings.find(l => Number(l.tokenId) === tid)).filter(Boolean);
+  const cartItems = pendingTokenIds.map(tid => checkoutListings.find(l => Number(l.tokenId) === tid)).filter(Boolean);
   const activeSeller = cartItems[0]?.seller;
   const subtotal = cartItems.reduce((acc, item) => acc + (Number(item.priceUsd ?? item.price) || 0), 0);
   const firstShippingFee = cartItems[0] ? (Number(cartItems[0].shippingFee) || 0) : 0;
@@ -1172,16 +1191,12 @@ export function CheckoutSummary({
   const excessRefund = firstShippingFee * (boxesCount - 1);
   const totalCost = subtotal + firstShippingFee; // Net secure payment matching contract requirement
 
-  const recommendedAddons = allActiveListings.filter((item) => {
+  const recommendedAddons = recommendationListings.filter((item) => {
     if (!item.seller || item.seller.toLowerCase() !== activeSeller?.toLowerCase()) return false;
     if (item.isBatch) return false;
     if (pendingTokenIds.includes(Number(item.tokenId))) return false;
     return calculateCompatibility(item) === 100;
   });
-
-  const handleAddAddon = (tokenId) => {
-    setPendingTokenIds(prev => [...prev, Number(tokenId)]);
-  };
 
   const renderBoxGrid = () => {
     const boxesCount = Math.ceil(N / 3) || 1;
@@ -1280,7 +1295,7 @@ export function CheckoutSummary({
       )}
 
       {pendingBatchCheckouts.map((batch, batchIndex) => {
-        const listing = allActiveListings.find(
+        const listing = checkoutListings.find(
           (candidate) => candidate.isBatch && Number(candidate.listingId ?? candidate.id) === Number(batch.listingId)
         );
         const available = Number(listing?.quantity) || 1;
@@ -1713,18 +1728,16 @@ export function CheckoutSummary({
                     🐠 Recommended Add-ons (100% Match)
                   </h4>
                   <p style={{ color: "var(--text-muted)", fontSize: "0.7rem", margin: 0 }}>
-                    Other species from this breeder that perfectly match your tank:
+                    Other species from this breeder that perfectly match your tank. Recommendations are display-only; return to the directory to add one through a fresh checkout revision.
                   </p>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "160px", overflowY: "auto" }}>
                     {recommendedAddons.map((addon) => (
                       <div 
                         key={addon.tokenId}
-                        onClick={() => handleAddAddon(addon.tokenId)}
                         className="glass-card"
                         style={{ 
                           padding: "0.5rem", 
                           background: "rgba(255,255,255,0.01)", 
-                          cursor: "pointer", 
                           display: "flex", 
                           justifyContent: "space-between", 
                           alignItems: "center",

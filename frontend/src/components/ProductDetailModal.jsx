@@ -37,10 +37,34 @@ export function ProductDetailModal({
   onClose,
   onBuyNow,
   onAddToCart,
+  onMessage,
+  onCancelMessage,
+  messageIntent = false,
   walletAccount,
   casualModeActive = false,
 }) {
   const isOpen = !!listing || notFound;
+  const isPlant = listing ? isPlantEntry(speciesRecord || { specCode: listing.speciesId || 0 }) : false;
+
+  // Task 11 §3.C — a minimal, no-cart-required packing hint. Keep this hook
+  // above the loading/not-found returns so opening a route-resolved listing
+  // never changes the component's hook order.
+  const packingHint = useMemo(() => {
+    if (!listing || isPlant) return null;
+    const speciesProfile = normalizeSpeciesProfile(speciesRecord || {
+      scientificName: listing.scientificName,
+      commonName: listing.commonName,
+      minTemp: listing.minTemp,
+      maxTemp: listing.maxTemp,
+      minPh: listing.minPh,
+      maxPh: listing.maxPh,
+    });
+    const profile = deriveDefaultPackingProfile(speciesProfile, 1);
+    const preset = normalizeParcelPreset({});
+    const fit = canAddToParcel(preset, [], profile);
+    return { fitsStandardBox: !fit.addedBox };
+  }, [isPlant, listing, speciesRecord]);
+
   if (!isOpen) return null;
 
   if (notFound) {
@@ -61,27 +85,6 @@ export function ProductDetailModal({
 
   const view = assembleProductDetailView(listing, speciesRecord, { displayTank });
   const isOwner = walletAccount && listing.seller && listing.seller.toLowerCase() === walletAccount.toLowerCase();
-  const isPlant = isPlantEntry(speciesRecord || { specCode: listing.speciesId || 0 });
-
-  // Task 11 §3.C — a minimal, no-cart-required packing hint: does a single
-  // unit of this listing fit a standard box on its own? Composes the same
-  // engines the cart-drawer surface uses (never re-derived here). Skipped
-  // for plants (packing profiles are a livestock concept).
-  const packingHint = useMemo(() => {
-    if (isPlant) return null;
-    const speciesProfile = normalizeSpeciesProfile(speciesRecord || {
-      scientificName: listing.scientificName,
-      commonName: listing.commonName,
-      minTemp: listing.minTemp,
-      maxTemp: listing.maxTemp,
-      minPh: listing.minPh,
-      maxPh: listing.maxPh,
-    });
-    const profile = deriveDefaultPackingProfile(speciesProfile, 1);
-    const preset = normalizeParcelPreset({});
-    const fit = canAddToParcel(preset, [], profile);
-    return { fitsStandardBox: !fit.addedBox };
-  }, [isPlant, speciesRecord, listing.scientificName, listing.commonName, listing.minTemp, listing.maxTemp, listing.minPh, listing.maxPh]);
 
   const compatColor =
     view.compatibility.verdict === "ok" ? "var(--accent-green)"
@@ -230,21 +233,37 @@ export function ProductDetailModal({
             )}
           </div>
 
+          {/* A restored protected message intent opens only this confirmation.
+              Conversation creation happens after the explicit Continue click;
+              no message body or mutation is replayed after authentication. */}
+          {!isOwner && messageIntent && (
+            <div className="glass-card" style={{ padding: "1rem", border: "1px solid rgba(56, 189, 248, 0.35)" }}>
+              <h4 style={{ color: "#fff", margin: "0 0 0.4rem" }}>Ask this breeder?</h4>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.78rem", margin: "0 0 0.8rem" }}>
+                Continue to open a conversation about {view.identity.commonName}. Nothing will be sent until you write and submit a message.
+              </p>
+              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                <button className="btn-primary" onClick={() => onMessage?.(listing)}>Continue to messages</button>
+                <button className="btn-secondary" onClick={onCancelMessage}>Cancel</button>
+              </div>
+            </div>
+          )}
+
           {/* Add to cart (Task 10) + Buy Now shortcut (preserves the existing one-tap purchase) */}
           {!isOwner && (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               <button
                 className={casualModeActive ? "btn-primary" : "btn-primary-pro"}
                 onClick={() => onBuyNow && onBuyNow(listing)}
-                disabled={!walletAccount}
                 style={{ width: "100%", padding: "0.65rem 1rem", justifyContent: "center" }}
               >
-                {casualModeActive ? "Buy Now" : "Secure Livestock"}
+                {walletAccount
+                  ? (casualModeActive ? "Buy Now" : "Secure Livestock")
+                  : "Sign in to buy"}
               </button>
               <button
                 className="btn-secondary"
                 onClick={() => onAddToCart && onAddToCart(listing)}
-                disabled={!walletAccount}
                 style={{ width: "100%", padding: "0.55rem 1rem", justifyContent: "center" }}
               >
                 Add to Cart

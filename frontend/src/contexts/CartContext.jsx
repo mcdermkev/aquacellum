@@ -15,7 +15,12 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useAuth } from "./AuthContext.jsx";
 import { useMarketplaceListings } from "../hooks/useMarketplaceListings.js";
 import { CONTRACT_ADDRESS, MARKETPLACE_ADDRESS } from "../config/appConfig.js";
-import { loadCart, saveCart, clearCart as clearCartStore } from "../services/cartStore.js";
+import {
+  loadCart,
+  saveCart,
+  resolveCartMerge,
+  resolveCartRevisionConflict,
+} from "../services/cartStore.js";
 import {
   emptyCart,
   addToCart as addToCartModel,
@@ -25,6 +30,10 @@ import {
   cartTotals,
 } from "../services/cartModel.js";
 import { revalidateCart } from "../services/cartRevalidation.js";
+import {
+  getCanonicalListingKey,
+  resolveCheckoutListing,
+} from "../services/catalogQuery.js";
 import { getPausedSellers } from "../services/sellerVacation.js";
 
 const CartContext = createContext(null);
@@ -32,20 +41,42 @@ const CartContext = createContext(null);
 const SAVE_DEBOUNCE_MS = 600;
 
 export function CartProvider({ children }) {
-  const { account } = useAuth();
+  const { account, authenticated, sessionBridgeReady } = useAuth();
+  const canSync = !!(account && authenticated && sessionBridgeReady);
   const [cart, setCart] = useState(emptyCart());
-  const [loaded, setLoaded] = useState(false);
+  const cartIdentity = account || "__guest__";
+  const [loadedIdentity, setLoadedIdentity] = useState(null);
+  const loaded = loadedIdentity === cartIdentity;
   const [conflict, setConflict] = useState(null);
   const [changes, setChanges] = useState([]);
 
   // Same query key as MarketplaceBoard/BreederTerminal's own call — React
   // Query dedupes this to a shared cache entry rather than double-fetching,
   // per the spec's "the same source the board... uses" requirement (§1).
-  const { data: liveListings = [] } = useMarketplaceListings(CONTRACT_ADDRESS, MARKETPLACE_ADDRESS);
+  const {
+    data: liveListings = [],
+    isAuthoritative,
+    authoritativeListingKeys,
+    catalogRevision,
+    isLoading: catalogLoading,
+    isFetching: catalogFetching,
+    isError: catalogError,
+  } = useMarketplaceListings(CONTRACT_ADDRESS, MARKETPLACE_ADDRESS);
+  const catalogAuthoritative = !!isAuthoritative && !catalogLoading && !catalogFetching && !catalogError;
 
   const saveTimerRef = useRef(null);
+  const skipNextSaveRef = useRef(false);
+  const cartRef = useRef(cart);
+  cartRef.current = cart;
+  const cartSaveKey = useMemo(() => JSON.stringify({
+    seller: cart.seller,
+    items: cart.items,
+    updatedAt: cart.updatedAt,
+  }), [cart.seller, cart.items, cart.updatedAt]);
   const liveListingsRef = useRef(liveListings);
   liveListingsRef.current = liveListings;
+  const authoritativeKeysRef = useRef(authoritativeListingKeys);
+  authoritativeKeysRef.current = authoritativeListingKeys;
 
   // Sellers currently on vacation. Held in a ref because `revalidate` is
   // synchronous and called from several places (mount, focus, cart open, and
@@ -60,35 +91,70 @@ export function CartProvider({ children }) {
   // not on account, which only changes rarely and is always current here).
   const accountRef = useRef(account);
   accountRef.current = account;
+  const canSyncRef = useRef(canSync);
+  canSyncRef.current = canSync;
+  const catalogAuthoritativeRef = useRef(catalogAuthoritative);
+  catalogAuthoritativeRef.current = catalogAuthoritative;
+
+  const applyLoadedCart = useCallback((loadedCart) => {
+    const { mergeConflict, ...cartState } = loadedCart;
+    skipNextSaveRef.current = true;
+    setCart(cartState);
+    setConflict(mergeConflict || null);
+    setLoadedIdentity(account || "__guest__");
+  }, [account]);
 
   // ─── Initial load + reload on identity change (guest ↔ account, or
   // switching accounts) ──────────────────────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
+    setLoadedIdentity(null);
     (async () => {
-      const loadedCart = await loadCart({ account });
+      const loadedCart = await loadCart({ account, canSync });
       if (cancelled) return;
-      setCart(loadedCart);
-      setLoaded(true);
+      applyLoadedCart(loadedCart);
     })();
     return () => { cancelled = true; };
-  }, [account]);
+  }, [account, canSync, applyLoadedCart]);
 
-  // ─── Debounced persistence on every cart change ─────────────────────────────
+  const retryMerge = useCallback(async () => {
+    if (!account || !canSync || conflict?.type !== "merge_error") return;
+    setLoadedIdentity(null);
+    const loadedCart = await loadCart({ account, canSync });
+    applyLoadedCart(loadedCart);
+  }, [account, canSync, conflict, applyLoadedCart]);
+
+  // ─── Debounced persistence on every cart content change ─────────────────────
   useEffect(() => {
-    if (!loaded) return; // don't persist the initial empty state over a real load-in-flight
+    // Never persist either side of an unresolved reconciliation choice.
+    if (!loaded || conflict?.type === "merge_error" || conflict?.type === "sync_conflict") return;
+    if (skipNextSaveRef.current) {
+      skipNextSaveRef.current = false;
+      return;
+    }
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      saveCart(cart, { account: accountRef.current }).catch(() => {
-        // saveCart itself never throws (best-effort internally), but guard
-        // defensively — a persistence failure must never surface as an
-        // unhandled promise rejection in the UI layer.
+      const snapshot = cartRef.current;
+      saveCart(snapshot, {
+        account: accountRef.current,
+        canSync: canSyncRef.current,
+      }).then((result) => {
+        if (result?.ok && result.cart) {
+          // Acknowledging this tab's own queued mutation advances the lineage
+          // of any newer local edit without scheduling another identical save.
+          setCart((current) => ({ ...current, serverRevision: result.cart.serverRevision }));
+        } else if (result?.conflict) {
+          setConflict(result.conflict);
+        }
+      }).catch(() => {
+        // saveCart is best-effort internally, but avoid an unhandled rejection
+        // if local persistence itself becomes unavailable.
       });
     }, SAVE_DEBOUNCE_MS);
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
-  }, [cart, loaded]);
+  }, [cartSaveKey, loaded, conflict?.type]);
 
   // ─── Seller vacation lookup ─────────────────────────────────────────────────
   // Keyed on a sorted, de-duplicated seller string rather than the cart object, so
@@ -121,15 +187,53 @@ export function CartProvider({ children }) {
 
   // ─── Revalidation (§4) ───────────────────────────────────────────────────────
   const revalidate = useCallback(() => {
+    const currentCart = cartRef.current;
     const listings = liveListingsRef.current;
-    if (!Array.isArray(listings)) return { changes: [] };
-    const { cart: revalidatedCart, changes: newChanges } = revalidateCart(cart, listings, {
+    const ready = navigator.onLine && catalogAuthoritativeRef.current && Array.isArray(listings);
+    if (!ready) {
+      return {
+        changes: [],
+        eligible: false,
+        blockers: [],
+        checkoutItems: [],
+        cart: currentCart,
+        ready: false,
+        reason: navigator.onLine
+          ? "Live marketplace availability is still loading. Please try again."
+          : "Reconnect to the internet before checkout.",
+      };
+    }
+    const result = revalidateCart(currentCart, listings, {
       pausedSellers: pausedSellersRef.current,
+      authoritativeKeys: authoritativeKeysRef.current,
     });
-    setCart(revalidatedCart);
-    setChanges(newChanges);
-    return { changes: newChanges };
-  }, [cart]);
+    setCart(result.cart);
+    setChanges(result.changes);
+    return { ...result, ready: true };
+  }, []);
+
+  const hydrateListingForCheckout = useCallback((listingKey, quantity = 1) => {
+    const listings = liveListingsRef.current;
+    if (!navigator.onLine || !catalogAuthoritativeRef.current || !Array.isArray(listings)) {
+      return {
+        eligible: false,
+        reason: navigator.onLine
+          ? "Live marketplace availability is still loading. Please try again."
+          : "Reconnect to the internet before checkout.",
+      };
+    }
+    const listingsByKey = new Map();
+    for (const listing of listings) {
+      const key = getCanonicalListingKey(listing);
+      if (key) listingsByKey.set(key, listing);
+    }
+    return resolveCheckoutListing({
+      listingKey,
+      quantity,
+      listingsByKey,
+      authoritativeKeys: authoritativeKeysRef.current,
+    });
+  }, []);
 
   // NOTE: the vacation lookup above calls `revalidateRef.current?.()`. That ref is
   // declared just below with the mount/focus handlers — deliberately reused rather
@@ -158,7 +262,7 @@ export function CartProvider({ children }) {
     setCart((prevCart) => {
       const result = addToCartModel(prevCart, listing, quantity);
       if (result.conflict) {
-        setConflict(result.conflict);
+        setConflict({ ...result.conflict, type: "seller_add" });
         return prevCart; // unchanged — addToCartModel already didn't mutate
       }
       setConflict(null);
@@ -176,26 +280,81 @@ export function CartProvider({ children }) {
 
   const replaceCartWith = useCallback((listing, quantity = 1) => {
     setConflict(null);
-    setCart(replaceCartModel(listing, quantity));
+    setCart((current) => ({
+      ...replaceCartModel(listing, quantity),
+      serverRevision: current.serverRevision,
+    }));
   }, []);
 
-  const resolveConflict = useCallback((accept) => {
+  const resolveConflict = useCallback(async (choice) => {
     const pending = conflict;
+    if (!pending) return;
+
+    if (pending.type === "sync_conflict") {
+      const result = await resolveCartRevisionConflict({
+        account,
+        conflict: pending,
+        resolution: choice,
+        canSync,
+      });
+      if (!result.ok) {
+        setConflict(result.conflict || { ...pending, error: result.error });
+        return;
+      }
+      skipNextSaveRef.current = true;
+      setConflict(null);
+      setCart(result.cart);
+      return;
+    }
+
+    if (pending.type === "account_merge") {
+      const result = await resolveCartMerge({
+        account,
+        conflict: pending,
+        resolution: choice,
+        canSync,
+      });
+      if (!result.ok) {
+        if (result.code === "operation_mismatch") {
+          setConflict({
+            type: "merge_error",
+            code: result.code,
+            error: result.error,
+            accountCart: pending.accountCart,
+            guestCart: pending.guestCart,
+          });
+        } else if (result.conflict) {
+          setConflict(result.conflict);
+        } else {
+          setConflict((current) => current ? { ...current, error: result.error } : current);
+        }
+        return;
+      }
+      skipNextSaveRef.current = true;
+      setConflict(null);
+      setCart(result.cart);
+      return;
+    }
+
     setConflict(null);
-    if (!pending || !accept) return;
+    if (!choice) return;
     // conflict.incomingItem is already a fully-formed CartItem (built by
     // cartModel's addToCart via cartItemFromListing) — replace the cart with
     // it directly rather than routing back through replaceCart, which
     // expects a raw listing shape.
-    setCart({ seller: pending.incomingSeller, items: [pending.incomingItem], updatedAt: Date.now() });
-  }, [conflict]);
+    setCart((current) => ({
+      seller: pending.incomingSeller,
+      items: [pending.incomingItem],
+      updatedAt: Date.now(),
+      serverRevision: current.serverRevision,
+    }));
+  }, [account, canSync, conflict]);
 
   const dismissConflict = useCallback(() => setConflict(null), []);
 
   const clear = useCallback(() => {
-    setCart(emptyCart());
-    clearCartStore({ account }).catch(() => {});
-  }, [account]);
+    setCart((current) => ({ ...emptyCart(), serverRevision: current.serverRevision }));
+  }, []);
 
   const totals = cartTotals(cart);
 
@@ -205,11 +364,16 @@ export function CartProvider({ children }) {
     totals,
     changes,
     conflict,
+    catalogAuthoritative,
+    catalogRevision,
+    authoritativeListingKeys,
+    hydrateListingForCheckout,
     addItem,
     setItemQuantity,
     removeItem,
     replaceCart: replaceCartWith,
     resolveConflict,
+    retryMerge,
     dismissConflict,
     clear,
     revalidate,

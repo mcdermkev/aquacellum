@@ -23,21 +23,33 @@ function timeAgo(dateString) {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-export function ConversationView({ conversationId, otherWallet, otherProfile, onBack }) {
+export function ConversationView({ conversationId, otherWallet, otherProfile, listingName = null, onBack }) {
   const { messages, isLoading } = useConversationMessages(conversationId);
   const sendMutation = useSendMessage();
   const markRead = useMarkConversationRead();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef(null);
-  const { account } = useAuth();
+  const { account, authenticated } = useAuth();
+  const canMutateConversation = !!account && !!authenticated;
   const walletAddress = account || getCurrentWallet();
+  const canMutateConversationRef = useRef(canMutateConversation);
+  canMutateConversationRef.current = canMutateConversation;
+  const markReadRef = useRef(markRead.mutate);
+  markReadRef.current = markRead.mutate;
 
-  // Mark as read on open
+  // Mark as read only when a verified user opens/switches conversations.
+  // Authentication changing later must not replay this mutation automatically.
   useEffect(() => {
-    if (conversationId) {
-      markRead.mutate(conversationId);
+    if (conversationId && canMutateConversationRef.current) {
+      markReadRef.current(conversationId);
     }
   }, [conversationId]);
+
+  // A draft from a session that became unverified must not silently become
+  // sendable if authentication later returns. No mutation is replayed here.
+  useEffect(() => {
+    if (!canMutateConversation) setInput("");
+  }, [canMutateConversation]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -46,13 +58,16 @@ export function ConversationView({ conversationId, otherWallet, otherProfile, on
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim() || sendMutation.isPending) return;
+    if (!canMutateConversation || !conversationId || !input.trim() || sendMutation.isPending) return;
 
     const body = input.trim();
     setInput("");
 
     await sendMutation.mutateAsync({ conversationId, body });
   };
+
+  const composerEnabled = canMutateConversation && !sendMutation.isPending;
+  const sendEnabled = composerEnabled && !!input.trim();
 
   return (
     <div style={{
@@ -98,6 +113,12 @@ export function ConversationView({ conversationId, otherWallet, otherProfile, on
           </span>
         )}
       </div>
+
+      {listingName && (
+        <div style={{ padding: "0.55rem 1rem", background: "rgba(56, 189, 248, 0.08)", color: "var(--text-secondary)", fontSize: "0.72rem" }}>
+          Conversation opened about <strong style={{ color: "#fff" }}>{listingName}</strong>. Write and send your own message below.
+        </div>
+      )}
 
       {/* Messages */}
       <div style={{
@@ -171,6 +192,15 @@ export function ConversationView({ conversationId, otherWallet, otherProfile, on
       </div>
 
       {/* Input bar */}
+      {!canMutateConversation && (
+        <p
+          id="conversation-auth-status"
+          role="status"
+          style={{ margin: 0, padding: "0.55rem 1rem 0", color: "var(--text-muted)", fontSize: "0.72rem" }}
+        >
+          Sign in with your Aquadex account to send messages or update read status.
+        </p>
+      )}
       <form
         onSubmit={handleSend}
         style={{
@@ -185,7 +215,9 @@ export function ConversationView({ conversationId, otherWallet, otherProfile, on
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value.slice(0, 2000))}
-          placeholder="Type a message…"
+          placeholder={canMutateConversation ? "Type a message…" : "Verified sign-in required to send messages"}
+          disabled={!composerEnabled}
+          aria-describedby={canMutateConversation ? undefined : "conversation-auth-status"}
           style={{
             flex: 1,
             padding: "0.55rem 0.75rem",
@@ -203,18 +235,18 @@ export function ConversationView({ conversationId, otherWallet, otherProfile, on
         />
         <button
           type="submit"
-          disabled={!input.trim() || sendMutation.isPending}
+          disabled={!sendEnabled}
           style={{
             padding: "0.55rem 1rem",
             borderRadius: "50px",
             border: "none",
-            background: input.trim()
+            background: sendEnabled
               ? "linear-gradient(135deg, #0ea5e9, #0369a1)"
               : "rgba(255, 255, 255, 0.05)",
-            color: input.trim() ? "#fff" : "var(--text-muted)",
+            color: sendEnabled ? "#fff" : "var(--text-muted)",
             fontSize: "0.8rem",
             fontWeight: 600,
-            cursor: input.trim() ? "pointer" : "default",
+            cursor: sendEnabled ? "pointer" : "default",
             transition: "all 0.15s ease",
           }}
         >

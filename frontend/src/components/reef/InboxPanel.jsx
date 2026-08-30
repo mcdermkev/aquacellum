@@ -6,7 +6,7 @@
  * Replaces separate SonarBell and MessagesPanel in the header.
  */
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useUnreadCount, useNotifications, useMarkRead, useMarkAllRead } from "../../hooks/useSonar";
 import { useConversations, useUnreadDMCount } from "../../hooks/useMessages";
 import { isSupabaseConfigured } from "../../services/supabaseClient";
@@ -25,13 +25,19 @@ function timeAgo(dateString) {
   return `${Math.floor(seconds / 86400)}d`;
 }
 
-export function InboxPanel({ casualModeActive = false }) {
+export function InboxPanel({ casualModeActive = false, initialView = null, pendingConversation = null, onConversationConsumed = null, onRouteClose = null }) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeInboxTab, setActiveInboxTab] = useState("notifications");
   const [activeConvo, setActiveConvo] = useState(null);
   const [showPreferences, setShowPreferences] = useState(false);
   const dropdownRef = useRef(null);
   const configured = isSupabaseConfigured();
+
+  const closeInbox = useCallback(() => {
+    setIsOpen(false);
+    setActiveConvo(null);
+    if (initialView === "messages") onRouteClose?.();
+  }, [initialView, onRouteClose]);
 
   // Notifications
   const { data: notifUnread = 0 } = useUnreadCount(configured);
@@ -46,18 +52,44 @@ export function InboxPanel({ casualModeActive = false }) {
 
   const totalUnread = notifUnread + dmUnread;
 
+  // /app/messages composes the existing inbox rather than introducing a
+  // second messaging surface. Route changes can open this presentation even
+  // when ReefFeed remains mounted under the same shell tab.
+  useEffect(() => {
+    if (initialView !== "messages") return;
+    setIsOpen(true);
+    setActiveInboxTab("messages");
+    setShowPreferences(false);
+  }, [initialView]);
+
+  // Canonical /app/messages handoffs arrive as state from App, avoiding the
+  // former timer/event race during lazy mounting.
+  useEffect(() => {
+    if (!pendingConversation?.conversationId) return;
+    setIsOpen(true);
+    setActiveInboxTab("messages");
+    setShowPreferences(false);
+    setActiveConvo({
+      id: pendingConversation.conversationId,
+      otherWallet: pendingConversation.targetWallet,
+      otherProfile: pendingConversation.targetProfile || null,
+      listingKey: pendingConversation.listingKey || null,
+      listingName: pendingConversation.listingName || null,
+    });
+    onConversationConsumed?.();
+  }, [onConversationConsumed, pendingConversation]);
+
   // Close dropdown on outside click
   useEffect(() => {
     if (!isOpen) return;
     const handleClick = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setIsOpen(false);
-        setActiveConvo(null);
+        closeInbox();
       }
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [isOpen]);
+  }, [closeInbox, isOpen]);
 
   // Open a specific conversation when another component (e.g. a profile's
   // "Message" button) requests it via the reef_open_conversation event.
@@ -82,7 +114,7 @@ export function InboxPanel({ casualModeActive = false }) {
     if (!notification.is_read) {
       markRead.mutate(notification.id);
     }
-    setIsOpen(false);
+    closeInbox();
   };
 
   if (!configured) return null;
@@ -91,7 +123,10 @@ export function InboxPanel({ casualModeActive = false }) {
   if (activeConvo) {
     return (
       <div ref={dropdownRef} style={{ position: "relative" }}>
-        <InboxButton totalUnread={totalUnread} isOpen={isOpen} onClick={() => { setIsOpen(!isOpen); setActiveConvo(null); }} />
+        <InboxButton totalUnread={totalUnread} isOpen={isOpen} onClick={() => {
+          if (isOpen) closeInbox();
+          else setIsOpen(true);
+        }} />
         {isOpen && (
           <div
             className="reef-inbox-dropdown"
@@ -122,6 +157,7 @@ export function InboxPanel({ casualModeActive = false }) {
                 conversationId={activeConvo.id}
                 otherWallet={activeConvo.otherWallet}
                 otherProfile={activeConvo.otherProfile}
+                listingName={activeConvo.listingName}
               />
             </div>
           </div>
@@ -132,7 +168,10 @@ export function InboxPanel({ casualModeActive = false }) {
 
   return (
     <div ref={dropdownRef} style={{ position: "relative" }}>
-      <InboxButton totalUnread={totalUnread} isOpen={isOpen} onClick={() => setIsOpen(!isOpen)} />
+      <InboxButton totalUnread={totalUnread} isOpen={isOpen} onClick={() => {
+        if (isOpen) closeInbox();
+        else setIsOpen(true);
+      }} />
 
       {isOpen && (
         <div

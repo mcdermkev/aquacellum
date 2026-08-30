@@ -438,7 +438,7 @@
     }
 
     function listingAppUrl(item) {
-      return `/app/marketplace?listing=${encodeURIComponent(listingKey(item))}`;
+      return `/app/products/${encodeURIComponent(listingKey(item))}`;
     }
 
     function storefrontUrl(store, fallbackSeller) {

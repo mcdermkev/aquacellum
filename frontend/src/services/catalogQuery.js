@@ -60,6 +60,69 @@ export function getListingKey(item = {}) {
   return item.isBatch ? `batch-${item.listingId ?? item.id}` : `single-${item.tokenId ?? item.id}`;
 }
 
+/** Strict parser for identities that are allowed to cross a commerce boundary. */
+export function parseListingKey(value) {
+  const match = /^(single|batch)-([1-9]\d*)$/.exec(String(value || ""));
+  if (!match) return null;
+  const id = Number(match[2]);
+  if (!Number.isSafeInteger(id)) return null;
+  return { key: `${match[1]}-${id}`, id, isBatch: match[1] === "batch" };
+}
+
+/** Return a canonical key only when the listing has a valid positive integer id. */
+export function getCanonicalListingKey(item = {}) {
+  const rawId = item.isBatch ? (item.listingId ?? item.id) : (item.tokenId ?? item.id);
+  const id = Number(rawId);
+  if (!Number.isSafeInteger(id) || id <= 0) return null;
+  return `${item.isBatch ? "batch" : "single"}-${id}`;
+}
+
+/**
+ * Resolve one requested checkout line against a specifically authoritative
+ * catalog row. This is presentation/recovery validation only; the Stripe API
+ * remains the final authority for price, inventory, seller and buyer binding.
+ */
+export function resolveCheckoutListing({
+  listingKey,
+  quantity = 1,
+  expectedSeller = null,
+  listingsByKey,
+  authoritativeKeys,
+} = {}) {
+  const parsed = parseListingKey(listingKey);
+  if (!parsed) return { eligible: false, reason: "This checkout link is not valid." };
+  if (!(listingsByKey instanceof Map) || !(authoritativeKeys instanceof Set) || !authoritativeKeys.has(parsed.key)) {
+    return { eligible: false, reason: "Live availability for this listing could not be verified." };
+  }
+
+  const listing = listingsByKey.get(parsed.key);
+  if (!listing || getCanonicalListingKey(listing) !== parsed.key || !!listing.isBatch !== parsed.isBatch) {
+    return { eligible: false, reason: "This listing is no longer available." };
+  }
+  if (!isListingActive(listing)) {
+    return { eligible: false, reason: "This listing is no longer active." };
+  }
+
+  const seller = String(listing.seller || listing.sellerAddress || "").trim().toLowerCase();
+  if (!seller) return { eligible: false, reason: "The listing seller could not be verified." };
+  if (expectedSeller && seller !== String(expectedSeller).trim().toLowerCase()) {
+    return { eligible: false, reason: "The listing seller changed. Review your cart before checkout." };
+  }
+
+  const requested = Number(quantity);
+  if (!Number.isSafeInteger(requested) || requested <= 0 || (!parsed.isBatch && requested !== 1)) {
+    return { eligible: false, reason: "The requested quantity is not valid." };
+  }
+  const available = parsed.isBatch
+    ? Number(listing.quantityRemaining ?? listing.quantity)
+    : 1;
+  if (!Number.isFinite(available) || available < requested || available <= 0) {
+    return { eligible: false, reason: "The requested quantity is no longer available." };
+  }
+
+  return { eligible: true, listing, listingKey: parsed.key, quantity: requested, seller };
+}
+
 /**
  * Ascending, deterministic comparator over listing keys (type-prefixed, then
  * numeric where possible, else lexicographic). Used as the tiebreak for every

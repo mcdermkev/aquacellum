@@ -46,7 +46,12 @@ export function emptyCart() {
 /** Normalize a possibly-undefined/malformed cart into a safe shape. */
 function normalizeCart(cart) {
   if (!cart || !Array.isArray(cart.items)) return emptyCart();
-  return { seller: cart.seller ?? null, items: cart.items, updatedAt: cart.updatedAt ?? Date.now() };
+  return {
+    seller: cart.seller ?? null,
+    items: cart.items,
+    updatedAt: cart.updatedAt ?? Date.now(),
+    serverRevision: Number.isSafeInteger(Number(cart.serverRevision)) ? Number(cart.serverRevision) : 0,
+  };
 }
 
 // ─── Cart-item construction ──────────────────────────────────────────────────
@@ -117,7 +122,12 @@ export function addToCart(cart, listing, quantity = 1) {
 
   if (safeCart.items.length === 0) {
     return {
-      cart: { seller: incomingSeller || null, items: [incomingItem], updatedAt: Date.now() },
+      cart: {
+        seller: incomingSeller || null,
+        items: [incomingItem],
+        updatedAt: Date.now(),
+        serverRevision: safeCart.serverRevision,
+      },
     };
   }
 
@@ -211,7 +221,7 @@ export function setQuantity(cart, listingKey, quantity) {
 export function removeItem(cart, listingKey) {
   const safeCart = normalizeCart(cart);
   const nextItems = safeCart.items.filter((i) => i.listingKey !== listingKey);
-  if (nextItems.length === 0) return emptyCart();
+  if (nextItems.length === 0) return { ...emptyCart(), serverRevision: safeCart.serverRevision };
   return { ...safeCart, items: nextItems, updatedAt: Date.now() };
 }
 
@@ -260,7 +270,12 @@ export function mergeCarts(base, incoming) {
   }
 
   return {
-    cart: { seller: safeBase.seller || safeIncoming.seller || null, items: merged, updatedAt: Date.now() },
+    cart: {
+      seller: safeBase.seller || safeIncoming.seller || null,
+      items: merged,
+      updatedAt: Date.now(),
+      serverRevision: safeBase.serverRevision,
+    },
     kept: "merged",
   };
 }

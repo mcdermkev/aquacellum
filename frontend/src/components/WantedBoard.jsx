@@ -7,6 +7,7 @@ import { formatUsdCents, parseUsdToCents } from "../utils/money";
 import { LazyImage } from "./LazyImage";
 import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";
 import { db } from "../db";
+import { useAuth } from "../contexts/AuthContext.jsx";
 
 /**
  * WantedBoard — "Looking For" section in the marketplace.
@@ -53,12 +54,27 @@ function formatBudget(cents) {
   return formatUsdCents(cents, { showCents: false });
 }
 
-export function WantedBoard({ casualModeActive = false, walletAccount }) {
+export function WantedBoard({
+  casualModeActive = false,
+  walletAccount,
+  initialCompose = false,
+  onRequireAuth,
+  onIntentConsumed,
+}) {
+  const { authenticated } = useAuth();
+  const canProtectedWrite = !!walletAccount && !!authenticated;
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+
+  useEffect(() => {
+    if (!canProtectedWrite || !initialCompose) return;
+    setShowForm(true);
+    setFormError("");
+    onIntentConsumed?.();
+  }, [canProtectedWrite, initialCompose, onIntentConsumed]);
 
   // Form state — species is now a validated catalog selection, not free text.
   const [selectedSpecies, setSelectedSpecies] = useState(null);
@@ -208,8 +224,9 @@ export function WantedBoard({ casualModeActive = false, walletAccount }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError("");
-    if (!walletAccount) {
-      setFormError("Connect a wallet to post a want.");
+    if (!canProtectedWrite) {
+      setFormError("Sign in with your Aquadex account to post a want.");
+      onRequireAuth?.({ action: "wanted-post", returnTo: "/app/wanted" });
       return;
     }
     if (!selectedSpecies) {
@@ -257,11 +274,18 @@ export function WantedBoard({ casualModeActive = false, walletAccount }) {
     }
   };
 
-  const handleFulfill = async (id) => {
+  const handleFulfill = async (item) => {
+    const owner = String(item?.wallet_address || "").toLowerCase();
+    if (!canProtectedWrite) {
+      onRequireAuth?.();
+      return;
+    }
+    if (!owner || owner !== walletAccount.toLowerCase()) return;
     await supabase
       .from("wanted_listings")
       .update({ is_active: false, fulfilled_at: new Date().toISOString() })
-      .eq("id", id);
+      .eq("id", item.id)
+      .eq("wallet_address", owner);
     await fetchListings();
   };
 
@@ -271,10 +295,15 @@ export function WantedBoard({ casualModeActive = false, walletAccount }) {
     setRespondText(
       `Hi! I saw your Wanted post for ${item.species_name} — I have some available. Happy to work out details.`
     );
+    if (!canProtectedWrite) onRequireAuth?.();
   };
 
   // Send the response: create/reuse a conversation, then send the message.
   const handleRespond = async (item) => {
+    if (!canProtectedWrite) {
+      onRequireAuth?.();
+      return;
+    }
     if (!respondText.trim()) return;
     setRespondStatus((s) => ({ ...s, [item.id]: "sending" }));
     try {
@@ -372,18 +401,24 @@ export function WantedBoard({ casualModeActive = false, walletAccount }) {
               : "Demand board. Post acquisition targets; matching keepers can respond in-thread."}
           </p>
         </div>
-        {walletAccount && (
-          <button
-            onClick={() => {
-              setShowForm(!showForm);
-              setFormError("");
-            }}
-            className="btn-primary"
-            style={{ fontSize: "0.8rem", padding: "0.5rem 1rem" }}
-          >
-            {showForm ? "Cancel" : casualModeActive ? "+ I'm Looking For..." : "+ Post Want"}
-          </button>
-        )}
+        <button
+          onClick={() => {
+            if (!canProtectedWrite) {
+              onRequireAuth?.({ action: "wanted-post", returnTo: "/app/wanted" });
+              return;
+            }
+            setShowForm(!showForm);
+            setFormError("");
+          }}
+          className="btn-primary"
+          style={{ fontSize: "0.8rem", padding: "0.5rem 1rem" }}
+        >
+          {!canProtectedWrite
+            ? "Sign in to post"
+            : showForm
+              ? "Cancel"
+              : casualModeActive ? "+ I'm Looking For..." : "+ Post Want"}
+        </button>
       </div>
 
       {/* Post Form */}
@@ -617,16 +652,16 @@ export function WantedBoard({ casualModeActive = false, walletAccount }) {
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
                     {isOwn ? (
                       <button
-                        onClick={() => handleFulfill(item.id)}
+                        onClick={() => handleFulfill(item)}
                         title="Mark as found"
                         aria-label="Mark as found"
                         style={actionBtn("rgba(34, 197, 94, 0.1)", "rgba(34, 197, 94, 0.3)", "#34d399")}
                       >
                         ✓ Found
                       </button>
-                    ) : walletAccount && status === "sent" ? (
+                    ) : canProtectedWrite && status === "sent" ? (
                       <span style={{ fontSize: "0.72rem", color: "#4ade80", whiteSpace: "nowrap" }}>✓ Message sent</span>
-                    ) : walletAccount && !isResponding ? (
+                    ) : !isResponding ? (
                       <button
                         onClick={() => openResponder(item)}
                         style={actionBtn(
@@ -635,7 +670,7 @@ export function WantedBoard({ casualModeActive = false, walletAccount }) {
                           matchesMe ? "#4ade80" : "#38bdf8"
                         )}
                       >
-                        💬 I have this
+                        {canProtectedWrite ? "💬 I have this" : "💬 Sign in to respond"}
                       </button>
                     ) : null}
                   </div>

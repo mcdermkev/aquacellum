@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "./styles/index.css";
 import "./styles/storefront-setup.css";
@@ -7,6 +7,8 @@ import { ConnectWallet } from "./components/ConnectWallet";
 import { useScrollAffordance } from "./hooks/useScrollAffordance";
 import { CartButton } from "./components/cart/CartButton";
 import { CartDrawer } from "./components/cart/CartDrawer";
+import { useCart } from "./contexts/CartContext";
+import { canonicalProductPath, resolveCommerceRoute } from "./services/commerceRoute";
 import { useFontSettings } from "./hooks/useFontSettings";
 import { useHighContrast } from "./hooks/useHighContrast";
 import { SpecimenDetailModal } from "./components/SpecimenDetailModal";
@@ -105,6 +107,38 @@ const ReefFeed = lazy(() =>
 const BreederTerminal = lazy(() =>
   import("./components/breeder/BreederTerminal").then((m) => ({ default: m.BreederTerminal }))
 );
+
+const StorefrontContent = lazy(() =>
+  import("./components/storefront/StorefrontPage").then((m) => ({ default: m.StorefrontContent }))
+);
+
+function CommerceAuthRequired({ title, onSignIn }) {
+  return (
+    <div className="glass-card" style={{ maxWidth: "560px", margin: "2rem auto", padding: "2.5rem", textAlign: "center" }}>
+      <h2 style={{ color: "#fff", marginBottom: "0.75rem" }}>{title}</h2>
+      <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem", lineHeight: 1.5 }}>
+        Sign in to continue. This commerce route will stay in place, and current data will be rechecked before any protected action.
+      </p>
+      <button className="btn-primary" type="button" onClick={onSignIn} style={{ margin: "0 auto", justifyContent: "center" }}>
+        Sign in
+      </button>
+    </div>
+  );
+}
+
+function CommerceRouteNotice({ title, message, actionLabel = "Back to marketplace", onAction }) {
+  return (
+    <div className="glass-card" style={{ maxWidth: "620px", margin: "2rem auto", padding: "2.5rem", textAlign: "center" }}>
+      <h2 style={{ color: "#fff", marginBottom: "0.75rem" }}>{title}</h2>
+      <p style={{ color: "var(--text-secondary)", marginBottom: "1.5rem", lineHeight: 1.5 }}>{message}</p>
+      {onAction && (
+        <button className="btn-secondary" type="button" onClick={onAction} style={{ margin: "0 auto", justifyContent: "center" }}>
+          {actionLabel}
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function App() {
   const { account, ready, authenticated, getAccessToken } = useAuth();
@@ -309,55 +343,50 @@ export default function App() {
   const navScrollRef = useScrollAffordance();
 
   const location = useLocation();
+  const commerceRoute = useMemo(
+    () => resolveCommerceRoute(location.pathname, VALID_TABS),
+    [location.pathname],
+  );
+  const isBareAppPath = location.pathname === "/app" || location.pathname === "/app/";
+  const legacyHashTab = isBareAppPath ? location.hash.replace(/^#/, "") : "";
   const tabFromPath = location.pathname.replace(/^\/app\/?/, "").split("/")[0];
-  const activeTab = VALID_TABS.includes(tabFromPath) ? tabFromPath : "tanks";
+  const activeTab = commerceRoute?.tab
+    || (VALID_TABS.includes(legacyHashTab) ? legacyHashTab : null)
+    || (VALID_TABS.includes(tabFromPath) ? tabFromPath : "tanks");
 
   // Navigate to a tab while preserving any query string (e.g. ?view=breeder).
   // Reads window.location.search at call time so it stays correct even when
   // invoked from event handlers registered once on mount.
   // `anchor` is an optional in-page target appended as a hash, used to deep-link
   // a specific Settings section (`SettingsPanel` reads `#settings/<id>` on mount).
-  // It has to travel with the navigate() call rather than being assigned to
-  // window.location.hash afterwards, because react-router replaces the whole URL
-  // and would drop a separately-set hash.
   const goToTab = (tab, anchor) => {
     navigate(`/app/${tab}${window.location.search}${anchor ? `#${anchor}` : ""}`);
   };
 
-  // Backward-compat: redirect legacy hash deep links (/app#directory) and bare
-  // /app to the canonical path-based route. Runs once on mount.
+  // Canonicalize compatibility aliases without dropping their query or hash.
+  // Explicit commerce routes are resolved above and never pass through Tanks.
   useEffect(() => {
-    const hash = window.location.hash.replace("#", "");
-    // Legacy: the standalone "My Store" tab was consolidated into the Breeder
-    // Terminal (which owns storefront setup). Redirect old links/bookmarks.
-    if (hash === "storefront" || tabFromPath === "storefront") {
-      navigate(`/app/breeder-terminal${window.location.search}`, { replace: true });
+    const suffix = `${location.search}${location.hash}`;
+    if (commerceRoute?.redirectTo) {
+      navigate(`${commerceRoute.redirectTo}${suffix}`, { replace: true });
       return;
     }
-    // Retired: the "Local Sellers"/"Local Map" tab (Fish Finder T15). Pickup
-    // coordination lives on the order that created it, so old links/bookmarks
-    // land on My Orders rather than the generic /app/tanks fallback.
-    if (hash === "map" || tabFromPath === "map") {
-      navigate(`/app/orders${window.location.search}`, { replace: true });
+    if (isBareAppPath && VALID_TABS.includes(legacyHashTab)) {
+      navigate(`/app/${legacyHashTab}${suffix}`, { replace: true });
       return;
     }
-    if (VALID_TABS.includes(hash)) {
-      navigate(`/app/${hash}${window.location.search}`, { replace: true });
-    } else if (!VALID_TABS.includes(tabFromPath)) {
-      navigate(`/app/tanks${window.location.search}`, { replace: true });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Redirect any mid-session navigation to a retired tab (covers stray links
-  // after the My Store consolidation and the Local Map retirement).
-  useEffect(() => {
     if (tabFromPath === "storefront") {
-      navigate(`/app/breeder-terminal${window.location.search}`, { replace: true });
-    } else if (tabFromPath === "map") {
-      navigate(`/app/orders${window.location.search}`, { replace: true });
+      navigate(`/app/breeder-terminal${suffix}`, { replace: true });
+      return;
     }
-  }, [tabFromPath, navigate]);
+    if (tabFromPath === "map") {
+      navigate(`/app/orders${window.location.search}`, { replace: true });
+      return;
+    }
+    if (!commerceRoute && !VALID_TABS.includes(tabFromPath)) {
+      navigate(`/app/tanks${suffix}`, { replace: true });
+    }
+  }, [commerceRoute, isBareAppPath, legacyHashTab, location.hash, location.search, navigate, tabFromPath]);
 
   // Starter Quest: visiting the marketplace tab completes the "browse" step.
   useEffect(() => {
@@ -381,7 +410,7 @@ export default function App() {
   const deepLinkSpecies = new URLSearchParams(location.search).get("species");
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search).get("species");
-    if (sp && activeTab !== "gallery") {
+    if (sp && !commerceRoute && activeTab !== "gallery") {
       navigate(`/app/gallery${window.location.search}`, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -471,6 +500,18 @@ export default function App() {
   // once by whichever gallery is mounted (FishFinder in casual, BreedGallery in pro).
   const [pendingSpeciesSearch, setPendingSpeciesSearch] = useState(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const {
+    cart: persistedCart,
+    loaded: cartLoaded,
+    revalidate: revalidateCartForCheckout,
+    hydrateListingForCheckout,
+    catalogAuthoritative,
+    catalogRevision,
+  } = useCart();
+  const checkoutHydratedRef = useRef(null);
+  const [checkoutRouteState, setCheckoutRouteState] = useState({ key: null, status: "idle", message: null });
+  const [pendingConversation, setPendingConversation] = useState(null);
+  const promptedProtectedRouteRef = useRef(null);
 
   // Echo Whispers — real user state from Dexie (replaces hardcoded values)
   const [echoUserState, setEchoUserState] = useState({ totalXp: 0, streakDays: 0, lastActiveDate: null, currentTier: "Shallow" });
@@ -497,6 +538,99 @@ export default function App() {
 
   // Hook up useXPSync globally in App.jsx
   useXPSync(account, marketplaceContract, null, getAccessToken);
+
+  // Protected commerce routes retain their URL while composing the existing
+  // ConnectWallet/Privy prompt. Checkout additionally requires a verified
+  // Privy session with a linked wallet; a self-custody address alone is not
+  // represented as accountless order ownership.
+  useEffect(() => {
+    const hasAccess = !!account && (!commerceRoute?.requiresVerifiedSession || authenticated);
+    if (hasAccess) {
+      promptedProtectedRouteRef.current = null;
+      return;
+    }
+    if (!ready || !commerceRoute?.requiresAuth) return;
+    const routeKey = `${location.pathname}${location.search}${location.hash}`;
+    if (promptedProtectedRouteRef.current === routeKey) return;
+    promptedProtectedRouteRef.current = routeKey;
+    setTriggerLoginOnEntry(true);
+  }, [account, authenticated, commerceRoute, location.hash, location.pathname, location.search, ready]);
+
+  // A canonical checkout route reconstructs selection from non-authoritative
+  // identity only: either a canonical listing key in the URL or the persisted
+  // cart. Live catalog revalidation must succeed before CheckoutSummary mounts;
+  // server checkout remains the final authority for money and ownership.
+  useEffect(() => {
+    if (commerceRoute?.kind !== "checkout") {
+      checkoutHydratedRef.current = null;
+      return;
+    }
+    if (!account || !authenticated || !cartLoaded || !isOnline || !catalogAuthoritative || !catalogRevision) return;
+
+    const hydrationKey = `${account}:${location.pathname}${location.search}:${catalogRevision}:${persistedCart.updatedAt || 0}`;
+    if (checkoutHydratedRef.current === hydrationKey) return;
+
+    const params = new URLSearchParams(location.search);
+    const listingKey = params.get("listing");
+    const requestedQuantity = Number(params.get("quantity") || 1);
+
+    if (listingKey) {
+      const resolved = hydrateListingForCheckout(listingKey, requestedQuantity);
+      checkoutHydratedRef.current = hydrationKey;
+      if (!resolved.eligible) {
+        setPreselectedOrderForCheckout(null);
+        setCheckoutRouteState({ key: hydrationKey, status: "error", message: resolved.reason });
+        return;
+      }
+      const listing = resolved.listing;
+      const listingId = listing.isBatch ? (listing.listingId ?? listing.id) : (listing.tokenId ?? listing.id);
+      setPreselectedOrderForCheckout({
+        account,
+        type: listing.isBatch ? "pending_batch" : "pending_purchase",
+        id: listingId,
+        meta: {
+          quantity: resolved.quantity,
+          authoritativeListing: listing,
+          catalogRevision,
+        },
+      });
+      setCheckoutRouteState({ key: hydrationKey, status: "ready", message: null });
+      return;
+    }
+
+    const validation = revalidateCartForCheckout();
+    checkoutHydratedRef.current = hydrationKey;
+    if (!validation.ready) {
+      setPreselectedOrderForCheckout(null);
+      setCheckoutRouteState({ key: hydrationKey, status: "error", message: validation.reason });
+      return;
+    }
+    if (validation.changes.length > 0) {
+      setPreselectedOrderForCheckout(null);
+      setCheckoutRouteState({
+        key: hydrationKey,
+        status: "error",
+        message: "Your cart changed after live availability was checked. Review it before continuing.",
+      });
+      return;
+    }
+    if (!validation.eligible) {
+      setPreselectedOrderForCheckout(null);
+      setCheckoutRouteState({
+        key: hydrationKey,
+        status: "error",
+        message: validation.blockers?.[0] || "One or more cart items need attention before checkout.",
+      });
+      return;
+    }
+    setPreselectedOrderForCheckout({
+      account,
+      type: "pending_cart",
+      id: null,
+      meta: { items: validation.checkoutItems, catalogRevision },
+    });
+    setCheckoutRouteState({ key: hydrationKey, status: "ready", message: null });
+  }, [account, authenticated, cartLoaded, catalogAuthoritative, catalogRevision, commerceRoute?.kind, hydrateListingForCheckout, isOnline, location.pathname, location.search, persistedCart.updatedAt, revalidateCartForCheckout]);
 
   // ─── Arrival Flow: track incoming specimens + nudge state ─────────────────
   const { incomingCount, hasNudge, shouldShowToast, markToastShown } = useArrivalNudge(account);
@@ -627,19 +761,36 @@ export default function App() {
   // Removed rather than left one-sided — see the seam inventory guard. Sharing a
   // tank to the Reef still works from the Reef composer itself.
 
+  const navigateCommerce = useCallback((pathname, {
+    replace = false,
+    dropLegacyListing = true,
+    params: nextParams = {},
+  } = {}) => {
+    const params = new URLSearchParams(location.search);
+    if (dropLegacyListing) params.delete("listing");
+    Object.entries(nextParams).forEach(([key, value]) => {
+      if (value == null || value === "") params.delete(key);
+      else params.set(key, String(value));
+    });
+    const search = params.toString();
+    navigate(
+      { pathname, search: search ? `?${search}` : "", hash: location.hash },
+      { replace },
+    );
+  }, [location.hash, location.search, navigate]);
+
   // Listen for "Ask the breeder" (and other cross-tab) requests to open a DM.
-  // The inbox lives on the Reef tab, so navigate there first, then re-emit the
-  // open event once ReefFeed's InboxPanel is mounted to catch it.
+  // Route conversation handoffs through state so the canonical /app/messages
+  // surface receives them deterministically after mounting. No message is sent.
   useEffect(() => {
-    const handleOpenConversation = (e) => {
-      goToTab("reef");
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent("reef_open_conversation", { detail: e.detail }));
-      }, 300);
+    const handleOpenConversation = (event) => {
+      if (!event.detail?.conversationId) return;
+      setPendingConversation(event.detail);
+      navigateCommerce("/app/messages");
     };
     window.addEventListener("aquadex_open_conversation", handleOpenConversation);
     return () => window.removeEventListener("aquadex_open_conversation", handleOpenConversation);
-  }, []);
+  }, [navigateCommerce]);
 
   // Listen for Poseidon deep-link navigation events (species search, tab switches).
   //
@@ -740,16 +891,101 @@ export default function App() {
     goToTab("directory");
   };
 
-  const handleSelectCheckoutOrder = (type, id, meta = null) => {
-    setPreselectedOrderForCheckout({ type, id, meta });
-    goToTab("orders");
+  const handleOpenProductRoute = (listingKey) => {
+    navigateCommerce(canonicalProductPath(listingKey));
   };
 
-  // Task 10: CartDrawer's "Proceed to checkout" hand-off — routes the full
-  // (already-revalidated) cart into the existing checkout entry point rather
-  // than the cart owning any checkout logic of its own.
+  const handleCloseProductRoute = () => {
+    navigateCommerce("/app/directory", { params: { action: null, quantity: null } });
+  };
+
+  const handleMarketplaceSectionRoute = (section) => {
+    navigateCommerce(section === "wanted" ? "/app/wanted" : "/app/directory");
+  };
+
+  const requireCommerceAuth = (intent = null) => {
+    if (intent?.action) {
+      const listingKey = intent.listingKey ? String(intent.listingKey) : null;
+      const safeIntent = {
+        action: String(intent.action),
+        listingKey,
+        quantity: Math.max(1, Number(intent.quantity) || 1),
+        returnTo: intent.returnTo
+          ? String(intent.returnTo)
+          : listingKey
+            ? canonicalProductPath(listingKey)
+            : location.pathname,
+      };
+      sessionStorage.setItem("aquadex_commerce_return_intent", JSON.stringify(safeIntent));
+      navigateCommerce(safeIntent.returnTo, {
+        params: { action: safeIntent.action, quantity: listingKey ? safeIntent.quantity : null },
+      });
+    }
+    setTriggerLoginOnEntry(true);
+  };
+
+  // Resume only presentation intent after authentication. Payment, offers,
+  // messages, reviews, claims, and ownership mutations still require a fresh
+  // explicit user confirmation on their existing authorized surface.
+  useEffect(() => {
+    if (!account || !authenticated) return;
+    let intent;
+    try {
+      intent = JSON.parse(sessionStorage.getItem("aquadex_commerce_return_intent") || "null");
+    } catch {
+      intent = null;
+    }
+    if (!intent?.action || !intent?.returnTo) return;
+    sessionStorage.removeItem("aquadex_commerce_return_intent");
+    if (intent.action === "buy" && intent.listingKey) {
+      navigateCommerce("/app/checkout", {
+        params: { listing: intent.listingKey, quantity: intent.quantity, action: "buy" },
+      });
+      return;
+    }
+    navigateCommerce(intent.returnTo, {
+      params: {
+        action: intent.action,
+        quantity: intent.listingKey ? intent.quantity : null,
+      },
+    });
+  }, [account, authenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSelectCheckoutOrder = (type, id, meta = null) => {
+    setPreselectedOrderForCheckout({ account, type, id, meta });
+    const isCheckoutSelection = type === "pending_purchase" || type === "pending_batch" || type === "pending_cart";
+    if (!isCheckoutSelection) {
+      navigateCommerce("/app/orders");
+      return;
+    }
+    const listingKey = type === "pending_purchase"
+      ? `single-${id}`
+      : type === "pending_batch"
+        ? `batch-${id}`
+        : null;
+    navigateCommerce("/app/checkout", {
+      params: {
+        listing: listingKey,
+        quantity: type === "pending_batch" ? (Number(meta?.quantity) || 1) : null,
+        action: listingKey ? "buy" : null,
+      },
+    });
+  };
+
+  // CartDrawer's handoff selects the existing CheckoutSummary presentation.
+  // Anonymous users keep the persisted cart and /app/checkout intent while the
+  // existing Privy prompt runs; payment remains unavailable until authenticated.
   const handleProceedToCheckoutFromCart = (cart) => {
     setIsCartOpen(false);
+    if (!account || !authenticated || !cartLoaded) {
+      // Route intent only until CartProvider finishes verified-session
+      // guest→account reconciliation. Never snapshot a pre-login cart into
+      // the protected checkout presentation.
+      setPreselectedOrderForCheckout(null);
+      navigateCommerce("/app/checkout");
+      if (!account || !authenticated) requireCommerceAuth();
+      return;
+    }
     handleSelectCheckoutOrder("pending_cart", null, { items: cart.items });
   };
 
@@ -790,6 +1026,72 @@ export default function App() {
   }, [speciesCount]);
 
   const renderContent = () => {
+    if (commerceRoute?.kind === "not-found") {
+      return (
+        <CommerceRouteNotice
+          title="Commerce page not found"
+          message="This marketplace link is incomplete or no longer supported. Nothing was redirected to an unrelated dashboard page."
+          onAction={() => navigateCommerce("/app/directory", { replace: true })}
+        />
+      );
+    }
+
+    const lacksCommerceAccess = commerceRoute?.requiresAuth
+      && (!account || (commerceRoute.requiresVerifiedSession && !authenticated));
+    if (lacksCommerceAccess) {
+      const titles = {
+        checkout: "Sign in with your Aquadex account to continue to checkout",
+        orders: "Sign in to view your orders",
+        messages: "Sign in to view your messages",
+        "breeder-terminal": "Sign in to manage your storefront",
+      };
+      return (
+        <CommerceAuthRequired
+          title={titles[commerceRoute.kind] || "Sign in to continue"}
+          onSignIn={requireCommerceAuth}
+        />
+      );
+    }
+
+    if (commerceRoute?.kind === "checkout") {
+      const checkoutKey = `${account}:${location.pathname}${location.search}:${catalogRevision}:${persistedCart.updatedAt || 0}`;
+      if (!isOnline || !catalogAuthoritative) {
+        return (
+          <CommerceRouteNotice
+            title="Live availability check required"
+            message={isOnline
+              ? "Aquadex is loading the authoritative marketplace catalog. Checkout stays blocked until that check succeeds."
+              : "Reconnect to the internet before checkout. Offline cart snapshots can be edited, but they cannot start payment."}
+            actionLabel="Review cart"
+            onAction={() => navigateCommerce("/app/cart")}
+          />
+        );
+      }
+      if (checkoutRouteState.key !== checkoutKey || checkoutRouteState.status === "idle") {
+        return <CommerceRouteNotice title="Checking your cart" message="Confirming live availability before checkout…" />;
+      }
+      if (checkoutRouteState.status === "error") {
+        return (
+          <CommerceRouteNotice
+            title="Checkout needs your attention"
+            message={checkoutRouteState.message}
+            actionLabel="Review cart"
+            onAction={() => navigateCommerce("/app/cart")}
+          />
+        );
+      }
+    }
+
+    if (commerceRoute?.kind === "store") {
+      return (
+        <StorefrontContent
+          identifier={commerceRoute.slug}
+          embedded
+          onOpenListing={handleOpenProductRoute}
+        />
+      );
+    }
+
     switch (activeTab) {
       case "breeder":
         return (
@@ -844,6 +1146,13 @@ export default function App() {
               activeSellerFilter={activeSellerFilter}
               setActiveSellerFilter={setActiveSellerFilter}
               filterSpeciesId={activeSpeciesFilter?.id ?? null}
+              routeListingKey={commerceRoute?.kind === "product" ? commerceRoute.listingKey : null}
+              routeView={commerceRoute?.kind === "saved" ? "saved" : commerceRoute?.kind === "wanted" ? "wanted" : "listings"}
+              routeCollection={commerceRoute?.kind === "collection" ? commerceRoute.collection : "all"}
+              onOpenProduct={handleOpenProductRoute}
+              onCloseProduct={handleCloseProductRoute}
+              onNavigateMarketplace={handleMarketplaceSectionRoute}
+              onRequireAuth={requireCommerceAuth}
               pendingSavedSearch={pendingSavedSearch}
               onClearPendingSavedSearch={() => setPendingSavedSearch(null)}
             />
@@ -877,18 +1186,23 @@ export default function App() {
       // (Fish Finder T15). "map" is no longer in VALID_TABS, and the redirect
       // effect below sends /app/map to /app/orders, where pickup coordination
       // actually lives.
-      case "orders":
+      case "orders": {
+        const accountCheckoutSelection = preselectedOrderForCheckout?.account === account
+          ? preselectedOrderForCheckout
+          : null;
         return (
-          <CheckoutSummary 
+          <CheckoutSummary
+            key={`${account || "anonymous"}:${location.pathname}${location.search}:${catalogRevision}:${persistedCart.updatedAt || 0}`}
             contractAddress={CONTRACT_ADDRESS} 
             marketplaceAddress={MARKETPLACE_ADDRESS} 
             walletAccount={account} 
-            preselectedOrderForCheckout={preselectedOrderForCheckout}
+            preselectedOrderForCheckout={accountCheckoutSelection}
             clearPreselectedOrder={() => setPreselectedOrderForCheckout(null)}
             displayTank={displayTank}
             casualModeActive={casualModeActive}
           />
         );
+      }
       case "incoming":
         return (
           <IncomingSpecimens
@@ -910,6 +1224,10 @@ export default function App() {
               casualModeActive={casualModeActive}
               walletAccount={account}
               walletAddress={account}
+              openMessages={commerceRoute?.kind === "messages"}
+              pendingConversation={pendingConversation}
+              onConversationConsumed={() => setPendingConversation(null)}
+              onCloseMessages={() => navigateCommerce("/app/reef", { params: { action: null, quantity: null } })}
             />
           </Suspense>
         );
@@ -1019,7 +1337,10 @@ export default function App() {
     );
   }
 
-  if (!enteredDashboard) {
+  // Explicit public commerce routes enter the shared shell directly. Protected
+  // routes render the shell's sign-in recovery without losing their URL.
+  const bypassFirstRunLanding = !!commerceRoute || (isBareAppPath && legacyHashTab === "directory");
+  if (!enteredDashboard && !bypassFirstRunLanding) {
     if (viewParam === "breeder") {
       return (
         <LandingBreeder 
@@ -1185,7 +1506,7 @@ export default function App() {
                 <span className="sync-status-text">{casualModeActive ? "Saved" : "Synced"}</span>
               </button>
             )}
-            {account && <CartButton onOpen={() => setIsCartOpen(true)} />}
+            <CartButton onOpen={() => setIsCartOpen(true)} />
             <ConnectWallet 
               onConnected={handleWalletConnected} 
               onDisconnected={handleWalletDisconnected} 
@@ -1590,8 +1911,11 @@ export default function App() {
           add-on tank-fit signal; the drawer degrades gracefully to a
           "select a tank" affordance when it's null. */}
       <CartDrawer
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
+        isOpen={isCartOpen || commerceRoute?.kind === "cart"}
+        onClose={() => {
+          setIsCartOpen(false);
+          if (commerceRoute?.kind === "cart") navigateCommerce("/app/directory");
+        }}
         onProceedToCheckout={handleProceedToCheckoutFromCart}
         casualModeActive={casualModeActive}
         buyerTank={displayTank}

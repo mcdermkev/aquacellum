@@ -1,12 +1,45 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { db } from "../db";
 import { fetchListingsByBreed } from "../utils/listingManager";
 import { getProvider } from "../utils/smartAccount";
 import { getLocalListings } from "../services/relayer";
 import { pullCloudListings } from "../services/cloudSync";
+import { getCanonicalListingKey } from "../services/catalogQuery";
+
+function markCatalogMetadata(listings, source, authoritativeKeys = []) {
+  const result = Array.isArray(listings) ? listings : [];
+  Object.defineProperties(result, {
+    __catalogSource: {
+      value: source,
+      enumerable: true,
+      configurable: true,
+    },
+    __authoritativeKeys: {
+      value: [...new Set(authoritativeKeys)],
+      enumerable: true,
+      configurable: true,
+    },
+  });
+  return result;
+}
+
+function mergeByCanonicalKey(...groups) {
+  const seen = new Set();
+  const merged = [];
+  for (const group of groups) {
+    for (const listing of Array.isArray(group) ? group : []) {
+      const key = getCanonicalListingKey(listing);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      merged.push(listing);
+    }
+  }
+  return merged;
+}
 
 export function useMarketplaceListings(contractAddress, marketplaceAddress, filterSpeciesId = null) {
-  return useQuery({
+  const query = useQuery({
     queryKey: ["listings", filterSpeciesId || "all"],
     queryFn: async () => {
       const provider = getProvider();
@@ -17,54 +50,60 @@ export function useMarketplaceListings(contractAddress, marketplaceAddress, filt
       const cloudListings = await pullCloudListings(filterSpeciesId);
 
       try {
-        const data = await fetchListingsByBreed(
+        const onChainListings = await fetchListingsByBreed(
           filterSpeciesId,
           contractAddress,
           marketplaceAddress,
           provider
         );
 
-        // Update Dexie database offline cache if fetching all listings
+        // Update Dexie database offline cache if fetching all listings.
         if (!filterSpeciesId) {
           try {
             await db.listings.clear();
-            await db.listings.bulkAdd(data);
+            await db.listings.bulkAdd(onChainListings);
           } catch (dbErr) {
             console.warn("Failed to store listings in Dexie cache:", dbErr);
           }
         }
 
-        // Merge: on-chain > cloud > local (deduplicated by id)
-        const ids = new Set(data.map((l) => Number(l.id)));
-        const uniqueCloud = cloudListings.filter((l) => !ids.has(Number(l.id)));
-        uniqueCloud.forEach((l) => ids.add(Number(l.id)));
-        const uniqueLocal = localListings.filter((l) => !ids.has(Number(l.id)));
-
-        return [...data, ...uniqueCloud, ...uniqueLocal];
+        // Merge by the type-prefixed canonical identity. On-chain and current
+        // server-backed cloud rows are authoritative for their own keys only;
+        // a successful chain read never promotes unrelated device-local rows.
+        const merged = mergeByCanonicalKey(onChainListings, cloudListings, localListings);
+        const authoritativeKeys = [...onChainListings, ...cloudListings]
+          .map(getCanonicalListingKey)
+          .filter(Boolean);
+        return markCatalogMetadata(merged, "authoritative", authoritativeKeys);
       } catch (err) {
         console.warn("Fetch listings failed, using cloud + local fallback...", err);
 
-        // Fallback: merge cloud listings + local listings + Dexie cache
         const cached = await db.listings.toArray();
-        const base = (cached || []).filter((item) =>
+        const matchingCache = (cached || []).filter((item) =>
           filterSpeciesId ? Number(item.speciesId) === Number(filterSpeciesId) : true
         );
 
-        // Deduplicate: cloud > cached > local
-        const ids = new Set();
-        const merged = [];
-        for (const l of cloudListings) { ids.add(Number(l.id)); merged.push(l); }
-        for (const l of base) { if (!ids.has(Number(l.id))) { ids.add(Number(l.id)); merged.push(l); } }
-        for (const l of localListings) { if (!ids.has(Number(l.id))) { ids.add(Number(l.id)); merged.push(l); } }
-
-        if (merged.length > 0) {
-          return merged;
-        }
+        // Fallback rows remain useful for discovery but authorize no checkout.
+        const merged = mergeByCanonicalKey(cloudListings, matchingCache, localListings);
+        if (merged.length > 0) return markCatalogMetadata(merged, "fallback", []);
         throw err;
       }
     },
-    staleTime: 1000 * 60 * 2, // 2 minutes (invalidated reactively on-chain)
-    gcTime: 1000 * 60 * 30, // 30 minutes
+    staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 30,
     enabled: !!contractAddress && !!marketplaceAddress,
   });
+
+  const authoritativeListingKeys = useMemo(
+    () => new Set(query.data?.__authoritativeKeys || []),
+    [query.data],
+  );
+
+  return {
+    ...query,
+    isAuthoritative: query.data?.__catalogSource === "authoritative",
+    catalogSource: query.data?.__catalogSource || (query.isError ? "error" : "loading"),
+    authoritativeListingKeys,
+    catalogRevision: query.dataUpdatedAt || 0,
+  };
 }

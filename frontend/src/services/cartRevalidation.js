@@ -30,7 +30,13 @@
  * primitives, which this module reuses rather than re-deriving).
  */
 
-import { getListingKey, normalizePriceCents, isListingActive } from "./catalogQuery.js";
+import {
+  getCanonicalListingKey,
+  getListingKey,
+  normalizePriceCents,
+  isListingActive,
+  resolveCheckoutListing,
+} from "./catalogQuery.js";
 
 export const CART_CHANGE_TYPE = Object.freeze({
   UNAVAILABLE: "unavailable",
@@ -53,7 +59,7 @@ function indexLiveListings(liveListings) {
   for (const listing of liveListings) {
     if (!listing) continue;
     try {
-      const key = getListingKey(listing);
+      const key = getCanonicalListingKey(listing) || getListingKey(listing);
       if (key) byKey.set(key, listing);
     } catch {
       // A malformed listing shouldn't abort indexing the rest — skip it.
@@ -177,7 +183,13 @@ export function revalidateCart(cart, liveListings, opts = {}) {
   const pausedSellers = opts.pausedSellers instanceof Set ? opts.pausedSellers : null;
   const safeItems = Array.isArray(cart?.items) ? cart.items : [];
   if (safeItems.length === 0) {
-    return { cart: cart && Array.isArray(cart.items) ? cart : { seller: null, items: [], updatedAt: Date.now() }, changes: [] };
+    return {
+      cart: cart && Array.isArray(cart.items) ? cart : { seller: null, items: [], updatedAt: Date.now() },
+      changes: [],
+      eligible: false,
+      blockers: ["Your cart is empty."],
+      checkoutItems: [],
+    };
   }
 
   const byKey = indexLiveListings(liveListings);
@@ -213,8 +225,57 @@ export function revalidateCart(cart, liveListings, opts = {}) {
     return revalidated.pausedSeller ? { ...revalidated, pausedSeller: false } : revalidated;
   });
 
+  const revalidatedCart = {
+    seller: cart.seller ?? null,
+    items: nextItems,
+    updatedAt: cart.updatedAt ?? Date.now(),
+    ...(Number.isSafeInteger(Number(cart.serverRevision))
+      ? { serverRevision: Number(cart.serverRevision) }
+      : {}),
+  };
+  const authoritativeKeys = opts.authoritativeKeys instanceof Set
+    ? opts.authoritativeKeys
+    : new Set(byKey.keys());
+  const blockers = [];
+  const checkoutItems = [];
+  const checkoutSellers = new Set();
+
+  for (const item of nextItems) {
+    if (!item?.listingKey || item.unavailable) {
+      blockers.push("One or more cart items are unavailable.");
+      continue;
+    }
+    const resolved = resolveCheckoutListing({
+      listingKey: item.listingKey,
+      quantity: item.quantity,
+      expectedSeller: cart.seller,
+      listingsByKey: byKey,
+      authoritativeKeys,
+    });
+    if (!resolved.eligible) {
+      blockers.push(resolved.reason);
+      continue;
+    }
+    checkoutSellers.add(resolved.seller);
+    checkoutItems.push({
+      ...item,
+      seller: resolved.seller,
+      quantity: resolved.quantity,
+      unitPriceCents: normalizePriceCents(resolved.listing),
+      unavailable: false,
+      authoritativeListing: resolved.listing,
+    });
+  }
+
+  if (checkoutSellers.size > 1) {
+    blockers.push("Cart items must all come from the same seller.");
+  }
+
   return {
-    cart: { seller: cart.seller ?? null, items: nextItems, updatedAt: cart.updatedAt ?? Date.now() },
+    cart: revalidatedCart,
     changes,
+    eligible: blockers.length === 0 && checkoutItems.length === nextItems.length && checkoutItems.length > 0,
+    blockers: [...new Set(blockers)],
+    checkoutItems,
   };
 }

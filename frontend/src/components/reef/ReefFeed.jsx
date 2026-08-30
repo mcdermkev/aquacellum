@@ -29,7 +29,7 @@ import { getCurrentWallet, isSupabaseConfigured } from "../../services/supabaseC
 import { useQueryClient } from "@tanstack/react-query";
 import { useScrollAffordance } from "../../hooks/useScrollAffordance";
 
-export function ReefFeed({ casualModeActive = false, walletAddress, onNavigateProfile }) {
+export function ReefFeed({ casualModeActive = false, walletAddress, onNavigateProfile, openMessages = false, pendingConversation = null, onConversationConsumed, onCloseMessages }) {
   const tabsScrollRef = useScrollAffordance();
   const [activeTab, setActiveTab] = useState("feed");
   const [composerOpen, setComposerOpen] = useState(false);
@@ -239,7 +239,13 @@ export function ReefFeed({ casualModeActive = false, walletAddress, onNavigatePr
               👤
             </button>
           )}
-          <InboxPanel casualModeActive={casualModeActive} />
+          <InboxPanel
+            casualModeActive={casualModeActive}
+            initialView={openMessages ? "messages" : null}
+            pendingConversation={pendingConversation}
+            onConversationConsumed={onConversationConsumed}
+            onRouteClose={openMessages ? onCloseMessages : null}
+          />
           <button
             onClick={handleRefresh}
             style={{

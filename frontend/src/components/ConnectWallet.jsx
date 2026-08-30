@@ -21,6 +21,7 @@ function shortAddress(addr) {
 export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, triggerLoginOnEntry, clearTriggerLogin }) {
   const {
     account,
+    authenticated,
     loginMethod,
     isConnecting,
     error,
@@ -60,14 +61,14 @@ export function ConnectWallet({ onConnected, onDisconnected, casualModeActive, t
 
   // Auto-trigger login when landing page CTA sets triggerLoginOnEntry
   React.useEffect(() => {
-    if (triggerLoginOnEntry && !account && !isConnecting && ready) {
+    if (triggerLoginOnEntry && (!account || !authenticated) && !isConnecting && ready) {
       connectPrivy();
       if (clearTriggerLogin) clearTriggerLogin();
     } else if (triggerLoginOnEntry) {
       // Already connected or not ready — just clear the flag
       if (clearTriggerLogin) clearTriggerLogin();
     }
-  }, [triggerLoginOnEntry, account, isConnecting, ready]);
+  }, [triggerLoginOnEntry, account, authenticated, isConnecting, ready, connectPrivy, clearTriggerLogin]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Render: Wrong network warning

@@ -120,6 +120,7 @@
     "supabase/migrations/20260817220000_drop_wanted_max_price_eth.sql",
     "supabase/migrations/20260817230000_tide_recap.sql",
     "supabase/migrations/20260817231000_ensure_bid_rules_trigger.sql",
-    "supabase/migrations/20260818120000_reef_trust_authority.sql"
+    "supabase/migrations/20260818120000_reef_trust_authority.sql",
+    "frontend/supabase/migrations/20260829_cart_merge_idempotency.sql"
   ]
 }

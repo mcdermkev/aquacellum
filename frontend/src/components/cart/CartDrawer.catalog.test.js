@@ -57,9 +57,11 @@ describe("CartDrawer / CartButton — composition (§7.7, no forked cart logic)"
   });
 
   it("CartDrawer calls revalidateCart (via useCart().revalidate) before routing to checkout", () => {
-    expect(DRAWER_SOURCE).toContain("const { changes: freshChanges } = revalidate();");
+    expect(DRAWER_SOURCE).toContain("const validation = revalidate();");
+    expect(DRAWER_SOURCE).toContain("const { changes: freshChanges } = validation;");
     expect(DRAWER_SOURCE).toMatch(/freshChanges\.length > 0/);
-    expect(DRAWER_SOURCE).toContain("onProceedToCheckout?.(cart, totals);");
+    expect(DRAWER_SOURCE).toContain("if (!validation.eligible)");
+    expect(DRAWER_SOURCE).toContain("onProceedToCheckout?.(validation.cart, totals);");
   });
 
   it("CartDrawer revalidates on open (useEffect keyed on isOpen)", () => {
@@ -76,14 +78,11 @@ describe("CartDrawer / CartButton — composition (§7.7, no forked cart logic)"
     expect(DRAWER_SOURCE).toContain('className="sliding-drawer-content"');
   });
 
-  it("CartContext revalidates via the pure cartRevalidation.revalidateCart core", () => {
+  it("CartContext exposes a stable ref-backed revalidate callback", () => {
     expect(CONTEXT_SOURCE).toContain('import { revalidateCart } from "../services/cartRevalidation.js"');
-    // Matches the call rather than one exact argument list. The point of this
-    // assertion is that CartContext DELEGATES to the pure core instead of forking
-    // cart logic — not that the signature never grows. It gained a third argument
-    // when vacation mode began passing `pausedSellers` through, which is the core
-    // being extended as designed (its `opts` was reserved for exactly this).
-    expect(CONTEXT_SOURCE).toMatch(/revalidateCart\(\s*cart,\s*listings\b/);
+    expect(CONTEXT_SOURCE).toContain("const currentCart = cartRef.current;");
+    expect(CONTEXT_SOURCE).toMatch(/revalidateCart\(\s*currentCart,\s*listings\b/);
+    expect(CONTEXT_SOURCE).toMatch(/const revalidate = useCallback\([\s\S]*?\n\s+\}, \[\]\);/);
     // And the forked-logic guard the assertion actually exists to enforce.
     expect(CONTEXT_SOURCE).not.toMatch(/function\s+revalidateItem/);
   });
@@ -131,23 +130,32 @@ describe("CartDrawer — seller-conflict UX (§7.8)", () => {
     expect(DRAWER_SOURCE).toContain("onClick={() => resolveConflict(false)}");
     expect(DRAWER_SOURCE).toContain("onClick={() => resolveConflict(true)}");
   });
+
+  it("keeps both revision-conflict snapshots behind explicit account/device choices", () => {
+    expect(DRAWER_SOURCE).toContain('conflict.type === "sync_conflict"');
+    expect(DRAWER_SOURCE).toContain('onClick={() => resolveConflict("account")}');
+    expect(DRAWER_SOURCE).toContain('onClick={() => resolveConflict("local")}');
+    expect(DRAWER_SOURCE).toContain("Use account cart");
+    expect(DRAWER_SOURCE).toContain("Replace with this device");
+  });
 });
 
 describe("cartStore.js — persistence (§7.9)", () => {
-  it("always writes Dexie via the cart table, for both guest and authed accounts", () => {
-    expect(STORE_SOURCE).toContain("await writeDexieCart(cart);");
+  it("always writes the identity-scoped Dexie cart before any server mutation", () => {
+    expect(STORE_SOURCE).toContain("await writeScopedDexieCart(safe, account);");
     expect(STORE_SOURCE).toContain("db.cart");
   });
 
-  it("a failed server sync is caught and logged, never thrown or surfaced to the caller", () => {
-    expect(STORE_SOURCE).toMatch(/if \(!result\.ok\) \{\s*console\.warn\("\[CartStore\] Server cart sync failed \(non-fatal\):", result\.error\);\s*\}/);
+  it("surfaces revision conflicts but keeps generic sync failures non-fatal", () => {
+    expect(STORE_SOURCE).toContain('type: "sync_conflict"');
+    expect(STORE_SOURCE).toContain('console.warn("[CartStore] Server cart sync failed (non-fatal):", result.error)');
   });
 
   it("saveCart does not clear the local cart when the server call fails", () => {
-    // writeDexieCart(cart) runs unconditionally before the (best-effort)
-    // server PUT — a failed PUT cannot have already wiped local data.
+    // The scoped Dexie write runs unconditionally before the revision-CAS PUT,
+    // so a failed or rejected request leaves the device snapshot recoverable.
     const saveCartBody = STORE_SOURCE.slice(STORE_SOURCE.indexOf("export async function saveCart"));
-    const writeIdx = saveCartBody.indexOf("await writeDexieCart(cart);");
+    const writeIdx = saveCartBody.indexOf("await writeScopedDexieCart(safe, account);");
     const putIdx = saveCartBody.indexOf('authedFetch("PUT"');
     expect(writeIdx).toBeGreaterThan(-1);
     expect(putIdx).toBeGreaterThan(writeIdx);

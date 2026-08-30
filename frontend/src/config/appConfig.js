@@ -37,9 +37,10 @@ export const STOREFRONT_BETA_WALLETS = [
   // "0xYOUR_TESTER_WALLET_HERE",
 ];
 
-// ── Valid tab names for URL hash routing ──────────────────────────────────
-// Retired tabs are omitted here and redirected in App.jsx, so old links land
-// somewhere meaningful instead of the generic /app/tanks fallback:
+// ── Valid dashboard tab names ─────────────────────────────────────────────
+// First-class commerce paths are resolved separately in commerceRoute.js so
+// route identity such as product keys/store slugs is not collapsed into a tab.
+// Retired dashboard tabs still redirect somewhere meaningful instead of Tanks:
 //   "storefront" ("My Store")        → "breeder-terminal" (owns storefront setup)
 //   "map" ("Local Sellers"/"Local Map") → "orders" (Fish Finder T15: a pickup
 //        meetup belongs to the order that created it, and finding sellers is

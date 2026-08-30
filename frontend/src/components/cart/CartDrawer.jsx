@@ -11,7 +11,7 @@
  * and dispatches the provided actions.
  */
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Plus, Minus, Trash, Info, Warning, ShoppingCartSimple } from "@phosphor-icons/react";
 import { Modal } from "../Modal.jsx";
 import { FishSilhouetteSVG } from "../SilhouetteSVG.jsx";
@@ -38,8 +38,10 @@ function changeNote(change, casualModeActive) {
 }
 
 export function CartDrawer({ isOpen, onClose, onProceedToCheckout, casualModeActive = false, buyerTank = null }) {
-  const { cart, totals, changes, conflict, setItemQuantity, removeItem, resolveConflict, revalidate, addItem } = useCart();
+  const { cart, totals, changes, conflict, setItemQuantity, removeItem, resolveConflict, retryMerge, revalidate, addItem } = useCart();
+  const { catalogAuthoritative } = useCart();
   const { boxStatus, recommendations } = useAddOnRecommendations({ cart, buyerTank });
+  const [checkoutError, setCheckoutError] = useState(null);
 
   // Revalidate every time the drawer opens (spec §4: "on cart open").
   useEffect(() => {
@@ -54,14 +56,26 @@ export function CartDrawer({ isOpen, onClose, onProceedToCheckout, casualModeAct
   }
 
   const handleProceed = () => {
-    const { changes: freshChanges } = revalidate();
+    setCheckoutError(null);
+    const validation = revalidate();
+    const { changes: freshChanges } = validation;
+    if (!validation.ready || !navigator.onLine || !catalogAuthoritative) {
+      setCheckoutError(validation.reason || (navigator.onLine
+        ? "Live marketplace availability is still loading. Please try again."
+        : "Reconnect to the internet before checkout."));
+      return;
+    }
     if (freshChanges.length > 0) {
       // Stay open so the buyer can see what changed before continuing —
       // never route to checkout on a just-revalidated cart without giving
       // the buyer a moment to see the update.
       return;
     }
-    onProceedToCheckout?.(cart, totals);
+    if (!validation.eligible) {
+      setCheckoutError(validation.blockers?.[0] || "One or more cart items need attention before checkout.");
+      return;
+    }
+    onProceedToCheckout?.(validation.cart, totals);
   };
 
   return (
@@ -153,6 +167,12 @@ export function CartDrawer({ isOpen, onClose, onProceedToCheckout, casualModeAct
                 </strong>
               </div>
 
+              {checkoutError && (
+                <div role="alert" style={{ padding: "0.65rem 0.75rem", borderRadius: "8px", border: "1px solid rgba(248,113,113,0.35)", background: "rgba(248,113,113,0.08)", color: "var(--accent-red, #f87171)", fontSize: "0.78rem", lineHeight: 1.4 }}>
+                  {checkoutError}
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={handleProceed}
@@ -182,13 +202,15 @@ export function CartDrawer({ isOpen, onClose, onProceedToCheckout, casualModeAct
         )}
       </div>
 
-      {/* Seller-conflict confirmation, rendered as a nested overlay on top of
-          the drawer (kept inside the same Modal focus scope). */}
+      {/* Cart conflict confirmation or retry, rendered as a nested overlay on
+          top of the drawer (kept inside the same Modal focus scope). */}
       {conflict && (
         <div
           role="alertdialog"
           aria-modal="true"
-          aria-label="Replace cart?"
+          aria-label={conflict.type === "merge_error"
+            ? "Cart merge needs retry"
+            : conflict.type === "sync_conflict" ? "Cart changed elsewhere" : "Replace cart?"}
           style={{
             position: "absolute", inset: 0, background: "rgba(6, 8, 20, 0.75)",
             display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem", zIndex: 10,
@@ -200,27 +222,94 @@ export function CartDrawer({ isOpen, onClose, onProceedToCheckout, casualModeAct
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--amber-400)" }}>
               <Warning size={20} weight="duotone" />
-              <strong style={{ fontFamily: "Outfit, sans-serif", color: "var(--text-primary)" }}>Replace cart?</strong>
+              <strong style={{ fontFamily: "Outfit, sans-serif", color: "var(--text-primary)" }}>
+                {conflict.type === "merge_error"
+                  ? "Cart merge needs a fresh retry"
+                  : conflict.type === "sync_conflict"
+                    ? "Your cart changed elsewhere"
+                    : conflict.type === "account_merge" ? "Choose which cart to keep" : "Replace cart?"}
+              </strong>
             </div>
             <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", margin: 0, lineHeight: 1.5 }}>
-              Your cart has fish from <strong style={{ color: "var(--text-primary)" }}>{generateAlias(conflict.currentSeller)}</strong>.
-              Start a new cart with <strong style={{ color: "var(--text-primary)" }}>{generateAlias(conflict.incomingSeller)}</strong>?
+              {conflict.type === "merge_error" ? (
+                <>Your device cart is preserved. Retry to reconcile it with your account using a fresh, verified merge request.</>
+              ) : conflict.type === "sync_conflict" ? (
+                <>This device and your account both changed. Nothing was overwritten. Choose the account cart or explicitly replace it with this device&apos;s cart.</>
+              ) : conflict.type === "account_merge" ? (
+                <>
+                  Your saved account cart is from <strong style={{ color: "var(--text-primary)" }}>{generateAlias(conflict.currentSeller)}</strong>,
+                  while this device&apos;s guest cart is from <strong style={{ color: "var(--text-primary)" }}>{generateAlias(conflict.incomingSeller)}</strong>.
+                  Single-seller checkout requires you to keep one.
+                </>
+              ) : (
+                <>
+                  Your cart has fish from <strong style={{ color: "var(--text-primary)" }}>{generateAlias(conflict.currentSeller)}</strong>.
+                  Start a new cart with <strong style={{ color: "var(--text-primary)" }}>{generateAlias(conflict.incomingSeller)}</strong>?
+                </>
+              )}
             </p>
-            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-              <button
-                type="button"
-                onClick={() => resolveConflict(false)}
-                style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid var(--glass-border)", background: "transparent", color: "var(--text-secondary)", fontSize: "0.8rem", cursor: "pointer" }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => resolveConflict(true)}
-                style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, var(--teal-400), var(--violet-500))", color: "#04120f", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
-              >
-                Replace cart
-              </button>
+            {conflict.error && <p role="alert" style={{ color: "var(--accent-red, #f87171)", fontSize: "0.78rem", margin: 0 }}>{conflict.error}</p>}
+            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end", flexWrap: "wrap" }}>
+              {conflict.type === "merge_error" ? (
+                <button
+                  type="button"
+                  onClick={retryMerge}
+                  style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, var(--teal-400), var(--violet-500))", color: "#04120f", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
+                >
+                  Retry cart merge
+                </button>
+              ) : conflict.type === "sync_conflict" ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => resolveConflict("account")}
+                    style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid var(--glass-border)", background: "transparent", color: "var(--text-secondary)", fontSize: "0.8rem", cursor: "pointer" }}
+                  >
+                    Use account cart
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => resolveConflict("local")}
+                    style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, var(--teal-400), var(--violet-500))", color: "#04120f", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
+                  >
+                    Replace with this device
+                  </button>
+                </>
+              ) : conflict.type === "account_merge" ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => resolveConflict("account")}
+                    style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid var(--glass-border)", background: "transparent", color: "var(--text-secondary)", fontSize: "0.8rem", cursor: "pointer" }}
+                  >
+                    Keep account cart
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => resolveConflict("guest")}
+                    style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, var(--teal-400), var(--violet-500))", color: "#04120f", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
+                  >
+                    Keep this device cart
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => resolveConflict(false)}
+                    style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "1px solid var(--glass-border)", background: "transparent", color: "var(--text-secondary)", fontSize: "0.8rem", cursor: "pointer" }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => resolveConflict(true)}
+                    style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "none", background: "linear-gradient(135deg, var(--teal-400), var(--violet-500))", color: "#04120f", fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}
+                  >
+                    Replace cart
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

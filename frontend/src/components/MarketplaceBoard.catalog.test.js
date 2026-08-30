@@ -35,6 +35,9 @@ const BOARD_SOURCE = stripComments(
 const MODAL_SOURCE = stripComments(
   readFileSync(fileURLToPath(new URL("./ProductDetailModal.jsx", import.meta.url)), "utf8")
 );
+const WANTED_SOURCE = stripComments(
+  readFileSync(fileURLToPath(new URL("./WantedBoard.jsx", import.meta.url)), "utf8")
+);
 
 describe("MarketplaceBoard — catalog query wiring", () => {
   it("routes search/filter/sort through applyCatalogQuery (no forked filter logic)", () => {
@@ -127,5 +130,45 @@ describe("ProductDetailModal — composition (no re-derived compatibility/pricin
 
   it("Add to cart calls the provided handler rather than reimplementing checkout", () => {
     expect(MODAL_SOURCE).toContain("onAddToCart && onAddToCart(listing)");
+  });
+});
+
+describe("Marketplace protected writes — verified Privy boundary", () => {
+  it("requires account plus authenticated before conversation creation", () => {
+    expect(BOARD_SOURCE).toContain('const { authenticated } = useAuth();');
+    expect(BOARD_SOURCE).toContain("const canProtectedWrite = !!walletAccount && !!authenticated;");
+    const handler = BOARD_SOURCE.slice(
+      BOARD_SOURCE.indexOf("const openListingConversation"),
+      BOARD_SOURCE.indexOf("// Local XP"),
+    );
+    expect(handler.indexOf("if (!canProtectedWrite)")).toBeGreaterThan(-1);
+    expect(handler.indexOf("getOrCreateConversation(seller)")).toBeGreaterThan(handler.indexOf("if (!canProtectedWrite)"));
+    expect(BOARD_SOURCE).toContain('messageIntent={canProtectedWrite && searchParams.get("action") === "message"}');
+  });
+
+  it("guards every wanted mutation before its first write and narrows fulfillment by owner", () => {
+    expect(WANTED_SOURCE).toContain('const { authenticated } = useAuth();');
+    expect(WANTED_SOURCE).toContain("const canProtectedWrite = !!walletAccount && !!authenticated;");
+
+    const submit = WANTED_SOURCE.slice(WANTED_SOURCE.indexOf("const handleSubmit"), WANTED_SOURCE.indexOf("const handleFulfill"));
+    expect(submit.indexOf("if (!canProtectedWrite)")).toBeGreaterThan(-1);
+    expect(submit.indexOf('.from("wanted_listings").insert')).toBeGreaterThan(submit.indexOf("if (!canProtectedWrite)"));
+
+    const fulfill = WANTED_SOURCE.slice(WANTED_SOURCE.indexOf("const handleFulfill"), WANTED_SOURCE.indexOf("// Open the inline responder"));
+    expect(fulfill.indexOf("if (!canProtectedWrite)")).toBeGreaterThan(-1);
+    expect(fulfill.indexOf('.update({ is_active: false')).toBeGreaterThan(fulfill.indexOf("if (!canProtectedWrite)"));
+    expect(fulfill).toContain('.eq("wallet_address", owner)');
+
+    const respond = WANTED_SOURCE.slice(WANTED_SOURCE.indexOf("const handleRespond"), WANTED_SOURCE.indexOf("// Demand aggregation"));
+    expect(respond.indexOf("if (!canProtectedWrite)")).toBeGreaterThan(-1);
+    expect(respond.indexOf("getOrCreateConversation(item.wallet_address)")).toBeGreaterThan(respond.indexOf("if (!canProtectedWrite)"));
+    expect(respond.indexOf("sendMessage(convo.id")).toBeGreaterThan(respond.indexOf("if (!canProtectedWrite)"));
+  });
+
+  it("resumes only confirmation/composer presentation after verified login", () => {
+    expect(MODAL_SOURCE).toContain("!isOwner && messageIntent");
+    expect(MODAL_SOURCE).toContain("onClick={() => onMessage?.(listing)}");
+    expect(WANTED_SOURCE).toMatch(/if \(!canProtectedWrite \|\| !initialCompose\) return;/);
+    expect(WANTED_SOURCE).toContain("setShowForm(true)");
   });
 });
