@@ -1852,5 +1852,125 @@
     "source": "wikimedia",
     "license": "CC BY 3.0",
     "attribution": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Joris_Raats&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:Joris Raats (page does not exist)\">Joris Raats</a>"
+  },
+  {
+    "species": "Holopristis pulchra",
+    "source": "wikimedia",
+    "license": "Public domain",
+    "attribution": "<a href=\"//commons.wikimedia.org/wiki/User:Haplochromis\" title=\"User:Haplochromis\">Haplochromis</a>"
+  },
+  {
+    "species": "Petitella georgiae",
+    "source": "wikimedia",
+    "license": "CC BY-SA 4.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/wiki/User:NasserHalaweh\" title=\"User:NasserHalaweh\">NasserHalaweh</a>"
+  },
+  {
+    "species": "Holopristis ocellifera",
+    "source": "wikimedia",
+    "license": "CC BY 4.0",
+    "attribution": "Axel Zarske"
+  },
+  {
+    "species": "Bario oligolepis",
+    "source": "inaturalist",
+    "license": "cc-by",
+    "attribution": "(c) Michael Bakker Paiva, some rights reserved (CC BY)"
+  },
+  {
+    "species": "Brachychalcinus orbicularis",
+    "source": "wikimedia",
+    "license": "Public domain",
+    "attribution": "<bdi><a href=\"https://en.wikipedia.org/wiki/en:Fran%C3%A7ois-Louis_Laporte,_comte_de_Castelnau\" class=\"extiw\" title=\"w:en:François-Louis Laporte, comte de Castelnau\"><span title=\"French explorer and entomologist (1802–1880)\">François-Louis Laporte, comte de Castelnau</span></a></bdi>"
+  },
+  {
+    "species": "Ctenobrycon spilurus",
+    "source": "wikimedia",
+    "license": "CC BY-SA 4.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/wiki/User:AlejandroLinaresGarcia\" title=\"User:AlejandroLinaresGarcia\">AlejandroLinaresGarcia</a>"
+  },
+  {
+    "species": "Hemigrammus unilineatus",
+    "source": "wikimedia",
+    "license": "Public domain",
+    "attribution": "Carl H. Eigenmann, 1912"
+  },
+  {
+    "species": "Hyphessobrycon flammeus",
+    "source": "wikimedia",
+    "license": "Public domain",
+    "attribution": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Mosasaurus&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:Mosasaurus (page does not exist)\">Mosasaurus</a>"
+  },
+  {
+    "species": "Hyphessobrycon griemi",
+    "source": "inaturalist",
+    "license": "cc-by",
+    "attribution": "(c) Celso Henrique Varela Rios, some rights reserved (CC BY)"
+  },
+  {
+    "species": "Hyphessobrycon heterorhabdus",
+    "source": "wikimedia",
+    "license": "Public domain",
+    "attribution": "Carl H. Eigenmann"
+  },
+  {
+    "species": "Hyphessobrycon scholzei",
+    "source": "wikimedia",
+    "license": "CC BY 4.0",
+    "attribution": "A. Zarske, D. Bork, H.-J. Richter, illus. Jürgen Scholz"
+  },
+  {
+    "species": "Pristella maxillaris",
+    "source": "inaturalist",
+    "license": "cc-by",
+    "attribution": "(c) Jan Ebr &amp; Ivana Ebrová, some rights reserved (CC BY)"
+  },
+  {
+    "species": "Gymnocharacinus bergii",
+    "source": "inaturalist",
+    "license": "cc0",
+    "attribution": "no rights reserved"
+  },
+  {
+    "species": "Hemigrammus hyanuary",
+    "source": "wikimedia",
+    "license": "CC BY-SA 2.0 de",
+    "attribution": "Thomnight (<a href=\"//commons.wikimedia.org/wiki/User:Thomnight\" title=\"User:Thomnight\">Thomnight</a>)"
+  },
+  {
+    "species": "Megalamphodus bentosi",
+    "source": "wikimedia",
+    "license": "CC BY 3.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/wiki/User:Holleday\" title=\"User:Holleday\">Holger Krisp</a>"
+  },
+  {
+    "species": "Megalamphodus rosaceus",
+    "source": "wikimedia",
+    "license": "CC BY-SA 4.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Luki86&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:Luki86 (page does not exist)\">Luki86</a>"
+  },
+  {
+    "species": "Thayeria obliqua",
+    "source": "wikimedia",
+    "license": "CC BY-SA 4.0",
+    "attribution": "Klaus Rudloff"
+  },
+  {
+    "species": "Astyanax mexicanus",
+    "source": "wikimedia",
+    "license": "CC BY-SA 4.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/wiki/User:Syrio\" title=\"User:Syrio\">Syrio</a>"
+  },
+  {
+    "species": "Astyanax bimaculatus",
+    "source": "inaturalist",
+    "license": "cc-by",
+    "attribution": "(c) Julien Renoult, some rights reserved (CC BY)"
+  },
+  {
+    "species": "Hemigrammus collettii",
+    "source": "wikimedia",
+    "license": "Public domain",
+    "attribution": "<span lang=\"en\">Anonymous</span><span style=\"display:none\">Unknown author</span>"
   }
 ]
