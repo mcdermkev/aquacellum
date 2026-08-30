@@ -949,6 +949,22 @@ export function SpawningWizard({ contractAddress, walletAccount, onComplete, cas
                           </strong>
                         </div>
                       </div>
+                      {(snappedParameters.gh !== null || snappedParameters.kh !== null || snappedParameters.tal !== null) && (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
+                          <div className="telemetry-tile-premium">
+                            <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>GH</span>
+                            <strong style={{ fontSize: "1.2rem", color: "#fff" }}>{readingText(snappedParameters.gh, " dGH")}</strong>
+                          </div>
+                          <div className="telemetry-tile-premium">
+                            <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>KH</span>
+                            <strong style={{ fontSize: "1.2rem", color: "#fff" }}>{readingText(snappedParameters.kh, " dKH")}</strong>
+                          </div>
+                          <div className="telemetry-tile-premium">
+                            <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>Alkalinity</span>
+                            <strong style={{ fontSize: "1.2rem", color: "#fff" }}>{readingText(snappedParameters.tal, " ppm")}</strong>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="glass-card" style={{ padding: "2rem", textAlign: "center", border: "1px dashed var(--glass-border)" }}>

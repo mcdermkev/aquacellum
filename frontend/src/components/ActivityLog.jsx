@@ -22,8 +22,13 @@ export function ActivityLog({ onChainLogs, actionLogs, casualModeActive }) {
     const ts        = Number(l.timestamp || 0) * 1000;
     const tempRaw   = l.tempCelsiusX10 !== undefined ? Number(l.tempCelsiusX10) : (l.temp !== undefined ? Number(l.temp) : 0);
     const phRaw     = l.phX10          !== undefined ? Number(l.phX10)          : (l.ph   !== undefined ? Number(l.ph)   : 0);
+    // Hardness/alkalinity are optional (local-only). Resolve to display units
+    // (dGH/dKH/ppm) or null when the reading didn't include them.
+    const gh        = l.ghX10  !== undefined ? Number(l.ghX10) / 10  : (l.gh  !== undefined ? Number(l.gh)  : null);
+    const kh        = l.khX10  !== undefined ? Number(l.khX10) / 10  : (l.kh  !== undefined ? Number(l.kh)  : null);
+    const tal       = l.talPpm !== undefined ? Number(l.talPpm)      : (l.tal !== undefined ? Number(l.tal) : null);
     const notesStr  = typeof l.notes === "string" ? l.notes : "";
-    return { _type: "water", _ts: ts, _id: i, tempRaw, phRaw, notesStr };
+    return { _type: "water", _ts: ts, _id: i, tempRaw, phRaw, gh, kh, tal, notesStr };
   });
 
   const actionItems = safeAction.map((l, i) => ({
@@ -81,6 +86,9 @@ export function ActivityLog({ onChainLogs, actionLogs, casualModeActive }) {
                 hardcoded output this replaced, so the default path is unchanged.
               */}
               Temp: {formatTemperature(log.tempRaw / 10, tempUnit, { parenthesizeSecond: true })} | pH: {(log.phRaw / 10).toFixed(1)}
+              {log.gh !== null ? ` | GH: ${log.gh.toFixed(1)} dGH` : ""}
+              {log.kh !== null ? ` | KH: ${log.kh.toFixed(1)} dKH` : ""}
+              {log.tal !== null ? ` | Alk: ${log.tal.toFixed(0)} ppm` : ""}
             </span>
             {log.notesStr ? <p style={{ color: "var(--text-secondary)", marginTop: "0.25rem", margin: 0 }}>"{log.notesStr}"</p> : null}
           </div>

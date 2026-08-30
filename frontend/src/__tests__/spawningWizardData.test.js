@@ -191,6 +191,9 @@ describe("parameterSnapshotFromLog", () => {
       ammonia: "0.00",
       nitrite: "0.00",
       nitrate: "5.0",
+      gh: null,
+      kh: null,
+      tal: null,
       timestamp: 1700000000,
     });
   });
@@ -211,6 +214,9 @@ describe("parameterSnapshotFromLog", () => {
       ammonia: "0.25",
       nitrite: "0.00",
       nitrate: "12.4",
+      gh: null,
+      kh: null,
+      tal: null,
       timestamp: 500,
     });
   });
@@ -224,6 +230,9 @@ describe("parameterSnapshotFromLog", () => {
       ammonia: null,
       nitrite: null,
       nitrate: null,
+      gh: null,
+      kh: null,
+      tal: null,
       timestamp: 300,
     });
   });
@@ -232,6 +241,23 @@ describe("parameterSnapshotFromLog", () => {
     expect(parameterSnapshotFromLog({ tankId: 7, timestamp: 300, notes: "topped off" })).toBeNull();
     expect(parameterSnapshotFromLog(null)).toBeNull();
     expect(parameterSnapshotFromLog(undefined)).toBeNull();
+  });
+
+  it("converts hardness (dGH/dKH ×10) and total alkalinity (ppm) fields", () => {
+    const snapshot = parameterSnapshotFromLog({
+      tempCelsiusX10: 245,
+      phX10: 72,
+      ghX10: 85,
+      khX10: 50,
+      talPpm: 90,
+      timestamp: 42,
+    });
+    expect(snapshot).toMatchObject({ gh: "8.5", kh: "5.0", tal: "90" });
+  });
+
+  it("reads decimal hardness/alkalinity rows too", () => {
+    const snapshot = parameterSnapshotFromLog({ gh: 6.4, kh: 3.2, tal: 55, timestamp: 9 });
+    expect(snapshot).toMatchObject({ gh: "6.4", kh: "3.2", tal: "55" });
   });
 
   it("rejects unparseable values instead of turning them into NaN", () => {

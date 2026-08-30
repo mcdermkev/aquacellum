@@ -60,6 +60,11 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
   const [reviewBusyId, setReviewBusyId] = useState(null);
   const [reviewError, setReviewError] = useState(null);
 
+  // Full-size preview for an uploaded evidence photo. Uploaded proofs are stored
+  // as data: URLs; opening one in a new tab renders a blank page (browsers won't
+  // navigate to a multi-hundred-KB data URL), so show it in an in-app lightbox.
+  const [previewUrl, setPreviewUrl] = useState(null);
+
   const configured = isSupabaseConfigured();
   const submitter = (walletAccount || "").toLowerCase();
 
@@ -271,14 +276,26 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
             </div>
           )}
           {m.proof_url && (
-            <a
-              href={m.proof_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ fontSize: "0.7rem", color: "var(--accent-cyan, #22d3ee)", textDecoration: "none" }}
-            >
-              View reference ↗
-            </a>
+            m.proof_url.startsWith("data:") ? (
+              // Uploaded photo (data URL) — open in the in-app lightbox.
+              <button
+                type="button"
+                onClick={() => setPreviewUrl(m.proof_url)}
+                style={{ fontSize: "0.7rem", color: "var(--accent-cyan, #22d3ee)", textDecoration: "none", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+              >
+                View reference ↗
+              </button>
+            ) : (
+              // Pasted external URL — a real link, safe to open in a new tab.
+              <a
+                href={m.proof_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ fontSize: "0.7rem", color: "var(--accent-cyan, #22d3ee)", textDecoration: "none" }}
+              >
+                View reference ↗
+              </a>
+            )
           )}
         </div>
 
@@ -577,6 +594,38 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
           </div>
         )}
       </div>
+
+      {/* Evidence-photo lightbox */}
+      {previewUrl && (
+        <div
+          onClick={() => setPreviewUrl(null)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 1000,
+            background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: "2rem",
+            cursor: "zoom-out",
+          }}
+        >
+          <img
+            src={previewUrl}
+            alt="Morph evidence"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: "12px", boxShadow: "0 20px 60px rgba(0,0,0,0.6)", cursor: "default" }}
+          />
+          <button
+            type="button"
+            onClick={() => setPreviewUrl(null)}
+            aria-label="Close preview"
+            style={{
+              position: "absolute", top: "1.25rem", right: "1.5rem",
+              background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)",
+              color: "#fff", fontSize: "1.1rem", borderRadius: "8px", width: "2.2rem", height: "2.2rem", cursor: "pointer",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 }
