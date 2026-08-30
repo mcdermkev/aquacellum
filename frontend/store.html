@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Breeder Storefront — Aquacellum</title>
-  <meta name="description" content="Browse this breeder's live aquarium fish. Tank-raised specimens with buyer-protected health guarantees from verified breeders on Aquacellum.">
+  <meta name="description" content="Browse live aquarium fish and breeder-published storefront collections on Aquacellum.">
   <meta property="og:title" content="Breeder Storefront — Aquacellum">
-  <meta property="og:description" content="Tank-raised fish from a verified breeder. Buyer-protected payments with a live-arrival guarantee.">
+  <meta property="og:description" content="Explore this breeder's current Aquacellum listings, profile, and documented marketplace history.">
   <meta property="og:type" content="website">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -138,7 +138,7 @@
   <meta property="og:image" content="https://aquacellum.com/og-banner.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Breeder Storefront — Aquacellum">
-  <meta name="twitter:description" content="Tank-raised fish from a verified breeder. Buyer-protected payments with a live-arrival guarantee.">
+  <meta name="twitter:description" content="Explore this breeder's current Aquacellum listings, profile, and documented marketplace history.">
 </head>
 <body>
   <!-- Navigation -->
@@ -217,128 +217,124 @@
       return match ? match[1].replace(/\/$/, '') : null;
     }
 
-    // ── Price Helper ──────────────────────────────────────────────────────
-    function ethToUSD(priceEth) {
-      const usd = parseFloat(priceEth || 0) * 1000;
-      if (usd <= 0) return 'Free';
-      return '$' + usd.toFixed(2);
+    function element(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text != null) node.textContent = String(text);
+      return node;
     }
 
-    // ── Pedigree ──────────────────────────────────────────────────────────
-    function getPedigree(item) {
-      if (item.isBatch) return { label: 'Batch Fry', cls: 'batch', tier: '' };
-      const s = Number(item.sireId || 0), d = Number(item.damId || 0);
-      if (s === 0 && d === 0) return { label: 'Wild Caught', cls: 'wild', tier: 'tier-wild' };
-      if ((s !== 0 && d === 0) || (s === 0 && d !== 0)) return { label: 'F1 Bred', cls: 'f1', tier: '' };
-      return { label: 'Purebred', cls: 'purebred', tier: 'tier-purebred' };
+    function safeImageUrl(value) {
+      if (!value) return '';
+      try {
+        const url = new URL(value, window.location.origin);
+        return url.protocol === 'https:' || url.origin === window.location.origin ? url.href : '';
+      } catch { return ''; }
     }
-    // ── Normalize API response shape ──────────────────────────────────────
-    // The /api/storefront-detail endpoint returns the profile under `breeder`
-    // with camelCase stats and nested listing objects. renderStorefront()
-    // expects `profile` with snake_case stats and flat listings. Map between them.
+
+    function formatPrice(priceUsd) {
+      const value = Number(priceUsd);
+      return Number.isFinite(value) && value > 0
+        ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+        : 'Contact seller';
+    }
+
+    function getPedigree(item) {
+      if (item.isBatch) return { label: 'Fry batch', cls: 'batch', tier: '' };
+      const sire = Number(item.sireId || 0);
+      const dam = Number(item.damId || 0);
+      if (sire && dam) return { label: 'Documented parents', cls: 'purebred', tier: 'tier-purebred' };
+      if (sire || dam) return { label: 'Partial parent record', cls: 'f1', tier: '' };
+      return { label: 'Provenance not documented', cls: 'wild', tier: '' };
+    }
+
     function normalizeApiResponse(data) {
-      if (!data || !data.breeder) return data; // already in {profile,stats,...} shape
-      const b = data.breeder || {};
-      const s = data.stats || {};
+      if (!data || !data.breeder) return data;
+      const breeder = data.breeder || {};
+      const stats = data.stats || {};
       return {
         profile: {
-          display_name: b.displayName,
-          wallet_address: b.walletAddress,
-          slug: b.slug,
-          bio: b.bio,
-          location: b.location,
-          specialties: b.specialties || [],
-          is_master_breeder: b.isMasterBreeder,
-          avatar_url: b.avatarUrl || null,
-          banner_url: b.bannerUrl || null,
+          display_name: breeder.displayName,
+          wallet_address: breeder.walletAddress,
+          slug: breeder.slug,
+          bio: breeder.bio,
+          location: breeder.location,
+          specialties: breeder.specialties || [],
+          is_master_breeder: breeder.isMasterBreeder,
+          avatar_url: breeder.avatarUrl || null,
+          banner_url: breeder.bannerUrl || null,
         },
         stats: {
-          avg_rating: s.avgRating,
-          review_count: s.reviewCount,
-          species_count: s.speciesCount,
-          total_listings: s.totalListings,
-          total_sales: s.totalSales,
+          avg_rating: stats.avgRating,
+          review_count: stats.reviewCount,
+          species_count: stats.speciesCount,
+          total_sales: stats.totalSales,
         },
         listings: (data.listings || []).map(normalizeApiListing),
         reviews: data.reviews || [],
-        // Task 21A: sections arrive pre-arranged (featured -> collections ->
-        // catch-all already applied server-side); just normalize each
-        // section's nested listings the same way as the top-level array.
-        sections: (data.sections || []).map(sec => ({
-          id: sec.id,
-          type: sec.type,
-          title: sec.title,
-          listings: (sec.listings || []).map(normalizeApiListing),
+        sections: (data.sections || []).map((section) => ({
+          id: section.id,
+          type: section.type,
+          title: section.title,
+          listings: (section.listings || []).map(normalizeApiListing),
         })),
       };
     }
 
-    /** Map one API listing object (species/price/imageUrl shape) to the flat shape renderStorefront/buildListingCard expect. */
-    function normalizeApiListing(l) {
+    function normalizeApiListing(listing) {
+      // The endpoint returns a nested public response. Keep compatibility with
+      // display-safe projected rows without ever reading the raw table.
+      const normalized = listing?.species
+        ? listing
+        : (AquadexPublicListings.parseRow(listing) || listing || {});
+      const pedigree = normalized.pedigree || {};
       return {
-        commonName: l.species?.commonName,
-        scientificName: l.species?.scientificName,
-        price: l.price?.eth,
-        isBatch: l.type === 'batch',
-        quantity: l.quantity,
-        imageUrl: l.imageUrl,
+        id: normalized.id,
+        listingId: normalized.listingId,
+        tokenId: normalized.tokenId,
+        commonName: normalized.species?.commonName || normalized.commonName,
+        scientificName: normalized.species?.scientificName || normalized.scientificName,
+        priceUsd: normalized.price?.approximateUsd ?? normalized.priceUsd,
+        isBatch: normalized.type === 'batch' || normalized.isBatch === true,
+        quantity: normalized.quantity,
+        imageUrl: normalized.imageUrl || normalized.photoUrl,
+        sireId: pedigree.sireId ?? normalized.sireId,
+        damId: pedigree.damId ?? normalized.damId,
+        isShipping: normalized.shippingAvailable ?? normalized.isShipping,
+        localPickup: normalized.localPickup,
       };
     }
 
-    // ── Initialize ─────────────────────────────────────────────────────────
+    function listingUrl(item) {
+      const id = item.isBatch ? (item.listingId ?? item.id) : (item.tokenId ?? item.id);
+      const key = `${item.isBatch ? 'batch' : 'single'}-${id}`;
+      return `/app/marketplace?listing=${encodeURIComponent(key)}`;
+    }
+
     async function init() {
       const slug = getSlugFromUrl();
       if (!slug) { showError('No storefront specified.'); return; }
 
       try {
-        // Fetch storefront data via API
-        const res = await fetch(`/api/storefront-detail?id=${encodeURIComponent(slug)}`);
-        if (!res.ok) throw new Error('Storefront not found');
-        const data = await res.json();
-        renderStorefront(normalizeApiResponse(data));
-      } catch (e) {
-        // Fallback: try direct Supabase query
-        try {
-          const profileRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/breeder_profiles?or=(slug.eq.${slug},wallet_address.eq.${slug})&limit=1`,
-            { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
-          );
-          if (profileRes.ok) {
-            const profiles = await profileRes.json();
-            if (profiles.length > 0) {
-              const p = profiles[0];
-              // Fetch stats
-              const statsRes = await fetch(
-                `${SUPABASE_URL}/rest/v1/breeder_stats?wallet_address=eq.${p.wallet_address}`,
-                { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
-              );
-              let stats = {};
-              if (statsRes.ok) { const s = await statsRes.json(); stats = s[0] || {}; }
-              // Fetch listings
-              // Display-safe projection, not the raw listings table (Fish Finder T14).
-              const all = await AquadexPublicListings.fetchListings({
-                supabaseUrl: SUPABASE_URL,
-                anonKey: SUPABASE_ANON_KEY,
-                query: 'is_active=eq.true&order=created_at.desc&limit=50',
-              });
-              let listings = all.filter(l => l.seller?.toLowerCase() === p.wallet_address.toLowerCase());
-              renderStorefront({ profile: p, stats, listings, reviews: [] });
-              return;
-            }
-          }
-          showError('Storefront not found. This breeder may not have set up their page yet.');
-        } catch (e2) {
-          showError('Unable to load storefront. Please try again later.');
-        }
+        const response = await fetch(`/api/storefront-detail?id=${encodeURIComponent(slug)}`);
+        if (!response.ok) throw new Error(response.status === 404 ? 'Storefront not found.' : 'Storefront unavailable.');
+        renderStorefront(normalizeApiResponse(await response.json()));
+      } catch (error) {
+        showError(error.message || 'Unable to load storefront. Please try again later.');
       }
     }
 
-    function showError(msg) {
-      // Before showing error, check if it's a demo slug
-      const slug = getSlugFromUrl();
-      const demoData = getDemoStorefront(slug);
-      if (demoData) { renderStorefront(demoData); return; }
-      document.getElementById('loadingState').innerHTML = `<div class="empty-state"><h3>😔 ${msg}</h3><p><a href="/breeders.html" style="color:var(--violet-400);">Browse all breeders →</a></p></div>`;
+    function showError(message) {
+      const loading = document.getElementById('loadingState');
+      const panel = element('div', 'empty-state');
+      panel.append(element('h3', '', message));
+      const copy = element('p');
+      const link = element('a', '', 'Browse all breeders →');
+      link.href = '/breeders.html';
+      link.style.color = 'var(--violet-400)';
+      copy.append(link);
+      panel.append(copy);
+      loading.replaceChildren(panel);
     }
 
     // ── Demo Storefronts ──────────────────────────────────────────────────
@@ -444,162 +440,164 @@
       const stats = data.stats || {};
       const listings = data.listings || [];
       const reviews = data.reviews || [];
-
       const name = profile.display_name || generateAlias(profile.wallet_address);
       const initial = name.charAt(0).toUpperCase();
-      const isMaster = profile.is_master_breeder || false;
-      const specialties = profile.specialties || [];
-      const location = profile.location || '';
-      const bio = profile.bio || '';
 
-      // Update page title
       document.title = `${name} — Breeder Storefront | Aquacellum`;
 
-      // Banner
-      const bannerEl = document.getElementById('storeBanner');
-      const bannerSrc = profile.banner_url || (profile.banner_cid ? `${IPFS_GATEWAY}/${profile.banner_cid}` : null);
-      if (bannerSrc) {
-        bannerEl.innerHTML = `<img src="${bannerSrc}" alt="Banner" onload="this.classList.add('loaded')"><div class="store-banner-overlay"></div>`;
-      }
-
-      // Profile
-      const avatarSrc = profile.avatar_url || (profile.avatar_cid ? `${IPFS_GATEWAY}/${profile.avatar_cid}` : null);
-      const avatarHtml = avatarSrc
-        ? `<img class="store-avatar" src="${avatarSrc}" alt="${name}">`
-        : `<div class="store-avatar-placeholder">${initial}</div>`;
-
-      document.getElementById('storeProfile').innerHTML = `
-        <div class="store-avatar-wrap">
-          ${avatarHtml}
-          ${isMaster ? '<div class="store-master-crown">👑</div>' : ''}
-        </div>
-        <div class="store-info">
-          <div class="store-name-row">
-            <h1 class="store-name">${name}</h1>
-            <span class="store-trust-badge">✓ Verified Breeder</span>
-          </div>
-          ${bio ? `<p class="store-bio">${bio}</p>` : ''}
-          <div class="store-meta">
-            ${location ? `<span class="store-location">📍 ${location}</span>` : ''}
-          </div>
-          ${specialties.length ? `<div class="store-specialties">${specialties.map(s => `<span class="store-specialty">${s}</span>`).join('')}</div>` : ''}
-        </div>
-      `;
-
-      // Stats
-      const rating = stats.avg_rating ? parseFloat(stats.avg_rating).toFixed(1) : '—';
-      document.getElementById('statsBar').innerHTML = `
-        <div class="stat-card"><div class="stat-icon">⭐</div><div><div class="stat-value">${rating}</div><div class="stat-label">Rating (${stats.review_count || 0} reviews)</div></div></div>
-        <div class="stat-card"><div class="stat-icon">🐟</div><div><div class="stat-value">${stats.species_count || 0}</div><div class="stat-label">Species</div></div></div>
-        <div class="stat-card"><div class="stat-icon">📦</div><div><div class="stat-value">${stats.total_listings || listings.length}</div><div class="stat-label">Active Listings</div></div></div>
-        <div class="stat-card"><div class="stat-icon">✓</div><div><div class="stat-value">${stats.total_sales || 0}</div><div class="stat-label">Completed Sales</div></div></div>
-      `;
-
-      // Task 21A: featured/collection sections render above the plain
-      // catalog, using the exact order the server already assembled
-      // (assembleStorefrontLayout) — this page never re-sorts them.
-      renderStoreSections(data.sections || []);
-
-      // Listings
-      document.getElementById('listingCount').textContent = listings.length;
-      if (listings.length === 0) {
-        document.getElementById('listingsGrid').innerHTML = '<div class="empty-state"><h3>No active listings</h3><p>This breeder hasn\'t listed any specimens yet. Check back soon!</p></div>';
+      const banner = document.getElementById('storeBanner');
+      const bannerImage = safeImageUrl(profile.banner_url || (profile.banner_cid ? `${IPFS_GATEWAY}/${profile.banner_cid}` : null));
+      const overlay = element('div', 'store-banner-overlay');
+      if (bannerImage) {
+        const image = element('img');
+        image.src = bannerImage;
+        image.alt = `${name} storefront banner`;
+        image.addEventListener('load', () => image.classList.add('loaded'));
+        banner.replaceChildren(image, overlay);
       } else {
+        banner.replaceChildren(element('div', 'store-banner-fallback'), overlay);
+      }
+
+      const avatarWrap = element('div', 'store-avatar-wrap');
+      const avatarUrl = safeImageUrl(profile.avatar_url || (profile.avatar_cid ? `${IPFS_GATEWAY}/${profile.avatar_cid}` : null));
+      if (avatarUrl) {
+        const avatar = element('img', 'store-avatar');
+        avatar.src = avatarUrl;
+        avatar.alt = name;
+        avatarWrap.append(avatar);
+      } else {
+        avatarWrap.append(element('div', 'store-avatar-placeholder', initial));
+      }
+      if (profile.is_master_breeder) {
+        const crown = element('div', 'store-master-crown', '👑');
+        crown.title = 'Master Breeder';
+        avatarWrap.append(crown);
+      }
+
+      const info = element('div', 'store-info');
+      const nameRow = element('div', 'store-name-row');
+      nameRow.append(element('h1', 'store-name', name));
+      if (profile.is_master_breeder) nameRow.append(element('span', 'store-trust-badge', 'Master Breeder'));
+      info.append(nameRow);
+      if (profile.bio) info.append(element('p', 'store-bio', profile.bio));
+      if (profile.location) {
+        const meta = element('div', 'store-meta');
+        meta.append(element('span', 'store-location', `📍 ${profile.location}`));
+        info.append(meta);
+      }
+      if (Array.isArray(profile.specialties) && profile.specialties.length) {
+        const specialties = element('div', 'store-specialties');
+        profile.specialties.forEach((specialty) => specialties.append(element('span', 'store-specialty', specialty)));
+        info.append(specialties);
+      }
+      document.getElementById('storeProfile').replaceChildren(avatarWrap, info);
+
+      const statsBar = document.getElementById('statsBar');
+      const statCard = (icon, value, label) => {
+        const card = element('div', 'stat-card');
+        const copy = element('div');
+        copy.append(element('div', 'stat-value', value), element('div', 'stat-label', label));
+        card.append(element('div', 'stat-icon', icon), copy);
+        return card;
+      };
+      const reviewCount = Math.max(0, Number(stats.review_count) || 0);
+      const rating = reviewCount > 0 && Number(stats.avg_rating) > 0 ? Number(stats.avg_rating).toFixed(1) : '—';
+      statsBar.replaceChildren(
+        statCard('⭐', rating, `Rating (${reviewCount} reviews)`),
+        statCard('🐟', Math.max(0, Number(stats.species_count) || 0), 'Species'),
+        statCard('📦', listings.length, 'Active Listings'),
+        statCard('✓', Math.max(0, Number(stats.total_sales) || 0), 'Completed Sales')
+      );
+
+      renderStoreSections(data.sections || []);
+      document.getElementById('listingCount').textContent = String(listings.length);
+      if (listings.length) {
         renderListings(listings, 'listingsGrid');
+      } else {
+        const empty = element('div', 'empty-state');
+        empty.append(element('h3', '', 'No active listings'), element('p', '', 'This breeder has not published any active listings yet.'));
+        document.getElementById('listingsGrid').replaceChildren(empty);
       }
 
-      // Reviews
-      if (reviews.length > 0) {
-        document.getElementById('reviewsSection').style.display = '';
-        document.getElementById('reviewsList').innerHTML = reviews.map(r => `
-          <div class="review-card">
-            <div class="review-header">
-              <span class="review-author">${r.author || 'Anonymous'}</span>
-              <span class="review-stars">${'⭐'.repeat(r.rating || 5)}</span>
-            </div>
-            <div class="review-body">${r.body || ''}</div>
-            <div class="review-date">${r.date || ''}</div>
-          </div>
-        `).join('');
+      const reviewsSection = document.getElementById('reviewsSection');
+      const reviewsList = document.getElementById('reviewsList');
+      reviewsList.replaceChildren();
+      if (reviews.length) {
+        reviews.forEach((review) => {
+          const card = element('div', 'review-card');
+          const header = element('div', 'review-header');
+          const stars = Math.max(0, Math.min(5, Math.round(Number(review.rating) || 0)));
+          header.append(element('span', 'review-author', review.author || 'Anonymous'), element('span', 'review-stars', '⭐'.repeat(stars)));
+          card.append(header, element('div', 'review-body', review.body || ''), element('div', 'review-date', review.date || ''));
+          reviewsList.append(card);
+        });
+        reviewsSection.style.display = '';
+      } else {
+        reviewsSection.style.display = 'none';
       }
 
-      // Show content
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('storeContent').style.display = '';
     }
-    // ── Render Listings Grid ──────────────────────────────────────────────
+
     function renderListings(listings, targetId, featured) {
       const grid = document.getElementById(targetId);
       if (!grid) return;
-
-      // Try to get species images from fishbase
-      let fishbaseData = [];
-      fetch('/fishbase_master.json?v=2').then(r => r.ok ? r.json() : []).then(data => {
-        fishbaseData = data;
-        // Re-render with images
-        grid.innerHTML = listings.map((item, idx) => buildListingCard(item, idx, fishbaseData, featured)).join('');
-        animateCards(grid);
-      }).catch(() => {
-        grid.innerHTML = listings.map((item, idx) => buildListingCard(item, idx, [], featured)).join('');
-        animateCards(grid);
-      });
+      fetch('/fishbase_master.json?v=2')
+        .then((response) => response.ok ? response.json() : [])
+        .catch(() => [])
+        .then((fishbaseData) => {
+          grid.replaceChildren(...listings.map((item) => buildListingCard(item, fishbaseData, featured)));
+          animateCards(grid);
+        });
     }
 
-    // ── Task 21A: Featured/collection sections ────────────────────────────
-    // Sections arrive pre-ordered and pre-resolved from the server
-    // (assembleStorefrontLayout) — this just renders what it's given, in
-    // order, with no re-sorting/re-filtering.
     function renderStoreSections(sections) {
       const container = document.getElementById('storeSections');
       if (!container) return;
-      if (!sections || sections.length === 0) { container.innerHTML = ''; return; }
-
-      container.innerHTML = sections.map((section, sIdx) => {
+      container.replaceChildren();
+      sections.forEach((section, index) => {
         const isFeatured = section.type === 'featured';
-        const icon = isFeatured ? '⭐' : '📚';
-        const gridId = `storeSectionGrid-${sIdx}`;
-        return `
-          <div class="store-section ${isFeatured ? 'store-section--featured' : ''}">
-            <div class="section-header">
-              <div class="section-title">${icon} ${escapeHtml(section.title || 'Collection')} <span class="section-count">${section.listings.length}</span></div>
-            </div>
-            <div class="store-section-grid" id="${gridId}"></div>
-          </div>`;
-      }).join('');
-
-      sections.forEach((section, sIdx) => {
-        renderListings(section.listings, `storeSectionGrid-${sIdx}`, section.type === 'featured');
+        const wrapper = element('div', `store-section${isFeatured ? ' store-section--featured' : ''}`);
+        const header = element('div', 'section-header');
+        const title = element('div', 'section-title');
+        title.append(document.createTextNode(`${isFeatured ? '⭐' : '📚'} ${section.title || 'Collection'} `));
+        title.append(element('span', 'section-count', (section.listings || []).length));
+        header.append(title);
+        const grid = element('div', 'store-section-grid');
+        grid.id = `storeSectionGrid-${index}`;
+        wrapper.append(header, grid);
+        container.append(wrapper);
+        renderListings(section.listings || [], grid.id, isFeatured);
       });
     }
 
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str == null ? '' : String(str);
-      return div.innerHTML;
-    }
-
-    function buildListingCard(item, idx, fishbaseData, featured) {
+    function buildListingCard(item, fishbaseData, featured) {
       const pedigree = getPedigree(item);
-      const price = ethToUSD(item.price);
-      const imgUrl = getSpeciesImage(item.scientificName, fishbaseData);
-      const imageHtml = imgUrl
-        ? `<img src="${imgUrl}" alt="${item.commonName || 'Fish'}" loading="lazy">`
-        : '<span class="placeholder-icon">🐟</span>';
-      const featuredClass = featured ? ' tier-featured' : '';
+      const card = element('a', `listing-card ${pedigree.tier}${featured ? ' tier-featured' : ''}`.trim());
+      card.href = listingUrl(item);
+      card.setAttribute('aria-label', `View ${item.commonName || 'listing'}`);
 
-      return `
-        <div class="listing-card ${pedigree.tier}${featuredClass}" data-idx="${idx}">
-          <div class="card-image">
-            ${imageHtml}
-            <span class="card-badge badge-${pedigree.cls}">${pedigree.label}</span>
-            <span class="card-price">${price}</span>
-          </div>
-          <div class="card-info">
-            <div class="card-name">${item.commonName || 'Unknown Species'}</div>
-            <div class="card-sci">${item.scientificName || ''}</div>
-            <div class="card-cta">View Details →</div>
-          </div>
-        </div>`;
+      const imageArea = element('div', 'card-image');
+      const imageUrl = safeImageUrl(item.imageUrl) || safeImageUrl(getSpeciesImage(item.scientificName, fishbaseData));
+      if (imageUrl) {
+        const image = element('img');
+        image.src = imageUrl;
+        image.alt = item.commonName || 'Aquarium fish';
+        image.loading = 'lazy';
+        imageArea.append(image);
+      } else {
+        imageArea.append(element('span', 'placeholder-icon', '🐟'));
+      }
+      imageArea.append(element('span', `card-badge badge-${pedigree.cls}`, pedigree.label));
+      imageArea.append(element('span', 'card-price', formatPrice(item.priceUsd)));
+
+      const info = element('div', 'card-info');
+      info.append(element('div', 'card-name', item.commonName || 'Unknown Species'));
+      if (item.scientificName) info.append(element('div', 'card-sci', item.scientificName));
+      info.append(element('div', 'card-cta', item.isBatch ? 'Choose quantity →' : 'View listing →'));
+      card.append(imageArea, info);
+      return card;
     }
 
     function getSpeciesImage(scientificName, fishbaseData) {

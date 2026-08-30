@@ -516,11 +516,18 @@ async function handleDiscover(req, res) {
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/;
 
 async function handleSetup(req, res) {
-  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS" })) return;
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed. Use POST." });
   }
+
+  // Storefront ownership is an authorization boundary: the service-role write
+  // must always be scoped to the wallet proven by the Privy session. A body
+  // wallet is accepted only as a consistency check for older clients and never
+  // as authority.
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
 
   const {
     walletAddress,
@@ -534,15 +541,20 @@ async function handleSetup(req, res) {
     shippingPolicy,
     doaPolicy,
     handshakePolicy,
-  } = req.body;
+  } = req.body || {};
 
-  if (!walletAddress || !slug || !displayName) {
-    return res.status(400).json({
-      error: "Missing required fields: walletAddress, slug, displayName",
+  if (walletAddress && walletAddress.toLowerCase() !== wallet) {
+    return res.status(403).json({
+      error: "You can only update your own storefront.",
+      code: "STOREFRONT_OWNER_MISMATCH",
     });
   }
 
-  const wallet = walletAddress.toLowerCase();
+  if (!slug || !displayName) {
+    return res.status(400).json({
+      error: "Missing required fields: slug, displayName",
+    });
+  }
 
   // Beta gate removed — storefront open to all authenticated users
 
@@ -652,7 +664,8 @@ async function handleSetup(req, res) {
           doa_policy: clean(doaPolicy),
           handshake_policy: clean(handshakePolicy),
           storefront_active: true,
-          is_master_breeder: true,
+          // Master Breeder is earned by the dedicated eligibility workflow;
+          // ordinary profile setup must never grant a trust credential.
           updated_at: new Date().toISOString(),
         },
         { onConflict: "wallet_address" }

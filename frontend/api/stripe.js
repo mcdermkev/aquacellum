@@ -2057,24 +2057,28 @@ async function handleParcelPresets(req, res) {
 
 /**
  * ?action=ship-from — seller manages their PRIVATE origin address.
- *   GET  ?wallet=0x..   → returns the stored address for the authenticated seller
- *   POST { walletAddress, ...address } → validates + upserts the origin
+ *   GET  → returns the stored address for the authenticated seller
+ *   POST { ...address } → validates + upserts that seller's origin
  *
- * Auth: a verified Privy session is required. The address is sensitive (real
- * pickup location) and never exposed to buyers — only used server-side to rate
- * shipments and buy labels.
+ * Auth: a verified Privy session with a linked wallet is required. The wallet
+ * is derived only from that session — query/body wallet values are never used
+ * as authority. The address is sensitive and never exposed to buyers.
  */
 async function handleShipFrom(req, res) {
   if (handleCorsPreFlight(req, res, { methods: "GET, POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
 
-  const auth = await verifyPrivyToken(req);
-  if (!auth.verified) {
-    return res.status(401).json({ error: "Unauthorized", message: auth.error });
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+
+  const claimedWallet = req.method === "GET" ? req.query.wallet : req.body?.walletAddress;
+  if (claimedWallet && claimedWallet.toLowerCase() !== wallet) {
+    return res.status(403).json({
+      error: "You can only manage your own shipping origin.",
+      code: "SHIP_FROM_OWNER_MISMATCH",
+    });
   }
 
   if (req.method === "GET") {
-    const wallet = req.query.wallet;
-    if (!wallet) return res.status(400).json({ error: "Missing wallet query parameter" });
     const row = await loadShipFrom(wallet);
     if (!row) return res.status(200).json({ configured: false });
     return res.status(200).json({
@@ -2099,9 +2103,9 @@ async function handleShipFrom(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { walletAddress, name, phone, companyName, addressLine1, addressLine2, city, state, postalCode, countryCode, residential } = req.body || {};
-  if (!walletAddress || !name || !addressLine1 || !city || !state || !postalCode) {
-    return res.status(400).json({ error: "Missing required fields: walletAddress, name, addressLine1, city, state, postalCode" });
+  const { name, phone, companyName, addressLine1, addressLine2, city, state, postalCode, countryCode, residential } = req.body || {};
+  if (!name || !addressLine1 || !city || !state || !postalCode) {
+    return res.status(400).json({ error: "Missing required fields: name, addressLine1, city, state, postalCode" });
   }
 
   // Validate deliverability with ShipEngine before saving so bad origins never
@@ -2120,7 +2124,7 @@ async function handleShipFrom(req, res) {
 
   const isValidated = validation.status === "verified";
   const row = {
-    wallet_address: walletAddress.toLowerCase(),
+    wallet_address: wallet,
     name,
     phone: phone || null,
     company_name: companyName || null,
@@ -2263,48 +2267,87 @@ async function handleShipLabel(req, res) {
   if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const auth = await verifyPrivyToken(req);
-  if (!auth.verified) {
-    return res.status(401).json({ error: "Unauthorized", message: auth.error });
-  }
+  const sellerWallet = await requireWalletFromSession(req, res);
+  if (!sellerWallet) return;
 
   const {
-    sellerWallet, orderId, paymentIntentId, tokenId,
-    serviceCode: bodyService, carrierId: bodyCarrier, shipTo: bodyShipTo,
-    parcelPresetId, shipDate,
+    sellerWallet: claimedSellerWallet,
+    orderId,
+    paymentIntentId,
+    tokenId: claimedTokenId,
+    parcelPresetId,
+    shipDate,
   } = req.body || {};
 
-  if (!sellerWallet) return res.status(400).json({ error: "Missing sellerWallet" });
-  if (tokenId == null) return res.status(400).json({ error: "Missing tokenId" });
-
-  // Load the order row (source of truth for buyer address + paid service) if we
-  // can find it. Falls back to values supplied in the request body.
-  let orderRow = null;
-  try {
-    let q = supabase.from("orders").select("*");
-    if (orderId) q = q.eq("id", orderId);
-    else if (paymentIntentId) q = q.eq("stripe_payment_intent", paymentIntentId);
-    else q = q.eq("on_chain_token_id", Number(tokenId));
-    const { data } = await q.eq("seller_wallet", sellerWallet.toLowerCase()).limit(1).maybeSingle();
-    orderRow = data || null;
-  } catch (e) {
-    orderRow = null;
+  if (claimedSellerWallet && claimedSellerWallet.toLowerCase() !== sellerWallet) {
+    return res.status(403).json({
+      error: "You can only purchase labels for your own orders.",
+      code: "SHIP_LABEL_OWNER_MISMATCH",
+    });
+  }
+  if (!orderId && !paymentIntentId) {
+    return res.status(400).json({
+      error: "An orderId or paymentIntentId is required.",
+      code: "SHIP_LABEL_ORDER_REQUIRED",
+    });
   }
 
-  const orderMeta = (() => {
-    try { return typeof orderRow?.metadata === "string" ? JSON.parse(orderRow.metadata) : (orderRow?.metadata || {}); }
-    catch { return {}; }
-  })();
+  // The order is the authorization and fulfillment source of truth. Never fall
+  // back to a caller-selected token, destination, or shipping service: a valid
+  // seller session must also own the exact paid order before postage is bought.
+  let query = supabase.from("orders").select("*");
+  query = orderId
+    ? query.eq("id", orderId)
+    : query.eq("stripe_payment_intent", paymentIntentId);
+  const { data: orderRow, error: orderError } = await query
+    .eq("seller_wallet", sellerWallet)
+    .limit(1)
+    .maybeSingle();
+  if (orderError) {
+    console.error("[ShipEngine label] order lookup failed:", orderError.message);
+    return res.status(500).json({ error: "Could not load the order" });
+  }
+  if (!orderRow) {
+    return res.status(404).json({
+      error: "Order not found for the authenticated seller.",
+      code: "SHIP_LABEL_ORDER_NOT_FOUND",
+    });
+  }
 
-  const shipTo = bodyShipTo || orderMeta.ship_to || orderMeta.shipTo;
-  const serviceCode = bodyService || orderRow?.ship_service_code || orderMeta.ship_service_code;
-  const carrierId = bodyCarrier || orderRow?.ship_carrier_id || orderMeta.ship_carrier_id;
+  const intentId = orderRow.stripe_payment_intent || paymentIntentId;
+  let paymentMeta = {};
+  if (intentId && stripe) {
+    try {
+      const intent = await stripe.paymentIntents.retrieve(intentId);
+      paymentMeta = intent.metadata || {};
+    } catch (error) {
+      console.error("[ShipEngine label] payment lookup failed:", error.message);
+      return res.status(502).json({ error: "Could not verify the paid shipping details" });
+    }
+  }
 
+  const parseObject = (value) => {
+    if (!value) return null;
+    if (typeof value === "object") return value;
+    try { return JSON.parse(value); } catch { return null; }
+  };
+  const orderMeta = parseObject(orderRow.metadata) || {};
+  const shipTo = parseObject(paymentMeta.ship_to) || parseObject(orderMeta.ship_to) || parseObject(orderMeta.shipTo);
+  const serviceCode = orderRow.ship_service_code || paymentMeta.ship_service_code || orderMeta.ship_service_code;
+  const carrierId = orderRow.ship_carrier_id || paymentMeta.ship_carrier_id || orderMeta.ship_carrier_id;
+  const tokenId = orderRow.on_chain_token_id ?? paymentMeta.tokenId ?? orderMeta.tokenId;
+
+  if (tokenId == null || (claimedTokenId != null && Number(claimedTokenId) !== Number(tokenId))) {
+    return res.status(403).json({
+      error: "The requested specimen does not match this order.",
+      code: "SHIP_LABEL_TOKEN_MISMATCH",
+    });
+  }
   if (!shipTo || !shipTo.postalCode) {
-    return res.status(400).json({ error: "Missing buyer shipTo address (not on order and not provided)" });
+    return res.status(400).json({ error: "The paid order has no verified shipping destination" });
   }
   if (!serviceCode) {
-    return res.status(400).json({ error: "Missing serviceCode (the service the buyer paid for)" });
+    return res.status(400).json({ error: "The paid order has no shipping service" });
   }
 
   const shipFromRow = await loadShipFrom(sellerWallet);
@@ -3089,7 +3132,10 @@ async function handlePreviewPromo(req, res) {
 }
 
 async function handleCreateCheckout(req, res) {
-  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS" })) return;
+  if (handleCorsPreFlight(req, res, {
+    methods: "POST, OPTIONS",
+    headers: "Content-Type, Authorization",
+  })) return;
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -3101,36 +3147,46 @@ async function handleCreateCheckout(req, res) {
 
   const {
     purchaseType,   // "specimen" | "shipping" | "batch" | "multi" | "pickup"
-    buyerWallet,
+    buyerWallet: claimedBuyerWallet,
     sellerWallet,
     items,
     successUrl,
     cancelUrl,
   } = req.body;
 
-  if (!purchaseType || !buyerWallet || !sellerWallet || !items || items.length === 0) {
+  if (!purchaseType || !claimedBuyerWallet || !sellerWallet || !items || items.length === 0) {
     return res.status(400).json({
       error: "Missing required fields: purchaseType, buyerWallet, sellerWallet, items",
     });
   }
 
-  // Guest purchases from the public marketplace page use 'guest' as a placeholder.
-  // On-chain settlement is deferred until the buyer links an account.
-  const isGuestPurchase = buyerWallet === 'guest' || buyerWallet === '0x0000000000000000000000000000000000000000';
-
-  // Capture the buyer's VERIFIED Privy identity (DID) so the later release step
-  // can authorize from the logged-in session instead of a wallet-signature popup.
-  // Best-effort — guests / logged-out buyers fall back to the signature path.
-  let buyerUserId = null;
-  try {
-    const authHeader = req.headers["authorization"] || req.headers["Authorization"];
-    if (authHeader) {
-      const { verified, userId } = await verifyPrivyToken(req);
-      if (verified && userId) buyerUserId = userId;
-    }
-  } catch (e) {
-    console.warn("[Stripe Checkout] Buyer identity capture skipped:", e.message);
+  // Checkout ownership is an authorization boundary. Require a verified Privy
+  // session and derive the buyer from it before any seller lookup, inventory
+  // reservation, or Stripe session creation. The body wallet remains only a
+  // compatibility assertion; it can never choose settlement ownership.
+  const checkoutAuth = await verifyPrivyToken(req);
+  if (!checkoutAuth.verified) {
+    return res.status(401).json({
+      error: checkoutAuth.error || "Sign in before checkout.",
+      code: "ACCOUNT_REQUIRED_FOR_CHECKOUT",
+    });
   }
+  if (!checkoutAuth.walletAddress) {
+    return res.status(401).json({
+      error: "Your session has no linked account address.",
+      code: "CHECKOUT_WALLET_REQUIRED",
+    });
+  }
+
+  const buyerWallet = checkoutAuth.walletAddress.toLowerCase();
+  if (String(claimedBuyerWallet).toLowerCase() !== buyerWallet) {
+    return res.status(403).json({
+      error: "Checkout can only be created for your signed-in account.",
+      code: "CHECKOUT_BUYER_MISMATCH",
+    });
+  }
+  const buyerUserId = checkoutAuth.userId || null;
+  const isGuestPurchase = false;
 
   const SUCCESS_URL = successUrl
     || process.env.CHECKOUT_SUCCESS_URL
@@ -3225,8 +3281,8 @@ async function handleCreateCheckout(req, res) {
             product_data: {
               name: item.commonName || `Live Specimen`,
               description: item.scientificName
-                ? `${item.scientificName} — Verified breeder specimen`
-                : `Live specimen from verified breeder`,
+                ? `${item.scientificName} — Seller-listed specimen`
+                : `Seller-listed live specimen`,
               images: item.imageUrl ? [item.imageUrl] : [],
             },
             unit_amount: item.priceCentsUSD,
@@ -3246,8 +3302,8 @@ async function handleCreateCheckout(req, res) {
             product_data: {
               name: item.commonName || `Live Specimen`,
               description: item.scientificName
-                ? `${item.scientificName} — Live Arrival Guaranteed`
-                : `Live specimen — Live Arrival Guaranteed`,
+                ? `${item.scientificName} — Shipping available`
+                : `Live specimen — shipping available`,
               images: item.imageUrl ? [item.imageUrl] : [],
             },
             unit_amount: item.priceCentsUSD,
@@ -3286,7 +3342,7 @@ async function handleCreateCheckout(req, res) {
             currency: "usd",
             product_data: {
               name: `${item.commonName || "Juvenile Fish"} (x${item.quantity})`,
-              description: `Batch of ${item.quantity} tank-raised juveniles from verified breeder`,
+              description: `Batch of ${item.quantity} juvenile fish`,
               images: item.imageUrl ? [item.imageUrl] : [],
             },
             unit_amount: item.pricePerFishCents,
@@ -3307,7 +3363,7 @@ async function handleCreateCheckout(req, res) {
               currency: "usd",
               product_data: {
                 name: item.commonName || `Live Specimen`,
-                description: `Live specimen from verified breeder`,
+                description: `Seller-listed live specimen`,
                 images: item.imageUrl ? [item.imageUrl] : [],
               },
               unit_amount: item.priceCentsUSD,

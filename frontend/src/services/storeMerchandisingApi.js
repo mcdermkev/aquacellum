@@ -71,3 +71,25 @@ export async function fetchStoreSections(sellerWallet) {
 export async function saveStoreSections(sections) {
   return request(undefined, { method: "PUT", body: { sections }, auth: true });
 }
+
+/**
+ * Create or update the authenticated seller's public storefront profile.
+ * The server derives ownership from the Privy session; walletAddress is sent
+ * only as a legacy consistency check and cannot select another owner.
+ */
+export async function saveStorefrontProfile(profile) {
+  const headers = { "Content-Type": "application/json" };
+  const token = await getSessionToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}/storefront-detail?action=setup`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(profile),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return { success: false, error: data.error || `Request failed (${res.status})`, status: res.status };
+  }
+  return { success: true, ...data };
+}

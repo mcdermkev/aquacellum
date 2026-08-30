@@ -31,6 +31,7 @@ import { uploadImage, createPreviewUrl, revokePreviewUrl } from "../services/med
 import { getProfile } from "../services/reefApi";
 import { startSellerOnboarding, checkSellerStatus } from "../services/stripePayments";
 import { ShipFromSetup } from "./ShipFromSetup";
+import { saveStorefrontProfile } from "../services/storeMerchandisingApi";
 
 const SLUG_REGEX = /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/;
 const MAX_BIO = 280;
@@ -241,27 +242,21 @@ export function StorefrontSetup({ walletAccount, casualModeActive, existingProfi
     setSaveResult(null);
 
     try {
-      const res = await fetch("/api/storefront-detail?action=setup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          walletAddress: walletAccount,
-          slug: slug.toLowerCase(),
-          displayName: displayName.trim(),
-          bio: bio.trim(),
-          specialties,
-          location: location.trim() || null,
-          avatarUrl: appAvatarUrl || null,
-          bannerUrl: bannerUrl || null,
-          shippingPolicy: shippingPolicy.trim() || null,
-          doaPolicy: doaPolicy.trim() || null,
-          handshakePolicy: handshakePolicy.trim() || null,
-        }),
+      const data = await saveStorefrontProfile({
+        walletAddress: walletAccount,
+        slug: slug.toLowerCase(),
+        displayName: displayName.trim(),
+        bio: bio.trim(),
+        specialties,
+        location: location.trim() || null,
+        avatarUrl: appAvatarUrl || null,
+        bannerUrl: bannerUrl || null,
+        shippingPolicy: shippingPolicy.trim() || null,
+        doaPolicy: doaPolicy.trim() || null,
+        handshakePolicy: handshakePolicy.trim() || null,
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
+      if (data.success) {
         setSaveResult({ success: true, message: casualModeActive
           ? "Your store is live! Share it with buyers."
           : "Storefront published successfully." });

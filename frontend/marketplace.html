@@ -3,1353 +3,792 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aquacellum Marketplace — Browse Live Livestock Listings</title>
-  <meta name="description" content="Browse live aquarium livestock listings from verified local breeders. Tank-raised specimens with buyer-protection guarantees. No account needed to browse.">
-  <meta name="keywords" content="aquarium fish for sale, buy fish online, local fish breeder, tank-raised fish, aquarium marketplace, live fish listings, aquacellum marketplace">
-  <meta property="og:title" content="Aquacellum Marketplace — Live Livestock Listings">
-  <meta property="og:description" content="Browse verified breeder listings. Tank-raised specimens with buyer-protection guarantees and live-arrival protection.">
+  <title>Aquacellum Marketplace — Independent Aquarium Breeders</title>
+  <meta name="description" content="Shop tank-raised aquarium fish from independent breeders. Explore breeder storefronts, documented livestock, local pickup, protected payments, and nationwide shipping.">
+  <meta name="keywords" content="aquarium fish for sale, independent fish breeders, tank-raised fish, aquarium marketplace, local fish breeder, buy fish online">
+  <meta property="og:title" content="Aquacellum — The Independent Breeder Marketplace">
+  <meta property="og:description" content="Discover breeder storefronts and shop documented, tank-raised aquarium fish with protected checkout.">
   <meta property="og:type" content="website">
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/shared.css">
-
-  <style>
-    /* =========================================
-       HERO
-    ========================================= */
-    .hero { position: relative; padding: 80px 0 60px; overflow: hidden; text-align: center; }
-    .hero::before {
-      content: ''; position: absolute; top: 50%; left: 50%;
-      width: 800px; height: 800px; transform: translate(-50%, -50%);
-      background: radial-gradient(circle, rgba(139,92,246,0.08) 0%, rgba(168,85,247,0.04) 30%, transparent 60%);
-      animation: hero-pulse 6s ease-in-out infinite; pointer-events: none;
-    }
-    @keyframes hero-pulse {
-      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-      50% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.7; }
-    }
-    /* Floating particles */
-    .hero-particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-    .particle { position: absolute; width: 4px; height: 4px; background: var(--violet-400); border-radius: 50%; opacity: 0; animation: float-up 8s ease-in-out infinite; }
-    .particle:nth-child(1) { left: 10%; animation-delay: 0s; animation-duration: 7s; }
-    .particle:nth-child(2) { left: 25%; animation-delay: 1.5s; animation-duration: 9s; width: 3px; height: 3px; background: var(--purple-400); }
-    .particle:nth-child(3) { left: 45%; animation-delay: 3s; animation-duration: 6s; width: 5px; height: 5px; background: var(--blue-400); }
-    .particle:nth-child(4) { left: 65%; animation-delay: 0.8s; animation-duration: 10s; width: 3px; height: 3px; }
-    .particle:nth-child(5) { left: 80%; animation-delay: 2.5s; animation-duration: 8s; background: var(--emerald-400); }
-    .particle:nth-child(6) { left: 92%; animation-delay: 4s; animation-duration: 7.5s; width: 3px; height: 3px; background: var(--amber-400); }
-    @keyframes float-up {
-      0% { transform: translateY(100vh) scale(0); opacity: 0; }
-      10% { opacity: 0.8; }
-      90% { opacity: 0.6; }
-      100% { transform: translateY(-100px) scale(1); opacity: 0; }
-    }
-
-    .hero-badge {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 8px 18px; font-size: 0.72rem; font-weight: 600;
-      color: var(--violet-300); background: rgba(139,92,246,0.08);
-      border: 1px solid rgba(139,92,246,0.2); border-radius: 50px;
-      margin-bottom: 24px; backdrop-filter: blur(8px);
-      animation: badge-glow 3s ease-in-out infinite;
-    }
-    @keyframes badge-glow {
-      0%, 100% { box-shadow: 0 0 10px rgba(139,92,246,0.1); }
-      50% { box-shadow: 0 0 25px rgba(139,92,246,0.2); }
-    }
-    .hero-badge-dot { width: 6px; height: 6px; background: var(--emerald-400); border-radius: 50%; animation: pulse-dot 2s ease-in-out infinite; }
-    @keyframes pulse-dot { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } }
-
-    .hero h1 {
-      font-family: 'Outfit', sans-serif; font-size: clamp(2.2rem, 5vw, 3.5rem);
-      font-weight: 900; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 20px;
-      background: linear-gradient(135deg, #fff 0%, var(--violet-200) 40%, var(--purple-300) 70%, var(--blue-400) 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    }
-    .hero-subtitle { font-size: 1.05rem; color: var(--text-secondary); max-width: 560px; margin: 0 auto 36px; line-height: 1.7; }
-    /* Hero trust pillars */
-    .hero-pillars { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 40px; }
-    .hero-pillar { display: flex; align-items: center; gap: 10px; padding: 12px 20px; background: rgba(139,92,246,0.04); border: 1px solid rgba(139,92,246,0.12); border-radius: 14px; backdrop-filter: blur(12px); transition: var(--transition); }
-    .hero-pillar:hover { background: rgba(139,92,246,0.08); border-color: rgba(139,92,246,0.3); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(139,92,246,0.08); }
-    .hero-pillar-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 1.1rem; }
-    .hero-pillar-icon-escrow { background: rgba(139,92,246,0.12); }
-    .hero-pillar-icon-arrival { background: rgba(52,211,153,0.12); }
-    .hero-pillar-icon-verified { background: rgba(251,191,36,0.12); }
-    .hero-pillar-text { text-align: left; }
-    .hero-pillar-title { font-size: 0.78rem; font-weight: 700; color: #fff; }
-    .hero-pillar-desc { font-size: 0.65rem; color: var(--text-secondary); margin-top: 1px; }
-
-    /* Hero stats */
-    .hero-stats { display: flex; justify-content: center; gap: 48px; flex-wrap: wrap; }
-    .hero-stat { text-align: center; }
-    .hero-stat-value { font-family: 'Outfit', sans-serif; font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, var(--violet-300), var(--purple-400)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .hero-stat-label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; margin-top: 4px; }
-
-    /* =========================================
-       FEATURED BREEDERS CAROUSEL
-    ========================================= */
-    .featured-section { margin-bottom: 2.5rem; }
-    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
-    .section-title { font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 10px; }
-    .section-title-icon { font-size: 1rem; }
-    .section-see-all { font-size: 0.75rem; color: var(--violet-400); font-weight: 600; transition: color 0.2s; }
-    .section-see-all:hover { color: var(--violet-300); }
-    .breeders-scroll { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 12px; scrollbar-width: thin; scrollbar-color: rgba(139,92,246,0.2) transparent; }
-    .breeders-scroll::-webkit-scrollbar { height: 4px; }
-    .breeders-scroll::-webkit-scrollbar-track { background: transparent; }
-    .breeders-scroll::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 4px; }
-    .breeder-chip {
-      flex-shrink: 0; display: flex; align-items: center; gap: 10px;
-      padding: 10px 16px; background: var(--glass-bg); border: 1px solid var(--glass-border);
-      border-radius: 50px; backdrop-filter: blur(12px); cursor: pointer;
-      transition: var(--transition); white-space: nowrap;
-    }
-    .breeder-chip:hover { border-color: rgba(139,92,246,0.35); background: rgba(139,92,246,0.06); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(139,92,246,0.08); }
-    .breeder-chip.active { border-color: var(--violet-400); background: rgba(139,92,246,0.12); box-shadow: 0 0 16px rgba(139,92,246,0.15); }
-    .breeder-chip-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--violet-500), var(--purple-400)); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 700; color: #fff; }
-    .breeder-chip-info { display: flex; flex-direction: column; }
-    .breeder-chip-name { font-size: 0.75rem; font-weight: 600; color: #fff; }
-    .breeder-chip-count { font-size: 0.6rem; color: var(--text-muted); }
-    .breeder-chip-verified { width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; font-size: 0.55rem; }
-    /* =========================================
-       FILTERS BAR — Chips Style (matches database.html)
-    ========================================= */
-    .filters-bar {
-      position: relative; z-index: 10; max-width: 100%; margin: 0 auto 2rem;
-      padding: 20px 24px; background: var(--glass-bg); border: 1px solid var(--glass-border);
-      border-radius: var(--radius-lg); backdrop-filter: blur(12px);
-      display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
-    }
-    .search-wrap { position: relative; flex: 1; min-width: 200px; }
-    .search-wrap svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
-    .search-input {
-      width: 100%; padding: 10px 16px 10px 40px; font-size: 0.88rem; color: var(--text-primary);
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(167,139,250,0.15);
-      border-radius: var(--radius-sm); outline: none; transition: var(--transition);
-    }
-    .search-input:focus { border-color: var(--violet-500); box-shadow: 0 0 0 3px rgba(139,92,246,0.1); }
-    .search-input::placeholder { color: var(--text-muted); }
-
-    /* Quick-filter chips */
-    .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; }
-    .filter-chip {
-      padding: 5px 12px; border-radius: 20px; font-size: 0.68rem; font-weight: 600;
-      color: var(--text-muted); background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.06); cursor: pointer;
-      transition: all 0.2s; white-space: nowrap;
-    }
-    .filter-chip:hover { color: var(--violet-300); border-color: rgba(139,92,246,0.25); background: rgba(139,92,246,0.06); }
-    .filter-chip.active { color: var(--violet-300); background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.3); box-shadow: 0 0 8px rgba(139,92,246,0.1); }
-
-    /* Sort chips */
-    .sort-chips { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; margin-top: 4px; }
-    .sort-chip {
-      padding: 6px 14px; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
-      color: var(--text-muted); background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.06); cursor: pointer;
-      transition: all 0.2s; white-space: nowrap;
-    }
-    .sort-chip:hover { color: var(--text-secondary); border-color: rgba(255,255,255,0.12); }
-    .sort-chip.active { color: var(--violet-300); background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.25); }
-
-    /* Grid density toggle */
-    .grid-density-toggle { display: flex; gap: 4px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 3px; }
-    .grid-density-btn {
-      padding: 6px 10px; border-radius: 6px; font-size: 0.72rem; font-weight: 600;
-      color: var(--text-muted); background: none; cursor: pointer;
-      transition: all 0.2s ease; display: flex; align-items: center; gap: 4px;
-    }
-    .grid-density-btn.active { background: rgba(139,92,246,0.12); color: var(--violet-300); border: 1px solid rgba(139,92,246,0.2); }
-    .grid-density-btn:hover:not(.active) { color: var(--text-secondary); background: rgba(255,255,255,0.03); }
-    .result-count { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; margin-left: auto; white-space: nowrap; }
-    /* =========================================
-       LISTING GRID — Trading Card Style (Tiered)
-    ========================================= */
-    .listings-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-      gap: 24px; margin-bottom: 3rem; position: relative; z-index: 1;
-    }
-    .listings-grid.grid-large { grid-template-columns: repeat(2, 1fr); gap: 32px; }
-    .listings-grid.grid-compact { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
-    .listings-grid.grid-list { grid-template-columns: 1fr; gap: 10px; }
-
-    .listing-card {
-      aspect-ratio: 3 / 4; border-radius: var(--radius-md); overflow: hidden;
-      cursor: pointer; position: relative; background: var(--glass-bg);
-      border: 1px solid var(--glass-border); backdrop-filter: blur(16px);
-      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.35s ease, border-color 0.35s ease;
-      display: flex; flex-direction: column;
-      opacity: 0; transform: translateY(24px);
-    }
-    .listing-card.card-visible { opacity: 1; transform: translateY(0); transition: transform 0.5s cubic-bezier(0.4,0,0.2,1), opacity 0.5s ease, box-shadow 0.35s ease, border-color 0.35s ease; }
-
-    /* List view override */
-    .listings-grid.grid-list .listing-card {
-      aspect-ratio: unset; flex-direction: row; border-radius: var(--radius-sm);
-    }
-    .listings-grid.grid-list .card-image { width: 120px; min-height: 100px; flex-shrink: 0; }
-    .listings-grid.grid-list .card-info { flex: 1; padding: 12px 16px; }
-    .listings-grid.grid-list .card-params { display: none; }
-
-    /* ---- Tier: Batch Fry — muted, clean ---- */
-    .listing-card.tier-batch { border-color: rgba(56,189,248,0.08); }
-    .listing-card.tier-batch:hover { transform: translateY(-4px) scale(1.015); box-shadow: 0 12px 36px rgba(56,189,248,0.1); border-color: rgba(56,189,248,0.22); }
-
-    /* ---- Tier: F1 Bred — subtle cyan glow ---- */
-    .listing-card.tier-f1 { border-color: rgba(96,165,250,0.12); border-width: 1.5px; }
-    .listing-card.tier-f1:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 14px 44px rgba(96,165,250,0.14), 0 0 20px rgba(96,165,250,0.06); border-color: rgba(96,165,250,0.35); }
-
-    /* ---- Tier: Purebred — emerald glow ---- */
-    .listing-card.tier-purebred { border-color: rgba(52,211,153,0.12); border-width: 1.5px; }
-    .listing-card.tier-purebred:hover { transform: translateY(-5px) scale(1.02); box-shadow: 0 14px 44px rgba(52,211,153,0.14), 0 0 20px rgba(52,211,153,0.06); border-color: rgba(52,211,153,0.35); }
-
-    /* ---- Tier: Wild Caught — holographic chase card ---- */
-    .listing-card.tier-wild { border-width: 2px; border-color: rgba(251,191,36,0.25); position: relative; }
-    .listing-card.tier-wild::before {
-      content: ''; position: absolute; inset: -2px; border-radius: var(--radius-md); padding: 2px;
-      background: linear-gradient(135deg, rgba(251,191,36,0.5), rgba(232,121,249,0.4), rgba(139,92,246,0.4), rgba(96,165,250,0.3), rgba(251,191,36,0.5));
-      background-size: 300% 300%; animation: holo-shift 6s ease-in-out infinite;
-      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor; mask-composite: exclude;
-      pointer-events: none; z-index: 3; opacity: 0.6; transition: opacity 0.3s;
-    }
-    .listing-card.tier-wild:hover::before { opacity: 1; }
-    .listing-card.tier-wild:hover { transform: translateY(-6px) scale(1.025); box-shadow: 0 20px 60px rgba(251,191,36,0.18), 0 0 30px rgba(232,121,249,0.08); }
-    @keyframes holo-shift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-
-    /* ---- Tier: Premium (high price) — violet holographic ---- */
-    .listing-card.tier-premium { border-width: 2px; border-color: rgba(167,139,250,0.25); }
-    .listing-card.tier-premium::before {
-      content: ''; position: absolute; inset: -2px; border-radius: var(--radius-md); padding: 2px;
-      background: linear-gradient(135deg, rgba(167,139,250,0.5), rgba(232,121,249,0.4), rgba(251,191,36,0.3), rgba(34,211,238,0.3), rgba(167,139,250,0.5));
-      background-size: 300% 300%; animation: holo-shift 6s ease-in-out infinite;
-      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor; mask-composite: exclude;
-      pointer-events: none; z-index: 3; opacity: 0.5; transition: opacity 0.3s;
-    }
-    .listing-card.tier-premium:hover::before { opacity: 1; }
-    .listing-card.tier-premium:hover { transform: translateY(-6px) scale(1.025); box-shadow: 0 20px 60px rgba(167,139,250,0.18), 0 0 30px rgba(232,121,249,0.08); }
-    /* Card innards */
-    .card-vignette { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(ellipse at center, transparent 50%, rgba(6,5,15,0.5) 100%); }
-    .card-image {
-      flex: 1; position: relative; overflow: hidden;
-      background: linear-gradient(135deg, rgba(139,92,246,0.04), rgba(96,165,250,0.02));
-      display: flex; align-items: center; justify-content: center;
-    }
-    .card-image .blur-bg { position: absolute; inset: -20px; width: calc(100% + 40px); height: calc(100% + 40px); object-fit: cover; filter: blur(20px) brightness(0.5) saturate(1.3); transform: scale(1.1); }
-    .card-image .main-img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: cover; object-position: center 40%; transition: transform 0.45s cubic-bezier(0.4,0,0.2,1); }
-    .listing-card:hover .card-image .main-img { transform: scale(1.06); }
-    .card-image .placeholder-icon { font-size: 3rem; opacity: 0.4; }
-
-    /* Badges on card */
-    .card-pedigree-badge {
-      position: absolute; top: 10px; left: 10px; z-index: 4;
-      padding: 4px 10px; border-radius: 20px; font-size: 0.6rem; font-weight: 700;
-      letter-spacing: 0.03em; backdrop-filter: blur(8px);
-    }
-    .badge-wild { background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.4); color: #fbbf24; }
-    .badge-purebred { background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.35); color: #34d399; }
-    .badge-f1 { background: rgba(96,165,250,0.12); border: 1px solid rgba(96,165,250,0.35); color: #60a5fa; }
-    .badge-batch { background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.35); color: #7dd3fc; }
-    .card-price-badge {
-      position: absolute; bottom: 10px; left: 10px; z-index: 4;
-      font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 700;
-      padding: 4px 10px; border-radius: 20px;
-      background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.35);
-      color: var(--emerald-300); backdrop-filter: blur(8px);
-    }
-    .card-shipping-badge {
-      position: absolute; bottom: 10px; right: 10px; z-index: 4;
-      font-size: 0.55rem; font-weight: 700; padding: 3px 8px; border-radius: 12px;
-      background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.25); color: #fbbf24;
-      backdrop-filter: blur(8px);
-    }
-
-    /* Card info section */
-    .card-info {
-      padding: 16px 18px 14px;
-      background: linear-gradient(180deg, rgba(15,12,31,0.95) 0%, rgba(10,8,22,1) 100%);
-      border-top: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 4px;
-    }
-    .card-common-name { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 0.95rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .card-sci-name { font-size: 0.72rem; font-style: italic; color: var(--violet-400); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
-    .card-seller-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
-    .card-seller-avatar { width: 18px; height: 18px; border-radius: 50%; background: linear-gradient(135deg, var(--violet-500), var(--purple-400)); display: flex; align-items: center; justify-content: center; font-size: 0.45rem; font-weight: 700; color: #fff; flex-shrink: 0; }
-    .card-seller-name { font-size: 0.65rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .card-seller-verified { font-size: 0.55rem; flex-shrink: 0; }
-    .card-seller-tier { font-size: 0.5rem; font-weight: 600; padding: 1px 6px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; margin-left: auto; }
-    .card-seller-tier.tier-trusted { color: var(--blue-300); background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.15); }
-    .card-seller-tier.tier-established { color: var(--amber-300); background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.15); }
-    .card-seller-tier.tier-master { color: var(--emerald-300); background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.15); }
-
-    /* Save/Watchlist button on cards */
-    .card-save-btn { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 5; transition: all 0.2s ease; font-size: 0.85rem; line-height: 1; }
-    .card-save-btn:hover { background: rgba(0,0,0,0.7); border-color: rgba(244,63,94,0.4); transform: scale(1.1); }
-    .card-save-btn.saved { background: rgba(244,63,94,0.15); border-color: rgba(244,63,94,0.4); }
-    .card-save-btn.saved:hover { background: rgba(244,63,94,0.25); }
-
-    /* Micro parameter gauges on cards */
-    .card-params { display: flex; gap: 8px; margin-top: 6px; align-items: center; }
-    .micro-gauge { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-    .micro-gauge-label { font-size: 0.55rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; display: flex; justify-content: space-between; align-items: center; }
-    .micro-gauge-value { font-family: 'JetBrains Mono', monospace; font-size: 0.55rem; color: var(--text-secondary); }
-    .micro-track { height: 3px; border-radius: 2px; background: rgba(255,255,255,0.06); position: relative; overflow: hidden; }
-    .micro-fill { position: absolute; top: 0; height: 100%; border-radius: 2px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
-    .micro-fill.temp { background: linear-gradient(90deg, #fbbf24, #fb7185); }
-    .micro-fill.ph { background: linear-gradient(90deg, #22d3ee, #a78bfa); }
-    .micro-fill.qty { background: linear-gradient(90deg, #8b5cf6, #c084fc); }
-
-    .card-cta { font-size: 0.68rem; font-weight: 600; color: var(--violet-300); opacity: 0; transform: translateY(4px); transition: opacity 0.3s, transform 0.3s; margin-top: 4px; }
-    .listing-card:hover .card-cta { opacity: 1; transform: translateY(0); }
-    /* =========================================
-       3D FLIP CARD POPUP (from database.html pattern)
-    ========================================= */
-    .popup-overlay {
-      display: none; position: fixed; inset: 0; z-index: 2000;
-      background: rgba(6, 5, 15, 0.9); backdrop-filter: blur(10px);
-      align-items: center; justify-content: center; padding: 24px;
-      animation: overlay-in 0.3s ease;
-    }
-    .popup-overlay.active { display: flex; }
-    @keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
-
-    .flip-card-container { width: 380px; max-width: 90vw; aspect-ratio: 3 / 4; perspective: 1200px; cursor: pointer; }
-    .flip-card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-    .flip-card.flipped { transform: rotateY(180deg); }
-    .flip-face {
-      position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
-      border-radius: var(--radius-lg); border: 2px solid rgba(167,139,250,0.15);
-      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4), 0 0 60px rgba(139,92,246,0.05);
-    }
-
-    /* Front face */
-    .flip-front { display: flex; flex-direction: column; background: var(--bg-surface); overflow: hidden; }
-    .flip-front-image { flex: 1; position: relative; overflow: hidden; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; }
-    .flip-front-image .blur-bg { position: absolute; inset: -20px; width: calc(100% + 40px); height: calc(100% + 40px); object-fit: cover; filter: blur(20px) brightness(0.5) saturate(1.3); transform: scale(1.1); }
-    .flip-front-image .main-img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: cover; object-position: center 40%; }
-    .flip-front-image .placeholder-icon { font-size: 4rem; opacity: 0.4; }
-    .flip-front-info { padding: 20px; background: linear-gradient(180deg, rgba(15,12,31,0.95), var(--bg-surface)); border-top: 1px solid var(--glass-border); }
-    .flip-front-common { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.2rem; color: var(--text-primary); margin-bottom: 4px; }
-    .flip-front-sci { font-size: 0.85rem; font-style: italic; color: var(--violet-400); margin-bottom: 6px; }
-    .flip-front-price { font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; font-weight: 700; color: var(--emerald-300); margin-bottom: 6px; }
-    .flip-front-seller { font-size: 0.75rem; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
-    .flip-front-badges { position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 6px; z-index: 4; }
-    .flip-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 700; backdrop-filter: blur(8px); }
-    .flip-hint { position: absolute; bottom: 12px; right: 16px; font-size: 0.68rem; color: var(--text-muted); opacity: 0.7; display: flex; align-items: center; gap: 4px; }
-
-    /* Back face */
-    .flip-back { transform: rotateY(180deg); background: var(--bg-surface); display: flex; flex-direction: column; overflow: hidden; border-radius: var(--radius-lg); }
-    .flip-back-header { padding: 20px 20px 12px; border-bottom: 1px solid var(--glass-border); background: linear-gradient(180deg, rgba(139,92,246,0.04), transparent); }
-    .flip-back-title { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--text-primary); margin-bottom: 2px; }
-    .flip-back-sci { font-size: 0.78rem; font-style: italic; color: var(--violet-400); }
-    .flip-back-content { flex: 1; padding: 16px 20px; overflow-y: auto; }
-    .back-section { margin-bottom: 16px; }
-    .back-section-title { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--violet-400); margin-bottom: 8px; }
-    .back-params { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .back-param { padding: 8px 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; }
-    .back-param-label { font-size: 0.62rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
-    .back-param-value { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-primary); }
-    .back-seller-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(139,92,246,0.04); border: 1px solid rgba(139,92,246,0.1); border-radius: 10px; margin-bottom: 12px; }
-    .back-seller-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--violet-500), var(--purple-400)); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: #fff; }
-    .back-seller-info { flex: 1; }
-    .back-seller-name { font-size: 0.82rem; font-weight: 600; color: #fff; }
-    .back-seller-label { font-size: 0.62rem; color: var(--text-muted); }
-    .back-cta { display: block; width: 100%; padding: 0.75rem; font-size: 0.85rem; font-weight: 700; color: #fff; text-align: center; background: linear-gradient(135deg, var(--violet-600), var(--purple-500)); border-radius: 10px; transition: var(--transition); margin-top: 8px; cursor: pointer; border: none; text-decoration: none; }
-    .back-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(139,92,246,0.3); }
-    .back-cta:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
-    .back-cta-secondary { display: block; width: 100%; padding: 0.5rem; font-size: 0.72rem; font-weight: 500; color: var(--text-secondary); text-align: center; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 8px; transition: var(--transition); margin-top: 6px; text-decoration: none; }
-    .back-cta-secondary:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); color: #fff; }
-    .back-cta-price { display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .back-cta-price-amount { font-size: 1rem; }
-    .back-cta-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .flip-back-hint { padding: 12px 20px; border-top: 1px solid var(--glass-border); text-align: center; font-size: 0.68rem; color: var(--text-muted); }
-    /* =========================================
-       WANTED LISTINGS SECTION
-    ========================================= */
-    .wanted-section { margin-bottom: 3rem; }
-    .wanted-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
-    .wanted-card {
-      padding: 16px 20px; background: rgba(251,191,36,0.03); border: 1px solid rgba(251,191,36,0.12);
-      border-radius: var(--radius-sm); transition: var(--transition); cursor: default;
-    }
-    .wanted-card:hover { border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.06); }
-    .wanted-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-    .wanted-card-icon { font-size: 1rem; }
-    .wanted-card-species { font-family: 'Outfit', sans-serif; font-size: 0.88rem; font-weight: 700; color: #fff; }
-    .wanted-card-detail { font-size: 0.72rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px; }
-    .wanted-card-footer { display: flex; align-items: center; justify-content: space-between; }
-    .wanted-card-budget { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--amber-300); }
-    .wanted-card-user { font-size: 0.65rem; color: var(--text-muted); }
-
-    /* =========================================
-       SKELETON LOADING
-    ========================================= */
-    .skeleton-card { aspect-ratio: 3 / 4; border-radius: var(--radius-md); background: var(--glass-bg); border: 1px solid var(--glass-border); overflow: hidden; display: flex; flex-direction: column; }
-    .skeleton-image { flex: 1; background: linear-gradient(110deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 37%, rgba(255,255,255,0.03) 63%); background-size: 200% 100%; animation: skeleton-shimmer 1.5s ease-in-out infinite; }
-    .skeleton-info { padding: 16px 18px; border-top: 1px solid var(--glass-border); }
-    .skeleton-line { height: 12px; border-radius: 6px; background: linear-gradient(110deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 37%, rgba(255,255,255,0.04) 63%); background-size: 200% 100%; animation: skeleton-shimmer 1.5s ease-in-out infinite; margin-bottom: 8px; }
-    .skeleton-line:last-child { width: 60%; margin-bottom: 0; }
-    @keyframes skeleton-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
-    /* =========================================
-       FOOTER, EMPTY, LOADING
-    ========================================= */
-    .loading-state { text-align: center; padding: 80px 24px; color: var(--text-secondary); }
-    .loading-spinner { width: 40px; height: 40px; border: 3px solid rgba(167,139,250,0.15); border-top-color: var(--violet-400); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .empty-state { text-align: center; padding: 80px 24px; color: var(--text-muted); grid-column: 1 / -1; }
-    .empty-state h3 { font-family: 'Outfit', sans-serif; font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 8px; }
-    .load-more-wrap { text-align: center; margin-bottom: 3rem; }
-    .load-more-btn { padding: 0.7rem 2rem; font-size: 0.82rem; font-weight: 600; color: var(--violet-300); border: 1px solid rgba(167,139,250,0.3); border-radius: 10px; background: rgba(139,92,246,0.05); backdrop-filter: blur(8px); transition: var(--transition); }
-    .load-more-btn:hover { background: rgba(139,92,246,0.12); border-color: rgba(167,139,250,0.6); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(139,92,246,0.12); }
-    /* =========================================
-       RESPONSIVE
-    ========================================= */
-    @media (max-width: 768px) {
-      .hero { padding: 48px 0 32px; }
-      .hero-subtitle { font-size: 0.9rem; margin-bottom: 24px; }
-      .hero-pillars { gap: 10px; }
-      .hero-pillar { padding: 10px 14px; }
-      .hero-stats { gap: 24px; }
-      .hero-stat-value { font-size: 1.4rem; }
-      .breeders-scroll { gap: 0.75rem; }
-      .filters-bar { padding: 14px 16px; gap: 10px; margin-bottom: 1.5rem; border-radius: var(--radius-md); }
-      .filters-bar .search-wrap { min-width: 100%; order: -1; }
-      .grid-density-toggle { width: 100%; justify-content: center; }
-      .result-count { margin-left: 0; width: 100%; }
-      .listings-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
-      .listings-grid.grid-large { grid-template-columns: 1fr; gap: 16px; }
-      .listings-grid.grid-large .listing-card { aspect-ratio: 3 / 4; }
-      .listings-grid.grid-compact { grid-template-columns: repeat(3, 1fr); gap: 10px; }
-      .listing-card { aspect-ratio: 2.5 / 4; }
-      .card-params { display: none; }
-      .card-info { padding: 12px 14px 10px; gap: 2px; }
-      .card-common-name { font-size: 0.82rem; }
-      .card-sci-name { font-size: 0.65rem; }
-      .flip-card-container { width: 300px; }
-      .wanted-grid { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 480px) {
-      .hero h1 { font-size: 1.8rem; }
-      .hero-pillars { flex-direction: column; align-items: center; }
-      .listings-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-      .listings-grid.grid-compact { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-      .listings-grid.grid-compact .card-info { padding: 8px 10px 6px; }
-      .listings-grid.grid-compact .card-common-name { font-size: 0.7rem; }
-      .listings-grid.grid-compact .card-sci-name { display: none; }
-      .flip-card-container { width: 260px; }
-    }
-  </style>
-  <link rel="canonical" href="https://aquacellum.com/marketplace">
   <meta property="og:url" content="https://aquacellum.com/marketplace">
   <meta property="og:site_name" content="Aquacellum">
   <meta property="og:image" content="https://aquacellum.com/og-banner.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Aquacellum Marketplace — Live Livestock Listings">
-  <meta name="twitter:description" content="Browse verified breeder listings. Tank-raised specimens with buyer-protection guarantees and live-arrival protection.">
+  <link rel="canonical" href="https://aquacellum.com/marketplace">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/shared.css">
+  <style>
+    :root {
+      --market-ink: #f8f8fb;
+      --market-muted: #a6a7b2;
+      --market-dim: #71727d;
+      --market-panel: #111217;
+      --market-panel-2: #17181e;
+      --market-line: rgba(255,255,255,.1);
+      --market-lime: #d8ff71;
+      --market-lilac: #b9a7ff;
+      --market-coral: #ff8e78;
+      --market-aqua: #73e4da;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #090a0e; color: var(--market-ink); font-family: "DM Sans", sans-serif; }
+    a { color: inherit; }
+    button, input, select { font: inherit; }
+    button { color: inherit; }
+    .market-shell { overflow: hidden; }
+    .market-wrap { width: min(1440px, calc(100% - 40px)); margin: 0 auto; }
+
+    .commerce-nav {
+      position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--market-line);
+      background: rgba(9,10,14,.88); backdrop-filter: blur(18px);
+    }
+    .commerce-nav__inner { min-height: 58px; display: flex; align-items: center; gap: 26px; }
+    .commerce-nav__label { font-family: "Manrope", sans-serif; font-size: .78rem; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+    .commerce-nav__links { display: flex; gap: 22px; align-items: center; overflow-x: auto; scrollbar-width: none; }
+    .commerce-nav__links::-webkit-scrollbar { display: none; }
+    .commerce-nav__links a { flex: none; color: var(--market-muted); font-size: .83rem; text-decoration: none; transition: color .2s; }
+    .commerce-nav__links a:hover, .commerce-nav__links a:focus-visible { color: #fff; }
+    .commerce-nav__actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+    .market-btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--market-line); background: transparent; color: #fff; font-weight: 700; font-size: .82rem; text-decoration: none; cursor: pointer; transition: transform .2s, border-color .2s, background .2s; }
+    .market-btn:hover { transform: translateY(-1px); border-color: rgba(255,255,255,.28); }
+    .market-btn--bright { background: var(--market-lime); color: #11130a; border-color: var(--market-lime); }
+    .market-btn--solid { background: #fff; color: #111; border-color: #fff; }
+
+    .market-hero { position: relative; min-height: 680px; display: grid; align-items: end; padding: 90px 0 68px; border-bottom: 1px solid var(--market-line); }
+    .market-hero::before { content: ""; position: absolute; inset: 0; background:
+      radial-gradient(circle at 82% 20%, rgba(185,167,255,.24), transparent 31%),
+      radial-gradient(circle at 76% 74%, rgba(115,228,218,.16), transparent 27%),
+      linear-gradient(130deg, #090a0e 0%, #111118 52%, #181422 100%); }
+    .market-hero::after { content: ""; position: absolute; width: min(46vw, 650px); aspect-ratio: 1; right: 5vw; top: 40px; border-radius: 48% 52% 58% 42%; background: linear-gradient(145deg, rgba(216,255,113,.11), rgba(185,167,255,.24)); filter: blur(1px); box-shadow: inset 0 0 100px rgba(255,255,255,.05); transform: rotate(-8deg); }
+    .market-hero__content { position: relative; z-index: 2; max-width: 900px; }
+    .market-eyebrow { display: flex; align-items: center; gap: 10px; color: var(--market-lime); font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 22px; }
+    .market-eyebrow::before { content: ""; width: 34px; height: 1px; background: currentColor; }
+    .market-hero h1 { margin: 0; max-width: 920px; font-family: "Manrope", sans-serif; font-size: clamp(3rem, 7.5vw, 7rem); line-height: .91; letter-spacing: -.065em; font-weight: 700; }
+    .market-hero h1 em { color: var(--market-lime); font-style: normal; }
+    .market-hero__bottom { margin-top: 34px; display: flex; align-items: end; justify-content: space-between; gap: 28px; }
+    .market-hero__copy { max-width: 630px; color: #c6c6cf; font-size: clamp(1rem, 1.6vw, 1.24rem); line-height: 1.65; }
+    .market-hero__actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .market-stats { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--market-line); }
+    .market-stat { padding: 24px 0; border-right: 1px solid var(--market-line); text-align: center; }
+    .market-stat:last-child { border-right: 0; }
+    .market-stat strong { display: block; font-family: "Manrope", sans-serif; font-size: 1.65rem; }
+    .market-stat span { color: var(--market-dim); font-size: .7rem; text-transform: uppercase; letter-spacing: .12em; }
+
+    .market-section { padding: 86px 0; }
+    .market-section--tint { background: #0e0f14; border-block: 1px solid var(--market-line); }
+    .market-section__head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 32px; }
+    .market-kicker { color: var(--market-lilac); font-size: .7rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 10px; }
+    .market-section h2 { margin: 0; font-family: "Manrope", sans-serif; font-size: clamp(2rem, 4.2vw, 4rem); line-height: 1; letter-spacing: -.045em; }
+    .market-section__intro { max-width: 560px; color: var(--market-muted); line-height: 1.65; font-size: .94rem; }
+    .market-link { display: inline-flex; align-items: center; gap: 8px; color: #fff; text-decoration: none; font-size: .82rem; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,.36); padding-bottom: 3px; }
+
+    .collection-grid { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 12px; }
+    .collection-card { position: relative; min-height: 230px; display: flex; flex-direction: column; justify-content: space-between; padding: 22px; border: 1px solid var(--market-line); background: var(--market-panel); border-radius: 4px; overflow: hidden; cursor: pointer; text-align: left; transition: transform .25s, border-color .25s; }
+    .collection-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,.26); }
+    .collection-card:nth-child(1) { background: linear-gradient(160deg, #19251d, #111217 62%); }
+    .collection-card:nth-child(2) { background: linear-gradient(160deg, #211a2c, #111217 62%); }
+    .collection-card:nth-child(3) { background: linear-gradient(160deg, #17282a, #111217 62%); }
+    .collection-card:nth-child(4) { background: linear-gradient(160deg, #2a2118, #111217 62%); }
+    .collection-card:nth-child(5) { background: linear-gradient(160deg, #2b1b20, #111217 62%); }
+    .collection-card:nth-child(6) { background: linear-gradient(160deg, #1b1d2e, #111217 62%); }
+    .collection-card__icon { font-size: 2rem; }
+    .collection-card strong { display: block; font-family: "Manrope", sans-serif; font-size: 1.05rem; }
+    .collection-card span { display: block; margin-top: 5px; color: var(--market-muted); font-size: .72rem; line-height: 1.45; }
+    .collection-card--future { cursor: default; }
+    .collection-card--future::after { content: "Expanding soon"; position: absolute; top: 14px; right: 14px; padding: 5px 8px; border: 1px solid var(--market-line); border-radius: 999px; color: var(--market-muted); font-size: .58rem; text-transform: uppercase; letter-spacing: .08em; }
+
+    .store-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 18px; }
+    .store-card { min-height: 460px; display: flex; flex-direction: column; border: 1px solid var(--market-line); border-radius: 4px; background: var(--market-panel); overflow: hidden; transition: transform .25s, border-color .25s; }
+    .store-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,.26); }
+    .store-card__visual { position: relative; min-height: 210px; padding: 22px; display: flex; align-items: end; background: linear-gradient(140deg, #25202d, #16191d); overflow: hidden; }
+    .store-card__visual img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .store-card__visual::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(7,8,11,.92), rgba(7,8,11,.05) 68%); }
+    .store-card__avatar { position: relative; z-index: 2; width: 62px; height: 62px; border-radius: 50%; border: 2px solid rgba(255,255,255,.8); background: #242630; display: grid; place-items: center; font-family: "Manrope", sans-serif; font-size: 1.15rem; font-weight: 800; overflow: hidden; }
+    .store-card__avatar img { position: static; width: 100%; height: 100%; object-fit: cover; }
+    .store-card__body { flex: 1; display: flex; flex-direction: column; padding: 24px; }
+    .store-card__title-row { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+    .store-card h3 { margin: 0; font-family: "Manrope", sans-serif; font-size: 1.35rem; letter-spacing: -.025em; }
+    .store-card__location { color: var(--market-muted); font-size: .73rem; white-space: nowrap; }
+    .store-card__bio { color: var(--market-muted); line-height: 1.58; font-size: .82rem; margin: 13px 0 17px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .store-card__tags { min-height: 27px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .store-tag { padding: 5px 9px; border: 1px solid var(--market-line); border-radius: 999px; color: #c9c9d0; font-size: .63rem; }
+    .store-card__facts { display: flex; gap: 16px; padding-top: 18px; margin-top: auto; border-top: 1px solid var(--market-line); color: var(--market-muted); font-size: .7rem; }
+    .store-card__facts strong { color: #fff; }
+    .store-card__actions { display: flex; gap: 8px; margin-top: 18px; }
+    .store-card__actions .market-btn { flex: 1; }
+
+    .catalog-toolbar { position: sticky; top: 58px; z-index: 30; display: grid; grid-template-columns: minmax(220px,1fr) auto auto; gap: 12px; padding: 16px; margin-bottom: 28px; border: 1px solid var(--market-line); background: rgba(14,15,20,.94); backdrop-filter: blur(16px); }
+    .market-search { min-height: 46px; width: 100%; border: 1px solid var(--market-line); background: #0a0b0f; color: #fff; padding: 0 15px; border-radius: 2px; outline: none; }
+    .market-search:focus { border-color: var(--market-lilac); }
+    .market-select { min-height: 46px; border: 1px solid var(--market-line); background: #0a0b0f; color: #fff; padding: 0 36px 0 13px; border-radius: 2px; }
+    .filter-row { grid-column: 1 / -1; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .filter-chip { flex: none; min-height: 36px; padding: 0 13px; border: 1px solid var(--market-line); border-radius: 999px; background: transparent; color: var(--market-muted); font-size: .7rem; cursor: pointer; }
+    .filter-chip[aria-pressed="true"] { color: #111; border-color: var(--market-lime); background: var(--market-lime); }
+    .result-count { align-self: center; color: var(--market-muted); font-size: .74rem; white-space: nowrap; }
+
+    .product-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 22px 14px; }
+    .product-card { min-width: 0; background: transparent; }
+    .product-card__visual { position: relative; aspect-ratio: 4/5; overflow: hidden; background: #15161b; border: 1px solid var(--market-line); cursor: pointer; }
+    .product-card__visual img { width: 100%; height: 100%; object-fit: cover; transition: transform .45s; }
+    .product-card:hover .product-card__visual img { transform: scale(1.035); }
+    .product-card__placeholder { width: 100%; height: 100%; display: grid; place-items: center; font-size: 3.4rem; background: radial-gradient(circle at 50% 35%, #25232f, #14151a 68%); }
+    .product-card__badge { position: absolute; top: 12px; left: 12px; padding: 6px 9px; border-radius: 999px; background: rgba(8,9,12,.78); border: 1px solid rgba(255,255,255,.18); backdrop-filter: blur(8px); color: #fff; font-size: .62rem; font-weight: 700; }
+    .save-button { position: absolute; top: 10px; right: 10px; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; border: 1px solid rgba(255,255,255,.2); background: rgba(8,9,12,.72); cursor: pointer; }
+    .save-button[aria-pressed="true"] { background: #fff; color: #111; }
+    .product-card__body { padding: 14px 3px 0; }
+    .product-card__row { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+    .product-card h3 { min-width: 0; margin: 0; font-family: "Manrope", sans-serif; font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .product-card__price { font-weight: 700; white-space: nowrap; }
+    .product-card__scientific { margin-top: 3px; color: var(--market-muted); font-size: .7rem; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .product-card__seller { margin-top: 9px; display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--market-muted); font-size: .69rem; }
+    .product-card__seller a { color: #d7d7dd; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.2); }
+    .product-card__fulfillment { color: var(--market-aqua); }
+    .product-card__actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 12px; }
+    .product-card__actions .market-btn { min-height: 40px; padding: 0 13px; font-size: .72rem; }
+
+    .empty-panel { grid-column: 1 / -1; padding: 54px 24px; border: 1px solid var(--market-line); background: var(--market-panel); text-align: center; }
+    .empty-panel h3 { margin: 0 0 8px; font-family: "Manrope", sans-serif; }
+    .empty-panel p { margin: 0; color: var(--market-muted); }
+    .skeleton { min-height: 420px; border: 1px solid var(--market-line); background: linear-gradient(100deg, #121318 20%, #1a1b21 42%, #121318 64%); background-size: 300% 100%; animation: shimmer 1.4s infinite; }
+    @keyframes shimmer { to { background-position: -150% 0; } }
+
+    .wanted-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+    .wanted-card { min-height: 190px; display: flex; flex-direction: column; padding: 23px; border: 1px solid var(--market-line); background: var(--market-panel); }
+    .wanted-card__label { color: var(--market-coral); font-size: .65rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .wanted-card h3 { margin: 14px 0 8px; font-family: "Manrope", sans-serif; font-size: 1.1rem; }
+    .wanted-card p { margin: 0; color: var(--market-muted); font-size: .8rem; line-height: 1.55; }
+    .wanted-card__footer { margin-top: auto; padding-top: 18px; display: flex; justify-content: space-between; color: #ddd; font-size: .7rem; }
+
+    .trust-grid { display: grid; grid-template-columns: repeat(4,1fr); border: 1px solid var(--market-line); }
+    .trust-item { min-height: 220px; padding: 27px; border-right: 1px solid var(--market-line); }
+    .trust-item:last-child { border-right: 0; }
+    .trust-item__icon { font-size: 1.45rem; }
+    .trust-item h3 { margin: 40px 0 10px; font-family: "Manrope", sans-serif; font-size: 1rem; }
+    .trust-item p { margin: 0; color: var(--market-muted); font-size: .77rem; line-height: 1.55; }
+
+    .seller-cta { margin-bottom: 86px; padding: 60px; display: grid; grid-template-columns: 1.3fr .7fr; align-items: center; gap: 30px; color: #10110b; background: var(--market-lime); }
+    .seller-cta h2 { margin: 0; font-family: "Manrope", sans-serif; font-size: clamp(2.2rem, 5vw, 5rem); letter-spacing: -.055em; line-height: .95; }
+    .seller-cta p { max-width: 600px; margin: 18px 0 0; color: #343626; line-height: 1.6; }
+    .seller-cta__actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+    .seller-cta .market-btn { border-color: rgba(0,0,0,.25); color: #111; }
+    .seller-cta .market-btn--solid { background: #111; color: #fff; border-color: #111; }
+
+    .product-dialog { width: min(920px, calc(100% - 28px)); max-height: calc(100vh - 28px); padding: 0; border: 1px solid rgba(255,255,255,.18); background: #111217; color: #fff; }
+    .product-dialog::backdrop { background: rgba(0,0,0,.82); backdrop-filter: blur(6px); }
+    .product-dialog__layout { display: grid; grid-template-columns: 1fr 1fr; }
+    .product-dialog__visual { min-height: 570px; background: #191a20; }
+    .product-dialog__visual img { width: 100%; height: 100%; object-fit: cover; }
+    .product-dialog__visual .product-card__placeholder { min-height: 570px; }
+    .product-dialog__body { position: relative; padding: 38px; display: flex; flex-direction: column; }
+    .dialog-close { position: absolute; top: 14px; right: 14px; width: 40px; height: 40px; border: 1px solid var(--market-line); border-radius: 50%; background: transparent; cursor: pointer; }
+    .product-dialog__body h2 { margin: 34px 0 3px; font-family: "Manrope", sans-serif; font-size: 2rem; letter-spacing: -.04em; }
+    .dialog-scientific { color: var(--market-muted); font-style: italic; }
+    .dialog-price { margin: 25px 0; font-family: "Manrope", sans-serif; font-size: 1.8rem; }
+    .dialog-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--market-line); border: 1px solid var(--market-line); }
+    .dialog-fact { min-height: 78px; padding: 14px; background: #111217; }
+    .dialog-fact span { display: block; color: var(--market-dim); font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; }
+    .dialog-fact strong { display: block; margin-top: 7px; font-size: .8rem; }
+    .dialog-seller { margin: 24px 0; padding: 17px 0; border-block: 1px solid var(--market-line); }
+    .dialog-seller span { display: block; color: var(--market-muted); font-size: .67rem; text-transform: uppercase; letter-spacing: .1em; }
+    .dialog-seller a { display: inline-block; margin-top: 6px; font-weight: 700; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.3); }
+    .dialog-actions { margin-top: auto; display: grid; gap: 9px; }
+    .dialog-note { color: var(--market-muted); font-size: .68rem; line-height: 1.45; text-align: center; }
+
+    @media (max-width: 1100px) {
+      .collection-grid { grid-template-columns: repeat(3, 1fr); }
+      .store-grid { grid-template-columns: repeat(2,1fr); }
+      .product-grid { grid-template-columns: repeat(3,1fr); }
+      .trust-grid { grid-template-columns: repeat(2,1fr); }
+      .trust-item:nth-child(2) { border-right: 0; }
+      .trust-item:nth-child(-n+2) { border-bottom: 1px solid var(--market-line); }
+    }
+    @media (max-width: 760px) {
+      .market-wrap { width: min(100% - 24px, 1440px); }
+      .commerce-nav__label { display: none; }
+      .commerce-nav__links { gap: 16px; }
+      .commerce-nav__actions .market-btn:first-child { display: none; }
+      .market-hero { min-height: 620px; padding: 72px 0 40px; }
+      .market-hero::after { width: 90vw; right: -40vw; opacity: .7; }
+      .market-hero__bottom { align-items: start; flex-direction: column; }
+      .market-section { padding: 64px 0; }
+      .market-section__head { align-items: start; flex-direction: column; }
+      .collection-grid { grid-template-columns: repeat(2,1fr); }
+      .collection-card { min-height: 190px; }
+      .store-grid { grid-template-columns: 1fr; }
+      .catalog-toolbar { top: 58px; grid-template-columns: 1fr; }
+      .market-select, .result-count { width: 100%; }
+      .product-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 22px 10px; }
+      .product-card__actions { grid-template-columns: 1fr; }
+      .product-card__actions .market-btn:last-child { display: none; }
+      .wanted-grid { grid-template-columns: 1fr; }
+      .seller-cta { padding: 36px 24px; grid-template-columns: 1fr; }
+      .seller-cta__actions { justify-content: flex-start; }
+      .product-dialog__layout { grid-template-columns: 1fr; }
+      .product-dialog__visual { min-height: 330px; max-height: 42vh; }
+      .product-dialog__visual .product-card__placeholder { min-height: 330px; }
+      .product-dialog__body { padding: 24px; }
+    }
+    @media (max-width: 470px) {
+      .market-stats { grid-template-columns: 1fr; }
+      .market-stat { border-right: 0; border-bottom: 1px solid var(--market-line); }
+      .market-stat:last-child { border-bottom: 0; }
+      .collection-grid { grid-template-columns: 1fr 1fr; }
+      .collection-card { min-height: 165px; padding: 16px; }
+      .product-card__seller { align-items: start; flex-direction: column; }
+      .trust-grid { grid-template-columns: 1fr; }
+      .trust-item { border-right: 0; border-bottom: 1px solid var(--market-line); }
+      .trust-item:last-child { border-bottom: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
 </head>
 <body>
-
-  <!-- Ambient Background -->
-  <div class="ambient-layer">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-  </div>
-
-  <!-- ========== NAVIGATION ========== -->
   <header id="site-nav"></header>
-  <!-- ========== HERO ========== -->
-  <section class="hero">
-    <div class="hero-particles">
-      <div class="particle"></div><div class="particle"></div><div class="particle"></div>
-      <div class="particle"></div><div class="particle"></div><div class="particle"></div>
-    </div>
-    <div class="container">
-      <div class="hero-badge">
-        <span class="hero-badge-dot"></span>
-        Live Marketplace — Updated in Real Time
+  <div class="market-shell">
+    <nav class="commerce-nav" aria-label="Marketplace sections">
+      <div class="market-wrap commerce-nav__inner">
+        <span class="commerce-nav__label">Marketplace</span>
+        <div class="commerce-nav__links">
+          <a href="#stores">Breeder shops</a>
+          <a href="#catalog">Fish</a>
+          <a href="#wanted">Wanted</a>
+          <a href="/breeders">Breeder directory</a>
+        </div>
+        <div class="commerce-nav__actions">
+          <a class="market-btn" href="/app/orders">My orders</a>
+          <a class="market-btn market-btn--bright" href="/app/breeder-terminal">Sell with us</a>
+        </div>
       </div>
-      <h1>Tank-Raised Fish From<br>Verified Local Breeders</h1>
-      <p class="hero-subtitle">
-        Every listing is backed by our Buyer Protection program. Browse confidently knowing your purchase is protected from checkout to arrival.
-      </p>
+    </nav>
 
-      <div class="hero-pillars">
-        <div class="hero-pillar">
-          <div class="hero-pillar-icon hero-pillar-icon-escrow">🔒</div>
-          <div class="hero-pillar-text">
-            <div class="hero-pillar-title">Buyer-Protected Payments</div>
-            <div class="hero-pillar-desc">Funds release only after you confirm receipt</div>
+    <main>
+      <section class="market-hero">
+        <div class="market-wrap market-hero__content">
+          <div class="market-eyebrow">Independent breeder marketplace</div>
+          <h1>Aquarium life,<br><em>raised with care.</em></h1>
+          <div class="market-hero__bottom">
+            <p class="market-hero__copy">Shop distinctive, tank-raised fish directly from the breeders who know them best. Discover independent storefronts, documented lines, local pickup, and protected checkout in one place.</p>
+            <div class="market-hero__actions">
+              <a class="market-btn market-btn--bright" href="#catalog">Shop fish</a>
+              <a class="market-btn" href="#stores">Explore breeders</a>
+            </div>
           </div>
         </div>
-        <div class="hero-pillar">
-          <div class="hero-pillar-icon hero-pillar-icon-arrival">🐟</div>
-          <div class="hero-pillar-text">
-            <div class="hero-pillar-title">Live Arrival Guarantee</div>
-            <div class="hero-pillar-desc">3-day safety window on all shipped orders</div>
+      </section>
+
+      <div class="market-wrap market-stats" aria-label="Live marketplace statistics">
+        <div class="market-stat"><strong id="statStores">—</strong><span>Breeder shops</span></div>
+        <div class="market-stat"><strong id="statListings">—</strong><span>Live listings</span></div>
+        <div class="market-stat"><strong id="statSpecies">—</strong><span>Species available</span></div>
+      </div>
+
+      <section class="market-section" aria-labelledby="collectionHeading">
+        <div class="market-wrap">
+          <div class="market-section__head">
+            <div><div class="market-kicker">Shop your way</div><h2 id="collectionHeading">Explore the collection</h2></div>
+            <p class="market-section__intro">Start with a breeder, a fulfillment method, or the kind of livestock you are looking for. Every live filter reflects current public inventory.</p>
+          </div>
+          <div class="collection-grid" id="collectionGrid">
+            <button class="collection-card" type="button" data-filter="all"><span class="collection-card__icon">🐟</span><span><strong>All livestock</strong><span>Browse every active fish listing.</span></span></button>
+            <button class="collection-card" type="button" data-filter="batch"><span class="collection-card__icon">◌</span><span><strong>Fry & batches</strong><span>Choose quantities from breeder-raised groups.</span></span></button>
+            <button class="collection-card" type="button" data-filter="ships"><span class="collection-card__icon">↗</span><span><strong>Ships to you</strong><span>Listings offering protected shipping.</span></span></button>
+            <button class="collection-card" type="button" data-filter="local"><span class="collection-card__icon">⌖</span><span><strong>Local pickup</strong><span>Meet breeders and collect nearby.</span></span></button>
+            <a class="collection-card" href="#wanted"><span class="collection-card__icon">◎</span><span><strong>Wanted board</strong><span>Tell breeders what you are seeking.</span></span></a>
+            <div class="collection-card collection-card--future"><span class="collection-card__icon">▦</span><span><strong>Supplies</strong><span>Food, plants, equipment, and breeder goods are the next catalog expansion.</span></span></div>
           </div>
         </div>
-        <div class="hero-pillar">
-          <div class="hero-pillar-icon hero-pillar-icon-verified">✓</div>
-          <div class="hero-pillar-text">
-            <div class="hero-pillar-title">Identity-Verified Breeders</div>
-            <div class="hero-pillar-desc">Real hobbyists, not anonymous sellers</div>
+      </section>
+
+      <section class="market-section market-section--tint" id="stores" aria-labelledby="storesHeading">
+        <div class="market-wrap">
+          <div class="market-section__head">
+            <div><div class="market-kicker">Meet the people behind the fish</div><h2 id="storesHeading">Independent breeder shops</h2></div>
+            <a class="market-link" href="/breeders">Browse the breeder directory <span aria-hidden="true">↗</span></a>
+          </div>
+          <div class="store-grid" id="storeGrid" aria-live="polite">
+            <div class="skeleton" aria-label="Loading breeder storefronts"></div>
+            <div class="skeleton" aria-hidden="true"></div>
+            <div class="skeleton" aria-hidden="true"></div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div class="hero-stats">
-        <div class="hero-stat">
-          <div class="hero-stat-value" id="statListings">—</div>
-          <div class="hero-stat-label">Active Listings</div>
+      <section class="market-section" id="catalog" aria-labelledby="catalogHeading">
+        <div class="market-wrap">
+          <div class="market-section__head">
+            <div><div class="market-kicker">Live now</div><h2 id="catalogHeading">Fish from the collective</h2></div>
+            <p class="market-section__intro">Inventory comes from independent sellers. Open a listing for care details, then continue to the signed-in marketplace for quantities, messaging, compatibility, shipping rates, and checkout.</p>
+          </div>
+
+          <div class="catalog-toolbar" aria-label="Catalog controls">
+            <label><span class="sr-only">Search listings</span><input class="market-search" id="searchInput" type="search" placeholder="Search fish, scientific names, or breeders…" autocomplete="off"></label>
+            <label><span class="sr-only">Sort listings</span><select class="market-select" id="sortSelect"><option value="newest">Newest</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="alpha">Name: A–Z</option></select></label>
+            <span class="result-count" id="resultCount">Loading inventory…</span>
+            <div class="filter-row" id="filterRow" aria-label="Listing filters">
+              <button class="filter-chip" type="button" data-filter="all" aria-pressed="true">All</button>
+              <button class="filter-chip" type="button" data-filter="ships" aria-pressed="false">Ships</button>
+              <button class="filter-chip" type="button" data-filter="local" aria-pressed="false">Local pickup</button>
+              <button class="filter-chip" type="button" data-filter="batch" aria-pressed="false">Fry & batches</button>
+              <button class="filter-chip" type="button" data-filter="saved" aria-pressed="false">Saved</button>
+            </div>
+          </div>
+
+          <div class="product-grid" id="productGrid" aria-live="polite">
+            <div class="skeleton" aria-label="Loading fish listings"></div><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div><div class="skeleton" aria-hidden="true"></div>
+          </div>
         </div>
-        <div class="hero-stat">
-          <div class="hero-stat-value" id="statSpecies">—</div>
-          <div class="hero-stat-label">Species Available</div>
+      </section>
+
+      <section class="market-section market-section--tint" id="wanted" aria-labelledby="wantedHeading">
+        <div class="market-wrap">
+          <div class="market-section__head">
+            <div><div class="market-kicker">Demand, made visible</div><h2 id="wantedHeading">What keepers are looking for</h2></div>
+            <a class="market-link" href="/app/wanted">Post a wanted request <span aria-hidden="true">↗</span></a>
+          </div>
+          <div class="wanted-grid" id="wantedGrid" aria-live="polite"></div>
         </div>
-        <div class="hero-stat">
-          <div class="hero-stat-value" id="statBreeders">—</div>
-          <div class="hero-stat-label">Active Breeders</div>
+      </section>
+
+      <section class="market-section" aria-labelledby="trustHeading">
+        <div class="market-wrap">
+          <div class="market-section__head"><div><div class="market-kicker">Built for living cargo</div><h2 id="trustHeading">More than a checkout</h2></div></div>
+          <div class="trust-grid">
+            <article class="trust-item"><div class="trust-item__icon">◈</div><h3>Protected payments</h3><p>Eligible orders keep seller payment protected until the documented fulfillment flow completes.</p></article>
+            <article class="trust-item"><div class="trust-item__icon">◇</div><h3>Arrival workflow</h3><p>Shipping orders include tracking, delivery status, and a structured path to report arrival problems.</p></article>
+            <article class="trust-item"><div class="trust-item__icon">⌁</div><h3>Breeder identity</h3><p>Shop individual profiles, policies, specialties, and verified-purchase reputation where available.</p></article>
+            <article class="trust-item"><div class="trust-item__icon">⌘</div><h3>Care-aware shopping</h3><p>Signed-in buyers can compare care requirements and evaluate listings against their aquarium setup.</p></article>
+          </div>
         </div>
-      </div>
-    </div>
-  </section>
-  <!-- ========== MAIN CONTENT ========== -->
-  <main class="container">
+      </section>
 
-    <!-- Featured Breeders Carousel -->
-    <section class="featured-section" id="featuredBreeders" style="display:none;">
-      <div class="section-header">
-        <div class="section-title"><span class="section-title-icon">⭐</span> Featured Breeders</div>
-        <button class="section-see-all" onclick="clearBreederFilter()">Show All</button>
-      </div>
-      <div class="breeders-scroll" id="breedersScroll"></div>
-    </section>
-
-    <!-- Filters Bar -->
-    <div class="filters-bar">
-      <div class="search-wrap">
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" class="search-input" id="searchInput" placeholder="Search species, breeder, pedigree..." oninput="applyFilters()">
-      </div>
-      <div class="grid-density-toggle">
-        <button class="grid-density-btn" data-density="large" onclick="setGridDensity('large')">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
-          Large
-        </button>
-        <button class="grid-density-btn active" data-density="medium" onclick="setGridDensity('medium')">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="0.5" y="0.5" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="5.25" y="0.5" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="10" y="0.5" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="0.5" y="5.25" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="5.25" y="5.25" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/><rect x="10" y="5.25" width="3.5" height="3.5" rx="0.75" stroke="currentColor" stroke-width="1.2"/></svg>
-          Medium
-        </button>
-        <button class="grid-density-btn" data-density="compact" onclick="setGridDensity('compact')">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="0.5" y="0.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="4" y="0.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="7.5" y="0.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/><rect x="11" y="0.5" width="2.5" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1"/></svg>
-          Compact
-        </button>
-        <button class="grid-density-btn" data-density="list" onclick="setGridDensity('list')">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="0.5" y="1" width="13" height="2.5" rx="0.75" stroke="currentColor" stroke-width="1"/><rect x="0.5" y="5.5" width="13" height="2.5" rx="0.75" stroke="currentColor" stroke-width="1"/><rect x="0.5" y="10" width="13" height="2.5" rx="0.75" stroke="currentColor" stroke-width="1"/></svg>
-          List
-        </button>
-      </div>
-      <span class="result-count" id="resultCount"></span>
-      <!-- Quick filter chips -->
-      <div class="filter-chips">
-        <button class="filter-chip" id="savedFilterChip" onclick="toggleFilterChip(this, 'saved')">❤️ Saved</button>
-        <button class="filter-chip" onclick="toggleFilterChip(this, 'ships')">🚚 Ships Nationwide</button>
-        <button class="filter-chip" onclick="toggleFilterChip(this, 'local')">📍 Local Pickup</button>
-        <button class="filter-chip" onclick="toggleFilterChip(this, 'wild')">🌿 Wild Caught</button>
-        <button class="filter-chip" onclick="toggleFilterChip(this, 'purebred')">🧬 Purebred</button>
-        <button class="filter-chip" onclick="toggleFilterChip(this, 'batch')">📦 Batch Fry</button>
-        <button class="filter-chip" onclick="toggleFilterChip(this, 'under25')">💰 Under $25</button>
-        <button class="filter-chip" onclick="toggleFilterChip(this, 'cichlid')">🐠 Cichlids</button>
-        <button class="filter-chip" onclick="toggleFilterChip(this, 'livebearer')">🐟 Livebearers</button>
-      </div>
-      <!-- Sort chips -->
-      <div class="sort-chips">
-        <button class="sort-chip active" data-sort="newest" onclick="setSort('newest')">✦ Newest</button>
-        <button class="sort-chip" data-sort="price-asc" onclick="setSort('price-asc')">↑ Price Low</button>
-        <button class="sort-chip" data-sort="price-desc" onclick="setSort('price-desc')">↓ Price High</button>
-        <button class="sort-chip" data-sort="alpha" onclick="setSort('alpha')">A→Z Species</button>
-        <button class="sort-chip" data-sort="pedigree" onclick="setSort('pedigree')">🏆 Pedigree</button>
-      </div>
-    </div>
-    <!-- Loading State -->
-    <div id="loadingState" class="loading-state">
-      <div class="loading-spinner"></div>
-      <p>Loading marketplace listings...</p>
-    </div>
-
-    <!-- Listing Grid -->
-    <div id="listingsGrid" class="listings-grid" style="display:none;">
-      <!-- Skeleton cards while loading -->
-      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
-      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
-      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
-      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
-      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
-      <div class="skeleton-card"><div class="skeleton-image"></div><div class="skeleton-info"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></div>
-    </div>
-
-    <!-- Load More -->
-    <div id="loadMoreWrap" class="load-more-wrap" style="display:none;">
-      <button class="load-more-btn" onclick="loadMore()">Show More Listings</button>
-    </div>
-
-    <!-- Wanted Listings Section -->
-    <section class="wanted-section" id="wantedSection" style="display:none;">
-      <div class="section-header">
-        <div class="section-title"><span class="section-title-icon">🔍</span> Looking to Buy</div>
-        <a href="/app#wanted" class="section-see-all">Post a Want →</a>
-      </div>
-      <div class="wanted-grid" id="wantedGrid"></div>
-    </section>
-
-  </main>
-  <!-- ========== 3D FLIP CARD POPUP ========== -->
-  <div class="popup-overlay" id="popupOverlay">
-    <div class="flip-card-container" id="flipCardContainer">
-      <div class="flip-card" id="flipCard">
-        <div class="flip-face flip-front" id="flipFront"></div>
-        <div class="flip-face flip-back" id="flipBack"></div>
-      </div>
-    </div>
+      <section class="market-wrap seller-cta" aria-labelledby="sellerHeading">
+        <div><h2 id="sellerHeading">Your fish deserve their own storefront.</h2><p>Create listings, organize collections, manage fulfillment, buy shipping labels, run promotions, track performance, and receive payouts from the Breeder Terminal.</p></div>
+        <div class="seller-cta__actions"><a class="market-btn market-btn--solid" href="/app/breeder-terminal">Open Breeder Terminal</a><a class="market-btn" href="/breeder">Learn about selling</a></div>
+      </section>
+    </main>
   </div>
 
-  <!-- ========== FOOTER ========== -->
+  <dialog class="product-dialog" id="productDialog" aria-labelledby="dialogTitle">
+    <div class="product-dialog__layout">
+      <div class="product-dialog__visual" id="dialogVisual"></div>
+      <div class="product-dialog__body">
+        <button class="dialog-close" id="dialogClose" type="button" aria-label="Close product details">×</button>
+        <div class="market-kicker" id="dialogKicker">Live listing</div>
+        <h2 id="dialogTitle"></h2>
+        <div class="dialog-scientific" id="dialogScientific"></div>
+        <div class="dialog-price" id="dialogPrice"></div>
+        <div class="dialog-facts" id="dialogFacts"></div>
+        <div class="dialog-seller"><span>Offered by</span><a id="dialogSeller" href="#"></a></div>
+        <div class="dialog-actions">
+          <a class="market-btn market-btn--bright" id="dialogBuy" href="#">Continue to listing</a>
+          <div class="dialog-note" id="dialogNote">Sign in is requested only when you buy, message a breeder, save account-level searches, or manage an order.</div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
   <footer id="site-footer"></footer>
-  <!-- ========== DATA LOGIC ========== -->
-  <!-- Loaded before the inline script below (not with the deferred /js bundle at
-       the bottom) so AquadexPublicListings is defined when init() runs. -->
   <script src="/js/public-listings.js"></script>
   <script>
-    // ── Configuration ──────────────────────────────────────────────────────
-    const SUPABASE_URL = 'https://yahsdztnvsykzecjatsl.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaHNkenRudnN5a3plY2phdHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQwMDgsImV4cCI6MjA5NjA3MDAwOH0.3anqDFU9hUjZg2AFWJlXSBbwSM-knNrmb-uQ_Baq98I';
-    const CONTRACT_ADDRESS = '0x351ca8f34D94F29F6f865Afa419A636324473DeF';
-    const MARKETPLACE_ADDRESS = '0x0741D50d49e7374b855b532c17aD36aBF8AF3b3e';
-    const RPC_URL = 'https://base-sepolia-rpc.publicnode.com';
+    "use strict";
 
-    // ── Alias Generator ───────────────────────────────────────────────────
-    const ADJECTIVES = ["Coral","Sapphire","Drift","Lunar","Ember","Misty","Crystal","Tide","Storm","Solar","Velvet","Copper","Silver","Frost","Dusk","Reef","Azure","Pearl","Golden","Moss","Jade","Cobalt","Crimson","Opal","Indigo","Rustic","Aqua","Tidal","Brine","Prism","Starlit","Sunken","Deep","Calm","Wild"];
-    const FISH_NAMES = ["Tetra","Guppy","Betta","Pleco","Rasbora","Danio","Cory","Molly","Barb","Loach","Killi","Goby","Wrasse","Tang","Angel","Discus","Oscar","Arowana","Pike","Darter","Minnow","Shiner","Blenny","Gudgeon","Cichlid","Snapper","Grouper","Bass","Perch","Sculpin"];
+    const SUPABASE_URL = "https://yahsdztnvsykzecjatsl.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6InlhaHNkenRudnN5a3plY2phdHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQwMDgsImV4cCI6MjA5NjA3MDAwOH0.3anqDFU9hUjZg2AFWJlXSBbwSM-knNrmb-uQ_Baq98I";
+    const WATCHLIST_KEY = "aquadex_watchlist";
 
-    function generateAlias(address) {
-      if (!address || address.length < 10) return "Unknown Keeper";
-      const n = address.toLowerCase().replace("0x", "");
-      const adj = ADJECTIVES[parseInt(n.slice(0, 4), 16) % ADJECTIVES.length];
-      const fish = FISH_NAMES[parseInt(n.slice(4, 8), 16) % FISH_NAMES.length];
-      const num = (parseInt(n.slice(8, 12), 16) % 9000) + 1000;
-      return `${adj} ${fish} ${num}`;
+    const state = {
+      listings: [],
+      storefronts: [],
+      storefrontTotal: 0,
+      fishbase: [],
+      selectedFilter: "all",
+      search: "",
+      sort: "newest",
+      saved: readSaved(),
+    };
+
+    function readSaved() {
+      try { return new Set(JSON.parse(localStorage.getItem(WATCHLIST_KEY) || "[]")); }
+      catch { return new Set(); }
     }
 
-    // ── State ──────────────────────────────────────────────────────────────
-    let allListings = [];
-    let filteredListings = [];
-    let fishbaseData = [];
-    let breederProfiles = {};
-    let breederStats = {}; // { walletLower: { listings: N, tier: 'new'|'trusted'|'established'|'master' } }
-    let wantedListings = [];
-    let savedListings = new Set(JSON.parse(localStorage.getItem('aquadex_watchlist') || '[]'));
-    let visibleCount = 24;
-    let currentSort = 'newest';
-    let activeFilters = new Set();
-    let activeBreederFilter = null;
-    let isFlipped = false;
-    // ── Initialize ─────────────────────────────────────────────────────────
-    async function init() {
+    function element(tag, className, text) {
+      const el = document.createElement(tag);
+      if (className) el.className = className;
+      if (text != null) el.textContent = String(text);
+      return el;
+    }
+
+    function safeImageUrl(value) {
+      if (!value) return "";
       try {
-        const fbRes = await fetch('/fishbase_master.json?v=2');
-        if (fbRes.ok) fishbaseData = await fbRes.json();
-      } catch (e) { console.warn('Failed to load fishbase data:', e); }
+        const url = new URL(value, window.location.origin);
+        return url.protocol === "https:" || url.origin === window.location.origin ? url.href : "";
+      } catch { return ""; }
+    }
 
-      const [cloudListings, onChainListings] = await Promise.allSettled([
-        fetchCloudListings(),
-        fetchOnChainListings()
-      ]);
+    function listingKey(item) {
+      return `${item.isBatch ? "batch" : "single"}-${item.isBatch ? (item.listingId ?? item.id) : (item.tokenId ?? item.id)}`;
+    }
 
-      const cloud = cloudListings.status === 'fulfilled' ? cloudListings.value : [];
-      const onChain = onChainListings.status === 'fulfilled' ? onChainListings.value : [];
+    function listingAppUrl(item) {
+      return `/app/marketplace?listing=${encodeURIComponent(listingKey(item))}`;
+    }
 
-      // Merge: on-chain first, then cloud (deduplicate)
-      const idsSeen = new Set();
-      const merged = [];
-      for (const item of onChain) {
-        const key = `${item.isBatch ? 'b' : 's'}-${item.id}`;
-        if (!idsSeen.has(key)) { idsSeen.add(key); merged.push(item); }
+    function storefrontUrl(store, fallbackSeller) {
+      const slug = store?.slug || fallbackSeller;
+      return slug ? `/store/${encodeURIComponent(slug)}` : "/breeders";
+    }
+
+    function priceNumber(item) {
+      const value = Number(item.priceUsd ?? item.price ?? item.priceCentsUSD / 100 ?? 0);
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    function formatPrice(item) {
+      const value = priceNumber(item);
+      return value > 0 ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value) : "Contact seller";
+    }
+
+    function speciesImage(item) {
+      const direct = safeImageUrl(item.photoUrl || item.imageUrl);
+      if (direct) return direct;
+      const sci = String(item.scientificName || "").toLowerCase();
+      const match = state.fishbase.find((fish) => String(fish.scientificName || "").toLowerCase() === sci);
+      return safeImageUrl(match?.masterPhotoUrl);
+    }
+
+    function storeForSeller(seller) {
+      const key = String(seller || "").toLowerCase();
+      return state.storefronts.find((store) => String(store.walletAddress || "").toLowerCase() === key) || null;
+    }
+
+    function sellerName(item) {
+      const store = storeForSeller(item.seller);
+      return store?.displayName || item.sellerDisplayName || "Independent breeder";
+    }
+
+    function isLocalPickup(item) {
+      if (item.localPickup === true || item.fulfillmentType === "pickup") return true;
+      if (item.localPickup === false) return false;
+      return item.isShipping === false;
+    }
+
+    function fulfillmentLabel(item) {
+      if (item.isShipping === true) return "Ships";
+      if (isLocalPickup(item)) return "Local pickup";
+      return "Ask breeder";
+    }
+
+    function pedigreeLabel(item) {
+      if (item.isBatch) return "Fry batch";
+      const sire = Number(item.sireId || 0);
+      const dam = Number(item.damId || 0);
+      if (sire && dam) return "Documented parents";
+      if (sire || dam) return "Partial parent record";
+      return "Provenance not documented";
+    }
+
+    function emptyPanel(title, copy) {
+      const panel = element("div", "empty-panel");
+      panel.append(element("h3", "", title), element("p", "", copy));
+      return panel;
+    }
+
+    async function fetchStorefronts() {
+      try {
+        const res = await fetch("/api/storefront-detail?action=discover&limit=12");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        state.storefronts = Array.isArray(data.storefronts) ? data.storefronts : [];
+        state.storefrontTotal = Math.max(state.storefronts.length, Number(data.total) || 0);
+      } catch (error) {
+        console.warn("[Marketplace] storefront discovery failed:", error.message);
+        state.storefronts = [];
+        state.storefrontTotal = 0;
       }
-      for (const item of cloud) {
-        const key = `${item.isBatch ? 'b' : 's'}-${item.id}`;
-        if (!idsSeen.has(key)) { idsSeen.add(key); merged.push(item); }
-      }
-
-      allListings = merged;
-      await fetchBreederProfiles();
-      await fetchWantedListings();
-
-      applyFilters();
+      renderStores();
       updateStats();
-      computeBreederStats();
-      updateSavedChipCount();
-      renderFeaturedBreeders();
-      renderWantedSection();
-
-      document.getElementById('loadingState').style.display = 'none';
-      document.getElementById('listingsGrid').style.display = '';
     }
 
-    // ── Fetch Breeder Profiles ─────────────────────────────────────────────
-    async function fetchBreederProfiles() {
-      const sellers = [...new Set(allListings.map(l => l.seller).filter(Boolean))];
-      if (sellers.length === 0) return;
+    async function fetchListings() {
       try {
-        const wallets = sellers.map(s => s.toLowerCase());
-        const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/profiles?wallet_address=in.(${wallets.map(w => `"${w}"`).join(',')})&select=wallet_address,display_name`,
-          { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' } }
-        );
-        if (res.ok) {
-          const profiles = await res.json();
-          profiles.forEach(p => { if (p.display_name) breederProfiles[p.wallet_address.toLowerCase()] = p.display_name; });
-        }
-      } catch (e) { console.warn('Failed to fetch breeder profiles:', e); }
-    }
-
-    function getBreederName(seller) {
-      if (!seller) return 'Unknown Breeder';
-      return breederProfiles[seller.toLowerCase()] || generateAlias(seller);
-    }
-
-    function computeBreederStats() {
-      const counts = {};
-      allListings.forEach(item => {
-        if (!item.seller) return;
-        const key = item.seller.toLowerCase();
-        counts[key] = (counts[key] || 0) + 1;
-      });
-      Object.entries(counts).forEach(([wallet, count]) => {
-        let tier = 'new';
-        let label = 'New Breeder';
-        let icon = '🌱';
-        if (count >= 10) { tier = 'master'; label = 'Master Breeder'; icon = '🏆'; }
-        else if (count >= 5) { tier = 'established'; label = 'Established'; icon = '⭐'; }
-        else if (count >= 3) { tier = 'trusted'; label = 'Trusted'; icon = '✓'; }
-        breederStats[wallet] = { listings: count, tier, label, icon };
-      });
-    }
-
-    function getBreederBadge(seller) {
-      if (!seller) return '';
-      const stats = breederStats[seller.toLowerCase()];
-      if (!stats || stats.tier === 'new') return '';
-      return `<span class="card-seller-tier tier-${stats.tier}" title="${stats.label} — ${stats.listings} listings">${stats.icon} ${stats.label}</span>`;
-    }
-
-    // ── Watchlist / Save for Later ─────────────────────────────────────────
-    function getListingKey(item) {
-      return `${item.isBatch ? 'b' : 's'}-${item.id}`;
-    }
-
-    function isListingSaved(item) {
-      return savedListings.has(getListingKey(item));
-    }
-
-    function toggleSaveListing(event, idx) {
-      event.stopPropagation();
-      event.preventDefault();
-      const item = filteredListings[idx];
-      if (!item) return;
-      const key = getListingKey(item);
-      if (savedListings.has(key)) {
-        savedListings.delete(key);
-      } else {
-        savedListings.add(key);
+        const rows = await AquadexPublicListings.fetchRows({
+          supabaseUrl: SUPABASE_URL,
+          anonKey: SUPABASE_ANON_KEY,
+          query: "is_active=eq.true&order=created_at.desc&limit=200",
+        });
+        state.listings = rows.map((row) => {
+          const data = AquadexPublicListings.parseRow(row) || {};
+          return {
+            ...data,
+            id: data.id ?? row.id,
+            listingId: data.listingId ?? (row.is_batch ? row.id : undefined),
+            tokenId: data.tokenId ?? (!row.is_batch ? row.id : undefined),
+            seller: data.seller || row.seller_address,
+            sellerDisplayName: data.sellerDisplayName || row.seller_display_name,
+            commonName: data.commonName || row.common_name || "Aquarium livestock",
+            speciesId: data.speciesId || row.species_id,
+            price: data.price ?? row.price,
+            isBatch: data.isBatch ?? row.is_batch ?? false,
+            createdAt: data.createdAt || row.created_at,
+          };
+        });
+      } catch (error) {
+        console.warn("[Marketplace] listing fetch failed:", error.message);
+        state.listings = [];
       }
-      localStorage.setItem('aquadex_watchlist', JSON.stringify([...savedListings]));
-      // Re-render the affected card's save button
-      const btn = event.currentTarget;
-      const isSaved = savedListings.has(key);
-      btn.classList.toggle('saved', isSaved);
-      btn.innerHTML = isSaved ? '❤️' : '🤍';
-      btn.title = isSaved ? 'Remove from saved' : 'Save for later';
-      // Update filter chip count if showing saved
-      updateSavedChipCount();
+      renderProducts();
+      updateStats();
     }
 
-    function updateSavedChipCount() {
-      const chip = document.getElementById('savedFilterChip');
-      if (chip) {
-        const count = savedListings.size;
-        chip.textContent = `❤️ Saved${count > 0 ? ` (${count})` : ''}`;
+    async function fetchFishbase() {
+      try {
+        const res = await fetch("/fishbase_master.json?v=2");
+        if (res.ok) state.fishbase = await res.json();
+      } catch { state.fishbase = []; }
+    }
+
+    async function fetchWanted() {
+      const grid = document.getElementById("wantedGrid");
+      grid.replaceChildren();
+      try {
+        const headers = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/wanted_listings?status=eq.open&order=created_at.desc&limit=6`, { headers });
+        const rows = res.ok ? await res.json() : [];
+        if (!rows.length) {
+          grid.append(emptyPanel("No open requests yet", "Be the first keeper to tell breeders what you are looking for."));
+          return;
+        }
+        rows.forEach((row) => grid.append(buildWantedCard(row)));
+      } catch {
+        grid.append(emptyPanel("Wanted requests are unavailable", "Open the signed-in wanted board to post or review requests."));
       }
     }
 
-    // ── Fetch Wanted Listings ──────────────────────────────────────────────
-    async function fetchWantedListings() {
-      try {
-        const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/wanted_listings?status=eq.open&order=created_at.desc&limit=6`,
-          { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' } }
-        );
-        if (res.ok) wantedListings = await res.json();
-      } catch (e) { console.warn('Failed to fetch wanted listings:', e); }
-    }
-    // ── Price Helpers ─────────────────────────────────────────────────────
-    // Listings store price as a plain USD dollar string (see relayer.js /
-    // listingManager.js) — no unit conversion needed here.
-    function ethToUSD(priceEth) {
-      const usd = parseFloat(priceEth || 0);
-      if (usd <= 0) return 'Free';
-      return '$' + usd.toFixed(2);
-    }
-    function ethToUSDRaw(priceEth) { return parseFloat(priceEth || 0); }
-
-    // ── Cloud Listings ─────────────────────────────────────────────────────
-    // Reads the display-safe `aquadex_listings_public` view rather than the raw
-    // table, so this anonymous page only ever receives allowlisted listing
-    // fields (Fish Finder T14). See /js/public-listings.js.
-    async function fetchCloudListings() {
-      return AquadexPublicListings.fetchListings({
-        supabaseUrl: SUPABASE_URL,
-        anonKey: SUPABASE_ANON_KEY,
-        query: 'is_active=eq.true&order=created_at.desc&limit=200',
-      });
+    function buildWantedCard(row) {
+      const card = element("article", "wanted-card");
+      card.append(element("div", "wanted-card__label", "Keeper request"));
+      card.append(element("h3", "", row.species_name || "Aquarium livestock"));
+      card.append(element("p", "", row.description || "A keeper is looking for this species."));
+      const footer = element("div", "wanted-card__footer");
+      footer.append(element("span", "", row.max_budget ? `Up to $${Number(row.max_budget).toFixed(0)}` : "Budget flexible"));
+      footer.append(element("span", "", row.location || "Location flexible"));
+      card.append(footer);
+      return card;
     }
 
-    // ── On-Chain Listings ──────────────────────────────────────────────────
-    async function fetchOnChainListings() {
-      if (typeof ethers === 'undefined') {
-        await loadScript('https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js');
-      }
-      if (typeof ethers === 'undefined') return [];
-
-      const provider = new ethers.providers.StaticJsonRpcProvider(RPC_URL, { name: 'base-sepolia', chainId: 84532 });
-      const managerAbi = [
-        'function totalSpecimensMinted() view returns (uint256)',
-        'function specimens(uint256) view returns (uint256 speciesId, uint256 sireId, uint256 damId, uint256 birthTimestamp, string ipfsMetadataUri, uint8 status)',
-        'function speciesCatalog(uint256) view returns (string commonName, string scientificName, uint8 careLevel, uint16 minTempCelsiusX10, uint16 maxTempCelsiusX10, uint16 minPhX10, uint16 maxPhX10, bool exists)',
-        'function spawnLogs(uint256) view returns (uint256 speciesId, uint256 sireId, uint256 damId, uint256 quantity, uint256 timestamp, address breeder)'
-      ];
-      const marketAbi = [
-        'function listings(uint256) view returns (address seller, uint256 price, bool active, bool isShipping, uint256 shippingFee)',
-        'function batchListings(uint256) view returns (uint256 listingId, uint256 spawnId, uint256 quantity, uint256 pricePerFish, address seller, bool isActive)'
-      ];
-      const manager = new ethers.Contract(CONTRACT_ADDRESS, managerAbi, provider);
-      const market = new ethers.Contract(MARKETPLACE_ADDRESS, marketAbi, provider);
-      const results = [];
-
-      try {
-        const total = Number(await manager.totalSpecimensMinted());
-        const limit = Math.min(total, 50);
-        for (let i = 1; i <= limit; i++) {
-          try {
-            const listing = await market.listings(i);
-            if (listing.active) {
-              const spec = await manager.specimens(i);
-              const species = await manager.speciesCatalog(Number(spec.speciesId));
-              results.push({ id: i, tokenId: i, seller: listing.seller, price: ethers.utils.formatEther(listing.price), isShipping: listing.isShipping, shippingFee: ethers.utils.formatEther(listing.shippingFee), speciesId: Number(spec.speciesId), commonName: species.commonName, scientificName: species.scientificName, sireId: Number(spec.sireId), damId: Number(spec.damId), careLevel: Number(species.careLevel), minTemp: Number(species.minTempCelsiusX10) / 10, maxTemp: Number(species.maxTempCelsiusX10) / 10, minPh: Number(species.minPhX10) / 10, maxPh: Number(species.maxPhX10) / 10, isBatch: false });
-            }
-          } catch (e) { /* skip */ }
-        }
-      } catch (e) { console.warn('On-chain individual listings failed:', e); }
-
-      try {
-        let lid = 1;
-        while (lid <= 30) {
-          try {
-            const batch = await market.batchListings(lid);
-            if (batch.seller === '0x0000000000000000000000000000000000000000') break;
-            if (batch.isActive) {
-              const spawn = await manager.spawnLogs(Number(batch.spawnId));
-              const species = await manager.speciesCatalog(Number(spawn.speciesId));
-              results.push({ id: lid, listingId: lid, spawnId: Number(batch.spawnId), quantity: Number(batch.quantity), price: ethers.utils.formatEther(batch.pricePerFish), seller: batch.seller, speciesId: Number(spawn.speciesId), commonName: species.commonName + ' Fry Batch', scientificName: species.scientificName, careLevel: Number(species.careLevel), minTemp: Number(species.minTempCelsiusX10) / 10, maxTemp: Number(species.maxTempCelsiusX10) / 10, minPh: Number(species.minPhX10) / 10, maxPh: Number(species.maxPhX10) / 10, isBatch: true, isShipping: false, shippingFee: '0' });
-            }
-            lid++;
-          } catch (e) { break; }
-        }
-      } catch (e) { console.warn('On-chain batch listings failed:', e); }
-
-      return results;
-    }
-
-    function loadScript(src) {
-      return new Promise((resolve, reject) => {
-        const s = document.createElement('script'); s.src = src;
-        s.onload = resolve; s.onerror = reject;
-        document.head.appendChild(s);
-      });
-    }
-    // ── Pedigree & Tier Helpers ──────────────────────────────────────────
-    function getPedigreeInfo(item) {
-      if (item.isBatch) return { label: 'Batch Fry', cls: 'batch', tier: 'tier-batch', weight: 1 };
-      const s = Number(item.sireId || 0), d = Number(item.damId || 0);
-      if (s === 0 && d === 0) return { label: 'Wild Caught', cls: 'wild', tier: 'tier-wild', weight: 4 };
-      if ((s !== 0 && d === 0) || (s === 0 && d !== 0)) return { label: 'F1 Bred', cls: 'f1', tier: 'tier-f1', weight: 2 };
-      return { label: 'Purebred', cls: 'purebred', tier: 'tier-purebred', weight: 3 };
-    }
-
-    function getTierClass(item) {
-      const usd = ethToUSDRaw(item.price);
-      if (usd >= 100) return 'tier-premium'; // Override: expensive = premium holographic
-      return getPedigreeInfo(item).tier;
-    }
-
-    // ── Filtering & Sorting ────────────────────────────────────────────────
-    function toggleFilterChip(btn, filter) {
-      btn.classList.toggle('active');
-      if (activeFilters.has(filter)) activeFilters.delete(filter);
-      else activeFilters.add(filter);
-      applyFilters();
-    }
-
-    function setSort(sort) {
-      currentSort = sort;
-      document.querySelectorAll('.sort-chip').forEach(chip => chip.classList.toggle('active', chip.dataset.sort === sort));
-      applyFilters();
-    }
-
-    function setGridDensity(density) {
-      const grid = document.getElementById('listingsGrid');
-      grid.classList.remove('grid-large', 'grid-compact', 'grid-list');
-      if (density === 'large') grid.classList.add('grid-large');
-      if (density === 'compact') grid.classList.add('grid-compact');
-      if (density === 'list') grid.classList.add('grid-list');
-      document.querySelectorAll('.grid-density-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.density === density));
-    }
-
-    function applyFilters() {
-      const query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
-
-      filteredListings = allListings.filter(item => {
-        // Text search
-        if (query) {
-          const searchable = [item.commonName || '', item.scientificName || '', getBreederName(item.seller)].join(' ').toLowerCase();
-          if (!searchable.includes(query)) return false;
-        }
-        // Breeder filter
-        if (activeBreederFilter && item.seller?.toLowerCase() !== activeBreederFilter) return false;
-        // Chip filters
-        if (activeFilters.size > 0) {
-          // Saved filter — special: only show saved items
-          if (activeFilters.has('saved') && !isListingSaved(item)) return false;
-          const pedigree = getPedigreeInfo(item);
-          const usd = ethToUSDRaw(item.price);
-          if (activeFilters.has('ships') && !item.isShipping) return false;
-          if (activeFilters.has('local') && item.isShipping) return false;
-          if (activeFilters.has('wild') && pedigree.cls !== 'wild') return false;
-          if (activeFilters.has('purebred') && pedigree.cls !== 'purebred') return false;
-          if (activeFilters.has('batch') && !item.isBatch) return false;
-          if (activeFilters.has('under25') && usd > 25) return false;
-          if (activeFilters.has('cichlid')) {
-            const name = (item.commonName || '').toLowerCase() + ' ' + (item.scientificName || '').toLowerCase();
-            if (!name.includes('cichlid') && !isCichlid(item.scientificName)) return false;
-          }
-          if (activeFilters.has('livebearer')) {
-            const name = (item.commonName || '').toLowerCase();
-            if (!name.includes('guppy') && !name.includes('molly') && !name.includes('platy') && !name.includes('swordtail') && !name.includes('endler')) return false;
-          }
-        }
-        return true;
-      });
-
-      // Sorting
-      filteredListings.sort((a, b) => {
-        switch (currentSort) {
-          case 'price-asc': return ethToUSDRaw(a.price) - ethToUSDRaw(b.price);
-          case 'price-desc': return ethToUSDRaw(b.price) - ethToUSDRaw(a.price);
-          case 'alpha': return (a.commonName || '').localeCompare(b.commonName || '');
-          case 'pedigree': return getPedigreeInfo(b).weight - getPedigreeInfo(a).weight;
-          default: return 0; // newest = default order from API
-        }
-      });
-
-      visibleCount = 24;
-      renderGrid();
-    }
-
-    function isCichlid(scientificName) {
-      if (!scientificName || fishbaseData.length === 0) return false;
-      const match = fishbaseData.find(f => f.scientificName?.toLowerCase() === scientificName.toLowerCase());
-      return match?.family?.toLowerCase().includes('cichlid') || false;
-    }
-    // ── Render Grid (Trading Card Style) ──────────────────────────────────
-    function renderGrid() {
-      const grid = document.getElementById('listingsGrid');
-      const loadMoreWrap = document.getElementById('loadMoreWrap');
-
-      if (filteredListings.length === 0) {
-        grid.innerHTML = '<div class="empty-state"><h3>No listings found</h3><p>Try adjusting your search or filters, or check back soon.</p></div>';
-        loadMoreWrap.style.display = 'none';
-        document.getElementById('resultCount').textContent = '0 listings';
+    function renderStores() {
+      const grid = document.getElementById("storeGrid");
+      grid.replaceChildren();
+      if (!state.storefronts.length) {
+        grid.append(emptyPanel("Storefronts are being prepared", "Active breeder shops will appear here as sellers publish their profiles."));
         return;
       }
+      state.storefronts.slice(0, 6).forEach((store, index) => grid.append(buildStoreCard(store, index)));
+    }
 
-      const visible = filteredListings.slice(0, visibleCount);
+    function buildStoreCard(store, index) {
+      const card = element("article", "store-card");
+      const visual = element("div", "store-card__visual");
+      const banner = safeImageUrl(store.bannerUrl);
+      if (banner) {
+        const img = element("img"); img.src = banner; img.alt = ""; img.loading = "lazy"; visual.append(img);
+      }
+      const avatar = element("div", "store-card__avatar", (store.displayName || "B").charAt(0).toUpperCase());
+      const avatarUrl = safeImageUrl(store.avatarUrl);
+      if (avatarUrl) { const img = element("img"); img.src = avatarUrl; img.alt = ""; avatar.replaceChildren(img); }
+      visual.append(avatar);
 
-      grid.innerHTML = visible.map((item, idx) => {
-        const imgUrl = item.photoUrl || getSpeciesImage(item.scientificName);
-        const pedigree = getPedigreeInfo(item);
-        const tierClass = getTierClass(item);
-        const priceDisplay = ethToUSD(item.price);
-        const breederName = getBreederName(item.seller);
-        const initial = breederName.charAt(0).toUpperCase();
+      const body = element("div", "store-card__body");
+      const titleRow = element("div", "store-card__title-row");
+      titleRow.append(element("h3", "", store.displayName || "Independent breeder"));
+      if (store.location) titleRow.append(element("span", "store-card__location", store.location));
+      body.append(titleRow);
+      body.append(element("p", "store-card__bio", store.bio || "Explore this breeder's current livestock and storefront collections."));
 
-        const imageHtml = imgUrl
-          ? `<img class="blur-bg" src="${imgUrl}" alt="" aria-hidden="true"><img class="main-img" src="${imgUrl}" alt="${item.commonName || 'Fish'}" loading="lazy">`
-          : '<span class="placeholder-icon">🐟</span>';
+      const tags = element("div", "store-card__tags");
+      (store.specialties || []).slice(0, 4).forEach((tag) => tags.append(element("span", "store-tag", tag)));
+      body.append(tags);
 
-        // Micro gauges
-        let paramsHtml = '<div class="card-params">';
-        if (item.minTemp && item.maxTemp) {
-          const tLeft = ((item.minTemp - 15) / 20) * 100;
-          const tWidth = ((item.maxTemp - item.minTemp) / 20) * 100;
-          paramsHtml += `<div class="micro-gauge"><div class="micro-gauge-label"><span>Temp</span><span class="micro-gauge-value">${item.minTemp}–${item.maxTemp}°</span></div><div class="micro-track"><div class="micro-fill temp" style="left:${tLeft}%;width:${tWidth}%"></div></div></div>`;
+      const facts = element("div", "store-card__facts");
+      const stats = store.stats || {};
+      if (Number(stats.avgRating) > 0) {
+        const rating = element("span"); rating.append(element("strong", "", Number(stats.avgRating).toFixed(1)), document.createTextNode(" rating")); facts.append(rating);
+      }
+      if (Number(stats.totalSales) > 0) {
+        const sales = element("span"); sales.append(element("strong", "", stats.totalSales), document.createTextNode(" sales")); facts.append(sales);
+      }
+      if (Number(stats.speciesCount) > 0) {
+        const species = element("span"); species.append(element("strong", "", stats.speciesCount), document.createTextNode(" species")); facts.append(species);
+      }
+      if (!facts.childElementCount) facts.append(element("span", "", "New storefront"));
+      body.append(facts);
+
+      const actions = element("div", "store-card__actions");
+      const shop = element("a", "market-btn market-btn--solid", "Visit shop");
+      shop.href = storefrontUrl(store);
+      const inventory = element("button", "market-btn", "See inventory"); inventory.type = "button";
+      inventory.addEventListener("click", () => filterSeller(store.walletAddress));
+      actions.append(shop, inventory);
+      body.append(actions);
+      card.append(visual, body);
+      return card;
+    }
+
+    function filteredListings() {
+      const query = state.search.toLowerCase().trim();
+      let rows = state.listings.filter((item) => {
+        if (query) {
+          const haystack = [item.commonName, item.scientificName, sellerName(item)].filter(Boolean).join(" ").toLowerCase();
+          if (!haystack.includes(query)) return false;
         }
-        if (item.minPh && item.maxPh) {
-          const pLeft = ((item.minPh - 5) / 4.5) * 100;
-          const pWidth = ((item.maxPh - item.minPh) / 4.5) * 100;
-          paramsHtml += `<div class="micro-gauge"><div class="micro-gauge-label"><span>pH</span><span class="micro-gauge-value">${item.minPh}–${item.maxPh}</span></div><div class="micro-track"><div class="micro-fill ph" style="left:${pLeft}%;width:${pWidth}%"></div></div></div>`;
-        }
-        if (item.isBatch && item.quantity) {
-          const qWidth = Math.min((item.quantity / 50) * 100, 100);
-          paramsHtml += `<div class="micro-gauge"><div class="micro-gauge-label"><span>Qty</span><span class="micro-gauge-value">${item.quantity}</span></div><div class="micro-track"><div class="micro-fill qty" style="left:0%;width:${qWidth}%"></div></div></div>`;
-        }
-        paramsHtml += '</div>';
-
-        return `
-          <div class="listing-card ${tierClass}" onclick="openPopup(${idx})" data-idx="${idx}">
-            <div class="card-image">
-              ${imageHtml}
-              <div class="card-vignette"></div>
-              <button class="card-save-btn ${isListingSaved(item) ? 'saved' : ''}" onclick="toggleSaveListing(event, ${idx})" title="${isListingSaved(item) ? 'Remove from saved' : 'Save for later'}">${isListingSaved(item) ? '❤️' : '🤍'}</button>
-              <span class="card-pedigree-badge badge-${pedigree.cls}">${pedigree.label}</span>
-              <span class="card-price-badge">${priceDisplay}</span>
-              ${item.isShipping ? '<span class="card-shipping-badge">🚚 Ships</span>' : ''}
-            </div>
-            <div class="card-info">
-              <div class="card-common-name">${item.commonName || 'Unknown Species'}</div>
-              <div class="card-sci-name">${item.scientificName || ''}</div>
-              <div class="card-seller-row">
-                <span class="card-seller-avatar">${initial}</span>
-                <span class="card-seller-name">${breederName}</span>
-                <span class="card-seller-verified">✓</span>
-                ${getBreederBadge(item.seller)}
-              </div>
-              ${paramsHtml}
-              <div class="card-cta">Inspect Listing →</div>
-            </div>
-          </div>`;
-      }).join('');
-
-      loadMoreWrap.style.display = visibleCount < filteredListings.length ? '' : 'none';
-      document.getElementById('resultCount').textContent = `Showing ${Math.min(visibleCount, filteredListings.length)} of ${filteredListings.length} listings`;
-
-      // Staggered entrance animation
-      requestAnimationFrame(() => {
-        const cards = grid.querySelectorAll('.listing-card');
-        const observer = new IntersectionObserver((entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              const card = entry.target;
-              const idx = Array.from(cards).indexOf(card) % 8;
-              setTimeout(() => card.classList.add('card-visible'), idx * 60);
-              observer.unobserve(card);
-            }
-          });
-        }, { threshold: 0.05, rootMargin: '50px' });
-        cards.forEach(card => observer.observe(card));
+        if (state.selectedFilter.startsWith("seller:")) return String(item.seller || "").toLowerCase() === state.selectedFilter.slice(7);
+        if (state.selectedFilter === "ships") return !!item.isShipping;
+        if (state.selectedFilter === "local") return isLocalPickup(item);
+        if (state.selectedFilter === "batch") return !!item.isBatch;
+        if (state.selectedFilter === "saved") return state.saved.has(listingKey(item));
+        return true;
       });
-    }
-    // ── 3D Flip Card Popup ────────────────────────────────────────────────
-    function openPopup(idx) {
-      const item = filteredListings[idx];
-      if (!item) return;
-
-      // Track listing view
-      const viewKey = `${item.isBatch ? 'b' : 's'}-${item.id}`;
-      try {
-        const views = JSON.parse(localStorage.getItem('aquadex_listing_views') || '{}');
-        const sessionViewed = JSON.parse(sessionStorage.getItem('aquadex_listings_viewed_this_session') || '[]');
-        if (!sessionViewed.includes(viewKey)) {
-          sessionViewed.push(viewKey);
-          sessionStorage.setItem('aquadex_listings_viewed_this_session', JSON.stringify(sessionViewed));
-          views[viewKey] = (views[viewKey] || 0) + 1;
-          localStorage.setItem('aquadex_listing_views', JSON.stringify(views));
-        }
-      } catch (e) { /* non-critical */ }
-
-      const imgUrl = item.photoUrl || getSpeciesImage(item.scientificName);
-      const pedigree = getPedigreeInfo(item);
-      const priceDisplay = ethToUSD(item.price);
-      const breederName = getBreederName(item.seller);
-      const initial = breederName.charAt(0).toUpperCase();
-
-      // Front face
-      const frontImageHtml = imgUrl
-        ? `<img class="blur-bg" src="${imgUrl}" alt=""><img class="main-img" src="${imgUrl}" alt="${item.commonName}">`
-        : '<span class="placeholder-icon">🐟</span>';
-
-      document.getElementById('flipFront').innerHTML = `
-        <div class="flip-front-image">
-          ${frontImageHtml}
-          <div class="flip-front-badges">
-            <span class="flip-badge badge-${pedigree.cls}">${pedigree.label}</span>
-          </div>
-          <span class="flip-hint">Click to flip →</span>
-        </div>
-        <div class="flip-front-info">
-          <div class="flip-front-common">${item.commonName || 'Unknown Species'}</div>
-          <div class="flip-front-sci">${item.scientificName || ''}</div>
-          <div class="flip-front-price">${priceDisplay}</div>
-          <div class="flip-front-seller">
-            <span class="card-seller-avatar">${initial}</span>
-            ${breederName} <span class="card-seller-verified">✓</span>
-          </div>
-        </div>
-      `;
-
-      // Back face
-      let paramsHtml = '';
-      if (item.minTemp && item.maxTemp) paramsHtml += `<div class="back-param"><div class="back-param-label">Temperature</div><div class="back-param-value">${item.minTemp}–${item.maxTemp}°C</div></div>`;
-      if (item.minPh && item.maxPh) paramsHtml += `<div class="back-param"><div class="back-param-label">pH Range</div><div class="back-param-value">${item.minPh}–${item.maxPh}</div></div>`;
-      if (item.isBatch && item.quantity) paramsHtml += `<div class="back-param"><div class="back-param-label">Quantity</div><div class="back-param-value">${item.quantity} fry</div></div>`;
-      paramsHtml += `<div class="back-param"><div class="back-param-label">Fulfillment</div><div class="back-param-value">${item.isShipping ? 'Ships nationwide' : 'Local pickup'}</div></div>`;
-      if (item.isShipping && item.shippingFee && parseFloat(item.shippingFee) > 0) {
-        paramsHtml += `<div class="back-param"><div class="back-param-label">Shipping Fee</div><div class="back-param-value">${ethToUSD(item.shippingFee)}</div></div>`;
-      }
-      paramsHtml += `<div class="back-param"><div class="back-param-label">Pedigree</div><div class="back-param-value">${pedigree.label}</div></div>`;
-
-      document.getElementById('flipBack').innerHTML = `
-        <div class="flip-back-header">
-          <div class="flip-back-title">${item.commonName || 'Unknown Species'}</div>
-          <div class="flip-back-sci">${item.scientificName || ''}</div>
-        </div>
-        <div class="flip-back-content">
-          <div class="back-section">
-            <div class="back-section-title">Listing Details</div>
-            <div class="back-params">${paramsHtml}</div>
-          </div>
-          <div class="back-seller-row">
-            <div class="back-seller-avatar">${initial}</div>
-            <div class="back-seller-info">
-              <div class="back-seller-name">${breederName}</div>
-              <div class="back-seller-label">Verified Breeder</div>
-            </div>
-          </div>
-          <button onclick="buyNow(event, ${idx})" class="back-cta" id="buyNowBtn">
-            <span class="back-cta-price">
-              <span>${item.isBatch ? 'Buy 1 Fish' : 'Buy Now'}</span>
-              <span class="back-cta-price-amount">${priceDisplay}${item.isBatch ? ' each' : ''}${item.isShipping && parseFloat(item.shippingFee) > 0 ? ' + shipping' : ''}</span>
-            </span>
-          </button>
-          <a href="/app#marketplace?listing=${item.isBatch ? 'b' : 's'}-${item.id}" class="back-cta-secondary">${item.isBatch ? 'Buy Multiple in App →' : 'View Full Details in App →'}</a>
-        </div>
-        <div class="flip-back-hint">Click to flip back</div>
-      `;
-
-      isFlipped = false;
-      document.getElementById('flipCard').classList.remove('flipped');
-      document.getElementById('popupOverlay').classList.add('active');
-      document.body.style.overflow = 'hidden';
-    }
-
-    function closePopup() {
-      document.getElementById('popupOverlay').classList.remove('active');
-      document.body.style.overflow = '';
-      isFlipped = false;
-      document.getElementById('flipCard').classList.remove('flipped');
-    }
-
-    // Flip on click
-    document.getElementById('flipCardContainer').addEventListener('click', (e) => {
-      if (e.target.closest('.back-cta') || e.target.closest('.back-cta-secondary')) return; // Don't flip on CTA click
-      isFlipped = !isFlipped;
-      document.getElementById('flipCard').classList.toggle('flipped', isFlipped);
-    });
-
-    // Close on overlay click
-    document.getElementById('popupOverlay').addEventListener('click', (e) => {
-      if (e.target === document.getElementById('popupOverlay')) closePopup();
-    });
-
-    // Close on Escape
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePopup(); });
-
-    // ── Buy Now (Direct Stripe Checkout) ──────────────────────────────────
-    async function buyNow(event, idx) {
-      event.stopPropagation();
-      event.preventDefault();
-
-      const item = filteredListings[idx];
-      if (!item) return;
-
-      const btn = event.currentTarget;
-      const originalHtml = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<span class="back-cta-spinner"></span> Preparing checkout...';
-
-      try {
-        const priceCentsUSD = Math.round(ethToUSDRaw(item.price) * 100);
-        const shippingFeeCents = item.isShipping ? Math.round(ethToUSDRaw(item.shippingFee) * 100) : 0;
-        const imgUrl = item.photoUrl || getSpeciesImage(item.scientificName);
-
-        const purchaseType = item.isBatch ? 'batch' : (item.isShipping ? 'shipping' : 'specimen');
-
-        const itemPayload = {
-          tokenId: item.tokenId || item.id,
-          listingId: item.listingId || item.id,
-          commonName: item.commonName || 'Live Specimen',
-          scientificName: item.scientificName || '',
-          priceCentsUSD: priceCentsUSD,
-          imageUrl: imgUrl || undefined,
-        };
-
-        if (purchaseType === 'shipping') {
-          itemPayload.shippingFeeCents = shippingFeeCents;
-        }
-        if (purchaseType === 'batch') {
-          itemPayload.pricePerFishCents = priceCentsUSD;
-          itemPayload.quantity = item.quantity || 1;
-        }
-
-        const body = {
-          purchaseType,
-          buyerWallet: 'guest', // Guest buyer — account linkage happens post-purchase
-          sellerWallet: item.seller,
-          items: [itemPayload],
-          successUrl: window.location.origin + '/checkout/success?session_id={CHECKOUT_SESSION_ID}',
-          cancelUrl: window.location.href,
-        };
-
-        const res = await fetch('/api/stripe?action=create-checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-
-        const data = await res.json();
-
-        if (data.success && data.checkoutUrl) {
-          window.location.href = data.checkoutUrl;
-        } else {
-          throw new Error(data.error || 'Failed to create checkout');
-        }
-      } catch (err) {
-        console.error('Buy Now failed:', err);
-        btn.disabled = false;
-        btn.innerHTML = originalHtml;
-        // Show inline error briefly
-        const errDiv = document.createElement('div');
-        errDiv.style.cssText = 'padding: 8px 12px; background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); border-radius: 6px; color: #f87171; font-size: 0.75rem; margin-top: 8px; text-align: center;';
-        errDiv.textContent = err.message === 'SELLER_NOT_CONNECTED' 
-          ? 'This breeder hasn\'t enabled card payments yet. Try the app for other options.'
-          : 'Something went wrong. Please try again.';
-        btn.parentElement.appendChild(errDiv);
-        setTimeout(() => errDiv.remove(), 5000);
-      }
-    }
-
-    // ── Featured Breeders ─────────────────────────────────────────────────
-    function renderFeaturedBreeders() {
-      const sellerCounts = {};
-      allListings.forEach(item => {
-        if (!item.seller) return;
-        const key = item.seller.toLowerCase();
-        sellerCounts[key] = (sellerCounts[key] || 0) + 1;
+      rows = rows.slice().sort((a, b) => {
+        if (state.sort === "price-asc") return priceNumber(a) - priceNumber(b);
+        if (state.sort === "price-desc") return priceNumber(b) - priceNumber(a);
+        if (state.sort === "alpha") return String(a.commonName || "").localeCompare(String(b.commonName || ""));
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
       });
-
-      const sellers = Object.entries(sellerCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 12);
-
-      if (sellers.length < 2) return; // Don't show if only 1 breeder
-
-      const scroll = document.getElementById('breedersScroll');
-      scroll.innerHTML = sellers.map(([wallet, count]) => {
-        const name = getBreederName(wallet);
-        const initial = name.charAt(0).toUpperCase();
-        return `
-          <div class="breeder-chip ${activeBreederFilter === wallet ? 'active' : ''}" onclick="filterByBreeder('${wallet}')">
-            <div class="breeder-chip-avatar">${initial}</div>
-            <div class="breeder-chip-info">
-              <div class="breeder-chip-name">${name}</div>
-              <div class="breeder-chip-count">${count} listing${count > 1 ? 's' : ''}</div>
-            </div>
-            <span class="breeder-chip-verified">✓</span>
-          </div>`;
-      }).join('');
-
-      document.getElementById('featuredBreeders').style.display = '';
+      return rows;
     }
 
-    function filterByBreeder(wallet) {
-      if (activeBreederFilter === wallet) {
-        activeBreederFilter = null;
-      } else {
-        activeBreederFilter = wallet;
+    function renderProducts() {
+      const grid = document.getElementById("productGrid");
+      const rows = filteredListings();
+      grid.replaceChildren();
+      document.getElementById("resultCount").textContent = `${rows.length} ${rows.length === 1 ? "listing" : "listings"}`;
+      if (!rows.length) {
+        grid.append(emptyPanel("No listings match", state.listings.length ? "Try a different search or collection." : "Breeders are preparing their first public inventory. Explore storefronts or post a wanted request in the meantime."));
+        return;
       }
-      renderFeaturedBreeders();
-      applyFilters();
+      rows.forEach((item) => grid.append(buildProductCard(item)));
     }
 
-    function clearBreederFilter() {
-      activeBreederFilter = null;
-      renderFeaturedBreeders();
-      applyFilters();
+    function buildProductCard(item) {
+      const card = element("article", "product-card");
+      const visual = element("div", "product-card__visual");
+      visual.tabIndex = 0; visual.setAttribute("role", "button"); visual.setAttribute("aria-label", `View ${item.commonName || "listing"}`);
+      const imageUrl = speciesImage(item);
+      if (imageUrl) { const img = element("img"); img.src = imageUrl; img.alt = item.commonName || "Aquarium fish"; img.loading = "lazy"; visual.append(img); }
+      else visual.append(element("div", "product-card__placeholder", "🐟"));
+      visual.append(element("span", "product-card__badge", pedigreeLabel(item)));
+      const save = element("button", "save-button", state.saved.has(listingKey(item)) ? "♥" : "♡");
+      save.type = "button"; save.setAttribute("aria-label", state.saved.has(listingKey(item)) ? "Remove from saved" : "Save listing"); save.setAttribute("aria-pressed", String(state.saved.has(listingKey(item))));
+      save.addEventListener("click", (event) => { event.stopPropagation(); toggleSaved(item, save); });
+      visual.append(save);
+      visual.addEventListener("click", () => openProduct(item));
+      visual.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openProduct(item); } });
+
+      const body = element("div", "product-card__body");
+      const row = element("div", "product-card__row");
+      row.append(element("h3", "", item.commonName || "Aquarium livestock"), element("span", "product-card__price", formatPrice(item)));
+      body.append(row);
+      if (item.scientificName) body.append(element("div", "product-card__scientific", item.scientificName));
+      const seller = element("div", "product-card__seller");
+      const sellerStore = storeForSeller(item.seller);
+      const sellerLink = element("a", "", sellerName(item)); sellerLink.href = storefrontUrl(sellerStore, item.seller);
+      seller.append(sellerLink, element("span", "product-card__fulfillment", fulfillmentLabel(item)));
+      body.append(seller);
+      const actions = element("div", "product-card__actions");
+      const continueLink = element("a", "market-btn market-btn--solid", item.isBatch ? "Choose quantity" : "View listing"); continueLink.href = listingAppUrl(item);
+      const details = element("button", "market-btn", "Details"); details.type = "button"; details.addEventListener("click", () => openProduct(item));
+      actions.append(continueLink, details); body.append(actions);
+      card.append(visual, body);
+      return card;
     }
 
-    // ── Wanted Listings ────────────────────────────────────────────────────
-    function renderWantedSection() {
-      if (wantedListings.length === 0) return;
-
-      const grid = document.getElementById('wantedGrid');
-      grid.innerHTML = wantedListings.map(w => {
-        const budgetDisplay = w.max_budget ? `Up to $${parseFloat(w.max_budget).toFixed(0)}` : 'Flexible';
-        return `
-          <div class="wanted-card">
-            <div class="wanted-card-header">
-              <span class="wanted-card-icon">🔍</span>
-              <span class="wanted-card-species">${w.species_name || 'Any Species'}</span>
-            </div>
-            <div class="wanted-card-detail">${w.description || 'Looking to buy this species.'}</div>
-            <div class="wanted-card-footer">
-              <span class="wanted-card-budget">${budgetDisplay}</span>
-              <span class="wanted-card-user">${w.location || ''}</span>
-            </div>
-          </div>`;
-      }).join('');
-
-      document.getElementById('wantedSection').style.display = '';
+    function toggleSaved(item, button) {
+      const key = listingKey(item);
+      if (state.saved.has(key)) state.saved.delete(key); else state.saved.add(key);
+      localStorage.setItem(WATCHLIST_KEY, JSON.stringify([...state.saved]));
+      const active = state.saved.has(key);
+      button.textContent = active ? "♥" : "♡";
+      button.setAttribute("aria-pressed", String(active));
+      button.setAttribute("aria-label", active ? "Remove from saved" : "Save listing");
+      if (state.selectedFilter === "saved") renderProducts();
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────
-    function getSpeciesImage(scientificName) {
-      if (!scientificName || fishbaseData.length === 0) return '';
-      const match = fishbaseData.find(f => f.scientificName && f.scientificName.toLowerCase() === scientificName.toLowerCase());
-      return match?.masterPhotoUrl || '';
+    function openProduct(item) {
+      const dialog = document.getElementById("productDialog");
+      const visual = document.getElementById("dialogVisual");
+      visual.replaceChildren();
+      const imageUrl = speciesImage(item);
+      if (imageUrl) { const img = element("img"); img.src = imageUrl; img.alt = item.commonName || "Aquarium fish"; visual.append(img); }
+      else visual.append(element("div", "product-card__placeholder", "🐟"));
+      document.getElementById("dialogKicker").textContent = item.isBatch ? "Breeder-raised batch" : "Individual listing";
+      document.getElementById("dialogTitle").textContent = item.commonName || "Aquarium livestock";
+      document.getElementById("dialogScientific").textContent = item.scientificName || "";
+      document.getElementById("dialogPrice").textContent = item.isBatch ? `${formatPrice(item)} each` : formatPrice(item);
+      const facts = document.getElementById("dialogFacts"); facts.replaceChildren();
+      const values = [
+        ["Fulfillment", fulfillmentLabel(item)],
+        ["Record", pedigreeLabel(item)],
+        ["Available", item.isBatch ? `${Number(item.quantity || 0)} fish` : "1 specimen"],
+        ["Care range", item.minTemp && item.maxTemp ? `${item.minTemp}–${item.maxTemp}°C` : "Open full details"],
+      ];
+      values.forEach(([label, value]) => { const fact = element("div", "dialog-fact"); fact.append(element("span", "", label), element("strong", "", value)); facts.append(fact); });
+      const store = storeForSeller(item.seller);
+      const seller = document.getElementById("dialogSeller"); seller.textContent = sellerName(item); seller.href = storefrontUrl(store, item.seller);
+      const buy = document.getElementById("dialogBuy"); buy.textContent = item.isBatch ? "Choose quantity & continue" : "Continue to listing"; buy.href = listingAppUrl(item);
+      document.getElementById("dialogNote").textContent = item.isBatch ? "The next screen lets you choose an exact quantity before checkout. Availability and price are rechecked before payment." : "Availability and price are rechecked before payment. Sign in is requested only for protected actions.";
+      dialog.showModal();
+    }
+
+    function selectFilter(filter) {
+      state.selectedFilter = filter;
+      document.querySelectorAll(".filter-chip").forEach((chip) => chip.setAttribute("aria-pressed", String(chip.dataset.filter === filter)));
+      renderProducts();
+      document.getElementById("catalog").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function filterSeller(wallet) {
+      if (!wallet) return;
+      state.selectedFilter = `seller:${String(wallet).toLowerCase()}`;
+      document.querySelectorAll(".filter-chip").forEach((chip) => chip.setAttribute("aria-pressed", "false"));
+      renderProducts();
+      document.getElementById("catalog").scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     function updateStats() {
-      document.getElementById('statListings').textContent = allListings.length || '0';
-      const speciesSet = new Set(allListings.map(l => l.scientificName).filter(Boolean));
-      document.getElementById('statSpecies').textContent = speciesSet.size || '0';
-      const sellerSet = new Set(allListings.map(l => l.seller).filter(Boolean));
-      document.getElementById('statBreeders').textContent = sellerSet.size || '0';
+      document.getElementById("statStores").textContent = state.storefrontTotal;
+      document.getElementById("statListings").textContent = state.listings.length;
+      document.getElementById("statSpecies").textContent = new Set(state.listings.map((item) => item.scientificName || item.speciesId).filter(Boolean)).size;
     }
 
-    function loadMore() {
-      visibleCount += 24;
-      renderGrid();
+    function bindControls() {
+      document.getElementById("searchInput").addEventListener("input", (event) => { state.search = event.target.value; renderProducts(); });
+      document.getElementById("sortSelect").addEventListener("change", (event) => { state.sort = event.target.value; renderProducts(); });
+      document.querySelectorAll(".filter-chip").forEach((chip) => chip.addEventListener("click", () => selectFilter(chip.dataset.filter)));
+      document.querySelectorAll(".collection-card[data-filter]").forEach((card) => card.addEventListener("click", () => selectFilter(card.dataset.filter)));
+      const dialog = document.getElementById("productDialog");
+      document.getElementById("dialogClose").addEventListener("click", () => dialog.close());
+      dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
     }
 
-    // ── Boot ───────────────────────────────────────────────────────────────
+    async function init() {
+      bindControls();
+      await fetchFishbase();
+      await Promise.all([fetchStorefronts(), fetchListings(), fetchWanted()]);
+      renderProducts();
+    }
+
     init();
   </script>
-
   <script src="/js/nav.js"></script>
   <script src="/js/footer.js"></script>
   <script src="/js/reveal.js"></script>
-
 </body>
 </html>

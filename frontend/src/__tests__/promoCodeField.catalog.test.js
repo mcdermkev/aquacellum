@@ -103,11 +103,11 @@ describe("CheckoutSummary — mounts the field and threads promoCode into checko
 
   it("passes the applied promo code into every checkout wrapper call", () => {
     expect(CHECKOUT).toContain("promoCode: consolidatedPromo?.code");
-    expect(CHECKOUT).toContain("promoCode: batchPromo?.code");
+    expect(CHECKOUT).toContain("promoCode: batchPromos[batch.listingId]?.code");
   });
 
-  it("clears an applied promo when the cart changes (no stale discount display)", () => {
+  it("clears an applied promo when the relevant cart group changes (no stale discount display)", () => {
     expect(CHECKOUT).toContain("setConsolidatedPromo(null)");
-    expect(CHECKOUT).toContain("setBatchPromo(null)");
+    expect(CHECKOUT).toContain("[batch.listingId]: null");
   });
 });

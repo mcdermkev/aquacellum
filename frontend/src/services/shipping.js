@@ -95,12 +95,12 @@ export async function getShippingMargin() {
  * Fetch the seller's stored ship-from origin. Requires the seller's session.
  * @returns {Promise<{configured:boolean, shipFrom?:Object}>}
  */
-export async function getSellerShipFrom(walletAddress) {
+export async function getSellerShipFrom(_walletAddress) {
   const headers = {};
   const token = await getSessionToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(
-    `${API_BASE}/stripe?action=ship-from&wallet=${encodeURIComponent(walletAddress)}`,
+    `${API_BASE}/stripe?action=ship-from`,
     { method: "GET", headers }
   );
   if (!res.ok) return { configured: false };
