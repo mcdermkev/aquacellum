@@ -42,7 +42,7 @@ const RPC_URL = process.env.RPC_URL || "https://sepolia.base.org";
 // Only the two calls this module makes. Kept minimal and human-readable, the
 // same convention as api/relay-transaction.js. NOTE: ethers v5 in this project.
 const MANAGER_ABI = [
-  "function addSpecies(string scientificName, string commonName, string canonicalIpfsUri, uint8 careLevel, uint16 minTempCelsiusX10, uint16 maxTempCelsiusX10, uint8 minPhX10, uint8 maxPhX10) returns (uint256)",
+  "function addSpecies(string scientificName, string commonName, string canonicalIpfsUri, uint8 careLevel, int16 minTempCelsiusX10, int16 maxTempCelsiusX10, uint8 minPhX10, uint8 maxPhX10) returns (uint256)",
   "function nextSpeciesId() view returns (uint256)",
   "function curator() view returns (address)",
 ];
