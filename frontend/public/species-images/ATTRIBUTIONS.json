@@ -1666,5 +1666,53 @@
     "source": "inaturalist",
     "license": "cc-by-nc",
     "attribution": "(c) adryan_ryalisar, some rights reserved (CC BY-NC)"
+  },
+  {
+    "species": "Aphyosemion cameronense",
+    "source": "wikimedia",
+    "license": "CC BY 4.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Jokuyken15&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:Jokuyken15 (page does not exist)\">Jokuyken15</a>"
+  },
+  {
+    "species": "Fundulopanchax amieti",
+    "source": "wikimedia",
+    "license": "CC BY-SA 3.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Cisamarc&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:Cisamarc (page does not exist)\">Cisamarc</a>"
+  },
+  {
+    "species": "Fundulopanchax sjostedti",
+    "source": "wikimedia",
+    "license": "CC BY-SA 4.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/wiki/User:Andrewbogott\" title=\"User:Andrewbogott\">Andrewbogott</a>"
+  },
+  {
+    "species": "Nothobranchius foerschi",
+    "source": "wikimedia",
+    "license": "CC BY 4.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Jokuyken15&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:Jokuyken15 (page does not exist)\">Jokuyken15</a>"
+  },
+  {
+    "species": "Aphyosemion bitaeniatum",
+    "source": "wikimedia",
+    "license": "CC BY-SA 3.0",
+    "attribution": "Violaine2, France"
+  },
+  {
+    "species": "Nothobranchius eggersi",
+    "source": "wikimedia",
+    "license": "CC BY-SA 2.0",
+    "attribution": "<a rel=\"nofollow\" class=\"external text\" href=\"https://www.flickr.com/photos/42902413@N00\">Denise Chan</a>"
+  },
+  {
+    "species": "Nothobranchius korthausae",
+    "source": "wikimedia",
+    "license": "CC BY-SA 4.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/wiki/User:Andrewbogott\" title=\"User:Andrewbogott\">Andrew Bogott</a>"
+  },
+  {
+    "species": "Epiplatys bifasciatus",
+    "source": "wikimedia",
+    "license": "Public domain",
+    "attribution": "Boulenger, George Albert; Loat, L."
   }
 ]

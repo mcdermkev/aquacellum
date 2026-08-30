@@ -21437,5 +21437,905 @@
       "layoutRequirement": "",
       "comments": "FishBase has limited breeding notes for this species."
     }
+  },
+  {
+    "specCode": 9813,
+    "scientificName": "Aphyosemion abacinum",
+    "genus": "Aphyosemion",
+    "species": "abacinum",
+    "commonName": "Killifish (Aphyosemion abacinum)",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 3.5,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Expert"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Aphyosemion-abacinum.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in swampy parts of quiet brooks under forest cover (Ref. 3788). Not a seasonal killifish. Is very difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Non-seasonal killifish; FishBase does not provide a complete captive spawning protocol in this extract.",
+      "layoutRequirement": "Provide species-appropriate cover and a secure lid; exact spawning layout requires specialist review.",
+      "comments": "Occurs in swampy parts of quiet brooks under forest cover (Ref. 3788). Not a seasonal killifish. Is very difficult to maintain in aquarium (Ref. 27139). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A quiet forest-brook killi for the specialist who enjoys the hard-to-find branch of the hobby.",
+        "pro": "Aphyosemion abacinum; non-annual forest killi with very difficult aquarium maintenance reported in FishBase."
+      },
+      "flavorText": {
+        "casual": "A quiet forest-brook killi for the specialist who enjoys the hard-to-find branch of the hobby. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Aphyosemion abacinum; non-annual forest killi with very difficult aquarium maintenance reported in FishBase. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 9713,
+    "scientificName": "Aphyosemion bitaeniatum",
+    "genus": "Aphyosemion",
+    "species": "bitaeniatum",
+    "commonName": "Two-striped Aphyosemion",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 5,
+    "masterPhotoUrl": "/species-images/aphyosemion-bitaeniatum.png",
+    "tankMetrics": {
+      "difficulty": "Intermediate"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Aphyosemion-bitaeniatum.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in brooks and small streams in the coastal rainforest on quaternary sediment soil (Ref. 3788). Not a seasonal killifish. Is easy to maintain in the aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Non-seasonal killifish; FishBase does not provide a complete captive spawning protocol in this extract.",
+      "layoutRequirement": "Provide species-appropriate cover and a secure lid; exact spawning layout requires specialist review.",
+      "comments": "Occurs in brooks and small streams in the coastal rainforest on quaternary sediment soil (Ref. 3788). Not a seasonal killifish. Is easy to maintain in the aquarium (Ref. 27139). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "Two stripes, soft forest water, and a little West African mystery.",
+        "pro": "Aphyosemion bitaeniatum; non-annual stream killi reported as easy to maintain in the local FishBase record."
+      },
+      "flavorText": {
+        "casual": "Two stripes, soft forest water, and a little West African mystery. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Aphyosemion bitaeniatum; non-annual stream killi reported as easy to maintain in the local FishBase record. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 9719,
+    "scientificName": "Aphyosemion cameronense",
+    "genus": "Aphyosemion",
+    "species": "cameronense",
+    "commonName": "Cameroon killi",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 5,
+    "masterPhotoUrl": "/species-images/aphyosemion-cameronense.png",
+    "tankMetrics": {
+      "difficulty": "Advanced"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Aphyosemion-cameronense.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in swamps, swampy parts of shallow brooks and small streams under dark forest cover on the inland plains rainforest (Ref. 3788). Not a seasonal killifish. Is difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Non-seasonal killifish; FishBase does not provide a complete captive spawning protocol in this extract.",
+      "layoutRequirement": "Provide species-appropriate cover and a secure lid; exact spawning layout requires specialist review.",
+      "comments": "Occurs in swamps, swampy parts of shallow brooks and small streams under dark forest cover on the inland plains rainforest (Ref. 3788). Not a seasonal killifish. Is difficult to maintain in aquarium (Ref. 27139). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A swamp-and-stream killi that prefers a calm, shaded stage.",
+        "pro": "Aphyosemion cameronense; non-annual rainforest killi with difficult aquarium maintenance reported in FishBase."
+      },
+      "flavorText": {
+        "casual": "A swamp-and-stream killi that prefers a calm, shaded stage. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Aphyosemion cameronense; non-annual rainforest killi with difficult aquarium maintenance reported in FishBase. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 9724,
+    "scientificName": "Aphyosemion christyi",
+    "genus": "Aphyosemion",
+    "species": "christyi",
+    "commonName": "Christy's Lyretail",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 6,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Advanced"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Aphyosemion-christyi.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "It occurs mainly in the weedy and shallow parts of brooks, small streams, pools and swamps (Ref. 3788); these brooks are located in forested savannah (Ref. 3788). It is not a seasonal killifish and difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Non-seasonal killifish; FishBase does not provide a complete captive spawning protocol in this extract.",
+      "layoutRequirement": "Provide species-appropriate cover and a secure lid; exact spawning layout requires specialist review.",
+      "comments": "It occurs mainly in the weedy and shallow parts of brooks, small streams, pools and swamps (Ref. 3788); these brooks are located in forested savannah (Ref. 3788). It is not a seasonal killifish and difficult to maintain in aquarium (Ref. 27139). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "Christy's lyretail brings a weedy-brook personality to the killifish shelf.",
+        "pro": "Aphyosemion christyi; non-annual shallow-brook killi with difficult aquarium maintenance reported in FishBase."
+      },
+      "flavorText": {
+        "casual": "Christy's lyretail brings a weedy-brook personality to the killifish shelf. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Aphyosemion christyi; non-annual shallow-brook killi with difficult aquarium maintenance reported in FishBase. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 9727,
+    "scientificName": "Aphyosemion coeleste",
+    "genus": "Aphyosemion",
+    "species": "coeleste",
+    "commonName": "Sky-blue killi",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 5,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Advanced"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Aphyosemion-coeleste.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in swampy parts of rainforest brooks on the inland plains and hills (Ref. 3788). Not a seasonal killifish. Is difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Non-seasonal killifish; FishBase does not provide a complete captive spawning protocol in this extract.",
+      "layoutRequirement": "Provide species-appropriate cover and a secure lid; exact spawning layout requires specialist review.",
+      "comments": "Occurs in swampy parts of rainforest brooks on the inland plains and hills (Ref. 3788). Not a seasonal killifish. Is difficult to maintain in aquarium (Ref. 27139). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The sky-blue killi is a small specialist from swampy rainforest brooks.",
+        "pro": "Aphyosemion coeleste; non-annual rainforest-brook killi with difficult aquarium maintenance reported in FishBase."
+      },
+      "flavorText": {
+        "casual": "The sky-blue killi is a small specialist from swampy rainforest brooks. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Aphyosemion coeleste; non-annual rainforest-brook killi with difficult aquarium maintenance reported in FishBase. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 9738,
+    "scientificName": "Aphyosemion gabunense",
+    "genus": "Aphyosemion",
+    "species": "gabunense",
+    "commonName": "Gabon killi",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 5,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Intermediate"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Aphyosemion-gabunense.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in swamps and brooks in the coastal rainforest (Ref. 3788). Not a seasonal killifish. Is easy to maintain in the aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Non-seasonal killifish; FishBase does not provide a complete captive spawning protocol in this extract.",
+      "layoutRequirement": "Provide species-appropriate cover and a secure lid; exact spawning layout requires specialist review.",
+      "comments": "Occurs in swamps and brooks in the coastal rainforest (Ref. 3788). Not a seasonal killifish. Is easy to maintain in the aquarium (Ref. 27139). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A Gabon killi for keepers who like peaceful water and uncommon names.",
+        "pro": "Aphyosemion gabunense; non-annual coastal-rainforest killi reported as easy to maintain in FishBase."
+      },
+      "flavorText": {
+        "casual": "A Gabon killi for keepers who like peaceful water and uncommon names. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Aphyosemion gabunense; non-annual coastal-rainforest killi reported as easy to maintain in FishBase. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 9751,
+    "scientificName": "Aphyosemion lambertorum",
+    "genus": "Aphyosemion",
+    "species": "lambertorum",
+    "commonName": "Killifish (Aphyosemion lambertorum)",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 5,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Advanced"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Aphyosemion-lambertorum.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in brooks and small streams in the forested and humid savanna (Ref. 3788). Not a seasonal killifish. Is difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Non-seasonal killifish; FishBase does not provide a complete captive spawning protocol in this extract.",
+      "layoutRequirement": "Provide species-appropriate cover and a secure lid; exact spawning layout requires specialist review.",
+      "comments": "Occurs in brooks and small streams in the forested and humid savanna (Ref. 3788). Not a seasonal killifish. Is difficult to maintain in aquarium (Ref. 27139). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A little forest killi with a big specialist-collection aura.",
+        "pro": "Aphyosemion lambertorum; non-annual forest killi with difficult aquarium maintenance reported in FishBase."
+      },
+      "flavorText": {
+        "casual": "A little forest killi with a big specialist-collection aura. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Aphyosemion lambertorum; non-annual forest killi with difficult aquarium maintenance reported in FishBase. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 9756,
+    "scientificName": "Aphyosemion maculatum",
+    "genus": "Aphyosemion",
+    "species": "maculatum",
+    "commonName": "Killifish (Aphyosemion maculatum)",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 5,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Expert"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Aphyosemion-maculatum.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in brooks in the rainforest on the inland plain (Ref. 3788). Not a seasonal killifish. Is very difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Non-seasonal killifish; FishBase does not provide a complete captive spawning protocol in this extract.",
+      "layoutRequirement": "Provide species-appropriate cover and a secure lid; exact spawning layout requires specialist review.",
+      "comments": "Occurs in brooks in the rainforest on the inland plain (Ref. 3788). Not a seasonal killifish. Is very difficult to maintain in aquarium (Ref. 27139). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A spotted Aphyosemion for the keeper who prefers discovery to familiarity.",
+        "pro": "Aphyosemion maculatum; non-annual inland-rainforest brook killi with very difficult aquarium maintenance reported in FishBase."
+      },
+      "flavorText": {
+        "casual": "A spotted Aphyosemion for the keeper who prefers discovery to familiarity. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Aphyosemion maculatum; non-annual inland-rainforest brook killi with very difficult aquarium maintenance reported in FishBase. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 9708,
+    "scientificName": "Fundulopanchax amieti",
+    "genus": "Fundulopanchax",
+    "species": "amieti",
+    "commonName": "Amiet's Lyretail",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 7,
+    "masterPhotoUrl": "/species-images/fundulopanchax-amieti.png",
+    "tankMetrics": {
+      "difficulty": "Advanced"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Fundulopanchax-amieti.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in the swampy parts of brooks in the rainforest (Ref. 3788). Not a seasonal killifish. Bottom spawner, 1 month incubation. Is difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Bottom spawner; FishBase notes 1 month incubation.",
+      "layoutRequirement": "FishBase identifies this as a bottom spawner; use a species-specific spawning medium only after confirming specialist guidance.",
+      "comments": "Occurs in the swampy parts of brooks in the rainforest (Ref. 3788). Not a seasonal killifish. Bottom spawner, 1 month incubation. Is difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "Amiet's lyretail is a bottom-spawning killi with a rainforest-swamp story.",
+        "pro": "Fundulopanchax amieti; FishBase reports bottom spawning and approximately one-month incubation."
+      },
+      "flavorText": {
+        "casual": "Amiet's lyretail is a bottom-spawning killi with a rainforest-swamp story. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Fundulopanchax amieti; FishBase reports bottom spawning and approximately one-month incubation. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 9736,
+    "scientificName": "Fundulopanchax filamentosus",
+    "genus": "Fundulopanchax",
+    "species": "filamentosus",
+    "commonName": "Plumed lyretail",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 5.5,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Expert"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Fundulopanchax-filamentosus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in swamps and swampy parts of shallow brooks in the coastal rainforest (Ref. 3788). Feeds on worms, crustaceans and insects (Ref. 7020). Bottom spawner, 1.5 month incubation. Is very difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Feeds on worms, crustaceans and insects (Ref.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Bottom spawner; FishBase notes 1.",
+      "layoutRequirement": "FishBase identifies this as a bottom spawner; use a species-specific spawning medium only after confirming specialist guidance.",
+      "comments": "Occurs in swamps and swampy parts of shallow brooks in the coastal rainforest (Ref. 3788). Feeds on worms, crustaceans and insects (Ref. 7020). Bottom spawner, 1.5 month incubation. Is very difficult to maintain in aquarium (Ref. 27139). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The plumed lyretail turns a shaded swamp into a tiny breeding laboratory.",
+        "pro": "Fundulopanchax filamentosus; bottom-spawning killi with FishBase notes of approximately 1.5-month incubation."
+      },
+      "flavorText": {
+        "casual": "The plumed lyretail turns a shaded swamp into a tiny breeding laboratory. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Fundulopanchax filamentosus; bottom-spawning killi with FishBase notes of approximately 1.5-month incubation. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 9743,
+    "scientificName": "Fundulopanchax gularis",
+    "genus": "Fundulopanchax",
+    "species": "gularis",
+    "commonName": "Gulare",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 9,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Advanced"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Fundulopanchax-gularis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in swamps, pools and swampy parts of brooks and small streams in the humid coastal rainforest. Bottom spawner, 2 months incubation. Is difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Bottom spawner; FishBase notes 2 months incubation.",
+      "layoutRequirement": "FishBase identifies this as a bottom spawner; use a species-specific spawning medium only after confirming specialist guidance.",
+      "comments": "Occurs in swamps, pools and swampy parts of brooks and small streams in the humid coastal rainforest. Bottom spawner, 2 months incubation. Is difficult to maintain in aquarium (Ref. 27139). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A larger gularis with the patient, deliberate rhythm of a bottom-spawning killi.",
+        "pro": "Fundulopanchax gularis; bottom-spawning killi with FishBase notes of approximately two-month incubation."
+      },
+      "flavorText": {
+        "casual": "A larger gularis with the patient, deliberate rhythm of a bottom-spawning killi. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Fundulopanchax gularis; bottom-spawning killi with FishBase notes of approximately two-month incubation. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 9789,
+    "scientificName": "Fundulopanchax scheeli",
+    "genus": "Fundulopanchax",
+    "species": "scheeli",
+    "commonName": "Killifish (Fundulopanchax scheeli)",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 6,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Intermediate"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Fundulopanchax-scheeli.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in brooks and small streams in the coastal rainforest and forested savanna, mainly in waters on tertiary sedimentary soil (Ref. 3788). Not a seasonal killifish. Is easy to maintain in the aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Non-seasonal killifish; FishBase does not provide a complete captive spawning protocol in this extract.",
+      "layoutRequirement": "Provide species-appropriate cover and a secure lid; exact spawning layout requires specialist review.",
+      "comments": "Occurs in brooks and small streams in the coastal rainforest and forested savanna, mainly in waters on tertiary sedimentary soil (Ref. 3788). Not a seasonal killifish. Is easy to maintain in the aquarium (Ref. 27139)."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A rainforest-brook killi for a keeper building a carefully researched collection.",
+        "pro": "Fundulopanchax scheeli; non-annual killi reported as easy to maintain in the local FishBase record."
+      },
+      "flavorText": {
+        "casual": "A rainforest-brook killi for a keeper building a carefully researched collection. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Fundulopanchax scheeli; non-annual killi reported as easy to maintain in the local FishBase record. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 9792,
+    "scientificName": "Fundulopanchax sjostedti",
+    "genus": "Fundulopanchax",
+    "species": "sjostedti",
+    "commonName": "Blue gularis",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 13,
+    "masterPhotoUrl": "/species-images/fundulopanchax-sjostedti.png",
+    "tankMetrics": {
+      "difficulty": "Intermediate"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Fundulopanchax-sjostedti.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in temporary swamps, raphia-swamps and swampy parts of slow flowing brooks in the swampy coastal rainforest. 14 cm TL (Ref. 3788). Not a seasonal killifish. Bottom spawner, 2 months incubation. Is easy to maintain in aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Bottom spawner; FishBase notes 2 months incubation.",
+      "layoutRequirement": "FishBase identifies this as a bottom spawner; use a species-specific spawning medium only after confirming specialist guidance.",
+      "comments": "Occurs in temporary swamps, raphia-swamps and swampy parts of slow flowing brooks in the swampy coastal rainforest. 14 cm TL (Ref. 3788). Not a seasonal killifish. Bottom spawner, 2 months incubation. Is easy to maintain in aquarium (Ref. 27139). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The blue gularis is the bold, large-bodied showpiece of this first batch.",
+        "pro": "Fundulopanchax sjostedti; large non-annual killi with bottom-spawning and approximately two-month incubation notes in FishBase."
+      },
+      "flavorText": {
+        "casual": "The blue gularis is the bold, large-bodied showpiece of this first batch. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Fundulopanchax sjostedti; large non-annual killi with bottom-spawning and approximately two-month incubation notes in FishBase. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 9852,
+    "scientificName": "Nothobranchius eggersi",
+    "genus": "Nothobranchius",
+    "species": "eggersi",
+    "commonName": "Killifish (Nothobranchius eggersi)",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 5,
+    "masterPhotoUrl": "/species-images/nothobranchius-eggersi.png",
+    "tankMetrics": {
+      "difficulty": "Intermediate"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Nothobranchius-eggersi.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in temporary pools and swamps (Ref. 3788). Bottom spawner, 2-3 months incubation. Is easy to maintain in the aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Bottom spawner; FishBase notes 2-3 months incubation.",
+      "layoutRequirement": "FishBase identifies this as a bottom spawner; use a species-specific spawning medium only after confirming specialist guidance.",
+      "comments": "Occurs in temporary pools and swamps (Ref. 3788). Bottom spawner, 2-3 months incubation. Is easy to maintain in the aquarium (Ref. 27139). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A temporary-pool killi whose life cycle makes every generation feel like a deadline.",
+        "pro": "Nothobranchius eggersi; annual-style bottom spawner with FishBase notes of two-to-three-month incubation."
+      },
+      "flavorText": {
+        "casual": "A temporary-pool killi whose life cycle makes every generation feel like a deadline. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Nothobranchius eggersi; annual-style bottom spawner with FishBase notes of two-to-three-month incubation. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 9854,
+    "scientificName": "Nothobranchius foerschi",
+    "genus": "Nothobranchius",
+    "species": "foerschi",
+    "commonName": "Killifish (Nothobranchius foerschi)",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 5,
+    "masterPhotoUrl": "/species-images/nothobranchius-foerschi.png",
+    "tankMetrics": {
+      "difficulty": "Intermediate"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Nothobranchius-foerschi.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Bottom spawner, 2-4 months incubation. Is easy to maintain in the aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Bottom spawner; FishBase notes 2-4 months incubation.",
+      "layoutRequirement": "FishBase identifies this as a bottom spawner; use a species-specific spawning medium only after confirming specialist guidance.",
+      "comments": "Bottom spawner, 2-4 months incubation. Is easy to maintain in the aquarium (Ref. 27139)."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A small notho with a big seasonal story written into its eggs.",
+        "pro": "Nothobranchius foerschi; FishBase reports bottom spawning and two-to-four-month incubation."
+      },
+      "flavorText": {
+        "casual": "A small notho with a big seasonal story written into its eggs. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Nothobranchius foerschi; FishBase reports bottom spawning and two-to-four-month incubation. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 9859,
+    "scientificName": "Nothobranchius korthausae",
+    "genus": "Nothobranchius",
+    "species": "korthausae",
+    "commonName": "Killifish (Nothobranchius korthausae)",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 5,
+    "masterPhotoUrl": "/species-images/nothobranchius-korthausae.png",
+    "tankMetrics": {
+      "difficulty": "Unknown"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Nothobranchius-korthausae.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in pools, swamps, ditches and small streams (Ref. 3788, 97277). Temporary pools and streams; distinctively more abundant in temporary pools; open savanna-like vegetation and gallery forest (Ref. 83284). Bottom spawner, 1-3 months incubation (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Bottom spawner; FishBase notes 1-3 months incubation (Ref.",
+      "layoutRequirement": "FishBase identifies this as a bottom spawner; use a species-specific spawning medium only after confirming specialist guidance.",
+      "comments": "Occurs in pools, swamps, ditches and small streams (Ref. 3788, 97277). Temporary pools and streams; distinctively more abundant in temporary pools; open savanna-like vegetation and gallery forest (Ref. 83284). Bottom spawner, 1-3 months incubation (Ref. 27139). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "The Korthausae notho brings temporary pools and patient egg incubation to the fish room.",
+        "pro": "Nothobranchius korthausae; bottom spawner from temporary pools with one-to-three-month incubation noted in FishBase."
+      },
+      "flavorText": {
+        "casual": "The Korthausae notho brings temporary pools and patient egg incubation to the fish room. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Nothobranchius korthausae; bottom spawner from temporary pools with one-to-three-month incubation noted in FishBase. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 9863,
+    "scientificName": "Nothobranchius microlepis",
+    "genus": "Nothobranchius",
+    "species": "microlepis",
+    "commonName": "Small scaled nothobranch",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 8,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Expert"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Nothobranchius-microlepis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in temporary pools. 8 cm max TL (Ref. 3788). Bottom spawner, 3 months incubation. Very difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Bottom spawner; FishBase notes 3 months incubation.",
+      "layoutRequirement": "FishBase identifies this as a bottom spawner; use a species-specific spawning medium only after confirming specialist guidance.",
+      "comments": "Occurs in temporary pools. 8 cm max TL (Ref. 3788). Bottom spawner, 3 months incubation. Very difficult to maintain in aquarium (Ref. 27139). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A small-scaled notho for keepers who want a true specialist breeding project.",
+        "pro": "Nothobranchius microlepis; temporary-pool bottom spawner with approximately three-month incubation reported in FishBase."
+      },
+      "flavorText": {
+        "casual": "A small-scaled notho for keepers who want a true specialist breeding project. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Nothobranchius microlepis; temporary-pool bottom spawner with approximately three-month incubation reported in FishBase. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 9864,
+    "scientificName": "Nothobranchius neumanni",
+    "genus": "Nothobranchius",
+    "species": "neumanni",
+    "commonName": "Killifish (Nothobranchius neumanni)",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 6.5,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Advanced"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Nothobranchius-neumanni.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Bottom spawner, X months incubation. Is difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Bottom spawner; FishBase notes X months incubation.",
+      "layoutRequirement": "FishBase identifies this as a bottom spawner; use a species-specific spawning medium only after confirming specialist guidance.",
+      "comments": "Bottom spawner, X months incubation. Is difficult to maintain in aquarium (Ref. 27139). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; open water/substratum egg scatterers. Parental care: none."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A quiet notho whose incomplete incubation note is a reason to research before keeping.",
+        "pro": "Nothobranchius neumanni; FishBase identifies bottom spawning but reports an incomplete incubation value."
+      },
+      "flavorText": {
+        "casual": "A quiet notho whose incomplete incubation note is a reason to research before keeping. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Nothobranchius neumanni; FishBase identifies bottom spawning but reports an incomplete incubation value. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 9823,
+    "scientificName": "Epiplatys barmoiensis",
+    "genus": "Epiplatys",
+    "species": "barmoiensis",
+    "commonName": "Killifish (Epiplatys barmoiensis)",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 7,
+    "masterPhotoUrl": "",
+    "tankMetrics": {
+      "difficulty": "Expert"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Epiplatys-barmoiensis.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in swampy areas and small rivers on the coastal plains (Ref. 3788). Not a seasonal killifish. Is very difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Non-seasonal killifish; FishBase does not provide a complete captive spawning protocol in this extract.",
+      "layoutRequirement": "Provide species-appropriate cover and a secure lid; exact spawning layout requires specialist review.",
+      "comments": "Occurs in swampy areas and small rivers on the coastal plains (Ref. 3788). Not a seasonal killifish. Is very difficult to maintain in aquarium (Ref. 27139). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; brood hiders."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A surface-oriented West African killi for shaded swamp and small-river setups.",
+        "pro": "Epiplatys barmoiensis; FishBase reports a non-guarding brood-hider reproductive guild and very difficult aquarium maintenance."
+      },
+      "flavorText": {
+        "casual": "A surface-oriented West African killi for shaded swamp and small-river setups. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Epiplatys barmoiensis; FishBase reports a non-guarding brood-hider reproductive guild and very difficult aquarium maintenance. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
+  },
+  {
+    "specCode": 2474,
+    "scientificName": "Epiplatys bifasciatus",
+    "genus": "Epiplatys",
+    "species": "bifasciatus",
+    "commonName": "Killifish (Epiplatys bifasciatus)",
+    "family": "Nothobranchiidae",
+    "type": "fish",
+    "maxLengthCm": 6,
+    "masterPhotoUrl": "/species-images/epiplatys-bifasciatus.png",
+    "tankMetrics": {
+      "difficulty": "Advanced"
+    },
+    "enhanced": false,
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Epiplatys-bifasciatus.html",
+        "type": "Scientific data"
+      }
+    ],
+    "ecology": {
+      "comments": "Occurs in swamps, small brooks and rivulets in the savanna, weedy parts of rivers and swamps in coastal areas (Ref. 3788). 5.0 cm max SL (Ref. 7372). Browses on algae and higher plant material, terrestrial and aquatic insects, notably culicid larvae and pupae and small beetles (Ref. 28714). Not a seasonal killifish. Is difficult to maintain in aquarium (Ref. 27139)."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "Specific food items are not listed in the local FishBase extract; specialist diet review is required.",
+      "feedingPlaybook": ""
+    },
+    "reproduction": {
+      "spawningTrait": "Non-seasonal killifish; FishBase does not provide a complete captive spawning protocol in this extract.",
+      "layoutRequirement": "Provide species-appropriate cover and a secure lid; exact spawning layout requires specialist review.",
+      "comments": "Occurs in swamps, small brooks and rivulets in the savanna, weedy parts of rivers and swamps in coastal areas (Ref. 3788). 5.0 cm max SL (Ref. 7372). Browses on algae and higher plant material, terrestrial and aquatic insects, notably culicid larvae and pupae and small beetles (Ref. 28714). Not a seasonal killifish. Is difficult to maintain in aquarium (Ref. 27139). Reproductive mode: dioecism. Fertilization: external. Guild: nonguarders; brood hiders."
+    },
+    "personality": {
+      "vibeLine": {
+        "casual": "A two-banded killi that browses the edges of swamps, brooks, and weedy rivers.",
+        "pro": "Epiplatys bifasciatus; non-seasonal West African killi with brood-hider reproductive guild reported in FishBase."
+      },
+      "flavorText": {
+        "casual": "A two-banded killi that browses the edges of swamps, brooks, and weedy rivers. Start with a secure lid, stable water, and species-specific research before attempting a breeding setup.",
+        "pro": "Epiplatys bifasciatus; non-seasonal West African killi with brood-hider reproductive guild reported in FishBase. FishBase is the source for the natural-history claims; verify captive methods with specialist breeder guidance before presenting them as routine care."
+      }
+    }
   }
 ]
