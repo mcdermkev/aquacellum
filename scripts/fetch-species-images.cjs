@@ -81,6 +81,12 @@ function toFilename(scientificName) {
   return scientificName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '.png';
 }
 
+function isCommercialCompatibleLicense(license) {
+  const normalized = String(license || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  if (!normalized || /\b(?:nc|nd)\b|non[- ]commercial|no derivatives/.test(normalized)) return false;
+  return normalized.includes('cc0') || normalized.includes('public domain') || normalized.includes('cc by') || normalized.includes('cc-by');
+}
+
 // ---- iNaturalist Search ----
 async function searchINaturalist(scientificName) {
   const query = encodeURIComponent(scientificName);
@@ -93,11 +99,11 @@ async function searchINaturalist(scientificName) {
     const json = JSON.parse(res.data);
     if (!json.results || json.results.length === 0) return null;
 
-    // Find the best photo (highest quality, most votes)
+    // Prefer the highest-voted photo that has a commercial-compatible license.
     for (const obs of json.results) {
-      if (obs.photos && obs.photos.length > 0) {
-        const photo = obs.photos[0];
-        // iNaturalist URLs: replace 'square' or 'medium' with 'large' for high-res
+      for (const photo of obs.photos || []) {
+        const license = photo.license_code || '';
+        if (!isCommercialCompatibleLicense(license)) continue;
         let photoUrl = photo.url || '';
         photoUrl = photoUrl.replace('/square.', '/large.').replace('/medium.', '/large.');
 
@@ -105,7 +111,7 @@ async function searchINaturalist(scientificName) {
           return {
             url: photoUrl,
             attribution: photo.attribution || 'iNaturalist',
-            license: photo.license_code || 'CC-BY-NC',
+            license,
             source: 'inaturalist'
           };
         }
@@ -148,12 +154,9 @@ async function searchWikimedia(scientificName) {
       const imageInfo = page?.imageinfo?.[0];
       if (!imageInfo) continue;
 
-      // Check license
+      // Accept only licenses compatible with commercial distribution and image resizing.
       const license = imageInfo.extmetadata?.LicenseShortName?.value || '';
-      const allowedLicenses = ['CC BY', 'CC BY-SA', 'CC0', 'Public domain', 'CC BY 2.0', 'CC BY 3.0', 'CC BY 4.0', 'CC BY-SA 2.0', 'CC BY-SA 3.0', 'CC BY-SA 4.0'];
-      const isAllowed = allowedLicenses.some(l => license.toLowerCase().includes(l.toLowerCase()));
-
-      if (!isAllowed) continue;
+      if (!isCommercialCompatibleLicense(license)) continue;
 
       const imgUrl = imageInfo.thumburl || imageInfo.url;
       if (imgUrl) {
