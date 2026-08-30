@@ -1714,5 +1714,59 @@
     "source": "wikimedia",
     "license": "Public domain",
     "attribution": "Boulenger, George Albert; Loat, L."
+  },
+  {
+    "species": "Corydoras axelrodi",
+    "source": "wikimedia",
+    "license": "CC BY 3.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:Ghostsword&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:Ghostsword (page does not exist)\">Ghostsword</a>"
+  },
+  {
+    "species": "Corydoras ehrhardti",
+    "source": "wikimedia",
+    "license": "CC BY 4.0",
+    "attribution": "Tiago P. Carvalho"
+  },
+  {
+    "species": "Corydoras punctatus",
+    "source": "wikimedia",
+    "license": "Public domain",
+    "attribution": "<bdi><a href=\"https://www.wikidata.org/wiki/Q18508574\" class=\"extiw\" title=\"d:Q18508574\"><span title=\"French bird painter (1796–1860)\">Paul Louis Oudart</span></a></bdi>"
+  },
+  {
+    "species": "Corydoras reticulatus",
+    "source": "wikimedia",
+    "license": "CC BY-SA 4.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/wiki/User:NasserHalaweh\" title=\"User:NasserHalaweh\">NasserHalaweh</a>"
+  },
+  {
+    "species": "Corydoras splendens",
+    "source": "wikimedia",
+    "license": "CC BY-SA 2.0 de",
+    "attribution": "<a href=\"https://en.wikipedia.org/wiki/de:User:Maschinenkanone\" class=\"extiw\" title=\"w:de:User:Maschinenkanone\">Maschinenkanone</a> at <a href=\"https://en.wikipedia.org/wiki/de:\" class=\"extiw\" title=\"w:de:\">German Wikipedia</a>"
+  },
+  {
+    "species": "Aspidoras albater",
+    "source": "inaturalist",
+    "license": "cc0",
+    "attribution": "no rights reserved"
+  },
+  {
+    "species": "Aspidoras fuscoguttatus",
+    "source": "inaturalist",
+    "license": "cc-by",
+    "attribution": "(c) Jean Martins, some rights reserved (CC BY)"
+  },
+  {
+    "species": "Aspidoras pauciradiatus",
+    "source": "wikimedia",
+    "license": "CC BY-SA 3.0",
+    "attribution": "<a href=\"//commons.wikimedia.org/w/index.php?title=User:TheManOnTheStreet&amp;action=edit&amp;redlink=1\" class=\"new\" title=\"User:TheManOnTheStreet (page does not exist)\">Mike Noren</a>"
+  },
+  {
+    "species": "Scleromystax barbatus",
+    "source": "inaturalist",
+    "license": "cc-by-sa",
+    "attribution": "(c) Henrique Bitencourt, some rights reserved (CC BY-SA)"
   }
 ]
