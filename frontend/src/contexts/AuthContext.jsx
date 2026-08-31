@@ -46,6 +46,11 @@ import { setSessionTokenGetter as setListingPedigreeSessionTokenGetter } from ".
 // founder cannot approve anything.
 import { setSessionTokenGetter as setSpeciesCurationSessionTokenGetter } from "../services/speciesCurationApi";
 
+// Morph curation (review / promote-to-sub-species / notify) authorizes the acting
+// wallet from this Privy token, never the request body. See
+// docs/MORPH_SUBSPECIES_PROMOTION_SPEC.md §4.
+import { setSessionTokenGetter as setMorphSessionTokenGetter } from "../services/morphSubmissionsApi";
+
 // The two paid Gemini VISION endpoints. Both require a signed-in account, so
 // without these registrations Echo cannot identify a fish and every Reef photo
 // silently loses its generated alt text — a quiet accessibility regression, since
@@ -496,6 +501,7 @@ function PrivyAuthProvider({ children }) {
       setPickupCoordinationSessionTokenGetter(getAccessToken);
       setListingPedigreeSessionTokenGetter(getAccessToken);
       setSpeciesCurationSessionTokenGetter(getAccessToken);
+      setMorphSessionTokenGetter(getAccessToken);
       setEchoVisionSessionTokenGetter(getAccessToken);
       setAltTextSessionTokenGetter(getAccessToken);
     } else {
@@ -510,6 +516,7 @@ function PrivyAuthProvider({ children }) {
       setPickupCoordinationSessionTokenGetter(null);
       setListingPedigreeSessionTokenGetter(null);
       setSpeciesCurationSessionTokenGetter(null);
+      setMorphSessionTokenGetter(null);
       setEchoVisionSessionTokenGetter(null);
       setAltTextSessionTokenGetter(null);
     }
@@ -525,6 +532,7 @@ function PrivyAuthProvider({ children }) {
       setPickupCoordinationSessionTokenGetter(null);
       setListingPedigreeSessionTokenGetter(null);
       setSpeciesCurationSessionTokenGetter(null);
+      setMorphSessionTokenGetter(null);
       setEchoVisionSessionTokenGetter(null);
       setAltTextSessionTokenGetter(null);
     };
