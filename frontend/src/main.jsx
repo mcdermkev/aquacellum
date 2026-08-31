@@ -83,7 +83,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             network: 'base-sepolia',
             nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
             rpcUrls: {
-              default: { http: ['https://base-sepolia-rpc.publicnode.com'] },
+              // Base's own endpoint. Was publicnode.com, which now rate-limits
+              // (HTTP 429) and floods the console; Privy has no fallback here, so
+              // the primary must be the reliable one.
+              default: { http: ['https://sepolia.base.org'] },
             },
             blockExplorers: {
               default: { name: 'BaseScan', url: 'https://sepolia.basescan.org' },
