@@ -52,7 +52,10 @@
  */
 
 import { SignJWT, importPKCS8 } from "jose";
-import { verifyPrivyToken } from "./verifyPrivyToken.js";
+import {
+  respondToPrivyConfigurationFailure,
+  verifyPrivyToken,
+} from "./verifyPrivyToken.js";
 import { handleCorsPreFlight } from "./cors.js";
 
 /** Must match ATTESTATION_PURPOSE in src/services/pedigreeDocument.js. */
@@ -92,7 +95,10 @@ export default async function handler(req, res) {
   }
 
   // ── Reuse the existing trust root ────────────────────────────────────────
-  const { verified, walletAddress: tokenWallet, error: authError } = await verifyPrivyToken(req);
+  const authResult = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(authResult, res)) return;
+
+  const { verified, walletAddress: tokenWallet, error: authError } = authResult;
   if (!verified) {
     return res.status(401).json({ error: authError || "Authentication failed" });
   }

@@ -36,7 +36,10 @@
  * would make this gate decorative.
  */
 
-import { verifyPrivyToken } from './verifyPrivyToken.js';
+import {
+  respondToPrivyConfigurationFailure,
+  verifyPrivyToken,
+} from './verifyPrivyToken.js';
 import { checkRateLimit } from './rateLimiter.js';
 
 /**
@@ -52,8 +55,10 @@ import { checkRateLimit } from './rateLimiter.js';
  * @returns {Promise<{userId: string, walletAddress: string|null}|null>}
  */
 export async function requireAccount(req, res) {
-  const { verified, userId, walletAddress, error } = await verifyPrivyToken(req);
+  const authResult = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(authResult, res)) return null;
 
+  const { verified, userId, walletAddress, error } = authResult;
   if (!verified || !userId) {
     res.status(401).json({
       error: error || 'Authentication required',

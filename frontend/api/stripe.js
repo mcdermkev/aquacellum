@@ -25,7 +25,11 @@ import Stripe from "stripe";
 import { ethers } from "ethers";
 import { createClient } from "@supabase/supabase-js";
 import { handleCorsPreFlight } from "./_lib/cors.js";
-import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
+import {
+  isPrivyConfigurationFailure,
+  respondToPrivyConfigurationFailure,
+  verifyPrivyToken,
+} from "./_lib/verifyPrivyToken.js";
 import * as shipengine from "./_lib/shipengine.js";
 import { captureServerEvent } from "./_lib/posthogServer.js";
 import {
@@ -1020,7 +1024,10 @@ async function handleRelease(req, res) {
   // Attempt 1: Privy session token (no wallet popup).
   const authHeader = req.headers["authorization"] || req.headers["Authorization"];
   if (authHeader) {
-    const { verified, userId, walletAddress } = await verifyPrivyToken(req);
+    const releaseAuth = await verifyPrivyToken(req);
+    if (respondToPrivyConfigurationFailure(releaseAuth, res)) return;
+
+    const { verified, userId, walletAddress } = releaseAuth;
     if (verified) {
       const tokenWallet = (walletAddress || "").toLowerCase();
       if (buyerUserId && userId === buyerUserId) {
@@ -1219,7 +1226,10 @@ async function handleReleaseV2(req, res) {
   const authHeader = req.headers["authorization"] || req.headers["Authorization"];
   let authorized = false;
   if (authHeader) {
-    const { verified, userId, walletAddress } = await verifyPrivyToken(req);
+    const releaseV2Auth = await verifyPrivyToken(req);
+    if (respondToPrivyConfigurationFailure(releaseV2Auth, res)) return;
+
+    const { verified, userId, walletAddress } = releaseV2Auth;
     if (verified) {
       const tokenWallet = (walletAddress || "").toLowerCase();
       authorized =
@@ -1336,7 +1346,12 @@ async function authorizeAdminOrCurator(req) {
   const curatorWallet = (process.env.CURATOR_WALLET || "").toLowerCase();
   if (authHeader.startsWith("Bearer ") && curatorWallet) {
     try {
-      const { verified, walletAddress } = await verifyPrivyToken(req);
+      const curatorAuth = await verifyPrivyToken(req);
+      if (isPrivyConfigurationFailure(curatorAuth)) {
+        return { ok: false, status: 503, error: "Authentication service unavailable" };
+      }
+
+      const { verified, walletAddress } = curatorAuth;
       if (verified && walletAddress && walletAddress.toLowerCase() === curatorWallet) {
         return { ok: true, via: "curator" };
       }
@@ -1421,7 +1436,10 @@ async function handleDispute(req, res) {
   const authHeader = req.headers["authorization"] || req.headers["Authorization"];
   let isBuyer = false;
   if (authHeader) {
-    const { verified, userId, walletAddress } = await verifyPrivyToken(req);
+    const disputeAuth = await verifyPrivyToken(req);
+    if (respondToPrivyConfigurationFailure(disputeAuth, res)) return;
+
+    const { verified, userId, walletAddress } = disputeAuth;
     if (verified) {
       const tokenWallet = (walletAddress || "").toLowerCase();
       if ((buyerUserId && userId === buyerUserId) || (tokenWallet && tokenWallet === buyerWallet)) {
@@ -1506,7 +1524,10 @@ async function handleDoaOpen(req, res) {
 
   // Auth: verified Privy session. The service authorizes that this user is the
   // order's buyer (Privy DID or wallet match) before opening.
-  const { verified, userId, walletAddress } = await verifyPrivyToken(req);
+  const doaAuth = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(doaAuth, res)) return;
+
+  const { verified, userId, walletAddress } = doaAuth;
   if (!verified) {
     return res.status(401).json({ error: "Missing or invalid authentication" });
   }
@@ -1843,7 +1864,10 @@ async function handleParcelPreset(req, res) {
  * Sends the 401 response itself when unauthorized; returns null in that case.
  */
 async function requireWalletFromSession(req, res) {
-  const { verified, walletAddress, error } = await verifyPrivyToken(req);
+  const authResult = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(authResult, res)) return null;
+
+  const { verified, walletAddress, error } = authResult;
   if (!verified) {
     res.status(401).json({ error: error || "Missing or invalid authentication" });
     return null;
@@ -2670,7 +2694,10 @@ async function handleHandoffIssue(req, res) {
   const secret = handoffSecret();
   if (!secret) return res.status(500).json({ error: "Handoff signing not configured" });
 
-  const { verified, error } = await verifyPrivyToken(req);
+  const handoffAuth = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(handoffAuth, res)) return;
+
+  const { verified, error } = handoffAuth;
   if (!verified) return res.status(401).json({ error: error || "Unauthorized" });
 
   const { tokenId, buyerWallet } = req.body || {};
@@ -2717,7 +2744,10 @@ async function handleCashConfirm(req, res) {
   if (!secret) return res.status(500).json({ error: "Handoff signing not configured" });
 
   // The confirming seller must hold a valid Privy session.
-  const { verified, error } = await verifyPrivyToken(req);
+  const cashConfirmAuth = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(cashConfirmAuth, res)) return;
+
+  const { verified, error } = cashConfirmAuth;
   if (!verified) return res.status(401).json({ error: error || "Unauthorized" });
 
   const { token, signature, issuedAt } = req.body || {};
@@ -3165,6 +3195,8 @@ async function handleCreateCheckout(req, res) {
   // reservation, or Stripe session creation. The body wallet remains only a
   // compatibility assertion; it can never choose settlement ownership.
   const checkoutAuth = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(checkoutAuth, res)) return;
+
   if (!checkoutAuth.verified) {
     return res.status(401).json({
       error: checkoutAuth.error || "Sign in before checkout.",

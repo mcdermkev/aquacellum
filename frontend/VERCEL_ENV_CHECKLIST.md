@@ -10,14 +10,18 @@ Variables without `VITE_` are server-side only (API routes).
 | Variable | Purpose | Set? |
 |----------|---------|------|
 | `VITE_PRIVY_APP_ID` | Privy authentication (email/Google login) | `cmprm8kqd000l0cl54w0e9jn3` |
+| `PRIVY_APP_ID` | Server Privy JWT audience/JWKS trust root | Same intended Privy application; server-only input |
 | `VITE_CDP_PAYMASTER_URL` | EIP-4337 gas sponsorship (on-chain writes) | Coinbase CDP bundler URL |
 | `VITE_SUPABASE_URL` | Cloud sync + social features | Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | Cloud sync + social features (browser) | Supabase anon key |
 | `SUPABASE_URL` | Server-side Supabase (webhooks, checkout) | Same as VITE_ version |
 | `SUPABASE_SERVICE_KEY` | Server-side Supabase (service role) | Supabase service role key |
+| `SUPABASE_JWT_SECRET` | Supabase auth-bridge JWT signing | Supabase project JWT secret |
 | `RELAYER_PRIVATE_KEY` | On-chain transaction sponsor (relay API) | Deployer private key (no 0x prefix) |
 | `RPC_URL` | Base Sepolia RPC for server functions | `https://sepolia.base.org` |
 | `MANAGER_ADDRESS` | AquadexManager contract | `0x351ca8f34D94F29F6f865Afa419A636324473DeF` |
+
+`PRIVY_APP_ID` must be present in every environment that serves authenticated APIs. Server routes do not fall back to `VITE_PRIVY_APP_ID` or a hard-coded application ID. Record confirmation without copying secrets or access tokens.
 
 ## IMPORTANT — Required for Poseidon AI to work
 
@@ -79,14 +83,27 @@ These are baked into the Vite build at deploy time:
 
 After setting all variables and deploying:
 
-1. Hit `/api/poseidon-health` — check that:
+1. Confirm `PRIVY_APP_ID` exists server-side and equals the intended Privy token audience. Do not paste the value into logs or verification evidence.
+2. Exercise `/api/mint-session`: a valid token wallet succeeds; a different body wallet returns 403; a token without a wallet cannot use a body wallet; an environment missing `PRIVY_APP_ID` returns 503.
+3. Hit `/api/poseidon-health` — check that:
    - `status` is `"configured"` (Poseidon AI is working)
    - `relayer.status` is `"healthy"` (relayer wallet has ETH)
    - `relayer.balanceEth` is above `0.01`
-
-2. Test the login flow — sign up with a test email, verify wallet gets created
-
-3. Test tank registration — create a tank, check it syncs to Supabase
-
-4. If relayer balance is low, send testnet ETH to the relayer address shown
+4. Test the login flow — sign up with a test email, verify wallet gets created
+5. Test tank registration — create a tank, check it syncs to Supabase
+6. If relayer balance is low, send testnet ETH to the relayer address shown
    in the health endpoint response (use Base Sepolia faucet)
+
+## Fish Room private media pipeline (deployment-gated)
+
+Keep `SHOWCASE_MEDIA_ENABLED=false` until the database migration, private-bucket catalog probe, Azure worker smoke test, worst-case image corpus, revocation test, and dead-job alert all pass.
+
+| Variable | Purpose |
+|----------|---------|
+| `SHOWCASE_MEDIA_ENABLED` | Explicit production capability gate; exact value `true` enables stage/finalize/publish |
+| `SHOWCASE_STORAGE_S3_ENDPOINT` | Supabase Storage S3 endpoint; HTTPS, server-only |
+| `SHOWCASE_STORAGE_S3_REGION` | Exact Supabase S3 region |
+| `SHOWCASE_STORAGE_S3_ACCESS_KEY_ID` | Server-only key used only to presign exact five-minute source PUTs |
+| `SHOWCASE_STORAGE_S3_SECRET_ACCESS_KEY` | Server-only S3 signing secret; never exposed/logged |
+
+The Azure Container Apps worker requires `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` as secrets. Do not put S3 credentials in the worker: it uses service-role Storage operations and service-only leased-job RPCs. Record deployment ID/region/revision and pass/fail evidence without copying any secret or object key.

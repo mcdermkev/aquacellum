@@ -178,5 +178,9 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.{js,jsx}'],
+    // The app build aliases "ethers" to a browser UMD shim (window.ethers). Under Node tests there
+    // is no window, so point "ethers" back at the real package for server-side unit tests (e.g. the
+    // EIP-191 wallet-link vectors). This is test-only and does not affect the browser bundle.
+    alias: [{ find: /^ethers$/, replacement: resolve(__dirname, 'node_modules/ethers/lib/index.js') }],
   }
 });

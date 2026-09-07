@@ -75,9 +75,14 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { createHash } from "node:crypto";
 import { ethers } from "ethers";
 import { setCorsHeaders, handleCorsPreFlight } from "./_lib/cors.js";
-import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
+import {
+  isPrivyConfigurationFailure,
+  respondToPrivyConfigurationFailure,
+  verifyPrivyToken,
+} from "./_lib/verifyPrivyToken.js";
 import { buildReefTrustMessage, REEF_TRUST_MAX_AGE_MS } from "../src/services/reefTrustProof.js";
 import {
   isOrderReviewable,
@@ -123,6 +128,8 @@ export default async function handler(req, res) {
       return handleCheckSlug(req, res);
     case "discover":
       return handleDiscover(req, res);
+    case "showcase-media":
+      return handleShowcaseMedia(req, res);
     case "setup":
       return handleSetup(req, res);
     // ── Task 20: Verified Structured Reviews ──
@@ -494,6 +501,86 @@ async function handleDiscover(req, res) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// ACTION: showcase-media  (private derivative proxy)
+// GET /api/showcase-media/:assetId/:variant (rewritten to this consolidated function)
+//
+// Authorization is recomputed before every Storage read. The RPC returns one exact immutable
+// object only when the Room/attachment/asset/version chain is still published. The object key and
+// signed Storage URLs are never returned to the caller, and all responses are non-cacheable.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const SHOWCASE_MEDIA_ASSET_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const SHOWCASE_MEDIA_VARIANTS = new Set(["hero", "thumb"]);
+const SHOWCASE_MEDIA_MAX_BYTES = 4 * 1024 * 1024;
+
+function setShowcaseMediaHeaders(res) {
+  res.setHeader("Cache-Control", "private, no-store, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "no-referrer");
+}
+
+async function handleShowcaseMedia(req, res) {
+  setCorsHeaders(req, res, { methods: "GET, OPTIONS" });
+  setShowcaseMediaHeaders(res);
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "GET") {
+    res.setHeader("Allow", "GET, OPTIONS");
+    return res.status(405).json({ error: "method_not_allowed" });
+  }
+
+  const assetId = typeof req.query.asset === "string" ? req.query.asset : "";
+  const variant = typeof req.query.variant === "string" ? req.query.variant : "";
+  if (!SHOWCASE_MEDIA_ASSET_RE.test(assetId) || !SHOWCASE_MEDIA_VARIANTS.has(variant)) {
+    return res.status(404).json({ error: "not_found" });
+  }
+
+  try {
+    const { data: authorization, error: authError } = await supabase.rpc(
+      "showcase_authorize_media_read",
+      { p_asset_id: assetId, p_variant: variant }
+    );
+    if (authError) {
+      console.error("[storefront/showcase-media] authorization", authError.code || "error");
+      return res.status(500).json({ error: "internal_error" });
+    }
+    if (!authorization) return res.status(404).json({ error: "not_found" });
+
+    const expectedSize = Number(authorization.byteSize);
+    const expectedMime = authorization.mime;
+    if (authorization.bucket !== "showcase-media-derivatives-v1"
+        || expectedMime !== "image/webp"
+        || !Number.isSafeInteger(expectedSize) || expectedSize < 1
+        || expectedSize > SHOWCASE_MEDIA_MAX_BYTES
+        || typeof authorization.objectKey !== "string"
+        || !/^[0-9a-f]{64}$/.test(authorization.checksumHex || "")) {
+      return res.status(500).json({ error: "internal_error" });
+    }
+
+    const { data: blob, error: downloadError } = await supabase.storage
+      .from(authorization.bucket)
+      .download(authorization.objectKey);
+    if (downloadError || !blob) return res.status(404).json({ error: "not_found" });
+    const bytes = Buffer.from(await blob.arrayBuffer());
+    if (bytes.length !== expectedSize || bytes.length > SHOWCASE_MEDIA_MAX_BYTES) {
+      return res.status(404).json({ error: "not_found" });
+    }
+    const checksum = createHash("sha256").update(bytes).digest("hex");
+    if (checksum !== authorization.checksumHex) {
+      return res.status(404).json({ error: "not_found" });
+    }
+
+    res.setHeader("Content-Type", expectedMime);
+    res.setHeader("Content-Length", String(bytes.length));
+    return res.status(200).send(bytes);
+  } catch (error) {
+    console.error("[storefront/showcase-media] error", error?.code || "error");
+    return res.status(500).json({ error: "internal_error" });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // ACTION: setup
 // POST /api/storefront-detail?action=setup
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -713,7 +800,12 @@ const MENTORSHIP_PROFILE_SELECT = `
 `;
 
 async function resolveReefActor(req) {
-  const { verified, userId, error } = await verifyPrivyToken(req);
+  const authResult = await verifyPrivyToken(req);
+  if (isPrivyConfigurationFailure(authResult)) {
+    return { ok: false, status: 503, error: "Authentication service unavailable" };
+  }
+
+  const { verified, userId, error } = authResult;
   if (!verified || !userId) {
     return { ok: false, status: 401, error: error || "Missing or invalid authentication" };
   }
@@ -1105,7 +1197,10 @@ function reviewRowToClient(row) {
  * requireWalletFromSession / api/cart.js's requireWallet.
  */
 async function requireReviewerWallet(req, res) {
-  const { verified, walletAddress, error } = await verifyPrivyToken(req);
+  const authResult = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(authResult, res)) return null;
+
+  const { verified, walletAddress, error } = authResult;
   if (!verified) {
     res.status(401).json({ error: error || "Missing or invalid authentication" });
     return null;
@@ -1512,7 +1607,10 @@ async function handleModerateReview(req, res) {
  * in the request.
  */
 async function requireWalletFromSession(req, res) {
-  const { verified, walletAddress, error } = await verifyPrivyToken(req);
+  const authResult = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(authResult, res)) return null;
+
+  const { verified, walletAddress, error } = authResult;
   if (!verified) {
     res.status(401).json({ error: error || "Missing or invalid authentication" });
     return null;

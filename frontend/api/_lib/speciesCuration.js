@@ -28,7 +28,10 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { createClient } from "@supabase/supabase-js";
 import { ethers } from "ethers";
-import { verifyPrivyToken } from "./verifyPrivyToken.js";
+import {
+  respondToPrivyConfigurationFailure,
+  verifyPrivyToken,
+} from "./verifyPrivyToken.js";
 import { checkRateLimit } from "./rateLimiter.js";
 
 const SUPABASE_URL =
@@ -121,8 +124,10 @@ function findInReference(scientificName) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function requireVerifiedWallet(req, res) {
-  const { verified, walletAddress, error } = await verifyPrivyToken(req);
+  const authResult = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(authResult, res)) return null;
 
+  const { verified, walletAddress, error } = authResult;
   if (!verified) {
     res.status(401).json({ error: error || "Authentication required" });
     return null;

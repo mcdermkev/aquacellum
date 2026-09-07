@@ -1,0 +1,18 @@
+{
+  "name": "aquacellum-showcase-media-worker",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "start": "node worker.mjs",
+    "check": "node --check worker.mjs && node --check corpus.mjs",
+    "corpus": "node corpus.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.107.0",
+    "sharp": "0.35.2"
+  }
+}

@@ -32,7 +32,10 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { ethers } from "ethers";
-import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
+import {
+  respondToPrivyConfigurationFailure,
+  verifyPrivyToken,
+} from "./_lib/verifyPrivyToken.js";
 import { handleCorsPreFlight } from "./_lib/cors.js";
 import { checkRateLimit } from "./_lib/rateLimiter.js";
 
@@ -144,7 +147,10 @@ export default async function handler(req, res) {
   // ── Default route: XP validation ─────────────────────────────────────────
 
   // ── Rate limit (100 XP claims/hr per user — generous but prevents scripts) ──
-  const { verified, userId, walletAddress: tokenWallet, error: authError } = await verifyPrivyToken(req);
+  const authResult = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(authResult, res)) return;
+
+  const { verified, userId, walletAddress: tokenWallet, error: authError } = authResult;
 
   if (!verified) {
     return res.status(401).json({ error: authError || "Authentication failed" });

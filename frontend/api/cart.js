@@ -25,7 +25,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { ethers } from "ethers";
 import { handleCorsPreFlight } from "./_lib/cors.js";
-import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
+import {
+  respondToPrivyConfigurationFailure,
+  verifyPrivyToken,
+} from "./_lib/verifyPrivyToken.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL || "",
@@ -124,7 +127,10 @@ export default async function handler(req, res) {
  * endpoint is that a cart is scoped to the token holder's own identity.
  */
 async function requireWallet(req, res) {
-  const { verified, walletAddress, error } = await verifyPrivyToken(req);
+  const authResult = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(authResult, res)) return null;
+
+  const { verified, walletAddress, error } = authResult;
   if (!verified) {
     res.status(401).json({ error: error || "Missing or invalid authentication" });
     return null;
