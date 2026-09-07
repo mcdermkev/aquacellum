@@ -338,6 +338,62 @@ export function MorphRegistration({ walletAccount, casualModeActive, contractAdd
         </p>
       </div>
 
+      <section
+        aria-labelledby="steve-morph-reference-heading"
+        className="glass-card"
+        style={{
+          padding: "1rem",
+          marginBottom: "1.5rem",
+          border: "1px solid rgba(34, 211, 238, 0.2)",
+          background: "rgba(34, 211, 238, 0.035)",
+        }}
+      >
+        <h3
+          id="steve-morph-reference-heading"
+          style={{ fontSize: "0.88rem", color: "#fff", margin: "0 0 0.25rem" }}
+        >
+          Steve&apos;s morph references
+        </h3>
+        <p style={{ fontSize: "0.7rem", color: "var(--text-muted, #94a3b8)", margin: "0 0 0.75rem", lineHeight: 1.45 }}>
+          Reference photography from Steve&apos;s collection. Names follow the source folders and do not indicate registry verification.
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(125px, 1fr))", gap: "0.65rem" }}>
+          {[
+            { name: "Echos of the moon", imageUrl: "/morphs/steve/echos-of-the-moon.jpg" },
+            { name: "Gladio", imageUrl: "/morphs/steve/gladio.jpg" },
+            { name: "Pink Saffire", imageUrl: "/morphs/steve/pink-saffire.jpg" },
+            { name: "Shinkai", imageUrl: "/morphs/steve/shinkai.jpg" },
+          ].map((reference) => (
+            <a
+              key={reference.name}
+              href={reference.imageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Open ${reference.name} reference photo`}
+              style={{
+                overflow: "hidden",
+                borderRadius: "9px",
+                border: "1px solid rgba(255, 255, 255, 0.12)",
+                background: "rgba(15, 23, 42, 0.72)",
+                color: "#fff",
+                textDecoration: "none",
+              }}
+            >
+              <img
+                src={reference.imageUrl}
+                alt={`${reference.name} fish from Steve's reference collection`}
+                loading="lazy"
+                decoding="async"
+                style={{ width: "100%", aspectRatio: "4 / 3", objectFit: "cover", display: "block" }}
+              />
+              <span style={{ display: "block", padding: "0.48rem 0.55rem", fontSize: "0.7rem", fontWeight: 600 }}>
+                {reference.name}
+              </span>
+            </a>
+          ))}
+        </div>
+      </section>
+
       {!configured && (
         <div style={{ padding: "0.75rem 1rem", borderRadius: "10px", background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.25)", color: "var(--accent-amber, #fbbf24)", fontSize: "0.8rem", marginBottom: "1rem" }}>
           The morph registry backend isn't configured in this environment. Submissions are disabled.
