@@ -155,6 +155,23 @@ export function reconcileRemaining(lines, listingId, quantityRemaining) {
 }
 
 /**
+ * Apply the server's result of a +/- stock adjust. Mirrors adjust_inventory_by:
+ * reaching 0 retires the line, a positive delta puts it back on sale, and a
+ * negative delta never re-activates a paused line. The count is the server's.
+ */
+export function applyAdjustResult(lines, listingId, quantityRemaining, delta) {
+  if (quantityRemaining == null || !Number.isFinite(Number(quantityRemaining))) {
+    return Array.isArray(lines) ? lines : [];
+  }
+  const n = Math.max(0, Math.floor(Number(quantityRemaining)));
+  return (Array.isArray(lines) ? lines : []).map((line) => {
+    if (line.id !== String(listingId)) return line;
+    const isActive = n === 0 ? false : Number(delta) > 0 ? true : line.isActive;
+    return { ...line, quantityRemaining: n, isActive };
+  });
+}
+
+/**
  * Wording only. `casualModeActive` never changes what a control does — it is the
  * same prop the rest of breeder/ uses to soften vocabulary for hobbyists.
  */
@@ -174,6 +191,9 @@ export function boothCopy(casualModeActive = false) {
         cardOfflineReason: "Card needs a connection",
         queuedLabel: "waiting to sync",
         offlineLabel: "No connection — cash sales still work",
+        adjustUpLabel: "One more",
+        adjustDownLabel: "One less",
+        adjustOfflineReason: "Fixing counts needs a connection",
       }
     : {
         sectionTitle: "Booth",
@@ -189,5 +209,8 @@ export function boothCopy(casualModeActive = false) {
         cardOfflineReason: "Card needs a connection",
         queuedLabel: "queued",
         offlineLabel: "Offline — cash sales still record",
+        adjustUpLabel: "Add one",
+        adjustDownLabel: "Remove one",
+        adjustOfflineReason: "Stock adjustments need a connection",
       };
 }

@@ -140,6 +140,8 @@
     "frontend/supabase/migrations/20260916_inventory_of_record.sql",
     "frontend/supabase/migrations/20260917_published_tanks.sql",
     "frontend/supabase/migrations/20260918_fix_stock_backfill_string_blob.sql",
-    "frontend/supabase/migrations/20260918_public_view_quantity_remaining.sql"
+    "frontend/supabase/migrations/20260918_public_view_quantity_remaining.sql",
+    "frontend/supabase/migrations/20260926_inventory_adjust_by_delta.sql",
+    "frontend/supabase/migrations/20260926_server_only_rpc_lockdown.sql"
   ]
 }

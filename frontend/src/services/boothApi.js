@@ -109,6 +109,42 @@ export async function recordCashSale({
 }
 
 /**
+ * Nudge a line's stock up or down by `delta` (a miscount or a restock — not a
+ * sale). `POST /api/storefront-detail?action=adjust-inventory`.
+ *
+ * Online-only on purpose: unlike a cash sale, a correction is not something that
+ * already happened in the physical world and must be kept, and replaying stale
+ * taps later would fight whatever the seller has since done. The server applies
+ * the delta under the sale lock and returns the authoritative count.
+ *
+ * @param {object} params
+ * @param {string|number} params.listingId
+ * @param {number} params.delta - non-zero integer, e.g. +1 / -1
+ * @param {typeof fetch} [params.fetchImpl]
+ * @returns {Promise<{success:boolean, quantityRemaining?:number, error?:string, code?:string, status?:number, offline?:boolean}>}
+ */
+export async function adjustInventory({ listingId, delta, fetchImpl = fetch } = {}) {
+  const token = await getSessionToken();
+  if (!token) return { success: false, error: "Sign in again to change stock.", code: "NO_SESSION" };
+
+  let res;
+  try {
+    res = await fetchImpl(`${API_BASE}/storefront-detail?action=adjust-inventory`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ listingId: String(listingId), delta }),
+    });
+  } catch (err) {
+    return { success: false, offline: true, error: err?.message || "offline" };
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return { success: false, status: res.status, code: data.code || null, error: data.error || `Request failed (${res.status})` };
+  }
+  return { success: true, quantityRemaining: Number(data.quantityRemaining) };
+}
+
+/**
  * Publish (or re-publish) a tank for its QR label
  * (`POST /api/storefront-detail?action=publish-tank`).
  *

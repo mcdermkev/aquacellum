@@ -59,6 +59,7 @@ import { resolveFeePolicy, FEE_RAIL } from "../src/services/feePolicy.js";
 // _lib/rawBody.js for how Vercel replays them and why re-serializing req.body
 // failed every webhook (2026-09-26).
 import { readRawBody } from "./_lib/rawBody.js";
+import { recordCardSaleInventory } from "./_lib/cardSaleInventory.js";
 
 let stripe;
 try {
@@ -447,6 +448,29 @@ async function handleWebhook(req, res) {
         } catch (commitErr) {
           console.warn("[Canonical] reservation commit skipped:", commitErr.message);
         }
+      }
+
+      // Card sale of a batch → decrement the inventory of record, exactly once
+      // (idempotent on the PaymentIntent), then release the hold so the unit is
+      // not counted twice. See _lib/cardSaleInventory.js. Never fails the webhook.
+      try {
+        const inv = await recordCardSaleInventory({
+          supabase,
+          metadata,
+          paymentIntentId,
+          releaseHolds: isCanonicalSettlementEnabled()
+            ? (md) => releaseCheckoutReservations({ supabase, metadata: md, now: Date.now() })
+            : null,
+        });
+        if (inv.applied) {
+          console.log(`[Inventory] card sale ${paymentIntentId}: listing ${metadata.listingId} now ${inv.quantityRemaining} (holds released: ${inv.holdsReleased})`);
+        } else if (inv.oversold) {
+          console.error(`[Inventory] OVERSOLD: paid card sale ${paymentIntentId} for listing ${metadata.listingId}, but stock was already gone. Funds are held; seller must refund or substitute.`);
+        } else if (inv.error) {
+          console.error(`[Inventory] card sale decrement failed for ${paymentIntentId}:`, inv.error);
+        }
+      } catch (invErr) {
+        console.error("[Inventory] card sale decrement error:", invErr?.message || invErr);
       }
 
       // Idempotent promotion redemption (Task 21B — Tier A). If a promo was

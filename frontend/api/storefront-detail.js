@@ -199,6 +199,9 @@ export default async function handler(req, res) {
     // ── Booth: record an in-person cash sale (no money moves, no fee) ──
     case "record-sale":
       return handleRecordSale(req, res);
+    // ── Booth: +/- stock correction (miscount, restock) ──
+    case "adjust-inventory":
+      return handleAdjustInventory(req, res);
     // ── Aquadex tank QR: publish a tank, and the public read behind the label ──
     case "publish-tank":
       return handlePublishTank(req, res);
@@ -2799,6 +2802,73 @@ function safePublishedImageUrl(value) {
     return url.protocol === "https:" ? url.href : null;
   } catch {
     return null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BOOTH: +/- STOCK ADJUST
+// POST /api/storefront-detail?action=adjust-inventory   body { listingId, delta }
+//
+// BOOTH_BUILD_SPEC.md §6 ("+/− adjust"). For a miscount or a restock — NOT a sale:
+// no order row, no money, no fee. Sales go through ?action=record-sale.
+//
+// The delta is applied by adjust_inventory_by (20260926) inside the same advisory
+// lock as record_inventory_sale, so a tap on one phone can never overwrite a sale
+// rung up on another. The wallet comes only from the verified session.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const MAX_ADJUST_DELTA = 1000;
+
+async function handleAdjustInventory(req, res) {
+  setCorsHeaders(req, res, { methods: "POST, OPTIONS" });
+  res.setHeader("Cache-Control", "private, no-store, max-age=0");
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST, OPTIONS");
+    return res.status(405).json({ error: "method_not_allowed" });
+  }
+
+  const sellerWallet = await requireWalletFromSession(req, res);
+  if (!sellerWallet) return;
+
+  let body = req.body;
+  if (typeof body === "string") {
+    try { body = JSON.parse(body); } catch { body = {}; }
+  }
+  const { listingId, delta } = body || {};
+
+  if (listingId == null || String(listingId).trim() === "") {
+    return res.status(400).json({ error: "listingId is required", code: "LISTING_REQUIRED" });
+  }
+  const d = Number(delta);
+  if (!Number.isInteger(d) || d === 0 || Math.abs(d) > MAX_ADJUST_DELTA) {
+    return res.status(400).json({
+      error: `delta must be a non-zero whole number between -${MAX_ADJUST_DELTA} and ${MAX_ADJUST_DELTA}`,
+      code: "INVALID_DELTA",
+    });
+  }
+
+  try {
+    const { data: remaining, error } = await supabase.rpc("adjust_inventory_by", {
+      p_listing_id: String(listingId),
+      p_delta: d,
+      p_seller: sellerWallet,
+    });
+    if (error) {
+      const msg = error.message || "";
+      if (/does not belong/i.test(msg)) {
+        return res.status(403).json({ error: "That listing isn't yours.", code: "NOT_YOUR_LISTING" });
+      }
+      if (/not found/i.test(msg)) {
+        return res.status(404).json({ error: "Listing not found.", code: "LISTING_NOT_FOUND" });
+      }
+      console.error("[adjust-inventory] failed:", msg);
+      return res.status(500).json({ error: "Could not update stock.", code: "ADJUST_FAILED" });
+    }
+    return res.status(200).json({ ok: true, quantityRemaining: Number(remaining) });
+  } catch (err) {
+    console.error("[adjust-inventory] unexpected:", err?.message || err);
+    return res.status(500).json({ error: "Could not update stock.", code: "ADJUST_FAILED" });
   }
 }
 

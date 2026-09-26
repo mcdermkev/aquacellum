@@ -56,7 +56,7 @@ import {
 import { supabase } from "../../services/supabaseClient";
 import { formatPriceCents } from "../../services/catalogQuery";
 import { announce } from "../../utils/a11y";
-import { publishTank, recordCashSale, sendQueuedSale } from "../../services/boothApi";
+import { adjustInventory, publishTank, recordCashSale, sendQueuedSale } from "../../services/boothApi";
 import {
   countQueuedSales,
   isPermanentFailure,
@@ -67,6 +67,7 @@ import {
   replayQueue,
 } from "../../services/boothOutbox";
 import {
+  applyAdjustResult,
   applyLocalSale,
   boothCopy,
   boothProductPath,
@@ -131,6 +132,8 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
   const [publishModalOpen, setPublishModalOpen] = useState(false);
   const [publishBusy, setPublishBusy] = useState(false);
   const [publishResult, setPublishResult] = useState(null);
+  // One adjust in flight at a time per line; the server result replaces the count.
+  const [adjustingId, setAdjustingId] = useState(null);
 
   const inventory = useQuery({
     queryKey: ["boothInventory", walletAccount ? String(walletAccount).toLowerCase() : null],
@@ -197,6 +200,25 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
     setSellTarget(line);
     setSellQty(clampSellQuantity(1, line.quantityRemaining));
     setSaleError(null);
+  };
+
+  /**
+   * +/- correction (miscount or restock). NOT a sale: no order, no fee. Online
+   * only — the count shown is replaced by the server's, never guessed locally,
+   * because a second phone at the booth may have sold one meanwhile.
+   */
+  const handleAdjust = async (line, delta) => {
+    if (!online || adjustingId) return;
+    setAdjustingId(line.id);
+    setSaleError(null);
+    const result = await adjustInventory({ listingId: line.id, delta });
+    if (result.success) {
+      setLines((prev) => applyAdjustResult(prev, line.id, result.quantityRemaining, delta));
+      announce(`${line.commonName}: ${result.quantityRemaining} ${copy.remainingLabel}.`);
+    } else {
+      setSaleError(result.offline ? copy.adjustOfflineReason : result.error || "Could not update stock.");
+    }
+    setAdjustingId(null);
   };
 
   const closeSell = () => {
@@ -531,6 +553,9 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
               line={line}
               copy={copy}
               onSell={() => openSell(line)}
+              onAdjust={(delta) => handleAdjust(line, delta)}
+              adjusting={adjustingId === line.id}
+              canAdjust={online && !adjustingId}
             />
           ))}
         </div>
@@ -597,8 +622,32 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
  * and their Sell control is gone rather than disabled — nothing to press means
  * nothing to mis-press while distracted.
  */
-function BoothLine({ line, copy, onSell }) {
+function BoothLine({ line, copy, onSell, onAdjust, adjusting = false, canAdjust = true }) {
   const soldOut = isSoldOut(line);
+  // An unknown count (never backfilled) can't be nudged meaningfully from here.
+  const known = line.quantityRemaining != null;
+  const adjustBtn = (delta, label, glyph, disabled) => (
+    <button
+      type="button"
+      className="btn-secondary"
+      onClick={() => onAdjust?.(delta)}
+      disabled={disabled}
+      aria-label={`${label}: ${line.commonName}`}
+      title={canAdjust ? label : copy.adjustOfflineReason}
+      style={{
+        minWidth: TAP_MIN,
+        minHeight: TAP_MIN,
+        fontSize: "1.35rem",
+        fontWeight: 800,
+        lineHeight: 1,
+        borderRadius: "12px",
+        padding: 0,
+        opacity: disabled ? 0.4 : 1,
+      }}
+    >
+      {glyph}
+    </button>
+  );
 
   return (
     <div
@@ -607,12 +656,14 @@ function BoothLine({ line, copy, onSell }) {
         padding: "0.9rem 1rem",
         display: "flex",
         alignItems: "center",
-        gap: "0.85rem",
+        flexWrap: "wrap",
+        gap: "0.6rem 0.85rem",
         opacity: soldOut ? 0.55 : 1,
         border: soldOut ? "1px dashed rgba(248,113,113,0.45)" : undefined,
       }}
     >
-      <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+      {/* Wraps to its own row on a narrow phone so − count + Sell stay full size. */}
+      <div style={{ flex: "1 1 150px", minWidth: 0 }}>
         <strong
           style={{
             color: "#fff",
@@ -664,9 +715,13 @@ function BoothLine({ line, copy, onSell }) {
         )}
       </div>
 
+      {/* − count + : fix a miscount or restock without leaving the booth. "+"
+          stays available on a sold-out line so it can be restocked. */}
+      {known && adjustBtn(-1, copy.adjustDownLabel, "−", !canAdjust || adjusting || line.quantityRemaining <= 0)}
+
       {/* Big remaining count — readable across a table. "—" when the column
           predates the migration and we genuinely do not know. */}
-      <div style={{ textAlign: "center", minWidth: "3.25rem" }}>
+      <div style={{ textAlign: "center", minWidth: "3.25rem" }} aria-busy={adjusting || undefined}>
         <div
           style={{
             fontSize: "2rem",
@@ -682,6 +737,8 @@ function BoothLine({ line, copy, onSell }) {
           {copy.remainingLabel}
         </div>
       </div>
+
+      {known && adjustBtn(1, copy.adjustUpLabel, "+", !canAdjust || adjusting)}
 
       {!soldOut && (
         <button
