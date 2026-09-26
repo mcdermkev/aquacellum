@@ -55,6 +55,15 @@ import { createSupabaseDoaClaimStore } from "./_lib/supabaseDoaClaimStore.js";
 import { evaluatePromotion } from "../src/services/promotionEngine.js";
 import { computeCheckoutCharge } from "../src/services/checkoutPricing.js";
 import { resolveFeePolicy, FEE_RAIL } from "../src/services/feePolicy.js";
+import { readRawBody, attachJsonBody } from "./_lib/rawBody.js";
+
+// Vercel's body parser is OFF for this function. Stripe signs the exact bytes it
+// sends; with the parser on, req.body arrives as a parsed object and the original
+// bytes are gone, so every webhook failed signature verification (seen live
+// 2026-09-26: "No signatures found matching the expected signature").
+// The webhook reads raw bytes; every other action gets req.body restored by
+// attachJsonBody in the dispatcher below, so those handlers are unchanged.
+export const config = { api: { bodyParser: false } };
 
 let stripe;
 try {
@@ -147,40 +156,7 @@ function buildReleaseAuthMessage({ tokenId, paymentRef, issuedAt }) {
 // WEBHOOK HELPERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/**
- * Read the EXACT bytes Stripe sent (needed for Stripe signature verification).
- *
- * ORDER MATTERS. On Vercel, `req.body` is a lazy getter: the first read parses
- * the JSON. The old version checked `req.body` first and, getting an object back,
- * re-serialized it with JSON.stringify — which never matches the pretty-printed
- * bytes Stripe signed, so every webhook failed with "No signatures found matching
- * the expected signature" (seen live 2026-09-26). So: read the untouched request
- * stream first, and only fall back to an already-materialized body.
- *
- * Returns `{ buf, source }`; `source` is logged on failure so a regression is
- * diagnosable without logging the payload.
- */
-function getRawBody(req) {
-  const streamReadable =
-    typeof req?.on === "function" && req.readableEnded !== true && req.complete !== true;
-  if (streamReadable) {
-    return new Promise((resolve, reject) => {
-      const chunks = [];
-      req.on("data", (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
-      req.on("end", () => resolve({ buf: Buffer.concat(chunks), source: "stream" }));
-      req.on("error", reject);
-    });
-  }
-  const body = req?.body;
-  if (Buffer.isBuffer(body)) return Promise.resolve({ buf: body, source: "buffer" });
-  if (typeof body === "string") return Promise.resolve({ buf: Buffer.from(body), source: "string" });
-  // A parsed object cannot reproduce Stripe's signed bytes; verification will
-  // fail, and the logged source says why.
-  if (body && typeof body === "object") {
-    return Promise.resolve({ buf: Buffer.from(JSON.stringify(body)), source: "reserialized-object" });
-  }
-  return Promise.resolve({ buf: Buffer.alloc(0), source: "empty" });
-}
+
 
 /**
  * Compute the on-chain stripePaymentHash from a Stripe PaymentIntent ID.
@@ -442,7 +418,7 @@ async function handleWebhook(req, res) {
 
   let bodySource = "unread";
   try {
-    const { buf, source } = await getRawBody(req);
+    const { buf, source } = await readRawBody(req);
     bodySource = source;
     const signature = req.headers["stripe-signature"];
     event = stripe.webhooks.constructEvent(buf, signature, WEBHOOK_SECRET);
@@ -3146,6 +3122,13 @@ async function handleGuestOrderLookup(req, res) {
 
 export default async function handler(req, res) {
   const action = req.query.action || "webhook";
+
+  // Body parsing is disabled for this function (see `config` above). Restore
+  // req.body for every action except the webhook, which must see raw bytes.
+  if (action !== "webhook") {
+    const parsed = await attachJsonBody(req);
+    if (!parsed.ok) return res.status(parsed.status).json({ error: parsed.error });
+  }
 
   switch (action) {
     case "webhook":
