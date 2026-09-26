@@ -54,6 +54,12 @@ local_data/
 # Kiro internal
 .kiro/
 
+# Keeper-supplied showcase photos/videos (e.g. Steve's fish room). Never in git:
+# the repo is public and this is someone else's media. Served from the public
+# Supabase Storage bucket `showcase-public`; vercel.json rewrites /showcase-media/*
+# to it, so the public URLs are unchanged. Upload new files there, not here.
+frontend/public/showcase-media/
+
 # Docs — internal planning, keep off GitHub (except XR architecture)
 docs/
 !docs/IMMERSIVE_REEF_ARCHITECTURE.md

@@ -1,0 +1,9 @@
+# Keep LF in the working tree on every OS.
+#
+# The index is already all-LF and CI runs on Linux. Windows checkouts with
+# core.autocrlf=true were getting CRLF, which made the local suite red where CI
+# is green: source-string "catalog" tests expect "\n", and vitest cannot import
+# scripts/seams/report.mjs when its shebang line ends in "\r".
+#
+# text=auto still auto-detects binaries (images, PDFs, fonts) and leaves them alone.
+* text=auto eol=lf
