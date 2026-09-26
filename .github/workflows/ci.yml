@@ -41,10 +41,14 @@ jobs:
           # (pushPreferenceGate), and AquadexStorage.sol (specimenIdentity). Dropping
           # either would not fail loudly; those tests would read a missing file, so
           # verify against the suite before trimming this list further.
+          #
+          # `services/showcase-media-worker` is read by showcaseVideoPhaseC.test.js
+          # (the worker's video.mjs / worker.mjs). Small, source only.
           sparse-checkout: |
             frontend
             supabase
             contracts
+            services/showcase-media-worker
 
       - uses: actions/setup-node@v4
         with:
