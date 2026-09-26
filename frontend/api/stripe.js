@@ -148,24 +148,38 @@ function buildReleaseAuthMessage({ tokenId, paymentRef, issuedAt }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Read raw body from the request stream (needed for Stripe signature verification).
+ * Read the EXACT bytes Stripe sent (needed for Stripe signature verification).
+ *
+ * ORDER MATTERS. On Vercel, `req.body` is a lazy getter: the first read parses
+ * the JSON. The old version checked `req.body` first and, getting an object back,
+ * re-serialized it with JSON.stringify — which never matches the pretty-printed
+ * bytes Stripe signed, so every webhook failed with "No signatures found matching
+ * the expected signature" (seen live 2026-09-26). So: read the untouched request
+ * stream first, and only fall back to an already-materialized body.
+ *
+ * Returns `{ buf, source }`; `source` is logged on failure so a regression is
+ * diagnosable without logging the payload.
  */
 function getRawBody(req) {
-  if (req.body && Buffer.isBuffer(req.body)) {
-    return Promise.resolve(req.body);
+  const streamReadable =
+    typeof req?.on === "function" && req.readableEnded !== true && req.complete !== true;
+  if (streamReadable) {
+    return new Promise((resolve, reject) => {
+      const chunks = [];
+      req.on("data", (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+      req.on("end", () => resolve({ buf: Buffer.concat(chunks), source: "stream" }));
+      req.on("error", reject);
+    });
   }
-  if (req.body && typeof req.body === "string") {
-    return Promise.resolve(Buffer.from(req.body));
+  const body = req?.body;
+  if (Buffer.isBuffer(body)) return Promise.resolve({ buf: body, source: "buffer" });
+  if (typeof body === "string") return Promise.resolve({ buf: Buffer.from(body), source: "string" });
+  // A parsed object cannot reproduce Stripe's signed bytes; verification will
+  // fail, and the logged source says why.
+  if (body && typeof body === "object") {
+    return Promise.resolve({ buf: Buffer.from(JSON.stringify(body)), source: "reserialized-object" });
   }
-  if (req.body && typeof req.body === "object") {
-    return Promise.resolve(Buffer.from(JSON.stringify(req.body)));
-  }
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    req.on("data", (chunk) => chunks.push(chunk));
-    req.on("end", () => resolve(Buffer.concat(chunks)));
-    req.on("error", reject);
-  });
+  return Promise.resolve({ buf: Buffer.alloc(0), source: "empty" });
 }
 
 /**
@@ -426,12 +440,14 @@ async function handleWebhook(req, res) {
 
   let event;
 
+  let bodySource = "unread";
   try {
-    const rawBody = await getRawBody(req);
+    const { buf, source } = await getRawBody(req);
+    bodySource = source;
     const signature = req.headers["stripe-signature"];
-    event = stripe.webhooks.constructEvent(rawBody, signature, WEBHOOK_SECRET);
+    event = stripe.webhooks.constructEvent(buf, signature, WEBHOOK_SECRET);
   } catch (err) {
-    console.error("[Stripe Webhook] Signature verification failed:", err.message);
+    console.error(`[Stripe Webhook] Signature verification failed (body source: ${bodySource}):`, err.message);
     return res.status(400).json({ error: "Invalid webhook signature" });
   }
 
