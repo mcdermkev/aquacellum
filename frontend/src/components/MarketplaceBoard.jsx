@@ -23,6 +23,7 @@ import { LoadingSkeleton } from "./LoadingSkeleton";
 import { getOrCreateConversation } from "../services/messagesApi";
 import { getProfile } from "../services/reefApi";
 import { generateAlias } from "../utils/generateAlias";
+import { batchCardPhoto } from "../utils/listingCardPhoto";
 import { db } from "../db";
 import { evaluateTankFit } from "../services/addOnRecommender";
 import { applyCatalogQuery, SORT_OPTIONS, FULFILLMENT_TYPES, getListingKey } from "../services/catalogQuery";
@@ -1694,7 +1695,14 @@ export function MarketplaceBoard({
                         }
                       }
 
-                      const customPhoto = !item.isBatch ? (resolvedCardPhotos[item.tokenId] || null) : null;
+                      // Singles resolve through resolveSpecimenPhoto (hosted → Dexie →
+                      // legacy). A batch has no specimen record to resolve against, so its
+                      // hosted copy IS the listing's own `photoUrl` — without this every
+                      // batch card fell back to the generic species image (e.g. Steve's
+                      // named medaka lines all showed the same stock Oryzias photo).
+                      const customPhoto = item.isBatch
+                        ? batchCardPhoto(item)
+                        : (resolvedCardPhotos[item.tokenId] || null);
                       let additionalPhotos = [];
                       if (!item.isBatch) {
                         try {
