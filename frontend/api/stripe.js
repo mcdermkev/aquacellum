@@ -3297,8 +3297,17 @@ async function resolveAuthoritativeListing({ id, isBatch = false }) {
 /**
  * Resolve the reservation targets (sku + quantity + authoritative on-hand stock)
  * for a starting checkout, so the reserve_stock oversell guard has a real
- * denominator. Specimen/shipping/pickup/multi are unique NFTs (stock 1 each);
- * a batch's on-hand count is the authoritative on-chain batchListings.quantity.
+ * denominator. Specimen/shipping/pickup/multi are unique NFTs (stock 1 each).
+ *
+ * A batch's on-hand count comes from the inventory of record first —
+ * `aquadex_listings.quantity_remaining` (20260916_inventory_of_record.sql), the
+ * column the booth cash-sale RPC decrements — and only falls back to the on-chain
+ * `batchListings(id).quantity` when that column is NULL or unreadable.
+ *
+ * Why this order: off-chain batch listings (e.g. the seeded 8000001–8000007) have
+ * no on-chain batch at all, so the chain read returns 0 and every guest checkout
+ * of them was refused as OUT_OF_STOCK. A NULL column still defers to the chain
+ * rather than guessing, so on-chain batches are unaffected until backfilled.
  *
  * @param {string} purchaseType
  * @param {Array<Object>} items
@@ -3307,14 +3316,29 @@ async function resolveAuthoritativeListing({ id, isBatch = false }) {
 async function resolveReservationTargets(purchaseType, items) {
   if (purchaseType === "batch") {
     const it = items[0];
-    let stock = 0;
+    let stock = null;
     try {
-      const marketplace = getMarketplaceContract();
-      const b = await marketplace.batchListings(Number(it.listingId));
-      stock = Number(b.quantity.toString());
+      const { data: row, error } = await supabase
+        .from("aquadex_listings")
+        .select("quantity_remaining")
+        .eq("id", String(it.listingId))
+        .maybeSingle();
+      if (error) throw error;
+      if (row && row.quantity_remaining != null && Number.isFinite(Number(row.quantity_remaining))) {
+        stock = Math.max(0, Math.floor(Number(row.quantity_remaining)));
+      }
     } catch (e) {
-      console.warn("[Checkout] Could not resolve batch stock on-chain:", e.message);
-      stock = 0;
+      console.warn("[Checkout] Could not read inventory-of-record stock:", e.message);
+    }
+    if (stock === null) {
+      try {
+        const marketplace = getMarketplaceContract();
+        const b = await marketplace.batchListings(Number(it.listingId));
+        stock = Number(b.quantity.toString());
+      } catch (e) {
+        console.warn("[Checkout] Could not resolve batch stock on-chain:", e.message);
+        stock = 0;
+      }
     }
     return [{ sku: String(it.listingId), quantity: Number(it.quantity) || 1, totalStock: stock }];
   }
