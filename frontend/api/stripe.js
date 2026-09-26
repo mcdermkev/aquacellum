@@ -55,15 +55,10 @@ import { createSupabaseDoaClaimStore } from "./_lib/supabaseDoaClaimStore.js";
 import { evaluatePromotion } from "../src/services/promotionEngine.js";
 import { computeCheckoutCharge } from "../src/services/checkoutPricing.js";
 import { resolveFeePolicy, FEE_RAIL } from "../src/services/feePolicy.js";
-import { readRawBody, attachJsonBody } from "./_lib/rawBody.js";
-
-// Vercel's body parser is OFF for this function. Stripe signs the exact bytes it
-// sends; with the parser on, req.body arrives as a parsed object and the original
-// bytes are gone, so every webhook failed signature verification (seen live
-// 2026-09-26: "No signatures found matching the expected signature").
-// The webhook reads raw bytes; every other action gets req.body restored by
-// attachJsonBody in the dispatcher below, so those handlers are unchanged.
-export const config = { api: { bodyParser: false } };
+// Webhook signature verification needs the exact bytes Stripe sent; see
+// _lib/rawBody.js for how Vercel replays them and why re-serializing req.body
+// failed every webhook (2026-09-26).
+import { readRawBody } from "./_lib/rawBody.js";
 
 let stripe;
 try {
@@ -3122,13 +3117,6 @@ async function handleGuestOrderLookup(req, res) {
 
 export default async function handler(req, res) {
   const action = req.query.action || "webhook";
-
-  // Body parsing is disabled for this function (see `config` above). Restore
-  // req.body for every action except the webhook, which must see raw bytes.
-  if (action !== "webhook") {
-    const parsed = await attachJsonBody(req);
-    if (!parsed.ok) return res.status(parsed.status).json({ error: parsed.error });
-  }
 
   switch (action) {
     case "webhook":
