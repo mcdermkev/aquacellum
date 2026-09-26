@@ -202,6 +202,19 @@ export default async function handler(req, res) {
     // ── Booth: +/- stock correction (miscount, restock) ──
     case "adjust-inventory":
       return handleAdjustInventory(req, res);
+    // ── Booth staff (helpers who ring up sales; seller manages them by QR) ──
+    case "booth-staff-invite":
+      return handleBoothStaffInvite(req, res);
+    case "booth-staff-list":
+      return handleBoothStaffList(req, res);
+    case "booth-staff-remove":
+      return handleBoothStaffRemove(req, res);
+    case "booth-staff-join":
+      return handleBoothStaffJoin(req, res);
+    case "booth-staff-context":
+      return handleBoothStaffContext(req, res);
+    case "booth-staff-inventory":
+      return handleBoothStaffInventory(req, res);
     // ── Aquadex tank QR: publish a tank, and the public read behind the label ──
     case "publish-tank":
       return handlePublishTank(req, res);
@@ -2617,9 +2630,9 @@ async function handleRecordSale(req, res) {
     return res.status(405).json({ error: "method_not_allowed" });
   }
 
-  // The selling wallet comes ONLY from the verified session — never the body.
-  const sellerWallet = await requireWalletFromSession(req, res);
-  if (!sellerWallet) return;
+  // Who is at the till comes ONLY from the verified session — never the body.
+  const sessionWallet = await requireWalletFromSession(req, res);
+  if (!sessionWallet) return;
 
   let body = req.body;
   if (typeof body === "string") {
@@ -2632,7 +2645,23 @@ async function handleRecordSale(req, res) {
     unitPriceCents,
     rail = "cash",
     note = null,
+    forSeller = null,
   } = body || {};
+
+  // Booth staff: a helper may ring up a sale against the seller's stock, but
+  // only with an ACTIVE booth_staff membership for that seller. Without
+  // `forSeller` (or when it is the caller's own wallet) this is exactly the
+  // seller's own sale, unchanged.
+  let sellerWallet = sessionWallet;
+  let recordedBy = null;
+  if (forSeller && String(forSeller).toLowerCase() !== sessionWallet) {
+    const target = String(forSeller).toLowerCase();
+    if (!(await isActiveBoothStaff(target, sessionWallet))) {
+      return res.status(403).json({ error: "You're not a helper for this booth.", code: "NOT_BOOTH_STAFF" });
+    }
+    sellerWallet = target;
+    recordedBy = sessionWallet;
+  }
 
   if (!saleId || typeof saleId !== "string" || saleId.length > 128) {
     return res.status(400).json({ error: "saleId is required", code: "SALE_ID_REQUIRED" });
@@ -2723,7 +2752,7 @@ async function handleRecordSale(req, res) {
         quantity: qty,
         items: [{ listingId: String(listingId), quantity: qty, priceCents: unitCents }],
         notes: note ? String(note).slice(0, 500) : null,
-        metadata: { saleId, rail: "cash", source: "booth" },
+        metadata: { saleId, rail: "cash", source: "booth", ...(recordedBy ? { recordedBy } : {}) },
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -2870,6 +2899,257 @@ async function handleAdjustInventory(req, res) {
     console.error("[adjust-inventory] unexpected:", err?.message || err);
     return res.status(500).json({ error: "Could not update stock.", code: "ADJUST_FAILED" });
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BOOTH STAFF — helpers who ring up sales for a seller (Aquashella §5.6)
+//
+// The seller shows a QR; a helper scans it and signs in. After that the helper
+// can open the seller's booth and record CASH sales (record-sale with forSeller)
+// and start card sales (guest checkout, open to anyone). Everything else stays
+// seller-only because those endpoints still require session wallet == seller:
+// adjust-inventory, guest-handoff-confirm (money release), publish-tank, and
+// these management actions.
+//
+// Invite tokens: 32 random bytes, only the SHA-256 is stored, single use,
+// 15-minute expiry, redeemed atomically by redeem_booth_staff_invite.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const BOOTH_INVITE_TTL_MS = 15 * 60 * 1000;
+const WALLET_RE = /^0x[0-9a-f]{40}$/;
+
+function hashInviteToken(token) {
+  return crypto.createHash("sha256").update(String(token), "utf8").digest("hex");
+}
+
+/** True when `staffWallet` currently helps at `sellerWallet`'s booth. */
+async function isActiveBoothStaff(sellerWallet, staffWallet) {
+  const seller = String(sellerWallet || "").toLowerCase();
+  const staff = String(staffWallet || "").toLowerCase();
+  if (!WALLET_RE.test(seller) || !WALLET_RE.test(staff) || seller === staff) return false;
+  const { data, error } = await supabase
+    .from("booth_staff")
+    .select("id")
+    .ilike("seller_wallet", seller)
+    .ilike("staff_wallet", staff)
+    .is("revoked_at", null)
+    .limit(1);
+  if (error) {
+    console.error("[booth-staff] membership check failed:", error.message);
+    return false; // fail closed
+  }
+  return Array.isArray(data) && data.length > 0;
+}
+
+/** Best-effort display names for a set of wallets (never blocks the response). */
+async function boothDisplayNames(wallets) {
+  const list = [...new Set((wallets || []).map((w) => String(w).toLowerCase()))].filter((w) => WALLET_RE.test(w));
+  const names = {};
+  if (!list.length) return names;
+  try {
+    const [{ data: breeders }, { data: profiles }] = await Promise.all([
+      supabase.from("breeder_profiles").select("wallet_address, display_name, slug").in("wallet_address", list),
+      supabase.from("profiles").select("wallet_address, display_name").in("wallet_address", list),
+    ]);
+    for (const p of profiles || []) if (p.display_name) names[String(p.wallet_address).toLowerCase()] = p.display_name;
+    for (const b of breeders || []) if (b.display_name) names[String(b.wallet_address).toLowerCase()] = b.display_name;
+  } catch { /* names are cosmetic */ }
+  return names;
+}
+
+function boothStaffPreamble(req, res, methods) {
+  setCorsHeaders(req, res, { methods: `${methods}, OPTIONS` });
+  res.setHeader("Cache-Control", "private, no-store, max-age=0");
+  if (req.method === "OPTIONS") { res.status(204).end(); return false; }
+  if (!methods.split(", ").includes(req.method)) {
+    res.setHeader("Allow", `${methods}, OPTIONS`);
+    res.status(405).json({ error: "method_not_allowed" });
+    return false;
+  }
+  return true;
+}
+
+function parseJsonBody(req) {
+  let body = req.body;
+  if (typeof body === "string") {
+    try { body = JSON.parse(body); } catch { body = {}; }
+  }
+  return body || {};
+}
+
+/** POST — seller makes a one-time code a helper scans to join. */
+async function handleBoothStaffInvite(req, res) {
+  if (!boothStaffPreamble(req, res, "POST")) return;
+  const sellerWallet = await requireWalletFromSession(req, res);
+  if (!sellerWallet) return;
+
+  const token = crypto.randomBytes(32).toString("base64url");
+  const expiresAt = new Date(Date.now() + BOOTH_INVITE_TTL_MS).toISOString();
+  const { error } = await supabase.from("booth_staff_invites").insert({
+    token_hash: hashInviteToken(token),
+    seller_wallet: sellerWallet,
+    expires_at: expiresAt,
+  });
+  if (error) {
+    console.error("[booth-staff-invite] insert failed:", error.message);
+    return res.status(500).json({ error: "Could not create a helper code." });
+  }
+  const appUrl = process.env.APP_URL || "https://aquacellum.com";
+  const joinUrl = `${appUrl}/app/breeder-terminal?section=booth&join=${encodeURIComponent(token)}`;
+  return res.status(200).json({ ok: true, joinUrl, expiresAt });
+}
+
+/** GET — seller sees who helps at their booth. */
+async function handleBoothStaffList(req, res) {
+  if (!boothStaffPreamble(req, res, "GET")) return;
+  const sellerWallet = await requireWalletFromSession(req, res);
+  if (!sellerWallet) return;
+
+  const { data, error } = await supabase
+    .from("booth_staff")
+    .select("staff_wallet, added_at")
+    .ilike("seller_wallet", sellerWallet)
+    .is("revoked_at", null)
+    .order("added_at", { ascending: true });
+  if (error) {
+    console.error("[booth-staff-list] failed:", error.message);
+    return res.status(500).json({ error: "Could not load helpers." });
+  }
+  const names = await boothDisplayNames((data || []).map((r) => r.staff_wallet));
+  return res.status(200).json({
+    ok: true,
+    helpers: (data || []).map((r) => {
+      const w = String(r.staff_wallet).toLowerCase();
+      return { wallet: w, name: names[w] || null, addedAt: r.added_at };
+    }),
+  });
+}
+
+/** POST { wallet } — seller removes a helper. Takes effect on their next sale. */
+async function handleBoothStaffRemove(req, res) {
+  if (!boothStaffPreamble(req, res, "POST")) return;
+  const sellerWallet = await requireWalletFromSession(req, res);
+  if (!sellerWallet) return;
+
+  const staff = String(parseJsonBody(req).wallet || "").toLowerCase();
+  if (!WALLET_RE.test(staff)) return res.status(400).json({ error: "wallet is required", code: "WALLET_REQUIRED" });
+
+  const { error } = await supabase
+    .from("booth_staff")
+    .update({ revoked_at: new Date().toISOString() })
+    .ilike("seller_wallet", sellerWallet)
+    .ilike("staff_wallet", staff)
+    .is("revoked_at", null);
+  if (error) {
+    console.error("[booth-staff-remove] failed:", error.message);
+    return res.status(500).json({ error: "Could not remove the helper." });
+  }
+  return res.status(200).json({ ok: true });
+}
+
+/** POST { token } — a signed-in helper redeems the code they scanned. */
+async function handleBoothStaffJoin(req, res) {
+  if (!boothStaffPreamble(req, res, "POST")) return;
+  const staffWallet = await requireWalletFromSession(req, res);
+  if (!staffWallet) return;
+
+  const token = String(parseJsonBody(req).token || "");
+  if (token.length < 20 || token.length > 200) {
+    return res.status(400).json({ error: "That helper code isn't valid.", code: "INVITE_INVALID" });
+  }
+
+  const { data: sellerWallet, error } = await supabase.rpc("redeem_booth_staff_invite", {
+    p_token_hash: hashInviteToken(token),
+    p_staff_wallet: staffWallet,
+  });
+  if (error) {
+    const msg = error.message || "";
+    if (/yourself/i.test(msg)) {
+      return res.status(400).json({ error: "That's your own helper code — have your helper scan it.", code: "INVITE_SELF" });
+    }
+    if (/not found|expired/i.test(msg)) {
+      return res.status(404).json({ error: "That helper code has expired or was already used. Ask for a new one.", code: "INVITE_EXPIRED" });
+    }
+    console.error("[booth-staff-join] failed:", msg);
+    return res.status(500).json({ error: "Could not join the booth." });
+  }
+  const seller = String(sellerWallet).toLowerCase();
+  const names = await boothDisplayNames([seller]);
+  return res.status(200).json({ ok: true, seller: { wallet: seller, name: names[seller] || null } });
+}
+
+/** GET — which booths the signed-in person helps at. */
+async function handleBoothStaffContext(req, res) {
+  if (!boothStaffPreamble(req, res, "GET")) return;
+  const staffWallet = await requireWalletFromSession(req, res);
+  if (!staffWallet) return;
+
+  const { data, error } = await supabase
+    .from("booth_staff")
+    .select("seller_wallet, added_at")
+    .ilike("staff_wallet", staffWallet)
+    .is("revoked_at", null)
+    .order("added_at", { ascending: true });
+  if (error) {
+    console.error("[booth-staff-context] failed:", error.message);
+    return res.status(500).json({ error: "Could not load booths." });
+  }
+  const names = await boothDisplayNames((data || []).map((r) => r.seller_wallet));
+  return res.status(200).json({
+    ok: true,
+    booths: (data || []).map((r) => {
+      const w = String(r.seller_wallet).toLowerCase();
+      return { wallet: w, name: names[w] || null };
+    }),
+  });
+}
+
+/**
+ * GET ?seller=0x… — the seller's booth lines, for an active helper. Returns only
+ * what the booth screen shows (name, species, photo, price, stock); never the
+ * seller's private listing fields.
+ */
+async function handleBoothStaffInventory(req, res) {
+  if (!boothStaffPreamble(req, res, "GET")) return;
+  const staffWallet = await requireWalletFromSession(req, res);
+  if (!staffWallet) return;
+
+  const seller = String(req.query?.seller || "").toLowerCase();
+  if (!WALLET_RE.test(seller)) return res.status(400).json({ error: "seller is required", code: "SELLER_REQUIRED" });
+  if (!(await isActiveBoothStaff(seller, staffWallet))) {
+    return res.status(403).json({ error: "You're not a helper for this booth.", code: "NOT_BOOTH_STAFF" });
+  }
+
+  const { data, error } = await supabase
+    .from("aquadex_listings")
+    .select("id, common_name, price, is_batch, is_active, quantity_total, quantity_remaining, data, updated_at")
+    .eq("seller_address", seller)
+    .order("updated_at", { ascending: false });
+  if (error) {
+    console.error("[booth-staff-inventory] failed:", error.message);
+    return res.status(500).json({ error: "Could not load inventory." });
+  }
+  const rows = (data || []).map((r) => {
+    let d = r.data;
+    if (typeof d === "string") { try { d = JSON.parse(d); } catch { d = {}; } }
+    d = d && typeof d === "object" ? d : {};
+    return {
+      id: r.id,
+      common_name: r.common_name,
+      price: r.price,
+      is_batch: r.is_batch,
+      is_active: r.is_active,
+      quantity_total: r.quantity_total,
+      quantity_remaining: r.quantity_remaining,
+      data: {
+        commonName: d.commonName ?? null,
+        scientificName: d.scientificName ?? null,
+        photoUrl: d.photoUrl ?? null,
+        priceCentsUSD: d.priceCentsUSD ?? null,
+      },
+    };
+  });
+  return res.status(200).json({ ok: true, rows });
 }
 
 async function handlePublishTank(req, res) {

@@ -41,7 +41,14 @@ export function boothListingKey(row) {
  */
 export function normalizeBoothLine(row) {
   if (!row || row.id == null) return null;
-  const data = row.data && typeof row.data === "object" ? row.data : {};
+  // `data` can arrive as a JSON *string* (cloudSync writes JSON.stringify'd
+  // blobs; Steve's seeded listings are stored that way), so parse it rather than
+  // silently dropping the scientific name and photo.
+  let data = row.data;
+  if (typeof data === "string") {
+    try { data = JSON.parse(data); } catch { data = null; }
+  }
+  if (!data || typeof data !== "object" || Array.isArray(data)) data = {};
 
   // Unit conversion only — same expression the server uses to read a row.
   const priceCents =

@@ -51,12 +51,23 @@ import {
   SpinnerGap,
   QrCode,
   Printer,
+  UsersThree,
 } from "@phosphor-icons/react";
 
 import { supabase } from "../../services/supabaseClient";
 import { formatPriceCents } from "../../services/catalogQuery";
 import { announce } from "../../utils/a11y";
-import { adjustInventory, publishTank, recordCashSale, sendQueuedSale } from "../../services/boothApi";
+import {
+  adjustInventory,
+  fetchHelperInventory,
+  joinBooth,
+  listBoothsIHelp,
+  publishTank,
+  recordCashSale,
+  sendQueuedSale,
+} from "../../services/boothApi";
+import { useAuth } from "../../contexts/AuthContext";
+import { BoothHelpers } from "./BoothHelpers";
 import {
   countQueuedSales,
   isPermanentFailure,
@@ -136,10 +147,52 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
   // One adjust in flight at a time per line; the server result replaces the count.
   const [adjustingId, setAdjustingId] = useState(null);
 
+  // ── Booth staff ────────────────────────────────────────────────────────────
+  // `actingFor` is the seller wallet when this person is helping at someone
+  // else's booth; null means their own booth. Helpers only get Sell. Counts,
+  // publishing and helper management stay with the seller (server-enforced).
+  const { sessionBridgeReady } = useAuth();
+  const [staffBooths, setStaffBooths] = useState([]);
+  const [actingFor, setActingFor] = useState(null);
+  const [helpersOpen, setHelpersOpen] = useState(false);
+  const [joinNotice, setJoinNotice] = useState(null);
+  const helping = !!actingFor;
+  const helpingName = helping
+    ? (staffBooths.find((b) => b.wallet === actingFor)?.name || shortWallet(actingFor))
+    : null;
+
+  // Scanning a helper QR opens this screen with ?join=<code>. Redeem it once the
+  // session is ready (the token getter is registered by AuthContext), then drop
+  // it from the URL so a refresh doesn't try to reuse a spent code.
+  useEffect(() => {
+    if (!walletAccount || !sessionBridgeReady) return undefined;
+    let cancelled = false;
+    (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("join");
+      if (code) {
+        params.delete("join");
+        const rest = params.toString();
+        window.history.replaceState(null, "", `${window.location.pathname}${rest ? `?${rest}` : ""}${window.location.hash}`);
+        const r = await joinBooth(code);
+        if (cancelled) return;
+        if (r.success && r.seller?.wallet) {
+          setActingFor(r.seller.wallet);
+          setJoinNotice({ ok: true, text: `You're a helper at ${r.seller.name || shortWallet(r.seller.wallet)}'s booth. Tap Sell to ring up a sale.` });
+        } else {
+          setJoinNotice({ ok: false, text: r.error || "Couldn't join that booth." });
+        }
+      }
+      const ctx = await listBoothsIHelp();
+      if (!cancelled && ctx.success) setStaffBooths(ctx.booths || []);
+    })();
+    return () => { cancelled = true; };
+  }, [walletAccount, sessionBridgeReady]);
+
   const inventory = useQuery({
-    queryKey: ["boothInventory", walletAccount ? String(walletAccount).toLowerCase() : null],
-    queryFn: () => fetchBoothInventory(walletAccount),
-    enabled: !!walletAccount,
+    queryKey: ["boothInventory", walletAccount ? String(walletAccount).toLowerCase() : null, actingFor],
+    queryFn: () => (actingFor ? fetchHelperInventory(actingFor) : fetchBoothInventory(walletAccount)),
+    enabled: !!walletAccount && (!actingFor || sessionBridgeReady),
     // Short, unlike the 2-minute shared listings cache: at a booth the count on
     // screen is being read out loud to a customer.
     staleTime: 10_000,
@@ -151,6 +204,13 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
   useEffect(() => {
     if (inventory.data) setLines(normalizeBoothLines(inventory.data));
   }, [inventory.data]);
+
+  // A helper with no stock of their own lands straight on the booth they help at.
+  useEffect(() => {
+    if (!actingFor && staffBooths.length > 0 && inventory.isSuccess && (inventory.data || []).length === 0) {
+      setActingFor(staffBooths[0].wallet);
+    }
+  }, [actingFor, staffBooths, inventory.isSuccess, inventory.data]);
 
   const refreshQueuedCount = useCallback(async () => {
     try {
@@ -209,7 +269,9 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
    * because a second phone at the booth may have sold one meanwhile.
    */
   const handleAdjust = async (line, delta) => {
-    if (!online || adjustingId) return;
+    // Seller-only. The buttons aren't rendered for helpers, and the server
+    // refuses a helper anyway (adjust requires session wallet == seller).
+    if (helping || !online || adjustingId) return;
     setAdjustingId(line.id);
     setSaleError(null);
     const result = await adjustInventory({ listingId: line.id, delta });
@@ -254,6 +316,7 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
         quantity: qty,
         unitPriceCents: line.priceCents,
         sellerAddress: walletAccount,
+        forSeller: actingFor,
       });
     } catch (err) {
       setSaleBusy(false);
@@ -273,6 +336,7 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
       listingId: line.id,
       quantity: qty,
       unitPriceCents: line.priceCents,
+      forSeller: actingFor,
     });
 
     if (result.success) {
@@ -326,26 +390,56 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
             <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", margin: "0.15rem 0 0 0" }}>
               {copy.subtitle}
             </p>
-            <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: "0.2rem 0 0 0", fontFamily: "'JetBrains Mono', monospace" }}>
-              {copy.sellingAs} {shortWallet(walletAccount)}
-            </p>
+            {helping ? (
+              <p style={{ color: "#7dd3fc", fontSize: "0.9rem", margin: "0.2rem 0 0 0", fontWeight: 600 }}>
+                Helping at {helpingName}&apos;s booth
+                <span style={{ color: "var(--text-muted)", fontWeight: 400, fontFamily: "'JetBrains Mono', monospace", fontSize: "0.8rem" }}>
+                  {" "}· you: {shortWallet(walletAccount)}
+                </span>
+              </p>
+            ) : (
+              <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: "0.2rem 0 0 0", fontFamily: "'JetBrains Mono', monospace" }}>
+                {copy.sellingAs} {shortWallet(walletAccount)}
+              </p>
+            )}
           </div>
           <div style={{ display: "flex", gap: "0.4rem" }}>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => setPublishModalOpen(true)}
-              aria-label="Publish tank for QR label"
-              style={{
-                minHeight: TAP_MIN,
-                minWidth: TAP_MIN,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <QrCode size={20} weight="bold" />
-            </button>
+            {/* Seller-only controls. A helper sees Sell and Refresh, nothing else. */}
+            {!helping && (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setHelpersOpen(true)}
+                aria-label="Booth helpers"
+                title="Booth helpers"
+                style={{
+                  minHeight: TAP_MIN,
+                  minWidth: TAP_MIN,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <UsersThree size={20} weight="bold" />
+              </button>
+            )}
+            {!helping && (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setPublishModalOpen(true)}
+                aria-label="Publish tank for QR label"
+                style={{
+                  minHeight: TAP_MIN,
+                  minWidth: TAP_MIN,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <QrCode size={20} weight="bold" />
+              </button>
+            )}
             <button
               type="button"
               className="btn-secondary"
@@ -370,6 +464,40 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
             </button>
           </div>
         </div>
+
+        {/* Switch between your own booth and a booth you help at. */}
+        {staffBooths.length > 0 && (
+          <div role="group" aria-label="Which booth" style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", marginTop: "0.75rem" }}>
+            {[{ wallet: null, label: "My booth" }, ...staffBooths.map((b) => ({ wallet: b.wallet, label: `${b.name || shortWallet(b.wallet)}'s booth` }))].map((opt) => {
+              const active = (opt.wallet || null) === (actingFor || null);
+              return (
+                <button
+                  key={opt.wallet || "mine"}
+                  type="button"
+                  className={active ? "btn-primary" : "btn-secondary"}
+                  aria-pressed={active}
+                  onClick={() => { setActingFor(opt.wallet); setSaleError(null); setLastSale(null); }}
+                  style={{ minHeight: TAP_MIN, padding: "0 0.9rem", fontSize: "0.95rem", fontWeight: 600 }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {joinNotice && (
+          <div
+            role={joinNotice.ok ? "status" : "alert"}
+            style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginTop: "0.75rem", fontSize: "0.95rem", color: joinNotice.ok ? "#86efac" : "#fca5a5" }}
+          >
+            {joinNotice.ok ? <CheckCircle size={20} weight="fill" /> : <Warning size={20} weight="duotone" />}
+            <span style={{ flex: 1 }}>{joinNotice.text}</span>
+            <button type="button" className="btn-secondary" onClick={() => setJoinNotice(null)} aria-label="Dismiss" style={{ minWidth: TAP_MIN, minHeight: TAP_MIN }}>
+              <X size={18} weight="bold" />
+            </button>
+          </div>
+        )}
 
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.75rem" }}>
           {!online && (
@@ -551,7 +679,7 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
           {/* The same person can end up with two accounts (email code vs Google
               sign-in create separate wallets). An empty booth is the moment that
               bites, so say which account this is and what to try. */}
-          {lines.length === 0 && (
+          {lines.length === 0 && !helping && (
             <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginTop: "0.75rem", lineHeight: 1.5 }}>
               {copy.wrongAccountHint(shortWallet(walletAccount))}
             </p>
@@ -565,7 +693,7 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
               line={line}
               copy={copy}
               onSell={() => openSell(line)}
-              onAdjust={(delta) => handleAdjust(line, delta)}
+              onAdjust={helping ? null : (delta) => handleAdjust(line, delta)}
               adjusting={adjustingId === line.id}
               canAdjust={online && !adjustingId}
             />
@@ -586,8 +714,10 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
         />
       )}
 
+      {helpersOpen && !helping && <BoothHelpers onClose={() => setHelpersOpen(false)} />}
+
       {/* ── Publish Tank Modal ─────────────────────────────────────────── */}
-      {publishModalOpen && (
+      {publishModalOpen && !helping && (
         <PublishTankModal
           lines={lines}
           onClose={() => {
@@ -636,8 +766,9 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
  */
 function BoothLine({ line, copy, onSell, onAdjust, adjusting = false, canAdjust = true }) {
   const soldOut = isSoldOut(line);
-  // An unknown count (never backfilled) can't be nudged meaningfully from here.
-  const known = line.quantityRemaining != null;
+  // An unknown count (never backfilled) can't be nudged meaningfully from here,
+  // and helpers get no −/+ at all (onAdjust is null for them).
+  const known = line.quantityRemaining != null && typeof onAdjust === "function";
   const adjustBtn = (delta, label, glyph, disabled) => (
     <button
       type="button"

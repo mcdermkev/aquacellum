@@ -40,6 +40,8 @@ const PERMANENT_CODES = Object.freeze([
   "SALE_ID_REQUIRED",
   "LISTING_REQUIRED",
   "RAIL_NOT_ALLOWED",
+  // The seller removed this helper; replaying won't change that.
+  "NOT_BOOTH_STAFF",
 ]);
 
 function defaultTable() {
@@ -77,6 +79,9 @@ export function buildQueuedSale(sale = {}) {
     saleId: String(sale.saleId),
     listingId: String(sale.listingId),
     sellerAddress: sale.sellerAddress ? String(sale.sellerAddress).toLowerCase() : null,
+    // Set when a helper rings up a sale for someone else's booth, so a replay
+    // after reconnect lands on that booth — not the helper's own stock.
+    forSeller: sale.forSeller ? String(sale.forSeller).toLowerCase() : null,
     quantity: Math.max(1, Math.round(Number(sale.quantity) || 1)),
     unitPriceCents: Math.max(0, Math.round(Number(sale.unitPriceCents) || 0)),
     note: sale.note ? String(sale.note).slice(0, 500) : null,

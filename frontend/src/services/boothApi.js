@@ -65,6 +65,7 @@ export async function recordCashSale({
   quantity = 1,
   unitPriceCents,
   note = null,
+  forSeller = null,
   fetchImpl = fetch,
 } = {}) {
   const headers = { "Content-Type": "application/json" };
@@ -84,6 +85,10 @@ export async function recordCashSale({
         // Hardcoded, not a parameter. This module can only record cash.
         rail: "cash",
         note,
+        // A helper ringing up a sale for someone else's booth. The server only
+        // honours it for an active booth_staff membership; omitted otherwise so
+        // the seller's own sale request is unchanged.
+        ...(forSeller ? { forSeller: String(forSeller).toLowerCase() } : {}),
       }),
     });
   } catch (err) {
@@ -207,5 +212,64 @@ export function sendQueuedSale(row) {
     quantity: row.quantity,
     unitPriceCents: row.unitPriceCents,
     note: row.note,
+    forSeller: row.forSeller || null,
   });
+}
+
+// ─── Booth staff (helpers) ──────────────────────────────────────────────────
+// Seller-only: createHelperInvite, listHelpers, removeHelper.
+// Helper: joinBooth (redeem a scanned code), listBoothsIHelp, fetchHelperInventory.
+// Every call rides the same session bridge; the server decides who may do what.
+
+async function staffCall(action, { method = "GET", body, query = "", fetchImpl = fetch } = {}) {
+  const token = await getSessionToken();
+  if (!token) return { success: false, error: "Sign in to continue.", code: "NO_SESSION" };
+  let res;
+  try {
+    res = await fetchImpl(`${API_BASE}/storefront-detail?action=${action}${query}`, {
+      method,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+  } catch (err) {
+    return { success: false, offline: true, error: err?.message || "offline" };
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) return { success: false, status: res.status, code: data.code || null, error: data.error || `Request failed (${res.status})` };
+  return { success: true, ...data };
+}
+
+/** Seller: a single-use, 15-minute code for a helper to scan. → { joinUrl, expiresAt } */
+export function createHelperInvite(opts = {}) {
+  return staffCall("booth-staff-invite", { method: "POST", body: {}, ...opts });
+}
+
+/** Seller: current helpers. → { helpers: [{ wallet, name, addedAt }] } */
+export function listHelpers(opts = {}) {
+  return staffCall("booth-staff-list", opts);
+}
+
+/** Seller: remove a helper. */
+export function removeHelper(wallet, opts = {}) {
+  return staffCall("booth-staff-remove", { method: "POST", body: { wallet }, ...opts });
+}
+
+/** Helper: redeem the code from a scanned QR. → { seller: { wallet, name } } */
+export function joinBooth(token, opts = {}) {
+  return staffCall("booth-staff-join", { method: "POST", body: { token }, ...opts });
+}
+
+/** Helper: booths this account helps at. → { booths: [{ wallet, name }] } */
+export function listBoothsIHelp(opts = {}) {
+  return staffCall("booth-staff-context", opts);
+}
+
+/** Helper: a seller's booth lines (display fields + stock only). Throws on failure, for react-query. */
+export async function fetchHelperInventory(sellerWallet, opts = {}) {
+  const r = await staffCall("booth-staff-inventory", {
+    query: `&seller=${encodeURIComponent(String(sellerWallet).toLowerCase())}`,
+    ...opts,
+  });
+  if (!r.success) throw new Error(r.error || "Could not load inventory.");
+  return r.rows || [];
 }
