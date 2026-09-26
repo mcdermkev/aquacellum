@@ -171,6 +171,13 @@ export function applyAdjustResult(lines, listingId, quantityRemaining, delta) {
   });
 }
 
+/** `0xef09…98f7` — enough to tell two accounts apart at a glance. */
+export function shortWallet(address) {
+  const a = typeof address === "string" ? address.trim() : "";
+  if (!/^0x[0-9a-fA-F]{40}$/.test(a)) return a || "unknown account";
+  return `${a.slice(0, 6)}…${a.slice(-4)}`.toLowerCase();
+}
+
 /**
  * Wording only. `casualModeActive` never changes what a control does — it is the
  * same prop the rest of breeder/ uses to soften vocabulary for hobbyists.
@@ -194,6 +201,9 @@ export function boothCopy(casualModeActive = false) {
         adjustUpLabel: "One more",
         adjustDownLabel: "One less",
         adjustOfflineReason: "Fixing counts needs a connection",
+        sellingAs: "Selling as",
+        wrongAccountHint: (who) =>
+          `You're signed in as ${who}. Don't see your fish? You might be in your other account — sign out and sign in the other way (email code or Google).`,
       }
     : {
         sectionTitle: "Booth",
@@ -212,5 +222,8 @@ export function boothCopy(casualModeActive = false) {
         adjustUpLabel: "Add one",
         adjustDownLabel: "Remove one",
         adjustOfflineReason: "Stock adjustments need a connection",
+        sellingAs: "Selling as",
+        wrongAccountHint: (who) =>
+          `Signed in as ${who}. If your listings usually appear here, you may be in a second account: sign out and sign in the other way (email code vs. Google).`,
       };
 }

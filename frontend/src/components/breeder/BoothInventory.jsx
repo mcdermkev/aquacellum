@@ -70,6 +70,7 @@ import {
   applyAdjustResult,
   applyLocalSale,
   boothCopy,
+  shortWallet,
   boothProductPath,
   clampSellQuantity,
   filterBoothLines,
@@ -325,6 +326,9 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
             <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", margin: "0.15rem 0 0 0" }}>
               {copy.subtitle}
             </p>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: "0.2rem 0 0 0", fontFamily: "'JetBrains Mono', monospace" }}>
+              {copy.sellingAs} {shortWallet(walletAccount)}
+            </p>
           </div>
           <div style={{ display: "flex", gap: "0.4rem" }}>
             <button
@@ -544,6 +548,14 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
           <p style={{ color: "var(--text-muted)", fontSize: "1rem" }}>
             {lines.length === 0 ? copy.emptyState : copy.noMatches}
           </p>
+          {/* The same person can end up with two accounts (email code vs Google
+              sign-in create separate wallets). An empty booth is the moment that
+              bites, so say which account this is and what to try. */}
+          {lines.length === 0 && (
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginTop: "0.75rem", lineHeight: 1.5 }}>
+              {copy.wrongAccountHint(shortWallet(walletAccount))}
+            </p>
+          )}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>

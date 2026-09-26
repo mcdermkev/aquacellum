@@ -174,6 +174,7 @@ export default defineConfig({
         leaderboard: resolve(__dirname, 'leaderboard.html'),  // Zone leaderboard
         developers: resolve(__dirname, 'developers.html'),    // Public Species API docs
         order: resolve(__dirname, 'order.html'),              // Guest order tracking + pickup code
+        checkoutSuccess: resolve(__dirname, 'checkout-success.html'), // Stripe success_url; links the guest to their order
         tank: resolve(__dirname, 'tank.html')                 // Public tank page behind a printed QR label (/t/<token>)
       }
     }

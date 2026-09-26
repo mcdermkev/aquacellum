@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { recordCardSaleInventory, CARD_SALE_ID_PREFIX } from "../../api/_lib/cardSaleInventory.js";
 import { adjustInventory, setSessionTokenGetter } from "../services/boothApi.js";
-import { applyAdjustResult } from "../services/boothInventory.js";
+import { applyAdjustResult, boothCopy, shortWallet } from "../services/boothInventory.js";
 
 const read = (p) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
@@ -189,6 +189,25 @@ describe("adjustInventory (client)", () => {
     setSessionTokenGetter(async () => "tok");
     const out = await adjustInventory({ listingId: 1, delta: -1, fetchImpl: async () => { throw new Error("net"); } });
     expect(out).toMatchObject({ success: false, offline: true });
+  });
+});
+
+describe("which account is selling (duplicate-account guard)", () => {
+  it("shortens a wallet so two accounts are easy to tell apart", () => {
+    expect(shortWallet("0xEF0931458159097A62FDDD0CA798F269B5CE98F7")).toBe("0xef09…98f7");
+    expect(shortWallet("")).toBe("unknown account");
+    expect(shortWallet("not-a-wallet")).toBe("not-a-wallet");
+  });
+
+  it("the empty-booth hint names the account and the other sign-in method, in both modes", () => {
+    for (const casual of [false, true]) {
+      const copy = boothCopy(casual);
+      expect(copy.sellingAs).toBeTruthy();
+      const hint = copy.wrongAccountHint("0xef09…98f7");
+      expect(hint).toContain("0xef09…98f7");
+      expect(hint).toMatch(/email/i);
+      expect(hint).toMatch(/google/i);
+    }
   });
 });
 

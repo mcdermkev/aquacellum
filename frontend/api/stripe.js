@@ -60,6 +60,7 @@ import { resolveFeePolicy, FEE_RAIL } from "../src/services/feePolicy.js";
 // failed every webhook (2026-09-26).
 import { readRawBody } from "./_lib/rawBody.js";
 import { recordCardSaleInventory } from "./_lib/cardSaleInventory.js";
+import { createSellerTransfer } from "./_lib/sellerTransfer.js";
 
 let stripe;
 try {
@@ -200,16 +201,10 @@ function getMarketplaceContract() {
  * platform balance. Used for immediate (non-shipping) payouts and for the
  * release-on-arrival payout of held shipping funds.
  */
-async function transferToSeller({ sellerStripeAccountId, amountCents, transferGroup, reference }) {
-  if (!sellerStripeAccountId) throw new Error("Missing seller Stripe account");
-  if (!amountCents || amountCents <= 0) throw new Error("Invalid seller payout amount");
-  return await stripe.transfers.create({
-    amount: amountCents,
-    currency: "usd",
-    destination: sellerStripeAccountId,
-    ...(transferGroup ? { transfer_group: transferGroup } : {}),
-    metadata: { reference: reference || "" },
-  });
+async function transferToSeller(args) {
+  // Funded from the buyer's own charge (source_transaction) so a same-day
+  // release works while that charge is still pending. See _lib/sellerTransfer.js.
+  return await createSellerTransfer(stripe, args);
 }
 
 /**
