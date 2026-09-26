@@ -1,0 +1,175 @@
+/**
+ * boothApi.js
+ *
+ * Client-side service for the booth cash-sale write
+ * (`POST /api/storefront-detail?action=record-sale`, BOOTH_BUILD_SPEC.md §4 C1).
+ * Folded onto the storefront-detail router like the pickup routes, because
+ * `frontend/api/` is at Vercel Hobby's 12-function limit.
+ *
+ * Auth is the same bridge every other authed seller service uses:
+ * `setSessionTokenGetter` takes Privy's `getAccessToken` (registered from
+ * AuthContext), and the token rides as a bearer header. The server derives the
+ * selling wallet from that token and never from the body — see
+ * `requireWalletFromSession` in the handler.
+ *
+ * MONEY BOUNDARY: no fee, no total, no Stripe. A cash sale moved money in person;
+ * this call only records it and decrements real stock. Card sales deliberately
+ * cannot go through here — the server rejects `rail !== "cash"` — because a card
+ * sale must run through `?action=create-checkout` so the fee policy applies.
+ *
+ * Failures are classified `permanent` vs not, because the offline outbox needs to
+ * know the difference between "the wifi is gone, keep this" and "the server has
+ * ruled on this, stop asking".
+ */
+
+const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+
+let _sessionTokenGetter = null;
+
+/** Register the session-token getter (e.g. Privy getAccessToken). Pass null to clear. */
+export function setSessionTokenGetter(getter) {
+  _sessionTokenGetter = typeof getter === "function" ? getter : null;
+}
+
+async function getSessionToken() {
+  if (!_sessionTokenGetter) return null;
+  try {
+    return (await _sessionTokenGetter()) || null;
+  } catch (err) {
+    console.warn("[BoothApi] Could not resolve session token:", err.message);
+    return null;
+  }
+}
+
+/**
+ * Record an in-person cash sale.
+ *
+ * `saleId` MUST be generated once per sale (see `newSaleId` in boothOutbox.js)
+ * and reused on every retry. The server is idempotent on it, which is what makes
+ * replaying the offline queue safe.
+ *
+ * @param {object} sale
+ * @param {string} sale.saleId
+ * @param {string|number} sale.listingId
+ * @param {number} sale.quantity
+ * @param {number} sale.unitPriceCents - what the seller charged per fish
+ * @param {string|null} [sale.note]
+ * @param {typeof fetch} [sale.fetchImpl] - injectable for tests
+ * @returns {Promise<{ok?:boolean, success:boolean, orderRecorded?:boolean, orderId?:string,
+ *   quantityRemaining?:number, warning?:string, error?:string, code?:string,
+ *   status?:number, permanent?:boolean, offline?:boolean}>}
+ */
+export async function recordCashSale({
+  saleId,
+  listingId,
+  quantity = 1,
+  unitPriceCents,
+  note = null,
+  fetchImpl = fetch,
+} = {}) {
+  const headers = { "Content-Type": "application/json" };
+  const token = await getSessionToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  let res;
+  try {
+    res = await fetchImpl(`${API_BASE}/storefront-detail?action=record-sale`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        saleId,
+        listingId: String(listingId),
+        quantity,
+        unitPriceCents,
+        // Hardcoded, not a parameter. This module can only record cash.
+        rail: "cash",
+        note,
+      }),
+    });
+  } catch (err) {
+    // No response at all — the classic bad-expo-wifi case. Explicitly NOT
+    // permanent: the outbox keeps the row and replays it on reconnect.
+    return { success: false, offline: true, permanent: false, error: err?.message || "offline" };
+  }
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    return {
+      success: false,
+      status: res.status,
+      code: data.code || null,
+      error: data.error || `Request failed (${res.status})`,
+      // 4xx is the server ruling on this sale; 5xx is worth retrying.
+      permanent: res.status >= 400 && res.status < 500,
+    };
+  }
+
+  return { success: true, ...data };
+}
+
+/**
+ * Publish (or re-publish) a tank for its QR label
+ * (`POST /api/storefront-detail?action=publish-tank`).
+ *
+ * Rides the same session bridge as `recordCashSale`: the server derives the
+ * owner wallet from the bearer token, keeps only listings that wallet owns, and
+ * resolves price/stock itself. The client only says WHICH listings.
+ *
+ * Throws on failure (unlike the sale path, there is no outbox to classify for).
+ *
+ * @param {object} params
+ * @param {string} params.tankRef - stable per-owner ref; re-publishing keeps the token
+ * @param {string} [params.title]
+ * @param {string} [params.caption]
+ * @param {Array<string|number>} params.listingIds
+ * @param {boolean} [params.isPublic]
+ * @param {typeof fetch} [params.fetchImpl]
+ * @returns {Promise<{ok:boolean, token:string, publicUrl:string, isPublic:boolean, sellableLines:number}>}
+ */
+export async function publishTank({
+  tankRef,
+  title = "",
+  caption = "",
+  listingIds = [],
+  isPublic = true,
+  fetchImpl = fetch,
+} = {}) {
+  const token = await getSessionToken();
+  if (!token) {
+    // Fail before the network: without a session the server can only 401.
+    throw new Error("Sign in again to publish this tank.");
+  }
+
+  const res = await fetchImpl(`${API_BASE}/storefront-detail?action=publish-tank`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      tankRef,
+      title,
+      caption,
+      listingIds: (Array.isArray(listingIds) ? listingIds : []).map(String),
+      isPublic,
+    }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || `Could not publish the tank (${res.status}).`);
+  }
+  return data;
+}
+
+/**
+ * Adapter for `replayQueue({ send })`. Takes a stored queue row and reuses its
+ * `saleId` verbatim — the one invariant the offline path depends on.
+ */
+export function sendQueuedSale(row) {
+  return recordCashSale({
+    saleId: row.saleId,
+    listingId: row.listingId,
+    quantity: row.quantity,
+    unitPriceCents: row.unitPriceCents,
+    note: row.note,
+  });
+}

@@ -19699,39 +19699,213 @@
     "maxLengthCm": 4,
     "masterPhotoUrl": "/species-images/oryzias-latipes.png",
     "tankMetrics": {
-      "difficulty": "Unknown"
+      "tempRangeCelsius": [15, 26],
+      "phRange": [7, 8],
+      "difficulty": "Beginner",
+      "minVolumeGallons": 5
     },
-    "enhanced": false,
-    "sources": [
-      {
-        "name": "FishBase",
-        "url": "https://www.fishbase.se/summary/Oryzias-latipes.html",
-        "type": "Scientific data"
-      }
-    ],
+    "enhanced": true,
+    "ecology": {
+      "comments": "Medaka (Japanese rice fish) are small, hardy surface-dwellers native to East Asia, long associated with rice paddies and lowland still waters. They are famously tolerant — surviving a wide temperature range, brackish conditions, and outdoor life — which makes them one of the easiest egg-laying fish to keep and breed. They are also a major scientific model organism and the most intensively bred ornamental fish in Japan.",
+      "biotope": "Shallow, still or slow-moving lowland waters: rice paddies, ponds, marshes, irrigation ditches and the margins of slow streams. These habitats are warm and sunlit in summer, densely vegetated, and can swing widely in temperature between day and night and across seasons. Some coastal populations occur in brackish tide pools.",
+      "phMin": 6.5,
+      "phMax": 8,
+      "hardnessRange": "Medium to hard (8-20 dGH); tolerates a wide range including slightly brackish water",
+      "tempCeiling": 32,
+      "socialBehavior": "Peaceful, active shoaling fish best kept in groups of six or more. Males display and gently spar over females but rarely cause harm. They mix well with other calm, temperate species and are ideal for outdoor tubs and ponds in warm months."
+    },
+    "diet": {
+      "trophicLevel": "Omnivore",
+      "fooditems": "In the wild, medaka feed at and near the surface on zooplankton, small crustaceans, insect larvae (including mosquito larvae), and algae. In captivity they thrive on a varied diet of high-quality micro pellets and crushed flake, supplemented with live or frozen daphnia, baby brine shrimp, and micro worms.",
+      "feedingPlaybook": "Feed small amounts once or twice daily — only what the group finishes in a couple of minutes. Their upturned mouths are built for surface feeding, so floating or slow-sinking micro foods work best. Conditioning adults with live and frozen foods dramatically increases spawning. Fry need infusoria or powdered fry food until large enough for baby brine shrimp."
+    },
+    "reproduction": {
+      "spawningTrait": "Continuous plant-spawner (non-annual). Females carry a cluster of fertilised eggs at the vent before attaching them to fine-leaved plants or spawning mops.",
+      "layoutRequirement": "A mature, gently filtered tank or tub with fine-leaved plants (java moss, hornwort) or yarn spawning mops. A long photoperiod (13+ hours of light) and warmth of 24-28°C reliably trigger daily spawning through the warm season.",
+      "comments": "Medaka are among the easiest egg-layers to breed. In breeding condition, a female releases eggs each morning and carries them below her belly until she brushes them onto plants or a mop. Eggs are adhesive and hatch in roughly 8-14 days depending on temperature. Adults will eat both eggs and fry, so move the mop (or the eggs) to a separate rearing container to raise good numbers. No hormones, cool-down, or dry-season simulation are needed."
+    },
     "personality": {
       "vibeLine": {
         "casual": "The classic medaka: small, hardy, and endlessly interesting to watch.",
         "pro": "Japanese ricefish and established laboratory model; a surface-oriented, non-annual breeder."
       },
       "flavorText": {
-        "casual": "The classic medaka: small, hardy, and endlessly interesting to watch. Start with stable water, gentle observation, and a careful species-specific plan.",
-        "pro": "Japanese ricefish and established laboratory model; a surface-oriented, non-annual breeder. The local FishBase record should remain the primary reference while aquarium and breeding evidence is reviewed."
+        "casual": "The little pond jewel — tough as nails, happy in a sunny tub, and quick to breed. A brilliant first fish for anyone who wants livebearer-easy breeding from an egg-layer.",
+        "pro": "A temperate, surface-oriented shoaler that rewards stable, well-lit, harder water. Tolerant of a wide temperature range and light brackishness; conditions readily and spawns daily under a long photoperiod."
       }
     },
-    "reproduction": {
-      "spawningTrait": "Non-annual breeder; detailed captive spawning guidance remains limited in FishBase.",
-      "layoutRequirement": "",
-      "comments": "Adults occur in ponds, marshes, paddy fields and small flows of plains (Ref. 41299). They prefer slow-moving streams. Inhabit mainly waters of lowlands and brackish water, and also known to inhabit tide pools of coasts of certain regions in Japan and Korea. They can withstand a wide range of salinity (Ref. 58933). Omnivorous (Ref. 58933). For indoor culture, a diluted sea water is rather better than the freshwater , and the use of a balanced salt solution is recommended, if the tap water proves to be unsuitable (Ref. 58933). Used in experimental research (Ref. 4537). Non-annual breeders. Are easy to maintain in the aquarium (Ref. 27139). A fluorescent ornamental variety (genetically modified fish), a product of fluorescent protein extracted from jellyfish and attaching to DNA in embryonic fish of this is now being sold in the aquarium trade (Ref. 48573). FishBase spawning area: Japan. Recorded spawning temperature: 28–30°C."
+    "lifespan": {
+      "averageYears": 2,
+      "rangeYears": [2, 4],
+      "notes": "Most medaka live 2-3 years, with well-kept fish reaching 4-5. Outdoor fish that overwinter cold tend to be robust and long-lived. Warmer, constant temperatures speed metabolism and can shorten lifespan slightly."
     },
-    "ecology": {
-      "comments": "Adults occur in ponds, marshes, paddy fields and small flows of plains (Ref. 41299). They prefer slow-moving streams. Inhabit mainly waters of lowlands and brackish water, and also known to inhabit tide pools of coasts of certain regions in Japan and Korea. They can withstand a wide range of salinity (Ref. 58933). Omnivorous (Ref. 58933). For indoor culture, a diluted sea water is rather better than the freshwater , and the use of a balanced salt solution is recommended, if the tap water proves to be unsuitable (Ref. 58933). Used in experimental research (Ref. 4537). Non-annual breeders. Are easy to maintain in the aquarium (Ref. 27139). A fluorescent ornamental variety (genetically modified fish), a product of fluorescent protein extracted from jellyfish and attaching to DNA in embryonic fish of this is now being sold in the aquarium trade (Ref. 48573)."
+    "origin": {
+      "native": "East Asia",
+      "countries": ["Japan", "South Korea", "China"],
+      "waterways": "Lowland rice-paddy country of Japan and the Korean Peninsula, extending into parts of eastern China. Long-domesticated in Japan, where ornamental strains have been selected for centuries.",
+      "habitat": "Warm, shallow, sunlit still waters — rice paddies, ponds, marshes, ditches and slow stream margins — often heavily vegetated and prone to large daily and seasonal temperature swings. Some populations tolerate brackish coastal tide pools.",
+      "iucnStatus": "Least Concern"
     },
-    "diet": {
-      "trophicLevel": "Omnivore",
-      "fooditems": "unidentified",
-      "feedingPlaybook": ""
-    }
+    "behavior": {
+      "swimmingLevel": "Top / Mid",
+      "activityPattern": "Diurnal",
+      "activityLevel": "Moderate to high",
+      "temperament": "Peaceful",
+      "notes": "Medaka are constantly busy at the surface, patrolling in a loose shoal and snapping at anything edible. They are unbothered by handling and temperature change, which is why they thrive in outdoor tubs. Their upturned mouth and flat back are classic surface-feeder adaptations."
+    },
+    "sexualDimorphism": {
+      "identifiable": true,
+      "male": "Larger, more angular dorsal and anal fins; the anal fin is long and roughly parallelogram-shaped, often with a fine notched or fringed edge. Body typically slimmer.",
+      "female": "Smaller, more triangular anal fin and a rounder, fuller belly. In breeding condition she carries a visible cluster of eggs at the vent each morning.",
+      "maturityAge": "2-3 months"
+    },
+    "diseases": {
+      "susceptibility": "Low",
+      "common": [
+        {
+          "name": "Mycobacteriosis (Fish TB / 'skinny disease')",
+          "cause": "Bacterial (Mycobacterium spp.)",
+          "notes": "The classic medaka ailment. Shows as progressive wasting, a curved spine, or lethargy despite eating. Chronic and hard to treat — prevent with clean water, low stocking, and by not breeding from affected lines. Practice basic hygiene, as some Mycobacterium can affect people through open cuts."
+        },
+        {
+          "name": "Ich (White Spot)",
+          "cause": "Parasitic (Ichthyophthirius multifiliis)",
+          "notes": "Salt-grain spots on body and fins, usually triggered by chilling or a sudden temperature drop. Medaka tolerate aquarium salt and gradual warming well, which makes ich straightforward to treat."
+        },
+        {
+          "name": "Fin Rot",
+          "cause": "Bacterial (opportunistic, poor water quality)",
+          "notes": "Ragged, receding fins — most often a symptom of dirty water or overcrowding rather than a primary disease. Corrects with water changes and better husbandry; long-fin lines are a little more prone to it."
+        },
+        {
+          "name": "Columnaris",
+          "cause": "Bacterial (Flavobacterium columnare)",
+          "notes": "Grey-white patches or cottony mouth and fin lesions, favoured by warm, dirty water. Improve water quality, cool the tank, and treat promptly as it can move fast."
+        }
+      ]
+    },
+    "tankmates": {
+      "compatible": [
+        { "species": "Other medaka / ricefish", "notes": "Same conditions and temperament — the ideal companions." },
+        { "species": "White Cloud Mountain minnows", "notes": "Temperate, peaceful, and thrive in the same cool water." },
+        { "species": "Chili and harlequin rasboras", "notes": "Small, calm mid-water shoalers that leave the surface to medaka." },
+        { "species": "Pygmy and dwarf corydoras", "notes": "Peaceful bottom-dwellers that share space without competing." },
+        { "species": "Cherry and Amano shrimp", "notes": "Great cleanup crew; adults are safe, though medaka pick at tiny shrimplets." },
+        { "species": "Nerite and ramshorn snails", "notes": "Harmless algae grazers, fully compatible." }
+      ],
+      "incompatible": [
+        { "species": "Bettas and other fin-nippers", "reason": "Nip trailing fins and stress a peaceful shoal." },
+        { "species": "Large or aggressive cichlids", "reason": "Will bully, out-compete, or eat a 4 cm fish." },
+        { "species": "Goldfish", "reason": "Out-size and out-compete medaka and foul the water." },
+        { "species": "High-heat tropicals (e.g. discus)", "reason": "Need constant warmth medaka do not; mismatched care." },
+        { "species": "Any fish large enough to eat them", "reason": "Medaka are small surface fish and easily eaten." }
+      ],
+      "notes": "Best appreciated in a species group or a calm, temperate community. They are surface-oriented, so peaceful mid- and bottom-dwellers share space well. Note that adult medaka eat their own eggs and newly hatched fry, and may pick at newborn shrimp."
+    },
+    "colorVariants": [
+      { "src": "/showcase-media/steve/lines/pink-saffire/IMG_20260907_165711_303.jpg", "label": "Pink Saffire" },
+      { "src": "/showcase-media/steve/lines/gladio/IMG_20260907_170316_911.jpg", "label": "Gladio (long-fin)" },
+      { "src": "/showcase-media/steve/lines/echos-of-the-moon/IMG_20260907_171300_216.jpg", "label": "Echos of the Moon" },
+      { "src": "/showcase-media/steve/lines/shinkai/IMG_20260907_171554_047.jpg", "label": "Shinkai" },
+      { "src": "/showcase-media/steve/posters/VID_20260901_115510_665.jpg", "label": "Long Fin Red Emperor" },
+      { "src": "/showcase-media/steve/posters/VID_20260901_115521_576.jpg", "label": "Blue Aurora Lame" }
+    ],
+    "variants": {
+      "tailTypes": [
+        { "name": "Standard fin", "description": "The wild-type short, rounded fin carried by most medaka lines." },
+        { "name": "Long-fin (Hikari long-fin)", "description": "Trailing, flowing fins that extend the dorsal, anal and caudal — seen here in the Gladio and Long Fin Red Emperor lines." }
+      ],
+      "colors": ["White", "Orange / Hi", "Red / crimson", "Pink / lavender", "Blue", "Gold / yellow", "Black", "Silver / translucent"],
+      "colorPatterns": ["Lame (metallic 'rame' shimmer)", "Two-tone", "Translucent (Shinkai-type)", "Nijiiro (rainbow)", "Solid"],
+      "notes": "Medaka are the most intensively bred ornamental fish in Japan, with hundreds of named varieties selected for colour, iridescence, fin shape and eye type. The named lines pictured above are bred by Steve of <a href=\"/store/ggstevericefishnj\">GG Steve Rice Fish NJ</a> — see the full <a href=\"/medaka-morphs\">medaka morph guide</a> for the story behind each line."
+    },
+    "acclimation": {
+      "method": "Float and gradual mix",
+      "sensitivity": "Low — one of the most forgiving aquarium fish",
+      "notes": "Float the sealed bag for 15-20 minutes to match temperature, then add tank water to the bag in stages over 20-30 minutes before netting the fish out. Medaka shrug off pH and hardness differences that would stress more delicate fish, but avoid dropping them into much colder water, which can invite ich.",
+      "quarantineDays": 14
+    },
+    "tankRequirements": {
+      "minDimensions": "40cm L x 20cm W (a standard ~5 gallon) for a small group",
+      "idealDimensions": "60cm L (10-20 gallon) or an outdoor tub / patio pond of 40L+",
+      "flowRate": "Gentle. Medaka come from still water; a sponge filter or lightly baffled filter is ideal.",
+      "lighting": "Bright. Strong light (or natural sunlight outdoors) brings out colour and, with a long photoperiod, drives spawning. It also encourages green water and algae, which fry graze on.",
+      "substrate": "Any — bare-bottom for breeding tubs, or sand / fine gravel in a display. Dark substrate deepens body colour.",
+      "decorEssentials": "Floating and fine-leaved plants (hornwort, java moss, frogbit) for cover, foraging and spawning sites; spawning mops if breeding. Open surface swimming space is appreciated.",
+      "lidRequired": true,
+      "lidNotes": "Medaka are surface fish and can jump, especially in bare or newly set-up tanks. Use a lid or leave a wide freeboard. Open-topped outdoor tubs work because the water sits well below the rim."
+    },
+    "growthTimeline": [
+      { "age": "0-1 week", "milestone": "Egg stage: adhesive eggs cling to plants or mops and develop visibly, hatching in ~8-14 days depending on warmth." },
+      { "age": "1-3 weeks", "milestone": "Free-swimming fry hang at the surface. Fed infusoria, green water, or powdered fry food, then baby brine shrimp." },
+      { "age": "3-8 weeks", "milestone": "Rapid growth and the first hint of body colour. Move up to crushed flake and micro pellets." },
+      { "age": "2-3 months", "milestone": "Sexual maturity. Fin shape lets you sex them; conditioned adults begin spawning." },
+      { "age": "3-6 months", "milestone": "Colour and pattern of the line come in fully; long-fin lines finish extending their fins." },
+      { "age": "6+ months", "milestone": "Full adult (~3-4 cm), in prime breeding condition through the warm season." }
+    ],
+    "maintenance": {
+      "waterChangePercent": 25,
+      "waterChangeFrequency": "Weekly",
+      "notes": "Undemanding. A weekly 20-30% change keeps colour and appetite strong. Outdoor tubs are largely self-sustaining in summer — top up for evaporation and only change water if it fouls. Match new-water temperature within a couple of degrees and always dechlorinate.",
+      "filterMaintenance": "Rinse sponge media in old tank water every few weeks. Mature, gently filtered water suits them best.",
+      "testSchedule": "Test ammonia and nitrite while cycling, then monitor nitrate. Target 0 ammonia, 0 nitrite, <30ppm nitrate."
+    },
+    "mythsVsReality": [
+      {
+        "myth": "Medaka need a heater like tropical fish",
+        "reality": "They are temperate. They do best without a heater at normal room temperature and can overwinter outdoors in many climates. Constant high heat actually shortens their lives."
+      },
+      {
+        "myth": "Rice fish are just feeder fish with no variety",
+        "reality": "Medaka are the most intensively bred ornamental fish in Japan, with hundreds of named colour, fin and scale varieties — some highly prized."
+      },
+      {
+        "myth": "They're too small to be interesting",
+        "reality": "A shoal at the surface of a planted tub is constantly active, and near-daily spawning makes them one of the most rewarding fish to breed at home."
+      },
+      {
+        "myth": "You need special equipment to breed them",
+        "reality": "A sunny tub, some plants or a mop, and good food are enough. The hard part is protecting eggs and fry from hungry adults, not triggering spawning."
+      }
+    ],
+    "enrichment": {
+      "tips": [
+        "Give them a sunlit spot: natural light outdoors (or bright light indoors) intensifies colour and keeps them spawning.",
+        "Grow floating plants — frogbit, hornwort, water lettuce — for cover, foraging and spawning sites.",
+        "Keep a proper shoal of 6 or more; medaka are far more confident and active in numbers.",
+        "Offer live foods like daphnia or mosquito larvae for natural surface-hunting behaviour.",
+        "Set up a summer patio tub: medaka are one of the best fish for an outdoor container pond in warm months."
+      ],
+      "notes": "Medaka are at their best in a bright, planted, gently filtered set-up — especially an outdoor tub — where a group can shoal, forage and breed the way they would in a rice paddy."
+    },
+    "availability": {
+      "commonness": "Common (and growing)",
+      "priceRange": "$3-$40+ per fish depending on line",
+      "notes": "Plain and wild-type medaka are inexpensive and widely available. Named ornamental lines — metallic 'lame', long-fin, and premium Japanese varieties — command more, with rare imported strains reaching high prices. Locally bred lines from hobby breeders are often the best value and the healthiest.",
+      "whereToBuy": [
+        "Independent breeders (e.g. GG Steve Rice Fish NJ)",
+        "Local fish stores",
+        "Aquarium clubs, auctions and swaps",
+        "Online medaka specialists"
+      ]
+    },
+    "sources": [
+      {
+        "name": "FishBase",
+        "url": "https://www.fishbase.se/summary/Oryzias-latipes.html",
+        "type": "Scientific data"
+      },
+      {
+        "name": "Seriously Fish",
+        "url": "https://www.seriouslyfish.com/species/oryzias-latipes/",
+        "type": "Care profile"
+      },
+      {
+        "name": "GG Steve Rice Fish NJ",
+        "url": "/store/ggstevericefishnj",
+        "type": "Breeder morph lines"
+      }
+    ]
   },
   {
     "specCode": 5162,

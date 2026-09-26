@@ -41,6 +41,9 @@
     .store-location { display: inline-flex; align-items: center; gap: 4px; font-size: 0.78rem; color: var(--text-muted); }
     .store-specialties { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
     .store-specialty { padding: 3px 10px; border-radius: 50px; font-size: 0.65rem; font-weight: 600; background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.2); color: var(--violet-300); }
+    .store-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; min-height: 38px; }
+    .store-showcase-link { display: inline-flex; align-items: center; padding: 8px 14px; border-radius: 10px; font-size: 0.76rem; font-weight: 700; color: var(--violet-200, #ddd6fe); text-decoration: none; background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.3); }
+    .store-showcase-link:hover { border-color: rgba(139,92,246,0.55); background: rgba(139,92,246,0.16); }
     /* =========================================
        STATS BAR
     ========================================= */
@@ -195,7 +198,9 @@
   <!-- Display-safe listing reads (Fish Finder T14) — must precede the inline
        script that calls AquadexPublicListings. -->
   <script src="/js/public-listings.js"></script>
-  <script>
+  <script type="module">
+    import { matchingShowcasePath, safePublicImageUrl } from '/src/services/showcasePublic.js';
+
     // ── Configuration ──────────────────────────────────────────────────────
     const SUPABASE_URL = 'https://yahsdztnvsykzecjatsl.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaHNkenRudnN5a3plY2phdHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQwMDgsImV4cCI6MjA5NjA3MDAwOH0.3anqDFU9hUjZg2AFWJlXSBbwSM-knNrmb-uQ_Baq98I';
@@ -224,13 +229,7 @@
       return node;
     }
 
-    function safeImageUrl(value) {
-      if (!value) return '';
-      try {
-        const url = new URL(value, window.location.origin);
-        return url.protocol === 'https:' || url.origin === window.location.origin ? url.href : '';
-      } catch { return ''; }
-    }
+    const safeImageUrl = (value) => safePublicImageUrl(value, window.location.origin);
 
     function formatPrice(priceUsd) {
       const value = Number(priceUsd);
@@ -309,6 +308,22 @@
       const id = item.isBatch ? (item.listingId ?? item.id) : (item.tokenId ?? item.id);
       const key = `${item.isBatch ? 'batch' : 'single'}-${id}`;
       return `/app/products/${encodeURIComponent(key)}`;
+    }
+
+    async function addShowcaseLink(container, slug) {
+      if (!container || !slug) return;
+      try {
+        const response = await fetch(`/api/storefront-detail?action=showcase-room&room=${encodeURIComponent(slug)}`);
+        if (!response.ok) return;
+        const payload = await response.json();
+        const showcasePath = matchingShowcasePath(payload, slug);
+        if (!showcasePath) return;
+        const actions = element('div', 'store-actions');
+        const link = element('a', 'store-showcase-link', 'View aquarium showcase →');
+        link.href = showcasePath;
+        actions.append(link);
+        container.append(actions);
+      } catch { /* a missing/private showcase never blocks the storefront */ }
     }
 
     async function init() {
@@ -491,6 +506,7 @@
         info.append(specialties);
       }
       document.getElementById('storeProfile').replaceChildren(avatarWrap, info);
+      addShowcaseLink(info, profile.slug);
 
       const statsBar = document.getElementById('statsBar');
       const statCard = (icon, value, label) => {

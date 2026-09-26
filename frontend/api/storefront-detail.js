@@ -75,9 +75,20 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import { createHash } from "node:crypto";
 import { ethers } from "ethers";
+import crypto from "node:crypto";
 import { setCorsHeaders, handleCorsPreFlight } from "./_lib/cors.js";
+import {
+  createShowcaseMediaHandler,
+  createShowcaseRoomHandler,
+  createShowcaseVideoTokenHandler,
+} from "./_lib/showcasePublicHandlers.js";
+import { getCuratedEntry } from "./_lib/showcaseCurated.js";
+import {
+  readCuratedVisibility,
+  writeCuratedVisibility,
+  authorizeCuratedManage,
+} from "./_lib/curatedVisibility.js";
 import {
   isPrivyConfigurationFailure,
   respondToPrivyConfigurationFailure,
@@ -111,11 +122,17 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY || ""
 );
 
+const handleShowcaseRoom = createShowcaseRoomHandler({ supabase, setCorsHeaders });
+const handleShowcaseMedia = createShowcaseMediaHandler({ supabase, setCorsHeaders });
+const handleShowcaseVideoToken = createShowcaseVideoTokenHandler({ supabase });
+
 // Protocol constants
 const CHAIN_ID = 84532; // Base Sepolia
 const MARKETPLACE_ADDRESS = "0x0741D50d49e7374b855b532c17aD36aBF8AF3b3e";
 const MANAGER_ADDRESS = "0x351ca8f34D94F29F6f865Afa419A636324473DeF";
-const PROTOCOL_FEE_BPS = 400; // 4%
+// Standard CARD rate. Not "all transactions": cash sales recorded in-app carry no
+// fee and verified event card sales are reduced (src/services/feePolicy.js).
+const PROTOCOL_FEE_BPS = 400; // 4% on standard card sales
 const BASE_URL = "https://aquadex.fish";
 const IPFS_GATEWAY = "https://gateway.pinata.cloud/ipfs";
 
@@ -128,8 +145,12 @@ export default async function handler(req, res) {
       return handleCheckSlug(req, res);
     case "discover":
       return handleDiscover(req, res);
+    case "showcase-room":
+      return handleShowcaseRoom(req, res);
     case "showcase-media":
       return handleShowcaseMedia(req, res);
+    case "showcase-video-token":
+      return handleShowcaseVideoToken(req, res);
     case "setup":
       return handleSetup(req, res);
     // ── Task 20: Verified Structured Reviews ──
@@ -175,10 +196,212 @@ export default async function handler(req, res) {
       return handlePickupArrange(req, res);
     case "pickup-confirm":
       return handlePickupConfirm(req, res);
+    // ── Booth: record an in-person cash sale (no money moves, no fee) ──
+    case "record-sale":
+      return handleRecordSale(req, res);
+    // ── Aquadex tank QR: publish a tank, and the public read behind the label ──
+    case "publish-tank":
+      return handlePublishTank(req, res);
+    case "public-tank":
+      return handlePublicTank(req, res);
+    // ── Curated showcase public/private toggle (session-authed, no signing) ──
+    case "curated-visibility":
+      return handleCuratedVisibility(req, res);
+    // ── One-time demo provisioning of Steve's store (secret-gated, single-purpose) ──
+    case "provision-steve-store":
+      return handleProvisionSteveStore(req, res);
     default:
       // No action = default storefront detail endpoint
       return handleStorefrontDetail(req, res);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ACTION: provision-steve-store (one-time demo seeding, secret-gated)
+// POST /api/storefront-detail?action=provision-steve-store  (header X-Provision-Secret)
+//
+// Single-purpose provisioner for the gold-standard demo: frees the ggstevericefishnj
+// slug from any old wallet, creates Steve's storefront under his current wallet, and
+// seeds his 7 pack listings (batch, local pickup, real intake prices/photos). Not real
+// money — Stripe stays test mode and the seller must still complete Connect onboarding
+// before checkout succeeds. Hardcoded target (wallet/slug/listings) so it can only ever
+// (re)build this one demo store, and gated by a server secret.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const STEVE_STORE_WALLET = "0xef0931458159097a62fddd0ca798f269b5ce98f7";
+const STEVE_STORE_SLUG = "ggstevericefishnj";
+const STEVE_MEDIA_BASE = "https://aquacellum.com/showcase-media/steve";
+const STEVE_STORE_LISTINGS = [
+  { id: 8000001, line: "Pink Saffire", pack: 4, totalCents: 7500, photo: `${STEVE_MEDIA_BASE}/lines/pink-saffire/IMG_20260907_165711_303.jpg` },
+  { id: 8000002, line: "Gradio", pack: 2, totalCents: 8000, photo: `${STEVE_MEDIA_BASE}/lines/gladio/IMG_20260907_170316_911.jpg` },
+  { id: 8000003, line: "Echos of the Moon", pack: 2, totalCents: 6000, photo: `${STEVE_MEDIA_BASE}/lines/echos-of-the-moon/IMG_20260907_171300_216.jpg` },
+  { id: 8000004, line: "Shinkai", pack: 4, totalCents: 5000, photo: `${STEVE_MEDIA_BASE}/lines/shinkai/IMG_20260907_171554_047.jpg` },
+  { id: 8000005, line: "Long Fin Red Emperor", pack: 2, totalCents: 7500, photo: `${STEVE_MEDIA_BASE}/posters/VID_20260901_115510_665.jpg` },
+  { id: 8000006, line: "Blue Aurora Lam\u00e9", pack: 2, totalCents: 5000, photo: `${STEVE_MEDIA_BASE}/posters/VID_20260901_115521_576.jpg` },
+  { id: 8000007, line: "Mixed", pack: 4, totalCents: 4000, photo: `${STEVE_MEDIA_BASE}/hero/show-pond-flag.jpg` },
+];
+
+function buildSteveListingRow(entry, index) {
+  const perFishCents = Math.round(entry.totalCents / entry.pack);
+  const perFishUsd = (perFishCents / 100).toFixed(2);
+  const totalUsd = (entry.totalCents / 100).toFixed(2);
+  const title = `${entry.line} Medaka`;
+  const data = {
+    id: entry.id,
+    listingId: entry.id,
+    isBatch: true,
+    active: true,
+    seller: STEVE_STORE_WALLET,
+    quantity: entry.pack,
+    // USD canonical: per-fish price drives Stripe; buying the full pack = pack total.
+    price: perFishUsd,
+    priceUsd: perFishUsd,
+    priceCentsUSD: perFishCents,
+    packTotalUsd: totalUsd,
+    commonName: title,
+    scientificName: "Oryzias latipes",
+    speciesId: 0,
+    isShipping: false,
+    localPickup: true,
+    fulfillment: "pickup",
+    photoUrl: entry.photo,
+    description: `${entry.line} — pack of ${entry.pack} for $${totalUsd} ($${perFishUsd}/fish). Japanese rice fish (medaka). Hardy, no heater needed; can outdoor overwinter, breeds easily. Local pickup in Toms River, NJ.`,
+    pickupArea: "Toms River, NJ",
+    healthStatus: "healthy",
+    doaGuarantee: true,
+    createdAt: Math.floor(Date.now() / 1000),
+  };
+  return {
+    id: String(entry.id),
+    seller_address: STEVE_STORE_WALLET,
+    species_id: 0,
+    common_name: title,
+    price: perFishUsd,
+    is_batch: true,
+    is_active: true,
+    // Descending created_at by index so the list shows Pink Saffire first.
+    created_at: new Date(Date.now() - index * 1000).toISOString(),
+    updated_at: new Date().toISOString(),
+    data: JSON.stringify(data),
+  };
+}
+
+async function handleProvisionSteveStore(req, res) {
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ error: "method_not_allowed" });
+  }
+  const secret = process.env.SHOWCASE_PROVISION_SECRET || "";
+  const provided = req.headers["x-provision-secret"];
+  if (!secret || provided !== secret) {
+    return res.status(403).json({ error: "forbidden" });
+  }
+  try {
+    // 1) Free the slug from any wallet that isn't the target (deletes the old empty profile).
+    const { error: freeErr } = await supabase
+      .from("breeder_profiles")
+      .delete()
+      .eq("slug", STEVE_STORE_SLUG)
+      .neq("wallet_address", STEVE_STORE_WALLET);
+    if (freeErr) throw new Error("free_slug: " + freeErr.message);
+
+    // 2) Upsert Steve's storefront profile under the current wallet.
+    const { error: profileErr } = await supabase
+      .from("breeder_profiles")
+      .upsert(
+        {
+          wallet_address: STEVE_STORE_WALLET,
+          slug: STEVE_STORE_SLUG,
+          display_name: "GG Steve Rice Fish NJ",
+          bio: "Japanese rice fish (medaka) bred in Toms River, NJ. Hardy, no heater needed; can outdoor overwinter, breeds easily. Local pickup.",
+          specialties: ["Medaka", "Japanese Rice Fish", "Oryzias latipes"],
+          location: "Toms River, NJ",
+          avatar_url: `${STEVE_MEDIA_BASE}/lines/pink-saffire/IMG_20260907_165711_303.jpg`,
+          banner_url: `${STEVE_MEDIA_BASE}/hero/show-pond-flag.jpg`,
+          storefront_active: true,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "wallet_address" }
+      );
+    if (profileErr) throw new Error("profile: " + profileErr.message);
+
+    // 3) Reset + insert the pack listings.
+    const { error: clearErr } = await supabase
+      .from("aquadex_listings")
+      .delete()
+      .eq("seller_address", STEVE_STORE_WALLET);
+    if (clearErr) throw new Error("clear_listings: " + clearErr.message);
+
+    const rows = STEVE_STORE_LISTINGS.map(buildSteveListingRow);
+    const { error: insertErr } = await supabase.from("aquadex_listings").insert(rows);
+    if (insertErr) throw new Error("insert_listings: " + insertErr.message);
+
+    return res.status(200).json({
+      ok: true,
+      slug: STEVE_STORE_SLUG,
+      wallet: STEVE_STORE_WALLET,
+      listings: rows.map((r) => ({ id: r.id, name: r.common_name, price: r.price })),
+    });
+  } catch (err) {
+    console.error("[provision-steve-store]", err?.message || "error");
+    return res.status(500).json({ error: "internal_error", detail: err?.message });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ACTION: Curated showcase visibility (public/private toggle)
+// GET  /api/storefront-detail?action=curated-visibility&slug=... → { slug, isPublic }
+// POST /api/storefront-detail?action=curated-visibility  { slug, isPublic } → { slug, isPublic }
+// Session-authenticated (Privy token, no wallet signature). Owner-scoped.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function handleCuratedVisibility(req, res) {
+  setCorsHeaders(req, res, { methods: "GET, POST, OPTIONS" });
+  res.setHeader("Cache-Control", "private, no-store, max-age=0");
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "GET" && req.method !== "POST") {
+    res.setHeader("Allow", "GET, POST, OPTIONS");
+    return res.status(405).json({ error: "method_not_allowed" });
+  }
+
+  let body = req.body;
+  if (typeof body === "string") {
+    try { body = JSON.parse(body); } catch { body = {}; }
+  }
+  const rawSlug = (req.query.slug || (body && body.slug) || "").toString().trim().toLowerCase();
+  const entry = getCuratedEntry(rawSlug);
+  if (!entry) return res.status(404).json({ error: "not_found" });
+
+  // Single-call guard form, matching every other verifier call site in this file.
+  // The previous two-guard form counted as two guards for one verifier call, which
+  // trips the privyConsumerConfig ratchet asserting guards === verifier calls.
+  // Behaviour is identical: the responder replies and returns truthy on a
+  // configuration failure, so an unconfigured verifier still fails closed.
+  const auth = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(auth, res)) return;
+  if (!auth.verified) return res.status(401).json({ error: "unauthorized" });
+
+  const existing = await readCuratedVisibility(supabase, rawSlug);
+  const authorized = authorizeCuratedManage(entry, auth, existing);
+  if (!authorized.ok) return res.status(403).json({ error: "forbidden" });
+
+  if (req.method === "GET") {
+    const isPublic = existing && typeof existing.isPublic === "boolean" ? existing.isPublic : entry.defaultPublic;
+    return res.status(200).json({ slug: rawSlug, isPublic });
+  }
+
+  const isPublic = !!(body && body.isPublic);
+  try {
+    await writeCuratedVisibility(supabase, rawSlug, {
+      isPublic,
+      ownerSub: authorized.ownerSub,
+      ownerWallet: authorized.ownerWallet,
+    });
+  } catch (error) {
+    console.error("[storefront/curated-visibility] write", error?.message || "error");
+    return res.status(500).json({ error: "internal_error" });
+  }
+  return res.status(200).json({ slug: rawSlug, isPublic });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -311,7 +534,8 @@ async function handleStorefrontDetail(req, res) {
         managerContract: MANAGER_ADDRESS,
         feeStructure: {
           totalFeeBps: PROTOCOL_FEE_BPS,
-          description: "4% protocol fee on all marketplace transactions",
+          description:
+            "4% protocol fee on standard card sales. Cash sales recorded in-app carry no fee, and verified event sales are reduced — the fee is for using the payment service, not for making a sale.",
         },
         ipfsGateway: IPFS_GATEWAY,
       },
@@ -500,85 +724,8 @@ async function handleDiscover(req, res) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ACTION: showcase-media  (private derivative proxy)
-// GET /api/showcase-media/:assetId/:variant (rewritten to this consolidated function)
-//
-// Authorization is recomputed before every Storage read. The RPC returns one exact immutable
-// object only when the Room/attachment/asset/version chain is still published. The object key and
-// signed Storage URLs are never returned to the caller, and all responses are non-cacheable.
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const SHOWCASE_MEDIA_ASSET_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-const SHOWCASE_MEDIA_VARIANTS = new Set(["hero", "thumb"]);
-const SHOWCASE_MEDIA_MAX_BYTES = 4 * 1024 * 1024;
-
-function setShowcaseMediaHeaders(res) {
-  res.setHeader("Cache-Control", "private, no-store, max-age=0");
-  res.setHeader("Pragma", "no-cache");
-  res.setHeader("Expires", "0");
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("Referrer-Policy", "no-referrer");
-}
-
-async function handleShowcaseMedia(req, res) {
-  setCorsHeaders(req, res, { methods: "GET, OPTIONS" });
-  setShowcaseMediaHeaders(res);
-  if (req.method === "OPTIONS") return res.status(204).end();
-  if (req.method !== "GET") {
-    res.setHeader("Allow", "GET, OPTIONS");
-    return res.status(405).json({ error: "method_not_allowed" });
-  }
-
-  const assetId = typeof req.query.asset === "string" ? req.query.asset : "";
-  const variant = typeof req.query.variant === "string" ? req.query.variant : "";
-  if (!SHOWCASE_MEDIA_ASSET_RE.test(assetId) || !SHOWCASE_MEDIA_VARIANTS.has(variant)) {
-    return res.status(404).json({ error: "not_found" });
-  }
-
-  try {
-    const { data: authorization, error: authError } = await supabase.rpc(
-      "showcase_authorize_media_read",
-      { p_asset_id: assetId, p_variant: variant }
-    );
-    if (authError) {
-      console.error("[storefront/showcase-media] authorization", authError.code || "error");
-      return res.status(500).json({ error: "internal_error" });
-    }
-    if (!authorization) return res.status(404).json({ error: "not_found" });
-
-    const expectedSize = Number(authorization.byteSize);
-    const expectedMime = authorization.mime;
-    if (authorization.bucket !== "showcase-media-derivatives-v1"
-        || expectedMime !== "image/webp"
-        || !Number.isSafeInteger(expectedSize) || expectedSize < 1
-        || expectedSize > SHOWCASE_MEDIA_MAX_BYTES
-        || typeof authorization.objectKey !== "string"
-        || !/^[0-9a-f]{64}$/.test(authorization.checksumHex || "")) {
-      return res.status(500).json({ error: "internal_error" });
-    }
-
-    const { data: blob, error: downloadError } = await supabase.storage
-      .from(authorization.bucket)
-      .download(authorization.objectKey);
-    if (downloadError || !blob) return res.status(404).json({ error: "not_found" });
-    const bytes = Buffer.from(await blob.arrayBuffer());
-    if (bytes.length !== expectedSize || bytes.length > SHOWCASE_MEDIA_MAX_BYTES) {
-      return res.status(404).json({ error: "not_found" });
-    }
-    const checksum = createHash("sha256").update(bytes).digest("hex");
-    if (checksum !== authorization.checksumHex) {
-      return res.status(404).json({ error: "not_found" });
-    }
-
-    res.setHeader("Content-Type", expectedMime);
-    res.setHeader("Content-Length", String(bytes.length));
-    return res.status(200).send(bytes);
-  } catch (error) {
-    console.error("[storefront/showcase-media] error", error?.code || "error");
-    return res.status(500).json({ error: "internal_error" });
-  }
-}
+// Anonymous showcase handlers live in a dependency-injected module so their no-store,
+// non-enumeration, and per-request media authorization behavior is executable in tests.
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ACTION: setup
@@ -2433,4 +2580,419 @@ function mapListingForResponse(listing, wallet) {
       },
     },
   };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BOOTH: RECORD AN IN-PERSON CASH SALE
+// POST /api/storefront-detail?action=record-sale
+//
+// BOOTH_BUILD_SPEC.md §4 (decision D2). The spreadsheet-killer.
+//
+// A vendor at an expo table sells a bag for cash. No money moves through us, so
+// there is NO platform fee — the fee is for using the payment service, and we
+// provided none. What we provide is the record: durable, cross-device, visible in
+// analytics, and it decrements real stock.
+//
+// Before this existed, a cash sale produced a QR on screen, a localStorage
+// counter, an XP event, and a Dexie delete that the next catalog refetch erased.
+// `order_type = 'cash_handshake'` was already a legal value in the orders CHECK
+// constraint that nothing ever wrote, which is why the Analytics "In-Person"
+// slice always read zero.
+//
+// Idempotent on a client-generated `saleId` so the offline outbox can replay a
+// booth sale any number of times and have it land exactly once. Every other cloud
+// write in this codebase is fire-and-forget with no retry; a booth sale that
+// vanishes is worse than no feature, so this one is replay-safe by construction.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function handleRecordSale(req, res) {
+  setCorsHeaders(req, res, { methods: "POST, OPTIONS" });
+  res.setHeader("Cache-Control", "private, no-store, max-age=0");
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST, OPTIONS");
+    return res.status(405).json({ error: "method_not_allowed" });
+  }
+
+  // The selling wallet comes ONLY from the verified session — never the body.
+  const sellerWallet = await requireWalletFromSession(req, res);
+  if (!sellerWallet) return;
+
+  let body = req.body;
+  if (typeof body === "string") {
+    try { body = JSON.parse(body); } catch { body = {}; }
+  }
+  const {
+    saleId,
+    listingId,
+    quantity = 1,
+    unitPriceCents,
+    rail = "cash",
+    note = null,
+  } = body || {};
+
+  if (!saleId || typeof saleId !== "string" || saleId.length > 128) {
+    return res.status(400).json({ error: "saleId is required", code: "SALE_ID_REQUIRED" });
+  }
+  if (listingId == null || String(listingId).trim() === "") {
+    return res.status(400).json({ error: "listingId is required", code: "LISTING_REQUIRED" });
+  }
+  const qty = Math.max(1, Math.round(Number(quantity) || 1));
+  const unitCents = Math.max(0, Math.round(Number(unitPriceCents) || 0));
+
+  // Cash only. A CARD sale must go through ?action=create-checkout so the fee
+  // policy and Stripe both apply — accepting rail:"card" here would be a way to
+  // record a card sale at 0% and skip the payment rail entirely.
+  if (rail !== "cash") {
+    return res.status(400).json({
+      error: "Only cash sales can be recorded here. Card sales go through checkout.",
+      code: "RAIL_NOT_ALLOWED",
+    });
+  }
+
+  try {
+    // ── 1. Decrement stock atomically (the oversell guard) ──────────────────
+    // Idempotent on saleId inside the RPC, so a replay returns the original
+    // remaining count without double-decrementing.
+    const { data: remaining, error: rpcError } = await supabase.rpc("record_inventory_sale", {
+      p_sale_id: saleId,
+      p_listing_id: String(listingId),
+      p_quantity: qty,
+      p_seller: sellerWallet,
+      p_rail: "cash",
+      p_order_id: null,
+    });
+
+    if (rpcError) {
+      const msg = rpcError.message || "";
+      if (/oversell/i.test(msg)) {
+        return res.status(409).json({
+          error: "Not enough stock left for that sale.",
+          code: "OUT_OF_STOCK",
+        });
+      }
+      if (/does not belong/i.test(msg)) {
+        return res.status(403).json({ error: "That listing isn't yours.", code: "NOT_YOUR_LISTING" });
+      }
+      if (/not found/i.test(msg)) {
+        return res.status(404).json({ error: "Listing not found.", code: "LISTING_NOT_FOUND" });
+      }
+      console.error("[record-sale] decrement failed:", msg);
+      return res.status(500).json({ error: "Could not record the sale.", code: "DECREMENT_FAILED" });
+    }
+
+    // ── 2. Replay check: has this sale already produced an order row? ───────
+    const { data: event } = await supabase
+      .from("inventory_sale_events")
+      .select("order_id")
+      .eq("sale_id", saleId)
+      .maybeSingle();
+
+    if (event?.order_id) {
+      return res.status(200).json({
+        ok: true,
+        replay: true,
+        orderId: event.order_id,
+        quantityRemaining: Number(remaining),
+      });
+    }
+
+    // ── 3. Record the sale as a real order ─────────────────────────────────
+    // The seller's stated price is trusted here, unlike at checkout. There is no
+    // platform money and no counterparty to protect: they are recording their own
+    // cash sale of their own fish at whatever they actually charged. Verifying it
+    // against the listing price would be wrong — booth sellers discount on the spot.
+    const totalCents = unitCents * qty;
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .insert({
+        order_type: "cash_handshake",
+        buyer_wallet: null,
+        seller_wallet: sellerWallet,
+        status: "completed",
+        fulfillment_type: "in_person",
+        subtotal_cents: totalCents,
+        shipping_fee_cents: 0,
+        // No payment service was provided, so there is no fee. Stated explicitly
+        // rather than left to default, because "0" here is a policy, not an absence.
+        platform_fee_cents: 0,
+        total_paid_cents: totalCents,
+        quantity: qty,
+        items: [{ listingId: String(listingId), quantity: qty, priceCents: unitCents }],
+        notes: note ? String(note).slice(0, 500) : null,
+        metadata: { saleId, rail: "cash", source: "booth" },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+
+    if (orderError) {
+      // Stock is already decremented and the event row is durable, so the sale is
+      // not lost — only its order row is missing. Surfaced as a partial success so
+      // the client does NOT retry the decrement (which would be a no-op anyway).
+      console.error("[record-sale] order insert failed:", orderError.message);
+      return res.status(200).json({
+        ok: true,
+        orderRecorded: false,
+        quantityRemaining: Number(remaining),
+        warning: "Stock updated, but the sale record could not be saved.",
+      });
+    }
+
+    // Link the order back to the inventory event so a replay short-circuits at
+    // step 2 instead of inserting a duplicate order.
+    await supabase
+      .from("inventory_sale_events")
+      .update({ order_id: order.id })
+      .eq("sale_id", saleId);
+
+    return res.status(200).json({
+      ok: true,
+      orderRecorded: true,
+      orderId: order.id,
+      quantityRemaining: Number(remaining),
+    });
+  } catch (err) {
+    console.error("[record-sale] unexpected:", err?.message || err);
+    return res.status(500).json({ error: "Could not record the sale." });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AQUADEX TANK QR — publish a tank, and the public page behind the printed label
+// BOOTH_BUILD_SPEC.md §5 (decision D5)
+//
+// The observed problem at Aquashella: a tank holds four species, a price is taped
+// to the framing, and the only way to learn WHICH fish is which is to interrupt a
+// vendor. The fix is a printed QR that opens a public page naming every fish, with
+// its Aquadex profile and its price, buyable as a guest.
+//
+// Publishing MATERIALISES a snapshot rather than joining live, because the
+// tank→listing association only exists in the seller's Dexie and breaks entirely
+// for batch listings. Prices are the one thing the client does NOT get to supply:
+// they are resolved server-side from aquadex_listings so the number on the label
+// can never disagree with what checkout actually charges.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const PUBLIC_TANK_MAX_SPECIMENS = 40;
+const PUBLIC_TANK_MAX_LISTINGS = 20;
+
+/** Trim + bound a display string, or null. Never throws on odd input. */
+function cleanText(value, max) {
+  if (value == null) return null;
+  const s = String(value).trim();
+  if (!s) return null;
+  return s.slice(0, max);
+}
+
+/**
+ * Only same-origin or https image URLs, mirroring showcase.html's
+ * safePublicImageUrl. Keeps a published tank from embedding a tracking pixel or
+ * an http asset that would break the page's mixed-content posture.
+ */
+function safePublishedImageUrl(value) {
+  const s = cleanText(value, 600);
+  if (!s) return null;
+  try {
+    const url = new URL(s, "https://aquacellum.com");
+    return url.protocol === "https:" ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+async function handlePublishTank(req, res) {
+  setCorsHeaders(req, res, { methods: "POST, OPTIONS" });
+  res.setHeader("Cache-Control", "private, no-store, max-age=0");
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST, OPTIONS");
+    return res.status(405).json({ error: "method_not_allowed" });
+  }
+
+  const ownerWallet = await requireWalletFromSession(req, res);
+  if (!ownerWallet) return;
+
+  let body = req.body;
+  if (typeof body === "string") {
+    try { body = JSON.parse(body); } catch { body = {}; }
+  }
+  const {
+    tankRef,
+    title,
+    caption,
+    photoUrl,
+    facts = {},
+    specimens = [],
+    listingIds = [],
+    isPublic = true,
+  } = body || {};
+
+  if (!tankRef || String(tankRef).trim() === "") {
+    return res.status(400).json({ error: "tankRef is required", code: "TANK_REF_REQUIRED" });
+  }
+
+  try {
+    // ── Resolve the sellable lines server-side ─────────────────────────────
+    // The client says WHICH listings are in this tank; the server decides what
+    // they cost and how many are left. A price the seller could type here would
+    // be a price checkout then refuses to honour.
+    const ids = (Array.isArray(listingIds) ? listingIds : [])
+      .slice(0, PUBLIC_TANK_MAX_LISTINGS)
+      .map((id) => String(id))
+      .filter(Boolean);
+
+    let commerce = [];
+    if (ids.length) {
+      const { data: rows, error: listErr } = await supabase
+        .from("aquadex_listings")
+        .select("id, seller_address, common_name, price, is_batch, is_active, quantity_remaining, data")
+        .in("id", ids);
+      if (listErr) {
+        console.warn("[publish-tank] listing lookup failed:", listErr.message);
+      }
+      commerce = (rows || [])
+        // Only the owner's own listings can be attached to their tank.
+        .filter((r) => String(r.seller_address).toLowerCase() === ownerWallet)
+        .map((r) => {
+          const d = r.data && typeof r.data === "object" ? r.data : {};
+          const remaining = r.quantity_remaining;
+          return {
+            listingKey: `${r.is_batch ? "batch" : "single"}-${r.id}`,
+            listingId: String(r.id),
+            commonName: r.common_name || d.commonName || "Fish",
+            scientificName: d.scientificName || null,
+            priceCents: Number(d.priceCentsUSD ?? Math.round(Number(r.price || 0) * 100)) || 0,
+            quantityRemaining: remaining == null ? null : Number(remaining),
+            isBatch: !!r.is_batch,
+            available: r.is_active !== false && (remaining == null || Number(remaining) > 0),
+            photoUrl: safePublishedImageUrl(d.photoUrl),
+            // Guest checkout needs the seller wallet in its request body. This is
+            // NOT a new disclosure: `aquadex_listings_public` already exposes
+            // seller_address for every active listing, and marketplace.html reads
+            // it to build the same guest checkout. A tank with no sellable lines
+            // therefore exposes no wallet at all.
+            sellerWallet: String(r.seller_address).toLowerCase(),
+            buyPath: `/app/products/${encodeURIComponent(`${r.is_batch ? "batch" : "single"}-${r.id}`)}`,
+          };
+        });
+    }
+
+    // ── Display-only fields (safe to take from the client) ────────────────
+    const snapshot = {
+      title: cleanText(title, 120) || "Aquarium",
+      caption: cleanText(caption, 400),
+      photoUrl: safePublishedImageUrl(photoUrl),
+      facts: {
+        tankType: cleanText(facts?.tankType, 60),
+        volumeLiters: Number.isFinite(Number(facts?.volumeLiters)) ? Number(facts.volumeLiters) : null,
+      },
+      specimens: (Array.isArray(specimens) ? specimens : [])
+        .slice(0, PUBLIC_TANK_MAX_SPECIMENS)
+        .map((s) => ({
+          publicName: cleanText(s?.publicName ?? s?.commonName, 120) || "Fish",
+          commonName: cleanText(s?.commonName, 120),
+          // The species link is what makes this the Aquadex. Absent for imported
+          // and batch-placeholder rows, which carry only a free-text name.
+          scientificName: cleanText(s?.scientificName, 160),
+        }))
+        .filter((s) => s.publicName),
+      commerce,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Re-publishing the same tank keeps the SAME token so already-printed labels
+    // keep working. That is the whole reason tank_ref is unique per owner.
+    const { data: existing } = await supabase
+      .from("published_tanks")
+      .select("token")
+      .eq("owner_wallet", ownerWallet)
+      .eq("tank_ref", String(tankRef))
+      .maybeSingle();
+
+    const token = existing?.token || crypto.randomBytes(16).toString("hex");
+
+    const { error: upsertErr } = await supabase
+      .from("published_tanks")
+      .upsert(
+        {
+          token,
+          owner_wallet: ownerWallet,
+          tank_ref: String(tankRef),
+          title: snapshot.title,
+          snapshot,
+          is_public: isPublic !== false,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "owner_wallet,tank_ref" }
+      );
+    if (upsertErr) {
+      console.error("[publish-tank] upsert failed:", upsertErr.message);
+      return res.status(500).json({ error: "Could not publish the tank." });
+    }
+
+    const appUrl = process.env.APP_URL || "https://aquacellum.com";
+    return res.status(200).json({
+      ok: true,
+      token,
+      isPublic: isPublic !== false,
+      publicUrl: `${appUrl}/t/${token}`,
+      sellableLines: commerce.length,
+    });
+  } catch (err) {
+    console.error("[publish-tank] unexpected:", err?.message || err);
+    return res.status(500).json({ error: "Could not publish the tank." });
+  }
+}
+
+/**
+ * GET /api/storefront-detail?action=public-tank&t=<token>
+ *
+ * The page behind the printed label. Public and unauthenticated by design — the
+ * whole point is that a stranger with a phone camera can read it with no app and
+ * no account. Returns ONLY the snapshot: never the local tank id, never the
+ * owner's tank_ref, and never anything from aquadex_tanks. (Sellable lines do
+ * carry the seller wallet, which the marketplace already publishes for every
+ * active listing — see the publish handler.)
+ */
+async function handlePublicTank(req, res) {
+  setCorsHeaders(req, res, { methods: "GET, OPTIONS" });
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "GET") {
+    res.setHeader("Allow", "GET, OPTIONS");
+    return res.status(405).json({ error: "method_not_allowed" });
+  }
+
+  const token = cleanText(req.query.t || req.query.token, 128);
+  if (!token) return res.status(400).json({ error: "missing_token" });
+
+  try {
+    const { data: row } = await supabase
+      .from("published_tanks")
+      .select("token, snapshot, is_public, updated_at")
+      .eq("token", token)
+      .maybeSingle();
+
+    // Unknown and unpublished are the same answer, so a 404 never confirms that a
+    // token exists but is private.
+    if (!row || row.is_public !== true) {
+      return res.status(404).json({ error: "not_found" });
+    }
+
+    // Unlike the showcase handler (which forces private, no-store), a booth label
+    // gets scanned repeatedly by different phones and SHOULD cache briefly.
+    res.setHeader("Cache-Control", "public, max-age=30, stale-while-revalidate=120");
+
+    // Best-effort popularity counter; never blocks or fails the read.
+    supabase
+      .rpc("increment_published_tank_views", { p_token: token })
+      .then(() => {})
+      .catch(() => {});
+
+    return res.status(200).json({ token: row.token, tank: row.snapshot, updatedAt: row.updated_at });
+  } catch (err) {
+    console.error("[public-tank] unexpected:", err?.message || err);
+    return res.status(500).json({ error: "unavailable" });
+  }
 }

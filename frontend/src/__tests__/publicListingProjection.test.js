@@ -18,13 +18,28 @@ import {
   toPublicListings,
 } from "../services/publicListingProjection.js";
 
-const MIGRATION_PATH = fileURLToPath(
-  new URL(
-    "../../../supabase/migrations/20260728_aquadex_listings_public_view.sql",
-    import.meta.url
-  )
-);
-const MIGRATION_SQL = readFileSync(MIGRATION_PATH, "utf8");
+const REPO_ROOT = fileURLToPath(new URL("../../../", import.meta.url));
+const VIEW_DEFINITION = /create\s+or\s+replace\s+view\s+public\.aquadex_listings_public\b/i;
+
+/**
+ * The CURRENT view definition is the LAST migration in the canonical apply
+ * order (supabase/migration-order.json) that (re)creates the view. Applied
+ * migrations are immutable, so the view evolves by superseding files; pinning
+ * one filename here would silently keep testing a stale definition.
+ */
+function currentViewMigration() {
+  const { order } = JSON.parse(
+    readFileSync(`${REPO_ROOT}supabase/migration-order.json`, "utf8")
+  );
+  const defining = order.filter((rel) =>
+    VIEW_DEFINITION.test(readFileSync(`${REPO_ROOT}${rel}`, "utf8"))
+  );
+  if (defining.length === 0) throw new Error("no migration defines aquadex_listings_public");
+  return defining[defining.length - 1];
+}
+
+const MIGRATION_FILE = currentViewMigration();
+const MIGRATION_SQL = readFileSync(`${REPO_ROOT}${MIGRATION_FILE}`, "utf8");
 
 /** The migration with `--` comment lines removed, for assertions about the
  *  actual statements (the prose discusses the patterns it rejects). */
@@ -40,14 +55,21 @@ const MIGRATION_CODE = MIGRATION_SQL.replace(/^\s*--.*$/gm, "").replace(
  */
 function sqlAllowlist(sql) {
   const body = sql.slice(sql.indexOf("jsonb_build_object("));
-  const re = /'([A-Za-z_][A-Za-z0-9_]*)',\s*l\.data_obj\s*->\s*'([A-Za-z_][A-Za-z0-9_]*)'/g;
+  // Two legal source forms:
+  //   'key', l.data_obj -> 'key'          (from the listing blob)
+  //   'key', to_jsonb(l.some_column)       (from a real base-table column)
+  const re =
+    /'([A-Za-z_][A-Za-z0-9_]*)',\s*(?:l\.data_obj\s*->\s*'([A-Za-z_][A-Za-z0-9_]*)'|to_jsonb\(\s*l\.([a-z_][a-z0-9_]*)\s*\))/g;
   const keys = [];
   let m;
   while ((m = re.exec(body)) !== null) {
-    // The emitted key and the source key must be the same field; a mismatch
-    // would silently rename data under the public consumers.
-    expect(m[2]).toBe(m[1]);
-    keys.push(m[1]);
+    const [, key, fromBlob, fromColumn] = m;
+    // The emitted key must name the same field as its source; a mismatch would
+    // silently rename data under the public consumers. Columns are snake_case,
+    // so they must be exactly the camelCase of the emitted key.
+    const source = fromBlob ?? fromColumn.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase());
+    expect(source).toBe(key);
+    keys.push(key);
   }
   return keys;
 }
@@ -123,6 +145,40 @@ describe("toPublicListing — strict allowlist (fail-closed)", () => {
     // from AquadexMarketplace.listings(tokenId) by any RPC caller, and public
     // storefront/breeder-count surfaces join on it.
     expect(PUBLIC_LISTING_DATA_FIELDS).toContain("seller");
+  });
+});
+
+describe("current view definition", () => {
+  it("resolves to the booth stock migration, not the superseded original", () => {
+    expect(MIGRATION_FILE).toBe(
+      "frontend/supabase/migrations/20260918_public_view_quantity_remaining.sql"
+    );
+  });
+
+  it("keeps the original column order as a prefix (create or replace view can only append)", () => {
+    // Postgres rejects a replace that renames/reorders existing view columns,
+    // so the migration would fail on apply rather than in review.
+    const select = MIGRATION_CODE.slice(
+      MIGRATION_CODE.search(/^select\s*$/im),
+      MIGRATION_CODE.search(/^from normalized l/im)
+    );
+    const columns = [...select.matchAll(/^\s{2}(?:\)\s+as\s+(\w+)|[\w.]+\s+as\s+(\w+)|l\.(\w+)|jsonb_build_object\()/gim)]
+      .map((m) => m[1] || m[2] || m[3])
+      .filter(Boolean);
+    expect(columns.slice(0, 11)).toEqual([
+      "id",
+      "seller_address",
+      "species_id",
+      "common_name",
+      "price",
+      "is_batch",
+      "is_active",
+      "created_at",
+      "updated_at",
+      "seller_display_name",
+      "data",
+    ]);
+    expect(columns.slice(11)).toEqual(["quantity_remaining"]);
   });
 });
 

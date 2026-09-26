@@ -90,7 +90,14 @@ registerRoute(
   })
 );
 
-// ── Revocable Room media: never enter Cache Storage ────────────────────────
+// ── Revocable Room media and signed video tokens: always network-only ────────
+// Signed playback responses live for at most 60 seconds and must never enter Cache Storage.
+registerRoute(
+  ({ url }) => url.pathname === "/api/storefront-detail"
+    && url.searchParams.get("action") === "showcase-video-token",
+  new NetworkOnly()
+);
+
 // This rule MUST precede the generic image matcher. Database authorization is
 // recomputed on every request, so offline/stale bytes must never outlive unpublish.
 registerRoute(

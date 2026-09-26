@@ -61,7 +61,13 @@
       radial-gradient(circle at 82% 20%, rgba(185,167,255,.24), transparent 31%),
       radial-gradient(circle at 76% 74%, rgba(115,228,218,.16), transparent 27%),
       linear-gradient(130deg, #090a0e 0%, #111118 52%, #181422 100%); }
-    .market-hero::after { content: ""; position: absolute; width: min(46vw, 650px); aspect-ratio: 1; right: 5vw; top: 40px; border-radius: 48% 52% 58% 42%; background: linear-gradient(145deg, rgba(216,255,113,.11), rgba(185,167,255,.24)); filter: blur(1px); box-shadow: inset 0 0 100px rgba(255,255,255,.05); transform: rotate(-8deg); }
+    /* Real planted-tank hero photo, faded into the dark background so the
+       headline stays readable. Replaces the old decorative gradient blob. */
+    .market-hero::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: min(62%, 960px);
+      background: url("https://aquacellum.com/showcase-media/steve/hero/show-pond-flag.jpg") center/cover no-repeat;
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.55) 42%, #000 100%);
+      mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,.55) 42%, #000 100%);
+      opacity: .9; }
     .market-hero__content { position: relative; z-index: 2; max-width: 900px; }
     .market-eyebrow { display: flex; align-items: center; gap: 10px; color: var(--market-lime); font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 22px; }
     .market-eyebrow::before { content: ""; width: 34px; height: 1px; background: currentColor; }
@@ -128,6 +134,9 @@
     .filter-row::-webkit-scrollbar { display: none; }
     .filter-chip { flex: none; min-height: 36px; padding: 0 13px; border: 1px solid var(--market-line); border-radius: 999px; background: transparent; color: var(--market-muted); font-size: .7rem; cursor: pointer; }
     .filter-chip[aria-pressed="true"] { color: #111; border-color: var(--market-lime); background: var(--market-lime); }
+    .filter-chip__count { opacity: .5; font-variant-numeric: tabular-nums; }
+    .filter-chip[aria-pressed="true"] .filter-chip__count { opacity: .75; }
+    .filter-chip:disabled { opacity: .4; cursor: default; }
     .result-count { align-self: center; color: var(--market-muted); font-size: .74rem; white-space: nowrap; }
 
     .product-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 22px 14px; }
@@ -179,15 +188,28 @@
 
     .product-dialog { width: min(920px, calc(100% - 28px)); max-height: calc(100vh - 28px); padding: 0; border: 1px solid rgba(255,255,255,.18); background: #111217; color: #fff; }
     .product-dialog::backdrop { background: rgba(0,0,0,.82); backdrop-filter: blur(6px); }
+    .product-dialog { overflow: auto; }
     .product-dialog__layout { display: grid; grid-template-columns: 1fr 1fr; }
-    .product-dialog__visual { min-height: 570px; background: #191a20; }
-    .product-dialog__visual img { width: 100%; height: 100%; object-fit: cover; }
-    .product-dialog__visual .product-card__placeholder { min-height: 570px; }
+    .product-dialog__visual { min-height: 570px; background: #191a20; display: flex; flex-direction: column; }
+    .pdlg-main { position: relative; flex: 1 1 auto; min-height: 320px; background: #0d0e12; }
+    .pdlg-main img, .pdlg-main video { width: 100%; height: 100%; object-fit: cover; display: block; background: #0d0e12; }
+    .pdlg-main .product-card__placeholder { width: 100%; height: 100%; min-height: 320px; }
+    .pdlg-thumbs { display: flex; gap: 6px; padding: 8px; overflow-x: auto; scrollbar-width: none; background: #111217; border-top: 1px solid var(--market-line); }
+    .pdlg-thumbs::-webkit-scrollbar { display: none; }
+    .pdlg-thumb { position: relative; flex: 0 0 auto; width: 58px; height: 58px; padding: 0; border: 1px solid var(--market-line); border-radius: 3px; overflow: hidden; background: #0d0e12; cursor: pointer; }
+    .pdlg-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .pdlg-thumb[aria-selected="true"] { border-color: var(--market-lime); }
+    .pdlg-thumb--video::after { content: "\25B6"; position: absolute; inset: 0; display: grid; place-items: center; font-size: .8rem; color: #fff; background: rgba(0,0,0,.4); }
     .product-dialog__body { position: relative; padding: 38px; display: flex; flex-direction: column; }
     .dialog-close { position: absolute; top: 14px; right: 14px; width: 40px; height: 40px; border: 1px solid var(--market-line); border-radius: 50%; background: transparent; cursor: pointer; }
     .product-dialog__body h2 { margin: 34px 0 3px; font-family: "Manrope", sans-serif; font-size: 2rem; letter-spacing: -.04em; }
     .dialog-scientific { color: var(--market-muted); font-style: italic; }
-    .dialog-price { margin: 25px 0; font-family: "Manrope", sans-serif; font-size: 1.8rem; }
+    .dialog-price { margin: 22px 0 16px; font-family: "Manrope", sans-serif; font-size: 1.8rem; }
+    .dialog-price__total { color: var(--market-muted); font-size: 1rem; font-family: "DM Sans", sans-serif; }
+    .dialog-desc { margin: 0 0 18px; color: #c6c6cf; line-height: 1.6; font-size: .88rem; }
+    .dialog-traits { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+    .dialog-trait { padding: 5px 10px; border: 1px solid var(--market-line); border-radius: 999px; color: #c9c9d0; font-size: .68rem; }
+    .dialog-trait strong { color: #fff; }
     .dialog-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--market-line); border: 1px solid var(--market-line); }
     .dialog-fact { min-height: 78px; padding: 14px; background: #111217; }
     .dialog-fact span { display: block; color: var(--market-dim); font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; }
@@ -197,6 +219,14 @@
     .dialog-seller a { display: inline-block; margin-top: 6px; font-weight: 700; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.3); }
     .dialog-actions { margin-top: auto; display: grid; gap: 9px; }
     .dialog-note { color: var(--market-muted); font-size: .68rem; line-height: 1.45; text-align: center; }
+    .dialog-guest { display: none; flex-direction: column; gap: 9px; margin-bottom: 12px; padding: 14px; border: 1px solid rgba(216,255,113,.28); background: rgba(216,255,113,.05); border-radius: 8px; }
+    .dialog-guest__label { font-size: .68rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--market-lime); }
+    .dialog-guest__sub { color: var(--market-muted); font-size: .74rem; line-height: 1.45; margin: -3px 0 2px; }
+    .dialog-guest__email { min-height: 46px; width: 100%; border: 1px solid var(--market-line); background: #0a0b0f; color: #fff; padding: 0 14px; border-radius: 6px; outline: none; }
+    .dialog-guest__email:focus { border-color: var(--market-lime); }
+    .dialog-guest__err { color: var(--market-coral); font-size: .74rem; min-height: 1em; }
+    .dialog-guest__secondary { text-align: center; font-size: .72rem; }
+    .dialog-guest__secondary a { color: var(--market-muted); }
 
     @media (max-width: 1100px) {
       .collection-grid { grid-template-columns: repeat(3, 1fr); }
@@ -212,7 +242,9 @@
       .commerce-nav__links { gap: 16px; }
       .commerce-nav__actions .market-btn:first-child { display: none; }
       .market-hero { min-height: 620px; padding: 72px 0 40px; }
-      .market-hero::after { width: 90vw; right: -40vw; opacity: .7; }
+      .market-hero::after { width: 100%; opacity: .32;
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.7) 55%, #000 100%);
+        mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.7) 55%, #000 100%); }
       .market-hero__bottom { align-items: start; flex-direction: column; }
       .market-section { padding: 64px 0; }
       .market-section__head { align-items: start; flex-direction: column; }
@@ -228,8 +260,9 @@
       .seller-cta { padding: 36px 24px; grid-template-columns: 1fr; }
       .seller-cta__actions { justify-content: flex-start; }
       .product-dialog__layout { grid-template-columns: 1fr; }
-      .product-dialog__visual { min-height: 330px; max-height: 42vh; }
-      .product-dialog__visual .product-card__placeholder { min-height: 330px; }
+      .product-dialog__visual { min-height: 300px; }
+      .pdlg-main { min-height: 240px; }
+      .pdlg-main .product-card__placeholder { min-height: 240px; }
       .product-dialog__body { padding: 24px; }
     }
     @media (max-width: 470px) {
@@ -376,17 +409,30 @@
 
   <dialog class="product-dialog" id="productDialog" aria-labelledby="dialogTitle">
     <div class="product-dialog__layout">
-      <div class="product-dialog__visual" id="dialogVisual"></div>
+      <div class="product-dialog__visual" id="dialogVisual">
+        <div class="pdlg-main" id="dialogMedia"></div>
+        <div class="pdlg-thumbs" id="dialogThumbs" aria-label="More photos and video"></div>
+      </div>
       <div class="product-dialog__body">
         <button class="dialog-close" id="dialogClose" type="button" aria-label="Close product details">×</button>
         <div class="market-kicker" id="dialogKicker">Live listing</div>
         <h2 id="dialogTitle"></h2>
         <div class="dialog-scientific" id="dialogScientific"></div>
         <div class="dialog-price" id="dialogPrice"></div>
+        <p class="dialog-desc" id="dialogDesc"></p>
+        <div class="dialog-traits" id="dialogTraits"></div>
         <div class="dialog-facts" id="dialogFacts"></div>
         <div class="dialog-seller"><span>Offered by</span><a id="dialogSeller" href="#"></a></div>
+        <form class="dialog-guest" id="dialogGuest">
+          <span class="dialog-guest__label">Buy now — no account needed</span>
+          <span class="dialog-guest__sub" id="dialogGuestSub">Pay securely and reserve for local pickup. We'll email your order &amp; pickup code.</span>
+          <input class="dialog-guest__email" id="guestEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" aria-label="Your email">
+          <button class="market-btn market-btn--bright" id="guestBuyBtn" type="submit">Buy &amp; reserve for pickup</button>
+          <div class="dialog-guest__err" id="guestBuyError" role="alert"></div>
+        </form>
         <div class="dialog-actions">
-          <a class="market-btn market-btn--bright" id="dialogBuy" href="#">Continue to listing</a>
+          <a class="market-btn market-btn--solid" id="dialogBuy" href="#">Continue to listing</a>
+          <a class="market-btn" id="dialogGuide" href="/medaka-morphs">Full care &amp; morph guide <span aria-hidden="true">↗</span></a>
           <div class="dialog-note" id="dialogNote">Sign in is requested only when you buy, message a breeder, save account-level searches, or manage an order.</div>
         </div>
       </div>
@@ -399,8 +445,50 @@
     "use strict";
 
     const SUPABASE_URL = "https://yahsdztnvsykzecjatsl.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6InlhaHNkenRudnN5a3plY2phdHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQwMDgsImV4cCI6MjA5NjA3MDAwOH0.3anqDFU9hUjZg2AFWJlXSBbwSM-knNrmb-uQ_Baq98I";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaHNkenRudnN5a3plY2phdHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQwMDgsImV4cCI6MjA5NjA3MDAwOH0.3anqDFU9hUjZg2AFWJlXSBbwSM-knNrmb-uQ_Baq98I";
     const WATCHLIST_KEY = "aquadex_watchlist";
+
+    // Per-line media (gallery + video) and traits, keyed by batch listing id.
+    // Mirrors the exact assets the /showcase and morph guide use, so the
+    // marketplace detail view is a real product page — not a single thumbnail.
+    const SM = "https://aquacellum.com/showcase-media/steve";
+    const LINE_MEDIA = {
+      8000001: { guide: "/medaka-morphs#pink-saffire", traits: [["Color", "Pink / lavender"], ["Eyes", "Blue"]], video: null,
+        gallery: [`${SM}/lines/pink-saffire/IMG_20260907_165711_303.jpg`, `${SM}/proof/saffire-pink-closeup.jpg`, `${SM}/lines/pink-saffire/IMG_20260907_165711_163.jpg`, `${SM}/lines/pink-saffire/IMG_20260907_165711_166.jpg`, `${SM}/lines/pink-saffire/IMG_20260907_165711_348.jpg`, `${SM}/lines/pink-saffire/IMG_20260907_165711_384.jpg`, `${SM}/lines/pink-saffire/IMG_20260907_165711_389.jpg`, `${SM}/lines/pink-saffire/IMG_20260907_165711_423.jpg`] },
+      8000002: { guide: "/medaka-morphs#gladio", traits: [["Color", "Silvery-white"], ["Fins", "Long-fin"]], video: { src: `${SM}/videos/VID_20260901_115451_294.mp4`, poster: `${SM}/posters/VID_20260901_115451_294.jpg` },
+        gallery: [`${SM}/lines/gladio/IMG_20260907_170316_911.jpg`, `${SM}/lines/gladio/IMG_20260907_170232_551.jpg`, `${SM}/lines/gladio/IMG_20260907_170232_694.jpg`, `${SM}/lines/gladio/IMG_20260907_170232_789.jpg`, `${SM}/lines/gladio/IMG_20260907_170316_858.jpg`, `${SM}/lines/gladio/IMG_20260907_170316_865.jpg`, `${SM}/lines/gladio/IMG_20260907_170316_902.jpg`, `${SM}/lines/gladio/IMG_20260907_170336_071.jpg`] },
+      8000003: { guide: "/medaka-morphs#echos-of-the-moon", traits: [["Type", "Keeper line"]], video: null,
+        gallery: [`${SM}/lines/echos-of-the-moon/IMG_20260907_171300_216.jpg`, `${SM}/lines/echos-of-the-moon/IMG_20260907_170845_166.jpg`, `${SM}/lines/echos-of-the-moon/IMG_20260907_170845_261.jpg`, `${SM}/lines/echos-of-the-moon/IMG_20260907_170845_265.jpg`, `${SM}/lines/echos-of-the-moon/IMG_20260907_170845_302.jpg`, `${SM}/lines/echos-of-the-moon/IMG_20260907_170845_340.jpg`, `${SM}/lines/echos-of-the-moon/IMG_20260907_171300_129.jpg`, `${SM}/lines/echos-of-the-moon/IMG_20260907_171300_175.jpg`, `${SM}/lines/echos-of-the-moon/IMG_20260907_171300_194.jpg`] },
+      8000004: { guide: "/medaka-morphs#shinkai", traits: [["Color", "Silvery / translucent"]], video: { src: `${SM}/videos/VID_20260901_115510_666.mp4`, poster: `${SM}/posters/VID_20260901_115510_666.jpg` },
+        gallery: [`${SM}/lines/shinkai/IMG_20260907_171554_047.jpg`, `${SM}/lines/shinkai/IMG_20260907_171554_049.jpg`, `${SM}/lines/shinkai/IMG_20260907_171554_097.jpg`, `${SM}/lines/shinkai/IMG_20260907_171554_102.jpg`, `${SM}/lines/shinkai/IMG_20260907_171554_111.jpg`, `${SM}/lines/shinkai/IMG_20260907_171554_134.jpg`, `${SM}/lines/shinkai/IMG_20260907_171554_147.jpg`, `${SM}/lines/shinkai/IMG_20260907_171554_193.jpg`] },
+      8000005: { guide: "/medaka-morphs#long-fin-red-emperor", traits: [["Color", "Orange / crimson"], ["Fins", "Long-fin"]], video: { src: `${SM}/videos/VID_20260901_115510_665.mp4`, poster: `${SM}/posters/VID_20260901_115510_665.jpg` },
+        gallery: [`${SM}/posters/VID_20260901_115510_665.jpg`] },
+      8000006: { guide: "/medaka-morphs#blue-aurora-lame", traits: [["Color", "Electric blue"], ["Scales", "Lam\u00e9 (metallic)"]], video: { src: `${SM}/videos/VID_20260901_115521_576.mp4`, poster: `${SM}/posters/VID_20260901_115521_576.jpg` },
+        gallery: [`${SM}/posters/VID_20260901_115521_576.jpg`] },
+      8000007: { guide: "/medaka-morphs", traits: [["Type", "Community display"]], video: { src: `${SM}/videos/VID_20260901_115511_370.mp4`, poster: `${SM}/posters/VID_20260901_115511_370.jpg` },
+        gallery: [`${SM}/hero/show-pond-flag.jpg`, `${SM}/hero/show-pond-blue.jpg`] },
+    };
+
+    // General, accurate care facts for Japanese rice fish (Oryzias latipes).
+    const MEDAKA_CARE = [["Water temp", "59\u201379\u00b0F"], ["pH range", "7.0\u20138.0"], ["Care level", "Beginner"], ["Adult size", "~1.5 in"]];
+
+    function lineMeta(item) {
+      return LINE_MEDIA[Number(item.listingId ?? item.id)] || null;
+    }
+
+    function mediaItems(item) {
+      const meta = lineMeta(item);
+      const items = [];
+      if (meta) {
+        (meta.gallery || []).forEach((src) => items.push({ type: "image", src }));
+        if (meta.video && meta.video.src) items.push({ type: "video", src: meta.video.src, poster: meta.video.poster });
+      }
+      if (!items.length) {
+        const fallback = speciesImage(item);
+        if (fallback) items.push({ type: "image", src: fallback });
+      }
+      return items;
+    }
 
     const state = {
       listings: [],
@@ -495,6 +583,52 @@
       return "Provenance not documented";
     }
 
+    function packSize(item) {
+      const qty = Number(item.quantity || 0);
+      return item.isBatch && qty > 0 ? qty : 0;
+    }
+
+    function cardBadgeLabel(item) {
+      const qty = packSize(item);
+      if (qty) return `Pack of ${qty}`;
+      if (Number(item.sireId || 0) && Number(item.damId || 0)) return "Documented parents";
+      return "Single fish";
+    }
+
+    function priceLabel(item) {
+      const base = formatPrice(item);
+      return item.isBatch && priceNumber(item) > 0 ? `${base} ea` : base;
+    }
+
+    function sellerListingCount(wallet) {
+      const key = String(wallet || "").toLowerCase();
+      return state.listings.filter((row) => String(row.seller || "").toLowerCase() === key).length;
+    }
+
+    const FILTER_LABELS = { all: "All", ships: "Ships", local: "Local pickup", batch: "Fry & batches", saved: "Saved" };
+
+    function countForFilter(filter) {
+      return state.listings.filter((item) => {
+        if (filter === "ships") return !!item.isShipping;
+        if (filter === "local") return isLocalPickup(item);
+        if (filter === "batch") return !!item.isBatch;
+        if (filter === "saved") return state.saved.has(listingKey(item));
+        return true;
+      }).length;
+    }
+
+    function updateFilterCounts() {
+      document.querySelectorAll(".filter-chip").forEach((chip) => {
+        const filter = chip.dataset.filter;
+        const label = FILTER_LABELS[filter] || filter;
+        const count = countForFilter(filter);
+        chip.replaceChildren(document.createTextNode(`${label} `), element("span", "filter-chip__count", count));
+        // Keep a zero-stock filter visible but non-clickable so buyers don't hit dead ends.
+        chip.disabled = filter !== "all" && count === 0;
+        if (chip.disabled && chip.getAttribute("aria-pressed") === "true") { chip.setAttribute("aria-pressed", "false"); }
+      });
+    }
+
     function emptyPanel(title, copy) {
       const panel = element("div", "empty-panel");
       panel.append(element("h3", "", title), element("p", "", copy));
@@ -545,6 +679,7 @@
         state.listings = [];
       }
       renderProducts();
+      if (state.storefronts.length) renderStores();
       updateStats();
     }
 
@@ -591,7 +726,8 @@
         grid.append(emptyPanel("Storefronts are being prepared", "Active breeder shops will appear here as sellers publish their profiles."));
         return;
       }
-      state.storefronts.slice(0, 6).forEach((store, index) => grid.append(buildStoreCard(store, index)));
+      const ordered = state.storefronts.slice().sort((a, b) => sellerListingCount(b.walletAddress) - sellerListingCount(a.walletAddress));
+      ordered.slice(0, 6).forEach((store, index) => grid.append(buildStoreCard(store, index)));
     }
 
     function buildStoreCard(store, index) {
@@ -619,6 +755,10 @@
 
       const facts = element("div", "store-card__facts");
       const stats = store.stats || {};
+      const liveCount = sellerListingCount(store.walletAddress);
+      if (liveCount > 0) {
+        const live = element("span"); live.append(element("strong", "", liveCount), document.createTextNode(liveCount === 1 ? " listing" : " listings")); facts.append(live);
+      }
       if (Number(stats.avgRating) > 0) {
         const rating = element("span"); rating.append(element("strong", "", Number(stats.avgRating).toFixed(1)), document.createTextNode(" rating")); facts.append(rating);
       }
@@ -634,9 +774,12 @@
       const actions = element("div", "store-card__actions");
       const shop = element("a", "market-btn market-btn--solid", "Visit shop");
       shop.href = storefrontUrl(store);
-      const inventory = element("button", "market-btn", "See inventory"); inventory.type = "button";
-      inventory.addEventListener("click", () => filterSeller(store.walletAddress));
-      actions.append(shop, inventory);
+      actions.append(shop);
+      if (liveCount > 0) {
+        const inventory = element("button", "market-btn", `See inventory (${liveCount})`); inventory.type = "button";
+        inventory.addEventListener("click", () => filterSeller(store.walletAddress));
+        actions.append(inventory);
+      }
       body.append(actions);
       card.append(visual, body);
       return card;
@@ -669,6 +812,7 @@
       const grid = document.getElementById("productGrid");
       const rows = filteredListings();
       grid.replaceChildren();
+      updateFilterCounts();
       document.getElementById("resultCount").textContent = `${rows.length} ${rows.length === 1 ? "listing" : "listings"}`;
       if (!rows.length) {
         grid.append(emptyPanel("No listings match", state.listings.length ? "Try a different search or collection." : "Breeders are preparing their first public inventory. Explore storefronts or post a wanted request in the meantime."));
@@ -684,7 +828,7 @@
       const imageUrl = speciesImage(item);
       if (imageUrl) { const img = element("img"); img.src = imageUrl; img.alt = item.commonName || "Aquarium fish"; img.loading = "lazy"; visual.append(img); }
       else visual.append(element("div", "product-card__placeholder", "🐟"));
-      visual.append(element("span", "product-card__badge", pedigreeLabel(item)));
+      visual.append(element("span", "product-card__badge", cardBadgeLabel(item)));
       const save = element("button", "save-button", state.saved.has(listingKey(item)) ? "♥" : "♡");
       save.type = "button"; save.setAttribute("aria-label", state.saved.has(listingKey(item)) ? "Remove from saved" : "Save listing"); save.setAttribute("aria-pressed", String(state.saved.has(listingKey(item))));
       save.addEventListener("click", (event) => { event.stopPropagation(); toggleSaved(item, save); });
@@ -694,13 +838,19 @@
 
       const body = element("div", "product-card__body");
       const row = element("div", "product-card__row");
-      row.append(element("h3", "", item.commonName || "Aquarium livestock"), element("span", "product-card__price", formatPrice(item)));
+      row.append(element("h3", "", item.commonName || "Aquarium livestock"), element("span", "product-card__price", priceLabel(item)));
       body.append(row);
       if (item.scientificName) body.append(element("div", "product-card__scientific", item.scientificName));
       const seller = element("div", "product-card__seller");
       const sellerStore = storeForSeller(item.seller);
-      const sellerLink = element("a", "", sellerName(item)); sellerLink.href = storefrontUrl(sellerStore, item.seller);
-      seller.append(sellerLink, element("span", "product-card__fulfillment", fulfillmentLabel(item)));
+      let sellerNode;
+      if (sellerStore) {
+        sellerNode = element("a", "", sellerName(item));
+        sellerNode.href = storefrontUrl(sellerStore, item.seller);
+      } else {
+        sellerNode = element("span", "product-card__seller-name", sellerName(item));
+      }
+      seller.append(sellerNode, element("span", "product-card__fulfillment", fulfillmentLabel(item)));
       body.append(seller);
       const actions = element("div", "product-card__actions");
       const continueLink = element("a", "market-btn market-btn--solid", item.isBatch ? "Choose quantity" : "View listing"); continueLink.href = listingAppUrl(item);
@@ -719,30 +869,114 @@
       button.setAttribute("aria-pressed", String(active));
       button.setAttribute("aria-label", active ? "Remove from saved" : "Save listing");
       if (state.selectedFilter === "saved") renderProducts();
+      else updateFilterCounts();
     }
 
     function openProduct(item) {
       const dialog = document.getElementById("productDialog");
-      const visual = document.getElementById("dialogVisual");
-      visual.replaceChildren();
-      const imageUrl = speciesImage(item);
-      if (imageUrl) { const img = element("img"); img.src = imageUrl; img.alt = item.commonName || "Aquarium fish"; visual.append(img); }
-      else visual.append(element("div", "product-card__placeholder", "🐟"));
+      const mainEl = document.getElementById("dialogMedia");
+      const thumbsEl = document.getElementById("dialogThumbs");
+      const media = mediaItems(item);
+
+      function showMedia(m) {
+        mainEl.replaceChildren();
+        if (m && m.type === "video") {
+          const v = document.createElement("video");
+          v.src = m.src; if (m.poster) v.poster = m.poster;
+          v.controls = true; v.playsInline = true; v.preload = "metadata";
+          mainEl.append(v);
+        } else if (m && m.type === "image") {
+          const img = element("img"); img.src = m.src; img.alt = item.commonName || "Aquarium fish"; mainEl.append(img);
+        } else {
+          mainEl.append(element("div", "product-card__placeholder", "🐟"));
+        }
+      }
+
+      thumbsEl.replaceChildren();
+      if (!media.length) {
+        showMedia(null);
+      } else {
+        showMedia(media[0]);
+        if (media.length > 1) {
+          media.forEach((m, index) => {
+            const thumb = element("button", "pdlg-thumb"); thumb.type = "button";
+            thumb.setAttribute("aria-selected", String(index === 0));
+            thumb.setAttribute("aria-label", m.type === "video" ? "Play video" : `Photo ${index + 1}`);
+            if (m.type === "video") thumb.classList.add("pdlg-thumb--video");
+            const img = element("img"); img.src = m.type === "video" ? (m.poster || "") : m.src; img.alt = ""; img.loading = "lazy"; thumb.append(img);
+            thumb.addEventListener("click", () => {
+              showMedia(m);
+              thumbsEl.querySelectorAll(".pdlg-thumb").forEach((x) => x.setAttribute("aria-selected", "false"));
+              thumb.setAttribute("aria-selected", "true");
+            });
+            thumbsEl.append(thumb);
+          });
+        }
+      }
+
       document.getElementById("dialogKicker").textContent = item.isBatch ? "Breeder-raised batch" : "Individual listing";
       document.getElementById("dialogTitle").textContent = item.commonName || "Aquarium livestock";
       document.getElementById("dialogScientific").textContent = item.scientificName || "";
-      document.getElementById("dialogPrice").textContent = item.isBatch ? `${formatPrice(item)} each` : formatPrice(item);
+
+      const price = document.getElementById("dialogPrice"); price.replaceChildren();
+      if (item.isBatch) {
+        price.append(document.createTextNode(`${formatPrice(item)} each`));
+        const packQty = Number(item.quantity || 0);
+        if (item.packTotalUsd && packQty) price.append(element("span", "dialog-price__total", ` · pack of ${packQty} = $${item.packTotalUsd}`));
+      } else {
+        price.textContent = formatPrice(item);
+      }
+
+      document.getElementById("dialogDesc").textContent = item.description || "";
+
+      const meta = lineMeta(item);
+      const traits = document.getElementById("dialogTraits"); traits.replaceChildren();
+      (meta && meta.traits ? meta.traits : []).forEach(([label, value]) => {
+        const chip = element("div", "dialog-trait");
+        chip.append(document.createTextNode(`${label} `), element("strong", "", value));
+        traits.append(chip);
+      });
+
       const facts = document.getElementById("dialogFacts"); facts.replaceChildren();
       const values = [
         ["Fulfillment", fulfillmentLabel(item)],
-        ["Record", pedigreeLabel(item)],
         ["Available", item.isBatch ? `${Number(item.quantity || 0)} fish` : "1 specimen"],
-        ["Care range", item.minTemp && item.maxTemp ? `${item.minTemp}–${item.maxTemp}°C` : "Open full details"],
       ];
+      const isMedaka = String(item.scientificName || "").toLowerCase() === "oryzias latipes";
+      if (isMedaka) MEDAKA_CARE.forEach((pair) => values.push(pair));
+      else if (item.minTemp && item.maxTemp) values.push(["Care range", `${item.minTemp}–${item.maxTemp}°C`]);
       values.forEach(([label, value]) => { const fact = element("div", "dialog-fact"); fact.append(element("span", "", label), element("strong", "", value)); facts.append(fact); });
+
       const store = storeForSeller(item.seller);
-      const seller = document.getElementById("dialogSeller"); seller.textContent = sellerName(item); seller.href = storefrontUrl(store, item.seller);
+      const seller = document.getElementById("dialogSeller"); seller.textContent = sellerName(item);
+      if (store) { seller.setAttribute("href", storefrontUrl(store, item.seller)); seller.removeAttribute("aria-disabled"); }
+      else { seller.removeAttribute("href"); seller.setAttribute("aria-disabled", "true"); }
+
       const buy = document.getElementById("dialogBuy"); buy.textContent = item.isBatch ? "Choose quantity & continue" : "Continue to listing"; buy.href = listingAppUrl(item);
+      const guide = document.getElementById("dialogGuide");
+      if (meta && meta.guide) { guide.setAttribute("href", meta.guide); guide.style.display = ""; }
+      else { guide.style.display = "none"; }
+      // Guest checkout (no login) is offered for local-pickup / batch listings.
+      // For those, the guest form is the primary CTA and the app link is
+      // demoted to a secondary "sign in" option.
+      const guestForm = document.getElementById("dialogGuest");
+      const guestEligible = !!item.isBatch || isLocalPickup(item);
+      document.getElementById("guestBuyError").textContent = "";
+      if (guestEligible) {
+        guestForm.style.display = "flex";
+        guestForm.dataset.listingId = String(item.listingId ?? item.id ?? "");
+        guestForm.dataset.tokenId = String(item.tokenId ?? item.id ?? "");
+        guestForm.dataset.seller = item.seller || "";
+        guestForm.dataset.qty = String(item.quantity || 1);
+        guestForm.dataset.name = item.commonName || "Fish";
+        guestForm.dataset.image = speciesImage(item) || "";
+        guestForm.dataset.batch = item.isBatch ? "1" : "";
+        buy.textContent = item.isBatch ? "Have an account? Sign in" : "Have an account? Sign in";
+      } else {
+        guestForm.style.display = "none";
+        buy.textContent = item.isBatch ? "Choose quantity & continue" : "Continue to listing";
+      }
+
       document.getElementById("dialogNote").textContent = item.isBatch ? "The next screen lets you choose an exact quantity before checkout. Availability and price are rechecked before payment." : "Availability and price are rechecked before payment. Sign in is requested only for protected actions.";
       dialog.showModal();
     }
@@ -776,6 +1010,54 @@
       const dialog = document.getElementById("productDialog");
       document.getElementById("dialogClose").addEventListener("click", () => dialog.close());
       dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
+      dialog.addEventListener("close", () => { const v = dialog.querySelector("#dialogMedia video"); if (v) { try { v.pause(); } catch (e) {} } });
+
+      document.getElementById("dialogGuest").addEventListener("submit", handleGuestCheckout);
+    }
+
+    // Guest checkout (no login): collect an email, create a held Stripe Checkout
+    // session for a local-pickup / batch listing, and redirect to Stripe. The
+    // server verifies the authoritative price + seller onboarding; funds are
+    // held and released when the seller confirms the in-person handoff.
+    async function handleGuestCheckout(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const email = document.getElementById("guestEmail").value.trim();
+      const errEl = document.getElementById("guestBuyError");
+      const btn = document.getElementById("guestBuyBtn");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errEl.textContent = "Enter a valid email so we can send your order."; return; }
+      const isBatch = form.dataset.batch === "1";
+      const seller = form.dataset.seller;
+      if (!seller) { errEl.textContent = "This listing can't be checked out right now."; return; }
+      errEl.textContent = "";
+      const original = btn.textContent;
+      btn.disabled = true; btn.textContent = "Redirecting to secure checkout…";
+      try {
+        const item = isBatch
+          ? { listingId: Number(form.dataset.listingId), quantity: Number(form.dataset.qty) || 1, commonName: form.dataset.name, imageUrl: form.dataset.image || undefined }
+          : { tokenId: Number(form.dataset.tokenId), commonName: form.dataset.name, imageUrl: form.dataset.image || undefined };
+        const payload = {
+          guest: true,
+          email,
+          purchaseType: isBatch ? "batch" : "pickup",
+          buyerWallet: "guest",
+          sellerWallet: seller,
+          items: [item],
+          successUrl: `${window.location.origin}/checkout-success.html?session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${window.location.origin}/marketplace.html`,
+        };
+        const res = await fetch("/api/stripe?action=create-checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.checkoutUrl) throw new Error(data.error || "Could not start checkout. Please try again.");
+        window.location.href = data.checkoutUrl;
+      } catch (err) {
+        errEl.textContent = err.message || "Checkout failed. Please try again.";
+        btn.disabled = false; btn.textContent = original;
+      }
     }
 
     async function init() {

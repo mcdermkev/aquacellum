@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Showcase — Aquacellum</title>
+  <meta name="description" content="A public window into a living aquarium — see the tanks, fish, and available marketplace offerings on Aquacellum.">
+  <meta property="og:title" content="Aquarium Showcase — Aquacellum">
+  <meta property="og:description" content="A public window into a living aquarium. See its tanks, fish, and available marketplace offerings.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="/icons/icon-512.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/shared.css">
+
+  <style>
+    .showcase-hero { padding: 2.5rem 0 1.5rem; }
+    .showcase-kicker { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--violet-300, #c4b5fd); }
+    .showcase-title { font-family: 'Outfit', sans-serif; font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; color: #fff; margin: 0.4rem 0 0.6rem; }
+    .showcase-desc { font-size: 0.95rem; line-height: 1.65; color: var(--text-secondary); max-width: 680px; }
+    .showcase-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1.1rem; min-height: 42px; }
+    .showcase-store-link { display: inline-flex; align-items: center; padding: 10px 18px; border-radius: 11px; font-size: 0.82rem; font-weight: 700; color: #061c18; text-decoration: none; background: linear-gradient(135deg, var(--emerald-400, #34d399), var(--teal-500, #14b8a6)); }
+    .showcase-store-link:hover { filter: brightness(1.08); }
+    .showcase-hero-media { display: none; margin: 0 0 2rem; border-radius: 18px; overflow: hidden; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); aspect-ratio: 16 / 7; }
+    .showcase-hero-media.visible { display: block; }
+    .showcase-hero-media img { width: 100%; height: 100%; display: block; object-fit: cover; }
+    .video-gallery { display: none; margin: 0 0 3rem; }
+    .video-gallery.visible { display: block; }
+    .video-gallery__title { font-family: 'Outfit', sans-serif; color: #fff; font-size: 1.45rem; margin: 0 0 1rem; }
+    .video-gallery__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+    .video-card { padding: 14px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; }
+    .video-card video { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 10px; background: #000; }
+    .video-card h3 { color: #fff; font-family: 'Outfit', sans-serif; font-size: 1rem; margin: .8rem 0 .35rem; }
+    .video-card p { color: var(--text-secondary); font-size: .8rem; line-height: 1.5; margin: 0; }
+    .video-card button { margin-top: .7rem; padding: 8px 13px; border-radius: 9px; border: 1px solid rgba(139,92,246,.35); background: rgba(139,92,246,.12); color: #ddd6fe; font-weight: 700; cursor: pointer; }
+    .video-card button:disabled { opacity: .55; cursor: wait; }
+
+    .tank-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin: 1.5rem 0 3rem; }
+    .tank-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-md, 16px); overflow: hidden; backdrop-filter: blur(12px); transition: var(--transition); }
+    .tank-card:hover { border-color: rgba(139,92,246,0.25); transform: translateY(-2px); }
+    .tank-card__visual { height: 180px; display: flex; align-items: center; justify-content: center; font-size: 2.6rem; background: linear-gradient(135deg, rgba(96,165,250,0.10), rgba(52,211,153,0.06)); }
+    .tank-card__visual img { width: 100%; height: 100%; object-fit: cover; }
+    .tank-card__body { padding: 16px 18px 20px; }
+    .tank-card__label { font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 700; color: #fff; margin: 0; }
+    .tank-card__caption { font-size: 0.82rem; line-height: 1.55; color: var(--text-secondary); margin-top: 6px; }
+    .tank-facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .tank-fact { padding: 3px 10px; border-radius: 50px; font-size: 0.65rem; font-weight: 600; background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.2); color: var(--violet-300, #c4b5fd); }
+    .specimen-list { list-style: none; margin: 14px 0 0; padding: 12px 0 0; border-top: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 10px; }
+    .specimen-item { display: flex; flex-direction: column; gap: 2px; }
+    .specimen-name { font-size: 0.85rem; font-weight: 600; color: var(--text-primary, #f8fafc); }
+    .specimen-species { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
+    .specimen-meta { font-size: 0.7rem; color: var(--text-muted); }
+    .specimen-story { font-size: 0.78rem; line-height: 1.5; color: var(--text-secondary); }
+    .tank-commerce { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.25); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .tank-commerce__info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .tank-commerce__pack { font-size: 0.82rem; font-weight: 700; color: var(--emerald-300, #6ee7b7); }
+    .tank-commerce__meta { font-size: 0.7rem; color: var(--text-muted); }
+    .tank-commerce__buy { flex-shrink: 0; padding: 8px 16px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; text-decoration: none; background: linear-gradient(135deg, var(--emerald-400, #34d399), var(--teal-500, #14b8a6)); color: #04231a; }
+    .tank-commerce__buy:hover { filter: brightness(1.08); }
+    .tank-guide-link { display: inline-block; margin-top: 14px; font-size: 0.78rem; font-weight: 700; text-decoration: none; color: var(--violet-300, #c4b5fd); }
+    .tank-guide-link:hover { filter: brightness(1.15); }
+    .state-panel { max-width: 560px; margin: 5rem auto; text-align: center; padding: 0 1rem; }
+    .state-panel h3 { font-family: 'Outfit', sans-serif; font-size: 1.3rem; color: #fff; margin-bottom: 0.6rem; }
+    .state-panel p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
+    @media (max-width: 640px) {
+      .showcase-hero { padding-top: 1.75rem; }
+      .showcase-hero-media { aspect-ratio: 4 / 3; }
+      .tank-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header id="site-nav"></header>
+
+  <div id="loadingState" class="state-panel">
+    <h3>Loading showcase…</h3>
+    <p>Fetching this aquarium's public window.</p>
+  </div>
+
+  <main id="showcaseContent" class="container" style="display:none;">
+    <header class="showcase-hero">
+      <div class="showcase-kicker">Aquarium Showcase</div>
+      <h1 class="showcase-title" id="roomTitle"></h1>
+      <p class="showcase-desc" id="roomDesc" style="display:none;"></p>
+      <div class="showcase-actions" id="showcaseActions"></div>
+    </header>
+    <div class="showcase-hero-media" id="roomHero"></div>
+    <section class="video-gallery" id="videoGallery" aria-labelledby="videoGalleryTitle">
+      <h2 class="video-gallery__title" id="videoGalleryTitle">From the fish room</h2>
+      <div class="video-gallery__grid" id="videoGalleryGrid"></div>
+    </section>
+    <div class="tank-grid" id="tankGrid"></div>
+  </main>
+
+  <footer id="site-footer"></footer>
+  <script src="/js/nav.js"></script>
+  <script src="/js/footer.js"></script>
+  <script src="/js/reveal.js"></script>
+  <script type="module">
+    import Hls from 'hls.js';
+    import {
+      canonicalProductPath,
+      heroProxyPath,
+      matchingStorePath,
+      roomSlugFromPath,
+      safePublicImageUrl,
+    } from '/src/services/showcasePublic.js';
+
+    function element(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text != null) node.textContent = String(text);
+      return node;
+    }
+
+    function showState(title, body) {
+      const panel = document.getElementById('loadingState');
+      panel.replaceChildren(element('h3', '', title), element('p', '', body));
+      panel.style.display = '';
+      document.getElementById('showcaseContent').style.display = 'none';
+    }
+
+    function enhanceMeta(room) {
+      if (room.title) {
+        document.title = `${room.title} — Showcase | Aquacellum`;
+        document.querySelector('meta[property="og:title"]')?.setAttribute('content', `${room.title} — Aquacellum`);
+      }
+      if (room.description) {
+        document.querySelector('meta[name="description"]')?.setAttribute('content', room.description);
+        document.querySelector('meta[property="og:description"]')?.setAttribute('content', room.description);
+      }
+    }
+
+    function renderRoomHero(room) {
+      const container = document.getElementById('roomHero');
+      const hero = room.hero;
+      const directImage = safePublicImageUrl(hero?.image, window.location.origin);
+      const src = directImage || heroProxyPath(hero?.assetId);
+      if (!src) return;
+      const image = element('img');
+      image.src = src;
+      image.alt = typeof hero?.alt === 'string' && hero.alt.trim() ? hero.alt.trim() : `${room.title || 'Aquarium'} showcase`;
+      const x = Number(hero.focalPoint?.x);
+      const y = Number(hero.focalPoint?.y);
+      if (Number.isFinite(x) && Number.isFinite(y) && x >= 0 && x <= 1 && y >= 0 && y <= 1) {
+        image.style.objectPosition = `${x * 100}% ${y * 100}%`;
+      }
+      image.addEventListener('load', () => container.classList.add('visible'));
+      image.addEventListener('error', () => container.replaceChildren());
+      container.replaceChildren(image);
+    }
+
+    const activeHls = new Set();
+
+    function attachSignedPlayback(video, playbackUrl) {
+      let parsed;
+      try { parsed = new URL(playbackUrl); } catch { throw new Error('invalid playback URL'); }
+      if (parsed.origin !== 'https://stream.mux.com' || !parsed.pathname.endsWith('.m3u8') || !parsed.searchParams.get('token')) {
+        throw new Error('invalid playback URL');
+      }
+      if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = parsed.toString();
+        video.load();
+        return;
+      }
+      if (!Hls.isSupported()) throw new Error('HLS playback is unavailable in this browser');
+      const hls = new Hls({ enableWorker: true, lowLatencyMode: false });
+      activeHls.add(hls);
+      hls.on(Hls.Events.DESTROYING, () => activeHls.delete(hls));
+      hls.loadSource(parsed.toString());
+      hls.attachMedia(video);
+    }
+
+    async function loadVideoPlayback({ roomSlug, item, video, button }) {
+      button.disabled = true;
+      button.textContent = 'Loading secure playback…';
+      try {
+        const response = await fetch(`/api/storefront-detail?action=showcase-video-token&room=${encodeURIComponent(roomSlug)}&video=${encodeURIComponent(item.videoId)}`, {
+          credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) throw new Error('playback unavailable');
+        const payload = await response.json();
+        const issuedAt = Number(payload.issuedAt);
+        const expiresAt = Number(payload.expiresAt);
+        if (payload.videoId !== item.videoId || !Number.isSafeInteger(issuedAt)
+            || !Number.isSafeInteger(expiresAt) || expiresAt - issuedAt < 1 || expiresAt - issuedAt > 60
+            || expiresAt <= Math.floor(Date.now() / 1000)) throw new Error('invalid token response');
+        attachSignedPlayback(video, payload.playbackUrl);
+        button.remove();
+        video.play().catch(() => {});
+      } catch {
+        button.disabled = false;
+        button.textContent = 'Playback unavailable — retry';
+      }
+    }
+
+    function renderVideoGallery(room) {
+      const section = document.getElementById('videoGallery');
+      const grid = document.getElementById('videoGalleryGrid');
+      grid.replaceChildren();
+      const videos = Array.isArray(room.videos) ? room.videos : [];
+      if (!videos.length) {
+        section.classList.remove('visible');
+        return;
+      }
+      videos.forEach((item) => {
+        const card = element('article', 'video-card');
+        const video = element('video');
+        video.controls = true;
+        video.playsInline = true;
+        video.setAttribute('aria-label', item.alt || item.title || 'Fish room video');
+        const title = element('h3', '', item.title || 'Fish room video');
+        // Curated direct-file playback: a plain same-origin MP4 with a poster,
+        // no signed-token dance. Falls back to the Mux secure-token path when a
+        // clip is only available as a signed videoId.
+        const directSrc = safePublicImageUrl(item.src, window.location.origin);
+        if (directSrc) {
+          video.preload = 'metadata';
+          const posterUrl = safePublicImageUrl(item.poster, window.location.origin);
+          if (posterUrl) video.poster = posterUrl;
+          video.src = directSrc;
+          card.append(video, title);
+          if (item.caption) card.append(element('p', '', item.caption));
+        } else {
+          video.preload = 'none';
+          card.append(video, title);
+          if (item.caption) card.append(element('p', '', item.caption));
+          const button = element('button', '', 'Load secure video');
+          button.type = 'button';
+          button.addEventListener('click', () => loadVideoPlayback({ roomSlug: room.slug, item, video, button }));
+          card.append(button);
+        }
+        grid.append(card);
+      });
+      section.classList.add('visible');
+    }
+
+    window.addEventListener('pagehide', () => {
+      activeHls.forEach((hls) => hls.destroy());
+      activeHls.clear();
+    }, { once: true });
+
+    function renderActions(room) {
+      const container = document.getElementById('showcaseActions');
+      const actions = Array.isArray(room.actions) ? room.actions : [];
+      if (actions.length) {
+        container.replaceChildren();
+        actions.forEach((action) => {
+          const href = safePublicImageUrl(action?.href, window.location.origin);
+          if (!href || typeof action?.label !== 'string' || !action.label.trim()) return;
+          const link = element('a', 'showcase-store-link', action.label.trim());
+          link.href = href;
+          container.append(link);
+        });
+        return;
+      }
+      // No curated actions — best-effort "Shop [breeder]" link if a store resolves.
+      addStoreLink(room.slug);
+    }
+
+    async function addStoreLink(roomSlug) {
+      if (!roomSlug) return;
+      try {
+        const response = await fetch(`/api/storefront-detail?id=${encodeURIComponent(roomSlug)}`);
+        if (!response.ok) return;
+        const payload = await response.json();
+        const storePath = matchingStorePath(payload, roomSlug);
+        if (!storePath) return;
+        const name = payload.breeder.displayName || 'this breeder';
+        const link = element('a', 'showcase-store-link', `Shop ${name}`);
+        link.href = storePath;
+        document.getElementById('showcaseActions').replaceChildren(link);
+      } catch { /* a missing store never blocks the showcase */ }
+    }
+
+    function buildFacts(facts) {
+      const wrap = element('div', 'tank-facts');
+      if (!facts) return wrap;
+      if (Number(facts.volumeLiters) > 0) wrap.append(element('span', 'tank-fact', `${facts.volumeLiters} L`));
+      if (facts.tankType) wrap.append(element('span', 'tank-fact', String(facts.tankType)));
+      if (Number.isFinite(Number(facts.inhabitantCount))) {
+        const count = Number(facts.inhabitantCount);
+        wrap.append(element('span', 'tank-fact', `${count} inhabitant${count === 1 ? '' : 's'}`));
+      }
+      return wrap;
+    }
+
+    function buildSpecimen(specimen) {
+      const item = element('li', 'specimen-item');
+      item.append(element('span', 'specimen-name', specimen.publicName || 'Unnamed specimen'));
+      const speciesLabel = specimen.species?.commonName || specimen.species?.scientificName;
+      if (speciesLabel) item.append(element('span', 'specimen-species', speciesLabel));
+      const metadata = [specimen.sex, specimen.lifeStage].filter(Boolean).join(' · ');
+      if (metadata) item.append(element('span', 'specimen-meta', metadata));
+      if (specimen.story) item.append(element('span', 'specimen-story', specimen.story));
+      return item;
+    }
+
+    function formatCents(cents) {
+      const value = Number(cents);
+      return Number.isFinite(value) && value > 0
+        ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value / 100)
+        : null;
+    }
+
+    function fulfillmentLabel(value) {
+      if (value === 'shipping') return 'Ships';
+      if (value === 'pickup') return 'Local pickup';
+      return 'Ask seller';
+    }
+
+    function buildCommerce(commerce) {
+      const wrap = element('div', 'tank-commerce');
+      const info = element('div', 'tank-commerce__info');
+      const packCount = Number(commerce.packSize);
+      const packText = commerce.isBatch && Number.isFinite(packCount) && packCount > 0 ? `Pack of ${packCount}` : 'Available now';
+      const price = formatCents(commerce.priceCents);
+      info.append(
+        element('span', 'tank-commerce__pack', price ? `${packText} — ${price}` : packText),
+        element('span', 'tank-commerce__meta', fulfillmentLabel(commerce.fulfillment)),
+      );
+      wrap.append(info);
+      const buyPath = canonicalProductPath(commerce.buyPath);
+      if (buyPath) {
+        const buy = element('a', 'tank-commerce__buy', 'View & buy');
+        buy.href = buyPath;
+        wrap.append(buy);
+      }
+      return wrap;
+    }
+
+    function buildTank(tank) {
+      const card = element('article', 'tank-card');
+      // Anchor for per-tank deep links (#tank-<slug>). Hash-only on purpose:
+      // the room handler only consults curated data when no `tank` param is
+      // present, so a &tank= request against a curated room would 404.
+      if (tank.slug) card.id = `tank-${tank.slug}`;
+      const visual = element('div', 'tank-card__visual');
+      const imageUrl = safePublicImageUrl(tank.photo || tank.commerce?.photoUrl, window.location.origin);
+      if (imageUrl) {
+        const image = element('img');
+        image.src = imageUrl;
+        image.alt = tank.label || 'Aquarium';
+        image.loading = 'lazy';
+        visual.append(image);
+      } else {
+        visual.textContent = '🐟';
+      }
+
+      const body = element('div', 'tank-card__body');
+      body.append(element('h2', 'tank-card__label', tank.label || tank.slug || 'Tank'));
+      if (tank.caption) body.append(element('p', 'tank-card__caption', tank.caption));
+      body.append(buildFacts(tank.facts));
+      const specimens = Array.isArray(tank.specimens) ? tank.specimens : [];
+      if (specimens.length) {
+        const list = element('ul', 'specimen-list');
+        specimens.forEach((specimen) => list.append(buildSpecimen(specimen)));
+        body.append(list);
+      }
+      if (tank.commerce && typeof tank.commerce === 'object') body.append(buildCommerce(tank.commerce));
+      const guideHref = safePublicImageUrl(tank.guideUrl, window.location.origin);
+      if (guideHref) {
+        const guide = element('a', 'tank-guide-link', 'Learn about this morph →');
+        guide.href = guideHref;
+        body.append(guide);
+      }
+      card.append(visual, body);
+      return card;
+    }
+
+    function render(room) {
+      enhanceMeta(room);
+      document.getElementById('roomTitle').textContent = room.title || 'Aquarium Showcase';
+      const description = document.getElementById('roomDesc');
+      if (room.description) {
+        description.textContent = room.description;
+        description.style.display = '';
+      }
+      renderRoomHero(room);
+      renderVideoGallery(room);
+      renderActions(room);
+
+      const grid = document.getElementById('tankGrid');
+      grid.replaceChildren();
+      const tanks = Array.isArray(room.tanks) ? room.tanks : [];
+      if (tanks.length) tanks.forEach((tank) => grid.append(buildTank(tank)));
+      else grid.append(element('p', 'showcase-desc', "This showcase doesn't have any public tanks yet."));
+
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('showcaseContent').style.display = '';
+
+      // The grid exists only now, so the browser's own hash scroll already ran
+      // and found nothing. Do it ourselves once the cards are in the document.
+      scrollToHashTarget();
+    }
+
+    function scrollToHashTarget() {
+      const hash = window.location.hash;
+      if (!hash || hash.length < 2) return;
+      let id;
+      try { id = decodeURIComponent(hash.slice(1)); } catch { return; }
+      if (!id) return;
+      const target = document.getElementById(id);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    async function init() {
+      const slug = roomSlugFromPath(window.location.pathname);
+      if (!slug) return showState('Showcase not found', 'No valid showcase was specified in the address.');
+      try {
+        const response = await fetch(`/api/storefront-detail?action=showcase-room&room=${encodeURIComponent(slug)}`);
+        if (response.status === 404) return showState('Showcase not available', "This showcase is private or doesn't exist.");
+        if (!response.ok) return showState('Showcase unavailable', 'Please try again in a moment.');
+        const payload = await response.json();
+        if (!payload?.room) return showState('Showcase unavailable', 'The showcase data could not be read.');
+        render(payload.room);
+      } catch {
+        showState('Showcase unavailable', 'Please try again in a moment.');
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

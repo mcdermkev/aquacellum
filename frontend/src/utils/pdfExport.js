@@ -603,3 +603,148 @@ export async function generateTankQRLabel({ tankId, tankName, facility, room, ra
   const fileName = `Aquadex_QR_Label_Unit_${tankId}.pdf`;
   doc.save(fileName);
 }
+
+// ─── Public Tank Label (the sign taped to the tank framing) ──────────────────
+
+/**
+ * Generate the PUBLIC printable label for a published tank.
+ *
+ * This is a different document from `generateTankQRLabel` above, which is the
+ * keeper's private logbook sticker (it encodes an in-app deep link and prints
+ * facility/room/rack). This one faces the BUYER: it replaces the handwritten
+ * paper price sign a vendor tapes to the tank framing at an expo, so it encodes
+ * the public `/t/<token>` page and prints the price large enough to read at
+ * arm's length without leaning in.
+ *
+ * Page/margins/fonts/colors match the keeper label — same jsPDF construction,
+ * same 4mm margin, same helvetica + DARK_TEXT/MUTED_TEXT/ACCENT_BLUE palette.
+ * Note that `format: [76, 51]` + portrait resolves to a 51mm x 76mm page (jsPDF
+ * orients the shorter side as the width), so the layout stacks vertically:
+ * QR on top, names in the middle, price band across the bottom.
+ *
+ * @param {Object} params
+ * @param {string} params.token - Published tank token (used in the filename)
+ * @param {string} params.tankName - Tank/line name shown under the QR
+ * @param {Array}  params.lines - Species/commerce lines, up to 3 of which print
+ *   [{ name?: string, commonName?: string, publicName?: string, priceCents?: number }]
+ * @param {string} params.publicUrl - Absolute URL the QR encodes, e.g. https://aquacellum.com/t/<token>
+ */
+export async function generatePublicTankLabel({ token, tankName, lines = [], publicUrl }) {
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [76, 51] }); // ~2" x 3" label, one-up
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 4;
+  const contentW = pageW - margin * 2;
+  const centerX = pageW / 2;
+
+  // Background
+  doc.setFillColor(...WHITE);
+  doc.rect(0, 0, pageW, pageH, "F");
+
+  // ── QR code (top, centered) ─────────────────────────────────────────────
+  // Encodes the public page rather than an app deep link, so a stranger's
+  // camera lands somewhere useful with no app installed and no account.
+  const scanUrl = publicUrl || `https://aquacellum.com/t/${token}`;
+  const qrSize = 30;
+  const qrX = (pageW - qrSize) / 2;
+  const qrDataUrl = await generateQRDataUrl(scanUrl);
+  let placed = false;
+  if (qrDataUrl) {
+    try {
+      doc.addImage(qrDataUrl, "PNG", qrX, margin, qrSize, qrSize);
+      placed = true;
+    } catch {
+      placed = false;
+    }
+  }
+  if (!placed) {
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(qrX, margin, qrSize, qrSize);
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(5.5);
+  doc.setTextColor(...ACCENT_BLUE);
+  doc.text("SCAN TO SEE EVERY FISH", centerX, margin + qrSize + 3.5, { align: "center" });
+
+  // ── Price band (bottom) — reserved first so text can never run into it ───
+  const bandH = 11;
+  const bandY = pageH - 4.5 - bandH;
+  const maxTextY = bandY - 1;
+
+  // ── Names (between the QR and the price band) ───────────────────────────
+  const rows = Array.isArray(lines) ? lines : [];
+  const rowName = (row) => {
+    if (!row) return "";
+    if (typeof row === "string") return row;
+    return row.name || row.publicName || row.commonName || "";
+  };
+
+  let y = margin + qrSize + 8.5;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...DARK_TEXT);
+  doc.splitTextToSize(String(tankName || "Aquarium"), contentW).slice(0, 2).forEach((line) => {
+    if (y > maxTextY) return;
+    doc.text(line, centerX, y, { align: "center" });
+    y += 4;
+  });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.5);
+  doc.setTextColor(...MUTED_TEXT);
+  const speciesLines = rows.map(rowName).filter(Boolean).slice(0, 3);
+  let printed = 0;
+  speciesLines.forEach((name) => {
+    if (y > maxTextY) return;
+    const [clipped] = doc.splitTextToSize(name, contentW);
+    doc.text(clipped, centerX, y, { align: "center" });
+    y += 3.4;
+    printed += 1;
+  });
+  if (rows.length > printed && y <= maxTextY) {
+    doc.setFontSize(5.5);
+    doc.text(`+ ${rows.length - printed} more — scan for the full list`, centerX, y, { align: "center" });
+  }
+
+  // ── The price: the part that replaces the handwritten sign ───────────────
+  const prices = rows
+    .map((row) => Number(row && typeof row === "object" ? row.priceCents : NaN))
+    .filter((cents) => Number.isFinite(cents) && cents > 0);
+  const lowest = prices.length ? Math.min(...prices) : null;
+
+  if (lowest != null) {
+    doc.setFillColor(240, 249, 255); // faint sky tint — readable, low toner cost
+    doc.roundedRect(margin, bandY, contentW, bandH, 1.5, 1.5, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(5.5);
+    doc.setTextColor(...MUTED_TEXT);
+    doc.text(prices.length > 1 ? "FROM" : "EACH", margin + 2.5, bandY + 3.5);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.setTextColor(...DARK_TEXT);
+    doc.text(`$${(lowest / 100).toFixed(2)}`, centerX, bandY + bandH - 2.6, { align: "center" });
+  } else {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...MUTED_TEXT);
+    doc.text("Ask for pricing", centerX, bandY + bandH / 2 + 1.5, { align: "center" });
+  }
+
+  // Bottom strip — Aquadex branding
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(4.5);
+  doc.setTextColor(...MUTED_TEXT);
+  doc.text("aquacellum.com • Aquadex Protocol", centerX, pageH - 1.8, { align: "center" });
+
+  // Border
+  doc.setDrawColor(...LIGHT_LINE);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(0.5, 0.5, pageW - 1, pageH - 1, 2, 2);
+
+  const fileName = `Aquadex_Tank_${token}.pdf`;
+  doc.save(fileName);
+}

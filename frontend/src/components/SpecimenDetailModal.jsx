@@ -204,7 +204,10 @@ export function SpecimenDetailModal({
           status: localSpec.status ?? 0,
           owner: localSpec.ownerAddress || walletAccount || ZeroAddress,
           commonName: localSpec.commonName,
-          scientificName: localSpec.scientificName
+          scientificName: localSpec.scientificName,
+          // The keeper's own morph/strain name, shown when recorded. Read straight
+          // from the local record; never inferred (on-chain specimens won't have it).
+          varietyName: localSpec.varietyName || ""
         };
       } else {
         // No local record for this serial — fall back to treating it as a
@@ -903,6 +906,12 @@ export function SpecimenDetailModal({
                     <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Scientific Name</span>
                     <span style={{ fontSize: "0.9rem", color: "var(--text-secondary)", fontStyle: "italic" }}>{speciesInfo.scientificName}</span>
                   </div>
+                  {spec.varietyName && (
+                    <div>
+                      <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Morph / Variety</span>
+                      <span style={{ fontSize: "0.9rem", color: "#fff" }}>{spec.varietyName}</span>
+                    </div>
+                  )}
                   <div>
                     <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>Estimated Age</span>
                     <span style={{ fontSize: "0.9rem", color: "#fff" }}>{calculateAge(spec.birthTimestamp, spec.lifeStage)}</span>

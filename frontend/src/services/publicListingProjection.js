@@ -81,6 +81,7 @@ export const PUBLIC_LISTING_DATA_FIELDS = Object.freeze([
   "shippingFeeCents",
   "isShipping",
   "quantity",
+  "quantityRemaining",
   // Care envelope shown on public cards
   "careLevel",
   "minTemp",

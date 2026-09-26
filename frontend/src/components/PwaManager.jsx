@@ -13,6 +13,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
 const IOS_HINT_DISMISS_KEY = "aquadex_ios_install_hint_dismissed";
@@ -109,6 +110,12 @@ export function PwaManager() {
   const [installEvent, setInstallEvent] = useState(null);
   const [showIosHint, setShowIosHint] = useState(false);
 
+  // Don't surface install prompts on a product deep-link (e.g. a buyer arriving
+  // from the marketplace at /app/products/batch-…). We still capture the
+  // beforeinstallprompt event, so the banner reappears once they navigate on.
+  const location = useLocation();
+  const onProductDeepLink = /^\/app\/products\//.test(location.pathname || "");
+
   // Capture the Android/desktop install prompt.
   useEffect(() => {
     if (isStandalone()) return;
@@ -173,6 +180,11 @@ export function PwaManager() {
   }
 
   if (installEvent) {
+    // Suppressed on a product deep link so a buyer arriving from the marketplace
+    // isn't interrupted mid-purchase. Checked INSIDE the branch rather than in the
+    // condition so the render order (update prompt first) stays legible to the
+    // source-level assertion in PwaManager.test.js.
+    if (onProductDeepLink) return null;
     return (
       <div style={cardStyle}>
         <span style={{ fontSize: "1.2rem" }}>🐠</span>
@@ -192,6 +204,7 @@ export function PwaManager() {
   }
 
   if (showIosHint) {
+    if (onProductDeepLink) return null;
     return (
       <div style={cardStyle}>
         <span style={{ fontSize: "1.2rem" }}>📲</span>

@@ -19,6 +19,16 @@ export function encodeSpecimenId(uuid) {
   return "spec_" + uuid;
 }
 
+export function encodeVideoId(uuid) {
+  return "video_" + uuid;
+}
+
+export function decodeVideoId(value) {
+  if (typeof value !== "string" || !value.startsWith("video_")) return null;
+  const uuid = value.slice(6);
+  return isCanonicalUuid(uuid) ? uuid : null;
+}
+
 export function encodeEntityId(kind, uuid) {
   return (kind === "tank" ? "tank_" : "spec_") + uuid;
 }

@@ -54,15 +54,22 @@ describe("showcase-owner route security posture", () => {
       "showcase_finalize_dataset_import", "showcase_stage_identity_candidates", "showcase_resolve_identity_conflict",
       "showcase_owner_room", "showcase_create_owner_room", "showcase_update_owner_room", "showcase_reset_owner_room",
       "showcase_put_room_tank", "showcase_remove_room_tank", "showcase_put_specimen_settings",
-      "showcase_owner_publication_preview", "showcase_set_owner_room_visibility",
+      "showcase_set_room_tank_commerce",
+      "showcase_owner_publication_preview", "showcase_owner_publication_preview_v2",
+      "showcase_set_owner_room_visibility", "showcase_set_owner_room_visibility_v2",
       "showcase_stage_room_hero", "showcase_cancel_room_hero_stage",
       "showcase_owner_media_upload_binding", "showcase_finalize_room_hero_upload",
-      "showcase_owner_media_status", "showcase_publish_room_hero", "showcase_revoke_media_asset",
+      "showcase_owner_media_status", "showcase_authorize_owner_media_preview",
+      "showcase_publish_room_hero", "showcase_revoke_media_asset",
+      "showcase_stage_room_video", "showcase_cancel_room_video_stage",
+      "showcase_owner_video_upload_binding", "showcase_finalize_room_video_upload",
+      "showcase_owner_room_videos", "showcase_put_room_video", "showcase_revoke_room_video",
+      "showcase_authorize_owner_video_playback",
       "showcase_resolve_owner_legacy_qr", "showcase_bind_owner_legacy_qr",
     ]);
     for (const name of [...rpcNames, ...called]) {
       expect(name.startsWith("showcase_"), `unexpected rpc ${name}`).toBe(true);
-      expect(allow.has(name), `rpc ${name} is not on the R1.3 allowlist`).toBe(true);
+      expect(allow.has(name), `rpc ${name} is not on the reviewed allowlist`).toBe(true);
     }
   });
 

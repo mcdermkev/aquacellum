@@ -2,6 +2,19 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/showcase/:path*",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://stream.mux.com; media-src 'self' https://stream.mux.com blob:; worker-src 'self' blob:"
+        },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    }
+  ],
   "functions": {
     "api/*.js": {
       "includeFiles": "public/fishbase_master.json"
@@ -22,16 +35,20 @@
     { "source": "/reef-social", "destination": "/app/reef", "permanent": false }
   ],
   "rewrites": [
+    { "source": "/showcase-media/:path*", "destination": "https://yahsdztnvsykzecjatsl.supabase.co/storage/v1/object/public/showcase-public/:path*" },
     { "source": "/api/showcase-media/:assetId/:variant", "destination": "/api/storefront-detail?action=showcase-media&asset=:assetId&variant=:variant" },
+    { "source": "/showcase/:path*", "destination": "/showcase.html" },
     { "source": "/checkout/success", "destination": "/checkout-success.html" },
     { "source": "/store/:path*", "destination": "/store.html" },
     { "source": "/species/:path*", "destination": "/species.html" },
+    { "source": "/t/:path*", "destination": "/tank.html" },
     { "source": "/app", "destination": "/app.html" },
     { "source": "/app/:path*", "destination": "/app.html" },
     { "source": "/hobbyist", "destination": "/hobbyist.html" },
     { "source": "/breeder", "destination": "/breeder.html" },
     { "source": "/database", "destination": "/database.html" },
     { "source": "/marketplace", "destination": "/marketplace.html" },
+    { "source": "/medaka-morphs", "destination": "/medaka-morphs.html" },
     { "source": "/reef", "destination": "/reef.html" },
     { "source": "/compare", "destination": "/compare.html" },
     { "source": "/how-it-works", "destination": "/how-it-works.html" },

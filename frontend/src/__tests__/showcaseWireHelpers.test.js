@@ -135,6 +135,12 @@ describe("showcaseValidation", () => {
     expect(validateAction("bootstrap", {}).ok).toBe(true);
   });
 
+  it("accepts only exact owner media-preview bindings", () => {
+    expect(validateAction("media-preview", { roomId: UUID, assetId: UUID2, variant: "hero" }).ok).toBe(true);
+    expect(validateAction("media-preview", { roomId: UUID, assetId: UUID2, variant: "source" }).code).toBe("invalid_field");
+    expect(validateAction("media-preview", { roomId: UUID, assetId: UUID2, variant: "hero", ownerId: UUID }).code).toBe("invalid_request");
+  });
+
   it("validates typed entity IDs and adjudication reason", () => {
     expect(validateAction("identity-adjudicate", { conflictId: UUID, chosenEntityId: "tank_" + UUID2, reason: "mine" }).ok).toBe(true);
     expect(validateAction("identity-adjudicate", { conflictId: UUID, chosenEntityId: null, reason: "reject" }).value.chosen).toBeNull();

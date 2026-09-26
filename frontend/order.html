@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your order — Aquacellum</title>
+  <meta name="robots" content="noindex">
+  <meta name="description" content="Track your Aquacellum order and show your pickup code at handoff.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root { --ink:#f8f8fb; --muted:#a6a7b2; --dim:#71727d; --panel:#111217; --line:rgba(255,255,255,.1); --lime:#d8ff71; --aqua:#73e4da; --coral:#ff8e78; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:#090a0e; color:var(--ink); font-family:"DM Sans",sans-serif; min-height:100vh; }
+    .wrap { width:min(560px, calc(100% - 32px)); margin:0 auto; padding:40px 0 64px; }
+    .brand { display:flex; align-items:center; gap:10px; font-family:"Manrope",sans-serif; font-weight:800; letter-spacing:.14em; text-transform:uppercase; font-size:.8rem; color:var(--muted); margin-bottom:28px; }
+    .brand a { color:inherit; text-decoration:none; }
+    .card { border:1px solid var(--line); background:var(--panel); border-radius:10px; padding:24px; margin-bottom:16px; }
+    h1 { font-family:"Manrope",sans-serif; font-size:1.5rem; margin:0 0 6px; letter-spacing:-.02em; }
+    .sub { color:var(--muted); font-size:.85rem; margin:0 0 20px; line-height:1.5; }
+    .status-pill { display:inline-flex; align-items:center; gap:8px; padding:7px 13px; border-radius:999px; font-size:.72rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+    .status-held { background:rgba(115,228,218,.12); color:var(--aqua); border:1px solid rgba(115,228,218,.3); }
+    .status-done { background:rgba(216,255,113,.14); color:var(--lime); border:1px solid rgba(216,255,113,.35); }
+    .row { display:flex; justify-content:space-between; gap:12px; padding:11px 0; border-top:1px solid var(--line); font-size:.9rem; }
+    .row:first-of-type { border-top:0; }
+    .row span:first-child { color:var(--muted); }
+    .row strong { font-weight:600; }
+    .btn { width:100%; min-height:50px; display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius:999px; border:1px solid var(--lime); background:var(--lime); color:#11130a; font-weight:700; font-size:.92rem; cursor:pointer; transition:transform .15s; }
+    .btn:hover { transform:translateY(-1px); }
+    .btn[disabled] { opacity:.5; cursor:default; transform:none; }
+    .qr-box { display:flex; flex-direction:column; align-items:center; gap:16px; padding:8px 0 4px; }
+    #qrCanvas { width:230px; height:230px; background:#fff; border-radius:12px; padding:12px; }
+    .code-text { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:.7rem; word-break:break-all; color:var(--dim); background:#0a0b0f; border:1px solid var(--line); border-radius:8px; padding:10px 12px; max-height:74px; overflow:auto; width:100%; }
+    .hint { color:var(--muted); font-size:.8rem; line-height:1.55; text-align:center; }
+    .countdown { color:var(--coral); font-size:.78rem; font-weight:600; }
+    .loading, .error { text-align:center; color:var(--muted); padding:40px 0; }
+    .done-hero { text-align:center; padding:12px 0; }
+    .done-hero .mark { font-size:2.6rem; }
+    .done-hero h2 { font-family:"Manrope",sans-serif; margin:10px 0 4px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand"><a href="/marketplace.html">◆ Aquacellum</a></div>
+    <div id="content">
+      <div class="loading">Loading your order…</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script>
+    "use strict";
+    const API = "/api/stripe";
+    const params = new URLSearchParams(location.search);
+    const ref = params.get("ref") || params.get("token") || "";
+    const content = document.getElementById("content");
+    let pollTimer = null;
+    let codeExpiry = 0;
+    let countdownTimer = null;
+
+    function money(cents) {
+      const v = Number(cents || 0) / 100;
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
+    }
+    function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+
+    async function fetchOrder() {
+      const res = await fetch(`${API}?action=order-lookup&ref=${encodeURIComponent(ref)}`);
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Error ${res.status}`);
+      return res.json();
+    }
+
+    function renderError(msg) {
+      content.replaceChildren(el("div", "error", `${msg}<br><br><a href="/marketplace.html" style="color:var(--lime)">Back to the marketplace</a>`));
+    }
+
+    function itemsSummary(order) {
+      const items = Array.isArray(order.items) ? order.items : [];
+      if (!items.length) return "Your order";
+      return items.map(i => `${i.quantity ? i.quantity + " × " : ""}${i.commonName || i.name || "Fish"}`).join(", ");
+    }
+
+    function renderComplete(order) {
+      stopPolling();
+      content.replaceChildren();
+      const card = el("div", "card");
+      card.append(el("div", "done-hero", `
+        <div class="mark" aria-hidden="true">✅</div>
+        <h2>Handoff complete</h2>
+        <p class="sub" style="margin-top:6px">You're all set — enjoy your fish! The seller has confirmed the pickup and the sale is complete.</p>
+      `));
+      const det = el("div");
+      det.append(row("Order", itemsSummary(order)));
+      det.append(row("Total", money(order.amountCents)));
+      if (order.seller && order.seller.name) det.append(row("Seller", order.seller.name));
+      card.append(det);
+      content.append(card);
+    }
+
+    function row(label, value) {
+      const r = el("div", "row");
+      r.append(el("span", null, label), el("strong", null, value));
+      return r;
+    }
+
+    function renderHeld(order) {
+      content.replaceChildren();
+      const head = el("div", "card");
+      head.append(el("h1", null, "Your order is confirmed 🐟"));
+      head.append(el("p", "sub", "Your payment is held securely. At the meetup, tap the button below and show the code to the seller — the moment they confirm the handoff, the sale is complete."));
+      head.append(el("div", null, "").appendChild(el("span", "status-pill status-held", "● Awaiting pickup")).parentElement);
+      const det = el("div", null);
+      det.style.marginTop = "18px";
+      det.append(row("Order", itemsSummary(order)));
+      det.append(row("Total paid", money(order.amountCents)));
+      if (order.seller && order.seller.name) det.append(row("Seller", order.seller.name));
+      if (order.seller && order.seller.pickupArea) det.append(row("Pickup", order.seller.pickupArea));
+      head.append(det);
+      content.append(head);
+
+      const codeCard = el("div", "card");
+      const btn = el("button", "btn", "Show my pickup code");
+      btn.type = "button";
+      btn.addEventListener("click", () => showCode(codeCard, btn));
+      codeCard.append(btn);
+      content.append(codeCard);
+    }
+
+    async function showCode(card, btn) {
+      btn.disabled = true; btn.textContent = "Generating…";
+      try {
+        const res = await fetch(`${API}?action=guest-handoff-code`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ref }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Could not generate a code");
+        codeExpiry = Number(data.expiresAt) || (Date.now() + 10 * 60 * 1000);
+        renderCode(card, data.token);
+        startPolling();
+        startCountdown(card);
+      } catch (err) {
+        btn.disabled = false; btn.textContent = "Show my pickup code";
+        const e = el("p", "hint", `⚠️ ${err.message}`); e.style.color = "var(--coral)";
+        card.append(e);
+      }
+    }
+
+    function renderCode(card, token) {
+      card.replaceChildren();
+      const box = el("div", "qr-box");
+      const canvas = el("canvas"); canvas.id = "qrCanvas";
+      box.append(canvas);
+      box.append(el("p", "hint", "Show this to the seller. They scan it (or type the code below) to complete your pickup."));
+      const code = el("div", "code-text", token);
+      box.append(code);
+      const cd = el("div", "countdown"); cd.id = "cd";
+      box.append(cd);
+      card.append(box);
+      if (window.QRCode && window.QRCode.toCanvas) {
+        window.QRCode.toCanvas(canvas, token, { width: 206, margin: 1 }, () => {});
+      } else {
+        canvas.style.display = "none";
+      }
+    }
+
+    function startCountdown(card) {
+      if (countdownTimer) clearInterval(countdownTimer);
+      countdownTimer = setInterval(() => {
+        const cd = document.getElementById("cd");
+        const left = Math.max(0, Math.floor((codeExpiry - Date.now()) / 1000));
+        if (cd) cd.textContent = left > 0 ? `Code expires in ${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}` : "Code expired — tap to refresh";
+        if (left <= 0) {
+          clearInterval(countdownTimer);
+          const card2 = document.querySelectorAll(".card")[1];
+          if (card2) { card2.replaceChildren(); const b = el("button", "btn", "Refresh pickup code"); b.type = "button"; b.addEventListener("click", () => showCode(card2, b)); card2.append(b); }
+        }
+      }, 1000);
+    }
+
+    function startPolling() {
+      if (pollTimer) return;
+      pollTimer = setInterval(async () => {
+        try {
+          const order = await fetchOrder();
+          if (order.complete) renderComplete(order);
+        } catch { /* keep polling */ }
+      }, 4000);
+    }
+    function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } if (countdownTimer) clearInterval(countdownTimer); }
+
+    async function init() {
+      if (!ref) { renderError("This link is missing its order reference."); return; }
+      try {
+        const order = await fetchOrder();
+        if (order.complete) renderComplete(order);
+        else renderHeld(order);
+      } catch (err) {
+        renderError(err.message || "We couldn't find that order.");
+      }
+    }
+    init();
+  </script>
+</body>
+</html>

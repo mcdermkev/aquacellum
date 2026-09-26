@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>This Tank — Aquacellum</title>
+  <meta name="description" content="Every fish in this tank, identified — with prices and a way to buy on the spot. No app, no account.">
+  <meta property="og:title" content="This Tank — Aquacellum">
+  <meta property="og:description" content="Every fish in this tank, identified — with prices and a way to buy on the spot.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="/icons/icon-512.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/shared.css">
+
+  <style>
+    /* Mobile-first: this page is read almost exclusively on a phone held in
+       front of a tank at an expo, so the single-column layout is the default
+       and the wider grid is the enhancement. */
+    .tank-page { padding: 1.75rem 0 3rem; max-width: 720px; }
+    .tank-kicker { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--violet-300, #c4b5fd); }
+    .tank-title { font-family: 'Outfit', sans-serif; font-size: clamp(1.7rem, 6vw, 2.6rem); font-weight: 800; color: #fff; margin: 0.4rem 0 0.6rem; line-height: 1.15; }
+    .tank-caption { font-size: 0.92rem; line-height: 1.65; color: var(--text-secondary); margin: 0; }
+    .tank-hero { display: none; margin: 1.1rem 0 0; border-radius: 16px; overflow: hidden; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); aspect-ratio: 4 / 3; }
+    .tank-hero.visible { display: block; }
+    .tank-hero img { width: 100%; height: 100%; display: block; object-fit: cover; }
+    .tank-facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .tank-fact { padding: 3px 10px; border-radius: 50px; font-size: 0.65rem; font-weight: 600; background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.2); color: var(--violet-300, #c4b5fd); }
+
+    .tank-section { margin-top: 2.25rem; }
+    .tank-section__title { font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; color: #fff; margin: 0 0 0.25rem; }
+    .tank-section__hint { font-size: 0.78rem; color: var(--text-muted); margin: 0 0 0.9rem; }
+
+    .specimen-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .specimen-item { padding: 12px 14px; border-radius: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 3px; }
+    .specimen-name { font-size: 0.92rem; font-weight: 600; color: var(--text-primary, #f8fafc); }
+    .specimen-species { font-size: 0.76rem; color: var(--text-muted); font-style: italic; }
+    .specimen-species a { color: var(--violet-300, #c4b5fd); text-decoration: none; font-weight: 600; }
+    .specimen-species a:hover { text-decoration: underline; }
+    .specimen-unlinked { font-size: 0.7rem; color: var(--text-muted); }
+
+    .commerce-list { display: flex; flex-direction: column; gap: 12px; }
+    .commerce-line { padding: 14px 16px; border-radius: 14px; background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.25); display: flex; flex-direction: column; gap: 10px; }
+    .commerce-line.is-unavailable { background: rgba(148,163,184,0.05); border-color: rgba(148,163,184,0.22); opacity: 0.72; }
+    .commerce-line__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .commerce-line__info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .commerce-line__name { font-size: 0.95rem; font-weight: 700; color: #fff; }
+    .commerce-line__species { font-size: 0.74rem; font-style: italic; color: var(--text-muted); }
+    .commerce-line__meta { font-size: 0.72rem; color: var(--text-muted); }
+    .commerce-line__price { font-family: 'Outfit', sans-serif; font-size: 1.35rem; font-weight: 800; color: var(--emerald-300, #6ee7b7); white-space: nowrap; }
+    .commerce-line.is-unavailable .commerce-line__price { color: var(--text-muted); text-decoration: line-through; }
+    .commerce-line__soldout { align-self: flex-start; padding: 4px 11px; border-radius: 50px; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; background: rgba(148,163,184,0.14); border: 1px solid rgba(148,163,184,0.3); color: #cbd5e1; }
+    .commerce-line__actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .buy-btn { padding: 11px 20px; border-radius: 11px; border: none; font-size: 0.85rem; font-weight: 700; cursor: pointer; color: #04231a; background: linear-gradient(135deg, var(--emerald-400, #34d399), var(--teal-500, #14b8a6)); }
+    .buy-btn:hover { filter: brightness(1.08); }
+    .buy-btn:disabled { opacity: 0.6; cursor: wait; }
+    .detail-link { font-size: 0.78rem; font-weight: 600; text-decoration: none; color: var(--violet-300, #c4b5fd); }
+    .detail-link:hover { text-decoration: underline; }
+
+    .guest-form { display: none; flex-direction: column; gap: 8px; padding-top: 4px; }
+    .guest-form.open { display: flex; }
+    .guest-form label { font-size: 0.74rem; font-weight: 600; color: var(--text-secondary); }
+    .guest-form input { width: 100%; padding: 11px 13px; border-radius: 10px; font-size: 0.9rem; color: #f8fafc; background: rgba(0,0,0,0.28); border: 1px solid var(--glass-border); }
+    .guest-form input:focus { outline: 2px solid rgba(52,211,153,0.4); outline-offset: 1px; }
+    .guest-form__note { font-size: 0.7rem; line-height: 1.5; color: var(--text-muted); margin: 0; }
+    .guest-form__error { font-size: 0.76rem; font-weight: 600; color: #fca5a5; min-height: 1em; }
+
+    .empty-note { font-size: 0.86rem; line-height: 1.6; color: var(--text-secondary); padding: 14px 16px; border-radius: 12px; background: var(--glass-bg); border: 1px solid var(--glass-border); margin: 0; }
+    .tank-updated { margin-top: 2rem; font-size: 0.68rem; color: var(--text-muted); }
+    .state-panel { max-width: 560px; margin: 5rem auto; text-align: center; padding: 0 1rem; }
+    .state-panel h3 { font-family: 'Outfit', sans-serif; font-size: 1.3rem; color: #fff; margin-bottom: 0.6rem; }
+    .state-panel p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
+    .state-panel a { color: var(--violet-300, #c4b5fd); font-weight: 600; }
+    @media (min-width: 641px) {
+      .tank-hero { aspect-ratio: 16 / 9; }
+    }
+  </style>
+</head>
+<body>
+  <header id="site-nav"></header>
+
+  <div id="loadingState" class="state-panel">
+    <h3>Loading this tank…</h3>
+    <p>Reading the label.</p>
+  </div>
+
+  <main id="tankContent" class="container tank-page" style="display:none;">
+    <header>
+      <div class="tank-kicker">In this tank</div>
+      <h1 class="tank-title" id="tankTitle"></h1>
+      <p class="tank-caption" id="tankCaption" style="display:none;"></p>
+      <div class="tank-facts" id="tankFacts"></div>
+    </header>
+    <div class="tank-hero" id="tankHero"></div>
+
+    <section class="tank-section" aria-labelledby="specimensTitle">
+      <h2 class="tank-section__title" id="specimensTitle">What's in this tank</h2>
+      <p class="tank-section__hint">Tap a species name to read its full Aquadex profile.</p>
+      <ul class="specimen-list" id="specimenList"></ul>
+      <p class="empty-note" id="specimenEmpty" style="display:none;">The keeper hasn't listed the fish in this tank yet.</p>
+    </section>
+
+    <section class="tank-section" aria-labelledby="commerceTitle">
+      <h2 class="tank-section__title" id="commerceTitle">Take one home</h2>
+      <p class="tank-section__hint" id="commerceHint">Buy as a guest — no app and no account needed.</p>
+      <div class="commerce-list" id="commerceList"></div>
+      <p class="empty-note" id="commerceEmpty" style="display:none;">Nothing from this tank is for sale right now. Ask the keeper.</p>
+    </section>
+
+    <p class="tank-updated" id="tankUpdated"></p>
+  </main>
+
+  <footer id="site-footer"></footer>
+  <script src="/js/nav.js"></script>
+  <script src="/js/footer.js"></script>
+  <script type="module">
+    import { canonicalProductPath, safePublicImageUrl } from '/src/services/showcasePublic.js';
+
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const USD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+
+    function element(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text != null) node.textContent = String(text);
+      return node;
+    }
+
+    function showState(title, bodyNodes) {
+      const panel = document.getElementById('loadingState');
+      panel.replaceChildren(element('h3', '', title), ...bodyNodes);
+      panel.style.display = '';
+      document.getElementById('tankContent').style.display = 'none';
+    }
+
+    function showMessage(title, body) {
+      showState(title, [element('p', '', body)]);
+    }
+
+    function showNotFound() {
+      const paragraph = element('p', '', "This tank isn't published. ");
+      const link = element('a', '', 'Browse the marketplace');
+      link.href = '/marketplace.html';
+      paragraph.append(link, document.createTextNode(' instead.'));
+      showState('Tank not available', [paragraph]);
+    }
+
+    /**
+     * The token comes out of the path (/t/<token>), never the hash — a fragment
+     * never reaches the server, so a hash-based label would break crawling and
+     * server-side rendering of the very link people are scanning.
+     */
+    function tokenFromPath(pathname) {
+      const match = String(pathname || '').match(/^\/t\/([^/?#]+)\/?$/);
+      if (!match) return null;
+      try {
+        const token = decodeURIComponent(match[1]).trim();
+        return token || null;
+      } catch {
+        return null;
+      }
+    }
+
+    // The species profile route keys off the scientific name (see species.html
+    // toSlug). No scientific name means no profile to link to — we still show
+    // the fish rather than guessing at a species.
+    function speciesPath(scientificName) {
+      if (typeof scientificName !== 'string') return '';
+      const trimmed = scientificName.trim();
+      if (!trimmed) return '';
+      const slug = trimmed.toLowerCase().replace(/\s+/g, '-');
+      return slug ? `/species/${encodeURIComponent(slug)}` : '';
+    }
+
+    function formatCents(cents) {
+      const value = Number(cents);
+      return Number.isFinite(value) && value > 0 ? USD.format(value / 100) : null;
+    }
+
+    function renderHeader(tank) {
+      const title = tank.title || 'Aquarium';
+      document.getElementById('tankTitle').textContent = title;
+      document.title = `${title} — Aquacellum`;
+      document.querySelector('meta[property="og:title"]')?.setAttribute('content', `${title} — Aquacellum`);
+      if (tank.caption) {
+        document.querySelector('meta[name="description"]')?.setAttribute('content', tank.caption);
+        document.querySelector('meta[property="og:description"]')?.setAttribute('content', tank.caption);
+        const caption = document.getElementById('tankCaption');
+        caption.textContent = tank.caption;
+        caption.style.display = '';
+      }
+
+      const facts = document.getElementById('tankFacts');
+      facts.replaceChildren();
+      const volume = Number(tank.facts?.volumeLiters);
+      if (Number.isFinite(volume) && volume > 0) facts.append(element('span', 'tank-fact', `${volume} L`));
+      if (tank.facts?.tankType) facts.append(element('span', 'tank-fact', String(tank.facts.tankType)));
+
+      const container = document.getElementById('tankHero');
+      container.replaceChildren();
+      const src = safePublicImageUrl(tank.photoUrl, window.location.origin);
+      if (!src) return;
+      const image = element('img');
+      image.src = src;
+      image.alt = title;
+      image.addEventListener('load', () => container.classList.add('visible'));
+      image.addEventListener('error', () => container.replaceChildren());
+      container.append(image);
+    }
+
+    function buildSpecimen(specimen) {
+      const item = element('li', 'specimen-item');
+      item.append(element('span', 'specimen-name', specimen.publicName || 'Fish'));
+
+      const scientificName = typeof specimen.scientificName === 'string' ? specimen.scientificName.trim() : '';
+      const commonName = typeof specimen.commonName === 'string' ? specimen.commonName.trim() : '';
+      const href = speciesPath(scientificName);
+
+      if (href) {
+        const line = element('span', 'specimen-species');
+        const link = element('a', '', scientificName);
+        link.href = href;
+        line.append(link);
+        if (commonName && commonName !== specimen.publicName) {
+          line.append(document.createTextNode(` · ${commonName}`));
+        }
+        item.append(line);
+      } else if (commonName && commonName !== specimen.publicName) {
+        item.append(element('span', 'specimen-species', commonName));
+      }
+      return item;
+    }
+
+    function renderSpecimens(specimens) {
+      const list = document.getElementById('specimenList');
+      const empty = document.getElementById('specimenEmpty');
+      list.replaceChildren();
+      if (!specimens.length) {
+        list.style.display = 'none';
+        empty.style.display = '';
+        return;
+      }
+      list.style.display = '';
+      empty.style.display = 'none';
+      specimens.forEach((specimen) => list.append(buildSpecimen(specimen)));
+    }
+
+    function isSellable(line) {
+      const remaining = line.quantityRemaining;
+      if (remaining != null && Number(remaining) <= 0) return false;
+      return line.available !== false;
+    }
+
+    function remainingLabel(line) {
+      const remaining = line.quantityRemaining;
+      if (remaining == null) return '';
+      const count = Number(remaining);
+      if (!Number.isFinite(count) || count <= 0) return '';
+      return `${count} left`;
+    }
+
+    /**
+     * Guest checkout, mirroring marketplace.html handleGuestCheckout: collect an
+     * email, let the server verify the authoritative price and seller
+     * onboarding, then hand off to Stripe. Guest mode only supports "batch" and
+     * "pickup", which is exactly what a booth tank sells.
+     */
+    async function submitGuestCheckout({ line, email, button, errorEl }) {
+      const original = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Redirecting to secure checkout…';
+      errorEl.textContent = '';
+      try {
+        const item = line.isBatch
+          ? { listingId: Number(line.listingId), quantity: 1, commonName: line.commonName, imageUrl: line.photoUrl || undefined }
+          : { tokenId: Number(line.listingId), commonName: line.commonName, imageUrl: line.photoUrl || undefined };
+        const response = await fetch('/api/stripe?action=create-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            guest: true,
+            email,
+            purchaseType: line.isBatch ? 'batch' : 'pickup',
+            buyerWallet: 'guest',
+            sellerWallet: line.sellerWallet,
+            items: [item],
+            successUrl: `${window.location.origin}/checkout-success.html?session_id={CHECKOUT_SESSION_ID}`,
+            cancelUrl: window.location.href,
+          }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.checkoutUrl) {
+          throw new Error(data.error || 'Could not start checkout. Please try again.');
+        }
+        window.location.href = data.checkoutUrl;
+      } catch (err) {
+        errorEl.textContent = err.message || 'Checkout failed. Please try again.';
+        button.disabled = false;
+        button.textContent = original;
+      }
+    }
+
+    function buildGuestForm(line) {
+      const form = element('form', 'guest-form');
+      form.noValidate = true;
+      const inputId = `guestEmail-${line.listingKey}`;
+
+      const label = element('label', '', 'Email for your receipt and pickup code');
+      label.htmlFor = inputId;
+      const input = element('input');
+      input.id = inputId;
+      input.type = 'email';
+      input.name = 'email';
+      input.autocomplete = 'email';
+      input.inputMode = 'email';
+      input.placeholder = 'you@example.com';
+      input.required = true;
+
+      const errorEl = element('div', 'guest-form__error');
+      errorEl.setAttribute('role', 'alert');
+      const submit = element('button', 'buy-btn', 'Continue to secure checkout');
+      submit.type = 'submit';
+      const note = element('p', 'guest-form__note', 'Payment is held until the seller confirms the handoff. No account required.');
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const email = input.value.trim();
+        if (!EMAIL_RE.test(email)) {
+          errorEl.textContent = 'Enter a valid email so we can send your order.';
+          return;
+        }
+        submitGuestCheckout({ line, email, button: submit, errorEl });
+      });
+
+      form.append(label, input, errorEl, submit, note);
+      return { form, input };
+    }
+
+    function buildCommerceLine(line) {
+      const sellable = isSellable(line);
+      const row = element('article', `commerce-line${sellable ? '' : ' is-unavailable'}`);
+
+      const head = element('div', 'commerce-line__head');
+      const info = element('div', 'commerce-line__info');
+      info.append(element('span', 'commerce-line__name', line.commonName || 'Fish'));
+      const scientificName = typeof line.scientificName === 'string' ? line.scientificName.trim() : '';
+      if (scientificName) info.append(element('span', 'commerce-line__species', scientificName));
+      const meta = [line.isBatch ? 'Group / batch' : 'Single specimen', remainingLabel(line)].filter(Boolean).join(' · ');
+      if (meta) info.append(element('span', 'commerce-line__meta', meta));
+      head.append(info);
+
+      const price = formatCents(line.priceCents);
+      if (price) head.append(element('div', 'commerce-line__price', price));
+      row.append(head);
+
+      if (!sellable) {
+        row.append(element('span', 'commerce-line__soldout', 'Sold out'));
+        return row;
+      }
+
+      const actions = element('div', 'commerce-line__actions');
+      const buy = element('button', 'buy-btn', price ? `Buy for ${price}` : 'Buy now');
+      buy.type = 'button';
+      const { form, input } = buildGuestForm(line);
+      buy.addEventListener('click', () => {
+        form.classList.add('open');
+        buy.style.display = 'none';
+        input.focus();
+      });
+      actions.append(buy);
+
+      const detailHref = canonicalProductPath(line.buyPath);
+      if (detailHref) {
+        const detail = element('a', 'detail-link', 'See full listing →');
+        detail.href = detailHref;
+        actions.append(detail);
+      }
+
+      row.append(actions, form);
+      return row;
+    }
+
+    function renderCommerce(commerce) {
+      const list = document.getElementById('commerceList');
+      const empty = document.getElementById('commerceEmpty');
+      const hint = document.getElementById('commerceHint');
+      list.replaceChildren();
+      if (!commerce.length) {
+        list.style.display = 'none';
+        hint.style.display = 'none';
+        empty.style.display = '';
+        return;
+      }
+      list.style.display = '';
+      hint.style.display = '';
+      empty.style.display = 'none';
+      commerce.forEach((line) => list.append(buildCommerceLine(line)));
+    }
+
+    function render(payload) {
+      const tank = payload.tank;
+      renderHeader(tank);
+      renderSpecimens(Array.isArray(tank.specimens) ? tank.specimens : []);
+      renderCommerce(Array.isArray(tank.commerce) ? tank.commerce : []);
+
+      const stamp = tank.updatedAt || payload.updatedAt;
+      const updated = document.getElementById('tankUpdated');
+      const when = stamp ? new Date(stamp) : null;
+      updated.textContent = when && !Number.isNaN(when.getTime())
+        ? `Updated ${when.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}`
+        : '';
+
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('tankContent').style.display = '';
+    }
+
+    async function init() {
+      const token = tokenFromPath(window.location.pathname);
+      if (!token) return showNotFound();
+      try {
+        const response = await fetch(`/api/storefront-detail?action=public-tank&t=${encodeURIComponent(token)}`, {
+          headers: { Accept: 'application/json' },
+        });
+        // Unknown and unpublished are deliberately the same answer server-side,
+        // so they get the same message here.
+        if (response.status === 404) return showNotFound();
+        if (!response.ok) return showMessage('Tank unavailable', 'Please try again in a moment.');
+        const payload = await response.json();
+        if (!payload?.tank || typeof payload.tank !== 'object') {
+          return showMessage('Tank unavailable', 'The tank data could not be read.');
+        }
+        render(payload);
+      } catch {
+        showMessage('Tank unavailable', 'Please try again in a moment.');
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

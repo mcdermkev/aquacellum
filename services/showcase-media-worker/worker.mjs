@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
+import { createShowcaseVideoProcessor } from "./video.mjs";
 
 const SOURCE_BUCKET = "showcase-media-source-v1";
 const DERIVATIVE_BUCKET = "showcase-media-derivatives-v1";
@@ -48,6 +49,11 @@ async function rpc(name, params) {
   }
   return data;
 }
+
+const videoEnabled = process.env.SHOWCASE_VIDEO_ENABLED === "true"
+  && !!String(process.env.MUX_TOKEN_ID || "").trim()
+  && !!String(process.env.MUX_TOKEN_SECRET || "").trim();
+const videoProcessor = createShowcaseVideoProcessor({ supabase, rpc, workerId });
 
 const CRC32_TABLE = (() => {
   const table = new Uint32Array(256);
@@ -351,12 +357,42 @@ async function handleJob(job) {
   }
 }
 
+async function handleVideoJob(job) {
+  try {
+    await videoProcessor.process(job);
+    console.log(JSON.stringify({ event: "video_job_complete", jobId: job.jobId, kind: job.kind }));
+  } catch (error) {
+    const code = closedErrorCode(error);
+    try {
+      await rpc("showcase_fail_video_job", {
+        p_job_id: job.jobId,
+        p_worker_id: workerId,
+        p_error_code: code,
+        p_permanent: error?.permanent === true && job.kind === "ingest_mux",
+      });
+    } catch (reportError) {
+      console.error(JSON.stringify({ event: "video_job_report_failed", jobId: job.jobId,
+        code: closedErrorCode(reportError) }));
+      return;
+    }
+    console.error(JSON.stringify({ event: "video_job_failed", jobId: job.jobId,
+      kind: job.kind, code, permanent: error?.permanent === true }));
+  }
+}
+
 async function sweepIfDue() {
   if (Date.now() - lastSweep < SWEEP_MS) return;
   const result = await rpc("showcase_sweep_media_maintenance", { p_limit: 100 });
+  const videoResult = videoEnabled
+    ? await rpc("showcase_sweep_video_maintenance", { p_limit: 100 })
+    : null;
   lastSweep = Date.now();
   if (Number(result?.overdueJobs || 0) > 0) {
     console.error(JSON.stringify({ event: "media_jobs_overdue", count: result.overdueJobs }));
+  }
+  if (Number(videoResult?.recoveredJobs || 0) > 0 || Number(videoResult?.expiredIntents || 0) > 0) {
+    console.error(JSON.stringify({ event: "video_maintenance_recovered",
+      jobs: Number(videoResult?.recoveredJobs || 0), intents: Number(videoResult?.expiredIntents || 0) }));
   }
 }
 
@@ -366,12 +402,25 @@ async function main() {
   while (!stopping) {
     try {
       await sweepIfDue();
-      const job = await rpc("showcase_claim_media_job", {
+      let job = await rpc("showcase_claim_media_job", {
         p_worker_id: workerId,
         p_lease_seconds: LEASE_SECONDS,
       });
-      if (job) await handleJob(job);
-      else await sleep(IDLE_MS);
+      if (job) {
+        await handleJob(job);
+        continue;
+      }
+      if (videoEnabled) {
+        job = await rpc("showcase_claim_video_job", {
+          p_worker_id: workerId,
+          p_lease_seconds: LEASE_SECONDS,
+        });
+        if (job) {
+          await handleVideoJob(job);
+          continue;
+        }
+      }
+      await sleep(IDLE_MS);
     } catch (error) {
       console.error(JSON.stringify({ event: "media_worker_loop_error", code: closedErrorCode(error) }));
       await sleep(5000);

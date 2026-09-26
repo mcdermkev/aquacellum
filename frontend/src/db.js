@@ -985,6 +985,100 @@ db.version(25).stores({
   tankGroups: "[ownerAddress+name], ownerAddress, name, createdAt, sortOrder"
 });
 
+// Version 26: owner-scoped durable identity for the authenticated Showcase builder.
+// ADDITIVE / NON-DESTRUCTIVE — every v25 store is carried forward verbatim.
+// The dataset row persists dataset/operation IDs and exact safe-retry request bodies before
+// network mutation. Entity mappings bind a local raw record to one stable schema-v3 UUID.
+db.version(26).stores({
+  species: "specCode, commonName, scientificName, type, difficulty",
+  listings: "id, tokenId, seller, price, isBatch, speciesId",
+  tanks: "id, ownerAddress, name, active",
+  userProfile: "walletAddress, totalXp, currentTier, zoneHash, isCouncilMember, onboardingComplete",
+  breederCompanion: "walletAddress, eggState, currentTier, selectedStats, zoneHash",
+  pendingHandshakes: "purchaseId, pin, salt, buyerAddress",
+  speciesManifest: "speciesId, scientificName, commonName, contractAddress, cachedAt",
+  actionLogs: "++id, tankId, actionType, timestamp, details",
+  spawnGrowout: "++id, spawnId, timestamp, type",
+  feedCache: "++id, contentId, authorWallet, createdAt, [authorWallet+createdAt]",
+  socialNotifications: "++id, category, isRead, createdAt",
+  draftContent: "++id, type, status, createdAt",
+  specimens: "id, ownerAddress, speciesId, currentTankId, status, createdAt, [ownerAddress+arrivalStatus], breederStockTag, onChainId, chainStatus",
+  localListings: "id, seller, speciesId, isBatch, listingId, tokenId",
+  marketOrders: "++key, orderType, status, state, buyer, seller, tokenId, purchaseId, listingId, assignedTankId",
+  spawns: "spawnId, sireId, damId, tankId, speciesId, status, timestamp",
+  tankNotes: "++id, tankId, createdAt",
+  xpCooldowns: "++id, walletAddress, actionType, tankId, timestamp, [walletAddress+actionType+tankId]",
+  storefrontCache: "id, walletAddress, cachedAt",
+  echoNeeds: "walletAddress, lastUpdate",
+  echoCompanionOnChain: "walletAddress, tokenId, cachedAt",
+  cart: "id, seller, listingKey, addedAt",
+  paramReadings: "++id, tankId, timestamp, source, [tankId+timestamp]",
+  tankSchedules: "++id, tankId, kind, nextDueAt, enabled, [tankId+kind]",
+  tankMedia: "++id, refType, refId, createdAt, [refType+refId]",
+  dexEntries: "[walletAddress+speciesKey], walletAddress, speciesKey, firstKeptAt",
+  wishlist: "[walletAddress+speciesKey], walletAddress, speciesKey, addedAt",
+  tankGroups: "[ownerAddress+name], ownerAddress, name, createdAt, sortOrder",
+  // NEW in v26:
+  showcaseDatasetState: "ownerAddress, datasetId, importId, updatedAt",
+  showcaseEntityMappings: "[ownerAddress+entityKind+localId], ownerAddress, entityKind, localId, entityKey"
+});
+
+// Version 27: booth cash-sale outbox (BOOTH_BUILD_SPEC.md §4/§6, decision D6).
+// ADDITIVE / NON-DESTRUCTIVE — every v26 store is carried forward verbatim.
+//
+// Why a durable queue rather than the usual fire-and-forget: every other cloud
+// write in this app (see cloudSync.js) logs a warning and drops the write on
+// failure. That is tolerable for a synced preference; it is not tolerable for a
+// sale that already happened in cash at an expo table with bad wifi. A booth
+// sale that vanishes is worse than no feature.
+//
+// `saleId` is the primary key and is client-generated (crypto.randomUUID) BEFORE
+// the first POST attempt, then reused on every retry. `record_inventory_sale` is
+// idempotent on it, so replaying the queue any number of times lands the sale
+// exactly once — that idempotency is the whole reason offline replay is safe.
+//
+// NON-INDEXED FIELDS (stored automatically by Dexie):
+//   - sellerAddress: lowercased EOA that recorded the sale
+//   - quantity / unitPriceCents: the line as the seller entered it
+//   - note: optional free text
+//   - attempts / lastAttemptAt / lastError: replay diagnostics
+//   - quantityRemaining / orderId: filled in from the server's response on send
+//   - rejectedReason: set when the server refuses permanently (out of stock etc.)
+db.version(27).stores({
+  species: "specCode, commonName, scientificName, type, difficulty",
+  listings: "id, tokenId, seller, price, isBatch, speciesId",
+  tanks: "id, ownerAddress, name, active",
+  userProfile: "walletAddress, totalXp, currentTier, zoneHash, isCouncilMember, onboardingComplete",
+  breederCompanion: "walletAddress, eggState, currentTier, selectedStats, zoneHash",
+  pendingHandshakes: "purchaseId, pin, salt, buyerAddress",
+  speciesManifest: "speciesId, scientificName, commonName, contractAddress, cachedAt",
+  actionLogs: "++id, tankId, actionType, timestamp, details",
+  spawnGrowout: "++id, spawnId, timestamp, type",
+  feedCache: "++id, contentId, authorWallet, createdAt, [authorWallet+createdAt]",
+  socialNotifications: "++id, category, isRead, createdAt",
+  draftContent: "++id, type, status, createdAt",
+  specimens: "id, ownerAddress, speciesId, currentTankId, status, createdAt, [ownerAddress+arrivalStatus], breederStockTag, onChainId, chainStatus",
+  localListings: "id, seller, speciesId, isBatch, listingId, tokenId",
+  marketOrders: "++key, orderType, status, state, buyer, seller, tokenId, purchaseId, listingId, assignedTankId",
+  spawns: "spawnId, sireId, damId, tankId, speciesId, status, timestamp",
+  tankNotes: "++id, tankId, createdAt",
+  xpCooldowns: "++id, walletAddress, actionType, tankId, timestamp, [walletAddress+actionType+tankId]",
+  storefrontCache: "id, walletAddress, cachedAt",
+  echoNeeds: "walletAddress, lastUpdate",
+  echoCompanionOnChain: "walletAddress, tokenId, cachedAt",
+  cart: "id, seller, listingKey, addedAt",
+  paramReadings: "++id, tankId, timestamp, source, [tankId+timestamp]",
+  tankSchedules: "++id, tankId, kind, nextDueAt, enabled, [tankId+kind]",
+  tankMedia: "++id, refType, refId, createdAt, [refType+refId]",
+  dexEntries: "[walletAddress+speciesKey], walletAddress, speciesKey, firstKeptAt",
+  wishlist: "[walletAddress+speciesKey], walletAddress, speciesKey, addedAt",
+  tankGroups: "[ownerAddress+name], ownerAddress, name, createdAt, sortOrder",
+  showcaseDatasetState: "ownerAddress, datasetId, importId, updatedAt",
+  showcaseEntityMappings: "[ownerAddress+entityKind+localId], ownerAddress, entityKind, localId, entityKey",
+  // NEW in v27:
+  boothSaleQueue: "saleId, listingId, createdAt, status"
+});
+
 /**
  * Derive tier key from totalXp using the canonical tier ladder.
  * Used by the v15 migration and shared with xp.js.

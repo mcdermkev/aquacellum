@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node worker.mjs",
-    "check": "node --check worker.mjs && node --check corpus.mjs",
+    "check": "node --check worker.mjs && node --check video.mjs && node --check corpus.mjs",
     "corpus": "node corpus.mjs"
   },
   "dependencies": {

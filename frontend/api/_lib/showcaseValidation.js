@@ -5,7 +5,7 @@
 // invalid_entity_id). No SQL/upstream detail is ever produced here. Validators return either
 // { ok: true, value } (normalized fields the route passes onward) or { ok: false, code, field? }.
 
-import { isCanonicalUuid, decodeEntityId } from "./showcaseIds.js";
+import { isCanonicalUuid, decodeEntityId, decodeVideoId } from "./showcaseIds.js";
 import { isSha256Hex } from "./showcaseManifest.js";
 
 const HEX64_OR_NULL = (v) => v === null || isSha256Hex(v);
@@ -197,9 +197,10 @@ const VALIDATORS = {
   },
 
   "publication-preview"(body) {
-    if (!keysExactly(body, ["roomId"])) return fail("invalid_request");
+    if (!keysExactly(body, ["roomId", "targetVisibility"])) return fail("invalid_request");
     if (!isCanonicalUuid(body.roomId)) return fail("invalid_field", "roomId");
-    return ok({ roomId: body.roomId });
+    if (!["unlisted", "public"].includes(body.targetVisibility)) return fail("invalid_field", "targetVisibility");
+    return ok({ roomId: body.roomId, targetVisibility: body.targetVisibility });
   },
 
   "room-read"(body) {
@@ -276,6 +277,22 @@ const VALIDATORS = {
     return ok({ roomId: body.roomId, tankUuid: tank.uuid, expectedRevision: body.expectedRevision });
   },
 
+  "commerce-set"(body) {
+    // Link (or clear, with listingKey: null) a tank's buyable pack. The listing key is a
+    // marketplace key (single-<tokenId> | batch-<listingId>); the seller-ownership check is the
+    // RPC's job. expectedRevision is required — commerce-set always targets an existing placement.
+    if (!keysExactly(body, ["roomId", "tankId", "expectedRevision", "listingKey"])) return fail("invalid_request");
+    if (!isCanonicalUuid(body.roomId)) return fail("invalid_field", "roomId");
+    const tank = decodeEntityId(body.tankId);
+    if (!tank || tank.kind !== "tank") return fail("invalid_entity_id", "tankId");
+    if (!isSafeUint(body.expectedRevision)) return fail("invalid_field", "expectedRevision");
+    if (!(body.listingKey === null
+        || (typeof body.listingKey === "string" && /^(single|batch)-[1-9][0-9]*$/.test(body.listingKey)))) {
+      return fail("invalid_field", "listingKey");
+    }
+    return ok({ roomId: body.roomId, tankUuid: tank.uuid, expectedRevision: body.expectedRevision, listingKey: body.listingKey });
+  },
+
   "specimen-settings-put"(body) {
     if (!keysExactly(body, ["specimenId", "expectedRevision", "visibility", "publicName", "story", "facts"])) return fail("invalid_request");
     const spec = decodeEntityId(body.specimenId);
@@ -311,6 +328,14 @@ const VALIDATORS = {
     return ok({ assetId: body.assetId });
   },
 
+  "media-preview"(body) {
+    if (!keysExactly(body, ["roomId", "assetId", "variant"])) return fail("invalid_request");
+    if (!isCanonicalUuid(body.roomId)) return fail("invalid_field", "roomId");
+    if (!isCanonicalUuid(body.assetId)) return fail("invalid_field", "assetId");
+    if (!["hero", "thumb"].includes(body.variant)) return fail("invalid_field", "variant");
+    return ok({ roomId: body.roomId, assetId: body.assetId, variant: body.variant });
+  },
+
   "media-hero-publish"(body) {
     if (!keysExactly(body, ["roomId", "assetId", "altText", "focalX", "focalY"])) return fail("invalid_request");
     if (!isCanonicalUuid(body.roomId)) return fail("invalid_field", "roomId");
@@ -328,12 +353,96 @@ const VALIDATORS = {
     return ok({ ...body });
   },
 
+  "video-stage"(body) {
+    if (!keysExactly(body, ["roomId", "operationId"])) return fail("invalid_request");
+    if (!isCanonicalUuid(body.roomId)) return fail("invalid_field", "roomId");
+    if (!isCanonicalUuid(body.operationId)) return fail("invalid_field", "operationId");
+    return ok({ ...body });
+  },
+
+  "video-finalize"(body) {
+    if (!keysExactly(body, ["roomId", "videoId", "uploadIntentId"])) return fail("invalid_request");
+    if (!isCanonicalUuid(body.roomId)) return fail("invalid_field", "roomId");
+    const videoUuid = decodeVideoId(body.videoId);
+    if (!videoUuid) return fail("invalid_entity_id", "videoId");
+    if (!isCanonicalUuid(body.uploadIntentId)) return fail("invalid_field", "uploadIntentId");
+    return ok({ roomId: body.roomId, videoUuid, uploadIntentId: body.uploadIntentId });
+  },
+
+  "video-list"(body) {
+    if (!keysExactly(body, ["roomId"])) return fail("invalid_request");
+    if (!isCanonicalUuid(body.roomId)) return fail("invalid_field", "roomId");
+    return ok({ roomId: body.roomId });
+  },
+
+  "video-put"(body) {
+    if (!keysExactly(body, ["roomId", "videoId", "expectedRevision", "title", "caption", "altText", "displayOrder", "visibility"])) {
+      return fail("invalid_request");
+    }
+    if (!isCanonicalUuid(body.roomId)) return fail("invalid_field", "roomId");
+    const videoUuid = decodeVideoId(body.videoId);
+    if (!videoUuid) return fail("invalid_entity_id", "videoId");
+    if (body.expectedRevision !== null && !isSafeUint(body.expectedRevision)) return fail("invalid_field", "expectedRevision");
+    if (!isStrLen(body.title, 1, 120) || body.title.trim() !== body.title) return fail("invalid_field", "title");
+    if (!(body.caption === null || (isStrLen(body.caption, 1, 1000) && body.caption.trim() === body.caption))) {
+      return fail("invalid_field", "caption");
+    }
+    if (!isStrLen(body.altText, 1, 500) || body.altText.trim() !== body.altText) return fail("invalid_field", "altText");
+    if (!isSafeUint(body.displayOrder, 19)) return fail("invalid_field", "displayOrder");
+    if (!["private", "unlisted", "public"].includes(body.visibility)) return fail("invalid_field", "visibility");
+    return ok({ ...body, videoUuid });
+  },
+
+  "video-revoke"(body) {
+    if (!keysExactly(body, ["roomId", "videoId", "expectedRevision"])) return fail("invalid_request");
+    if (!isCanonicalUuid(body.roomId)) return fail("invalid_field", "roomId");
+    const videoUuid = decodeVideoId(body.videoId);
+    if (!videoUuid) return fail("invalid_entity_id", "videoId");
+    if (!isSafeUint(body.expectedRevision)) return fail("invalid_field", "expectedRevision");
+    return ok({ roomId: body.roomId, videoUuid, expectedRevision: body.expectedRevision });
+  },
+
+  "video-playback-token"(body) {
+    if (!keysExactly(body, ["roomId", "videoId"])) return fail("invalid_request");
+    if (!isCanonicalUuid(body.roomId)) return fail("invalid_field", "roomId");
+    const videoUuid = decodeVideoId(body.videoId);
+    if (!videoUuid) return fail("invalid_entity_id", "videoId");
+    return ok({ roomId: body.roomId, videoUuid });
+  },
+
   "publication-set"(body) {
-    if (!keysExactly(body, ["roomId", "expectedRevision", "visibility"])) return fail("invalid_request");
+    if (!keysExactly(body, ["roomId", "expectedRevision", "visibility", "expectedPlacements", "approvedPreview"])) {
+      return fail("invalid_request");
+    }
     if (!isCanonicalUuid(body.roomId)) return fail("invalid_field", "roomId");
     if (!isSafeUint(body.expectedRevision)) return fail("invalid_field", "expectedRevision");
     if (!["private", "unlisted", "public"].includes(body.visibility)) return fail("invalid_field", "visibility");
-    return ok({ ...body });
+    if (body.visibility === "private") {
+      if (!Array.isArray(body.expectedPlacements) || body.expectedPlacements.length !== 0 || body.approvedPreview !== null) {
+        return fail("invalid_field", "expectedPlacements");
+      }
+      return ok({ ...body });
+    }
+    // The owner publishes the exact set of tanks they confirmed (1..100). The
+    // atomic RPC still binds expected == matched == actual placements, so no
+    // fixed count is required here; only the room tank ceiling and distinctness.
+    if (!Array.isArray(body.expectedPlacements) || body.expectedPlacements.length < 1
+        || body.expectedPlacements.length > 100 || !isPlainObject(body.approvedPreview)) {
+      return fail("invalid_field", "expectedPlacements");
+    }
+    const seen = new Set();
+    const expectedPlacements = [];
+    for (const placement of body.expectedPlacements) {
+      if (!keysExactly(placement, ["tankId", "revision"])) return fail("invalid_field", "expectedPlacements");
+      const tank = decodeEntityId(placement.tankId);
+      if (!tank || tank.kind !== "tank" || !isSafeUint(placement.revision) || seen.has(placement.tankId)) {
+        return fail("invalid_field", "expectedPlacements");
+      }
+      seen.add(placement.tankId);
+      expectedPlacements.push({ tankId: placement.tankId, revision: placement.revision });
+    }
+    expectedPlacements.sort((a, b) => a.tankId < b.tankId ? -1 : a.tankId > b.tankId ? 1 : 0);
+    return ok({ ...body, expectedPlacements });
   },
 
   "qr-resolve"(body) {

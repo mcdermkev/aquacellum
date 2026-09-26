@@ -659,6 +659,43 @@ export async function confirmCashPickup({ token } = {}) {
 }
 
 /**
+ * SELLER: confirm a GUEST (no-login) local-pickup handoff by submitting the
+ * buyer's scanned/pasted order code. Authorized from the seller's Privy session
+ * (sent as Bearer). On success the platform transfers the held funds to the
+ * seller and marks the order released — this confirmation IS the money-release
+ * trigger. No wallet signature needed (guest batch/pickup are off-chain).
+ *
+ * @param {Object} params
+ * @param {string} params.token - the scanned/pasted guest handoff code
+ * @returns {Promise<{success:boolean, orderId?:string, transferId?:string, error?:string}>}
+ */
+export async function confirmGuestHandoff({ token } = {}) {
+  try {
+    if (!token) return { success: false, error: "Missing pickup code" };
+    const sessionToken = await getSessionToken();
+    if (!sessionToken) {
+      return { success: false, error: "Please sign in as the seller to confirm this handoff." };
+    }
+    const response = await fetch(`${API_BASE}/stripe?action=guest-handoff-confirm`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionToken}`,
+      },
+      body: JSON.stringify({ token: token.trim() }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return { success: false, error: data.error || `Handoff failed (${response.status})` };
+    }
+    return { success: data.success !== false, ...data };
+  } catch (err) {
+    console.error("[StripePayments] confirmGuestHandoff failed:", err);
+    return { success: false, error: err.message || "Network error confirming handoff" };
+  }
+}
+
+/**
  * Core checkout creator. Calls the backend, gets a Stripe Checkout URL,
  * and optionally redirects the user or returns the URL.
  *
@@ -815,22 +852,22 @@ export async function startSellerOnboarding({ walletAddress, email, displayName 
  */
 export async function getSellerDashboardLink(walletAddress) {
   try {
-    // First get their status (which includes the stripeAccountId)
-    const status = await checkSellerStatus(walletAddress);
-    if (!status.connected || !status.stripeAccountId) {
-      return { success: false, error: "Seller not connected to Stripe" };
+    // Server-side createLoginLink — the only URL that actually authenticates the
+    // seller into their Stripe Express dashboard. (A hand-built
+    // connect.stripe.com/express/<id> link does not.)
+    const response = await fetch(`${API_BASE}/stripe?action=connect-dashboard`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ walletAddress }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.url) {
+      return { success: false, error: data.error || "Could not open the Stripe dashboard" };
     }
-
-    // The dashboard link needs to be generated server-side
-    // For now, direct sellers to Stripe Express dashboard via onboarding endpoint
-    // In production, add a dedicated /api/stripe-dashboard-link endpoint
-    return {
-      success: true,
-      dashboardUrl: `https://connect.stripe.com/express/${status.stripeAccountId}`,
-    };
+    return { success: true, dashboardUrl: data.url };
   } catch (err) {
     console.error("[StripePayments] Dashboard link failed:", err);
-    return { success: false, error: err.message };
+    return { success: false, error: err.message || "Network error" };
   }
 }
 

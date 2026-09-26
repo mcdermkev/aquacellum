@@ -261,6 +261,7 @@ export function TankInhabitants({
                                   </span>
                                 )}
                               </span>
+                              {spec.varietyName && <span className="ti-cert">{spec.varietyName}</span>}
                               {!casualModeActive && (
                                 <span className="ti-cert">Cert. {String(spec.id).padStart(3, "0")}</span>
                               )}

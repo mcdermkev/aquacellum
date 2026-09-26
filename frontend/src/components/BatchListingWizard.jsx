@@ -12,6 +12,7 @@ import {
   requiresCohort,
 } from "../utils/lifeStage";
 import { attachPedigreeToListing, sealLotPedigree } from "../services/listingPedigree";
+import { DEFAULT_STANDARD_FEE_PERCENT } from "../services/feePolicy";
 
 /**
  * BatchListingWizard — Guided form for sellers to list fry batches for sale.
@@ -268,7 +269,11 @@ export function BatchListingWizard({ isOpen, onClose, walletAccount, onSuccess }
   const parseVal = parseFloat(pricePerFish) || 0;
   const qty = parseInt(quantity) || 0;
   const totalRevenue = parseVal * qty;
-  const fee = totalRevenue * 0.04;
+  // Was `totalRevenue * 0.04`. The rate is no longer a constant — cash sales are
+  // 0% and event card sales are reduced (services/feePolicy.js) — so a literal
+  // here would quote the seller a number we don't charge. This shows the standard
+  // CARD rate, which is the honest worst case for a listing that hasn't sold yet.
+  const fee = totalRevenue * (DEFAULT_STANDARD_FEE_PERCENT / 100);
   const netPayout = totalRevenue - fee;
 
   return (

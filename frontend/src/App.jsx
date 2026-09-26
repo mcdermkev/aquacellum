@@ -219,6 +219,9 @@ export default function App() {
       if (!signal?.cancelled) {
         queryClient.invalidateQueries({ queryKey: ["tanks", walletAddr] });
         queryClient.invalidateQueries({ queryKey: ["reef", "profile", walletAddr] });
+        window.dispatchEvent(new CustomEvent("aquadex:cloud-sync-complete", {
+          detail: { wallet: String(walletAddr).toLowerCase() },
+        }));
         setSyncStatus("success");
         const now = new Date();
         setLastSyncedAt(now);
@@ -485,7 +488,12 @@ export default function App() {
   // Which Breeder Terminal section an incoming deep link asked for (Settings →
   // Seller). Mirrors the existing `breederToolsSection` pattern for the Breeder
   // Tools tab rather than inventing a second mechanism.
-  const [breederTerminalSection, setBreederTerminalSection] = useState(null);
+  const [breederTerminalSection, setBreederTerminalSection] = useState(
+    activeTab === "breeder-terminal" ? sectionParam : null
+  );
+  useEffect(() => {
+    if (activeTab === "breeder-terminal") setBreederTerminalSection(sectionParam || null);
+  }, [activeTab, sectionParam]);
   const [selectedSpecimenId, setSelectedSpecimenId] = useState(null);
   const [preselectedOrderForCheckout, setPreselectedOrderForCheckout] = useState(null);
   const [activeSellerFilter, setActiveSellerFilter] = useState(null);
@@ -1904,8 +1912,12 @@ export default function App() {
         />
       )}
 
-      {/* What's New changelog modal — shows once per version bump */}
-      <WhatsNewModal />
+      {/* What's New changelog modal — shows once per version bump.
+          Suppressed on product deep-links (e.g. /app/products/batch-…) so a buyer
+          arriving from the marketplace lands on the listing, not a changelog.
+          It only defers: the seen-flag isn't written, so it surfaces on the next
+          normal app entry. */}
+      {commerceRoute?.kind !== "product" && <WhatsNewModal />}
 
       {/* Persistent cart drawer (Task 10) — displayTank feeds the Task 11
           add-on tank-fit signal; the drawer degrades gracefully to a

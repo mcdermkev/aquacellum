@@ -128,6 +128,17 @@
     "supabase/migrations/20260829141000_showcase_r13_identity_api_foundation.sql",
     "supabase/migrations/20260829142000_showcase_r13_publication_api_rpc.sql",
     "supabase/migrations/20260829143000_showcase_r13_final_acl.sql",
-    "supabase/migrations/20260830160000_showcase_media_pipeline.sql"
+    "frontend/supabase/migrations/20260830_guest_checkout.sql",
+    "supabase/migrations/20260830130000_showcase_r14_commerce_seam.sql",
+    "supabase/migrations/20260830150000_showcase_commerce_photo.sql",
+    "supabase/migrations/20260830160000_showcase_media_pipeline.sql",
+    "supabase/migrations/20260908173000_showcase_atomic_owner_publication.sql",
+    "supabase/migrations/20260908180000_showcase_owner_media_preview.sql",
+    "supabase/migrations/20260908190000_showcase_room_video_gallery.sql",
+    "supabase/migrations/20260908200000_showcase_dynamic_owner_publication_count.sql",
+    "frontend/supabase/migrations/20260916_inventory_of_record.sql",
+    "frontend/supabase/migrations/20260917_published_tanks.sql",
+    "frontend/supabase/migrations/20260918_fix_stock_backfill_string_blob.sql",
+    "frontend/supabase/migrations/20260918_public_view_quantity_remaining.sql"
   ]
 }

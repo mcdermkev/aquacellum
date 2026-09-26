@@ -6,7 +6,7 @@
  * handlers in api/mux.js stay focused on request/response shaping.
  */
 
-import crypto from "crypto";
+import { verifyMuxWebhookSignature } from "./showcaseMux.js";
 
 const MUX_API_BASE = "https://api.mux.com";
 
@@ -22,8 +22,8 @@ export function isMuxConfigured() {
  * Returns null when Supabase isn't configured.
  */
 export function getSupabaseConfig() {
-  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
   return { url, key };
 }
@@ -80,33 +80,11 @@ export async function createDirectUpload({ walletAddress, corsOrigin }) {
 }
 
 /**
- * Verify a Mux webhook signature (best-effort). Vercel's JSON body parsing can
- * alter the raw bytes, so a mismatch is logged rather than treated as fatal —
- * matching the prior behavior of the standalone webhook.
+ * Verify a Mux webhook signature against the exact raw request bytes. The caller must reject every
+ * non-ok result before parsing JSON or touching storage/database state.
  */
-export function verifyMuxSignature(req, secret) {
-  if (!secret) return;
-  const signature = req.headers["mux-signature"];
-  if (!signature) {
-    console.warn("[Mux] No signature header — proceeding without verification");
-    return;
-  }
-  const parts = signature.split(",");
-  const timestampPart = parts.find((p) => p.startsWith("t="));
-  const signaturePart = parts.find((p) => p.startsWith("v1="));
-  if (!timestampPart || !signaturePart) return;
-
-  const timestamp = timestampPart.slice(2);
-  const expectedSig = signaturePart.slice(3);
-  const rawBody = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
-  const computedSig = crypto
-    .createHmac("sha256", secret)
-    .update(`${timestamp}.${rawBody}`)
-    .digest("hex");
-
-  if (computedSig !== expectedSig) {
-    console.warn("[Mux] Signature mismatch — allowing anyway (Vercel body parsing may alter raw body)");
-  }
+export function verifyMuxSignature({ rawBody, signatureHeader, secret, nowSeconds }) {
+  return verifyMuxWebhookSignature({ rawBody, signatureHeader, secret, nowSeconds });
 }
 
 /**

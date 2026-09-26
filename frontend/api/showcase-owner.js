@@ -4,14 +4,15 @@
 // response (including errors) is a bounded {ok, action, ...} envelope with a closed code and the
 // frozen no-store/security headers. Owner authority is ALWAYS the server-resolved owner_id from the
 // verified Privy subject; the body never carries owner/subject/entity authority. All database access
-// is through the 25 allowlisted SECURITY DEFINER RPCs — no base table is ever touched here.
+// is through reviewed, allowlisted SECURITY DEFINER RPCs — no base table is ever touched here.
 
 import { createClient } from "@supabase/supabase-js";
 import { randomBytes, createHash } from "node:crypto";
 
+import { downloadAuthorizedShowcaseMedia } from "./_lib/showcaseMediaBytes.js";
 import { ACTIONS, validateAction, parseStrictJson } from "./_lib/showcaseValidation.js";
 import {
-  encodeUuidCursor, decodeUuidCursor, encodeAvailableCursor, decodeAvailableCursor,
+  encodeUuidCursor, decodeUuidCursor, encodeAvailableCursor, decodeAvailableCursor, encodeVideoId,
 } from "./_lib/showcaseIds.js";
 import {
   startRequestSha256, candidateStageRequestSha256, sha256HexToByteaLiteral,
@@ -23,9 +24,17 @@ import {
 } from "./_lib/showcaseAuth.js";
 import {
   createShowcaseSourceUploadTarget,
+  createShowcaseVideoSourceUploadTarget,
   headShowcaseSourceObject,
+  headShowcaseVideoSourceObject,
   isShowcaseMediaStorageConfigured,
+  isShowcaseVideoStorageConfigured,
 } from "./_lib/showcaseMediaStorage.js";
+import {
+  createSignedMuxPlayback,
+  isShowcaseMuxConfigured,
+  isShowcaseMuxSigningConfigured,
+} from "./_lib/showcaseMux.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL || "",
@@ -88,6 +97,11 @@ const ERROR_MESSAGES = {
   media_upload_incomplete: "The private upload is missing or incomplete.",
   media_upload_expired: "The private upload target expired.",
   media_not_ready: "The image is not ready to publish.",
+  video_unavailable: "Room video is not enabled in this environment.",
+  video_quota_exceeded: "The Room video quota has been reached.",
+  video_upload_incomplete: "The private video upload is missing or incomplete.",
+  video_upload_expired: "The private video upload target expired.",
+  video_not_ready: "The video is not ready.",
   rate_limited: "Too many requests.",
   internal_error: "An unexpected error occurred.",
   authentication_unavailable: "Authentication service unavailable.",
@@ -144,7 +158,10 @@ function mapDbError(error) {
   if (has("SHOWCASE_WALLET_UNAVAILABLE") || has("SHOWCASE_WALLET_REVOKED")) return { status: 409, code: "wallet_unavailable" };
   if (has("SHOWCASE_ALIAS_UNAVAILABLE")) return { status: 409, code: "alias_unavailable" };
   if (has("SHOWCASE_MEDIA_QUOTA_EXCEEDED")) return { status: 409, code: "media_quota_exceeded" };
+  if (has("SHOWCASE_VIDEO_QUOTA_EXCEEDED")) return { status: 409, code: "video_quota_exceeded" };
   if (has("SHOWCASE_MEDIA_UPLOAD_EXPIRED")) return { status: 409, code: "media_upload_expired" };
+  if (has("SHOWCASE_VIDEO_UPLOAD_EXPIRED")) return { status: 409, code: "video_upload_expired" };
+  if (has("SHOWCASE_VIDEO_NOT_READY")) return { status: 409, code: "video_not_ready" };
   if (has("SHOWCASE_MEDIA_PUBLICATION_INVALID") || has("SHOWCASE_MEDIA_VARIANTS_INCOMPLETE")) {
     return { status: 409, code: "media_not_ready" };
   }
@@ -210,7 +227,10 @@ const HANDLERS = {
       capabilities: {
         walletProof: !!(cfg.appOrigin && cfg.chainId && cfg.privyAppId),
         datasetEnrollment: true, publication: true, legacyQr: true,
-        media: isShowcaseMediaStorageConfigured(), commerce: false,
+        media: isShowcaseMediaStorageConfigured(),
+        video: isShowcaseVideoStorageConfigured() && isShowcaseMuxConfigured()
+          && isShowcaseMuxSigningConfigured(),
+        commerce: true,
       },
       room: { exists: !!roomJson, revision: roomJson ? roomJson.revision : null },
       datasets: {
@@ -395,7 +415,9 @@ const HANDLERS = {
   },
 
   async "publication-preview"(ctx, v) {
-    const r = await rpcData("showcase_owner_publication_preview", { p_owner_id: ctx.ownerId, p_room_id: v.roomId });
+    const r = await rpcData("showcase_owner_publication_preview_v2", {
+      p_owner_id: ctx.ownerId, p_room_id: v.roomId, p_visibility: v.targetVisibility,
+    });
     if (r.fail) return r.fail;
     return { status: 200, data: r.data };
   },
@@ -515,6 +537,27 @@ const HANDLERS = {
     return { status: 200, data: r.data };
   },
 
+  async "media-preview"(ctx, v) {
+    if (!isShowcaseMediaStorageConfigured()) return { status: 503, code: "media_unavailable" };
+    const authorized = await rpcData("showcase_authorize_owner_media_preview", {
+      p_owner_id: ctx.ownerId, p_room_id: v.roomId,
+      p_asset_id: v.assetId, p_variant: v.variant,
+    });
+    if (authorized.fail) return authorized.fail;
+    if (!authorized.data) return { status: 404, code: "not_found" };
+
+    // Revocation is request-start authorization: a revoke makes every later request fail this RPC.
+    // An already-authorized in-flight download may finish; no durable URL or cache extends access.
+    const downloaded = await downloadAuthorizedShowcaseMedia({
+      supabase, authorization: authorized.data, ownerId: ctx.ownerId,
+      assetId: v.assetId, variant: v.variant,
+    });
+    if (!downloaded.ok) {
+      return { status: downloaded.code === "internal_error" ? 500 : 404, code: downloaded.code };
+    }
+    return { status: 200, bytes: downloaded.bytes, contentType: downloaded.mime };
+  },
+
   async "media-hero-publish"(ctx, v) {
     if (!isShowcaseMediaStorageConfigured()) return { status: 503, code: "media_unavailable" };
     if (!ownerMayPublish({ subject: ctx.subject, walletAddress: ctx.walletAddress })) {
@@ -537,16 +580,130 @@ const HANDLERS = {
     return { status: 200, data: r.data };
   },
 
+  async "video-stage"(ctx, v) {
+    if (!isShowcaseVideoStorageConfigured() || !isShowcaseMuxConfigured()) {
+      return { status: 503, code: "video_unavailable" };
+    }
+    const staged = await rpcData("showcase_stage_room_video", {
+      p_owner_id: ctx.ownerId, p_room_id: v.roomId, p_operation_id: v.operationId,
+    });
+    if (staged.fail) return staged.fail;
+    const d = staged.data;
+    if (d.intentState !== "staging") return { status: 409, code: "state_conflict" };
+    try {
+      const upload = await createShowcaseVideoSourceUploadTarget({ objectKey: d.sourceObjectKey });
+      return { status: 201, data: {
+        videoId: encodeVideoId(d.videoId), uploadIntentId: d.uploadIntentId,
+        upload, expiresAt: d.expiresAt,
+      } };
+    } catch (error) {
+      await callRpc("showcase_cancel_room_video_stage", {
+        p_owner_id: ctx.ownerId, p_room_id: v.roomId,
+        p_asset_id: d.videoId, p_intent_id: d.uploadIntentId,
+      });
+      console.error("[showcase-owner] video presign", error?.code || "error");
+      return { status: 503, code: "video_unavailable" };
+    }
+  },
+
+  async "video-finalize"(ctx, v) {
+    if (!isShowcaseVideoStorageConfigured() || !isShowcaseMuxConfigured()) {
+      return { status: 503, code: "video_unavailable" };
+    }
+    const binding = await rpcData("showcase_owner_video_upload_binding", {
+      p_owner_id: ctx.ownerId, p_room_id: v.roomId,
+      p_asset_id: v.videoUuid, p_intent_id: v.uploadIntentId,
+    });
+    if (binding.fail) return binding.fail;
+    if (!binding.data) return { status: 404, code: "not_found" };
+    let object;
+    try {
+      object = await headShowcaseVideoSourceObject(binding.data.sourceObjectKey);
+    } catch (error) {
+      console.error("[showcase-owner] video head", error?.code || "error");
+      if (error?.code === "SHOWCASE_VIDEO_SOURCE_SIZE_INVALID") {
+        return { status: 413, code: "payload_too_large" };
+      }
+      return { status: 409, code: "video_upload_incomplete" };
+    }
+    const finalized = await rpcData("showcase_finalize_room_video_upload", {
+      p_owner_id: ctx.ownerId, p_room_id: v.roomId, p_asset_id: v.videoUuid,
+      p_intent_id: v.uploadIntentId, p_source_byte_size: object.byteSize,
+    });
+    if (finalized.fail) return finalized.fail;
+    return { status: 202, data: { ...finalized.data, videoId: encodeVideoId(v.videoUuid) } };
+  },
+
+  async "video-list"(ctx, v) {
+    const listed = await rpcData("showcase_owner_room_videos", {
+      p_owner_id: ctx.ownerId, p_room_id: v.roomId,
+    });
+    if (listed.fail) return listed.fail;
+    if (listed.data === null) return { status: 404, code: "not_found" };
+    return { status: 200, data: { videos: listed.data } };
+  },
+
+  async "video-put"(ctx, v) {
+    const saved = await rpcData("showcase_put_room_video", {
+      p_owner_id: ctx.ownerId, p_room_id: v.roomId, p_asset_id: v.videoUuid,
+      p_expected_revision: v.expectedRevision, p_title: v.title, p_caption: v.caption,
+      p_alt_text: v.altText, p_display_order: v.displayOrder, p_visibility: v.visibility,
+    });
+    if (saved.fail) return saved.fail;
+    return { status: 200, data: saved.data };
+  },
+
+  async "video-revoke"(ctx, v) {
+    const revoked = await rpcData("showcase_revoke_room_video", {
+      p_owner_id: ctx.ownerId, p_room_id: v.roomId, p_asset_id: v.videoUuid,
+      p_expected_revision: v.expectedRevision,
+    });
+    if (revoked.fail) return revoked.fail;
+    return { status: 200, data: revoked.data };
+  },
+
+  async "video-playback-token"(ctx, v) {
+    if (!isShowcaseMuxSigningConfigured()) return { status: 503, code: "video_unavailable" };
+    const authorized = await rpcData("showcase_authorize_owner_video_playback", {
+      p_owner_id: ctx.ownerId, p_room_id: v.roomId, p_asset_id: v.videoUuid,
+    });
+    if (authorized.fail) return authorized.fail;
+    if (!authorized.data?.muxPlaybackId) return { status: 404, code: "not_found" };
+    try {
+      const playback = await createSignedMuxPlayback({
+        playbackId: authorized.data.muxPlaybackId, ttlSeconds: 60,
+      });
+      return { status: 200, data: { videoId: encodeVideoId(v.videoUuid), ...playback } };
+    } catch (error) {
+      console.error("[showcase-owner] video signing", error?.code || "error");
+      return { status: 503, code: "video_unavailable" };
+    }
+  },
+
   async "publication-set"(ctx, v) {
     // Curated rollout gate ("Steve first"): flipping a Room to a non-private visibility is
     // default-closed and limited to allowlisted owners (see ownerMayPublish). Taking a Room
-    // private is never gated, so an owner can always unpublish.
-    if (v.visibility !== "private"
-        && !ownerMayPublish({ subject: ctx.subject, walletAddress: ctx.walletAddress })) {
+    // private is never gated and stays on the deny-first legacy RPC, so rollback never depends
+    // on the v2 approval payload or curated allowlist.
+    if (v.visibility === "private") {
+      const r = await rpcData("showcase_set_owner_room_visibility", {
+        p_owner_id: ctx.ownerId, p_room_id: v.roomId,
+        p_expected_revision: v.expectedRevision, p_visibility: v.visibility,
+      });
+      if (r.fail) return r.fail;
+      return { status: 200, data: r.data };
+    }
+    if (!ownerMayPublish({ subject: ctx.subject, walletAddress: ctx.walletAddress })) {
       return { status: 403, code: "publication_not_authorized" };
     }
-    const r = await rpcData("showcase_set_owner_room_visibility", {
-      p_owner_id: ctx.ownerId, p_room_id: v.roomId, p_expected_revision: v.expectedRevision, p_visibility: v.visibility,
+
+    // The v2 RPC validates the complete approved preview and all seven placement revisions while
+    // holding the same owner publication lock through the visibility transition. There is no
+    // API-layer check-then-mutate window.
+    const r = await rpcData("showcase_set_owner_room_visibility_v2", {
+      p_owner_id: ctx.ownerId, p_room_id: v.roomId,
+      p_expected_revision: v.expectedRevision, p_visibility: v.visibility,
+      p_expected_placements: v.expectedPlacements, p_approved_preview: v.approvedPreview,
     });
     if (r.fail) return r.fail;
     return { status: 200, data: r.data };
@@ -573,6 +730,17 @@ const HANDLERS = {
     const r = await rpcData("showcase_put_specimen_settings", {
       p_owner_id: ctx.ownerId, p_specimen_key: v.specimenUuid,
       p_expected_revision: v.expectedRevision, p_payload: v.payload,
+    });
+    if (r.fail) return r.fail;
+    return { status: 200, data: r.data };
+  },
+
+  async "commerce-set"(ctx, v) {
+    // Link/clear a tank's buyable pack. The RPC enforces the seller-ownership invariant (the linked
+    // listing's seller must be an active verified wallet of this owner) and the room-private + CAS rules.
+    const r = await rpcData("showcase_set_room_tank_commerce", {
+      p_owner_id: ctx.ownerId, p_room_id: v.roomId, p_tank_key: v.tankUuid,
+      p_expected_revision: v.expectedRevision, p_listing_key: v.listingKey,
     });
     if (r.fail) return r.fail;
     return { status: 200, data: r.data };
@@ -666,6 +834,12 @@ export default async function handler(req, res) {
     return sendErr(res, action, status, validation.code);
   }
 
+  // Video is deferred for the first tanks/photo launch. Keep every owner video action closed at the
+  // server boundary so a compiled client or direct request cannot reach RPCs whose migration is absent.
+  if (action.startsWith("video-") && process.env.SHOWCASE_VIDEO_ENABLED !== "true") {
+    return sendErr(res, action, 503, "video_unavailable");
+  }
+
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
     return sendErr(res, action, 503, "service_unavailable");
   }
@@ -684,8 +858,15 @@ export default async function handler(req, res) {
 
     const ctx = { ownerId: owner.ownerId, subject: session.subject, walletAddress: session.walletAddress };
     const result = await HANDLERS[action](ctx, validation.value);
-    // Failure results carry a closed `code` (+ status); success results carry `data` (+ status).
+    // Failure results carry a closed `code`; media-preview is the sole binary success path.
     if (result.code) return sendErr(res, action, result.status || 500, result.code);
+    if (action === "media-preview" && Buffer.isBuffer(result.bytes)
+        && result.contentType === "image/webp") {
+      res.setHeader("Content-Type", result.contentType);
+      res.setHeader("Content-Length", String(result.bytes.length));
+      return res.status(result.status || 200).send(result.bytes);
+    }
+    if (result.bytes !== undefined) return sendErr(res, action, 500, "internal_error");
     return sendOk(res, action, result.data, result.status || 200);
   } catch (err) {
     // Logs carry only route/action and a safe code — never SQL/upstream messages, tokens, or payloads.

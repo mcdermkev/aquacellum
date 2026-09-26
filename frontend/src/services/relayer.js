@@ -479,6 +479,7 @@ export async function relayMintSpecimen({
   scientificName = "",
   gender = "Unsexed",
   breederStockTag = "",
+  varietyName = "",
   /**
    * How this fish entered the collection (utils/provenance.js). Defaults to null
    * so the caller decides; `resolveProvenance` then derives what it honestly can.
@@ -539,6 +540,7 @@ export async function relayMintSpecimen({
       }
     }
 
+    const normalizedVarietyName = String(varietyName ?? "").trim().slice(0, 80);
     const specimen = {
       id: specimenId,
       speciesId: Number(speciesId),
@@ -550,6 +552,7 @@ export async function relayMintSpecimen({
       ownerAddress: normalizeAddress(ownerAddress),
       commonName,
       scientificName,
+      varietyName: normalizedVarietyName,
       status: 0, // Active
       gender,
       breederStockTag: breederStockTag || "",
@@ -637,6 +640,7 @@ export async function relayMintSpecimen({
           speciesId: Number(speciesId),
           commonName,
           scientificName,
+          varietyName: normalizedVarietyName,
           status: 0,
           gender,
         });
@@ -1133,6 +1137,11 @@ export async function relayCancelBatchListing(listingId) {
     for (const r of rows) {
       await db.localListings.delete(r.id);
       try { await db.listings.delete(r.id); } catch (e) {}
+      // Deactivate in cloud too, mirroring relayCancelListing. Without this a
+      // cancelled batch stayed is_active = true in Supabase and kept showing on
+      // the public marketplace for every other user, because the delete above
+      // only clears THIS device's Dexie.
+      deactivateListingInCloud(r.id).catch(() => {});
     }
     return { success: true, listingId: Number(listingId), txHash: null };
   } catch (err) {

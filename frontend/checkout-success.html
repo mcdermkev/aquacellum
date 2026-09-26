@@ -190,10 +190,11 @@
       </div>
 
       <div class="success-actions">
-        <a href="/app/orders" class="success-btn-primary">
-          Open My Orders
+        <div id="guestOrderCta"></div>
+        <a href="/app/orders" class="success-btn-secondary" id="myOrdersLink">
+          Signed in? Open My Orders
         </a>
-        <a href="/marketplace" class="success-btn-secondary">
+        <a href="/marketplace.html" class="success-btn-secondary">
           Continue Browsing
         </a>
       </div>
@@ -203,5 +204,30 @@
   <footer id="site-footer"></footer>
   <script src="/js/nav.js"></script>
   <script src="/js/footer.js"></script>
+  <script>
+    // Guest checkout: resolve the order from the Stripe session id and surface a
+    // direct link to the buyer's order page (where they show the pickup code).
+    (function () {
+      var sessionId = new URLSearchParams(location.search).get("session_id");
+      if (!sessionId) return;
+      var cta = document.getElementById("guestOrderCta");
+      fetch("/api/stripe?action=order-lookup&session=" + encodeURIComponent(sessionId))
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) {
+          if (!data || !data.ref) return;
+          var orderUrl = "/order.html?ref=" + encodeURIComponent(data.ref);
+          var a = document.createElement("a");
+          a.href = orderUrl;
+          a.className = "success-btn-primary";
+          a.textContent = "View my order & pickup code";
+          cta.appendChild(a);
+          var sub = document.querySelector(".success-subtitle");
+          if (sub) {
+            sub.innerHTML = "Your payment is held securely. We've emailed your order link \u2014 or open it now to see your pickup code. At the meetup, show the code and the seller confirms the handoff to complete your order.";
+          }
+        })
+        .catch(function () { /* non-fatal; the emailed link still works */ });
+    })();
+  </script>
 </body>
 </html>

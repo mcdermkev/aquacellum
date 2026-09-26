@@ -103,7 +103,13 @@ describe("handleStorefrontDetail — folds pre-arranged sections into the defaul
 
   it("passes rawSections through assembleStorefrontLayout rather than re-deriving order/emptiness itself", () => {
     const idx = SOURCE.indexOf("async function handleStorefrontDetail(req, res) {");
-    const block = SOURCE.slice(idx, idx + 6000);
+    expect(idx).toBeGreaterThan(-1);
+    // Scope to the whole handler (up to the next top-level declaration), not a
+    // fixed character window: the handler grew past the old 6000-char slice and
+    // this assertion went red with the code unchanged.
+    const rest = SOURCE.slice(idx + 1);
+    const next = rest.search(/\r?\n(?:async\s+)?function\s|\r?\nexport\s/);
+    const block = SOURCE.slice(idx, next > -1 ? idx + 1 + next : undefined);
     expect(block).toContain("assembleStorefrontLayout(null, listings, rawSections)");
   });
 });

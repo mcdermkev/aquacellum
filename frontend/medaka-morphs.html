@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medaka Morph Guide — Aquacellum</title>
+  <meta name="description" content="A plain-language reference to Japanese rice fish (medaka) morphs — colors, fins, and traits — from Aquacellum's breeders.">
+  <meta property="og:title" content="Medaka Morph Guide — Aquacellum">
+  <meta property="og:description" content="Learn the medaka morphs — Pink Saffire, Shinkai, Gladio and more — then see them in a breeder's room and on the marketplace.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="/icons/icon-512.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/shared.css">
+
+  <style>
+    .guide-hero { padding: 2.5rem 0 1rem; }
+    .guide-kicker { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--violet-300, #c4b5fd); }
+    .guide-title { font-family: 'Outfit', sans-serif; font-size: clamp(2rem, 5vw, 3.25rem); font-weight: 800; color: #fff; margin: 0.4rem 0 0.6rem; }
+    .guide-desc { font-size: 0.95rem; line-height: 1.65; color: var(--text-secondary); max-width: 720px; }
+    .guide-species-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 1rem; padding: 9px 16px; border-radius: 11px; font-size: 0.82rem; font-weight: 700; text-decoration: none; color: #dbeafe; background: rgba(96,165,250,0.12); border: 1px solid rgba(96,165,250,0.3); }
+    .guide-species-link:hover { filter: brightness(1.1); }
+
+    .morph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 22px; margin: 1.75rem 0 3rem; }
+    .morph-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-md, 16px); overflow: hidden; backdrop-filter: blur(12px); scroll-margin-top: 90px; }
+    .morph-card__photo { height: 200px; background: linear-gradient(135deg, rgba(96,165,250,0.10), rgba(52,211,153,0.06)); display: flex; align-items: center; justify-content: center; font-size: 2.6rem; }
+    .morph-card__photo img { width: 100%; height: 100%; object-fit: cover; }
+    .morph-card__body { padding: 16px 18px 20px; }
+    .morph-card__name { font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; color: #fff; margin: 0; }
+    .morph-card__species { font-size: 0.72rem; color: var(--text-muted); font-style: italic; margin: 2px 0 0; }
+    .morph-traits { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+    .morph-trait { padding: 3px 10px; border-radius: 50px; font-size: 0.66rem; font-weight: 600; background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.2); color: var(--violet-300, #c4b5fd); }
+    .morph-trait strong { color: #fff; font-weight: 700; }
+    .morph-desc { font-size: 0.86rem; line-height: 1.6; color: var(--text-secondary); margin: 0 0 14px; }
+    .morph-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .morph-btn { display: inline-flex; align-items: center; padding: 8px 14px; border-radius: 10px; font-size: 0.78rem; font-weight: 700; text-decoration: none; }
+    .morph-btn--room { color: #04231a; background: linear-gradient(135deg, var(--emerald-400, #34d399), var(--teal-500, #14b8a6)); }
+    .morph-btn--market { color: #ddd6fe; background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.35); }
+    .morph-btn:hover { filter: brightness(1.08); }
+    .guide-note { max-width: 720px; margin: 0 0 3rem; font-size: 0.78rem; line-height: 1.6; color: var(--text-muted); padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); }
+    @media (max-width: 640px) { .morph-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header id="site-nav"></header>
+
+  <main class="container">
+    <header class="guide-hero">
+      <div class="guide-kicker">Reference</div>
+      <h1 class="guide-title">Medaka Morph Guide</h1>
+      <p class="guide-desc" id="guideIntro"></p>
+      <a class="guide-species-link" id="speciesLink" href="/species/oryzias-latipes">
+        📖 <span id="speciesLinkLabel">Species care &amp; facts</span>
+      </a>
+    </header>
+
+    <div class="morph-grid" id="morphGrid"></div>
+
+    <p class="guide-note">
+      These entries describe how each breeder keeps and names their line, alongside general facts about
+      Japanese rice fish. They are keeper descriptions, not verified genetic or lineage claims.
+    </p>
+  </main>
+
+  <footer id="site-footer"></footer>
+  <script src="/js/nav.js"></script>
+  <script src="/js/footer.js"></script>
+  <script src="/js/reveal.js"></script>
+  <script type="module">
+    import { MEDAKA_MORPHS, MEDAKA_SPECIES } from '/src/data/medakaMorphs.js';
+
+    function element(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text != null) node.textContent = String(text);
+      return node;
+    }
+
+    document.getElementById('guideIntro').textContent =
+      `Medaka (${MEDAKA_SPECIES.commonName}, ${MEDAKA_SPECIES.scientificName}) come in a growing range of hobbyist color and fin morphs. This guide explains the lines shown across the breeder showcases — what to look for, and where to see and buy them.`;
+
+    const speciesLink = document.getElementById('speciesLink');
+    speciesLink.href = MEDAKA_SPECIES.href;
+    document.getElementById('speciesLinkLabel').textContent =
+      `${MEDAKA_SPECIES.commonName} — care & facts`;
+
+    function buildTrait(trait) {
+      const span = element('span', 'morph-trait');
+      span.append(element('strong', '', trait.label + ': '), document.createTextNode(trait.value));
+      return span;
+    }
+
+    function buildMorph(morph) {
+      const card = element('article', 'morph-card');
+      card.id = morph.slug;
+
+      const photo = element('div', 'morph-card__photo');
+      if (morph.photo) {
+        const img = element('img');
+        img.src = morph.photo;
+        img.alt = morph.alt || morph.name;
+        img.loading = 'lazy';
+        photo.append(img);
+      } else {
+        photo.textContent = '🐟';
+      }
+
+      const body = element('div', 'morph-card__body');
+      body.append(element('h2', 'morph-card__name', morph.name));
+      body.append(element('p', 'morph-card__species', `${MEDAKA_SPECIES.commonName} · ${MEDAKA_SPECIES.scientificName}`));
+
+      const traits = Array.isArray(morph.traits) ? morph.traits : [];
+      if (traits.length) {
+        const wrap = element('div', 'morph-traits');
+        traits.forEach((trait) => { if (trait?.label && trait?.value) wrap.append(buildTrait(trait)); });
+        body.append(wrap);
+      }
+
+      if (morph.description) body.append(element('p', 'morph-desc', morph.description));
+
+      const actions = element('div', 'morph-actions');
+      if (morph.showcaseUrl) {
+        const room = element('a', 'morph-btn morph-btn--room', "See it in Steve's room");
+        room.href = morph.showcaseUrl;
+        actions.append(room);
+      }
+      const marketHref = typeof morph.productPath === 'string' && /^\/app\/products\/(single|batch)-[1-9][0-9]*$/.test(morph.productPath)
+        ? morph.productPath : '/marketplace';
+      const market = element('a', 'morph-btn morph-btn--market', morph.productPath ? 'See it on the marketplace' : 'Browse the marketplace');
+      market.href = marketHref;
+      actions.append(market);
+      body.append(actions);
+
+      card.append(photo, body);
+      return card;
+    }
+
+    const grid = document.getElementById('morphGrid');
+    MEDAKA_MORPHS.forEach((morph) => grid.append(buildMorph({ showcaseUrl: '/showcase/ggstevericefishnj', ...morph })));
+
+    // Deep-link: if the URL has a #slug, scroll it into view after render.
+    if (window.location.hash) {
+      const target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  </script>
+</body>
+</html>

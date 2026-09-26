@@ -15,6 +15,15 @@ function storefrontRewritePlugin() {
         if (req.url && req.url.startsWith('/store/')) {
           req.url = '/store.html';
         }
+        // Rewrite /showcase/* to the anonymous public Fish Room window.
+        if (req.url && req.url.startsWith('/showcase/')) {
+          req.url = '/showcase.html';
+        }
+        // Rewrite /t/* to /tank.html (public tank page behind a printed QR label).
+        // Deliberately /t/ and not /tank(s)/ — /tanks already redirects to /app/tanks.
+        if (req.url && req.url.startsWith('/t/')) {
+          req.url = '/tank.html';
+        }
         // Rewrite /species/* to /species.html (species detail pages)
         if (req.url && req.url.startsWith('/species/')) {
           req.url = '/species.html';
@@ -154,6 +163,8 @@ export default defineConfig({
         legal: resolve(__dirname, 'legal.html'),       // Legal & policies page
         app: resolve(__dirname, 'app.html'),           // React dashboard app
         store: resolve(__dirname, 'store.html'),        // Breeder Storefront (public)
+        showcase: resolve(__dirname, 'showcase.html'), // Published Fish Room (public)
+        medakaMorphs: resolve(__dirname, 'medaka-morphs.html'), // Medaka Morph Guide (public reference)
         species: resolve(__dirname, 'species.html'),      // Species detail page
         compare: resolve(__dirname, 'compare.html'),      // Species comparison tool
         howItWorks: resolve(__dirname, 'how-it-works.html'), // How it works / pricing
@@ -161,7 +172,9 @@ export default defineConfig({
         breeds: resolve(__dirname, 'breeds.html'),          // Breed gallery / lineage registry
         poseidon: resolve(__dirname, 'poseidon.html'),       // Poseidon AI assistant
         leaderboard: resolve(__dirname, 'leaderboard.html'),  // Zone leaderboard
-        developers: resolve(__dirname, 'developers.html')    // Public Species API docs
+        developers: resolve(__dirname, 'developers.html'),    // Public Species API docs
+        order: resolve(__dirname, 'order.html'),              // Guest order tracking + pickup code
+        tank: resolve(__dirname, 'tank.html')                 // Public tank page behind a printed QR label (/t/<token>)
       }
     }
   },

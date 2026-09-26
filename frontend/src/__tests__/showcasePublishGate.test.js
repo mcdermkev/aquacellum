@@ -85,8 +85,10 @@ describe("publication-set wiring (source contract)", () => {
   it("gates non-private publishing through ownerMayPublish before the RPC", () => {
     expect(route).toContain("ownerMayPublish");
     expect(route).toContain("publication_not_authorized");
-    // The gate only fires for non-private transitions (unpublish is never gated).
-    expect(route).toMatch(/v\.visibility !== "private"[\s\S]*ownerMayPublish/);
+    // The allowlist is reached only for non-private transitions; unpublish returns through the
+    // deny-first legacy RPC before the gate.
+    expect(route).toMatch(/v\.visibility === "private"[\s\S]*showcase_set_owner_room_visibility/);
+    expect(route).toMatch(/ownerMayPublish[\s\S]*showcase_set_owner_room_visibility_v2/);
   });
 
   it("keeps publication_not_authorized in the closed error dictionary", () => {

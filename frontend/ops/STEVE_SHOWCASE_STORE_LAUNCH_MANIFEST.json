@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 1,
+  "status": "awaiting-authenticated-owner-checkpoint",
+  "source": "docs/steves work/steves fish/STEVE_LISTINGS_INTAKE.xlsx",
+  "deployment": {
+    "target": "https://aquacellum.com",
+    "environment": "main-site",
+    "vercelPreviewUsed": false,
+    "directMainSiteDeploymentAuthorized": false
+  },
+  "payments": {
+    "stripeMode": "test",
+    "liveModeEnabled": false,
+    "livePayoutReadinessRequiredForThisRollout": false,
+    "testModeConnectConfirmed": false,
+    "testModeCheckoutConfirmed": false
+  },
+  "store": {
+    "slug": "ggstevericefishnj",
+    "publicPath": "/store/ggstevericefishnj",
+    "marketplacePath": "/marketplace.html",
+    "observedSellerWallet": "0x41e562ee88825ad8d79b48311a30742ac276c9eb",
+    "walletOwnershipConfirmed": false,
+    "payoutReadinessConfirmed": false,
+    "payoutReadinessScope": "test-mode-only"
+  },
+  "showcase": {
+    "slug": "ggstevericefishnj",
+    "title": "Steve's Rice Fish Room",
+    "description": "Japanese rice fish raised by Steve in Toms River, New Jersey. Explore the breeder tubs and follow active offerings to Aquacellum's marketplace.",
+    "publicPath": "/showcase/ggstevericefishnj",
+    "roomId": null,
+    "existingLifetimeRoomChecked": false,
+    "reviewMode": "authenticated-owner-publication-preview-on-main-site-private-room",
+    "hero": {
+      "sourceFile": null,
+      "altText": "Steve's Japanese rice fish room in Toms River, New Jersey",
+      "focalPoint": { "x": 0.5, "y": 0.5 },
+      "publicationPermissionConfirmed": false,
+      "candidateSourceFiles": [
+        {
+          "sourceFile": "docs/steves work/steves fish/IMG_20260901_145511_983.jpg",
+          "kind": "image",
+          "status": "needs-steve-selection-and-publication-permission"
+        },
+        {
+          "sourceFile": "docs/steves work/steves fish/IMG_20260901_145512_024.jpg",
+          "kind": "image",
+          "status": "needs-steve-selection-and-publication-permission"
+        },
+        {
+          "sourceFile": "docs/steves work/steves fish/VID_20260901_115511_370.mp4",
+          "kind": "video",
+          "status": "deferred-owner-bound-video-pipeline-required"
+        }
+      ]
+    }
+  },
+  "mediaInventory": {
+    "jpegCount": 62,
+    "mp4Count": 17,
+    "videoPublicationStatus": "deferred-owner-bound-target-bound-revocable-pipeline-required",
+    "confirmedReferenceAssetsAreProductPhotos": false,
+    "confirmedReferenceAssets": [
+      {
+        "label": "Echos of the Moon",
+        "sourceFile": "docs/steves work/steves fish/Echos of the moon/IMG_20260907_170845_166.jpg",
+        "publicReference": "/morphs/steve/echos-of-the-moon.jpg"
+      },
+      {
+        "label": "Gladio",
+        "sourceFile": "docs/steves work/steves fish/Gladio/IMG_20260907_170316_865.jpg",
+        "publicReference": "/morphs/steve/gladio.jpg"
+      },
+      {
+        "label": "Pink Saffire",
+        "sourceFile": "docs/steves work/steves fish/Pink Saffire/IMG_20260907_165711_163.jpg",
+        "publicReference": "/morphs/steve/pink-saffire.jpg"
+      },
+      {
+        "label": "Shinkai",
+        "sourceFile": "docs/steves work/steves fish/Shinkai/IMG_20260907_171554_111.jpg",
+        "publicReference": "/morphs/steve/shinkai.jpg"
+      }
+    ]
+  },
+  "sharedListingFacts": {
+    "commonName": "Japanese Rice Fish",
+    "scientificName": "Oryzias latipes",
+    "fulfillment": "pickup",
+    "pickupArea": "Toms River, NJ",
+    "careNote": "Hardy, no heater needed; can outdoor overwinter, breeds easily"
+  },
+  "offerings": [
+    {
+      "sourcePackRef": "medaka saffire pink",
+      "proposedDisplayName": "Saffire Pink Medaka",
+      "namingConfirmed": false,
+      "packSize": 4,
+      "priceCentsUSD": 7500,
+      "tankLabel": "Breeder Tub 1",
+      "tankSlug": "breeder-tub-1",
+      "canonicalTankId": null,
+      "sourceCohortId": null,
+      "availablePackCount": null,
+      "listingKey": null,
+      "productPhoto": null,
+      "referencePhotoCandidate": "/morphs/steve/pink-saffire.jpg",
+      "photoMappingStatus": "reference-provenance-confirmed-product-photo-needs-steve-approval",
+      "readyToPublish": false
+    },
+    {
+      "sourcePackRef": "medaka gradio",
+      "proposedDisplayName": "Gradio Medaka",
+      "namingConfirmed": false,
+      "packSize": 2,
+      "priceCentsUSD": 8000,
+      "tankLabel": "Breeder Tub 2",
+      "tankSlug": "breeder-tub-2",
+      "canonicalTankId": null,
+      "sourceCohortId": null,
+      "availablePackCount": null,
+      "listingKey": null,
+      "productPhoto": null,
+      "referencePhotoCandidate": "/morphs/steve/gladio.jpg",
+      "photoMappingStatus": "reference-provenance-confirmed-product-photo-needs-steve-approval",
+      "readyToPublish": false
+    },
+    {
+      "sourcePackRef": "medaka echos of the moon",
+      "proposedDisplayName": "Echos of the Moon Medaka",
+      "namingConfirmed": false,
+      "packSize": 2,
+      "priceCentsUSD": 6000,
+      "tankLabel": "Breeder Tub 3",
+      "tankSlug": "breeder-tub-3",
+      "canonicalTankId": null,
+      "sourceCohortId": null,
+      "availablePackCount": null,
+      "listingKey": null,
+      "productPhoto": null,
+      "referencePhotoCandidate": "/morphs/steve/echos-of-the-moon.jpg",
+      "photoMappingStatus": "reference-only-needs-product-photo-approval",
+      "readyToPublish": false
+    },
+    {
+      "sourcePackRef": "medaka shinkai",
+      "proposedDisplayName": "Shinkai Medaka",
+      "namingConfirmed": false,
+      "packSize": 4,
+      "priceCentsUSD": 5000,
+      "tankLabel": "Breeder Tub 4",
+      "tankSlug": "breeder-tub-4",
+      "canonicalTankId": null,
+      "sourceCohortId": null,
+      "availablePackCount": null,
+      "listingKey": null,
+      "productPhoto": null,
+      "referencePhotoCandidate": "/morphs/steve/shinkai.jpg",
+      "photoMappingStatus": "reference-only-needs-product-photo-approval",
+      "readyToPublish": false
+    },
+    {
+      "sourcePackRef": "medaka red emperor rlf",
+      "proposedDisplayName": "Red Emperor RLF Medaka",
+      "namingConfirmed": false,
+      "packSize": 2,
+      "priceCentsUSD": 7500,
+      "tankLabel": "Breeder Tank 1",
+      "tankSlug": "breeder-tank-1",
+      "canonicalTankId": null,
+      "sourceCohortId": null,
+      "availablePackCount": null,
+      "listingKey": null,
+      "productPhoto": null,
+      "referencePhotoCandidate": null,
+      "photoMappingStatus": "missing",
+      "readyToPublish": false
+    },
+    {
+      "sourcePackRef": "aurora lame",
+      "proposedDisplayName": "Aurora Lame Medaka",
+      "namingConfirmed": false,
+      "packSize": 2,
+      "priceCentsUSD": 5000,
+      "tankLabel": "Breeder Tub 5",
+      "tankSlug": "breeder-tub-5",
+      "canonicalTankId": null,
+      "sourceCohortId": null,
+      "availablePackCount": null,
+      "listingKey": null,
+      "productPhoto": null,
+      "referencePhotoCandidate": null,
+      "photoMappingStatus": "missing",
+      "readyToPublish": false
+    },
+    {
+      "sourcePackRef": "mixed",
+      "proposedDisplayName": "Mixed Medaka",
+      "namingConfirmed": false,
+      "packSize": 4,
+      "priceCentsUSD": 4000,
+      "tankLabel": "Show Pond",
+      "tankSlug": "show-pond",
+      "canonicalTankId": null,
+      "sourceCohortId": null,
+      "availablePackCount": null,
+      "listingKey": null,
+      "productPhoto": null,
+      "referencePhotoCandidate": null,
+      "photoMappingStatus": "missing",
+      "readyToPublish": false
+    }
+  ],
+  "publicationChecklist": {
+    "steveAuthenticatedOnMainSite": false,
+    "sellerWalletProven": false,
+    "stripeTestModeConnectConfirmed": false,
+    "stripeTestModeCheckoutConfirmed": false,
+    "inventoryConfirmed": false,
+    "cohortsConfirmed": false,
+    "photosApproved": false,
+    "canonicalTanksConfirmed": false,
+    "mainSiteOwnerPublicationPreviewApproved": false,
+    "directMainSiteDeploymentAuthorized": false
+  }
+}

@@ -125,6 +125,56 @@ describe("computeCheckoutCharge — discount clamping (defense in depth)", () =>
   });
 });
 
+describe("computeCheckoutCharge — variable fee rate (fee policy)", () => {
+  // The rate is no longer a constant: cash is 0% and verified event sales are
+  // reduced (services/feePolicy.js). These pin the arithmetic at the edges of
+  // that range so a policy change can never quietly mis-split a payout.
+  it("at 0% the seller receives the entire goods amount", () => {
+    const r = computeCheckoutCharge({ goodsPriceCents: 10000, feePercent: 0 });
+    expect(r.platformFeeCents).toBe(0);
+    expect(r.sellerPayoutCents).toBe(10000);
+    // The seller_funded invariant must still hold at the zero edge.
+    expect(r.platformGoodsMarginCents).toBe(r.platformFeeCents);
+  });
+
+  it("at 0% shipping is still excluded from the payout and still charged to the buyer", () => {
+    const r = computeCheckoutCharge({ goodsPriceCents: 10000, shippingCents: 1000, feePercent: 0 });
+    expect(r.sellerPayoutCents).toBe(10000);
+    expect(r.totalAmountCents).toBe(11000);
+    expect(r.buyerTotalCents).toBeGreaterThan(11000); // processing gross-up
+  });
+
+  it("at a reduced 2% the seller nets more than at 4%", () => {
+    const reduced = computeCheckoutCharge({ goodsPriceCents: 10000, feePercent: 2 });
+    const standard = computeCheckoutCharge({ goodsPriceCents: 10000, feePercent: 4 });
+    expect(reduced.platformFeeCents).toBe(200);
+    expect(reduced.sellerPayoutCents).toBe(9800);
+    expect(reduced.sellerPayoutCents).toBeGreaterThan(standard.sellerPayoutCents);
+    // The buyer pays the same either way — the fee moves OUR cut, not the price.
+    expect(reduced.buyerTotalCents).toBe(standard.buyerTotalCents);
+  });
+
+  it("fee + payout always reconcile to the goods base at any rate", () => {
+    for (const feePercent of [0, 1, 2, 4, 10]) {
+      for (const goods of [1, 99, 4999, 10000, 123456]) {
+        const r = computeCheckoutCharge({ goodsPriceCents: goods, feePercent });
+        expect(r.platformFeeCents + r.sellerPayoutCents).toBe(goods);
+        expect(r.platformFeeCents).toBeGreaterThanOrEqual(0);
+        expect(r.sellerPayoutCents).toBeGreaterThanOrEqual(0);
+      }
+    }
+  });
+
+  it("a seller_funded discount still reduces both fee and payout at a reduced rate", () => {
+    const r = computeCheckoutCharge({
+      goodsPriceCents: 10000, discountCents: 2000, funding: "seller_funded", feePercent: 2,
+    });
+    expect(r.platformFeeCents).toBe(160);   // 2% of 8000
+    expect(r.sellerPayoutCents).toBe(7840);
+    expect(r.platformGoodsMarginCents).toBe(r.platformFeeCents);
+  });
+});
+
 describe("computeCheckoutCharge — invariants", () => {
   it("seller_funded margin always equals the platform fee (never negative)", () => {
     for (const goods of [1, 99, 100, 4999, 10000, 123456]) {

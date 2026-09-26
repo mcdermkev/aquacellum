@@ -32,6 +32,7 @@ import { useUnitPrefs } from "../hooks/useUnitPrefs";
 import { celsiusToFahrenheit, formatTemperature, formatVolume, showCelsius, showFahrenheit } from "../utils/units";
 import { createCurrent } from "../services/reefApi";
 import { isSupabaseConfigured } from "../services/supabaseClient";
+import { getMyMorphSubmissions } from "../services/morphSubmissionsApi";
 import { ActivityLog } from "./ActivityLog";
 import { NotesTab } from "./NotesTab";
 import { QuickLogPanel } from "./QuickLogPanel";
@@ -226,9 +227,35 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const [addFishError, setAddFishError] = useState(null);
   const [addFishQty, setAddFishQty] = useState(1);
   const [addFishGender, setAddFishGender] = useState(SEX.UNSEXED);
+  const [addFishVarietyName, setAddFishVarietyName] = useState("");
+  // The keeper's own registered morphs (morph_submissions), offered as
+  // suggestions for the free-text morph field. Suggestions only — the field
+  // stays free text so an unregistered line can still be typed.
+  const [myMorphNames, setMyMorphNames] = useState([]);
   // "" means not recorded, and stays not recorded — never coerced to a stage.
   const [addFishLifeStage, setAddFishLifeStage] = useState("");
   const { data: contractSpecies = [] } = useContractSpecies(contractAddress);
+
+  // Load the keeper's own registered morph names once per wallet, to offer as
+  // autocomplete suggestions in the Add Fish morph field. Read-only, best-effort:
+  // a failure just means no suggestions, never a blocked registration.
+  useEffect(() => {
+    if (!walletAccount || !isSupabaseConfigured()) { setMyMorphNames([]); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await getMyMorphSubmissions(walletAccount);
+        if (cancelled) return;
+        const names = [...new Set((data || [])
+          .map((row) => (row?.morph_name || "").trim())
+          .filter(Boolean))];
+        setMyMorphNames(names);
+      } catch (err) {
+        if (!cancelled) console.warn("[TankList] Could not load registered morphs:", err?.message || err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [walletAccount]);
 
   // The reference catalog record for the species being added, so the Gender
   // control can show that species' sexing notes. Resolved by NAME via the
@@ -562,6 +589,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     setAddFishSearch("");
     setAddFishQty(1);
     setAddFishGender(SEX.UNSEXED);
+    setAddFishVarietyName("");
     // Cleared per open so a stage chosen for one batch is never silently applied
     // to the next — MintSpecimen leaves birthDate populated across registrations
     // and that is exactly the stale-value trap to avoid here.
@@ -602,6 +630,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
           commonName: species.commonName || "Specimen",
           scientificName: species.scientificName || "Unknown",
           gender: addFishGender,
+          varietyName: addFishVarietyName,
         });
         if (!result.success) throw new Error(result.error || "Failed to add fish");
 
@@ -3953,6 +3982,42 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   compact
                   hideWhenUndocumented
                 />
+              </div>
+
+              <div>
+                <label htmlFor="add-fish-variety" style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
+                  Morph / strain / variety
+                  <span style={{ color: "var(--text-muted)", fontWeight: 400 }}> (optional)</span>
+                </label>
+                <input
+                  id="add-fish-variety"
+                  type="text"
+                  list="add-fish-variety-suggestions"
+                  value={addFishVarietyName}
+                  onChange={(e) => setAddFishVarietyName(e.target.value)}
+                  maxLength={80}
+                  placeholder="e.g. Miyuki, Red King, Tricolor"
+                  style={{
+                    width: "100%",
+                    minHeight: "42px",
+                    padding: "0.55rem 0.7rem",
+                    color: "#fff",
+                    background: "rgba(0,0,0,0.2)",
+                    border: "1px solid var(--glass-border)",
+                    borderRadius: "6px",
+                    fontSize: "0.85rem",
+                  }}
+                />
+                {myMorphNames.length > 0 && (
+                  <datalist id="add-fish-variety-suggestions">
+                    {myMorphNames.map((name) => <option key={name} value={name} />)}
+                  </datalist>
+                )}
+                <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.3rem", display: "block" }}>
+                  {myMorphNames.length > 0
+                    ? "Pick one of your registered morphs, or type a new name. We won't infer or replace it."
+                    : "Enter the name you use for this line. We won't infer or replace it."}
+                </span>
               </div>
 
               {/* Life stage — the age question a keeper can actually answer.

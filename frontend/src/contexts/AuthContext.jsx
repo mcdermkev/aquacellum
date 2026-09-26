@@ -10,9 +10,15 @@
  * full self-custody control.
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { usePrivy, useWallets, useCreateWallet } from "@privy-io/react-auth";
 import { ethers } from "ethers";
+import {
+  resolveSessionWallet,
+  hasNoLinkedWallet,
+  findWalletByAddress,
+  isSameAddress,
+} from "../utils/privyWallet";
 import {
   BASE_SEPOLIA_CHAIN_ID,
   BASE_SEPOLIA_RPC_URL,
@@ -35,6 +41,12 @@ import {
 import { setSessionTokenGetter as setMerchandisingSessionTokenGetter } from "../services/storeMerchandisingApi";
 import { setSessionTokenGetter as setPromotionsSessionTokenGetter } from "../services/promotionsApi";
 import { setSessionTokenGetter as setPickupCoordinationSessionTokenGetter } from "../services/pickupCoordinationApi";
+
+// Booth cash sales (BOOTH_BUILD_SPEC.md §4/§6). Without this registration the
+// record-sale POST goes out unauthenticated, the server can't derive the selling
+// wallet, and every booth sale sits in the offline outbox forever looking like a
+// connectivity problem.
+import { setSessionTokenGetter as setBoothSessionTokenGetter } from "../services/boothApi";
 // Pedigree attestation (T3 §2.4). Not a data fetch like the others — this one lets a
 // sealed pedigree be attested at listing time, which is the whole reason listing time
 // was chosen as the sealing moment. Without it every document is `unattested`.
@@ -53,11 +65,17 @@ import { setSessionTokenGetter as setSpeciesCurationSessionTokenGetter } from ".
 // altTextGenerator is built to fall back rather than surface an error.
 import { setSessionTokenGetter as setEchoVisionSessionTokenGetter } from "../services/echoVision";
 import { setSessionTokenGetter as setAltTextSessionTokenGetter } from "../utils/altTextGenerator";
+import { setSessionTokenGetter as setShowcaseOwnerSessionTokenGetter } from "../services/showcaseOwnerApi";
 import { ensureProfile, updateProfile } from "../services/reefApi";
 import { identifyUser, resetAnalyticsIdentity, trackEvent } from "../services/analytics";
 import { isE2EMode, E2E_STUB_ACCOUNT } from "../utils/e2eMode";
 
 const AuthContext = createContext(null);
+
+// How long to wait for `useWallets()` to hydrate before treating "no wallet
+// visible" as "this identity has no wallet". Only the embedded-wallet recovery
+// path reads this; resolution itself is immediate.
+const WALLET_HYDRATION_GRACE_MS = 2500;
 
 /**
  * AuthProvider — dispatches to the real Privy-backed provider, or a no-Privy
@@ -100,6 +118,9 @@ function NoPrivyAuthProvider({ children }) {
     isConnecting: false,
     error,
     wrongNetwork: false,
+    privyUserId: null,
+    privyEmail: null,
+    privyLoginProvider: null,
     ready: true,
     authenticated: e2eMode,
     sessionBridgeReady: false,
@@ -149,32 +170,15 @@ function PrivyAuthProvider({ children }) {
     setError(null);
     setIsConnecting(true);
     try {
-      // If already authenticated, create wallet if missing
-      if (privyAuthenticated) {
-        if (wallets?.length) {
-          const embeddedWallet = wallets.find(w => w.walletClientType === "privy") || wallets[0];
-          if (embeddedWallet?.address) {
-            setAccount(embeddedWallet.address);
-            setLoginMethod("privy");
-            setWrongNetwork(false);
-            return;
-          }
-        }
-        // Create embedded wallet
-        const wallet = await createWallet();
-        if (wallet?.address) {
-          setAccount(wallet.address);
-          setLoginMethod("privy");
-          setWrongNetwork(false);
-        }
-        return;
-      }
+      // Already signed in: let the resolution effect below adopt the wallet.
+      // This used to call createWallet() whenever `wallets` looked empty, which
+      // is a duplicate-wallet generator during Privy hydration — see the wallet
+      // recovery effect and utils/privyWallet.js for why that matters.
+      if (privyAuthenticated) return;
       await privyLogin();
     } catch (err) {
       if (err.message?.includes("closed")) {
         setError("Login cancelled.");
-      } else if (err.message?.includes("already")) {
-        // Already has a wallet — will be resolved by useEffect
       } else {
         console.error("Privy login failed:", err);
         setError(err.message || "Login failed. Please try again.");
@@ -182,73 +186,108 @@ function PrivyAuthProvider({ children }) {
     } finally {
       setIsConnecting(false);
     }
-  }, [privyLogin, privyAuthenticated, wallets, createWallet]);
+  }, [privyLogin, privyAuthenticated]);
 
-  // Resolve Privy embedded wallet address when authenticated
+  // ─────────────────────────────────────────────────────────────────────────
+  // WALLET RESOLUTION
+  //
+  // The resolved address is PINNED to the Privy identity (DID) that produced
+  // it. A late-hydrating `wallets` array may UPGRADE a provisional address
+  // (one read off the user object before the array arrived) to an authoritative
+  // one, but an authoritative address is never silently swapped for a different
+  // authoritative address.
+  //
+  // That guard is load-bearing rather than defensive. Ownership is keyed by
+  // wallet address in ~20 tables and every Dexie read is scoped by it, so a
+  // mid-session address change does not error — it splits one person's
+  // inventory, orders, XP, storefront and Stripe payout mapping across two
+  // identities, and ensureProfile() inserts the second one without complaint.
+  // ─────────────────────────────────────────────────────────────────────────
+  const walletPinRef = useRef({ userId: null, address: null, source: null });
+  const walletCreationRef = useRef(null);
+
+  const commitPrivyWallet = useCallback(() => {
+    const userId = privyUser?.id || null;
+
+    // A different Privy identity (first login, or logout -> login as someone
+    // else in the same tab) resets the pin. Comparing DIDs rather than
+    // addresses is what makes that distinguishable from the bug case.
+    if (walletPinRef.current.userId !== userId) {
+      walletPinRef.current = { userId, address: null, source: null };
+    }
+
+    const { address, source } = resolveSessionWallet(wallets, privyUser);
+    if (!address) return false;
+
+    const pinned = walletPinRef.current;
+    if (pinned.address && !isSameAddress(pinned.address, address)) {
+      if (pinned.source === "wallets") {
+        console.error(
+          "[AuthContext] Refusing a mid-session wallet change for the same Privy identity.",
+          { keeping: pinned.address, ignored: address }
+        );
+        return true;
+      }
+      // Provisional -> authoritative upgrade is expected; fall through.
+    }
+
+    walletPinRef.current = { userId, address, source };
+    // Preserve the existing string when it is the same address so downstream
+    // effects (JWT bridge, analytics identify, ensureProfile) don't re-fire on
+    // a casing-only difference.
+    setAccount((prev) => (isSameAddress(prev, address) ? prev : address));
+    setLoginMethod("privy");
+    setWrongNetwork(false);
+    return true;
+  }, [wallets, privyUser]);
+
   useEffect(() => {
     if (!privyReady || !privyAuthenticated) return;
+    commitPrivyWallet();
+  }, [privyReady, privyAuthenticated, commitPrivyWallet]);
 
-    // Try to get address from wallets array first
-    if (wallets?.length) {
-      const embeddedWallet = wallets.find(w => w.walletClientType === "privy") || wallets[0];
-      if (embeddedWallet?.address) {
-        setAccount(embeddedWallet.address);
-        setLoginMethod("privy");
-        setWrongNetwork(false);
-        return;
-      }
-    }
-
-    // Fallback: extract wallet address from Privy user object
-    if (privyUser?.wallet?.address) {
-      setAccount(privyUser.wallet.address);
-      setLoginMethod("privy");
-      setWrongNetwork(false);
-      return;
-    }
-
-    // Fallback 2: check linkedAccounts for embedded wallet
-    if (privyUser?.linkedAccounts?.length) {
-      const walletAccount = privyUser.linkedAccounts.find(
-        a => a.type === "wallet" && a.walletClientType === "privy"
-      ) || privyUser.linkedAccounts.find(a => a.type === "wallet");
-      if (walletAccount?.address) {
-        setAccount(walletAccount.address);
-        setLoginMethod("privy");
-        setWrongNetwork(false);
-        return;
-      }
-    }
-
-    // No wallet found — need to create one
-    createWallet()
-      .then((wallet) => {
-        setAccount(wallet.address);
-        setLoginMethod("privy");
-        setWrongNetwork(false);
-      })
-      .catch((err) => {
-        console.warn("[AuthContext] Failed to create embedded wallet:", err);
-      });
-  }, [privyReady, privyAuthenticated, wallets, privyUser, createWallet]);
-
-  // Retry wallet resolution after a short delay if authenticated but no account
+  // Embedded-wallet recovery. `embeddedWallets.createOnLogin:
+  // 'users-without-wallets'` in main.jsx means Privy provisions the wallet
+  // itself, so reaching this path is already unusual. It is deliberately
+  // delayed and guarded: the previous version called createWallet() the instant
+  // a not-yet-hydrated `wallets` array looked empty, and only logged on
+  // failure. `hasNoLinkedWallet` requires the user object to be loaded and to
+  // show no wallet anywhere, and the ref caps this at one attempt per identity.
   useEffect(() => {
     if (!privyReady || !privyAuthenticated || account) return;
+    const userId = privyUser?.id || null;
+    if (!userId) return;
 
-    const retryTimer = setTimeout(() => {
-      if (wallets?.length) {
-        const w = wallets.find(w => w.walletClientType === "privy") || wallets[0];
-        if (w?.address) {
-          setAccount(w.address);
-          setLoginMethod("privy");
-          setWrongNetwork(false);
-        }
-      }
-    }, 2000);
+    const timer = setTimeout(() => {
+      // A wallet may have arrived during the grace period.
+      if (commitPrivyWallet()) return;
+      if (!hasNoLinkedWallet(privyUser, wallets)) return;
+      if (walletCreationRef.current === userId) return;
+      walletCreationRef.current = userId;
+      createWallet().catch((err) => {
+        console.warn("[AuthContext] Failed to create embedded wallet:", err?.message || err);
+      });
+    }, WALLET_HYDRATION_GRACE_MS);
 
-    return () => clearTimeout(retryTimer);
-  }, [privyReady, privyAuthenticated, account, wallets]);
+    return () => clearTimeout(timer);
+  }, [
+    privyReady,
+    privyAuthenticated,
+    account,
+    privyUser,
+    wallets,
+    createWallet,
+    commitPrivyWallet,
+  ]);
+
+  // The wallet object matching `account`. Signing paths use this rather than
+  // re-deriving "the current wallet", so the key that signs is by construction
+  // the address recorded as owner. Null for MetaMask logins, which fall through
+  // to the injected-provider branches.
+  const activePrivyWallet = useMemo(
+    () => (account ? findWalletByAddress(wallets, account) : null),
+    [wallets, account]
+  );
 
   // ─────────────────────────────────────────────────────────────────────────
   // REEF SOCIAL: Bridge wallet auth to Supabase session (JWT bridge)
@@ -397,28 +436,28 @@ function PrivyAuthProvider({ children }) {
     }
 
     const resolver = async () => {
-      const embeddedWallet = wallets.find(w => w.walletClientType === "privy") || wallets[0];
+      const embeddedWallet = activePrivyWallet;
       if (!embeddedWallet) {
         // Wallet not loaded yet — throw so we don't fall through to MetaMask
         throw new Error("Embedded wallet not yet available");
       }
 
-      // Get ethers provider from Privy wallet
-      const provider = await embeddedWallet.getEthersProvider();
-
-      // Switch to Base Sepolia if needed
+      // Privy exposes an EIP-1193 provider. Switch first, then request a fresh
+      // provider because existing instances retain their previous chain.
       try {
         await embeddedWallet.switchChain(BASE_SEPOLIA_CHAIN_ID);
       } catch (err) {
         console.warn("Chain switch failed for embedded wallet:", err);
       }
 
+      const eip1193Provider = await embeddedWallet.getEthereumProvider();
+      const provider = new ethers.providers.Web3Provider(eip1193Provider);
       return provider.getSigner();
     };
 
     registerSignerResolver(resolver);
     return () => unregisterSignerResolver();
-  }, [loginMethod, wallets]);
+  }, [loginMethod, wallets, activePrivyWallet]);
 
   // Register user's EIP-1193 provider with smartAccountClient for per-user smart wallets
   useEffect(() => {
@@ -427,20 +466,18 @@ function PrivyAuthProvider({ children }) {
       return;
     }
 
-    // Privy path: use embedded wallet's EIP-1193 provider
-    if (wallets?.length) {
-      const embeddedWallet = wallets.find(w => w.walletClientType === "privy") || wallets[0];
-      if (embeddedWallet?.address) {
-        (async () => {
-          try {
-            const eip1193Provider = await embeddedWallet.getEthereumProvider();
-            setUserSigner(eip1193Provider, embeddedWallet.address);
-          } catch (err) {
-            console.warn("[AuthContext] Failed to register Privy user signer:", err);
-          }
-        })();
-        return () => clearUserSigner();
-      }
+    // Privy path: use the EIP-1193 provider of the wallet matching `account`.
+    if (activePrivyWallet?.address) {
+      const embeddedWallet = activePrivyWallet;
+      (async () => {
+        try {
+          const eip1193Provider = await embeddedWallet.getEthereumProvider();
+          setUserSigner(eip1193Provider, embeddedWallet.address);
+        } catch (err) {
+          console.warn("[AuthContext] Failed to register Privy user signer:", err);
+        }
+      })();
+      return () => clearUserSigner();
     }
 
     // MetaMask path: use window.ethereum as the EIP-1193 provider
@@ -450,20 +487,21 @@ function PrivyAuthProvider({ children }) {
     }
 
     return () => clearUserSigner();
-  }, [account, wallets, loginMethod]);
+  }, [account, wallets, loginMethod, activePrivyWallet]);
 
   // Get a signer for transactions and signed Reef trust requests. This must be
   // declared before the token-registration effect because it is a dependency.
   const getSigner = useCallback(async () => {
     if (loginMethod === "privy" && wallets?.length) {
-      const embeddedWallet = wallets.find(w => w.walletClientType === "privy") || wallets[0];
+      const embeddedWallet = activePrivyWallet;
       if (embeddedWallet) {
         try {
           await embeddedWallet.switchChain(BASE_SEPOLIA_CHAIN_ID);
         } catch {
           // Continue — chain may already be correct.
         }
-        const provider = await embeddedWallet.getEthersProvider();
+        const eip1193Provider = await embeddedWallet.getEthereumProvider();
+        const provider = new ethers.providers.Web3Provider(eip1193Provider);
         return provider.getSigner();
       }
     }
@@ -480,7 +518,7 @@ function PrivyAuthProvider({ children }) {
     }
 
     throw new Error("Not connected. Please log in first.");
-  }, [loginMethod, wallets]);
+  }, [loginMethod, wallets, activePrivyWallet]);
 
   // Register the Privy session-token getter with the payments service so
   // checkout + release can authorize from the logged-in session (no wallet
@@ -502,6 +540,8 @@ function PrivyAuthProvider({ children }) {
       setSpeciesCurationSessionTokenGetter(getAccessToken);
       setEchoVisionSessionTokenGetter(getAccessToken);
       setAltTextSessionTokenGetter(getAccessToken);
+      setShowcaseOwnerSessionTokenGetter(getAccessToken);
+      setBoothSessionTokenGetter(getAccessToken);
       setSessionBridgeReady(true);
     } else {
       setSessionTokenGetter(null);
@@ -518,6 +558,8 @@ function PrivyAuthProvider({ children }) {
       setSpeciesCurationSessionTokenGetter(null);
       setEchoVisionSessionTokenGetter(null);
       setAltTextSessionTokenGetter(null);
+      setShowcaseOwnerSessionTokenGetter(null);
+      setBoothSessionTokenGetter(null);
       setSessionBridgeReady(false);
     }
     return () => {
@@ -535,6 +577,9 @@ function PrivyAuthProvider({ children }) {
       setSpeciesCurationSessionTokenGetter(null);
       setEchoVisionSessionTokenGetter(null);
       setAltTextSessionTokenGetter(null);
+      setShowcaseOwnerSessionTokenGetter(null);
+      setBoothSessionTokenGetter(null);
+      setSessionBridgeReady(false);
     };
   }, [privyAuthenticated, getAccessToken, getSigner]);
 
@@ -664,6 +709,10 @@ function PrivyAuthProvider({ children }) {
 
     unregisterSignerResolver();
     clearUserSigner();
+    // Clear the wallet pin so the next sign-in resolves from scratch rather
+    // than being compared against the previous identity's address.
+    walletPinRef.current = { userId: null, address: null, source: null };
+    walletCreationRef.current = null;
     setAccount(null);
     setLoginMethod(null);
     setWrongNetwork(false);
@@ -676,9 +725,8 @@ function PrivyAuthProvider({ children }) {
   const handleSwitchNetwork = useCallback(async () => {
     setError(null);
     try {
-      if (loginMethod === "privy" && wallets?.length) {
-        const embeddedWallet = wallets.find(w => w.walletClientType === "privy") || wallets[0];
-        await embeddedWallet.switchChain(BASE_SEPOLIA_CHAIN_ID);
+      if (loginMethod === "privy" && activePrivyWallet) {
+        await activePrivyWallet.switchChain(BASE_SEPOLIA_CHAIN_ID);
       } else {
         await switchToBaseSepolia();
       }
@@ -686,7 +734,7 @@ function PrivyAuthProvider({ children }) {
     } catch (err) {
       setError("Failed to switch network. Please switch manually in your wallet.");
     }
-  }, [loginMethod, wallets]);
+  }, [loginMethod, activePrivyWallet]);
 
   const value = {
     // State
@@ -695,6 +743,17 @@ function PrivyAuthProvider({ children }) {
     isConnecting,
     error,
     wrongNetwork,
+    // The Privy identity (DID) behind this session, and the email/provider it
+    // was reached by. Exposed for support diagnosis: two Privy identities for
+    // one human present as two wallets, and the DID is the only way to tell
+    // them apart from the client. Nothing keys ownership on this yet.
+    privyUserId: privyUser?.id || null,
+    privyEmail: privyUser?.email?.address || privyUser?.google?.email || null,
+    privyLoginProvider: privyUser?.google?.email
+      ? "google"
+      : privyUser?.email?.address
+        ? "email"
+        : null,
     // E2E stub: report ready+authenticated immediately so App.jsx's gates
     // (onboarding, enteredDashboard, etc.) behave exactly as a logged-in user.
     ready: e2eMode ? true : privyReady,

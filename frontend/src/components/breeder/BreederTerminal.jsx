@@ -55,6 +55,8 @@ import {
   ChatCircleDots,
   ClockCounterClockwise,
   Tag,
+  Images,
+  Tote,
 } from "@phosphor-icons/react";
 import { fetchSellerOrders } from "../../services/ordersSync";
 import { checkSellerStatus, startSellerOnboarding, getSellerDashboardLink } from "../../services/stripePayments";
@@ -77,6 +79,7 @@ import { ListSpecimenModal } from "../ListSpecimenModal";
 import { EditListingModal } from "../EditListingModal";
 import { HandshakeVerification } from "../HandshakeVerification";
 import { CashPickupConfirm } from "./CashPickupConfirm";
+import { GuestPickupConfirm } from "./GuestPickupConfirm";
 import { relayGetOrders, relayDispatchShipping } from "../../services/relayer";
 import { buyShippingLabel } from "../../services/shipping";
 import { normalizeSellerOrders, filterSellerOrders } from "../../services/sellerOrderView";
@@ -85,14 +88,21 @@ import { FULFILLMENT_METHODS } from "../../services/marketplaceStateMachine";
 import { getOrCreateConversation } from "../../services/messagesApi";
 import { fetchPickupForOrder, confirmPickupTime } from "../../services/pickupCoordinationApi";
 import { arrangementStatusView } from "../../services/pickupCoordination";
+import { ShowcaseOwnerBuilder } from "./ShowcaseOwnerBuilder";
+import { SteveShowcasePreview } from "./SteveShowcasePreview";
+import { BoothInventory } from "./BoothInventory";
 
 const LAST_VISIT_STORAGE_KEY = "aquadex_breeder_last_visit";
 
 const SECTIONS = Object.freeze({
   HOME: "home",
+  // Booth sits directly after Home: at an expo it is the only section that
+  // matters, and it should be one tap from arrival (BOOTH_BUILD_SPEC.md §6).
+  BOOTH: "booth",
   ORDERS: "orders",
   LISTINGS: "listings",
   STORE: "store",
+  SHOWCASE: "showcase",
   PROMOTIONS: "promotions",
   SHIPPING: "shipping",
   ANALYTICS: "analytics",
@@ -101,9 +111,11 @@ const SECTIONS = Object.freeze({
 
 const NAV_ITEMS = [
   { id: SECTIONS.HOME, label: "Home", icon: Package },
+  { id: SECTIONS.BOOTH, label: "Booth", icon: Tote },
   { id: SECTIONS.ORDERS, label: "Orders", icon: ClipboardText },
   { id: SECTIONS.LISTINGS, label: "Listings", icon: Package },
   { id: SECTIONS.STORE, label: "Store", icon: StorefrontIcon },
+  { id: SECTIONS.SHOWCASE, label: "Showcase", icon: Images },
   { id: SECTIONS.PROMOTIONS, label: "Promotions", icon: Tag },
   { id: SECTIONS.SHIPPING, label: "Shipping", icon: Truck },
   { id: SECTIONS.ANALYTICS, label: "Analytics", icon: ChartLineUp },
@@ -162,6 +174,7 @@ export function BreederTerminal({ walletAccount, casualModeActive = false, initi
   const [onboardingBusy, setOnboardingBusy] = useState(false);
   const [dashboardLinkBusy, setDashboardLinkBusy] = useState(false);
   const [isListModalOpen, setIsListModalOpen] = useState(false);
+  const [guestPickupOpen, setGuestPickupOpen] = useState(false); // Guest (no-login) pickup handoff confirm
   const [editingListing, setEditingListing] = useState(null); // Task 9 Inc2: Listings section inline edit
   const [existingStorefrontProfile, setExistingStorefrontProfile] = useState(null);
 
@@ -570,6 +583,27 @@ export function BreederTerminal({ walletAccount, casualModeActive = false, initi
         />
       )}
 
+      {/* Booth (BOOTH_BUILD_SPEC.md §6). Deliberately its own component and its
+          own seller-scoped inventory query — not `sellerListings` off the shared
+          `useMarketplaceListings` cache, which is 2-minute-stale and returns
+          `fallback`-tagged rows offline. Never entitlement-gated (decision D7). */}
+      {activeSection === SECTIONS.BOOTH && (
+        <BoothInventory walletAccount={walletAccount} casualModeActive={casualModeActive} />
+      )}
+
+      {activeSection === SECTIONS.ORDERS && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.75rem" }}>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setGuestPickupOpen(true)}
+            style={{ minHeight: "40px" }}
+          >
+            📷 Confirm a pickup
+          </button>
+        </div>
+      )}
+
       {activeSection === SECTIONS.ORDERS && (
         <OrdersSection
           views={filteredSellerViews}
@@ -638,6 +672,20 @@ export function BreederTerminal({ walletAccount, casualModeActive = false, initi
         </>
       )}
 
+      {activeSection === SECTIONS.SHOWCASE && (
+        <>
+          <SteveShowcasePreview />
+          <details style={{ marginTop: "1rem" }}>
+            <summary style={{ cursor: "pointer", color: "var(--text-muted)", fontSize: ".85rem" }}>
+              Advanced: publish this room for others to see
+            </summary>
+            <div style={{ marginTop: "1rem" }}>
+              <ShowcaseOwnerBuilder />
+            </div>
+          </details>
+        </>
+      )}
+
       {activeSection === SECTIONS.PROMOTIONS && (
         <PromotionsManager walletAccount={walletAccount} casualModeActive={casualModeActive} />
       )}
@@ -694,6 +742,14 @@ export function BreederTerminal({ walletAccount, casualModeActive = false, initi
         onClose={() => setEditingListing(null)}
         item={editingListing}
         onSuccess={() => setEditingListing(null)}
+      />
+
+      {/* Guest (no-login) local-pickup handoff: the seller scans/pastes the
+          buyer's order code and confirming releases the held funds to them. */}
+      <GuestPickupConfirm
+        isOpen={guestPickupOpen}
+        onClose={() => setGuestPickupOpen(false)}
+        onSuccess={() => { setGuestPickupOpen(false); }}
       />
 
       {/* Task 15: the canonical cash-pickup order's confirm_cash action opens
@@ -1441,12 +1497,20 @@ function SellerActionButton({ kind, copy, labelBuying, onBuyLabel, onOpenHandoff
 // `useMarketplaceListings` hook) and routes to the two existing modals.
 
 function listingStatus(item) {
+  // `isActive` is not a field any writer sets — relayCreateListing and
+  // BatchListingWizard write `active` on the blob, and Supabase stores
+  // `is_active`. Reading the non-existent camelCase key meant `=== false` was
+  // never true and a paused batch always rendered "Active". Check every shape.
+  const inactive = item.active === false || item.isActive === false || item.is_active === false;
+  // Prefer the server-authoritative remaining count (added by
+  // 20260916_inventory_of_record.sql) and fall back to the legacy blob quantity.
+  const remaining = Number(item.quantityRemaining ?? item.quantity_remaining ?? item.quantity ?? 0);
   if (item.isBatch) {
-    if (item.isActive === false) return { label: "Paused", tone: "muted", icon: "⏸️" };
-    if (Number(item.quantity) <= 0) return { label: "Sold out", tone: "alert", icon: "⚠️" };
+    if (remaining <= 0) return { label: "Sold out", tone: "alert", icon: "⚠️" };
+    if (inactive) return { label: "Paused", tone: "muted", icon: "⏸️" };
     return { label: "Active", tone: "good", icon: "✅" };
   }
-  if (item.active === false || item.status === "sold") return { label: "Sold", tone: "muted", icon: "✅" };
+  if (inactive || item.status === "sold") return { label: "Sold", tone: "muted", icon: "✅" };
   return { label: "Active", tone: "good", icon: "✅" };
 }
 

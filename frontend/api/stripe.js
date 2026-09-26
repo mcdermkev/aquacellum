@@ -23,6 +23,7 @@
 
 import Stripe from "stripe";
 import { ethers } from "ethers";
+import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { handleCorsPreFlight } from "./_lib/cors.js";
 import {
@@ -32,6 +33,7 @@ import {
 } from "./_lib/verifyPrivyToken.js";
 import * as shipengine from "./_lib/shipengine.js";
 import { captureServerEvent } from "./_lib/posthogServer.js";
+import { sendEmail, isResendConfigured } from "./_lib/resend.js";
 import {
   issueHandoffChallenge,
   verifyHandoffChallenge,
@@ -52,6 +54,7 @@ import { createSupabaseDoaClaimStore } from "./_lib/supabaseDoaClaimStore.js";
 // charge (coupon + fee/payout split by funding) lives only here.
 import { evaluatePromotion } from "../src/services/promotionEngine.js";
 import { computeCheckoutCharge } from "../src/services/checkoutPricing.js";
+import { resolveFeePolicy, FEE_RAIL } from "../src/services/feePolicy.js";
 
 let stripe;
 try {
@@ -170,6 +173,23 @@ function getRawBody(req) {
  */
 function computeStripePaymentHash(paymentIntentId) {
   return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(paymentIntentId));
+}
+
+/**
+ * Guest order confirmation email — plain, mobile-friendly HTML. The magic link
+ * is the buyer's only handle on a no-login order: it opens their order page
+ * where they show the pickup code the seller scans at handoff.
+ */
+function guestOrderEmailHtml({ orderUrl, itemName, amountUsd, sellerName, pickupArea }) {
+  const seller = sellerName || "the breeder";
+  const where = pickupArea ? ` in ${pickupArea}` : "";
+  return `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:520px;margin:0 auto;color:#1a1a1a;">
+    <h2 style="font-size:20px;margin:0 0 12px;">Your order is confirmed 🐟</h2>
+    <p style="font-size:15px;line-height:1.5;margin:0 0 8px;">Thanks for your purchase of <strong>${itemName}</strong> for <strong>$${amountUsd}</strong>.</p>
+    <p style="font-size:15px;line-height:1.5;margin:0 0 20px;">Your payment is held securely until you meet ${seller}${where} for local pickup. At the meetup, open your order page and show the pickup code — once ${seller} confirms the handoff, the sale is complete.</p>
+    <p style="margin:0 0 24px;"><a href="${orderUrl}" style="display:inline-block;background:#d8ff71;color:#11130a;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:999px;">View my order &amp; pickup code</a></p>
+    <p style="font-size:12px;color:#666;line-height:1.5;margin:0;">Keep this email — it's the link to your order. If the button doesn't work, paste this into your browser:<br>${orderUrl}</p>
+  </div>`;
 }
 
 /**
@@ -468,30 +488,86 @@ async function handleWebhook(req, res) {
         }
       }
 
-      // Guest purchases: defer on-chain settlement until buyer links an account
+      // Guest purchase — no login. Funds are captured and HELD in the platform
+      // balance (real escrow); the order is recorded and tracked by its
+      // guest_ref, then RELEASED to the seller when the SELLER confirms the
+      // in-person handoff (see ?action=guest-handoff-confirm). Guest batch/pickup
+      // are off-chain (no NFT / no on-chain buyer identity) — settlement is the
+      // held Stripe funds, released by the handoff confirmation.
       if (metadata.isGuestPurchase === "true" || metadata.buyerWallet === "guest") {
-        console.log(`[Stripe Webhook] Guest purchase — deferring settlement: ${paymentIntentId}`);
+        console.log(`[Stripe Webhook] Guest purchase (held): ${paymentIntentId}`);
+        const guestRef = metadata.guestRef || null;
+        const buyerEmail = metadata.buyerEmail || null;
+        const stripePaymentHash = computeStripePaymentHash(paymentIntentId);
 
+        // Held settlement row (funds captured; payout deferred to handoff).
         await supabase.from("fiat_settlements").insert({
           stripe_payment_intent_id: paymentIntentId,
-          stripe_payment_hash: computeStripePaymentHash(paymentIntentId),
+          stripe_payment_hash: stripePaymentHash,
           purchase_type: purchaseType,
           buyer_wallet: null,
+          buyer_email: buyerEmail,
+          guest_ref: guestRef,
           seller_wallet: metadata.sellerWallet,
           amount_cents_usd: amountCents,
           tx_hash: null,
           block_number: null,
-          // Valid enum value (CHECK allows pending/settled/failed/disputed/refunded).
-          // An unclaimed guest settlement is identified by buyer_wallet IS NULL.
-          status: "pending",
+          status: "settled",
           metadata: JSON.stringify(metadata),
           created_at: new Date().toISOString(),
         });
 
-        return res.status(200).json({
-          received: true,
-          action: "deferred_guest",
-        });
+        // Trackable order row so it surfaces in the seller's Breeder Terminal
+        // (locked + in_person => "to hand off") and on the guest's order page.
+        const guestOrderItems = metadata.items
+          ? (typeof metadata.items === "string" ? JSON.parse(metadata.items) : metadata.items)
+          : [{ tokenId: metadata.tokenId, listingId: metadata.listingId, commonName: metadata.commonName || "Fish", priceCents: amountCents }];
+        try {
+          await supabase.from("orders").insert({
+            order_type: purchaseType === "batch" ? "batch" : "shipping",
+            buyer_wallet: null,
+            buyer_email: buyerEmail,
+            guest_ref: guestRef,
+            seller_wallet: (metadata.sellerWallet || "").toLowerCase(),
+            status: "locked",
+            subtotal_cents: amountCents,
+            shipping_fee_cents: Number(metadata.shippingFeeCents || 0),
+            platform_fee_cents: Number(metadata.platformFeeCents || 0),
+            total_paid_cents: amountCents,
+            items: guestOrderItems,
+            quantity: Number(metadata.quantity || 1),
+            fulfillment_type: "in_person",
+            stripe_session_id: metadata.stripeSessionId || null,
+            stripe_payment_intent: paymentIntentId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "stripe_payment_intent", ignoreDuplicates: true });
+        } catch (guestOrderErr) {
+          console.warn("[Stripe Webhook] guest order insert failed:", guestOrderErr.message);
+        }
+
+        // Email the buyer their order magic-link (best-effort; never blocks the webhook).
+        if (buyerEmail && guestRef && isResendConfigured()) {
+          const appUrl = process.env.APP_URL || "https://aquacellum.com";
+          const orderUrl = `${appUrl}/order.html?ref=${encodeURIComponent(guestRef)}`;
+          const firstItem = guestOrderItems[0] || {};
+          const itemName = firstItem.commonName || firstItem.name || "your fish";
+          const amountUsd = (amountCents / 100).toFixed(2);
+          sendEmail({
+            to: buyerEmail,
+            subject: "Your Aquacellum order is confirmed 🐟",
+            html: guestOrderEmailHtml({ orderUrl, itemName, amountUsd }),
+          }).catch((e) => console.warn("[Stripe Webhook] guest email failed:", e.message));
+        }
+
+        captureServerEvent("guest", "marketplace_purchase", {
+          purchase_type: purchaseType,
+          amount_cents: amountCents,
+          payment_method: "fiat",
+          guest: true,
+        }).catch(() => {});
+
+        return res.status(200).json({ received: true, action: "guest_held", guestRef });
       }
 
       console.log(`[Stripe Webhook] Processing ${purchaseType} purchase: ${paymentIntentId}`);
@@ -912,6 +988,49 @@ async function handleConnectOnboard(req, res) {
       error: "Failed to create onboarding session",
       details: err.message,
     });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONNECT DASHBOARD LINK — one-time Stripe Express login link for the seller
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// The Payouts tab's "Open Stripe Dashboard" needs a real, signed Express login
+// link (stripe.accounts.createLoginLink) — a hand-built connect.stripe.com URL
+// does NOT authenticate the seller into their dashboard. Login links only work
+// once onboarding is complete (charges/payouts enabled), which matches the
+// button's own gating (it renders only when onboardingComplete is true).
+async function handleConnectDashboard(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, GET, OPTIONS" })) return;
+  if (req.method !== "POST" && req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+  if (!stripe) {
+    return res.status(500).json({ error: "Stripe not configured" });
+  }
+
+  const wallet = (req.method === "GET" ? req.query.wallet : req.body?.walletAddress) || "";
+  if (!wallet) {
+    return res.status(400).json({ error: "Missing walletAddress" });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("seller_stripe_accounts")
+      .select("stripe_account_id, onboarding_complete")
+      .eq("wallet_address", String(wallet).toLowerCase())
+      .single();
+
+    if (error || !data?.stripe_account_id) {
+      return res.status(404).json({ error: "Seller not connected to Stripe", code: "SELLER_NOT_CONNECTED" });
+    }
+
+    const link = await stripe.accounts.createLoginLink(data.stripe_account_id);
+    return res.status(200).json({ success: true, url: link.url });
+  } catch (err) {
+    // createLoginLink throws for accounts that haven't finished onboarding.
+    console.error("[Stripe Connect] Dashboard link failed:", err?.message || err);
+    return res.status(500).json({ error: "Failed to create dashboard link", details: err.message });
   }
 }
 
@@ -2833,6 +2952,182 @@ async function handleCashConfirm(req, res) {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// GUEST HANDOFF — no-login local pickup. The buyer shows a code from their order
+// page; the authenticated SELLER scans/confirms it, and THAT confirmation
+// releases the held funds to the seller. Guest batch/pickup are off-chain, so
+// release is a Stripe transfer only (no NFT move).
+//   guest-handoff-code    — buyer, authorized by the unguessable guest_ref →
+//                           issue a short-lived signed challenge for the QR
+//   guest-handoff-confirm — seller Privy session → verify the scanned code and
+//                           transfer the held funds to the seller
+//   order-lookup          — buyer, authorized by guest_ref → sanitized order view
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function loadGuestOrderByRef(ref) {
+  if (!ref) return null;
+  const { data } = await supabase.from("orders").select("*").eq("guest_ref", ref).maybeSingle();
+  return data || null;
+}
+
+async function handleGuestHandoffCode(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const secret = handoffSecret();
+  if (!secret) return res.status(500).json({ error: "Handoff signing not configured" });
+
+  const ref = String(req.body?.ref || "").trim();
+  if (!ref) return res.status(400).json({ error: "Missing order reference" });
+
+  const order = await loadGuestOrderByRef(ref);
+  if (!order) return res.status(404).json({ error: "Order not found" });
+  if (["released", "completed", "settled"].includes(order.status)) {
+    return res.status(409).json({ error: "This order is already complete", code: "ALREADY_COMPLETE" });
+  }
+
+  const item = Array.isArray(order.items) && order.items.length ? order.items[0] : {};
+  const { token, payload } = issueHandoffChallenge({
+    orderId: ref,
+    buyer: order.buyer_email || "guest",
+    seller: order.seller_wallet,
+    listingId: item.listingId != null ? item.listingId : null,
+    quantity: order.quantity || 1,
+    tokenId: item.tokenId != null ? item.tokenId : null,
+    type: HANDOFF_TYPES.PICKUP,
+    secret,
+  });
+  return res.status(200).json({ token, expiresAt: payload.exp });
+}
+
+async function handleGuestHandoffConfirm(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (!stripe) return res.status(500).json({ error: "Stripe not configured" });
+
+  const secret = handoffSecret();
+  if (!secret) return res.status(500).json({ error: "Handoff signing not configured" });
+
+  // The confirming seller must hold a valid Privy session.
+  const auth = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(auth, res)) return;
+  if (!auth.verified || !auth.walletAddress) {
+    return res.status(401).json({ error: auth.error || "Sign in as the seller to confirm the handoff" });
+  }
+  const sellerWallet = auth.walletAddress.toLowerCase();
+
+  const { token } = req.body || {};
+  if (!token) return res.status(400).json({ error: "Missing handoff code" });
+
+  const preview = parseChallenge(token);
+  if (!preview || !preview.orderId) return res.status(400).json({ error: "Unreadable handoff code" });
+
+  // Verify the buyer's signed challenge, bound to THIS confirming seller.
+  const verifyRes = await verifyHandoffChallenge(token, { secret, expectedSeller: sellerWallet });
+  if (!verifyRes.ok) {
+    const status = (verifyRes.reason || "").startsWith("replay") ? 409 : 401;
+    return res.status(status).json({ error: `Handoff not verified: ${verifyRes.reason}` });
+  }
+
+  const order = await loadGuestOrderByRef(preview.orderId);
+  if (!order) return res.status(404).json({ error: "Order not found" });
+  if (String(order.seller_wallet).toLowerCase() !== sellerWallet) {
+    return res.status(403).json({ error: "This order belongs to a different seller" });
+  }
+  if (["released", "completed"].includes(order.status)) {
+    return res.status(409).json({ error: "This order is already complete", code: "ALREADY_COMPLETE" });
+  }
+  if (!order.stripe_payment_intent) {
+    return res.status(400).json({ error: "Order has no payment to release" });
+  }
+
+  // Authoritative payout math from the PaymentIntent metadata.
+  let md = {};
+  try {
+    const pi = await stripe.paymentIntents.retrieve(order.stripe_payment_intent);
+    md = pi.metadata || {};
+  } catch (err) {
+    return res.status(502).json({ error: "Could not resolve payment", details: err.message });
+  }
+  const sellerPayoutCents = Number(md.sellerPayoutCents || 0);
+  const sellerStripeAccountId = md.sellerStripeAccountId;
+  if (!sellerStripeAccountId || !(sellerPayoutCents > 0)) {
+    return res.status(400).json({ error: "Order is missing payout details" });
+  }
+
+  // Release: transfer the held funds to the seller (no on-chain step for a guest
+  // batch/pickup order). Idempotency is guarded by the order-status check above.
+  let transferId;
+  try {
+    const transfer = await transferToSeller({
+      sellerStripeAccountId,
+      amountCents: sellerPayoutCents,
+      transferGroup: md.transferGroup,
+      reference: order.stripe_payment_intent,
+    });
+    transferId = transfer.id;
+  } catch (err) {
+    console.error("[Guest Handoff] Seller payout failed:", err.message);
+    return res.status(502).json({ error: "Could not pay out the seller", details: err.message });
+  }
+
+  const nowIso = new Date().toISOString();
+  await supabase.from("orders").update({ status: "released", updated_at: nowIso }).eq("id", order.id);
+  await supabase
+    .from("fiat_settlements")
+    .update({ settled_at: nowIso, metadata: JSON.stringify({ ...md, sellerTransferId: transferId, handoffConfirmedBy: sellerWallet }) })
+    .eq("stripe_payment_intent_id", order.stripe_payment_intent);
+
+  return res.status(200).json({ success: true, action: "guest_handoff_released", orderId: order.id, transferId });
+}
+
+async function handleGuestOrderLookup(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "GET, POST, OPTIONS" })) return;
+  const src = req.method === "GET" ? req.query : (req.body || {});
+  let ref = String(src.ref || "").trim();
+  const sessionId = String(src.session || "").trim();
+
+  // The success page only has the Stripe Checkout session id. Resolve the
+  // guest_ref from the session metadata (stamped at create-checkout).
+  if (!ref && sessionId && stripe) {
+    try {
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      ref = (session.metadata && session.metadata.guestRef) || "";
+    } catch { /* fall through to the missing-ref error */ }
+  }
+  if (!ref) return res.status(400).json({ error: "Missing order reference" });
+
+  const order = await loadGuestOrderByRef(ref);
+  if (!order) {
+    // The webhook may not have recorded the order yet (it lands a moment after
+    // the redirect). Return the ref so the client can deep-link to the order
+    // page, which polls until the order appears.
+    return res.status(200).json({ ref, status: "processing", complete: false, pending: true });
+  }
+
+  let seller = { name: null, pickupArea: null, slug: null };
+  try {
+    const { data: profile } = await supabase
+      .from("breeder_profiles")
+      .select("display_name, location, slug")
+      .eq("wallet_address", String(order.seller_wallet).toLowerCase())
+      .maybeSingle();
+    if (profile) seller = { name: profile.display_name, pickupArea: profile.location, slug: profile.slug };
+  } catch { /* non-fatal */ }
+
+  return res.status(200).json({
+    ref,
+    status: order.status,
+    complete: ["released", "completed"].includes(order.status),
+    items: order.items || [],
+    quantity: order.quantity,
+    amountCents: order.total_paid_cents,
+    buyerEmail: order.buyer_email,
+    createdAt: order.created_at,
+    seller,
+  });
+}
+
 export default async function handler(req, res) {
   const action = req.query.action || "webhook";
 
@@ -2845,6 +3140,8 @@ export default async function handler(req, res) {
       return handlePreviewPromo(req, res);
     case "connect-onboard":
       return handleConnectOnboard(req, res);
+    case "connect-dashboard":
+      return handleConnectDashboard(req, res);
     case "release":
       return handleRelease(req, res);
     case "release-v2":
@@ -2904,6 +3201,13 @@ export default async function handler(req, res) {
       return handleHandoffIssue(req, res);
     case "cash-confirm":
       return handleCashConfirm(req, res);
+    // ── Guest (no-login) local pickup: order lookup + two-party handoff release ──
+    case "order-lookup":
+      return handleGuestOrderLookup(req, res);
+    case "guest-handoff-code":
+      return handleGuestHandoffCode(req, res);
+    case "guest-handoff-confirm":
+      return handleGuestHandoffConfirm(req, res);
     // ── Auctions ───────────────────────────────────────────────────────────
     case "auction-payment-method":
       return handleAuctionPaymentMethod(req, res);
@@ -3023,7 +3327,63 @@ async function resolveReservationTargets(purchaseType, items) {
 }
 
 // Platform fee: 4% of the goods price (matches on-chain TOTAL_FEE_BPS = 400).
+// This is the STANDARD card rate. The effective rate for a given checkout is
+// chosen by resolveFeePolicy (src/services/feePolicy.js) — cash is 0% and a
+// verified event sale is reduced. See verifyEventFeeEligibility below.
 const PLATFORM_FEE_PERCENT = 4;
+const EVENT_FEE_PERCENT = Number(process.env.EVENT_FEE_PERCENT) || 2;
+
+/**
+ * Verify a claimed event sale server-side, returning the tide id to honour or null.
+ *
+ * The ONLY acceptable input is a tide id the SELLER is actually checked in to, on
+ * an expo that is happening right now. `insideEventZone` / `currentEventId` in the
+ * client are hardcoded `useState(true)` / `useState(1)` — decorative — so a client
+ * boolean is worth nothing here. This mirrors the established pattern for the XP
+ * event multiplier: the client passes an id, the SERVER decides the perk.
+ *
+ * KNOWN AND ACCEPTED LIMITATION: `checkInToTide` performs no location check
+ * despite its docstring, and `tides.gps_bounds` / `zone_hash` are written by
+ * nobody, so a determined seller can check in from their sofa and claim the
+ * reduced rate. That is tolerated deliberately, because the entire consequence is
+ * that WE take a smaller cut of our own sale — it cannot move buyer or seller
+ * money, mis-price a listing, or affect a payout. The blast radius is our own
+ * revenue, capped by requiring a real expo tide inside its own time window.
+ * Do not "fix" this by trusting a client-supplied zone flag; fix it by building
+ * real geofencing (deferred — see BOOTH_BUILD_SPEC.md §8).
+ */
+async function verifyEventFeeEligibility(tideId, sellerWallet) {
+  if (!tideId || !sellerWallet) return null;
+  try {
+    const { data: attendee } = await supabase
+      .from("tide_attendees")
+      .select("tide_id, rsvp_status")
+      .eq("tide_id", tideId)
+      .ilike("wallet_address", String(sellerWallet).toLowerCase())
+      .maybeSingle();
+    if (!attendee || attendee.rsvp_status !== "checked_in") return null;
+
+    const { data: tide } = await supabase
+      .from("tides")
+      .select("id, tide_type, start_time, end_time, status")
+      .eq("id", tideId)
+      .maybeSingle();
+    if (!tide || tide.tide_type !== "expo") return null;
+    if (tide.status === "cancelled") return null;
+
+    const now = Date.now();
+    const start = Date.parse(tide.start_time);
+    const end = Date.parse(tide.end_time);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+    if (now < start || now > end) return null;
+
+    return tide.id;
+  } catch (err) {
+    // Fail closed on the discount: a lookup problem must never grant a cheaper rate.
+    console.warn("[FeePolicy] event verification failed, using standard rate:", err?.message);
+    return null;
+  }
+}
 // Buyer-paid Stripe processing fee (grossed up so the platform nets goods+shipping).
 // US card default is 2.9% + $0.30; the 4% platform margin absorbs cross-border delta.
 const STRIPE_FEE_RATE = 0.029;
@@ -3190,35 +3550,72 @@ async function handleCreateCheckout(req, res) {
     });
   }
 
-  // Checkout ownership is an authorization boundary. Require a verified Privy
-  // session and derive the buyer from it before any seller lookup, inventory
-  // reservation, or Stripe session creation. The body wallet remains only a
-  // compatibility assertion; it can never choose settlement ownership.
-  const checkoutAuth = await verifyPrivyToken(req);
-  if (respondToPrivyConfigurationFailure(checkoutAuth, res)) return;
+  // Checkout ownership is an authorization boundary. Two identities are accepted:
+  //
+  //   • GUEST (no login): body { guest:true, email }, no Authorization header.
+  //     Funds are still captured and HELD in escrow; the order is tracked by an
+  //     unguessable guest_ref (emailed to the buyer) and RELEASED to the seller
+  //     when the SELLER confirms the in-person handoff. A guest has no wallet
+  //     and no on-chain buyer identity — allowed only for local-pickup / batch
+  //     orders (NFT-free / deferred settlement).
+  //
+  //   • ACCOUNT: a verified Privy session; the buyer is derived from the token
+  //     (the body wallet is only a compatibility assertion and can never choose
+  //     settlement ownership).
+  const authHeader = req.headers["authorization"] || req.headers["Authorization"];
+  const wantsGuest =
+    (req.body.guest === true || String(claimedBuyerWallet).toLowerCase() === "guest") && !authHeader;
 
-  if (!checkoutAuth.verified) {
-    return res.status(401).json({
-      error: checkoutAuth.error || "Sign in before checkout.",
-      code: "ACCOUNT_REQUIRED_FOR_CHECKOUT",
-    });
-  }
-  if (!checkoutAuth.walletAddress) {
-    return res.status(401).json({
-      error: "Your session has no linked account address.",
-      code: "CHECKOUT_WALLET_REQUIRED",
-    });
-  }
+  let buyerWallet;
+  let buyerUserId = null;
+  let isGuestPurchase = false;
+  let buyerEmail = null;
+  let guestRef = null;
 
-  const buyerWallet = checkoutAuth.walletAddress.toLowerCase();
-  if (String(claimedBuyerWallet).toLowerCase() !== buyerWallet) {
-    return res.status(403).json({
-      error: "Checkout can only be created for your signed-in account.",
-      code: "CHECKOUT_BUYER_MISMATCH",
-    });
+  if (wantsGuest) {
+    buyerEmail = String(req.body.email || "").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyerEmail)) {
+      return res.status(400).json({
+        error: "A valid email is required to check out as a guest.",
+        code: "GUEST_EMAIL_REQUIRED",
+      });
+    }
+    // Phase 1: guest checkout only for local-pickup / batch (no shipping/DOA/
+    // on-chain buyer identity). Fail closed on anything else.
+    if (purchaseType !== "pickup" && purchaseType !== "batch") {
+      return res.status(400).json({
+        error: "Guest checkout is only available for local-pickup orders. Please sign in to continue.",
+        code: "GUEST_UNSUPPORTED_TYPE",
+      });
+    }
+    isGuestPurchase = true;
+    buyerWallet = "guest";
+    guestRef = crypto.randomBytes(32).toString("hex");
+  } else {
+    const checkoutAuth = await verifyPrivyToken(req);
+    if (respondToPrivyConfigurationFailure(checkoutAuth, res)) return;
+
+    if (!checkoutAuth.verified) {
+      return res.status(401).json({
+        error: checkoutAuth.error || "Sign in before checkout.",
+        code: "ACCOUNT_REQUIRED_FOR_CHECKOUT",
+      });
+    }
+    if (!checkoutAuth.walletAddress) {
+      return res.status(401).json({
+        error: "Your session has no linked account address.",
+        code: "CHECKOUT_WALLET_REQUIRED",
+      });
+    }
+    buyerWallet = checkoutAuth.walletAddress.toLowerCase();
+    if (String(claimedBuyerWallet).toLowerCase() !== buyerWallet) {
+      return res.status(403).json({
+        error: "Checkout can only be created for your signed-in account.",
+        code: "CHECKOUT_BUYER_MISMATCH",
+      });
+    }
+    buyerUserId = checkoutAuth.userId || null;
   }
-  const buyerUserId = checkoutAuth.userId || null;
-  const isGuestPurchase = false;
 
   const SUCCESS_URL = successUrl
     || process.env.CHECKOUT_SUCCESS_URL
@@ -3299,6 +3696,8 @@ async function handleCreateCheckout(req, res) {
       sellerStripeAccountId: sellerAccount.stripe_account_id,
       isGuestPurchase: isGuestPurchase ? "true" : "false",
       ...(buyerUserId ? { buyerUserId } : {}),
+      ...(buyerEmail ? { buyerEmail } : {}),
+      ...(guestRef ? { guestRef } : {}),
     };
 
     switch (purchaseType) {
@@ -3499,12 +3898,26 @@ async function handleCreateCheckout(req, res) {
     // seller whole and the platform absorbs the discount. The processing fee is
     // grossed up on the DISCOUNTED chargeable amount so it stays exact after the
     // coupon reduces the total.
+    // ─── Fee policy (BOOTH_BUILD_SPEC.md §3) ───────────────────────────────
+    // The fee is for using the payment service. This is a CARD checkout, so the
+    // only question is whether it qualifies for the reduced event rate. Verified
+    // server-side against a real checked-in expo; anything unverified falls back
+    // to the standard rate. A request with no eventTideId produces byte-identical
+    // math to the pre-policy behaviour.
+    const verifiedEventTideId = await verifyEventFeeEligibility(req.body.eventTideId, sellerWallet);
+    const feePolicy = resolveFeePolicy({
+      rail: verifiedEventTideId ? FEE_RAIL.CARD_EVENT : FEE_RAIL.CARD,
+      eventId: verifiedEventTideId,
+      standardPercent: PLATFORM_FEE_PERCENT,
+      eventPercent: EVENT_FEE_PERCENT,
+    });
+
     const charge = computeCheckoutCharge({
       goodsPriceCents,
       shippingCents,
       discountCents,
       funding: appliedPromotion ? appliedPromotion.funding : "seller_funded",
-      feePercent: PLATFORM_FEE_PERCENT,
+      feePercent: feePolicy.feePercent,
       stripeRate: STRIPE_FEE_RATE,
       stripeFixedCents: STRIPE_FEE_FIXED_CENTS,
     });
@@ -3532,6 +3945,12 @@ async function handleCreateCheckout(req, res) {
     const transferGroup = `aqx_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     metadata.goodsTotalCents = String(totalAmountCents);
+    // Stamp the RATE and WHY, not just the resulting cents. Without these two keys
+    // a 0% or reduced-rate order is indistinguishable from a fee-calculation bug
+    // during reconciliation. Payout keeps reading sellerPayoutCents, so nothing
+    // downstream needs to know about the policy.
+    metadata.feePercent = String(feePolicy.feePercent);
+    metadata.feeReason = feePolicy.reason;
     metadata.platformFeeCents = String(platformFeeCents);
     metadata.sellerPayoutCents = String(sellerPayoutCents);
     metadata.processingFeeCents = String(processingFeeCents);
@@ -3594,10 +4013,14 @@ async function handleCreateCheckout(req, res) {
       // was created above; the fee/payout metadata already reflects the same
       // discount, so charge and payout stay in lockstep.
       ...(discounts ? { discounts } : {}),
+      // Guest checkout: capture the buyer's email on the session so Stripe sends
+      // a receipt and we have a contact handle for the order magic-link email.
+      ...(buyerEmail ? { customer_email: buyerEmail } : {}),
       payment_intent_data: {
         // No transfer_data / application_fee: funds land in the platform balance
         // and are held. The seller is paid via a later Transfer within transfer_group.
         transfer_group: transferGroup,
+        ...(buyerEmail ? { receipt_email: buyerEmail } : {}),
         metadata,
       },
       metadata,
@@ -3615,6 +4038,7 @@ async function handleCreateCheckout(req, res) {
       success: true,
       checkoutUrl: session.url,
       sessionId: session.id,
+      ...(guestRef ? { guestRef } : {}),
       goodsTotalCents: totalAmountCents,
       processingFeeCents,
       buyerTotalCents,

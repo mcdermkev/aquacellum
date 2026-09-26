@@ -18,14 +18,16 @@ export const COMPANION_ADDRESS = import.meta.env.VITE_COMPANION_ADDRESS || "0x90
 export const FOUNDER_WALLETS = [
   "0x53d3c6f4f11b0b08bc1a5034bbce7d46198b6851", // Kevin — old shared smart wallet (legacy)
   "0x9174d162ed1ab6594064fa0ffbfaf063dc20f3c6", // Kevin — per-user smart wallet (current)
-  "0x41e562ee88825ad8d79b48311a30742ac276c9eb", // Second founder — Smart wallet
+  "0x41e562ee88825ad8d79b48311a30742ac276c9eb", // Second founder — smart wallet / storefront identity
+  "0xef0931458159097a62fddd0ca798f269b5ce98f7", // Second founder — Privy embedded wallet (current)
 ];
 
 // Also match by prefix+suffix for partial-match fallback (truncated addresses)
 export const FOUNDER_WALLET_PATTERNS = [
   { prefix: "0x53d3c6", suffix: "6851" },
   { prefix: "0x4a85", suffix: "a6d3" },  // EOA (Privy embedded wallet)
-  { prefix: "0x41e562", suffix: "c9eb" }, // Second founder
+  { prefix: "0x41e562", suffix: "c9eb" }, // Second founder smart wallet
+  { prefix: "0xef0931", suffix: "98f7" }, // Second founder Privy wallet
   { prefix: "0x9174d1", suffix: "f3c6" }, // Kevin per-user smart wallet
 ];
 
