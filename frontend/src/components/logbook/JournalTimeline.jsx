@@ -100,7 +100,12 @@ export async function loadJournalEntries(tankId, tempUnit = DEFAULT_TEMP_UNIT) {
         kind: meta.kind,
         icon: meta.icon,
         title: meta.title,
-        detail: a.details || meta.detail || "",
+        // `details` can be a plain string OR a structured object (seeded
+        // "ParameterLog" rows store { temp, ph, ammonia, … } for the Reef
+        // Composer). Rendering the object straight into JSX threw React #31
+        // ("objects are not valid as a React child") and crashed the tab, so
+        // always coerce to a readable string here.
+        detail: coerceDetail(a.details, tempUnit) || meta.detail || "",
         ms: toMs(a.timestamp),
       });
     }
@@ -191,11 +196,38 @@ function inferKindFromType(t) {
     case "Scraped Algae": return "clean";
     case "Quick Water Test":
     case "Water Test":
+    case "ParameterLog":
     case "Detailed Test": return "test";
     case "Treatment": return "treatment";
     case "Observation": return "observation";
     default: return "care";
   }
+}
+
+/**
+ * Turn an action log's `details` into a string safe to render. Strings pass
+ * through; a structured reading object (e.g. seeded "ParameterLog" rows) is
+ * summarized into a "24.5°C · pH 7.2 · NH₃ 0.00 · …" line; anything else with
+ * an unknown shape returns null so it's never rendered raw.
+ */
+function coerceDetail(details, tempUnit = DEFAULT_TEMP_UNIT) {
+  if (details == null) return null;
+  if (typeof details === "string") return details;
+  if (typeof details === "object") {
+    const bits = [];
+    if (details.temp != null) bits.push(formatTemperature(Number(details.temp), tempUnit));
+    if (details.ph != null) bits.push(`pH ${Number(details.ph).toFixed(1)}`);
+    if (details.ammonia != null) bits.push(`NH₃ ${Number(details.ammonia).toFixed(2)}`);
+    if (details.nitrite != null) bits.push(`NO₂ ${Number(details.nitrite).toFixed(2)}`);
+    if (details.nitrate != null) bits.push(`NO₃ ${Number(details.nitrate).toFixed(0)}`);
+    if (details.gh != null) bits.push(`GH ${Number(details.gh).toFixed(1)}`);
+    if (details.kh != null) bits.push(`KH ${Number(details.kh).toFixed(1)}`);
+    if (details.tal != null) bits.push(`Alk ${Number(details.tal).toFixed(0)}`);
+    if (bits.length > 0) return bits.join(" · ");
+    if (typeof details.notes === "string" && details.notes.trim()) return details.notes.trim();
+    return null;
+  }
+  return String(details);
 }
 
 /** Normalize a timestamp (seconds or ms) to ms. */

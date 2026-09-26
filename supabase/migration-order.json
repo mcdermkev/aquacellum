@@ -129,6 +129,7 @@
     "supabase/migrations/20260829142000_showcase_r13_publication_api_rpc.sql",
     "supabase/migrations/20260829143000_showcase_r13_final_acl.sql",
     "frontend/supabase/migrations/20260830_guest_checkout.sql",
+    "supabase/migrations/20260830120000_morph_subspecies.sql",
     "supabase/migrations/20260830130000_showcase_r14_commerce_seam.sql",
     "supabase/migrations/20260830150000_showcase_commerce_photo.sql",
     "supabase/migrations/20260830160000_showcase_media_pipeline.sql",

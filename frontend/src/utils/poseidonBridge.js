@@ -234,7 +234,16 @@ export async function handlePoseidonAction(actionPayload) {
           nitritePpmX100: scaled(p.nitrite, 100),
           nitratePpmX100: scaled(p.nitrate, 100),
           salinitySgX10000: scaled(p.salinity, 10000),
+          // Hardness/alkalinity (local-only): dGH/dKH scaled ×10, alkalinity in ppm.
+          ghX10: scaled(p.gh ?? p.generalHardness, 10),
+          khX10: scaled(p.kh ?? p.carbonateHardness, 10),
+          talPpm: scaled(p.tal ?? p.alkalinity, 1),
         };
+        // Hardness/alkalinity are optional — drop them entirely when absent so a
+        // reading without them doesn't persist a misleading 0 in the panel.
+        for (const k of ["ghX10", "khX10", "talPpm"]) {
+          if (reading[k] == null) delete reading[k];
+        }
 
         const hasAnyReading = Object.values(reading).some((v) => v != null);
         if (!targetTankId || !hasAnyReading) {

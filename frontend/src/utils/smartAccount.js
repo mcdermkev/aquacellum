@@ -24,10 +24,18 @@ import { ethers } from "ethers";
 // Network constants
 // ---------------------------------------------------------------------------
 export const BASE_SEPOLIA_CHAIN_ID = 84532;
-export const BASE_SEPOLIA_RPC_URL  = "https://base-sepolia-rpc.publicnode.com";
+export const BASE_SEPOLIA_RPC_URL  = "https://sepolia.base.org";
 
 /**
- * Fallback RPC endpoints, in priority order (higher rate limits first).
+ * Fallback RPC endpoints, in priority order. `getProvider()` builds a
+ * FallbackProvider with quorum 1, so priority-1 is tried FIRST on every read.
+ *
+ * `sepolia.base.org` (Base's own endpoint, and what VITE_RPC_URL already points
+ * at) is primary. `publicnode.com` is demoted to LAST RESORT: it now aggressively
+ * rate-limits (HTTP 429), and while it was priority-1 every read hit it first and
+ * 429'd before falling back — a steady stream of console errors (the 30s event-log
+ * poll alone is 6 filters, so ~6 failures per cycle) that buried the console and
+ * slowed reads. It stays in the list only as a third fallback.
  *
  * ⚠️ EVERY ENTRY MUST SEND CORS HEADERS. These are called from the browser, so an
  * endpoint without `Access-Control-Allow-Origin` cannot work here at all — no
@@ -49,9 +57,9 @@ export const BASE_SEPOLIA_RPC_URL  = "https://base-sepolia-rpc.publicnode.com";
  * Checked 2026-08-16: all three below return an ACAO header and chainId 84532.
  */
 const RPC_ENDPOINTS = [
-  "https://base-sepolia-rpc.publicnode.com",
-  "https://sepolia.base.org", // Base's own public endpoint
+  "https://sepolia.base.org",                // Base's own public endpoint — primary
   "https://base-sepolia.drpc.org",
+  "https://base-sepolia-rpc.publicnode.com", // last resort: aggressively rate-limits (429)
 ];
 
 export const BASE_SEPOLIA_CHAIN_PARAMS = {

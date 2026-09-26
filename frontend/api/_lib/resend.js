@@ -184,3 +184,63 @@ export function unsubscribeHeaders(unsubscribeUrl) {
   if (!unsubscribeUrl) return undefined;
   return { "List-Unsubscribe": `<${unsubscribeUrl}>` };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Morph curation — transactional (not retention). See
+// docs/MORPH_SUBSPECIES_PROMOTION_SPEC.md §7.
+//
+//   kind='submitted' → to curators: a new morph awaits review.
+//   kind='verified'  → to submitter: their morph passed review.
+//   kind='promoted'  → to submitter: their morph is now a sub-species/strain.
+//   kind='rejected'  → to submitter: their morph was not accepted.
+// ─────────────────────────────────────────────────────────────────────────────
+export function morphReviewTemplate({ kind, morphName, baseSpecies }) {
+  const name = morphName || "a morph";
+  const base = baseSpecies || "its species";
+  const morphsUrl = `${APP_URL}/app/breeder?section=morphs`;
+
+  if (kind === "submitted") {
+    return {
+      subject: `🎨 New morph awaiting review: ${name}`,
+      html: wrapEmail(
+        `<p>A new morph is queued for curator review:</p>
+         <p><strong>${name}</strong> — ${base}</p>
+         <p>You're receiving this because you're a morph curator. Review it, verify the photo, and (if it holds up) promote it to a sub-species.</p>
+         ${ctaButton("Review the queue", morphsUrl)}`,
+        { previewText: `${name} (${base}) is awaiting review.` }
+      ),
+    };
+  }
+  if (kind === "verified") {
+    return {
+      subject: `✅ Your morph "${name}" was verified`,
+      html: wrapEmail(
+        `<p>Good news — a curator verified <strong>${name}</strong> (${base}).</p>
+         <p>It may be promoted to a registered sub-species next. You can track its status any time.</p>
+         ${ctaButton("View your submissions", morphsUrl)}`,
+        { previewText: `${name} passed curator review.` }
+      ),
+    };
+  }
+  if (kind === "promoted") {
+    return {
+      subject: `🐟 "${name}" is now a registered sub-species`,
+      html: wrapEmail(
+        `<p><strong>${name}</strong> is now a registered strain of ${base}, live in the catalog.</p>
+         <p>It can be added to tanks and referenced in listings and lineage like any other species.</p>
+         ${ctaButton("See it in the catalog", morphsUrl)}`,
+        { previewText: `${name} is now a registered strain of ${base}.` }
+      ),
+    };
+  }
+  // rejected
+  return {
+    subject: `Your morph "${name}" was not accepted`,
+    html: wrapEmail(
+      `<p>A curator reviewed <strong>${name}</strong> (${base}) and it wasn't accepted this time.</p>
+       <p>You can refine the details or evidence photo and submit again.</p>
+       ${ctaButton("View your submissions", morphsUrl)}`,
+      { previewText: `${name} was not accepted.` }
+    ),
+  };
+}

@@ -30,7 +30,7 @@ if (import.meta.env.DEV && typeof window !== "undefined") {
  *   facility?, room?, rack?, latestLog?, specimens?: [{ id?, speciesId, commonName,
  *   scientificName?, gender?, status? }], schedules?: [{ kind, cadenceDays?,
  *   lastDoneAt?, nextDueAt?, enabled? }], readings?: [{ timestamp?, temp?, ph?,
- *   ammonia?, nitrite?, nitrate?, source?, notes? }] }
+ *   ammonia?, nitrite?, nitrate?, gh?, kh?, tal?, source?, notes? }] }
  * @param {Array<object>} [fixture.unassignedSpecimens] nursery fixtures: same
  *   per-specimen shape as above, written with currentTankId 0.
  * @returns {Promise<{ tankIds: number[] }>}
@@ -98,6 +98,9 @@ async function seedForE2E(fixture = {}) {
         ammonia: r.ammonia,
         nitrite: r.nitrite,
         nitrate: r.nitrate,
+        gh: r.gh,
+        kh: r.kh,
+        tal: r.tal,
         source: r.source || "manual",
         notes: r.notes || "",
       });

@@ -71,19 +71,29 @@ export const CONTAINMENT_TYPES = ["Tank", "Tub", "Basket"];
 /** Nitrogen-cycle safety limits (ppm). Universal across freshwater tank types. */
 export const NITROGEN_LIMITS = { ammoniaMax: 0.05, nitriteMax: 0.05, nitrateMax: 20.0 };
 
-/** Temp (°C) and pH safe ranges by tankType index. Index 1 falls back to FW. */
+// ─── Hardness & alkalinity ideal ranges ─────────────────────────────────────
+// GH (general hardness) and KH (carbonate hardness) are reported in degrees
+// (dGH / dKH); TAL (total alkalinity) in ppm as CaCO₃. These round out the
+// most commonly-tested freshwater traits alongside temp/pH/nitrogen. Ranges are
+// carried per tankType in WATER_ENVELOPES below so brackish/pond can differ.
+
+/** Temp (°C), pH, hardness (dGH/dKH) and alkalinity (ppm) safe ranges by
+ *  tankType index. Index 1 falls back to FW. */
 const WATER_ENVELOPES = {
-  0: { tempMin: 22.0, tempMax: 26.0, phMin: 6.5, phMax: 7.8 }, // Freshwater
-  2: { tempMin: 22.0, tempMax: 28.0, phMin: 7.2, phMax: 8.2 }, // Brackish
-  3: { tempMin: 10.0, tempMax: 28.0, phMin: 6.8, phMax: 8.0 }, // Pond
+  // Freshwater
+  0: { tempMin: 22.0, tempMax: 26.0, phMin: 6.5, phMax: 7.8, ghMin: 4.0, ghMax: 12.0, khMin: 3.0, khMax: 8.0, talMin: 50.0, talMax: 140.0 },
+  // Brackish
+  2: { tempMin: 22.0, tempMax: 28.0, phMin: 7.2, phMax: 8.2, ghMin: 12.0, ghMax: 20.0, khMin: 8.0, khMax: 15.0, talMin: 140.0, talMax: 260.0 },
+  // Pond
+  3: { tempMin: 10.0, tempMax: 28.0, phMin: 6.8, phMax: 8.0, ghMin: 5.0, ghMax: 15.0, khMin: 4.0, khMax: 10.0, talMin: 70.0, talMax: 180.0 },
 };
 
 /**
- * Full safe envelope for a tankType: temp/pH ranges + nitrogen limits.
- * Unknown or reserved indices (incl. legacy saltwater = 1) fall back to
- * the Freshwater envelope.
+ * Full safe envelope for a tankType: temp/pH ranges + hardness/alkalinity
+ * ranges + nitrogen limits. Unknown or reserved indices (incl. legacy
+ * saltwater = 1) fall back to the Freshwater envelope.
  * @param {number} tankType
- * @returns {{tempMin:number,tempMax:number,phMin:number,phMax:number,ammoniaMax:number,nitriteMax:number,nitrateMax:number}}
+ * @returns {{tempMin:number,tempMax:number,phMin:number,phMax:number,ghMin:number,ghMax:number,khMin:number,khMax:number,talMin:number,talMax:number,ammoniaMax:number,nitriteMax:number,nitrateMax:number}}
  */
 export function getWaterEnvelope(tankType) {
   const base = WATER_ENVELOPES[Number(tankType)] || WATER_ENVELOPES[0];
@@ -93,8 +103,8 @@ export function getWaterEnvelope(tankType) {
 /**
  * Evaluate a normalized reading against a tank's envelope.
  * @param {number} tankType
- * @param {{temp?:number, ph?:number, ammonia?:number, nitrite?:number, nitrate?:number}} r
- * @returns {{flags:string[], tempOk:boolean, phOk:boolean, ammoniaOk:boolean, nitriteOk:boolean, nitrateOk:boolean}}
+ * @param {{temp?:number, ph?:number, ammonia?:number, nitrite?:number, nitrate?:number, gh?:number, kh?:number, tal?:number}} r
+ * @returns {{flags:string[], tempOk:boolean, phOk:boolean, ammoniaOk:boolean, nitriteOk:boolean, nitrateOk:boolean, ghOk:boolean, khOk:boolean, talOk:boolean}}
  */
 export function evaluateReading(tankType, r = {}) {
   const env = getWaterEnvelope(tankType);
@@ -106,12 +116,18 @@ export function evaluateReading(tankType, r = {}) {
   const ammoniaOk = !has(r.ammonia) || Number(r.ammonia) <= env.ammoniaMax;
   const nitriteOk = !has(r.nitrite) || Number(r.nitrite) <= env.nitriteMax;
   const nitrateOk = !has(r.nitrate) || Number(r.nitrate) <= env.nitrateMax;
+  const ghOk = !has(r.gh) || isInsideEnvelope(Number(r.gh), env.ghMin, env.ghMax);
+  const khOk = !has(r.kh) || isInsideEnvelope(Number(r.kh), env.khMin, env.khMax);
+  const talOk = !has(r.tal) || isInsideEnvelope(Number(r.tal), env.talMin, env.talMax);
 
   if (!tempOk) flags.push(`Temp ${Number(r.temp).toFixed(1)}°C outside ${env.tempMin}–${env.tempMax}°C`);
   if (!phOk) flags.push(`pH ${Number(r.ph).toFixed(1)} outside ${env.phMin}–${env.phMax}`);
   if (!ammoniaOk) flags.push(`High ammonia (${Number(r.ammonia).toFixed(2)} ppm)`);
   if (!nitriteOk) flags.push(`High nitrite (${Number(r.nitrite).toFixed(2)} ppm)`);
   if (!nitrateOk) flags.push(`High nitrate (${Number(r.nitrate).toFixed(1)} ppm)`);
+  if (!ghOk) flags.push(`GH ${Number(r.gh).toFixed(1)} dGH outside ${env.ghMin}–${env.ghMax}`);
+  if (!khOk) flags.push(`KH ${Number(r.kh).toFixed(1)} dKH outside ${env.khMin}–${env.khMax}`);
+  if (!talOk) flags.push(`Alkalinity ${Number(r.tal).toFixed(0)} ppm outside ${env.talMin}–${env.talMax}`);
 
-  return { flags, tempOk, phOk, ammoniaOk, nitriteOk, nitrateOk };
+  return { flags, tempOk, phOk, ammoniaOk, nitriteOk, nitrateOk, ghOk, khOk, talOk };
 }

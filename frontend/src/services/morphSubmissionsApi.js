@@ -7,15 +7,44 @@
  * `{ data, error }` rather than throwing.
  *
  * Reads + inserts are client-side via the shared `supabase` client. Status
- * flips (pending → verified/rejected) are privileged and go through the
- * service-role route `/api/update-morph-status`, which verifies the caller is
- * the on-chain curator — RLS can't express that because "curator" has no
- * Supabase JWT claim.
+ * flips (verify/reject) and promotion to a sub-species are privileged and go
+ * through the service-role routes `/api/validate-xp?action=review-morph` and
+ * `?action=promote-morph`, which verify the caller holds a curation role
+ * (founder/curator) via a Privy token — RLS can't express that because those
+ * roles have no Supabase JWT claim.
  *
  * Table: morph_submissions (see supabase/migrations/20260628_morph_submissions.sql)
  */
 
 import { supabase, getCurrentWallet, isSupabaseConfigured } from "./supabaseClient";
+
+// ── Auth bridge ──────────────────────────────────────────────────────────────
+// review/promote/notify hit privileged server routes that derive the acting
+// wallet from a Privy token, never from the body. Same `setSessionTokenGetter`
+// pattern as speciesCurationApi.js / reviewsApi.js, registered in AuthContext.
+let _sessionTokenGetter = null;
+
+/** Register the session-token getter (e.g. Privy getAccessToken). Pass null to clear. */
+export function setSessionTokenGetter(getter) {
+  _sessionTokenGetter = typeof getter === "function" ? getter : null;
+}
+
+async function getSessionToken() {
+  if (!_sessionTokenGetter) return null;
+  try {
+    return (await _sessionTokenGetter()) || null;
+  } catch (err) {
+    console.warn("[MorphSubmissions] Could not resolve session token:", err.message);
+    return null;
+  }
+}
+
+async function authHeaders() {
+  const headers = { "Content-Type": "application/json" };
+  const token = await getSessionToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  return headers;
+}
 
 /**
  * Submit a new morph for curator verification.
@@ -80,12 +109,12 @@ export async function getAllMorphSubmissions({ limit = 200 } = {}) {
  * endpoint, which re-checks that `callerWallet` is the on-chain curator before
  * writing. The UI should still gate visibility with the same curator check.
  */
-export async function reviewMorphSubmission({ id, status, callerWallet, note }) {
+export async function reviewMorphSubmission({ id, status, note }) {
   try {
     const res = await fetch("/api/validate-xp?action=review-morph", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status, callerWallet, note }),
+      headers: await authHeaders(),
+      body: JSON.stringify({ id, status, note }),
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -94,6 +123,46 @@ export async function reviewMorphSubmission({ id, status, callerWallet, note }) 
     return { data: body.data, error: null };
   } catch (err) {
     return { data: null, error: err.message || "Network error" };
+  }
+}
+
+/**
+ * Curator promote: turn a verified morph into an on-chain sub-species/strain.
+ * Server-role endpoint re-verifies the caller is a curator (founder/curator
+ * role via Privy), that the row is 'verified', resolves the base species,
+ * signs addSpecies with the curator key, and records the off-chain parent link.
+ */
+export async function promoteMorphSubmission({ id }) {
+  try {
+    const res = await fetch("/api/validate-xp?action=promote-morph", {
+      method: "POST",
+      headers: await authHeaders(),
+      body: JSON.stringify({ id }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { data: null, error: body.error || `Request failed (${res.status})` };
+    }
+    return { data: body, error: null };
+  } catch (err) {
+    return { data: null, error: err.message || "Network error" };
+  }
+}
+
+/**
+ * Best-effort: ask the server to email the curators that a new morph is queued.
+ * The in-app bell is fired by a DB trigger regardless; this only adds email and
+ * must never block or fail the submission flow.
+ */
+export async function notifyMorphSubmitted(id) {
+  try {
+    await fetch("/api/validate-xp?action=notify-morph", {
+      method: "POST",
+      headers: await authHeaders(),
+      body: JSON.stringify({ id }),
+    });
+  } catch {
+    /* non-fatal */
   }
 }
 

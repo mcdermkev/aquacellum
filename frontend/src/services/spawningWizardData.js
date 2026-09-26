@@ -145,6 +145,7 @@ function scaled(value, divisor, digits) {
  * @param {object|null} log
  * @returns {{temp: string|null, ph: string|null, ammonia: string|null,
  *            nitrite: string|null, nitrate: string|null,
+ *            gh: string|null, kh: string|null, tal: string|null,
  *            timestamp: number|null} | null}
  */
 export function parameterSnapshotFromLog(log) {
@@ -157,10 +158,13 @@ export function parameterSnapshotFromLog(log) {
     ammonia: present("ammoniaPpmX100") ? scaled(log.ammoniaPpmX100, 100, 2) : scaled(log.ammonia, 1, 2),
     nitrite: present("nitritePpmX100") ? scaled(log.nitritePpmX100, 100, 2) : scaled(log.nitrite, 1, 2),
     nitrate: present("nitratePpmX100") ? scaled(log.nitratePpmX100, 100, 1) : scaled(log.nitrate, 1, 1),
+    gh: present("ghX10") ? scaled(log.ghX10, 10, 1) : scaled(log.gh, 1, 1),
+    kh: present("khX10") ? scaled(log.khX10, 10, 1) : scaled(log.kh, 1, 1),
+    tal: present("talPpm") ? scaled(log.talPpm, 1, 0) : scaled(log.tal, 1, 0),
     timestamp: Number(log.timestamp) || null,
   };
 
-  const measured = [snapshot.temp, snapshot.ph, snapshot.ammonia, snapshot.nitrite, snapshot.nitrate];
+  const measured = [snapshot.temp, snapshot.ph, snapshot.ammonia, snapshot.nitrite, snapshot.nitrate, snapshot.gh, snapshot.kh, snapshot.tal];
   if (measured.every((v) => v === null)) return null;
 
   return snapshot;
