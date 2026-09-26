@@ -7,6 +7,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { CartProvider } from './contexts/CartContext'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { PwaManager } from './components/PwaManager'
+import { ShowcaseMediaProofBridge } from './components/ShowcaseMediaProofBridge'
 import { initAnalytics } from './services/analytics'
 import { installChunkErrorRecovery } from './utils/chunkErrorRecovery'
 import App from './App.jsx'
@@ -30,6 +31,10 @@ const queryClient = new QueryClient({
 })
 
 const privyAppId = import.meta.env.VITE_PRIVY_APP_ID;
+const proofParams = new URLSearchParams(window.location.search);
+const suppressPwaForApprovedRoomCreation = import.meta.env.VITE_SHOWCASE_MEDIA_PROOF_ENABLED === 'true'
+  && proofParams.get('showcase-media-proof') === '1'
+  && proofParams.get('showcase-media-proof-mode') === 'create-room';
 
 // The provider tree below <PrivyProvider>. Extracted so we can mount it with or
 // without Privy: PrivyProvider requires a valid appId, so when none is
@@ -43,7 +48,8 @@ const appTree = (
         <ErrorBoundary>
           <BrowserRouter>
             <App />
-            <PwaManager />
+            {!suppressPwaForApprovedRoomCreation && <PwaManager />}
+            <ShowcaseMediaProofBridge />
           </BrowserRouter>
         </ErrorBoundary>
       </CartProvider>

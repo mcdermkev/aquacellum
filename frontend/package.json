@@ -15,9 +15,12 @@
     "seams": "node scripts/seams/report.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "proof:showcase-media": "node ops/showcase-media-live-proof.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1125.0",
+    "@aws-sdk/s3-request-presigner": "3.1125.0",
     "@ethersproject/contracts": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
     "@ethersproject/solidity": "^5.7.0",

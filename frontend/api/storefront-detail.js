@@ -123,6 +123,10 @@ export default async function handler(req, res) {
       return handleCheckSlug(req, res);
     case "discover":
       return handleDiscover(req, res);
+    case "showcase-media": {
+      const { handleShowcaseMedia } = await import("./_lib/showcaseMediaProxy.js");
+      return handleShowcaseMedia(req, res);
+    }
     case "setup":
       return handleSetup(req, res);
     // ── Task 20: Verified Structured Reviews ──
