@@ -874,6 +874,9 @@ export async function relayLogWaterParameters({
   ammoniaPpmX100,
   nitritePpmX100,
   nitratePpmX100,
+  ghX10,
+  khX10,
+  talPpm,
   notes = "",
 } = {}) {
   try {
@@ -894,6 +897,12 @@ export async function relayLogWaterParameters({
       nitratePpmX100,
       notes,
     };
+    // Hardness & alkalinity are local-only (no on-chain slot in the fixed
+    // logWaterParameters signature). Persist them to Dexie when provided so the
+    // detailed water test keeps GH/KH/total-alkalinity alongside the rest.
+    if (ghX10 !== undefined && ghX10 !== null) log.ghX10 = ghX10;
+    if (khX10 !== undefined && khX10 !== null) log.khX10 = khX10;
+    if (talPpm !== undefined && talPpm !== null) log.talPpm = talPpm;
 
     const logs = tank.logs || [];
     logs.push(log);

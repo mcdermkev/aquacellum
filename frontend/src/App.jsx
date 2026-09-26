@@ -42,6 +42,8 @@ import { FeedbackWidget } from "./components/FeedbackWidget";
 import { PoseidonGlobalWidget } from "./components/PoseidonGlobalWidget";
 import { WhatsNewModal } from "./components/WhatsNewModal";
 import { IncomingBadge } from "./components/IncomingBadge";
+import { PickupLeadBadge } from "./components/PickupLeadBadge";
+import { usePickupLeadCount } from "./hooks/usePickupLeadCount";
 import { useArrivalNudge } from "./hooks/useArrivalNudge";
 import { initGrowoutReminders } from "./utils/growoutReminders";
 import { trackEvent } from "./services/analytics";
@@ -634,6 +636,11 @@ export default function App() {
 
   // ─── Arrival Flow: track incoming specimens + nudge state ─────────────────
   const { incomingCount, hasNudge, shouldShowToast, markToastShown } = useArrivalNudge(account);
+
+  // New (untriaged) guest pickup leads → a badge on the Breeder Terminal tab so
+  // a seller notices them without opening the terminal. Gated to the same
+  // condition that surfaces the tab (authenticated seller in the storefront beta).
+  const { pickupLeadCount } = usePickupLeadCount(!!account && authenticated && isStorefrontBeta && !casualModeActive);
 
   // Show nudge toast on startup (once per 24h)
   useEffect(() => {
@@ -1629,7 +1636,7 @@ export default function App() {
             { id: "reef",      icon: "🪸",  label: casualModeActive ? "The Reef"      : "Social",        alwaysShow: true },
             { id: "settings",  icon: "⚙️", label: "Settings",                                           alwaysShow: true  },
             ...(isFounder ? [{ id: "founders", icon: "📊", label: "Founders", alwaysShow: true }] : []),
-            ...(!casualModeActive && isStorefrontBeta ? [{ id: "breeder-terminal", icon: "🧑‍🌾", label: "Breeder Terminal", alwaysShow: true }] : []),
+            ...(!casualModeActive && isStorefrontBeta ? [{ id: "breeder-terminal", icon: "🧑‍🌾", label: "Breeder Terminal", alwaysShow: true, pickupBadge: true, pickupCount: pickupLeadCount }] : []),
           ]
             .filter((t) => t.alwaysShow)
             .map((tab) => {
@@ -1666,6 +1673,11 @@ export default function App() {
                   {tab.incomingBadge && (
                     <span style={{ position: "absolute", top: "4px", right: "4px" }}>
                       <IncomingBadge count={incomingCount} hasNudge={hasNudge} />
+                    </span>
+                  )}
+                  {tab.pickupBadge && tab.pickupCount > 0 && (
+                    <span style={{ position: "absolute", top: "4px", right: "4px" }}>
+                      <PickupLeadBadge count={tab.pickupCount} />
                     </span>
                   )}
                 </button>

@@ -1,0 +1,90 @@
+{
+  "id": "the-reef",
+  "youtubeTitle": "Dive Into The Reef: Community, Events, and Live Tanks",
+  "youtubeDescription": "Explore The Reef in Aquacellum — the hub for aquarium enthusiasts. Connect with breeders, join schools, RSVP to events, and discover live tank feeds. See how The Reef brings the community together.",
+  "tags": [
+    "Aquacellum",
+    "aquarium community",
+    "fish breeding",
+    "events",
+    "live tanks",
+    "schools",
+    "mentorship",
+    "Explore tab",
+    "social feed"
+  ],
+  "chapters": [
+    {
+      "time": "0:00",
+      "label": "Welcome to The Reef"
+    },
+    {
+      "time": "0:45",
+      "label": "Your Feed and Explore Tab"
+    },
+    {
+      "time": "2:00",
+      "label": "Groups and Schools"
+    },
+    {
+      "time": "3:15",
+      "label": "Events and Tides"
+    },
+    {
+      "time": "4:30",
+      "label": "Live Tanks and Closing"
+    }
+  ],
+  "beats": [
+    {
+      "onScreen": "Wide shot of The Reef interface, Echo swimming across.",
+      "narration": "Welcome to The Reef — the heart of your aquarium community. Here, you’ll find everything from personal feeds to live tank cams.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Scrolling through My Feed: real tank posts, photos, species tags, comments.",
+      "narration": "Start with My Feed. Posts from people you follow, built around real tanks. Share snapshots, species tags, and water updates. Join conversations through comments.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Explore tab: discovery feed, nearby breeders panel, top contributors.",
+      "narration": "The Explore tab helps you discover new connections. Find breeders nearby or browse top contributors in the community.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Groups tab: club directory and school creation flow with XP-lock notice.",
+      "narration": "Looking for groups? Check out Schools. Join clubs or create your own. Starting a school unlocks with experience points.",
+      "honesty": "gated"
+    },
+    {
+      "onScreen": "School page: real-time chat, challenges, member invites.",
+      "narration": "Inside a school, connect through real-time chat. Share challenges and invite new members to join.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Events tab: calendar view, RSVP flow, event page with chat, map, swap sheet.",
+      "narration": "Events bring the community together. Browse the calendar, RSVP, and join event chats. Virtual tides include maps, swap sheets, and auction tools.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Hosting virtual tides: XP-lock notice displayed.",
+      "narration": "Hosting virtual tides unlocks with XP. Until then, join public events or auctions hosted by others.",
+      "honesty": "gated"
+    },
+    {
+      "onScreen": "Live tab: scrolling through tank-cams.",
+      "narration": "Dive into the Live tab. Explore tank-cams from aquarists around the world. Watch their ecosystems in real time.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Profile editing: avatar update and Depth Score meter visible.",
+      "narration": "Your profile reflects your journey. Update your avatar, track your Depth Score, and connect with mentors or peers.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Echo swims by as interface fades out.",
+      "narration": "The Reef grows with you. Share, connect, and discover — all from the palm of your hand.",
+      "honesty": "live"
+    }
+  ]
+}

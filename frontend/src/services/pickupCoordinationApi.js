@@ -87,6 +87,37 @@ export async function deletePickupLocation(id) {
   return request("pickup-locations", { method: "DELETE", params: { id } });
 }
 
+/**
+ * List the authenticated seller's own guest pickup inquiries (the "reserve for
+ * local pickup" leads from public showcases/listings). Seller identity is the
+ * verified session wallet — the server filters to the caller's own rows.
+ * @param {number} [limit=50]
+ * @returns {Promise<{success:boolean, inquiries?:Object[], error?:string}>}
+ */
+export async function listPickupInquiries(limit = 50) {
+  return request("pickup-inquiries", { params: { limit: String(limit) } });
+}
+
+/**
+ * Update the status of one of the authenticated seller's own pickup leads
+ * (new | seen | contacted | closed). Ownership is enforced server-side.
+ * @param {string} id
+ * @param {"new"|"seen"|"contacted"|"closed"} status
+ * @returns {Promise<{success:boolean, id?:string, status?:string, error?:string}>}
+ */
+export async function setPickupInquiryStatus(id, status) {
+  return request("pickup-inquiry-status", { method: "POST", body: { id, status } });
+}
+
+/**
+ * Count the authenticated seller's NEW (untriaged) pickup leads — the number
+ * behind the Breeder Terminal nav badge. Returns 0 when signed out / on error.
+ * @returns {Promise<{success:boolean, count?:number, error?:string}>}
+ */
+export async function countNewPickupInquiries() {
+  return request("pickup-inquiries", { params: { countOnly: "1", status: "new" } });
+}
+
 // ─── Buyer/seller: order-scoped reveal + scheduling ─────────────────────────
 
 /**

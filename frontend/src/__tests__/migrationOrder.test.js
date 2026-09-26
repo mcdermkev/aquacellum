@@ -221,3 +221,83 @@ describe("the reasoning survives in the file", () => {
     expect(raw).toMatch(/ADDING A MIGRATION/);
   });
 });
+
+
+describe("Fish Room R1.2 Tier A migration contract", () => {
+  const identityPath = "supabase/migrations/20260829110000_showcase_identity_foundation.sql";
+  const publicationPath = "supabase/migrations/20260829120000_showcase_publication_foundation.sql";
+  const projectionPath = "supabase/migrations/20260829130000_showcase_rls_projection_rpc.sql";
+  const gatedStoragePath = "frontend/supabase/migrations/20260829140000_showcase_media_storage.sql";
+
+  const identitySql = readFileSync(repoPath(identityPath), "utf8");
+  const publicationSql = readFileSync(repoPath(publicationPath), "utf8");
+  const projectionSql = readFileSync(repoPath(projectionPath), "utf8");
+
+  it("pins the authorized identity -> publication -> projection dependency order", () => {
+    const positions = [identityPath, publicationPath, projectionPath].map((path) =>
+      manifest.order.indexOf(path)
+    );
+    expect(positions.every((position) => position >= 0)).toBe(true);
+    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+  });
+
+  it("keeps the later R1.0 storage gate closed", () => {
+    expect(manifest.order).not.toContain(gatedStoragePath);
+    expect(migrationsOnDisk()).not.toContain(gatedStoragePath);
+  });
+
+  it("uses UUID principals and lifetime-qualified wallet and alias uniqueness", () => {
+    expect(identitySql).toMatch(/showcase_owner_principals[\s\S]*id uuid PRIMARY KEY DEFAULT gen_random_uuid\(\)/);
+    expect(identitySql).toMatch(/UNIQUE \(chain_id, normalized_wallet_address\)/);
+    expect(identitySql).toMatch(/UNIQUE \(entity_kind, alias_kind, namespace, value\)/);
+    expect(identitySql).toMatch(/showcase_entity_aliases_deny_delete/);
+    expect(identitySql).toMatch(/showcase_owner_wallets_address_canonical[\s\S]*\^0x\[0-9a-f\]\{40\}\$/);
+  });
+
+  it("contains the evidence-keyed transfer transaction and old-owner revocation statements", () => {
+    expect(publicationSql).toMatch(/showcase_transfer_specimen\(p_transfer_evidence_id uuid\)/);
+    expect(publicationSql).toMatch(/finality_state <> 'accepted_final'/);
+    expect(publicationSql).toMatch(/SHOWCASE_TRANSFER_OPEN_IDENTITY_CONFLICT/);
+    expect(publicationSql).toMatch(/SET current_tank_key = NULL, owner_id = transfer_row\.to_owner_id/);
+    expect(publicationSql).toMatch(/SET state = 'archived', revoked_at = now\(\), revision = revision \+ 1/);
+    expect(publicationSql).toMatch(/INSERT INTO public\.showcase_projection_invalidations/);
+    expect(publicationSql).toMatch(/committed_ownership_id = new_ownership_id/);
+  });
+
+  it("contains owner-lock, irreversible tombstone, and exact media-path guards", () => {
+    expect(identitySql.match(/FOR KEY SHARE/g)?.length).toBeGreaterThanOrEqual(7);
+    expect(publicationSql).toMatch(/pg_try_advisory_xact_lock/);
+    expect(publicationSql).toMatch(/SHOWCASE_PUBLICATION_RETRY_REQUIRED/);
+    expect(publicationSql).toMatch(/reserved_disposition = 'tombstoned'/);
+    expect(publicationSql).toMatch(/BEFORE INSERT OR UPDATE OR DELETE ON public\.showcase_room_tanks/);
+    expect(publicationSql).toMatch(/BEFORE INSERT OR UPDATE OR DELETE ON public\.showcase_specimen_settings/);
+    expect(publicationSql).toMatch(/NEW\.source_object_key NOT IN/);
+    expect(publicationSql).toMatch(/NEW\.object_key NOT IN/);
+  });
+
+  it("makes every publication and media surface private by default", () => {
+    expect(publicationSql).toMatch(/showcase_rooms[\s\S]*visibility text NOT NULL DEFAULT 'private'/);
+    expect(publicationSql).toMatch(/showcase_room_tanks[\s\S]*visibility text NOT NULL DEFAULT 'private'/);
+    expect(publicationSql).toMatch(/showcase_specimen_settings[\s\S]*visibility text NOT NULL DEFAULT 'private'/);
+    expect(publicationSql).toMatch(/showcase_media_assets[\s\S]*state text NOT NULL DEFAULT 'staging'/);
+    expect(publicationSql).toMatch(/showcase_media_attachments[\s\S]*state text NOT NULL DEFAULT 'private'/);
+  });
+
+  it("finishes with FORCE RLS, no browser policy, and only a service projection grant", () => {
+    const combined = `${identitySql}\n${publicationSql}\n${projectionSql}`;
+    expect(projectionSql).toMatch(/ALTER TABLE public\.%I FORCE ROW LEVEL SECURITY/);
+    expect(projectionSql).toMatch(/REVOKE ALL ON TABLE public\.%I FROM PUBLIC, anon, authenticated, service_role/);
+    expect(projectionSql).toMatch(/GRANT EXECUTE ON FUNCTION public\.showcase_public_room\(text, text\) TO service_role/);
+    expect(combined).not.toMatch(/CREATE\s+POLICY/i);
+    expect(combined).not.toMatch(/GRANT\s+EXECUTE[\s\S]*\sTO\s+(anon|authenticated|PUBLIC)\s*;/i);
+  });
+
+  it("keeps the public projection allowlisted and independent of legacy/private sources", () => {
+    expect(projectionSql).toMatch(/showcase_public_room\([\s\S]*normalized_room_slug text,[\s\S]*normalized_tank_slug text DEFAULT NULL/);
+    expect(projectionSql).toMatch(/SECURITY DEFINER[\s\S]*SET search_path = public, pg_temp/);
+    expect(projectionSql).toMatch(/'schemaVersion', 1/);
+    expect(projectionSql).toMatch(/octet_length\(result_json::text\) > 1048576/);
+    expect(projectionSql).not.toMatch(/\b(aquadex_tanks|aquadex_specimens|profiles|breeder_profiles|marketplace_listings|orders)\b/);
+    expect(projectionSql).not.toMatch(/jsonb_build_object\('(establishedAt|approximateSize|careFact|source_object_key|wallet_address)'/);
+  });
+});

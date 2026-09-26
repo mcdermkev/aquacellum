@@ -1,0 +1,90 @@
+{
+  "id": "fish-finder",
+  "youtubeTitle": "Find the Right Fish for Your Aquarium",
+  "youtubeDescription": "Discover compatible fish for your aquarium with Aquacellum's Fish Finder and Breed Gallery. Learn how to evaluate water parameters, tank size, and stocking levels for each species. Explore tools for casual and pro users.",
+  "tags": [
+    "aquarium",
+    "fish compatibility",
+    "freshwater fish",
+    "tank setup",
+    "fish care",
+    "species catalog",
+    "aquacellum",
+    "fish breeding",
+    "tank planning"
+  ],
+  "chapters": [
+    {
+      "time": "0:00",
+      "label": "Intro"
+    },
+    {
+      "time": "0:45",
+      "label": "Fish Finder Overview"
+    },
+    {
+      "time": "2:00",
+      "label": "Breed Gallery Features"
+    },
+    {
+      "time": "3:30",
+      "label": "Compatibility Check"
+    },
+    {
+      "time": "4:30",
+      "label": "Closing Thoughts"
+    }
+  ],
+  "beats": [
+    {
+      "onScreen": "Echo gently swims into view near a serene freshwater tank.",
+      "narration": "Finding the right fish for your aquarium can be tricky. Let’s make it simpler.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Fish Finder interface: guided chips for tank size and water parameters.",
+      "narration": "Fish Finder is a compatibility-first tool for casual aquarists. It scores species against your aquarium’s water and size.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Personal species 'dex', showing collected and wishlist fish.",
+      "narration": "You can build your own species collection and wishlist. Name search and discovery chips make it easy to explore.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Tank-context rankings with species detail cards.",
+      "narration": "Rankings show how well each fish fits your tank. Details include shortcuts to marketplace listings.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Watchlist feature grayed out with XP requirement pop-up.",
+      "narration": "Watchlists and saved searches unlock with XP or entitlement. These are gated features.",
+      "honesty": "gated"
+    },
+    {
+      "onScreen": "Breed Gallery interface: filters, AI search, and compatibility widget.",
+      "narration": "For advanced users, Breed Gallery offers detailed filters, AI search, and compatibility checks for water, tank size, and stocking level.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Compatibility widget highlighting water and tank size inputs.",
+      "narration": "The compatibility check doesn’t cover fish behavior or aggression. It focuses on water parameters and space.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Species detail sub-tabs: certificates, hatchery, listings, and tips.",
+      "narration": "Pro users also access species details like certified specimens, hatchery info, and community tips.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Echo swims back into view, playfully circling the tank.",
+      "narration": "Whether you’re just starting out or breeding, this app helps you find the perfect match for your aquarium.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Aquacellum logo and app interface with download prompt.",
+      "narration": "Explore the Fish Finder and Breed Gallery today. Download the app to get started.",
+      "honesty": "live"
+    }
+  ]
+}

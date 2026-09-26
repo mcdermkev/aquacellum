@@ -33,6 +33,13 @@ const KID = "pedigree-endpoint-test";
 let privyResult = { verified: true, userId: "did:privy:test", walletAddress: WALLET };
 vi.mock("../../api/_lib/verifyPrivyToken.js", () => ({
   verifyPrivyToken: async () => privyResult,
+  respondToPrivyConfigurationFailure: (result, res) => {
+    if (result?.code !== "PRIVY_APP_ID_MISSING" && result?.code !== "PRIVY_APP_ID_INVALID") {
+      return false;
+    }
+    res.status(503).json({ error: "Authentication service unavailable" });
+    return true;
+  },
 }));
 
 /** Minimal Vercel-shaped res that records what the handler did. */
@@ -173,6 +180,19 @@ describe("the attestation endpoint's gates", () => {
     const res = makeRes();
     await attestHandler(post({ pedigreeHash: "a".repeat(64) }), res);
     expect(res.statusCode).toBe(401);
+    privyResult = { verified: true, userId: "did:privy:test", walletAddress: WALLET };
+  });
+
+  it("reports missing Privy server configuration as 503 before attesting", async () => {
+    privyResult = {
+      verified: false,
+      code: "PRIVY_APP_ID_MISSING",
+      error: "Authentication service is not configured",
+    };
+    const res = makeRes();
+    await attestHandler(post({ pedigreeHash: "a".repeat(64), walletAddress: WALLET }), res);
+    expect(res.statusCode).toBe(503);
+    expect(res.body).toEqual({ error: "Authentication service unavailable" });
     privyResult = { verified: true, userId: "did:privy:test", walletAddress: WALLET };
   });
 

@@ -37,6 +37,9 @@ const METRICS = [
   { key: "temp", label: "Temperature", unit: null, isTemp: true, bandKey: ["tempMin", "tempMax"], decimals: 1 },
   { key: "ph", label: "pH", unit: "", bandKey: ["phMin", "phMax"], decimals: 1 },
   { key: "nitrate", label: "Nitrate", unit: "ppm", bandKey: [0, "nitrateMax"], decimals: 0 },
+  { key: "gh", label: "General Hardness (GH)", unit: "dGH", bandKey: ["ghMin", "ghMax"], decimals: 1 },
+  { key: "kh", label: "Carbonate Hardness (KH)", unit: "dKH", bandKey: ["khMin", "khMax"], decimals: 1 },
+  { key: "tal", label: "Total Alkalinity", unit: "ppm", bandKey: ["talMin", "talMax"], decimals: 0 },
 ];
 
 const DAY_SECONDS = 86400;

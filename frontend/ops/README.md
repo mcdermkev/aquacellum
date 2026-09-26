@@ -84,9 +84,31 @@ node ops/verify-curation-contract.mjs
 
 ## Environment
 
-All four read `frontend/.env` when present. `SUPABASE_URL` and
+The species-curation tools read `frontend/.env` when present. `SUPABASE_URL` and
 `SUPABASE_SERVICE_KEY` are required for everything that touches Supabase;
 `backfill` also uses `RPC_URL` and `MANAGER_ADDRESS`.
 
 Note that none of these can publish to the chain. Publication is founder-gated and
 happens only through the promote endpoint, which holds the curator key server-side.
+
+## Showcase-media live proof (dedicated Preview only)
+
+`showcase-media-live-proof.mjs` is retained as internal evidence tooling. It is not
+imported by Vite, is not a Vercel function, and has no production package script.
+It only targets the pinned dedicated proof origin and requires that deployment's
+separately reviewed proof bridge and service-worker handshake; the clean product
+bundle intentionally contains neither.
+
+The runner uses a real Privy email session and a process-only
+`VERCEL_AUTOMATION_BYPASS_SECRET`. Its `create-room` mode performs an irreversible
+one-lifetime Room mutation and must never be run without explicit Tier A approval.
+Use `preflight` for read-only inspection. A canonical `run` stages, publishes,
+checks online/offline cache denial, revokes, and restores visibility, but the
+operator remains responsible for a tightly bounded Preview enablement window and
+for revoking the bypass and restoring disabled environment state in `finally`.
+
+```powershell
+$env:VERCEL_AUTOMATION_BYPASS_SECRET = "<temporary-preview-bypass>"
+node ops/showcase-media-live-proof.mjs --mode preflight --url "https://aquacellum-showcase-proof.vercel.app"
+Remove-Item Env:VERCEL_AUTOMATION_BYPASS_SECRET
+```

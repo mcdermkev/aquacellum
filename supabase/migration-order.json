@@ -121,6 +121,17 @@
     "supabase/migrations/20260817230000_tide_recap.sql",
     "supabase/migrations/20260817231000_ensure_bid_rules_trigger.sql",
     "supabase/migrations/20260818120000_reef_trust_authority.sql",
-    "frontend/supabase/migrations/20260829_cart_merge_idempotency.sql"
+    "frontend/supabase/migrations/20260829_cart_merge_idempotency.sql",
+    "supabase/migrations/20260829110000_showcase_identity_foundation.sql",
+    "supabase/migrations/20260829120000_showcase_publication_foundation.sql",
+    "supabase/migrations/20260829130000_showcase_rls_projection_rpc.sql",
+    "supabase/migrations/20260829141000_showcase_r13_identity_api_foundation.sql",
+    "supabase/migrations/20260829142000_showcase_r13_publication_api_rpc.sql",
+    "supabase/migrations/20260829143000_showcase_r13_final_acl.sql",
+    "supabase/migrations/20260830120000_morph_subspecies.sql",
+    "supabase/migrations/20260830130000_showcase_r14_commerce_seam.sql",
+    "supabase/migrations/20260830140000_marketplace_pickup_inquiries.sql",
+    "supabase/migrations/20260830150000_showcase_commerce_photo.sql",
+    "supabase/migrations/20260830160000_showcase_media_pipeline.sql"
   ]
 }

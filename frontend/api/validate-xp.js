@@ -32,9 +32,13 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { ethers } from "ethers";
-import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
+import {
+  respondToPrivyConfigurationFailure,
+  verifyPrivyToken,
+} from "./_lib/verifyPrivyToken.js";
 import { handleCorsPreFlight } from "./_lib/cors.js";
 import { checkRateLimit } from "./_lib/rateLimiter.js";
+import { sendEmail, isResendConfigured, morphReviewTemplate } from "./_lib/resend.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || "";
@@ -135,17 +139,25 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // ── Route: ?action=review-morph → curator morph status flip ──────────────
+  // ── Morph curation routes (folded here to stay under the 12-function cap) ──
   const action = req.query?.action || req.body?.action;
   if (action === "review-morph") {
     return handleMorphReview(req, res);
+  }
+  if (action === "promote-morph") {
+    return handleMorphPromote(req, res);
+  }
+  if (action === "notify-morph") {
+    return handleMorphNotify(req, res);
   }
 
   // ── Default route: XP validation ─────────────────────────────────────────
 
   // ── Rate limit (100 XP claims/hr per user — generous but prevents scripts) ──
-  const { verified, userId, walletAddress: tokenWallet, error: authError } = await verifyPrivyToken(req);
+  const authResult = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(authResult, res)) return;
 
+  const { verified, userId, walletAddress: tokenWallet, error: authError } = authResult;
   if (!verified) {
     return res.status(401).json({ error: authError || "Authentication failed" });
   }
@@ -359,9 +371,19 @@ export default async function handler(req, res) {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MORPH REVIEW — curator-gated status flip for morph submissions.
+// MORPH CURATION — review, promote-to-sub-species, and notify.
 // Folded into validate-xp to stay within Vercel Hobby's 12-function limit.
-// Called via POST /api/validate-xp?action=review-morph
+//   POST /api/validate-xp?action=review-morph   { id, status, note? }
+//   POST /api/validate-xp?action=promote-morph  { id }
+//   POST /api/validate-xp?action=notify-morph   { id }
+//
+// Auth mirrors api/_lib/speciesCuration.js: identity comes from a Privy-verified
+// token (never a body-supplied wallet), and the curation role is re-read
+// server-side from user_roles. Two reviewers — Kevin and Steve — hold 'founder'
+// (and now 'curator'); either can act alone (single-approval, per spec §2).
+// The on-chain addSpecies is signed by RELAYER_PRIVATE_KEY (the deployer/curator
+// key), not by a reviewer's wallet.
+// See docs/MORPH_SUBSPECIES_PROMOTION_SPEC.md.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MANAGER_ADDRESS =
@@ -375,22 +397,94 @@ const RPC_URL =
   process.env.BASE_SEPOLIA_RPC_URL ||
   "";
 
-const VALID_MORPH_STATUSES = ["pending", "verified", "rejected"];
+// Correct ABI — temps are int16 (verified against the compiled artifact). The
+// species-suggestion pipeline declares these as uint16, which is a latent
+// selector mismatch; do NOT copy that here.
+const MANAGER_ABI = [
+  "function addSpecies(string scientificName, string commonName, string canonicalIpfsUri, uint8 careLevel, int16 minTempCelsiusX10, int16 maxTempCelsiusX10, uint8 minPhX10, uint8 maxPhX10) returns (uint256)",
+  "function nextSpeciesId() view returns (uint256)",
+  "function curator() view returns (address)",
+  "function speciesCatalog(uint256) view returns (uint256 speciesId, string scientificName, string commonName, string canonicalIpfsUri, uint8 careLevel, int16 minTempCelsiusX10, int16 maxTempCelsiusX10, uint8 minPhX10, uint8 maxPhX10, bool active)",
+];
 
-async function getOnChainCurator() {
-  if (!MANAGER_ADDRESS || !RPC_URL) return { error: "not_configured" };
+const CURATION_ROLES = ["founder", "curator"];
+const REVIEW_STATUSES = ["verified", "rejected"];
+
+// Privy-verified wallet, or null (after sending the response). No fallback to a
+// body-supplied wallet — the exact weakness speciesCuration.js refuses to inherit.
+async function requireVerifiedWallet(req, res) {
+  const authResult = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(authResult, res)) return null;
+  const { verified, walletAddress, error } = authResult;
+  if (!verified) {
+    res.status(401).json({ error: error || "Authentication required" });
+    return null;
+  }
+  if (!walletAddress) {
+    res.status(401).json({
+      error: "Your session has no verified wallet address. Sign out and back in, then retry.",
+    });
+    return null;
+  }
+  return walletAddress.toLowerCase();
+}
+
+// Active roles for a wallet, filtered case-insensitively in JS (profiles /
+// user_roles wallet casing is not reliably normalized — same reason as
+// speciesCuration.getActiveRoles).
+async function getActiveRoles(supabase, wallet) {
+  const { data, error } = await supabase
+    .from("user_roles")
+    .select("role, wallet_address")
+    .eq("active", true);
+  if (error) {
+    console.error("[morph] role lookup failed:", error);
+    return { roles: [], error: "Could not verify your curation role" };
+  }
+  const roles = (data || [])
+    .filter((r) => String(r.wallet_address || "").toLowerCase() === wallet)
+    .map((r) => r.role);
+  return { roles, error: null };
+}
+
+// Resolve identity + curation role in one step. Returns the wallet, or null
+// after responding.
+async function requireCurator(req, res, supabase) {
+  const wallet = await requireVerifiedWallet(req, res);
+  if (!wallet) return null;
+  const { roles, error: roleErr } = await getActiveRoles(supabase, wallet);
+  if (roleErr) {
+    res.status(500).json({ error: roleErr });
+    return null;
+  }
+  if (!roles.some((r) => CURATION_ROLES.includes(r))) {
+    res.status(403).json({ error: "Only a curator can review morph submissions." });
+    return null;
+  }
+  return wallet;
+}
+
+// Best-effort email to a wallet's profile address. Never throws.
+async function emailWalletsMorph(supabase, wallets, templateArgs) {
+  if (!isResendConfigured() || !wallets?.length) return;
   try {
-    const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
-    const contract = new ethers.Contract(
-      MANAGER_ADDRESS,
-      ["function curator() view returns (address)"],
-      provider
+    const lowered = wallets.map((w) => String(w).toLowerCase());
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("wallet_address, email")
+      .in("wallet_address", wallets);
+    // Casing may differ; also try a broad fetch filtered in JS as a fallback.
+    const emails = (profiles || [])
+      .filter((p) => p.email && lowered.includes(String(p.wallet_address).toLowerCase()))
+      .map((p) => p.email);
+    const tmpl = morphReviewTemplate(templateArgs);
+    await Promise.all(
+      [...new Set(emails)].map((to) =>
+        sendEmail({ to, subject: tmpl.subject, html: tmpl.html }).catch(() => {})
+      )
     );
-    const addr = await contract.curator();
-    return { curator: String(addr).toLowerCase() };
   } catch (err) {
-    console.error("[review-morph] curator() read failed:", err.message);
-    return { error: "rpc_failed" };
+    console.warn("[morph] email dispatch failed (non-fatal):", err.message);
   }
 }
 
@@ -400,28 +494,15 @@ async function handleMorphReview(req, res) {
     return res.status(503).json({ error: "Service not configured (missing Supabase env vars)" });
   }
 
-  const { id, status, callerWallet, note } = req.body || {};
+  const wallet = await requireCurator(req, res, supabase);
+  if (!wallet) return;
 
+  const { id, status, note } = req.body || {};
   if (!id || typeof id !== "string") {
     return res.status(400).json({ error: "id is required" });
   }
-  if (!VALID_MORPH_STATUSES.includes(status)) {
-    return res.status(400).json({ error: `status must be one of: ${VALID_MORPH_STATUSES.join(", ")}` });
-  }
-  if (!callerWallet || typeof callerWallet !== "string") {
-    return res.status(400).json({ error: "callerWallet is required" });
-  }
-
-  // Verify the caller is the on-chain curator.
-  const { curator, error: curatorErr } = await getOnChainCurator();
-  if (curatorErr === "not_configured") {
-    return res.status(503).json({ error: "Curator verification not configured (missing manager address / RPC URL)" });
-  }
-  if (curatorErr === "rpc_failed" || !curator) {
-    return res.status(502).json({ error: "Could not verify curator on-chain. Try again." });
-  }
-  if (callerWallet.toLowerCase() !== curator) {
-    return res.status(403).json({ error: "Only the curator can review morph submissions." });
+  if (!REVIEW_STATUSES.includes(status)) {
+    return res.status(400).json({ error: `status must be one of: ${REVIEW_STATUSES.join(", ")}` });
   }
 
   try {
@@ -429,7 +510,7 @@ async function handleMorphReview(req, res) {
       .from("morph_submissions")
       .update({
         status,
-        reviewer_wallet: callerWallet.toLowerCase(),
+        reviewer_wallet: wallet,
         review_note: typeof note === "string" && note.trim() ? note.trim() : null,
         reviewed_at: new Date().toISOString(),
       })
@@ -442,9 +523,271 @@ async function handleMorphReview(req, res) {
       return res.status(500).json({ error: error.message });
     }
 
+    // In-app bell to the submitter is handled by the DB trigger; add email.
+    if (data?.submitter_wallet) {
+      await emailWalletsMorph(supabase, [data.submitter_wallet], {
+        kind: status,
+        morphName: data.morph_name,
+        baseSpecies: data.base_species,
+      });
+    }
+
     return res.status(200).json({ data });
   } catch (err) {
     console.error("[review-morph] Unexpected error:", err);
     return res.status(500).json({ error: err.message });
   }
+}
+
+async function handleMorphPromote(req, res) {
+  const supabase = getSupabase();
+  if (!supabase) {
+    return res.status(503).json({ error: "Service not configured (missing Supabase env vars)" });
+  }
+
+  const wallet = await requireCurator(req, res, supabase);
+  if (!wallet) return;
+
+  const { id } = req.body || {};
+  if (!id || typeof id !== "string") {
+    return res.status(400).json({ error: "id is required" });
+  }
+
+  // ── Read the morph row; the DB decides promotability, not the caller ──────
+  const { data: morph, error: readErr } = await supabase
+    .from("morph_submissions")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (readErr) {
+    console.error("[promote-morph] read failed:", readErr);
+    return res.status(500).json({ error: "Could not load that morph." });
+  }
+  if (!morph) return res.status(404).json({ error: "Morph submission not found." });
+
+  // Idempotency: never mint a second strain for the same submission.
+  if (morph.status === "promoted") {
+    return res.status(200).json({
+      alreadyPromoted: true,
+      promotedSpeciesId: morph.promoted_species_id,
+      txHash: morph.promotion_tx_hash,
+    });
+  }
+  if (morph.status !== "verified") {
+    return res.status(409).json({
+      error: `This morph is '${morph.status}', not 'verified'. Verify it first.`,
+      status: morph.status,
+    });
+  }
+
+  const strainName = String(morph.morph_name || "").trim();
+  if (!strainName) return res.status(400).json({ error: "Morph has no name." });
+
+  // ── Resolve the base species to an on-chain speciesId via species_id_map ──
+  const baseName = String(morph.base_species || "").trim();
+  if (!baseName) return res.status(409).json({ error: "Morph has no base species." });
+
+  const contractKey = MANAGER_ADDRESS.toLowerCase();
+  const { data: baseMap, error: baseErr } = await supabase
+    .from("species_id_map")
+    .select("onchain_species_id, scientific_name")
+    .eq("contract_address", contractKey)
+    .ilike("scientific_name", baseName)
+    .maybeSingle();
+  if (baseErr) {
+    console.error("[promote-morph] base species lookup failed:", baseErr);
+    return res.status(500).json({ error: "Could not resolve the base species." });
+  }
+  if (!baseMap?.onchain_species_id) {
+    return res.status(409).json({
+      error:
+        `The base species "${baseName}" is not in the live catalog (by scientific name), ` +
+        `so a strain can't be linked to it. Add the base species first.`,
+    });
+  }
+  const baseSpeciesId = Number(baseMap.onchain_species_id);
+
+  // ── Strain dedupe — by (base, name), NOT scientific name (strains share it) ──
+  const { data: existingStrain } = await supabase
+    .from("species_strains")
+    .select("strain_species_id")
+    .eq("base_species_id", baseSpeciesId)
+    .ilike("strain_name", strainName)
+    .maybeSingle();
+  if (existingStrain?.strain_species_id) {
+    return res.status(409).json({
+      error: `"${strainName}" is already a registered strain of species #${baseSpeciesId}.`,
+      strainSpeciesId: existingStrain.strain_species_id,
+    });
+  }
+
+  // ── Signer + on-chain preflight ───────────────────────────────────────────
+  const key = process.env.RELAYER_PRIVATE_KEY;
+  if (!key) return res.status(503).json({ error: "Catalog signer is not configured." });
+
+  let signer, manager;
+  try {
+    const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+    signer = new ethers.Wallet(key, provider);
+    manager = new ethers.Contract(MANAGER_ADDRESS, MANAGER_ABI, signer);
+  } catch (err) {
+    console.error("[promote-morph] signer init failed:", err);
+    return res.status(500).json({ error: "Could not initialise the catalog signer." });
+  }
+
+  let onchainCurator, nextId, baseRecord;
+  try {
+    [onchainCurator, nextId, baseRecord] = await Promise.all([
+      manager.curator(),
+      manager.nextSpeciesId(),
+      manager.speciesCatalog(baseSpeciesId),
+    ]);
+  } catch (err) {
+    console.error("[promote-morph] chain read failed:", err);
+    return res.status(502).json({ error: "Could not reach the catalog contract." });
+  }
+
+  if (String(onchainCurator).toLowerCase() !== signer.address.toLowerCase()) {
+    console.error(`[promote-morph] signer ${signer.address} is not curator ${onchainCurator}`);
+    return res.status(503).json({
+      error: "The configured signer does not hold curator rights on the catalog contract.",
+    });
+  }
+  if (!baseRecord || !baseRecord.active) {
+    return res.status(409).json({ error: "The base species is inactive on-chain." });
+  }
+
+  // The strain inherits the base species' scientific name + care envelope; the
+  // strain name is the distinguishing common name (e.g. "Pink Sapphire — <base> line").
+  const baseCommon = String(baseRecord.commonName || baseName);
+  const strainCommonName = `${strainName} — ${baseCommon} line`.slice(0, 96);
+
+  // ── Write the catalog entry with the curator key ─────────────────────────
+  let receipt;
+  try {
+    const tx = await manager.addSpecies(
+      baseRecord.scientificName,
+      strainCommonName,
+      baseRecord.canonicalIpfsUri || "",
+      baseRecord.careLevel,
+      baseRecord.minTempCelsiusX10,
+      baseRecord.maxTempCelsiusX10,
+      baseRecord.minPhX10,
+      baseRecord.maxPhX10
+    );
+    receipt = await tx.wait();
+  } catch (err) {
+    console.error("[promote-morph] addSpecies failed:", err);
+    return res.status(502).json({
+      error: `Catalog write failed: ${err.reason || err.message || "unknown error"}`,
+    });
+  }
+
+  // addSpecies assigns sequentially; the id it consumed is the nextId we read.
+  // Re-read to confirm rather than assume, so a concurrent write can't misattribute.
+  let assignedId = Number(nextId);
+  try {
+    const after = Number(await manager.nextSpeciesId());
+    if (after !== Number(nextId) + 1) {
+      console.warn(`[promote-morph] nextSpeciesId moved ${nextId} -> ${after}; concurrent write`);
+      assignedId = after - 1;
+    }
+  } catch {
+    /* non-fatal: the tx already succeeded */
+  }
+
+  // ── Record the off-chain parent link, then flip the morph to promoted ─────
+  const { error: strainErr } = await supabase.from("species_strains").insert({
+    base_species_id: baseSpeciesId,
+    strain_species_id: assignedId,
+    morph_submission_id: id,
+    strain_name: strainName,
+    created_by: wallet,
+  });
+  if (strainErr) console.error("[promote-morph] species_strains insert failed:", strainErr);
+
+  const { data: updated, error: statusErr } = await supabase
+    .from("morph_submissions")
+    .update({
+      status: "promoted",
+      base_species_id: baseSpeciesId,
+      promoted_species_id: assignedId,
+      promotion_tx_hash: receipt.transactionHash,
+      promoted_at: new Date().toISOString(),
+      reviewer_wallet: wallet,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select()
+    .single();
+  if (statusErr) console.error("[promote-morph] status update failed:", statusErr);
+
+  // In-app bell to the submitter is handled by the DB trigger; add email.
+  if (updated?.submitter_wallet) {
+    await emailWalletsMorph(supabase, [updated.submitter_wallet], {
+      kind: "promoted",
+      morphName: strainName,
+      baseSpecies: baseName,
+    });
+  }
+
+  return res.status(200).json({
+    promotedSpeciesId: assignedId,
+    baseSpeciesId,
+    strainName,
+    commonName: strainCommonName,
+    txHash: receipt.transactionHash,
+    message: `"${strainCommonName}" is live in the catalog as a strain of ${baseName}.`,
+  });
+}
+
+// Best-effort: email the curators that a new morph awaits review. The in-app
+// bell is already fired by the DB insert trigger; this adds email only. Requires
+// the caller to be the submitter (Privy-verified) so it can't be used to spam
+// curator inboxes for arbitrary rows.
+async function handleMorphNotify(req, res) {
+  const supabase = getSupabase();
+  if (!supabase) return res.status(200).json({ ok: false, reason: "not-configured" });
+
+  const wallet = await requireVerifiedWallet(req, res);
+  if (!wallet) return;
+
+  const { id } = req.body || {};
+  if (!id || typeof id !== "string") {
+    return res.status(400).json({ error: "id is required" });
+  }
+
+  const { data: morph } = await supabase
+    .from("morph_submissions")
+    .select("id, morph_name, base_species, submitter_wallet, status")
+    .eq("id", id)
+    .maybeSingle();
+  if (!morph) return res.status(404).json({ error: "Morph submission not found." });
+  if (String(morph.submitter_wallet || "").toLowerCase() !== wallet) {
+    return res.status(403).json({ error: "You can only notify for your own submission." });
+  }
+  if (morph.status !== "pending") {
+    return res.status(200).json({ ok: true, skipped: "not-pending" });
+  }
+
+  // Curator wallets = active founders/curators.
+  const { data: roleRows } = await supabase
+    .from("user_roles")
+    .select("wallet_address, role, active")
+    .eq("active", true);
+  const curatorWallets = [
+    ...new Set(
+      (roleRows || [])
+        .filter((r) => CURATION_ROLES.includes(r.role))
+        .map((r) => r.wallet_address)
+    ),
+  ];
+
+  await emailWalletsMorph(supabase, curatorWallets, {
+    kind: "submitted",
+    morphName: morph.morph_name,
+    baseSpecies: morph.base_species,
+  });
+
+  return res.status(200).json({ ok: true, notified: curatorWallets.length });
 }

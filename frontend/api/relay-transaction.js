@@ -18,7 +18,10 @@
  */
 
 import { ethers } from "ethers";
-import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
+import {
+  respondToPrivyConfigurationFailure,
+  verifyPrivyToken,
+} from "./_lib/verifyPrivyToken.js";
 import { handleCorsPreFlight } from "./_lib/cors.js";
 import { checkRateLimit } from "./_lib/rateLimiter.js";
 
@@ -50,6 +53,8 @@ export default async function handler(req, res) {
 
   // ─── Authentication: Verify Privy access token ───────────────────────────
   const auth = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(auth, res)) return;
+
   if (!auth.verified) {
     return res.status(401).json({ error: "Unauthorized", message: auth.error });
   }

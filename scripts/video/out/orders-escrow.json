@@ -1,0 +1,96 @@
+{
+  "id": "orders-escrow",
+  "youtubeTitle": "Orders, Escrow, and Safe Handoffs in Aquacellum",
+  "youtubeDescription": "Learn how Aquacellum ensures safe buying and selling for aquarists. From escrow-protected payments to verified in-person pickups, we cover tools that keep transactions smooth and secure. Perfect for breeders and buyers alike.",
+  "tags": [
+    "aquarium app",
+    "fish breeding",
+    "escrow payments",
+    "pickup handoff",
+    "buyer tools",
+    "fish orders",
+    "safe transactions",
+    "breeder tools",
+    "aquacellum features",
+    "aquarium trading"
+  ],
+  "chapters": [
+    {
+      "time": "0:00",
+      "label": "Introduction to Safe Transactions"
+    },
+    {
+      "time": "1:10",
+      "label": "Escrow Protection for Buyers"
+    },
+    {
+      "time": "2:30",
+      "label": "Order Tracking and Handoffs"
+    },
+    {
+      "time": "4:00",
+      "label": "Pickup Coordination Features"
+    },
+    {
+      "time": "5:30",
+      "label": "Closing Thoughts"
+    }
+  ],
+  "beats": [
+    {
+      "onScreen": "Aquacellum logo animation, followed by the Orders dashboard.",
+      "narration": "Aquacellum helps aquarists buy and sell fish with confidence. Today, we’ll explore orders, escrow protection, and safe handoffs.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Highlight the Order filters: All, Active, Completed, and Disputed.",
+      "narration": "Your Orders dashboard keeps everything organized. Filter by status to see active, completed, or disputed transactions.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Show Checkout lanes: Stripe escrow, in-person pickup, batch/fry.",
+      "narration": "Checkout offers options tailored to your needs. Choose Stripe escrow for shipped orders, or coordinate in-person pickups. Batch orders are ideal for fry or large groups.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Visualize escrow protection: funds held, 3-day window, disputes, DOA claims.",
+      "narration": "Escrow keeps your payment secure. Funds are held until arrival, with a three-day safety window for disputes or dead-on-arrival claims.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Show map/address and propose-a-time tools for pickups.",
+      "narration": "For in-person pickups, coordinate easily. Share a pickup location, propose times, and confirm your arrival.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Demonstrate PIN/QR handshake process.",
+      "narration": "Verified handoffs use a PIN or QR code. Both parties confirm the exchange, ensuring a secure transfer.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Highlight buyer insights and XP progress (blur gated areas).",
+      "narration": "Track your progress with buyer insights and XP. Analytics and reorder tools unlock as you gain experience.",
+      "honesty": "gated"
+    },
+    {
+      "onScreen": "Show Incoming/Transit dashboard with tracking numbers.",
+      "narration": "When items ship, the Incoming dashboard keeps track. View tracking numbers and prepare for their arrival.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Demonstrate Acclimation checklist and Confirm Arrival flow.",
+      "narration": "Use the acclimation checklist to guide new arrivals safely into their tanks. Confirm arrival to assign them and complete the process.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Close with a buyer leaving a review from the receipt screen.",
+      "narration": "Once your order is complete, leave a review. Feedback helps breeders improve and builds trust in the community.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Aquacellum logo and tagline fade-out.",
+      "narration": "Aquacellum makes buying and selling fish safer and simpler. Explore your Orders today.",
+      "honesty": "live"
+    }
+  ]
+}

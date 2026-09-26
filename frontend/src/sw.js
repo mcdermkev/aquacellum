@@ -90,11 +90,20 @@ registerRoute(
   })
 );
 
+// ── Revocable Room media: never enter Cache Storage ────────────────────────
+// This rule MUST precede the generic image matcher. Database authorization is
+// recomputed on every request, so offline/stale bytes must never outlive unpublish.
+registerRoute(
+  ({ url }) => url.pathname.startsWith("/api/showcase-media/"),
+  new NetworkOnly()
+);
+
 // ── Images (local /public assets + external species/CDN images) ─────────────
 // StaleWhileRevalidate: cached images load instantly, but updated photos
 // (e.g. wikimedia replacements) propagate on next visit without manual purge.
 registerRoute(
-  ({ request }) => request.destination === "image",
+  ({ request, url }) => request.destination === "image"
+    && !url.pathname.startsWith("/api/"),
   new StaleWhileRevalidate({
     cacheName: "images",
     plugins: [

@@ -120,6 +120,13 @@ describe("accepting an image", () => {
 
 vi.mock("../../api/_lib/verifyPrivyToken.js", () => ({
   verifyPrivyToken: vi.fn(),
+  respondToPrivyConfigurationFailure: (result, res) => {
+    if (result?.code !== "PRIVY_APP_ID_MISSING" && result?.code !== "PRIVY_APP_ID_INVALID") {
+      return false;
+    }
+    res.status(503).json({ error: "Authentication service unavailable" });
+    return true;
+  },
 }));
 
 const { verifyPrivyToken } = await import("../../api/_lib/verifyPrivyToken.js");
@@ -148,6 +155,19 @@ function fakeRes() {
 describe("who may spend money on a vision call", () => {
   beforeEach(() => {
     vi.mocked(verifyPrivyToken).mockReset();
+  });
+
+  it("reports missing server trust configuration as 503, not a sign-in failure", async () => {
+    vi.mocked(verifyPrivyToken).mockResolvedValue({
+      verified: false,
+      code: "PRIVY_APP_ID_MISSING",
+      error: "Authentication service is not configured",
+    });
+    const res = fakeRes();
+
+    expect(await requireAccount({ headers: {} }, res)).toBeNull();
+    expect(res.statusCode).toBe(503);
+    expect(res.body).toEqual({ error: "Authentication service unavailable" });
   });
 
   it("turns an anonymous caller away with a real 401", async () => {

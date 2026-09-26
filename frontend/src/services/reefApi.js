@@ -69,21 +69,6 @@ export async function ensureProfile(walletAddress, initialData = {}) {
 
   if (data) return { data, error: null };
 
-  // If direct insert failed (likely RLS), use the serverless API that has service role access
-  try {
-    const response = await fetch("/api/ensure-profile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ walletAddress: normalizedWallet, initialData }),
-    });
-    if (response.ok) {
-      const result = await response.json();
-      if (result.data) return { data: result.data, error: null };
-    }
-  } catch (apiErr) {
-    console.warn("[reefApi] ensure-profile API fallback failed:", apiErr.message);
-  }
-
   return { data: null, error: error?.message || "Profile creation failed" };
 }
 

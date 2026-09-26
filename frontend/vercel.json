@@ -22,8 +22,10 @@
     { "source": "/reef-social", "destination": "/app/reef", "permanent": false }
   ],
   "rewrites": [
+    { "source": "/api/showcase-media/:assetId/:variant", "destination": "/api/storefront-detail?action=showcase-media&asset=:assetId&variant=:variant" },
     { "source": "/checkout/success", "destination": "/checkout-success.html" },
     { "source": "/store/:path*", "destination": "/store.html" },
+    { "source": "/showcase/:path*", "destination": "/showcase.html" },
     { "source": "/species/:path*", "destination": "/species.html" },
     { "source": "/app", "destination": "/app.html" },
     { "source": "/app/:path*", "destination": "/app.html" },

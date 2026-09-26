@@ -75,9 +75,15 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { createHash } from "node:crypto";
 import { ethers } from "ethers";
 import { setCorsHeaders, handleCorsPreFlight } from "./_lib/cors.js";
-import { verifyPrivyToken } from "./_lib/verifyPrivyToken.js";
+import { checkRateLimit } from "./_lib/rateLimiter.js";
+import {
+  isPrivyConfigurationFailure,
+  respondToPrivyConfigurationFailure,
+  verifyPrivyToken,
+} from "./_lib/verifyPrivyToken.js";
 import { buildReefTrustMessage, REEF_TRUST_MAX_AGE_MS } from "../src/services/reefTrustProof.js";
 import {
   isOrderReviewable,
@@ -123,6 +129,16 @@ export default async function handler(req, res) {
       return handleCheckSlug(req, res);
     case "discover":
       return handleDiscover(req, res);
+    case "showcase-room":
+      return handleShowcaseRoom(req, res);
+    case "showcase-media":
+      return handleShowcaseMedia(req, res);
+    case "pickup-inquiry":
+      return handlePickupInquiry(req, res);
+    case "pickup-inquiries":
+      return handlePickupInquiries(req, res);
+    case "pickup-inquiry-status":
+      return handlePickupInquiryStatus(req, res);
     case "setup":
       return handleSetup(req, res);
     // ── Task 20: Verified Structured Reviews ──
@@ -494,6 +510,360 @@ async function handleDiscover(req, res) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// ACTION: showcase-room  (Showcase Public Window — P1)
+// GET /api/storefront-detail?action=showcase-room&room=<room-slug>[&tank=<tank-slug>]
+//
+// The sole PUBLIC (anonymous) reader for a published Fish Room. It is deliberately
+// thin: every visibility / verification / open-conflict / bounds decision belongs to
+// the SECURITY DEFINER projection RPC `public.showcase_public_room(text, text)`, which
+// returns NULL for anything not publicly viewable. This router runs on the service key,
+// and that RPC is granted to service_role only (see
+// supabase/migrations/20260829130000_showcase_rls_projection_rpc.sql), so the call site
+// needs no new grant and no new Vercel function (frontend/api is at the 12-function cap).
+//
+// Non-enumeration is the contract: a NULL projection — whether the room is private,
+// missing, unpublished, or conflict-blocked — is an IDENTICAL 404. The only normalization
+// applied here is trim + lowercase (slugs are stored lowercase); the RPC still validates
+// the slug shape and returns NULL for anything malformed.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function handleShowcaseRoom(req, res) {
+  setCorsHeaders(req, res, { methods: "GET, OPTIONS" });
+  if (req.method === "OPTIONS") return res.status(204).end();
+
+  if (req.method !== "GET") {
+    res.setHeader("Allow", "GET, OPTIONS");
+    return res.status(405).json({ error: "method_not_allowed" });
+  }
+
+  const rawRoom = typeof req.query.room === "string" ? req.query.room.trim() : "";
+  if (!rawRoom) {
+    return res.status(400).json({ error: "invalid_request" });
+  }
+  const room = rawRoom.toLowerCase();
+  const rawTank = typeof req.query.tank === "string" ? req.query.tank.trim() : "";
+  const tank = rawTank ? rawTank.toLowerCase() : null;
+
+  try {
+    const { data, error } = await supabase.rpc("showcase_public_room", {
+      normalized_room_slug: room,
+      normalized_tank_slug: tank,
+    });
+
+    if (error) {
+      // Never leak the upstream message; a projection fault is opaque to the caller.
+      console.error("[storefront/showcase-room] rpc error:", error.code || "error");
+      return res.status(500).json({ error: "internal_error" });
+    }
+
+    // NULL projection === not publicly viewable. Non-enumerating: same body for
+    // private / missing / unpublished / conflict-blocked.
+    if (data == null) {
+      return res.status(404).json({ error: "not_found" });
+    }
+
+    res.setHeader("Cache-Control", "private, no-store, max-age=0");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    return res.status(200).json(data);
+  } catch (err) {
+    console.error("[storefront/showcase-room] error:", err?.message);
+    return res.status(500).json({ error: "internal_error" });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ACTION: showcase-media  (private derivative proxy)
+// GET /api/showcase-media/:assetId/:variant (rewritten to this consolidated function)
+//
+// Authorization is recomputed before every Storage read. The RPC returns one exact immutable
+// object only when the Room/attachment/asset/version chain is still published. The object key and
+// signed Storage URLs are never returned to the caller, and all responses are non-cacheable.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const SHOWCASE_MEDIA_ASSET_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const SHOWCASE_MEDIA_VARIANTS = new Set(["hero", "thumb"]);
+const SHOWCASE_MEDIA_MAX_BYTES = 4 * 1024 * 1024;
+
+function setShowcaseMediaHeaders(res) {
+  res.setHeader("Cache-Control", "private, no-store, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "no-referrer");
+}
+
+async function handleShowcaseMedia(req, res) {
+  setCorsHeaders(req, res, { methods: "GET, OPTIONS" });
+  setShowcaseMediaHeaders(res);
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "GET") {
+    res.setHeader("Allow", "GET, OPTIONS");
+    return res.status(405).json({ error: "method_not_allowed" });
+  }
+
+  const assetId = typeof req.query.asset === "string" ? req.query.asset : "";
+  const variant = typeof req.query.variant === "string" ? req.query.variant : "";
+  if (!SHOWCASE_MEDIA_ASSET_RE.test(assetId) || !SHOWCASE_MEDIA_VARIANTS.has(variant)) {
+    return res.status(404).json({ error: "not_found" });
+  }
+
+  try {
+    const { data: authorization, error: authError } = await supabase.rpc(
+      "showcase_authorize_media_read",
+      { p_asset_id: assetId, p_variant: variant }
+    );
+    if (authError) {
+      console.error("[storefront/showcase-media] authorization", authError.code || "error");
+      return res.status(500).json({ error: "internal_error" });
+    }
+    if (!authorization) return res.status(404).json({ error: "not_found" });
+
+    const expectedSize = Number(authorization.byteSize);
+    const expectedMime = authorization.mime;
+    if (authorization.bucket !== "showcase-media-derivatives-v1"
+        || expectedMime !== "image/webp"
+        || !Number.isSafeInteger(expectedSize) || expectedSize < 1
+        || expectedSize > SHOWCASE_MEDIA_MAX_BYTES
+        || typeof authorization.objectKey !== "string"
+        || !/^[0-9a-f]{64}$/.test(authorization.checksumHex || "")) {
+      return res.status(500).json({ error: "internal_error" });
+    }
+
+    const { data: blob, error: downloadError } = await supabase.storage
+      .from(authorization.bucket)
+      .download(authorization.objectKey);
+    if (downloadError || !blob) return res.status(404).json({ error: "not_found" });
+    const bytes = Buffer.from(await blob.arrayBuffer());
+    if (bytes.length !== expectedSize || bytes.length > SHOWCASE_MEDIA_MAX_BYTES) {
+      return res.status(404).json({ error: "not_found" });
+    }
+    const checksum = createHash("sha256").update(bytes).digest("hex");
+    if (checksum !== authorization.checksumHex) {
+      return res.status(404).json({ error: "not_found" });
+    }
+
+    res.setHeader("Content-Type", expectedMime);
+    res.setHeader("Content-Length", String(bytes.length));
+    return res.status(200).send(bytes);
+  } catch (error) {
+    console.error("[storefront/showcase-media] error", error?.code || "error");
+    return res.status(500).json({ error: "internal_error" });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ACTION: pickup-inquiry  (Guest Pickup Inquiry — P3)
+// POST /api/storefront-detail?action=pickup-inquiry
+//
+// A casual buyer (NO account) submits a "reserve for local pickup" lead. No payment, no on-chain
+// action, no inventory hold — it is a notified lead. The seller is resolved SERVER-SIDE from the
+// listing key (never client-supplied). Rate-limited per IP and per listing; PII (name/contact) is
+// stored minimally, never echoed, never logged. The table has no anon RLS policy — this service-key
+// endpoint is the only writer.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const PICKUP_LISTING_KEY_RE = /^(single|batch)-[1-9][0-9]*$/;
+const PICKUP_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PICKUP_PHONE_RE = /^[+()\-.\s0-9]{7,40}$/;
+const PICKUP_SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+function clientIp(req) {
+  const fwd = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  return fwd || String(req.headers["x-real-ip"] || "") || "unknown";
+}
+
+async function handlePickupInquiry(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type" })) return;
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed. Use POST." });
+  }
+
+  const body = req.body || {};
+  const listingKey = String(body.listingKey || "");
+  if (!PICKUP_LISTING_KEY_RE.test(listingKey)) {
+    return res.status(400).json({ error: "invalid_request", code: "listing_key" });
+  }
+
+  // Rate limit before doing any work: per client IP (burst abuse) and per listing (spam a seller).
+  const ip = clientIp(req);
+  const ipLimit = checkRateLimit(`pickup-inquiry:ip:${ip}`, { maxRequests: 8, windowMs: 60 * 60 * 1000 });
+  const listingLimit = checkRateLimit(`pickup-inquiry:listing:${listingKey}`, { maxRequests: 40, windowMs: 60 * 60 * 1000 });
+  if (!ipLimit.allowed || !listingLimit.allowed) {
+    const resetIn = Math.max(ipLimit.allowed ? 0 : ipLimit.resetIn, listingLimit.allowed ? 0 : listingLimit.resetIn);
+    res.setHeader("Retry-After", String(resetIn));
+    return res.status(429).json({ error: "rate_limited", resetIn });
+  }
+
+  const guestName = String(body.guestName || "").trim();
+  if (guestName.length < 1 || guestName.length > 80) {
+    return res.status(400).json({ error: "invalid_request", code: "guest_name" });
+  }
+  const contactKind = String(body.contactKind || "");
+  if (contactKind !== "email" && contactKind !== "phone") {
+    return res.status(400).json({ error: "invalid_request", code: "contact_kind" });
+  }
+  const contactValue = String(body.contactValue || "").trim();
+  if (contactValue.length < 1 || contactValue.length > 120
+      || (contactKind === "email" && !PICKUP_EMAIL_RE.test(contactValue))
+      || (contactKind === "phone" && !PICKUP_PHONE_RE.test(contactValue))) {
+    return res.status(400).json({ error: "invalid_request", code: "contact_value" });
+  }
+  const message = body.message == null || body.message === "" ? null : String(body.message);
+  if (message !== null && message.length > 1000) {
+    return res.status(400).json({ error: "invalid_request", code: "message" });
+  }
+  const roomSlug = body.roomSlug == null || body.roomSlug === "" ? null : String(body.roomSlug);
+  if (roomSlug !== null && (roomSlug.length > 80 || !PICKUP_SLUG_RE.test(roomSlug))) {
+    return res.status(400).json({ error: "invalid_request", code: "room_slug" });
+  }
+
+  // Resolve the seller from the listing (active only). Reconstruct the row id from the typed key.
+  const isBatch = listingKey.startsWith("batch-");
+  const listingId = listingKey.slice(listingKey.indexOf("-") + 1);
+  const { data: listing, error: lookupErr } = await supabase
+    .from("aquadex_listings")
+    .select("seller_address")
+    .eq("id", listingId)
+    .eq("is_batch", isBatch)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (lookupErr) {
+    console.error("[pickup-inquiry] listing lookup error:", lookupErr.message);
+    return res.status(503).json({ error: "service_unavailable" });
+  }
+  if (!listing || !listing.seller_address) {
+    // Non-committal: unknown/inactive listing looks the same to the caller.
+    return res.status(404).json({ error: "listing_unavailable" });
+  }
+  const sellerAddress = String(listing.seller_address).toLowerCase();
+
+  const { error: insertErr } = await supabase.from("marketplace_pickup_inquiries").insert({
+    listing_key: listingKey,
+    seller_address: sellerAddress,
+    room_slug: roomSlug,
+    guest_name: guestName,
+    contact_kind: contactKind,
+    contact_value: contactValue,
+    message,
+  });
+  if (insertErr) {
+    console.error("[pickup-inquiry] insert error:", insertErr.message);
+    return res.status(500).json({ error: "internal_error" });
+  }
+
+  // Best-effort seller bell notification. A missing profile / any failure is ignored — the lead is
+  // already saved and the notification is a side effect, not part of the contract.
+  await supabase.rpc("dispatch_notification", {
+    p_recipient: sellerAddress,
+    p_category: "activity",
+    p_title: "🐟 New pickup request",
+    p_body: `${guestName} is interested in a local pickup.`,
+    p_icon: "🐟",
+    p_link_type: "pickup_inquiry",
+    p_link_id: listingKey,
+  }).catch(() => {});
+
+  // No PII in the response.
+  return res.status(201).json({ ok: true });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ACTION: pickup-inquiries  (seller-authenticated read of their own leads)
+// GET /api/storefront-detail?action=pickup-inquiries
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function handlePickupInquiries(req, res) {
+  setCorsHeaders(req, res, { methods: "GET, OPTIONS" });
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed. Use GET." });
+  }
+
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+
+  const statusFilter = typeof req.query.status === "string" && PICKUP_INQUIRY_STATUSES.includes(req.query.status)
+    ? req.query.status : null;
+
+  // Lightweight count mode for the nav badge — no rows/PII returned, just a number.
+  if (req.query.countOnly === "1" || req.query.countOnly === "true") {
+    let countQuery = supabase
+      .from("marketplace_pickup_inquiries")
+      .select("id", { count: "exact", head: true })
+      .eq("seller_address", wallet);
+    if (statusFilter) countQuery = countQuery.eq("status", statusFilter);
+    const { count, error } = await countQuery;
+    if (error) {
+      console.error("[pickup-inquiries] count error:", error.message);
+      return res.status(500).json({ error: "Failed to load inquiries" });
+    }
+    return res.status(200).json({ count: count || 0 });
+  }
+
+  const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+  let listQuery = supabase
+    .from("marketplace_pickup_inquiries")
+    .select("id, listing_key, room_slug, guest_name, contact_kind, contact_value, message, status, created_at")
+    .eq("seller_address", wallet);
+  if (statusFilter) listQuery = listQuery.eq("status", statusFilter);
+  const { data, error } = await listQuery
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.error("[pickup-inquiries] read error:", error.message);
+    return res.status(500).json({ error: "Failed to load inquiries" });
+  }
+  return res.status(200).json({ inquiries: data || [] });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ACTION: pickup-inquiry-status  (seller-authenticated triage of their own leads)
+// POST /api/storefront-detail?action=pickup-inquiry-status  { id, status }
+//
+// Lets a seller move a lead through new → seen → contacted → closed. Ownership is
+// enforced in the query (WHERE seller_address = <session wallet>) — the router uses
+// the service key, so the scoping is explicit here, never from the body.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const PICKUP_INQUIRY_STATUSES = ["new", "seen", "contacted", "closed"];
+
+async function handlePickupInquiryStatus(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed. Use POST." });
+  }
+
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+
+  const { id, status } = req.body || {};
+  if (typeof id !== "string" || !id) {
+    return res.status(400).json({ error: "invalid_request", code: "id" });
+  }
+  if (!PICKUP_INQUIRY_STATUSES.includes(status)) {
+    return res.status(400).json({ error: "invalid_request", code: "status" });
+  }
+
+  const { data, error } = await supabase
+    .from("marketplace_pickup_inquiries")
+    .update({ status })
+    .eq("id", id)
+    .eq("seller_address", wallet)
+    .select("id, status")
+    .maybeSingle();
+  if (error) {
+    console.error("[pickup-inquiry-status] update error:", error.message);
+    return res.status(500).json({ error: "internal_error" });
+  }
+  if (!data) {
+    // Either no such lead or it belongs to another seller — non-committal.
+    return res.status(404).json({ error: "not_found" });
+  }
+  return res.status(200).json({ ok: true, id: data.id, status: data.status });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // ACTION: setup
 // POST /api/storefront-detail?action=setup
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -713,7 +1083,12 @@ const MENTORSHIP_PROFILE_SELECT = `
 `;
 
 async function resolveReefActor(req) {
-  const { verified, userId, error } = await verifyPrivyToken(req);
+  const authResult = await verifyPrivyToken(req);
+  if (isPrivyConfigurationFailure(authResult)) {
+    return { ok: false, status: 503, error: "Authentication service unavailable" };
+  }
+
+  const { verified, userId, error } = authResult;
   if (!verified || !userId) {
     return { ok: false, status: 401, error: error || "Missing or invalid authentication" };
   }
@@ -1105,7 +1480,10 @@ function reviewRowToClient(row) {
  * requireWalletFromSession / api/cart.js's requireWallet.
  */
 async function requireReviewerWallet(req, res) {
-  const { verified, walletAddress, error } = await verifyPrivyToken(req);
+  const authResult = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(authResult, res)) return null;
+
+  const { verified, walletAddress, error } = authResult;
   if (!verified) {
     res.status(401).json({ error: error || "Missing or invalid authentication" });
     return null;
@@ -1512,7 +1890,10 @@ async function handleModerateReview(req, res) {
  * in the request.
  */
 async function requireWalletFromSession(req, res) {
-  const { verified, walletAddress, error } = await verifyPrivyToken(req);
+  const authResult = await verifyPrivyToken(req);
+  if (respondToPrivyConfigurationFailure(authResult, res)) return null;
+
+  const { verified, walletAddress, error } = authResult;
   if (!verified) {
     res.status(401).json({ error: error || "Missing or invalid authentication" });
     return null;

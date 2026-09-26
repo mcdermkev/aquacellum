@@ -333,6 +333,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   // Derive unique racks and rooms from the loaded tanks list for the bulk scope selectors
   const uniqueRacks = [...new Set(tanks.map(t => t.rack).filter(Boolean))];
   const uniqueRooms = [...new Set(tanks.map(t => t.room).filter(Boolean))];
+  // Location groups reuse the same merged/deduped list the chip bar shows
+  // (useTankGroups → mergeGroups), so bulk targeting matches the filter chips.
+  const uniqueGroups = locationGroups;
 
   // Which tanks are targeted by the current bulk scope selection
   const getBulkTargetTanks = () => {
@@ -348,11 +351,19 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       const selectedRoom = bulkRoomTarget || uniqueRooms[0];
       return tanks.filter(t => t.room === selectedRoom);
     }
+    if (bulkLogScope === "group") {
+      const selectedGroup = bulkGroupTarget || uniqueGroups[0];
+      if (!selectedGroup) return [];
+      // Membership is the tank's `facility` field — always via filterTanksByGroup,
+      // never a hand-rolled equality (case-insensitive, normalized).
+      return filterTanksByGroup(tanks, selectedGroup);
+    }
     return [];
   };
 
   const [bulkRackTarget, setBulkRackTarget] = useState("");
   const [bulkRoomTarget, setBulkRoomTarget] = useState("");
+  const [bulkGroupTarget, setBulkGroupTarget] = useState("");
 
   useEffect(() => {
     if (quickLogOpen) {
@@ -362,8 +373,32 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       if (!bulkRoomTarget && uniqueRooms.length > 0) {
         setBulkRoomTarget(uniqueRooms[0]);
       }
+      if (!bulkGroupTarget && uniqueGroups.length > 0) {
+        setBulkGroupTarget(uniqueGroups[0]);
+      }
     }
-  }, [quickLogOpen, uniqueRacks, uniqueRooms, bulkRackTarget, bulkRoomTarget]);
+  }, [quickLogOpen, uniqueRacks, uniqueRooms, uniqueGroups, bulkRackTarget, bulkRoomTarget, bulkGroupTarget]);
+
+  // Non-single scope selectors (rack/room/group) share one <select>; these
+  // resolve which target list, value, setter and label that select drives.
+  const bulkTargetOptions =
+    bulkLogScope === "rack" ? uniqueRacks
+      : bulkLogScope === "room" ? uniqueRooms
+        : bulkLogScope === "group" ? uniqueGroups
+          : [];
+  const bulkTargetValue =
+    bulkLogScope === "rack" ? bulkRackTarget
+      : bulkLogScope === "room" ? bulkRoomTarget
+        : bulkGroupTarget;
+  const setBulkTargetValue = (v) => {
+    if (bulkLogScope === "rack") setBulkRackTarget(v);
+    else if (bulkLogScope === "room") setBulkRoomTarget(v);
+    else setBulkGroupTarget(v);
+  };
+  const bulkTargetLabel =
+    bulkLogScope === "rack" ? "Target Rack"
+      : bulkLogScope === "room" ? "Target Room"
+        : "Target Group";
 
   const BULK_ACTION_LABELS = {
     feed:         { emoji: "🥣", label: "Feeding",        defaultDetail: "Routine feeding (standard diet)" },
@@ -945,6 +980,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       ammonia: lastLog?.ammoniaPpmX100 ? (lastLog.ammoniaPpmX100/100).toString() : "0.0",
       nitrite: lastLog?.nitritePpmX100 ? (lastLog.nitritePpmX100/100).toString() : "0.0",
       nitrate: lastLog?.nitratePpmX100 ? (lastLog.nitratePpmX100/100).toString() : "5.0",
+      gh: lastLog?.ghX10 ? (lastLog.ghX10/10).toString() : "8.0",
+      kh: lastLog?.khX10 ? (lastLog.khX10/10).toString() : "5.0",
+      tal: lastLog?.talPpm ? lastLog.talPpm.toString() : "80",
       notes: ""
     });
     setQuickLogMode("water_test");
@@ -1076,6 +1114,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     ammonia: "0.0",
     nitrite: "0.0",
     nitrate: "5.0",
+    gh: "8.0",
+    kh: "5.0",
+    tal: "80",
     notes: ""
   });
   const [submitting, setSubmitting] = useState(false);
@@ -1110,6 +1151,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       const ammoniaPpmX100 = Math.round(parseFloat(formData.ammonia) * 100);
       const nitritePpmX100 = Math.round(parseFloat(formData.nitrite) * 100);
       const nitratePpmX100 = Math.round(parseFloat(formData.nitrate) * 100);
+      const ghX10 = Math.round(parseFloat(formData.gh) * 10);
+      const khX10 = Math.round(parseFloat(formData.kh) * 10);
+      const talPpm = Math.round(parseFloat(formData.tal));
 
       for (const tank of targets) {
         const result = await relayLogWaterParameters({
@@ -1120,6 +1164,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
           ammoniaPpmX100,
           nitritePpmX100,
           nitratePpmX100,
+          ghX10,
+          khX10,
+          talPpm,
           notes: formData.notes,
         });
 
@@ -1136,6 +1183,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         ammonia: "0.0",
         nitrite: "0.0",
         nitrate: "5.0",
+        gh: "8.0",
+        kh: "5.0",
+        tal: "80",
         notes: ""
       });
       setQuickLogOpen(false);
@@ -1244,6 +1294,12 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const maxSafeTemp = _env.tempMax;
   const minSafePh = _env.phMin;
   const maxSafePh = _env.phMax;
+  const minSafeGh = _env.ghMin;
+  const maxSafeGh = _env.ghMax;
+  const minSafeKh = _env.khMin;
+  const maxSafeKh = _env.khMax;
+  const minSafeTal = _env.talMin;
+  const maxSafeTal = _env.talMax;
 
   // Location filter setup
   // Group CRUD + assignment. Writes go to Dexie (group list) and to the tank's
@@ -3061,6 +3117,40 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             </div>
                           </div>
                         </div>
+                        {/* Hardness & Alkalinity — only shown once a reading carries GH/KH/TAL */}
+                        {activeTank.latestLog && (activeTank.latestLog.ghX10 !== undefined || activeTank.latestLog.khX10 !== undefined || activeTank.latestLog.talPpm !== undefined) && (
+                          <div className="telemetry-tile-premium" style={{ gridColumn: "span 2" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>💎 Hardness & Alkalinity</span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem", fontSize: "0.75rem", color: "var(--text-primary)", marginTop: "0.25rem" }}>
+                              {activeTank.latestLog.ghX10 !== undefined && (
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <span>General hardness (GH):</span>
+                                  <strong style={{ color: getHslColor(activeTank.latestLog.ghX10/10, minSafeGh, maxSafeGh, 4) }}>
+                                    {(activeTank.latestLog.ghX10/10).toFixed(1)} dGH
+                                  </strong>
+                                </div>
+                              )}
+                              {activeTank.latestLog.khX10 !== undefined && (
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <span>Carbonate hardness (KH):</span>
+                                  <strong style={{ color: getHslColor(activeTank.latestLog.khX10/10, minSafeKh, maxSafeKh, 3) }}>
+                                    {(activeTank.latestLog.khX10/10).toFixed(1)} dKH
+                                  </strong>
+                                </div>
+                              )}
+                              {activeTank.latestLog.talPpm !== undefined && (
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <span>Total alkalinity:</span>
+                                  <strong style={{ color: getHslColor(activeTank.latestLog.talPpm, minSafeTal, maxSafeTal, 60) }}>
+                                    {activeTank.latestLog.talPpm} ppm
+                                  </strong>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {getChemistryAlerts(activeTank).length > 0 && (
@@ -3087,6 +3177,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                                 ammonia: "0.0",
                                 nitrite: "0.0",
                                 nitrate: "0.0",
+                                gh: activeTank.latestLog?.ghX10 ? (activeTank.latestLog.ghX10/10).toString() : "8.0",
+                                kh: activeTank.latestLog?.khX10 ? (activeTank.latestLog.khX10/10).toString() : "5.0",
+                                tal: activeTank.latestLog?.talPpm ? activeTank.latestLog.talPpm.toString() : "80",
                                 notes: "Immediate water change performed."
                               });
                               setQuickLogMode("water_test");
@@ -4052,7 +4145,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
           <div className="sliding-drawer-content" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
               <h3 style={{ fontSize: "1.5rem", color: "#fff" }}>
-                {quickLogMode === "water_test" ? "Quick Log Water Test" : `Bulk ${BULK_ACTION_LABELS[bulkLogAction]?.label || "Action"}`}
+                {quickLogMode === "water_test" ? (casualModeActive ? "Log Water Test" : "Detailed Water Test") : `Bulk ${BULK_ACTION_LABELS[bulkLogAction]?.label || "Action"}`}
               </h3>
               <button 
                 onClick={() => {
@@ -4080,6 +4173,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   { key: "single", label: "Single Tank" },
                   { key: "rack",   label: "Entire Rack" },
                   { key: "room",   label: "Entire Room" },
+                  // Only offer group scope when the keeper actually has groups.
+                  ...(uniqueGroups.length > 0 ? [{ key: "group", label: "Location Group" }] : []),
                 ].map(opt => (
                   <button
                     key={opt.key}
@@ -4126,14 +4221,14 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   ) : (
                     <>
                       <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-                        {bulkLogScope === "rack" ? "Target Rack" : "Target Room"}
+                        {bulkTargetLabel}
                       </label>
                       <select
-                        value={bulkLogScope === "rack" ? bulkRackTarget : bulkRoomTarget}
-                        onChange={(e) => bulkLogScope === "rack" ? setBulkRackTarget(e.target.value) : setBulkRoomTarget(e.target.value)}
+                        value={bulkTargetValue}
+                        onChange={(e) => setBulkTargetValue(e.target.value)}
                         style={{ width: "100%", padding: "0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
                       >
-                        {(bulkLogScope === "rack" ? uniqueRacks : uniqueRooms).map(name => (
+                        {bulkTargetOptions.map(name => (
                           <option key={name} value={name}>{name}</option>
                         ))}
                       </select>
@@ -4368,14 +4463,14 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   ) : (
                     <div>
                       <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
-                        {bulkLogScope === "rack" ? "Target Rack" : "Target Room"}
+                        {bulkTargetLabel}
                       </label>
                       <select
-                        value={bulkLogScope === "rack" ? bulkRackTarget : bulkRoomTarget}
-                        onChange={(e) => bulkLogScope === "rack" ? setBulkRackTarget(e.target.value) : setBulkRoomTarget(e.target.value)}
+                        value={bulkTargetValue}
+                        onChange={(e) => setBulkTargetValue(e.target.value)}
                         style={{ width: "100%", padding: "0.75rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
                       >
-                        {(bulkLogScope === "rack" ? uniqueRacks : uniqueRooms).map(name => (
+                        {bulkTargetOptions.map(name => (
                           <option key={name} value={name}>{name}</option>
                         ))}
                       </select>
@@ -4409,6 +4504,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               ammonia: lastLog.ammoniaPpmX100 ? (lastLog.ammoniaPpmX100/100).toString() : formData.ammonia,
                               nitrite: lastLog.nitritePpmX100 ? (lastLog.nitritePpmX100/100).toString() : formData.nitrite,
                               nitrate: lastLog.nitratePpmX100 ? (lastLog.nitratePpmX100/100).toString() : formData.nitrate,
+                              gh: lastLog.ghX10 ? (lastLog.ghX10/10).toString() : formData.gh,
+                              kh: lastLog.khX10 ? (lastLog.khX10/10).toString() : formData.kh,
+                              tal: lastLog.talPpm ? lastLog.talPpm.toString() : formData.tal,
                               notes: formData.notes,
                             });
                           }}
@@ -4517,6 +4615,88 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                         required
                         style={{ width: "100%", padding: "0.5rem", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
                       />
+                    </div>
+                  </div>
+
+                  {/* ── Hardness & alkalinity bars (GH / KH / Total Alkalinity) ── */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.25rem" }}>
+                        <span style={{ color: "var(--text-secondary)" }}>GH (dGH)</span>
+                        <strong style={{ color: isInsideEnvelope(Number(formData.gh), minSafeGh, maxSafeGh) ? "#4ade80" : "#f87171" }}>
+                          {formData.gh} {isInsideEnvelope(Number(formData.gh), minSafeGh, maxSafeGh) ? "(Ideal)" : "(Warning)"}
+                        </strong>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="30"
+                        step="0.5"
+                        value={formData.gh}
+                        onChange={(e) => setFormData({ ...formData, gh: e.target.value })}
+                        style={{
+                          width: "100%",
+                          height: "6px",
+                          borderRadius: "3px",
+                          background: getTrackBackground(0, 30, minSafeGh, maxSafeGh),
+                          outline: "none",
+                          accentColor: isInsideEnvelope(Number(formData.gh), minSafeGh, maxSafeGh) ? "#22c55e" : "#ef4444",
+                          cursor: "pointer"
+                        }}
+                      />
+                      <span style={{ fontSize: "0.6rem", color: "var(--text-muted)" }}>General hardness</span>
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.25rem" }}>
+                        <span style={{ color: "var(--text-secondary)" }}>KH (dKH)</span>
+                        <strong style={{ color: isInsideEnvelope(Number(formData.kh), minSafeKh, maxSafeKh) ? "#4ade80" : "#f87171" }}>
+                          {formData.kh} {isInsideEnvelope(Number(formData.kh), minSafeKh, maxSafeKh) ? "(Ideal)" : "(Warning)"}
+                        </strong>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="20"
+                        step="0.5"
+                        value={formData.kh}
+                        onChange={(e) => setFormData({ ...formData, kh: e.target.value })}
+                        style={{
+                          width: "100%",
+                          height: "6px",
+                          borderRadius: "3px",
+                          background: getTrackBackground(0, 20, minSafeKh, maxSafeKh),
+                          outline: "none",
+                          accentColor: isInsideEnvelope(Number(formData.kh), minSafeKh, maxSafeKh) ? "#22c55e" : "#ef4444",
+                          cursor: "pointer"
+                        }}
+                      />
+                      <span style={{ fontSize: "0.6rem", color: "var(--text-muted)" }}>Carbonate hardness</span>
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.25rem" }}>
+                        <span style={{ color: "var(--text-secondary)" }}>Alkalinity (ppm)</span>
+                        <strong style={{ color: isInsideEnvelope(Number(formData.tal), minSafeTal, maxSafeTal) ? "#4ade80" : "#f87171" }}>
+                          {formData.tal} {isInsideEnvelope(Number(formData.tal), minSafeTal, maxSafeTal) ? "(Ideal)" : "(Warning)"}
+                        </strong>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="300"
+                        step="5"
+                        value={formData.tal}
+                        onChange={(e) => setFormData({ ...formData, tal: e.target.value })}
+                        style={{
+                          width: "100%",
+                          height: "6px",
+                          borderRadius: "3px",
+                          background: getTrackBackground(0, 300, minSafeTal, maxSafeTal),
+                          outline: "none",
+                          accentColor: isInsideEnvelope(Number(formData.tal), minSafeTal, maxSafeTal) ? "#22c55e" : "#ef4444",
+                          cursor: "pointer"
+                        }}
+                      />
+                      <span style={{ fontSize: "0.6rem", color: "var(--text-muted)" }}>Total alkalinity (as CaCO₃)</span>
                     </div>
                   </div>
 
