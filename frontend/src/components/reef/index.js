@@ -33,7 +33,6 @@ export { TideLiveFeed } from "./TideLiveFeed";
 export { TideChat } from "./TideChat";
 export { TideMap } from "./TideMap";
 export { SwapSheet } from "./SwapSheet";
-export { AuctionPanel } from "./AuctionPanel";
 export { CreateTide } from "./CreateTide";
 export { SonarPreferences } from "./SonarPreferences";
 

@@ -113,6 +113,11 @@ const StorefrontContent = lazy(() =>
   import("./components/storefront/StorefrontPage").then((m) => ({ default: m.StorefrontContent }))
 );
 
+// Public auctions: browse, lot page + bidding, my bids/wins (docs/AUCTIONS_SPEC.md)
+const AuctionsPage = lazy(() =>
+  import("./components/auctions/AuctionsPage").then((m) => ({ default: m.AuctionsPage }))
+);
+
 function CommerceAuthRequired({ title, onSignIn }) {
   return (
     <div className="glass-card" style={{ maxWidth: "560px", margin: "2rem auto", padding: "2.5rem", textAlign: "center" }}>
@@ -1058,6 +1063,7 @@ export default function App() {
         orders: "Sign in to view your orders",
         messages: "Sign in to view your messages",
         "breeder-terminal": "Sign in to manage your storefront",
+        "auctions-mine": "Sign in to see your bids and wins",
       };
       return (
         <CommerceAuthRequired
@@ -1102,6 +1108,24 @@ export default function App() {
           identifier={commerceRoute.slug}
           embedded
           onOpenListing={handleOpenProductRoute}
+        />
+      );
+    }
+
+    if (commerceRoute?.kind === "auctions" || commerceRoute?.kind === "auction-lot" || commerceRoute?.kind === "auctions-mine") {
+      return (
+        <AuctionsPage
+          view={commerceRoute.kind}
+          lotId={commerceRoute.lotId || null}
+          signedIn={!!account && authenticated}
+          onNavigate={(path) => {
+            // Paths may carry their own query (e.g. ?status=ended); replace the
+            // auction params rather than piling them onto the current URL.
+            const [pathname, qs] = String(path).split("?");
+            const next = Object.fromEntries(new URLSearchParams(qs || ""));
+            navigateCommerce(pathname, { params: { card_saved: null, status: null, ...next } });
+          }}
+          onRequireSignIn={() => requireCommerceAuth()}
         />
       );
     }
@@ -1630,6 +1654,7 @@ export default function App() {
             { id: "gallery",   icon: "🔍",  label: casualModeActive ? "Fish Finder"   : "Breed Gallery", alwaysShow: true  },
             { id: "breeder",   icon: "🧬",  label: "Breeder Tools",                                      alwaysShow: !casualModeActive },
             { id: "directory", icon: "🛒",  label: casualModeActive ? "Breeder Store" : "Marketplace",  alwaysShow: true  },
+            { id: "auctions",  icon: "🔨",  label: "Auctions",                                           alwaysShow: true  },
             /* The "Local Sellers"/"Local Map" tab was retired (Fish Finder T15).
                Its two jobs already live where they belong: finding sellers is the
                Marketplace's job, and a pickup meetup belongs to the order that

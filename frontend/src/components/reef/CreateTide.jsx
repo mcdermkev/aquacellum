@@ -34,12 +34,9 @@ const TIDE_TYPES = [
     label: "Challenge",
     desc: "Time-boxed competition. Most spawns, best grow-out, photo contest.",
   },
-  {
-    key: "auction",
-    icon: "🔨",
-    label: "Auction",
-    desc: "Live auction for rare specimens. Real-time bidding with escrow.",
-  },
+  // "auction" was retired: auctions are standalone lots now (/app/auctions,
+  // docs/AUCTIONS_SPEC.md). The auction-lot code below is unreachable without
+  // this option and stays only until the Tide wizard is next reworked.
 ];
 
 export function CreateTide({ onSuccess, onCancel, preselectedSchoolId = null }) {

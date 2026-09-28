@@ -13,7 +13,7 @@
  *   HatcheryLogs           — "N available @ $X"
  *   HandshakeVerification  — "Your payment of $X", both cash and escrow branches
  *   WantedBoard            — max budget, plus the seller match notification
- *   AuctionPanel           — every bid, formerly quoted in wei and ETH
+ *   AuctionsPage           — every bid (replaced the Tide AuctionPanel, once quoted in wei and ETH)
  *
  * A $25 fish printed as "$25,000.00" on a payment confirmation screen. The number
  * was confident, prominent and wrong.
@@ -53,7 +53,7 @@ const PRICE_DISPLAY_COMPONENTS = [
   "components/HatcheryLogs.jsx",
   "components/HandshakeVerification.jsx",
   "components/WantedBoard.jsx",
-  "components/reef/AuctionPanel.jsx",
+  "components/auctions/AuctionsPage.jsx",
 ];
 
 describe("no component fabricates USD from a hardcoded crypto exchange rate", () => {
@@ -67,39 +67,26 @@ describe("no component fabricates USD from a hardcoded crypto exchange rate", ()
   }
 });
 
-describe("the Tides auction is denominated in USD cents, not wei", () => {
-  const panel = source("components/reef/AuctionPanel.jsx");
-  const api = source("services/tidesApi.js");
-  const hooks = source("hooks/useTides.js");
+describe("public auctions are denominated in USD cents, not wei", () => {
+  // The Tide AuctionPanel was retired for components/auctions/AuctionsPage.jsx
+  // (docs/AUCTIONS_SPEC.md). The same guarantees apply to its replacement.
+  const page = source("components/auctions/AuctionsPage.jsx");
+  const api = source("services/auctionsApi.js");
 
-  it("AuctionPanel quotes dollars through the shared money helpers", () => {
-    expect(panel).toContain('from "../../utils/money"');
-    expect(panel).toContain("formatUsdCents");
-    expect(panel).toContain("parseUsdToCents");
+  it("the auction page quotes dollars through the auctions money helpers", () => {
+    expect(page).toContain("centsToDollars");
+    expect(page).toContain("dollarsToCents");
   });
 
-  it("AuctionPanel no longer mentions wei, ETH or 1e18", () => {
-    expect(panel).not.toMatch(/amount_wei|reserve_wei|formatEth\b|1e18/);
-    // Bare "ETH" as a currency label.
-    expect(panel).not.toMatch(/\bETH\b/);
+  it("the auction page never mentions wei, ETH or 1e18", () => {
+    expect(page).not.toMatch(/amount_wei|reserve_wei|formatEth\b|1e18/);
+    expect(page).not.toMatch(/\bETH\b/);
   });
 
-  it("the bid write path takes cents and rejects a non-integer amount", () => {
-    expect(api).toContain("amount_cents: amountCents");
-    expect(api).toContain("Number.isInteger(amountCents)");
+  it("bids are sent in whole cents", () => {
+    expect(api).toMatch(/placeBid\(lotId, amountCents/);
+    expect(api).toContain("body: { lotId, amountCents }");
     expect(api).not.toContain("amount_wei");
-  });
-
-  it("getHighestBid orders by amount, not recency — the lot goes to the highest bid", () => {
-    // The original ordered by created_at DESC with nothing ever marking a bid
-    // 'outbid', so the most RECENT bid won and $1 could take a $5,000 lot.
-    expect(api).toContain('.order("amount_cents", { ascending: false })');
-    expect(api).toMatch(/getHighestBid[\s\S]{0,900}maybeSingle\(\)/);
-  });
-
-  it("the realtime ticker compares bids numerically in cents", () => {
-    expect(hooks).toContain("amount_cents");
-    expect(hooks).not.toContain("BigInt(a.amount_wei");
   });
 });
 

@@ -70,6 +70,9 @@ import { setSessionTokenGetter as setMorphSessionTokenGetter } from "../services
 import { setSessionTokenGetter as setEchoVisionSessionTokenGetter } from "../services/echoVision";
 import { setSessionTokenGetter as setAltTextSessionTokenGetter } from "../utils/altTextGenerator";
 import { setSessionTokenGetter as setShowcaseOwnerSessionTokenGetter } from "../services/showcaseOwnerApi";
+// Public auctions: bidding, listing a lot and the saved card all derive the
+// wallet from this token (docs/AUCTIONS_SPEC.md §8).
+import { setSessionTokenGetter as setAuctionsSessionTokenGetter } from "../services/auctionsApi";
 import { ensureProfile, updateProfile } from "../services/reefApi";
 import { identifyUser, resetAnalyticsIdentity, trackEvent } from "../services/analytics";
 import { isE2EMode, E2E_STUB_ACCOUNT } from "../utils/e2eMode";
@@ -547,6 +550,7 @@ function PrivyAuthProvider({ children }) {
       setAltTextSessionTokenGetter(getAccessToken);
       setShowcaseOwnerSessionTokenGetter(getAccessToken);
       setBoothSessionTokenGetter(getAccessToken);
+      setAuctionsSessionTokenGetter(getAccessToken);
       setSessionBridgeReady(true);
     } else {
       setSessionTokenGetter(null);
@@ -566,6 +570,7 @@ function PrivyAuthProvider({ children }) {
       setAltTextSessionTokenGetter(null);
       setShowcaseOwnerSessionTokenGetter(null);
       setBoothSessionTokenGetter(null);
+      setAuctionsSessionTokenGetter(null);
       setSessionBridgeReady(false);
     }
     return () => {
@@ -586,6 +591,7 @@ function PrivyAuthProvider({ children }) {
       setAltTextSessionTokenGetter(null);
       setShowcaseOwnerSessionTokenGetter(null);
       setBoothSessionTokenGetter(null);
+      setAuctionsSessionTokenGetter(null);
       setSessionBridgeReady(false);
     };
   }, [privyAuthenticated, getAccessToken, getSigner]);

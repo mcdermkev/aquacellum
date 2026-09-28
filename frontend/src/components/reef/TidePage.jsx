@@ -18,7 +18,6 @@ import TideLiveFeed from "./TideLiveFeed";
 import TideChat from "./TideChat";
 import TideMap from "./TideMap";
 import SwapSheet from "./SwapSheet";
-import AuctionPanel from "./AuctionPanel";
 import { TideStreamPlayer } from "./TideStreamPlayer";
 import { TideLivePulse } from "./TideLivePulse";
 import { TIDE_VIDEO_ENABLED } from "../../config/liveEvents";
@@ -209,7 +208,7 @@ export function TidePage({ tideId, onBack }) {
   // Including ended tides matters: settling the auction and paying for a won lot
   // both happen AFTER it finishes. Gated on live/upcoming only, this tab vanished
   // at exactly the moment the host needed it, so an auction could never be closed.
-  if (tide.tide_type === "auction") tabs.push({ key: "auction", label: isEnded ? "Results" : "Auction" });
+  if (tide.tide_type === "auction") tabs.push({ key: "auction", label: "Auction" });
   if (isEnded && tide.recap_content) tabs.push({ key: "recap", label: "Recap" });
 
   return (
@@ -469,14 +468,13 @@ export function TidePage({ tideId, onBack }) {
           <SwapSheet tideId={tideId} isLive={isLive} />
         )}
 
+        {/* Tide auctions were retired for standalone lots (docs/AUCTIONS_SPEC.md).
+            Old auction tides keep a pointer instead of a dead bidding panel. */}
         {activeTab === "auction" && (
-          <AuctionPanel
-            tideId={tideId}
-            isLive={isLive}
-            isEnded={isEnded}
-            isHost={isHost}
-            endTime={tide.end_time}
-          />
+          <div className="tide-page__auction-moved" role="status">
+            <p>Auctions moved. Browse and bid on live lots on the Auctions page.</p>
+            <a className="btn btn--primary btn--sm" href="/app/auctions">Go to Auctions</a>
+          </div>
         )}
 
         {activeTab === "recap" && tide.recap_content && (

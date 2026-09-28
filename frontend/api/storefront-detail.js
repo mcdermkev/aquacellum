@@ -3952,7 +3952,7 @@ async function handleMyAuctions(req, res) {
 
   const LOT_COLUMNS =
     "id, title, photos, status, source, quantity, starting_bid_cents, reserve_cents, high_bid_cents, high_bidder_wallet, " +
-    "bid_count, ends_at, winner_wallet, hammer_cents, payment_deadline, last_charge_error, closed_at, created_at";
+    "bid_count, ends_at, winner_wallet, hammer_cents, payment_deadline, last_charge_error, closed_at, created_at, order_id";
 
   const [sellingResult, myBidsResult] = await Promise.all([
     supabase.from("auction_lots").select(LOT_COLUMNS).eq("seller_wallet", wallet).order("created_at", { ascending: false }).limit(50),
@@ -3971,6 +3971,17 @@ async function handleMyAuctions(req, res) {
   if (myTop.size > 0) {
     const { data: lots, error } = await supabase.from("auction_lots").select(LOT_COLUMNS).in("id", [...myTop.keys()].slice(0, 100));
     if (error) return res.status(500).json({ error: "Could not load your bids." });
+
+    // Pickup links for lots this account won and paid for. The order ref is the
+    // bearer secret behind the pickup code, so it is only returned to the winner.
+    const wonOrderIds = (lots || []).filter((l) => l.winner_wallet === wallet && l.order_id).map((l) => l.order_id);
+    const refs = {};
+    if (wonOrderIds.length) {
+      const { data: orders } = await supabase.from("orders").select("id, guest_ref, status").in("id", wonOrderIds);
+      for (const o of orders || []) refs[o.id] = o;
+    }
+    const appUrl = process.env.APP_URL || "https://aquacellum.com";
+
     bidding = (lots || []).map((l) => ({
       id: l.id,
       title: l.title,
@@ -3984,6 +3995,9 @@ async function handleMyAuctions(req, res) {
       amountDueCents: l.winner_wallet === wallet ? l.hammer_cents : null,
       paymentDeadline: l.winner_wallet === wallet ? l.payment_deadline : null,
       lastChargeError: l.winner_wallet === wallet ? l.last_charge_error : null,
+      orderUrl: l.winner_wallet === wallet && refs[l.order_id]?.guest_ref
+        ? `${appUrl}/order.html?ref=${encodeURIComponent(refs[l.order_id].guest_ref)}`
+        : null,
     })).sort((a, b) => String(b.endsAt).localeCompare(String(a.endsAt)));
   }
 

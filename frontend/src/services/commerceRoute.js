@@ -126,6 +126,22 @@ export function resolveCommerceRoute(pathname = "", validDashboardTabs = []) {
         requiresAuth: true,
         requiresVerifiedSession: true,
       };
+    // Public auctions (docs/AUCTIONS_SPEC.md §1). Browsing and lot pages are
+    // public; "mine" needs a verified session.
+    case "auctions": {
+      if (segments.length > 2) {
+        return { kind: "not-found", tab: "directory", requestedPath: normalized, bypassLanding: true };
+      }
+      if (!rawIdentity) return { kind: "auctions", tab: "auctions", bypassLanding: true };
+      if (rawIdentity === "mine") {
+        return { kind: "auctions-mine", tab: "auctions", bypassLanding: true, requiresAuth: true, requiresVerifiedSession: true };
+      }
+      const lotId = decodeSegment(rawIdentity);
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(lotId || "")) {
+        return { kind: "not-found", tab: "auctions", requestedPath: normalized, bypassLanding: true };
+      }
+      return { kind: "auction-lot", tab: "auctions", lotId, bypassLanding: true };
+    }
     default:
       if (!head || validDashboardTabs.includes(head)) return null;
       return { kind: "not-found", tab: "directory", requestedPath: normalized, bypassLanding: true };

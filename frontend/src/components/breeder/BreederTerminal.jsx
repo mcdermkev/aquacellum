@@ -47,6 +47,7 @@ import {
   Truck,
   ChartLineUp,
   CurrencyDollar,
+  Gavel,
   Plus,
   Warning,
   CheckCircle,
@@ -91,6 +92,7 @@ import { arrangementStatusView } from "../../services/pickupCoordination";
 import { ShowcaseOwnerBuilder } from "./ShowcaseOwnerBuilder";
 import { SteveShowcasePreview } from "./SteveShowcasePreview";
 import { BoothInventory } from "./BoothInventory";
+import { AuctionSellerSection } from "./AuctionSellerSection";
 
 const LAST_VISIT_STORAGE_KEY = "aquadex_breeder_last_visit";
 
@@ -99,6 +101,7 @@ const SECTIONS = Object.freeze({
   // Booth sits directly after Home: at an expo it is the only section that
   // matters, and it should be one tap from arrival (BOOTH_BUILD_SPEC.md §6).
   BOOTH: "booth",
+  AUCTIONS: "auctions",
   ORDERS: "orders",
   LISTINGS: "listings",
   STORE: "store",
@@ -112,6 +115,7 @@ const SECTIONS = Object.freeze({
 const NAV_ITEMS = [
   { id: SECTIONS.HOME, label: "Home", icon: Package },
   { id: SECTIONS.BOOTH, label: "Booth", icon: Tote },
+  { id: SECTIONS.AUCTIONS, label: "Auctions", icon: Gavel },
   { id: SECTIONS.ORDERS, label: "Orders", icon: ClipboardText },
   { id: SECTIONS.LISTINGS, label: "Listings", icon: Package },
   { id: SECTIONS.STORE, label: "Store", icon: StorefrontIcon },
@@ -589,6 +593,17 @@ export function BreederTerminal({ walletAccount, casualModeActive = false, initi
           `fallback`-tagged rows offline. Never entitlement-gated (decision D7). */}
       {activeSection === SECTIONS.BOOTH && (
         <BoothInventory walletAccount={walletAccount} casualModeActive={casualModeActive} />
+      )}
+
+      {/* Auctions (docs/AUCTIONS_SPEC.md §2): list a lot, manage your lots.
+          Pickups are confirmed in Orders, the same as booth card sales. */}
+      {activeSection === SECTIONS.AUCTIONS && (
+        <AuctionSellerSection
+          walletAccount={walletAccount}
+          sellerStatus={sellerStatus}
+          onStartOnboarding={handleStartOnboarding}
+          onboardingBusy={onboardingBusy}
+        />
       )}
 
       {activeSection === SECTIONS.ORDERS && (

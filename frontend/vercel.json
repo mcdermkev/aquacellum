@@ -33,7 +33,9 @@
     { "source": "/incoming", "destination": "/app/incoming", "permanent": false },
     { "source": "/my-store", "destination": "/app/breeder-terminal", "permanent": false },
     { "source": "/settings", "destination": "/app/settings", "permanent": false },
-    { "source": "/reef-social", "destination": "/app/reef", "permanent": false }
+    { "source": "/reef-social", "destination": "/app/reef", "permanent": false },
+    { "source": "/auctions", "destination": "/app/auctions", "permanent": false },
+    { "source": "/auctions/:id", "destination": "/app/auctions/:id", "permanent": false }
   ],
   "rewrites": [
     { "source": "/showcase-media/:path*", "destination": "https://yahsdztnvsykzecjatsl.supabase.co/storage/v1/object/public/showcase-public/:path*" },
