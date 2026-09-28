@@ -153,6 +153,7 @@
     "frontend/supabase/migrations/20260929_auctions_v2_store_name.sql",
     "frontend/supabase/migrations/20260929_club_auction_night.sql",
     "frontend/supabase/migrations/20260930_club_desk_serialize.sql",
-    "frontend/supabase/migrations/20260930_club_desk_refunds.sql"
+    "frontend/supabase/migrations/20260930_club_desk_refunds.sql",
+    "frontend/supabase/migrations/20260930_club_auction_fees.sql"
   ]
 }

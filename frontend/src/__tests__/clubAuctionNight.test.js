@@ -181,7 +181,8 @@ describe("club desk card payments", () => {
     const settle = fn(STRIPE, "settleClubDeskPayment");
     expect(settle).toMatch(/desk_mark_payment_paid/);
     expect(settle.indexOf("replay")).toBeLessThan(settle.indexOf("createSellerTransfer"));
-    expect(settle).toMatch(/Number\(settled\.goodsCents\) - Number\(settled\.platformFeeCents\)/);
+    // bids + premium − our fee (− processing when the club covers it): clubAuctionFees.test.js
+    expect(settle).toMatch(/const payoutCents = clubDeskPayoutCents\(settled\);/);
   });
   it("refunds a paid QR that the desk had already replaced", () => {
     const settle = fn(STRIPE, "settleClubDeskPayment");

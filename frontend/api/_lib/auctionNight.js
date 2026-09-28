@@ -11,6 +11,18 @@ export { MAX_IMPORT_LOTS, parseLotImport } from "../../src/services/auctionNight
 
 export const CLUB_DESK_PURPOSE = "aquadex_club_desk";
 
+/**
+ * What the club is sent for a paid desk card payment (from desk_mark_payment_paid):
+ * bids + premium − our fee, minus processing when the club covers it.
+ */
+export function clubDeskPayoutCents(settled) {
+  const goods = Number(settled?.goodsCents) || 0;
+  const premium = Number(settled?.premiumCents) || 0;
+  const fee = Number(settled?.platformFeeCents) || 0;
+  const processing = settled?.clubPaysProcessing ? Number(settled?.processingFeeCents) || 0 : 0;
+  return Math.max(0, goods + premium - fee - processing);
+}
+
 /** Our card fee for a club sale: the normal rate minus the club's 25% share. */
 export function clubCardFeePercent(policyPercent) {
   const p = Number(policyPercent);
@@ -43,7 +55,16 @@ export function buildConsignorReport({ lots = [], payments = [] }) {
   }
 
   const rows = new Map();
-  const totals = { soldCents: 0, clubCents: 0, feeCents: 0, owedCents: 0, cashCents: 0, cardCents: 0, unpaidCents: 0, lotsSold: 0 };
+  const totals = {
+    soldCents: 0, clubCents: 0, feeCents: 0, owedCents: 0, cashCents: 0, cardCents: 0, unpaidCents: 0, lotsSold: 0,
+    // The club's own lines: never owed to consignors.
+    premiumCents: 0, clubProcessingCents: 0,
+  };
+  for (const p of payments) {
+    if (p.status !== "paid") continue;
+    totals.premiumCents += Number(p.premium_cents) || 0;
+    if (p.club_pays_processing && p.method !== "cash") totals.clubProcessingCents += Number(p.processing_fee_cents) || 0;
+  }
   for (const l of lots) {
     if (!SOLD_STATES.has(l.status) || !l.hammer_cents) continue;
     const key = l.consignor_name || "Club (no consignor)";
@@ -92,6 +113,7 @@ export function mapNightDbError(message = "") {
     [/unknown bidder number/i, 404, "UNKNOWN_BIDDER", "There's no bidder with that number."],
     [/finish setting up your profile/i, 409, "PROFILE_REQUIRED", "Finish setting up your profile first."],
     [/club name must/i, 400, "CLUB_NAME", "Club names are 2 to 80 characters."],
+    [/buyer'?s premium must/i, 400, "PREMIUM", "The buyer's premium can be 0% to 25%."],
     [/online bidding must end/i, 400, "ONLINE_CUTOFF", "Online bidding must end between an hour from now and the start of the meeting."],
     [/pick the auction date/i, 400, "EVENT_TIME", "Pick the auction date and time."],
     [/auction is closed/i, 409, "AUCTION_CLOSED", "This auction is closed."],

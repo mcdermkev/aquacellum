@@ -164,7 +164,8 @@ describe("helpers", () => {
 
 describe("pages", () => {
   it("say what the winner pays before they bid", () => {
-    expect(PAGE).toMatch(/If you win, your card is charged your bid plus a card processing fee/);
+    // The wording follows the lot's terms (club premium / processing): clubAuctionFees.test.js
+    expect(PAGE).toMatch(/\{winChargeText\(lot\)\}/);
     expect(PAGE).toMatch(/The seller is paid only after you pick up\./);
   });
 

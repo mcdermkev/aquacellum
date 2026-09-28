@@ -9,35 +9,70 @@
  */
 
 import { computeCheckoutCharge } from "../../src/services/checkoutPricing.js";
+import { buyerPremiumCents } from "../../src/services/auctionNightPayments.js";
 
+export { buyerPremiumCents };
 export const AUCTION_PAYMENT_PURPOSE = "aquadex_auction_lot_v2";
 export const CLUB_FEE_SHARE_PERCENT = 25;
 
 /**
+ * What card processing costs when the club covers it: Stripe's rate on the
+ * charge, rounded up so the platform never under-collects.
+ */
+export function absorbedProcessingCents(chargeCents, stripeRate, stripeFixedCents) {
+  return Math.ceil(Math.max(0, Number(chargeCents) || 0) * Number(stripeRate)) + Math.round(Number(stripeFixedCents) || 0);
+}
+
+/**
  * @param {object} args
- * @param {number} args.hammerCents - the winning bid
+ * @param {number} args.hammerCents - the winning bid (or a desk's total of winning bids)
  * @param {number} args.feePercent - the resolved platform fee rate
  * @param {number} args.stripeRate
  * @param {number} args.stripeFixedCents
+ * @param {number} [args.premiumPercent=0] - a club auction's buyer's premium
+ * @param {boolean} [args.clubPaysProcessing=false] - the club covers card processing
+ *
+ * Our fee is on the hammer only. The premium is added for the buyer and paid
+ * out in full with the seller's (club's) share. When the club covers
+ * processing, the buyer pays hammer + premium and the processing comes off the
+ * payout instead. With the defaults this is exactly the original plan.
  */
-export function planAuctionCharge({ hammerCents, feePercent, stripeRate, stripeFixedCents }) {
+export function planAuctionCharge({ hammerCents, feePercent, stripeRate, stripeFixedCents, premiumPercent = 0, clubPaysProcessing = false }) {
   const hammer = Math.round(Number(hammerCents));
   if (!Number.isInteger(hammer) || hammer < 100) throw new Error("planAuctionCharge: invalid hammer price");
+  const premium = buyerPremiumCents(hammer, premiumPercent);
   const c = computeCheckoutCharge({
     goodsPriceCents: hammer,
-    shippingCents: 0,
+    // The premium rides outside the fee base, like shipping: grossed up for
+    // processing, but no platform fee on it.
+    shippingCents: premium,
     discountCents: 0,
     funding: "seller_funded",
     feePercent,
     stripeRate,
     stripeFixedCents,
   });
+  if (clubPaysProcessing) {
+    const buyerTotal = hammer + premium;
+    const processing = absorbedProcessingCents(buyerTotal, stripeRate, stripeFixedCents);
+    return {
+      hammerCents: hammer,
+      premiumCents: premium,
+      clubPaysProcessing: true,
+      buyerTotalCents: buyerTotal,
+      processingFeeCents: processing,
+      platformFeeCents: c.platformFeeCents,
+      sellerPayoutCents: Math.max(0, hammer + premium - c.platformFeeCents - processing),
+    };
+  }
   return {
     hammerCents: hammer,
+    premiumCents: premium,
+    clubPaysProcessing: false,
     buyerTotalCents: c.buyerTotalCents,
     processingFeeCents: c.processingFeeCents,
     platformFeeCents: c.platformFeeCents,
-    sellerPayoutCents: c.sellerPayoutCents,
+    sellerPayoutCents: c.sellerPayoutCents + premium,
   };
 }
 
@@ -83,6 +118,8 @@ export function auctionChargeMetadata({ claim, plan, feePolicy, sellerStripeAcco
     platformFeeCents: String(plan.platformFeeCents),
     sellerPayoutCents: String(plan.sellerPayoutCents),
     processingFeeCents: String(plan.processingFeeCents),
+    ...(plan.premiumCents ? { premiumCents: String(plan.premiumCents) } : {}),
+    ...(plan.clubPaysProcessing ? { clubPaysProcessing: "true" } : {}),
     sellerStripeAccountId: String(sellerStripeAccountId),
     transferGroup: String(transferGroup),
     salesChannel: "online",

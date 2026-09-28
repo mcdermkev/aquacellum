@@ -88,6 +88,7 @@ import {
 import { FEE_RAIL, resolveFeePolicy } from "../src/services/feePolicy.js";
 import { mapAuctionDbError, parseLotListQuery, validateLotInput, cleanPhotos } from "./_lib/auctionLots.js";
 import { buildConsignorReport, clubCardFeePercent, mapNightDbError, MAX_IMPORT_LOTS } from "./_lib/auctionNight.js";
+import { MAX_BUYER_PREMIUM_PERCENT } from "../src/services/auctionNightPayments.js";
 import {
   createShowcaseMediaHandler,
   createShowcaseRoomHandler,
@@ -3763,7 +3764,7 @@ const AUCTION_LOT_PUBLIC_COLUMNS =
   "id, auction_id, host_type, school_id, club_name, club_slug, auction_title, seller_wallet, seller_name, " +
   "title, description, photos, source, quantity, starting_bid_cents, has_reserve, reserve_met, high_bid_cents, " +
   "bid_count, min_next_bid_cents, starts_at, ends_at, pickup_location, pickup_notes, members_only_bidding, " +
-  "public_status, sold_for_cents, closed_at, created_at, seller_slug";
+  "public_status, sold_for_cents, closed_at, created_at, seller_slug, buyer_premium_percent, club_pays_processing";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function publicLot(row) {
@@ -3791,6 +3792,8 @@ function publicLot(row) {
     pickupLocation: row.pickup_location,
     pickupNotes: row.pickup_notes,
     membersOnlyBidding: row.members_only_bidding,
+    buyerPremiumPercent: Number(row.buyer_premium_percent) || 0,
+    clubPaysProcessing: row.club_pays_processing === true,
     status: row.public_status,
     soldForCents: row.sold_for_cents,
     closedAt: row.closed_at,
@@ -4143,6 +4146,9 @@ async function handleClubAuctionCreate(req, res) {
     p_pickup_notes: String(b.pickupNotes || "").slice(0, 1000),
     p_default_split: Math.min(100, Math.max(0, Math.round(Number(b.defaultSplitPercent) || 0))),
     p_members_only_bidding: b.membersOnlyBidding === true,
+    // The club's fee choices; fixed once the auction exists.
+    p_buyer_premium: Math.min(MAX_BUYER_PREMIUM_PERCENT, Math.max(0, Math.round(Number(b.buyerPremiumPercent) || 0))),
+    p_club_pays_processing: b.clubPaysProcessing === true,
   });
   if (error) return nightError(res, error, "club-auction-create");
   return res.status(200).json({ ok: true, auctionId: data });
@@ -4166,7 +4172,7 @@ async function handleClubAuctionConsole(req, res) {
       .select("id, lot_number, title, description, photos, status, starting_bid_cents, reserve_cents, high_bid_cents, high_bidder_wallet, bid_count, hammer_cents, sold_to_bidder_id, winner_wallet, consignor_name, club_split_percent, payment_method, desk_payment_id, ends_at, closed_at")
       .eq("auction_id", id).neq("status", "cancelled").order("lot_number", { ascending: true }),
     supabase.from("auction_bidders").select("id, bidder_number, name, phone, email, wallet, created_at").eq("auction_id", id).order("bidder_number"),
-    supabase.from("auction_desk_payments").select("id, bidder_id, method, status, lot_ids, goods_cents, platform_fee_cents, processing_fee_cents, total_cents, created_at, paid_at, last_error, payout_cents, transfer_error, reversed_cents, reversal_error, refunded_cents, refunded_at, disputed_at").eq("auction_id", id).order("created_at", { ascending: false }).limit(500),
+    supabase.from("auction_desk_payments").select("id, bidder_id, method, status, lot_ids, goods_cents, platform_fee_cents, processing_fee_cents, total_cents, created_at, paid_at, last_error, premium_cents, club_pays_processing, payout_cents, transfer_error, reversed_cents, reversal_error, refunded_cents, refunded_at, disputed_at").eq("auction_id", id).order("created_at", { ascending: false }).limit(500),
     supabase.from("schools").select("id, name, slug").eq("id", auction.school_id).maybeSingle(),
     supabase.from("seller_stripe_accounts").select("onboarding_complete").eq("wallet_address", auction.host_wallet).maybeSingle(),
   ]);
@@ -4192,6 +4198,7 @@ async function handleClubAuctionConsole(req, res) {
       eventAt: auction.event_at, onlineEndsAt: auction.online_ends_at, currentLotId: auction.current_lot_id,
       pickupLocation: auction.pickup_location, pickupNotes: auction.pickup_notes,
       defaultSplitPercent: auction.default_club_split_percent, membersOnlyBidding: auction.members_only_bidding,
+      buyerPremiumPercent: Number(auction.buyer_premium_percent) || 0, clubPaysProcessing: auction.club_pays_processing === true,
       isPayoutHost: auction.host_wallet === wallet,
     },
     club: clubR.data ? { id: clubR.data.id, name: clubR.data.name, slug: clubR.data.slug } : null,
@@ -4375,6 +4382,7 @@ async function handleAuctionRoom(req, res) {
     room: {
       auctionId: data.auction_id, title: data.title, clubName: data.club_name, format: data.format,
       lotCount: Number(data.lot_count || 0), lotsLeft: Number(data.lots_left || 0),
+      buyerPremiumPercent: Number(data.buyer_premium_percent) || 0,
       lot: data.lot_id ? {
         id: data.lot_id, number: data.lot_number, title: data.lot_title,
         photo: Array.isArray(data.photos) ? data.photos[0] || null : null, quantity: data.quantity,

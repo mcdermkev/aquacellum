@@ -26,6 +26,7 @@ import {
   placeBid,
   startAddCard,
 } from "../../services/auctionsApi";
+import { winChargeText } from "../../services/auctionNightPayments";
 import { announce } from "../../utils/a11y";
 
 const TAP = "44px";
@@ -225,7 +226,7 @@ function BidPanel({ lot, viewer, signedIn, onRequireSignIn, onBid }) {
 
   const disclosure = (
     <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", margin: 0, lineHeight: 1.5 }}>
-      If you win, your card is charged your bid plus a card processing fee (about 3%).
+      {winChargeText(lot)}
       {lot.pickupLocation ? ` Pickup at ${lot.pickupLocation}.` : ""} The seller is paid only after you pick up.
     </p>
   );

@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { CheckCircle, CreditCard, DownloadSimple, Money, Printer, QrCode } from "@phosphor-icons/react";
 import { deskCancel, deskCard, deskCash } from "../../services/auctionNightApi";
-import { cardPaymentIssues } from "../../services/auctionNightPayments";
+import { buyerPremiumCents, cardPaymentIssues } from "../../services/auctionNightPayments";
 import { centsToDollars } from "../../services/auctionsApi";
 import { Note } from "./AuctionNightUi";
 
@@ -46,7 +46,13 @@ export function DeskPanel({ data, refresh }) {
   const bidders = useMemo(() => [...data.bidders].sort((a, b) => a.bidder_number - b.bidder_number), [data.bidders]);
   const selected = bidders.find((b) => b.id === selectedId) || null;
   const theirLots = selected ? data.lots.filter((l) => l.sold_to_bidder_id === selected.id) : [];
-  const owed = selected ? owing.get(selected.id) || 0 : 0;
+  // What they owe before any card fee: winning bids + the club's premium (same
+  // rounding as the database, on the bidder's total).
+  const premiumPercent = Number(data.auction?.buyerPremiumPercent) || 0;
+  const bids = selected ? owing.get(selected.id) || 0 : 0;
+  const premium = buyerPremiumCents(bids, premiumPercent);
+  const owed = bids + premium;
+  const dueFor = (goods) => goods + buyerPremiumCents(goods, premiumPercent);
   const pending = selected ? data.payments.find((p) => p.bidder_id === selected.id && p.status === "pending") : null;
   const lastPaid = selected ? data.payments.find((p) => p.bidder_id === selected.id && p.status === "paid") : null;
 
@@ -135,6 +141,14 @@ export function DeskPanel({ data, refresh }) {
                   </tr>
                 ))}
                 {theirLots.length === 0 && <tr><td className="an-soft">No wins yet.</td></tr>}
+                {premium > 0 && (
+                  <tr>
+                    <td />
+                    <td className="an-soft">Buyer&apos;s premium ({premiumPercent}%) on {centsToDollars(bids)} due</td>
+                    <td className="num">{centsToDollars(premium)}</td>
+                    <td />
+                  </tr>
+                )}
               </tbody>
             </table>
 
@@ -156,7 +170,14 @@ export function DeskPanel({ data, refresh }) {
                 ) : (
                   <Note tone="info">Cash only tonight: the club&apos;s payout account isn&apos;t set up for cards yet.</Note>
                 )}
-                {data.cardPaymentsReady && <p className="an-small an-muted">Card adds the processing fee for the bidder. The club&apos;s card rate is {cardFee}%; cash has no fee.</p>}
+                {data.cardPaymentsReady && (
+                  <p className="an-small an-muted">
+                    {data.auction?.clubPaysProcessing
+                      ? "The club covers card processing, so the card total is the same as cash."
+                      : "Card adds the processing fee for the bidder."}{" "}
+                    The club&apos;s card rate is {cardFee}% of the winning bids; cash has no fee.
+                  </p>
+                )}
                 {pending && (
                   <Note tone="info">
                     A card payment is open for this bidder.{" "}
@@ -193,7 +214,7 @@ export function DeskPanel({ data, refresh }) {
           <button key={b.id} type="button" className="an-btn" style={{ justifyContent: "space-between" }} aria-pressed={b.id === selectedId}
             onClick={() => { setSelectedId(b.id); setMsg(null); setQr(null); }}>
             <span><b>#{b.bidder_number}</b> {b.name}</span>
-            <span>{centsToDollars(owing.get(b.id))}</span>
+            <span>{centsToDollars(dueFor(owing.get(b.id)))}</span>
           </button>
         ))}
       </div>
@@ -231,6 +252,8 @@ export function ReportPanel({ data }) {
         <div className="an-stat"><b>{$(totals.cardCents)}</b><span>Card taken</span></div>
         <div className="an-stat"><b>{$(totals.clubCents)}</b><span>Club keeps</span></div>
         <div className="an-stat"><b>{$(totals.unpaidCents)}</b><span>Not paid yet</span></div>
+        {totals.premiumCents > 0 && <div className="an-stat"><b>{$(totals.premiumCents)}</b><span>Buyer&apos;s premium (club)</span></div>}
+        {totals.clubProcessingCents > 0 && <div className="an-stat"><b>{$(totals.clubProcessingCents)}</b><span>Card processing (club paid)</span></div>}
       </div>
       {issues.length > 0 && (
         <div className="an-stack">
@@ -267,6 +290,7 @@ export function ReportPanel({ data }) {
         </div>
         <p className="an-small an-muted">
           Card money goes to the club&apos;s payout account; pay consignors from this list. Cash has no fee. The club&apos;s cut is taken after the card fee.
+          The buyer&apos;s premium and any card processing the club covers are the club&apos;s own, not the consignors&apos;.
           Online wins are charged to the winner&apos;s saved card and paid out when they collect.
         </p>
       </div>

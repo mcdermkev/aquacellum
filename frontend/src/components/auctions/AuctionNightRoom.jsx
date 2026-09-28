@@ -129,6 +129,7 @@ export function AuctionNightRoom({ auctionId, paidNumber = null }) {
         {room && (
           <footer className="an-room-foot">
             <span>{room.lotsLeft} of {room.lotCount} lots left</span>
+            {room.buyerPremiumPercent > 0 && <span>+{room.buyerPremiumPercent}% buyer&apos;s premium</span>}
             <span>aquacellum.com</span>
           </footer>
         )}

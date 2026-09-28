@@ -20,6 +20,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import {
   createClub, createClubAuction, getNightConsole, getNightHome, nightConsolePath, nightHomePath, nightRoomPath,
 } from "../../services/auctionNightApi";
+import { MAX_BUYER_PREMIUM_PERCENT } from "../../services/auctionNightPayments";
 import { AuctionNightRoom } from "./AuctionNightRoom";
 import { ClerkPanel } from "./AuctionNightClerk";
 import { BiddersPanel, LotsPanel } from "./AuctionNightSetup";
@@ -73,7 +74,7 @@ function NewAuctionForm({ clubs, onCreated }) {
   nextWeek.setHours(19, 0, 0, 0);
   const [f, setF] = useState({
     clubId: clubs[0]?.id || "", title: "", format: "live", eventAt: toLocalInput(nextWeek), onlineEndsAt: "",
-    pickupLocation: "", defaultSplitPercent: "20",
+    pickupLocation: "", defaultSplitPercent: "20", buyerPremiumPercent: "0", processingPaidBy: "bidder",
   });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
@@ -87,6 +88,8 @@ function NewAuctionForm({ clubs, onCreated }) {
       eventAt: new Date(f.eventAt).toISOString(),
       onlineEndsAt: f.format === "hybrid" && f.onlineEndsAt ? new Date(f.onlineEndsAt).toISOString() : null,
       pickupLocation: f.pickupLocation, defaultSplitPercent: Number(f.defaultSplitPercent) || 0,
+      buyerPremiumPercent: Number(f.buyerPremiumPercent) || 0,
+      clubPaysProcessing: f.processingPaidBy === "club",
     });
     setBusy(false);
     if (!r.success) return setErr(r.error);
@@ -131,6 +134,20 @@ function NewAuctionForm({ clubs, onCreated }) {
           <input className="an-input" type="number" min="0" max="100" inputMode="numeric" value={f.defaultSplitPercent} onChange={set("defaultSplitPercent")} />
         </label>
       </div>
+      <div className="an-grid an-grid-halves">
+        <label className="an-field"><span className="an-label">Buyer&apos;s premium (%)</span>
+          <input className="an-input" type="number" min="0" max={MAX_BUYER_PREMIUM_PERCENT} inputMode="numeric" value={f.buyerPremiumPercent} onChange={set("buyerPremiumPercent")} />
+          <span className="an-small an-muted">Added to every winning bid. The club keeps all of it.</span>
+        </label>
+        <label className="an-field"><span className="an-label">Card processing is paid by</span>
+          <select className="an-select" value={f.processingPaidBy} onChange={set("processingPaidBy")}>
+            <option value="bidder">The bidder (added to card payments)</option>
+            <option value="club">The club (taken from the payout)</option>
+          </select>
+          <span className="an-small an-muted">About 3% of each card payment. Cash has none.</span>
+        </label>
+      </div>
+      <p className="an-small an-muted">These can&apos;t be changed after the auction is created, so bidders always know the terms.</p>
       {err && <Note tone="err">{err}</Note>}
       <button type="submit" className="an-btn an-btn-primary" disabled={busy || !f.clubId || !f.title.trim()}>
         {busy ? "Creating…" : "Create auction"}

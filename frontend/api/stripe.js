@@ -67,7 +67,7 @@ import {
   chargeFailureMessage,
   planAuctionCharge,
 } from "./_lib/auctionMoney.js";
-import { clubCardFeePercent } from "./_lib/auctionNight.js";
+import { clubCardFeePercent, clubDeskPayoutCents } from "./_lib/auctionNight.js";
 import { createSellerTransfer } from "./_lib/sellerTransfer.js";
 
 let stripe;
@@ -4618,11 +4618,28 @@ async function chargeAuctionLotV2(lotId) {
     standardPercent: PLATFORM_FEE_PERCENT,
     eventPercent: EVENT_FEE_PERCENT,
   });
+  // A club auction's fee choices (fixed at creation) apply to online winners
+  // too, so room and online bidders pay on the same terms.
+  let clubFees = { premiumPercent: 0, clubPaysProcessing: false };
+  if (claim.hostType === "club") {
+    const { data: lotRow, error: feeError } = await supabase.from("auction_lots")
+      .select("auctions(buyer_premium_percent, club_pays_processing)").eq("id", claim.lotId).maybeSingle();
+    if (feeError || !lotRow?.auctions) {
+      // Don't guess the terms. Nothing was charged; the lot stays 'charging' and
+      // the sweep reclaims it after 10 minutes (claim_auction_lot_for_charge).
+      throw new Error(`could not load club fee terms: ${feeError?.message || "no auction row"}`);
+    }
+    clubFees = {
+      premiumPercent: Number(lotRow.auctions.buyer_premium_percent) || 0,
+      clubPaysProcessing: lotRow.auctions.club_pays_processing === true,
+    };
+  }
   const plan = planAuctionCharge({
     hammerCents: claim.hammerCents,
     feePercent: feePolicy.feePercent,
     stripeRate: STRIPE_FEE_RATE,
     stripeFixedCents: STRIPE_FEE_FIXED_CENTS,
+    ...clubFees,
   });
   const transferGroup = `auc_${claim.lotId}`;
   const metadata = auctionChargeMetadata({
@@ -4694,6 +4711,8 @@ async function chargeAuctionLotV2(lotId) {
         channelSource: "auction",
         ...(claim.listingId ? { listingId: String(claim.listingId) } : {}),
         goodsCents: plan.hammerCents,
+        ...(plan.premiumCents ? { premiumCents: plan.premiumCents } : {}),
+        ...(plan.clubPaysProcessing ? { clubPaysProcessing: true } : {}),
         ...(event ? { eventId: String(event.id) } : {}),
       },
       created_at: nowIso,
@@ -4824,7 +4843,9 @@ async function retryAuctionPaymentsFor(wallet) {
 
 const CLUB_DESK_PURPOSE = "aquadex_club_desk";
 
-async function clubDeskFeePlan(hostWallet, goodsCents) {
+/** The desk card plan: club rate, plus the fee choices the club made at creation. */
+async function clubDeskFeePlan(auction, goodsCents) {
+  const hostWallet = auction.host_wallet;
   const event = await findActiveSellerEvent(supabase, hostWallet);
   const policy = resolveFeePolicy({
     rail: event ? FEE_RAIL.CARD_EVENT : FEE_RAIL.CARD,
@@ -4833,7 +4854,14 @@ async function clubDeskFeePlan(hostWallet, goodsCents) {
     eventPercent: EVENT_FEE_PERCENT,
   });
   const feePercent = clubCardFeePercent(policy.feePercent);
-  const plan = planAuctionCharge({ hammerCents: goodsCents, feePercent, stripeRate: STRIPE_FEE_RATE, stripeFixedCents: STRIPE_FEE_FIXED_CENTS });
+  const plan = planAuctionCharge({
+    hammerCents: goodsCents,
+    feePercent,
+    stripeRate: STRIPE_FEE_RATE,
+    stripeFixedCents: STRIPE_FEE_FIXED_CENTS,
+    premiumPercent: Number(auction.buyer_premium_percent) || 0,
+    clubPaysProcessing: auction.club_pays_processing === true,
+  });
   return { ...plan, feePercent };
 }
 
@@ -4856,7 +4884,7 @@ async function settleClubDeskPayment(paymentId, paymentIntent) {
   }
   if (settled?.replay) return { replay: true };
   const md = paymentIntent.metadata || {};
-  const payoutCents = Number(settled.goodsCents) - Number(settled.platformFeeCents);
+  const payoutCents = clubDeskPayoutCents(settled);
   if (md.clubStripeAccountId && payoutCents > 0) {
     try {
       const transfer = await createSellerTransfer(stripe, {
@@ -4991,7 +5019,9 @@ async function handleClubDeskCard(req, res) {
   // Totals come from the database, never the request.
   const { data: bidder } = await supabase.from("auction_bidders").select("id, auction_id, bidder_number, name, wallet, email").eq("id", bidderId).maybeSingle();
   if (!bidder) return res.status(404).json({ error: "There's no such bidder.", code: "UNKNOWN_BIDDER" });
-  const { data: auction } = await supabase.from("auctions").select("id, title, host_wallet, school_id, host_type").eq("id", bidder.auction_id).maybeSingle();
+  const { data: auction } = await supabase.from("auctions")
+    .select("id, title, host_wallet, school_id, host_type, buyer_premium_percent, club_pays_processing")
+    .eq("id", bidder.auction_id).maybeSingle();
   if (!auction || auction.host_type !== "club") return res.status(404).json({ error: "Auction not found." });
   const { data: isOrganizer } = await supabase.rpc("auction_is_club_organizer", { p_school: auction.school_id, p_wallet: actor });
   if (!isOrganizer) return res.status(403).json({ error: "Only a club organizer can take payments.", code: "NOT_ORGANIZER" });
@@ -5004,7 +5034,7 @@ async function handleClubDeskCard(req, res) {
   const { data: owed } = await supabase.from("auction_lots").select("hammer_cents").eq("sold_to_bidder_id", bidder.id).eq("status", "sold_live");
   const goods = (owed || []).reduce((s, l) => s + (l.hammer_cents || 0), 0);
   if (!(goods >= 100)) return res.status(409).json({ error: "This bidder has nothing left to pay.", code: "NOTHING_TO_PAY" });
-  const plan = await clubDeskFeePlan(auction.host_wallet, goods);
+  const plan = await clubDeskFeePlan(auction, goods);
 
   // Starting over voids this bidder's pending payment. Close its QR first so
   // the old link can't be paid as well; if it already was paid, stop here.
@@ -5019,8 +5049,12 @@ async function handleClubDeskCard(req, res) {
     p_processing_fee: plan.processingFeeCents,
   });
   if (beginError) return res.status(409).json({ error: beginError.message, code: "DESK_BEGIN_FAILED" });
-  if (Number(begun.goodsCents) !== goods) {
-    // A lot was paid or undone between our read and the reservation. Start over.
+  if (Number(begun.goodsCents) !== goods
+      || Number(begun.premiumCents || 0) !== plan.premiumCents
+      || (begun.clubPaysProcessing === true) !== plan.clubPaysProcessing) {
+    // A lot was paid or undone between our read and the reservation (or the
+    // database priced the premium differently). Start over rather than charge
+    // an amount the desk record doesn't match.
     await supabase.rpc("desk_fail_payment", { p_payment: begun.paymentId, p_error: "Totals changed; start again" });
     return res.status(409).json({ error: "The total changed. Tap card again.", code: "TOTAL_CHANGED" });
   }
@@ -5032,9 +5066,11 @@ async function handleClubDeskCard(req, res) {
     auctionId: String(auction.id),
     bidderNumber: String(bidder.bidder_number),
     goodsCents: String(goods),
+    premiumCents: String(plan.premiumCents),
     feePercent: String(plan.feePercent),
     platformFeeCents: String(plan.platformFeeCents),
     processingFeeCents: String(plan.processingFeeCents),
+    clubPaysProcessing: String(plan.clubPaysProcessing),
     clubStripeAccountId: String(club.stripe_account_id),
     transferGroup,
   };
@@ -5083,7 +5119,9 @@ async function handleClubDeskCard(req, res) {
       mode: "payment",
       line_items: [
         { price_data: { currency: "usd", product_data: { name: `${auction.title}: ${(owed || []).length} lot${(owed || []).length === 1 ? "" : "s"}`.slice(0, 120), description: `Bidder #${bidder.bidder_number} · ${bidder.name}`.slice(0, 200) }, unit_amount: goods }, quantity: 1 },
-        ...(plan.processingFeeCents > 0 ? [{ price_data: { currency: "usd", product_data: { name: "Card processing fee" }, unit_amount: plan.processingFeeCents }, quantity: 1 }] : []),
+        ...(plan.premiumCents > 0 ? [{ price_data: { currency: "usd", product_data: { name: `Buyer's premium (${Number(auction.buyer_premium_percent)}%)` }, unit_amount: plan.premiumCents }, quantity: 1 }] : []),
+        // When the club covers processing, the bidder pays bids + premium only.
+        ...(!plan.clubPaysProcessing && plan.processingFeeCents > 0 ? [{ price_data: { currency: "usd", product_data: { name: "Card processing fee" }, unit_amount: plan.processingFeeCents }, quantity: 1 }] : []),
       ],
       payment_intent_data: { transfer_group: transferGroup, description, metadata, ...(bidder.email ? { receipt_email: bidder.email } : {}) },
       metadata,
