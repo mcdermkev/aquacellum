@@ -18,28 +18,28 @@ import { generateAchievementCard, generateSpawnMilestoneCard } from "../utils/sh
 
 const ACHIEVEMENTS = [
   // Spawning milestones
-  { id: "first_spawn", icon: "🥚", label: "First Spawn", description: "Logged your first breeding event", check: (d) => d.totalSpawns >= 1, tier: "bronze" },
-  { id: "prolific_breeder", icon: "🐟", label: "Prolific Breeder", description: "Completed 10 successful spawns", check: (d) => d.totalSpawns >= 10, tier: "silver" },
-  { id: "master_spawner", icon: "👑", label: "Master Spawner", description: "Completed 50 spawns", check: (d) => d.totalSpawns >= 50, tier: "gold" },
+  { id: "first_spawn", icon: "/marks/achievements/first_spawn-earned.png", label: "First Spawn", description: "Logged your first breeding event", check: (d) => d.totalSpawns >= 1, tier: "bronze" },
+  { id: "prolific_breeder", icon: "/marks/achievements/prolific_breeder-earned.png", label: "Prolific Breeder", description: "Completed 10 successful spawns", check: (d) => d.totalSpawns >= 10, tier: "silver" },
+  { id: "master_spawner", icon: "/marks/achievements/master_spawner-earned.png", label: "Master Spawner", description: "Completed 50 spawns", check: (d) => d.totalSpawns >= 50, tier: "gold" },
 
   // Fry survival
-  { id: "fry_100", icon: "🌊", label: "Century Club", description: "100+ fry survived to grow-out", check: (d) => d.totalFrySurvived >= 100, tier: "bronze" },
-  { id: "fry_500", icon: "🏊", label: "Five Hundred Strong", description: "500+ fry survived", check: (d) => d.totalFrySurvived >= 500, tier: "silver" },
-  { id: "fry_1000", icon: "🌟", label: "Thousand Keeper", description: "1000+ fry survived across all spawns", check: (d) => d.totalFrySurvived >= 1000, tier: "gold" },
+  { id: "fry_100", icon: "/marks/achievements/fry_100-earned.png", label: "Century Club", description: "100+ fry survived to grow-out", check: (d) => d.totalFrySurvived >= 100, tier: "bronze" },
+  { id: "fry_500", icon: "/marks/achievements/fry_500-earned.png", label: "Five Hundred Strong", description: "500+ fry survived", check: (d) => d.totalFrySurvived >= 500, tier: "silver" },
+  { id: "fry_1000", icon: "/marks/achievements/fry_1000-earned.png", label: "Thousand Keeper", description: "1000+ fry survived across all spawns", check: (d) => d.totalFrySurvived >= 1000, tier: "gold" },
 
   // Species diversity
-  { id: "species_3", icon: "🧬", label: "Diversifier", description: "Bred 3+ different species", check: (d) => d.uniqueSpeciesBred >= 3, tier: "bronze" },
-  { id: "species_5", icon: "🔬", label: "Polybreeder", description: "Bred 5+ different species", check: (d) => d.uniqueSpeciesBred >= 5, tier: "silver" },
-  { id: "species_10", icon: "🏆", label: "Aquaculture Master", description: "Bred 10+ different species", check: (d) => d.uniqueSpeciesBred >= 10, tier: "gold" },
+  { id: "species_3", icon: "/marks/achievements/species_3-earned.png", label: "Diversifier", description: "Bred 3+ different species", check: (d) => d.uniqueSpeciesBred >= 3, tier: "bronze" },
+  { id: "species_5", icon: "/marks/achievements/species_5-earned.png", label: "Polybreeder", description: "Bred 5+ different species", check: (d) => d.uniqueSpeciesBred >= 5, tier: "silver" },
+  { id: "species_10", icon: "/marks/achievements/species_10-earned.png", label: "Aquaculture Master", description: "Bred 10+ different species", check: (d) => d.uniqueSpeciesBred >= 10, tier: "gold" },
 
   // Grow-out dedication
-  { id: "checkpoints_25", icon: "📊", label: "Data Collector", description: "Logged 25+ grow-out checkpoints", check: (d) => d.totalCheckpoints >= 25, tier: "bronze" },
-  { id: "checkpoints_100", icon: "📈", label: "Meticulous Keeper", description: "Logged 100+ checkpoints", check: (d) => d.totalCheckpoints >= 100, tier: "silver" },
-  { id: "checkpoints_500", icon: "🎯", label: "Data Obsessed", description: "500+ checkpoints logged", check: (d) => d.totalCheckpoints >= 500, tier: "gold" },
+  { id: "checkpoints_25", icon: "/marks/achievements/checkpoints_25-earned.png", label: "Data Collector", description: "Logged 25+ grow-out checkpoints", check: (d) => d.totalCheckpoints >= 25, tier: "bronze" },
+  { id: "checkpoints_100", icon: "/marks/achievements/checkpoints_100-earned.png", label: "Meticulous Keeper", description: "Logged 100+ checkpoints", check: (d) => d.totalCheckpoints >= 100, tier: "silver" },
+  { id: "checkpoints_500", icon: "/marks/achievements/checkpoints_500-earned.png", label: "Data Obsessed", description: "500+ checkpoints logged", check: (d) => d.totalCheckpoints >= 500, tier: "gold" },
 
   // Survival rate excellence
-  { id: "survival_90", icon: "💪", label: "Strong Lines", description: "Achieved 90%+ survival on any spawn", check: (d) => d.bestSurvivalRate >= 90, tier: "silver" },
-  { id: "survival_95", icon: "⚡", label: "Elite Genetics", description: "Achieved 95%+ survival rate", check: (d) => d.bestSurvivalRate >= 95, tier: "gold" },
+  { id: "survival_90", icon: "/marks/achievements/survival_90-earned.png", label: "Strong Lines", description: "Achieved 90%+ survival on any spawn", check: (d) => d.bestSurvivalRate >= 90, tier: "silver" },
+  { id: "survival_95", icon: "/marks/achievements/survival_95-earned.png", label: "Elite Genetics", description: "Achieved 95%+ survival rate", check: (d) => d.bestSurvivalRate >= 95, tier: "gold" },
 
   // Sales milestones.
   // These read `verifiedSales` — COMPLETED ORDERS where this account was the
@@ -49,8 +49,8 @@ const ACHIEVEMENTS = [
   // badge has a share button, which made that self-assessment one tap from being
   // published as a claim about someone's commercial history.
   // See docs/BREEDER_STATE_MODEL.md §9.11.
-  { id: "first_sale", icon: "💰", label: "First Sale", description: "Completed your first sale on the marketplace", check: (d) => d.verifiedSales >= 1, tier: "bronze" },
-  { id: "sales_50", icon: "🏪", label: "Established Seller", description: "Completed 50+ marketplace sales", check: (d) => d.verifiedSales >= 50, tier: "silver" },
+  { id: "first_sale", icon: "/marks/achievements/first_sale-earned.png", label: "First Sale", description: "Completed your first sale on the marketplace", check: (d) => d.verifiedSales >= 1, tier: "bronze" },
+  { id: "sales_50", icon: "/marks/achievements/sales_50-earned.png", label: "Established Seller", description: "Completed 50+ marketplace sales", check: (d) => d.verifiedSales >= 50, tier: "silver" },
 ];
 
 const TIER_STYLES = {
@@ -58,6 +58,16 @@ const TIER_STYLES = {
   silver: { bg: "rgba(192, 192, 210, 0.08)", border: "rgba(192, 192, 210, 0.25)", color: "#c0c0d2", glow: "rgba(192, 192, 210, 0.12)" },
   gold: { bg: "rgba(255, 215, 0, 0.08)", border: "rgba(255, 215, 0, 0.25)", color: "#ffd700", glow: "rgba(255, 215, 0, 0.15)" },
 };
+
+
+/** Public path for a Sigilwright achievement mark. Locked uses the dedicated -locked.png. */
+function achievementMarkSrc(achievement, earned) {
+  const icon = achievement.icon || "";
+  if (!earned && icon.endsWith("-earned.png")) {
+    return icon.replace(/-earned\.png$/, "-locked.png");
+  }
+  return icon;
+}
 
 export function BreederAchievements({ walletAccount }) {
   const [stats, setStats] = useState(null);
@@ -165,7 +175,13 @@ export function BreederAchievements({ walletAccount }) {
                 onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}
                 title={a.description}
                 >
-                  <div style={{ fontSize: "1.3rem", marginBottom: "4px" }}>{a.icon}</div>
+                  <img
+                    src={achievementMarkSrc(a, true)}
+                    alt=""
+                    width={64}
+                    height={64}
+                    style={{ width: 64, height: 64, objectFit: "contain", display: "block", margin: "0 auto 4px" }}
+                  />
                   <div style={{ fontSize: "0.7rem", fontWeight: "700", color: style.color, marginBottom: "2px" }}>{a.label}</div>
                   <div style={{ fontSize: "0.55rem", color: "var(--text-muted)", lineHeight: "1.3", marginBottom: "6px" }}>{a.description}</div>
                   <ShareButton
@@ -194,7 +210,13 @@ export function BreederAchievements({ walletAccount }) {
                 background: "rgba(255,255,255,0.01)", border: "1px dashed rgba(255,255,255,0.06)",
                 opacity: 0.5,
               }} title={a.description}>
-                <div style={{ fontSize: "1.1rem", marginBottom: "3px", filter: "grayscale(1)" }}>{a.icon}</div>
+                <img
+                  src={achievementMarkSrc(a, false)}
+                  alt=""
+                  width={64}
+                  height={64}
+                  style={{ width: 64, height: 64, objectFit: "contain", display: "block", margin: "0 auto 3px" }}
+                />
                 <div style={{ fontSize: "0.65rem", fontWeight: "600", color: "var(--text-muted)" }}>{a.label}</div>
                 <div style={{ fontSize: "0.52rem", color: "var(--text-muted)", marginTop: "2px" }}>{a.description}</div>
               </div>
