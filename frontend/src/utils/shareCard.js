@@ -39,10 +39,22 @@ export async function generateAchievementCard(achievement, stats = {}) {
   drawBackground(ctx);
   drawBrandHeader(ctx, "ACHIEVEMENT UNLOCKED");
 
-  // Achievement icon (large centered)
-  ctx.font = "48px serif";
+  // Achievement mark (large centered). icon is a public PNG path.
   ctx.textAlign = "center";
-  ctx.fillText(achievement.icon || "🏆", CARD_WIDTH / 2, 140);
+  const iconSrc = achievement.icon || "";
+  if (iconSrc.startsWith("/") || /\.(png|webp|svg)$/i.test(iconSrc)) {
+    try {
+      const img = await loadImage(iconSrc);
+      const size = 64;
+      ctx.drawImage(img, (CARD_WIDTH - size) / 2, 92, size, size);
+    } catch {
+      ctx.font = "48px serif";
+      ctx.fillText("🏆", CARD_WIDTH / 2, 140);
+    }
+  } else {
+    ctx.font = "48px serif";
+    ctx.fillText(iconSrc || "🏆", CARD_WIDTH / 2, 140);
+  }
 
   // Achievement name
   ctx.font = "bold 22px 'Inter', sans-serif";
@@ -233,6 +245,15 @@ export async function shareCardImage(blob, title, text) {
 }
 
 // ─── Canvas Helpers ─────────────────────────────────────────────────────────
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`failed to load ${src}`));
+    img.src = src;
+  });
+}
 
 function createCanvas() {
   const canvas = document.createElement("canvas");
