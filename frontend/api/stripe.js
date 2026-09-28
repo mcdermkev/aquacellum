@@ -61,6 +61,12 @@ import { resolveFeePolicy, FEE_RAIL } from "../src/services/feePolicy.js";
 import { readRawBody } from "./_lib/rawBody.js";
 import { recordCardSaleInventory, restockRefundedCardSale } from "./_lib/cardSaleInventory.js";
 import { cardOrderMetadata, findActiveSellerEvent, normalizeSalesChannel } from "./_lib/sellerEvents.js";
+import {
+  AUCTION_PAYMENT_PURPOSE,
+  auctionChargeMetadata,
+  chargeFailureMessage,
+  planAuctionCharge,
+} from "./_lib/auctionMoney.js";
 import { createSellerTransfer } from "./_lib/sellerTransfer.js";
 
 let stripe;
@@ -432,6 +438,12 @@ async function handleWebhook(req, res) {
       const paymentIntentId = paymentIntent.id;
       const amountCents = paymentIntent.amount;
 
+      // Auction lot charges are recorded synchronously by the sweep that made
+      // them (chargeAuctionLotV2). Nothing to settle here.
+      if (metadata?.purpose === AUCTION_PAYMENT_PURPOSE) {
+        return res.status(200).json({ received: true, action: "auction_recorded_by_sweep" });
+      }
+
       if (!purchaseType || !metadata?.buyerWallet) {
         console.log("[Stripe Webhook] Ignoring non-Aquadex payment:", paymentIntentId);
         return res.status(200).json({ received: true, action: "ignored" });
@@ -799,6 +811,8 @@ async function handleWebhook(req, res) {
           .ilike("wallet_address", siWallet);
 
         if (pmError) console.error("[Stripe] could not store payment method:", pmError.message);
+        // A winner fixing a declined card: retry their unpaid lots now.
+        else await retryAuctionPaymentsFor(siWallet);
       } catch (e) {
         console.error("[Stripe] setup_intent.succeeded handling failed:", e.message);
       }
@@ -823,6 +837,13 @@ async function handleWebhook(req, res) {
         .eq("stripe_payment_intent_id", paymentIntentId);
 
       const nftReturn = await returnFiatEscrowAssets(paymentIntentId);
+
+      // An auction lot refund: the lot is marked refunded and, if it hadn't been
+      // picked up yet, its fish go back into the listing. No-op for other payments.
+      if (charge.refunded === true) {
+        const { error: lotRefundError } = await supabase.rpc("mark_auction_lot_refunded", { p_payment_intent: paymentIntentId });
+        if (lotRefundError) console.error("[Auction] refund state update failed:", paymentIntentId, lotRefundError.message);
+      }
 
       // Stock + order status. A full refund of a fish that never left the seller
       // puts it back on sale; a handed-off or partial refund leaves stock alone
@@ -3198,6 +3219,10 @@ async function handleGuestHandoffConfirm(req, res) {
 
   const nowIso = new Date().toISOString();
   await supabase.from("orders").update({ status: "released", updated_at: nowIso }).eq("id", order.id);
+  if (md.purpose === AUCTION_PAYMENT_PURPOSE && md.lotId) {
+    const { error: lotError } = await supabase.rpc("mark_auction_lot_handed_off", { p_lot: md.lotId });
+    if (lotError) console.error("[Auction] handoff state update failed:", md.lotId, lotError.message);
+  }
   await supabase
     .from("fiat_settlements")
     .update({ settled_at: nowIso, metadata: JSON.stringify({ ...md, sellerTransferId: transferId, handoffConfirmedBy: sellerWallet }) })
@@ -3338,6 +3363,10 @@ export default async function handler(req, res) {
       return handleAuctionPaymentMethod(req, res);
     case "auction-charge":
       return handleAuctionCharge(req, res);
+    case "auction-sweep":
+      return handleAuctionSweep(req, res);
+    case "auction-pay":
+      return handleAuctionPay(req, res);
     default:
       return res.status(400).json({ error: `Unknown action: ${action}` });
   }
@@ -4300,11 +4329,18 @@ async function getOrCreateBuyerCustomer(walletAddress) {
  * having entered a card, with no way to retry into a good state.
  */
 async function handleAuctionPaymentMethod(req, res) {
-  if (handleCorsPreFlight(req, res, { methods: "GET, POST, OPTIONS" })) return;
+  if (handleCorsPreFlight(req, res, { methods: "GET, POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
   if (!stripe) return res.status(500).json({ error: "Stripe not configured" });
 
-  const wallet = String(req.method === "GET" ? req.query.wallet : req.body?.walletAddress || "").toLowerCase();
-  if (!wallet) return res.status(400).json({ error: "Missing wallet" });
+  // Auth: the card belongs to the SIGNED-IN account. Previously the wallet came
+  // from the query/body, so anyone could read another person's card brand/last 4
+  // or attach a Stripe customer to their wallet.
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+  const claimed = req.method === "GET" ? req.query.wallet : req.body?.walletAddress;
+  if (claimed && String(claimed).toLowerCase() !== wallet) {
+    return res.status(403).json({ error: "Signed in as a different account.", code: "WALLET_MISMATCH" });
+  }
 
   try {
     if (req.method === "GET") {
@@ -4363,8 +4399,13 @@ async function handleAuctionPaymentMethod(req, res) {
     // usage: off_session on setup_intent_data is what authorises charging the card
     // later without the buyer present, which is the entire point of the
     // card-on-file rule.
-    const origin = req.headers.origin || process.env.PUBLIC_APP_URL || "";
-    const returnTo = String(req.body?.returnUrl || `${origin}/app/reef`);
+    // Only return to our own site (an open redirect here would bounce a buyer
+    // from Stripe to anywhere).
+    const appUrl = process.env.APP_URL || "https://aquacellum.com";
+    const requested = String(req.body?.returnUrl || "");
+    const returnTo = requested.startsWith(`${appUrl}/`) || /^\/[^/]/.test(requested)
+      ? (requested.startsWith("/") ? `${appUrl}${requested}` : requested)
+      : `${appUrl}/auctions`;
 
     const session = await stripe.checkout.sessions.create({
       mode: "setup",
@@ -4392,6 +4433,9 @@ async function handleAuctionPaymentMethod(req, res) {
 }
 
 /**
+ * RETIRED (see handleAuctionSweep / handleAuctionPay). Historical notes on the
+ * old Tide-auction charge follow.
+ *
  * Charge the winner of a settled lot, off-session, then transfer the certificate.
  *
  * Ordering matters and is deliberate:
@@ -4409,133 +4453,301 @@ async function handleAuctionPaymentMethod(req, res) {
  */
 async function handleAuctionCharge(req, res) {
   if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS" })) return;
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-  if (!stripe) return res.status(500).json({ error: "Stripe not configured" });
+  // Retired with the event-"Tide" auction (docs/AUCTIONS_SPEC.md): it charged by
+  // settlement id with no sign-in. Lots are now charged by auction-sweep and
+  // auction-pay. Kept as a 410 so a stale client gets a clear answer.
+  return res.status(410).json({ error: "This auction flow was retired. Use the new auctions.", code: "GONE" });
+}
 
-  const { settlementId } = req.body || {};
-  if (!settlementId) return res.status(400).json({ error: "Missing settlementId" });
+// ═══════════════════════════════════════════════════════════════════════════════
+// PUBLIC AUCTIONS v2 — charge the winner, hold the money, pay out at pickup
+// (docs/AUCTIONS_SPEC.md §3, §5; migrations 20260929_auctions_v2*.sql)
+//
+//   auction-sweep  cron (pg_cron → pg_net, or Vercel daily): close ended lots,
+//                  then charge every winner that's due
+//   auction-pay    the signed-in winner retries after a decline ("Pay now")
+//
+// A charge is an off-session PaymentIntent on the winner's saved card for
+// hammer + processing fee, held on the platform (no transfer_data). The seller
+// is paid at pickup by the existing guest-handoff confirm, which reads the
+// payout from the PaymentIntent metadata.
+// ═══════════════════════════════════════════════════════════════════════════════
 
+const AUCTION_SWEEP_BATCH = 20;
+const AUCTION_SWEEP_BUDGET_MS = 45_000;
+
+/** CRON_SECRET (Vercel cron) or AUCTION_SWEEP_SECRET (pg_net), compared in constant time. */
+function isAuctionSweepRequest(req) {
+  if (isCronRequest(req)) return true;
+  const secret = String(process.env.AUCTION_SWEEP_SECRET || "").trim();
+  if (secret.length < 32) return false;
+  const header = String(req.headers["authorization"] || req.headers["Authorization"] || "");
+  const expected = Buffer.from(`Bearer ${secret}`);
+  const got = Buffer.from(header);
+  return got.length === expected.length && crypto.timingSafeEqual(got, expected);
+}
+
+async function notifyAuctionWinner(claim, kind, extra = {}) {
+  if (!isResendConfigured()) return;
   try {
-    // Read with the service role: auction_settlements has no client write policy
-    // and the amount must come from the database, never from the request body.
-    const { data: s, error: readError } = await supabase
-      .from("auction_settlements")
-      .select("id, tide_id, token_id, winner_wallet, seller_wallet, amount_cents, status")
-      .eq("id", settlementId)
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("email")
+      .ilike("wallet_address", String(claim.winnerWallet))
       .maybeSingle();
-
-    if (readError) throw new Error(readError.message);
-    if (!s) return res.status(404).json({ error: "Settlement not found" });
-
-    if (s.status === "paid" || s.status === "transferred") {
-      return res.status(200).json({ alreadyPaid: true, status: s.status });
+    if (!profile?.email) return;
+    const appUrl = process.env.APP_URL || "https://aquacellum.com";
+    const title = escapeEmailText(claim.title || "your lot");
+    let subject;
+    let body;
+    if (kind === "paid") {
+      subject = `You won: ${String(claim.title || "your lot").slice(0, 80)}`;
+      body = `<p>You won <strong>${title}</strong>. We charged your card ${escapeEmailText(extra.amount)}.</p>
+        <p>Pickup: ${escapeEmailText(claim.pickupLocation || "the seller will be in touch")}</p>
+        <p><a href="${appUrl}/order.html?ref=${encodeURIComponent(extra.guestRef)}">Open your order and pickup code</a>. Show the code to the seller when you collect.</p>
+        <p>The seller is paid only after you pick up.</p>`;
+    } else {
+      subject = `Action needed: payment for ${String(claim.title || "your lot").slice(0, 80)}`;
+      body = `<p>You won <strong>${title}</strong>, but the charge didn't go through: ${escapeEmailText(extra.message)}</p>
+        <p><a href="${appUrl}/auctions/mine">Update your card and pay</a> within 24 hours of the auction ending, or the lot goes back to the seller.</p>`;
     }
-    if (s.status === "forfeited" || s.status === "unsold") {
-      return res.status(409).json({ error: `This lot is ${s.status}.` });
-    }
-    if (!s.amount_cents || s.amount_cents <= 0) {
-      return res.status(409).json({ error: "Settlement has no amount to charge." });
-    }
+    await sendEmail({ to: profile.email, subject, html: body });
+  } catch (e) {
+    console.warn("[Auction] winner email failed:", e?.message || e);
+  }
+}
 
-    const { data: pm } = await supabase
-      .from("buyer_payment_methods")
-      .select("stripe_customer_id, payment_method_id")
-      .ilike("wallet_address", String(s.winner_wallet).toLowerCase())
-      .maybeSingle();
+function escapeEmailText(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
 
-    if (!pm?.payment_method_id) {
-      // Should be impossible: bidding requires a card. Treated as a payment
-      // failure so the lot follows the normal recovery path rather than wedging.
-      await supabase.rpc("record_auction_payment_failure", {
-        target_settlement: settlementId,
-        failure_reason: "No saved payment method on file",
-      });
-      return res.status(409).json({ error: "No payment method on file for the winner." });
-    }
+/**
+ * Claim → charge → record order + settlement → mark paid. Safe to call twice:
+ * the claim lets only one caller charge, and the PaymentIntent idempotency key
+ * is per lot + attempt.
+ */
+async function chargeAuctionLotV2(lotId) {
+  const { data: claim, error: claimError } = await supabase.rpc("claim_auction_lot_for_charge", { p_lot: lotId });
+  if (claimError) throw new Error(claimError.message);
+  if (!claim) return { lotId, skipped: "not_claimable" };
 
-    // The seller's Connect account, so the money lands with them.
-    const { data: seller } = await supabase
-      .from("seller_stripe_accounts")
-      .select("stripe_account_id, payouts_enabled")
-      .ilike("wallet_address", String(s.seller_wallet).toLowerCase())
-      .maybeSingle();
+  const fail = async (message) => {
+    const { error } = await supabase.rpc("record_auction_lot_charge_failure", { p_lot: lotId, p_error: message });
+    if (error) console.error("[Auction] could not record charge failure:", lotId, error.message);
+    await notifyAuctionWinner(claim, "failed", { message });
+    return { lotId, charged: false, error: message };
+  };
 
-    if (!seller?.stripe_account_id || !seller.payouts_enabled) {
-      return res.status(409).json({ error: "Seller cannot receive payouts yet." });
-    }
+  const { data: pm } = await supabase
+    .from("buyer_payment_methods")
+    .select("stripe_customer_id, payment_method_id")
+    .ilike("wallet_address", String(claim.winnerWallet))
+    .maybeSingle();
+  if (!pm?.payment_method_id) return fail("There's no saved card on your account. Add one, then tap Pay now.");
 
-    let intent;
-    try {
-      intent = await stripe.paymentIntents.create({
-        amount: s.amount_cents,
+  const { data: seller } = await supabase
+    .from("seller_stripe_accounts")
+    .select("stripe_account_id")
+    .eq("wallet_address", String(claim.sellerWallet).toLowerCase())
+    .maybeSingle();
+  if (!seller?.stripe_account_id) {
+    console.error("[Auction] seller has no Stripe account; not charging:", lotId);
+    return fail("The seller can't take payments right now. We'll let you know.");
+  }
+
+  const event = await findActiveSellerEvent(supabase, claim.sellerWallet);
+  const feePolicy = resolveFeePolicy({
+    rail: event ? FEE_RAIL.CARD_EVENT : FEE_RAIL.CARD,
+    eventId: event ? event.id : null,
+    standardPercent: PLATFORM_FEE_PERCENT,
+    eventPercent: EVENT_FEE_PERCENT,
+  });
+  const plan = planAuctionCharge({
+    hammerCents: claim.hammerCents,
+    feePercent: feePolicy.feePercent,
+    stripeRate: STRIPE_FEE_RATE,
+    stripeFixedCents: STRIPE_FEE_FIXED_CENTS,
+  });
+  const transferGroup = `auc_${claim.lotId}`;
+  const metadata = auctionChargeMetadata({
+    claim, plan, feePolicy, sellerStripeAccountId: seller.stripe_account_id, transferGroup, eventId: event?.id || null,
+  });
+
+  let intent;
+  try {
+    intent = await stripe.paymentIntents.create(
+      {
+        amount: plan.buyerTotalCents,
         currency: "usd",
         customer: pm.stripe_customer_id,
         payment_method: pm.payment_method_id,
-        // The buyer is not at the keyboard: this is the saved-card charge the
-        // SetupIntent authorised.
         off_session: true,
         confirm: true,
-        transfer_data: { destination: seller.stripe_account_id },
-        metadata: {
-          purpose: "aquadex_auction_lot",
-          settlement_id: s.id,
-          tide_id: s.tide_id,
-          token_id: String(s.token_id),
-          winner_wallet: s.winner_wallet,
-          seller_wallet: s.seller_wallet,
-        },
-        // Idempotent against double submits and retries.
-        idempotencyKey: `auction-settle-${s.id}`,
-      });
-    } catch (chargeErr) {
-      // Declines and 3DS-required both arrive here. Recorded as a recoverable
-      // failure, with Stripe's own message so the winner knows what to fix.
-      const reason = chargeErr?.raw?.message || chargeErr.message || "Card was declined";
-      await supabase.rpc("record_auction_payment_failure", {
-        target_settlement: settlementId,
-        failure_reason: reason,
-      });
-      return res.status(402).json({ error: reason, requiresAction: chargeErr?.code === "authentication_required" });
-    }
-
-    if (intent.status !== "succeeded") {
-      await supabase.rpc("record_auction_payment_failure", {
-        target_settlement: settlementId,
-        failure_reason: `Payment ${intent.status}`,
-      });
-      return res.status(402).json({ error: `Payment ${intent.status}`, paymentIntent: intent.id });
-    }
-
-    const { error: paidError } = await supabase.rpc("mark_auction_settlement_paid", {
-      target_settlement: settlementId,
-      payment_intent: intent.id,
-    });
-    if (paidError) throw new Error(paidError.message);
-
-    // Transfer is best-effort AFTER payment: if the seller no longer holds the
-    // specimen, transfer_auction_lot raises rather than reporting a move that did
-    // not happen. The buyer has paid, so that needs a human, not a silent pass.
-    let transferred = false;
-    let transferError = null;
-    const { error: xferError } = await supabase.rpc("transfer_auction_lot", {
-      target_settlement: settlementId,
-    });
-    if (xferError) {
-      transferError = xferError.message;
-      console.error("[Stripe] auction lot paid but transfer failed:", settlementId, xferError.message);
-    } else {
-      transferred = true;
-    }
-
-    return res.status(200).json({
-      paid: true,
-      paymentIntent: intent.id,
-      amountCents: s.amount_cents,
-      transferred,
-      transferError,
-    });
+        // Held on the platform: no transfer_data. Paid out at pickup.
+        transfer_group: transferGroup,
+        description: `Auction win: ${String(claim.title || "").slice(0, 180)}`,
+        metadata,
+      },
+      { idempotencyKey: `auction-lot-${claim.lotId}-${claim.attempt}` }
+    );
   } catch (err) {
-    console.error("[Stripe] auction-charge failed:", err);
-    return res.status(500).json({ error: err.message || "Charge failed" });
+    return fail(chargeFailureMessage(err));
+  }
+  if (intent.status !== "succeeded") {
+    return fail(`The charge is ${intent.status}. Update your card, then tap Pay now.`);
+  }
+
+  // The money has moved. Everything below records it; a failure here is logged
+  // loudly but must not un-charge anyone.
+  const guestRef = crypto.randomBytes(32).toString("hex");
+  const { data: winner } = await supabase
+    .from("profiles")
+    .select("email")
+    .ilike("wallet_address", String(claim.winnerWallet))
+    .maybeSingle();
+  const nowIso = new Date().toISOString();
+
+  let orderId = null;
+  const { data: order, error: orderError } = await supabase
+    .from("orders")
+    .insert({
+      order_type: claim.source === "batch_listing" ? "batch" : "shipping",
+      buyer_wallet: String(claim.winnerWallet).toLowerCase(),
+      buyer_email: winner?.email || null,
+      guest_ref: guestRef,
+      seller_wallet: String(claim.sellerWallet).toLowerCase(),
+      status: "locked",
+      subtotal_cents: plan.hammerCents,
+      shipping_fee_cents: 0,
+      platform_fee_cents: plan.platformFeeCents,
+      total_paid_cents: plan.buyerTotalCents,
+      items: [{
+        ...(claim.listingId ? { listingId: String(claim.listingId) } : {}),
+        commonName: claim.title,
+        quantity: claim.quantity || 1,
+        priceCents: plan.hammerCents,
+      }],
+      quantity: claim.quantity || 1,
+      fulfillment_type: "in_person",
+      stripe_payment_intent: intent.id,
+      metadata: {
+        rail: "card",
+        source: "auction",
+        lotId: claim.lotId,
+        salesChannel: "online",
+        channelSource: "auction",
+        ...(claim.listingId ? { listingId: String(claim.listingId) } : {}),
+        goodsCents: plan.hammerCents,
+        ...(event ? { eventId: String(event.id) } : {}),
+      },
+      created_at: nowIso,
+      updated_at: nowIso,
+    })
+    .select("id")
+    .single();
+  if (orderError) console.error("[Auction] PAID but order insert failed:", lotId, intent.id, orderError.message);
+  else orderId = order.id;
+
+  const { error: settlementError } = await supabase.from("fiat_settlements").insert({
+    stripe_payment_intent_id: intent.id,
+    stripe_payment_hash: computeStripePaymentHash(intent.id),
+    purchase_type: "auction",
+    buyer_wallet: String(claim.winnerWallet).toLowerCase(),
+    buyer_email: winner?.email || null,
+    guest_ref: guestRef,
+    seller_wallet: String(claim.sellerWallet).toLowerCase(),
+    amount_cents_usd: plan.buyerTotalCents,
+    platform_fee_cents: plan.platformFeeCents,
+    status: "settled",
+    metadata: JSON.stringify(metadata),
+    created_at: nowIso,
+  });
+  if (settlementError) console.error("[Auction] PAID but settlement insert failed:", lotId, intent.id, settlementError.message);
+
+  const { error: paidError } = await supabase.rpc("mark_auction_lot_paid", {
+    p_lot: lotId,
+    p_payment_intent: intent.id,
+    p_fee_percent: feePolicy.feePercent,
+    p_order_id: orderId,
+  });
+  if (paidError) console.error("[Auction] PAID but lot state update failed:", lotId, intent.id, paidError.message);
+
+  await notifyAuctionWinner(claim, "paid", { guestRef, amount: `$${(plan.buyerTotalCents / 100).toFixed(2)}` });
+  return { lotId, charged: true, paymentIntent: intent.id, amountCents: plan.buyerTotalCents, orderRecorded: !!orderId };
+}
+
+/** Cron: close ended lots, then charge every winner that's due (bounded batch + time). */
+async function handleAuctionSweep(req, res) {
+  if (!isAuctionSweepRequest(req)) return res.status(401).json({ error: "Unauthorized" });
+  if (!stripe) return res.status(500).json({ error: "Stripe not configured" });
+
+  const started = Date.now();
+  const { data: closed, error: closeError } = await supabase.rpc("close_ended_auction_lots", { p_limit: 200 });
+  if (closeError) console.error("[Auction sweep] close failed:", closeError.message);
+
+  const { data: due, error: dueError } = await supabase.rpc("auction_lots_due_for_charge", { p_limit: AUCTION_SWEEP_BATCH });
+  if (dueError) {
+    console.error("[Auction sweep] due list failed:", dueError.message);
+    return res.status(500).json({ error: "Could not list lots to charge." });
+  }
+
+  const results = [];
+  for (const row of due || []) {
+    if (Date.now() - started > AUCTION_SWEEP_BUDGET_MS) break;
+    const lotId = typeof row === "string" ? row : row?.auction_lots_due_for_charge || row?.id;
+    if (!lotId) continue;
+    try {
+      results.push(await chargeAuctionLotV2(lotId));
+    } catch (e) {
+      console.error("[Auction sweep] charge error:", lotId, e?.message || e);
+      results.push({ lotId, error: "internal" });
+    }
+  }
+  return res.status(200).json({ ok: true, closed: closed || null, charged: results });
+}
+
+/** POST { lotId } — the signed-in winner retries a failed payment. */
+async function handleAuctionPay(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (!stripe) return res.status(500).json({ error: "Stripe not configured" });
+
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+  const lotId = String(req.body?.lotId || "");
+  if (!/^[0-9a-f-]{36}$/i.test(lotId)) return res.status(400).json({ error: "Invalid lot id." });
+
+  const { data: lot } = await supabase
+    .from("auction_lots")
+    .select("id, winner_wallet, status, payment_deadline")
+    .eq("id", lotId)
+    .maybeSingle();
+  if (!lot || lot.winner_wallet !== wallet) return res.status(404).json({ error: "You didn't win this lot.", code: "NOT_WINNER" });
+  if (lot.status === "paid" || lot.status === "handed_off") return res.status(200).json({ ok: true, alreadyPaid: true });
+  if (lot.status !== "payment_failed" && lot.status !== "ended") {
+    return res.status(409).json({ error: "This lot isn't waiting for payment.", code: "NOT_DUE" });
+  }
+
+  const result = await chargeAuctionLotV2(lotId);
+  if (result.charged) return res.status(200).json({ ok: true, amountCents: result.amountCents });
+  if (result.skipped) return res.status(409).json({ error: "A payment is already in progress. Check back in a minute.", code: "IN_PROGRESS" });
+  return res.status(402).json({ error: result.error, code: "CHARGE_FAILED" });
+}
+
+/** After a winner saves a new card, retry their failed lot payments (best-effort). */
+async function retryAuctionPaymentsFor(wallet) {
+  try {
+    const { data: lots } = await supabase
+      .from("auction_lots")
+      .select("id")
+      .eq("winner_wallet", String(wallet).toLowerCase())
+      .eq("status", "payment_failed")
+      .gt("payment_deadline", new Date().toISOString())
+      .limit(5);
+    for (const l of lots || []) {
+      await chargeAuctionLotV2(l.id).catch((e) => console.warn("[Auction] retry failed:", l.id, e?.message));
+    }
+  } catch (e) {
+    console.warn("[Auction] retry lookup failed:", e?.message || e);
   }
 }

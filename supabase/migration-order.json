@@ -148,6 +148,7 @@
     "frontend/supabase/migrations/20260929_stock_holds_and_refund_restock.sql",
     "frontend/supabase/migrations/20260929_seller_events.sql",
     "frontend/supabase/migrations/20260929_auction_rpc_lockdown.sql",
-    "frontend/supabase/migrations/20260929_auctions_v2.sql"
+    "frontend/supabase/migrations/20260929_auctions_v2.sql",
+    "frontend/supabase/migrations/20260929_auctions_v2_money.sql"
   ]
 }
