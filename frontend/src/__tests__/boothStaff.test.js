@@ -279,7 +279,7 @@ describe("booth screen", () => {
   });
 
   it("rings up a helper's cash sale against the booth they're helping at", () => {
-    expect(BOOTH).toMatch(/forSeller: actingFor,\s*\}\);/);
+    expect(BOOTH).toMatch(/forSeller: actingFor,\s*(?:respectHolds: true,\s*)?\}\);/);
   });
 });
 

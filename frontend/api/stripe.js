@@ -59,7 +59,7 @@ import { resolveFeePolicy, FEE_RAIL } from "../src/services/feePolicy.js";
 // _lib/rawBody.js for how Vercel replays them and why re-serializing req.body
 // failed every webhook (2026-09-26).
 import { readRawBody } from "./_lib/rawBody.js";
-import { recordCardSaleInventory } from "./_lib/cardSaleInventory.js";
+import { recordCardSaleInventory, restockRefundedCardSale } from "./_lib/cardSaleInventory.js";
 import { createSellerTransfer } from "./_lib/sellerTransfer.js";
 
 let stripe;
@@ -821,7 +821,57 @@ async function handleWebhook(req, res) {
 
       const nftReturn = await returnFiatEscrowAssets(paymentIntentId);
 
-      return res.status(200).json({ received: true, action: "refund_recorded", nftReturn });
+      // Stock + order status. A full refund of a fish that never left the seller
+      // puts it back on sale; a handed-off or partial refund leaves stock alone
+      // (see refundRestockDecision). The order is marked refunded so it can't be
+      // handed off (and paid out) afterwards. Never fails the webhook.
+      const fullyRefunded = charge.refunded === true;
+      let restock = { applied: false, skipped: "not_attempted" };
+      try {
+        const { data: order } = await supabase
+          .from("orders")
+          .select("id, status")
+          .eq("stripe_payment_intent", paymentIntentId)
+          .maybeSingle();
+
+        restock = await restockRefundedCardSale({
+          supabase,
+          paymentIntentId,
+          fullyRefunded,
+          orderStatus: order?.status ?? null,
+        });
+        if (restock.applied) {
+          console.log(`[Inventory] refund ${paymentIntentId}: restocked, now ${restock.quantityRemaining}`);
+        } else if (restock.error) {
+          console.error(`[Inventory] refund restock failed for ${paymentIntentId}:`, restock.error);
+        }
+
+        // A committed hold left behind by a failed decrement would keep blocking
+        // the unit. Release it (no-op when already released).
+        if (fullyRefunded && isCanonicalSettlementEnabled()) {
+          try {
+            const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+            if (pi?.metadata?.reservationGroupId) {
+              await releaseCheckoutReservations({ supabase, metadata: pi.metadata, now: Date.now() });
+            }
+          } catch (relErr) {
+            console.warn("[Canonical] refund hold release skipped:", relErr.message);
+          }
+        }
+
+        // Mark refunded only once the restock (if any) is done, so a failed
+        // restock can be retried by resending the event.
+        if (fullyRefunded && order && order.status !== "refunded" && !restock.error) {
+          await supabase
+            .from("orders")
+            .update({ status: "refunded", updated_at: new Date().toISOString() })
+            .eq("id", order.id);
+        }
+      } catch (stockErr) {
+        console.error("[Inventory] refund stock handling error:", stockErr?.message || stockErr);
+      }
+
+      return res.status(200).json({ received: true, action: "refund_recorded", nftReturn, restock });
     }
 
     case "account.updated": {
@@ -3065,6 +3115,21 @@ async function handleGuestHandoffConfirm(req, res) {
   }
   if (!order.stripe_payment_intent) {
     return res.status(400).json({ error: "Order has no payment to release" });
+  }
+  // A refunded order (fully, or partly — fiat_settlements flips on any refund)
+  // must never pay out: the buyer already has that money back.
+  {
+    const { data: settlement, error: settlementErr } = await supabase
+      .from("fiat_settlements")
+      .select("status")
+      .eq("stripe_payment_intent_id", order.stripe_payment_intent)
+      .maybeSingle();
+    if (settlementErr) {
+      return res.status(503).json({ error: "Couldn't check this payment. Try again.", code: "SETTLEMENT_CHECK_UNAVAILABLE" });
+    }
+    if (order.status === "refunded" || settlement?.status === "refunded") {
+      return res.status(409).json({ error: "This order was refunded, so there's nothing to release.", code: "REFUNDED" });
+    }
   }
 
   // Authoritative payout math from the PaymentIntent metadata.

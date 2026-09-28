@@ -337,6 +337,9 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
       quantity: qty,
       unitPriceCents: line.priceCents,
       forSeller: actingFor,
+      // This is the live tap, so the seller still has the fish in hand: refuse
+      // it if an online buyer is mid-checkout. The offline replay doesn't.
+      respectHolds: true,
     });
 
     if (result.success) {

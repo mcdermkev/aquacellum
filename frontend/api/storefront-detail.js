@@ -2651,6 +2651,9 @@ async function handleRecordSale(req, res) {
     rail = "cash",
     note = null,
     forSeller = null,
+    // Live tap at the booth: don't take a fish an online buyer is paying for.
+    // Offline replays omit it — that fish already left the table.
+    respectHolds = false,
   } = body || {};
 
   // Booth staff: a helper may ring up a sale against the seller's stock, but
@@ -2689,7 +2692,7 @@ async function handleRecordSale(req, res) {
   // Server-minted sale ids live in reserved namespaces (card webhook `stripe:<pi>`,
   // stock audit `adjust:`). A client-chosen id there could pre-empt a card sale's
   // decrement, so refuse it. Booth ids are UUIDs / `booth-…`.
-  if (/^(stripe|adjust):/i.test(saleId)) {
+  if (/^(stripe|adjust|restock):/i.test(saleId)) {
     return res.status(400).json({ error: "Invalid saleId", code: "SALE_ID_RESERVED" });
   }
   if (listingId == null || String(listingId).trim() === "") {
@@ -2719,10 +2722,17 @@ async function handleRecordSale(req, res) {
       p_seller: sellerWallet,
       p_rail: "cash",
       p_order_id: null,
+      p_respect_holds: respectHolds === true,
     });
 
     if (rpcError) {
       const msg = rpcError.message || "";
+      if (/\bheld:/i.test(msg)) {
+        return res.status(409).json({
+          error: "Someone is paying for this online right now. Hold on a few minutes, or sell a different one.",
+          code: "HELD_FOR_CHECKOUT",
+        });
+      }
       if (/oversell/i.test(msg)) {
         return res.status(409).json({
           error: "Not enough stock left for that sale.",

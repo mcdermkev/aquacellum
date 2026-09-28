@@ -46,6 +46,8 @@ const PERMANENT_CODES = Object.freeze([
   "SALE_ID_CONFLICT",
   "HELPER_QUANTITY_LIMIT",
   "HELPER_PRICE_REQUIRED",
+  // Only returned to a live tap; the seller decides what to do, no auto-retry.
+  "HELD_FOR_CHECKOUT",
 ]);
 
 function defaultTable() {

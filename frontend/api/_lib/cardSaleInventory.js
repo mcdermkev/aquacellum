@@ -75,3 +75,51 @@ export async function recordCardSaleInventory({ supabase, metadata, paymentInten
 
   return { applied: true, quantityRemaining: Number(data), holdsReleased };
 }
+
+// ─── Refunds ────────────────────────────────────────────────────────────────
+
+export const RESTOCK_ID_PREFIX = "restock:";
+
+/**
+ * Order statuses meaning the fish never left the seller. Only these restock on a
+ * refund. Anything else — handed off (`released`/`completed`), shipped, disputed,
+ * unknown — keeps the stock as is: putting back a fish that's gone creates a
+ * phantom that can be sold twice, while missing a restock only under-sells and
+ * the seller fixes it with +.
+ */
+const NOT_HANDED_OFF = new Set(["locked", "pending"]);
+
+/**
+ * Pure: should this refund put stock back?
+ * @param {{ fullyRefunded: boolean, orderStatus: string|null|undefined }} args
+ * @returns {{ restock: boolean, reason?: string }}
+ */
+export function refundRestockDecision({ fullyRefunded, orderStatus }) {
+  if (!fullyRefunded) return { restock: false, reason: "partial_refund" };
+  if (orderStatus == null) return { restock: false, reason: "no_order" };
+  if (!NOT_HANDED_OFF.has(String(orderStatus))) return { restock: false, reason: `order_${orderStatus}` };
+  return { restock: true };
+}
+
+/**
+ * Put a refunded card sale's fish back in stock, exactly once
+ * (`restock_card_sale` is idempotent on the PaymentIntent).
+ *
+ * @param {object} args
+ * @param {{ rpc: Function }} args.supabase - service-role client
+ * @param {string} args.paymentIntentId
+ * @param {boolean} args.fullyRefunded - Stripe charge.refunded (true only for a full refund)
+ * @param {string|null} args.orderStatus - the order row's status before this refund
+ * @returns {Promise<{ applied: boolean, skipped?: string, quantityRemaining?: number, error?: string }>}
+ */
+export async function restockRefundedCardSale({ supabase, paymentIntentId, fullyRefunded, orderStatus }) {
+  if (!paymentIntentId) return { applied: false, skipped: "no_payment_intent" };
+  const decision = refundRestockDecision({ fullyRefunded, orderStatus });
+  if (!decision.restock) return { applied: false, skipped: decision.reason };
+
+  const { data, error } = await supabase.rpc("restock_card_sale", { p_payment_intent: paymentIntentId });
+  if (error) return { applied: false, error: error.message || String(error) };
+  // NULL: nothing was decremented for this payment (e.g. it was oversold).
+  if (data == null) return { applied: false, skipped: "no_card_decrement" };
+  return { applied: true, quantityRemaining: Number(data) };
+}

@@ -27,7 +27,7 @@ describe("#1 card and cash sale ids can't collide", () => {
   const f = fn(API, "handleRecordSale");
   it("record-sale refuses reserved stripe:/adjust: ids before touching stock", () => {
     const guard = f.indexOf("SALE_ID_RESERVED");
-    expect(f).toMatch(/\/\^\(stripe\|adjust\):\/i\.test\(saleId\)/);
+    expect(f).toMatch(/\/\^\(stripe\|adjust(?:\|restock)?\):\/i\.test\(saleId\)/);
     expect(guard).toBeGreaterThan(-1);
     expect(guard).toBeLessThan(f.indexOf('rpc("record_inventory_sale"'));
   });

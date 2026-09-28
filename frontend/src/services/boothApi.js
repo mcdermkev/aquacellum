@@ -66,6 +66,7 @@ export async function recordCashSale({
   unitPriceCents,
   note = null,
   forSeller = null,
+  respectHolds = false,
   fetchImpl = fetch,
 } = {}) {
   const headers = { "Content-Type": "application/json" };
@@ -89,6 +90,9 @@ export async function recordCashSale({
         // honours it for an active booth_staff membership; omitted otherwise so
         // the seller's own sale request is unchanged.
         ...(forSeller ? { forSeller: String(forSeller).toLowerCase() } : {}),
+        // Live tap only: refuse a fish an online buyer is paying for. Offline
+        // replays (sendQueuedSale) leave it off — that fish already left.
+        ...(respectHolds ? { respectHolds: true } : {}),
       }),
     });
   } catch (err) {

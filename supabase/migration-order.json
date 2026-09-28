@@ -144,6 +144,7 @@
     "frontend/supabase/migrations/20260926_inventory_adjust_by_delta.sql",
     "frontend/supabase/migrations/20260926_server_only_rpc_lockdown.sql",
     "frontend/supabase/migrations/20260927_booth_staff.sql",
-    "frontend/supabase/migrations/20260927_inventory_ledger_hardening.sql"
+    "frontend/supabase/migrations/20260927_inventory_ledger_hardening.sql",
+    "frontend/supabase/migrations/20260929_stock_holds_and_refund_restock.sql"
   ]
 }
