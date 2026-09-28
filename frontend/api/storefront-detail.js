@@ -3735,7 +3735,7 @@ const AUCTION_LOT_PUBLIC_COLUMNS =
   "id, auction_id, host_type, school_id, club_name, club_slug, auction_title, seller_wallet, seller_name, " +
   "title, description, photos, source, quantity, starting_bid_cents, has_reserve, reserve_met, high_bid_cents, " +
   "bid_count, min_next_bid_cents, starts_at, ends_at, pickup_location, pickup_notes, members_only_bidding, " +
-  "public_status, sold_for_cents, closed_at, created_at";
+  "public_status, sold_for_cents, closed_at, created_at, seller_slug";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function publicLot(row) {
@@ -3746,7 +3746,7 @@ function publicLot(row) {
     hostType: row.host_type,
     club: row.school_id ? { id: row.school_id, name: row.club_name, slug: row.club_slug } : null,
     auctionTitle: row.auction_title,
-    seller: { wallet: row.seller_wallet, name: row.seller_name || null },
+    seller: { wallet: row.seller_wallet, name: row.seller_name || null, slug: row.seller_slug || null },
     title: row.title,
     description: row.description,
     photos: Array.isArray(row.photos) ? row.photos : [],

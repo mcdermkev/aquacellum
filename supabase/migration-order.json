@@ -149,6 +149,7 @@
     "frontend/supabase/migrations/20260929_seller_events.sql",
     "frontend/supabase/migrations/20260929_auction_rpc_lockdown.sql",
     "frontend/supabase/migrations/20260929_auctions_v2.sql",
-    "frontend/supabase/migrations/20260929_auctions_v2_money.sql"
+    "frontend/supabase/migrations/20260929_auctions_v2_money.sql",
+    "frontend/supabase/migrations/20260929_auctions_v2_store_name.sql"
   ]
 }

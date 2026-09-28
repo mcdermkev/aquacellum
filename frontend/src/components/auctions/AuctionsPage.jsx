@@ -356,7 +356,12 @@ function AuctionLotDetail({ lotId, signedIn, onRequireSignIn, onNavigate }) {
         <div>
           <h2 id="lot-title" style={{ color: "#fff", fontSize: "1.4rem", margin: 0 }}>{lot.title}</h2>
           <p style={{ color: "var(--text-muted)", margin: "0.3rem 0 0 0", fontSize: "0.9rem" }}>
-            {lot.club ? `${lot.club.name} · ` : ""}Sold by {lot.seller.name || "a breeder"}
+            {lot.club ? `${lot.club.name} · ` : ""}Sold by{" "}
+            {lot.seller.slug ? (
+              <a href={`/app/store/${encodeURIComponent(lot.seller.slug)}`} onClick={(e) => { e.preventDefault(); onNavigate(`/app/store/${encodeURIComponent(lot.seller.slug)}`); }} style={{ color: "#7dd3fc" }}>
+                {lot.seller.name || "their store"}
+              </a>
+            ) : (lot.seller.name || "a breeder")}
             {lot.source === "batch_listing" && lot.quantity > 1 ? ` · ${lot.quantity} fish` : ""}
           </p>
         </div>
