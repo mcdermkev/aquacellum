@@ -86,6 +86,7 @@ import {
   SALES_CHANNEL,
 } from "./_lib/sellerEvents.js";
 import { FEE_RAIL, resolveFeePolicy } from "../src/services/feePolicy.js";
+import { mapAuctionDbError, parseLotListQuery, validateLotInput } from "./_lib/auctionLots.js";
 import {
   createShowcaseMediaHandler,
   createShowcaseRoomHandler,
@@ -232,6 +233,19 @@ export default async function handler(req, res) {
       return handleBoothEventEnd(req, res);
     case "booth-event-report":
       return handleBoothEventReport(req, res);
+    // ── Public auctions (docs/AUCTIONS_SPEC.md) ──
+    case "auctions":
+      return handleAuctionsPublic(req, res);
+    case "auction-lot":
+      return handleAuctionLot(req, res);
+    case "auction-bid":
+      return handleAuctionBid(req, res);
+    case "auction-create-lot":
+      return handleAuctionCreateLot(req, res);
+    case "auction-cancel-lot":
+      return handleAuctionCancelLot(req, res);
+    case "my-auctions":
+      return handleMyAuctions(req, res);
     // ── Aquadex tank QR: publish a tank, and the public read behind the label ──
     case "publish-tank":
       return handlePublishTank(req, res);
@@ -3706,4 +3720,288 @@ async function handleBoothEventReport(req, res) {
     truncated: orders.length >= MAX_REPORT_ORDERS,
     generatedAt: new Date(now).toISOString(),
   });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PUBLIC AUCTIONS — browse, lot detail, bid, create/cancel a lot, my auctions
+// (docs/AUCTIONS_SPEC.md, migration 20260929_auctions_v2.sql)
+//
+// Reads use the *_public views (no reserve amounts, no bidder wallets). Every
+// write calls a service-role-only RPC with the VERIFIED session wallet; the
+// database enforces the bid rules under a row lock.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const AUCTION_LOT_PUBLIC_COLUMNS =
+  "id, auction_id, host_type, school_id, club_name, club_slug, auction_title, seller_wallet, seller_name, " +
+  "title, description, photos, source, quantity, starting_bid_cents, has_reserve, reserve_met, high_bid_cents, " +
+  "bid_count, min_next_bid_cents, starts_at, ends_at, pickup_location, pickup_notes, members_only_bidding, " +
+  "public_status, sold_for_cents, closed_at, created_at";
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function publicLot(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    auctionId: row.auction_id,
+    hostType: row.host_type,
+    club: row.school_id ? { id: row.school_id, name: row.club_name, slug: row.club_slug } : null,
+    auctionTitle: row.auction_title,
+    seller: { wallet: row.seller_wallet, name: row.seller_name || null },
+    title: row.title,
+    description: row.description,
+    photos: Array.isArray(row.photos) ? row.photos : [],
+    source: row.source,
+    quantity: row.quantity,
+    startingBidCents: row.starting_bid_cents,
+    hasReserve: row.has_reserve,
+    reserveMet: row.reserve_met,
+    highBidCents: row.high_bid_cents,
+    bidCount: row.bid_count,
+    minNextBidCents: row.min_next_bid_cents,
+    startsAt: row.starts_at,
+    endsAt: row.ends_at,
+    pickupLocation: row.pickup_location,
+    pickupNotes: row.pickup_notes,
+    membersOnlyBidding: row.members_only_bidding,
+    status: row.public_status,
+    soldForCents: row.sold_for_cents,
+    closedAt: row.closed_at,
+    createdAt: row.created_at,
+  };
+}
+
+/** The verified session wallet, or null without failing the request (public reads). */
+async function optionalSessionWallet(req) {
+  const header = req.headers?.authorization || req.headers?.Authorization;
+  if (!header) return null;
+  try {
+    const auth = await verifyPrivyToken(req);
+    // A misconfigured verifier must not block a PUBLIC read: log it and treat the
+    // viewer as signed out (they just don't get their personal status).
+    if (isPrivyConfigurationFailure(auth)) {
+      console.error("[auction-lot] Privy verifier misconfigured; serving the public view");
+      return null;
+    }
+    return auth?.verified && auth.walletAddress ? auth.walletAddress.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+function escapeLike(s) {
+  return String(s).replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+/** GET — public list of lots. ?status=live|ended&sort=ending|new|nobids&q=&club=&limit= */
+async function handleAuctionsPublic(req, res) {
+  setCorsHeaders(req, res, { methods: "GET, OPTIONS" });
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "GET") return res.status(405).json({ error: "method_not_allowed" });
+
+  const { status, sort, q, club, limit } = parseLotListQuery(req.query || {});
+  let query = supabase.from("auction_lots_public").select(AUCTION_LOT_PUBLIC_COLUMNS);
+  if (status === "live") {
+    query = query.in("public_status", ["live", "upcoming"]);
+    if (sort === "nobids") query = query.eq("bid_count", 0);
+    query = sort === "new" ? query.order("created_at", { ascending: false }) : query.order("ends_at", { ascending: true });
+  } else {
+    query = query.in("public_status", ["sold", "unsold", "closed"]).order("closed_at", { ascending: false, nullsFirst: false });
+  }
+  if (q) query = query.ilike("title", `%${escapeLike(q)}%`);
+  if (club) query = query.eq("club_slug", club);
+
+  const { data, error } = await query.limit(limit);
+  if (error) {
+    console.error("[auctions] list failed:", error.message);
+    return res.status(500).json({ error: "Could not load auctions." });
+  }
+  res.setHeader("Cache-Control", "public, s-maxage=5, stale-while-revalidate=10");
+  return res.status(200).json({ ok: true, lots: (data || []).map(publicLot), serverTime: new Date().toISOString() });
+}
+
+/** GET ?id= — one lot, its bid history, and (when signed in) where you stand. */
+async function handleAuctionLot(req, res) {
+  setCorsHeaders(req, res, { methods: "GET, OPTIONS", headers: "Content-Type, Authorization" });
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "GET") return res.status(405).json({ error: "method_not_allowed" });
+
+  const id = String(req.query?.id || "");
+  if (!UUID_RE.test(id)) return res.status(400).json({ error: "Invalid lot id.", code: "LOT_ID_INVALID" });
+
+  const [lotResult, bidsResult] = await Promise.all([
+    supabase.from("auction_lots_public").select(AUCTION_LOT_PUBLIC_COLUMNS).eq("id", id).maybeSingle(),
+    supabase.from("auction_lot_bids_public").select("amount_cents, created_at, bidder_number")
+      .eq("lot_id", id).order("created_at", { ascending: false }).limit(50),
+  ]);
+  if (lotResult.error) {
+    console.error("[auction-lot] failed:", lotResult.error.message);
+    return res.status(500).json({ error: "Could not load the lot." });
+  }
+  if (!lotResult.data) return res.status(404).json({ error: "Lot not found.", code: "NOT_FOUND" });
+
+  const lot = publicLot(lotResult.data);
+  const bids = (bidsResult.data || []).map((b) => ({ amountCents: b.amount_cents, at: b.created_at, bidder: `Bidder ${b.bidder_number}` }));
+
+  const wallet = await optionalSessionWallet(req);
+  let viewer = null;
+  if (wallet) {
+    const [{ data: own }, { data: card }] = await Promise.all([
+      supabase.from("auction_lots").select("high_bidder_wallet, winner_wallet, seller_wallet").eq("id", id).maybeSingle(),
+      supabase.from("buyer_payment_methods").select("payment_method_id").ilike("wallet_address", wallet).maybeSingle(),
+    ]);
+    viewer = {
+      isSeller: own?.seller_wallet === wallet,
+      isHighBidder: own?.high_bidder_wallet === wallet,
+      isWinner: own?.winner_wallet === wallet,
+      hasCard: !!card?.payment_method_id,
+    };
+    res.setHeader("Cache-Control", "private, no-store");
+  } else {
+    res.setHeader("Cache-Control", "public, s-maxage=2, stale-while-revalidate=5");
+  }
+  return res.status(200).json({ ok: true, lot, bids, viewer, serverTime: new Date().toISOString() });
+}
+
+/** POST { lotId, amountCents } — place a bid as the signed-in account. */
+async function handleAuctionBid(req, res) {
+  if (!boothStaffPreamble(req, res, "POST")) return;
+  const bidder = await requireWalletFromSession(req, res);
+  if (!bidder) return;
+
+  const { lotId, amountCents } = parseJsonBody(req);
+  if (!UUID_RE.test(String(lotId || ""))) return res.status(400).json({ error: "Invalid lot id.", code: "LOT_ID_INVALID" });
+  const amount = Number(amountCents);
+  if (!Number.isInteger(amount) || amount < 100) {
+    return res.status(400).json({ error: "Enter a bid in whole cents, at least $1.", code: "BID_INVALID" });
+  }
+
+  const { data, error } = await supabase.rpc("place_lot_bid", { p_lot: lotId, p_bidder: bidder, p_amount: amount });
+  if (error) {
+    const mapped = mapAuctionDbError(error.message);
+    if (mapped.status >= 500) console.error("[auction-bid] failed:", error.message);
+    return res.status(mapped.status).json({ error: mapped.error, code: mapped.code });
+  }
+  return res.status(200).json({ ok: true, ...data });
+}
+
+/** POST — list a new lot as the signed-in seller. */
+async function handleAuctionCreateLot(req, res) {
+  if (!boothStaffPreamble(req, res, "POST")) return;
+  const seller = await requireWalletFromSession(req, res);
+  if (!seller) return;
+
+  const checked = validateLotInput(parseJsonBody(req), Date.now());
+  if (!checked.ok) return res.status(400).json({ error: checked.error, code: checked.code });
+
+  // Winners are charged automatically, so the money needs somewhere to land.
+  const { data: payouts, error: payoutsError } = await supabase
+    .from("seller_stripe_accounts")
+    .select("onboarding_complete")
+    .eq("wallet_address", seller)
+    .maybeSingle();
+  if (payoutsError) return res.status(503).json({ error: "Couldn't check your payout setup. Try again.", code: "PAYOUTS_CHECK_UNAVAILABLE" });
+  if (!payouts?.onboarding_complete) {
+    return res.status(409).json({ error: "Set up payouts before listing an auction. Winners are charged automatically.", code: "PAYOUTS_REQUIRED" });
+  }
+
+  const v = checked.value;
+  const { data: lotId, error } = await supabase.rpc("create_auction_lot", {
+    p_seller: seller,
+    p_title: v.title,
+    p_description: v.description,
+    p_photos: v.photos,
+    p_source: v.source,
+    p_listing_id: v.listingId,
+    p_quantity: v.quantity,
+    p_starting_bid: v.startingBidCents,
+    p_reserve: v.reserveCents,
+    p_ends_at: v.endsAt,
+    p_pickup_location: v.pickupLocation,
+    p_pickup_notes: v.pickupNotes,
+  });
+  if (error) {
+    const mapped = mapAuctionDbError(error.message);
+    if (mapped.status >= 500) console.error("[auction-create-lot] failed:", error.message);
+    return res.status(mapped.status).json({ error: mapped.error, code: mapped.code });
+  }
+  return res.status(200).json({ ok: true, lotId });
+}
+
+/** POST { lotId } — the seller cancels a lot that has no bids (stock goes back). */
+async function handleAuctionCancelLot(req, res) {
+  if (!boothStaffPreamble(req, res, "POST")) return;
+  const seller = await requireWalletFromSession(req, res);
+  if (!seller) return;
+
+  const { lotId } = parseJsonBody(req);
+  if (!UUID_RE.test(String(lotId || ""))) return res.status(400).json({ error: "Invalid lot id.", code: "LOT_ID_INVALID" });
+
+  const { data, error } = await supabase.rpc("cancel_auction_lot", { p_lot: lotId, p_seller: seller });
+  if (error) {
+    const mapped = mapAuctionDbError(error.message);
+    return res.status(mapped.status).json({ error: mapped.error, code: mapped.code });
+  }
+  return res.status(200).json({ ok: true, ...data });
+}
+
+/** GET — lots I'm selling, and lots I've bid on (with whether I'm winning / won). */
+async function handleMyAuctions(req, res) {
+  if (!boothStaffPreamble(req, res, "GET")) return;
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+
+  const LOT_COLUMNS =
+    "id, title, photos, status, source, quantity, starting_bid_cents, reserve_cents, high_bid_cents, high_bidder_wallet, " +
+    "bid_count, ends_at, winner_wallet, hammer_cents, payment_deadline, last_charge_error, closed_at, created_at";
+
+  const [sellingResult, myBidsResult] = await Promise.all([
+    supabase.from("auction_lots").select(LOT_COLUMNS).eq("seller_wallet", wallet).order("created_at", { ascending: false }).limit(50),
+    supabase.from("auction_lot_bids").select("lot_id, amount_cents").eq("bidder_wallet", wallet).order("created_at", { ascending: false }).limit(300),
+  ]);
+  if (sellingResult.error || myBidsResult.error) {
+    console.error("[my-auctions] failed:", (sellingResult.error || myBidsResult.error).message);
+    return res.status(500).json({ error: "Could not load your auctions." });
+  }
+
+  const myTop = new Map();
+  for (const b of myBidsResult.data || []) {
+    myTop.set(b.lot_id, Math.max(myTop.get(b.lot_id) || 0, b.amount_cents));
+  }
+  let bidding = [];
+  if (myTop.size > 0) {
+    const { data: lots, error } = await supabase.from("auction_lots").select(LOT_COLUMNS).in("id", [...myTop.keys()].slice(0, 100));
+    if (error) return res.status(500).json({ error: "Could not load your bids." });
+    bidding = (lots || []).map((l) => ({
+      id: l.id,
+      title: l.title,
+      photo: Array.isArray(l.photos) ? l.photos[0] || null : null,
+      status: l.status,
+      endsAt: l.ends_at,
+      highBidCents: l.high_bid_cents,
+      myTopBidCents: myTop.get(l.id),
+      winning: l.status === "live" && l.high_bidder_wallet === wallet,
+      won: l.winner_wallet === wallet,
+      amountDueCents: l.winner_wallet === wallet ? l.hammer_cents : null,
+      paymentDeadline: l.winner_wallet === wallet ? l.payment_deadline : null,
+      lastChargeError: l.winner_wallet === wallet ? l.last_charge_error : null,
+    })).sort((a, b) => String(b.endsAt).localeCompare(String(a.endsAt)));
+  }
+
+  const selling = (sellingResult.data || []).map((l) => ({
+    id: l.id,
+    title: l.title,
+    photo: Array.isArray(l.photos) ? l.photos[0] || null : null,
+    status: l.status,
+    source: l.source,
+    quantity: l.quantity,
+    startingBidCents: l.starting_bid_cents,
+    reserveCents: l.reserve_cents,
+    highBidCents: l.high_bid_cents,
+    bidCount: l.bid_count,
+    endsAt: l.ends_at,
+    hammerCents: l.hammer_cents,
+    closedAt: l.closed_at,
+  }));
+
+  return res.status(200).json({ ok: true, selling, bidding });
 }
