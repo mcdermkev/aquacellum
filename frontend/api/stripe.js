@@ -791,7 +791,23 @@ async function handleWebhook(req, res) {
         .update({ status: "disputed", disputed_at: new Date().toISOString() })
         .eq("stripe_payment_intent_id", paymentIntentId);
 
-      return res.status(200).json({ received: true, action: "dispute_flagged" });
+      // A club desk payment: Stripe takes the disputed amount from us, so take
+      // the club's payout back too. If we win the dispute, re-send it by hand
+      // from the Stripe dashboard (docs/AUCTIONS_SPEC.md §9a).
+      let clubDesk = null;
+      try {
+        const { data: deskPay, error: deskErr } = await supabase.rpc("desk_record_dispute", { p_payment_intent: paymentIntentId });
+        if (deskErr) console.error("[Club desk] dispute record failed:", paymentIntentId, deskErr.message);
+        else if (deskPay) {
+          // A dispute covers whatever wasn't refunded, so the whole payout comes
+          // back. A fixed target keeps a replayed webhook from reversing twice.
+          clubDesk = await reverseClubDeskPayout(deskPay, Number(deskPay.payoutCents || 0), "dispute");
+        }
+      } catch (deskDisputeErr) {
+        console.error("[Club desk] dispute handling error:", paymentIntentId, deskDisputeErr?.message || deskDisputeErr);
+      }
+
+      return res.status(200).json({ received: true, action: "dispute_flagged", clubDesk });
     }
 
     case "setup_intent.succeeded": {
@@ -859,6 +875,23 @@ async function handleWebhook(req, res) {
         if (lotRefundError) console.error("[Auction] refund state update failed:", paymentIntentId, lotRefundError.message);
       }
 
+      // A club desk payment: record the refund and take the same share back
+      // from the club's payout (we already paid them). No-op for other payments.
+      let clubDesk = null;
+      try {
+        const { data: deskPay, error: deskErr } = await supabase.rpc("desk_record_refund", {
+          p_payment_intent: paymentIntentId,
+          p_refunded_cents: Number(charge.amount_refunded) || 0,
+          p_full: charge.refunded === true,
+        });
+        if (deskErr) console.error("[Club desk] refund record failed:", paymentIntentId, deskErr.message);
+        else if (deskPay) {
+          clubDesk = await reverseClubDeskPayout(deskPay, clubDeskRefundTarget(deskPay, charge.amount_refunded, charge.amount), "refund");
+        }
+      } catch (deskRefundErr) {
+        console.error("[Club desk] refund handling error:", paymentIntentId, deskRefundErr?.message || deskRefundErr);
+      }
+
       // Stock + order status. A full refund of a fish that never left the seller
       // puts it back on sale; a handed-off or partial refund leaves stock alone
       // (see refundRestockDecision). The order is marked refunded so it can't be
@@ -909,7 +942,7 @@ async function handleWebhook(req, res) {
         console.error("[Inventory] refund stock handling error:", stockErr?.message || stockErr);
       }
 
-      return res.status(200).json({ received: true, action: "refund_recorded", nftReturn, restock });
+      return res.status(200).json({ received: true, action: "refund_recorded", nftReturn, restock, clubDesk });
     }
 
     case "account.updated": {
@@ -4826,19 +4859,74 @@ async function settleClubDeskPayment(paymentId, paymentIntent) {
   const payoutCents = Number(settled.goodsCents) - Number(settled.platformFeeCents);
   if (md.clubStripeAccountId && payoutCents > 0) {
     try {
-      await createSellerTransfer(stripe, {
+      const transfer = await createSellerTransfer(stripe, {
         sellerStripeAccountId: md.clubStripeAccountId,
         amountCents: payoutCents,
         transferGroup: md.transferGroup,
         reference: paymentIntent.id,
       });
+      await supabase.from("auction_desk_payments")
+        .update({ stripe_transfer_id: transfer?.id || null, payout_cents: payoutCents, transfer_error: null })
+        .eq("id", paymentId);
     } catch (e) {
       // Paid and handed over; the transfer can be retried from the Stripe
-      // dashboard. Loud, but never un-pays the buyer.
+      // dashboard. Recorded so the console shows it; never un-pays the buyer.
       console.error("[Club desk] PAID but club transfer failed:", paymentId, paymentIntent.id, e?.message || e);
+      await supabase.from("auction_desk_payments")
+        .update({ payout_cents: payoutCents, transfer_error: String(e?.message || e || "Transfer failed").slice(0, 500) })
+        .eq("id", paymentId);
     }
   }
   return { paid: true, payoutCents };
+}
+
+/**
+ * Take back part or all of the club's payout for a desk payment, up to
+ * `targetCents` reversed in total. Idempotent: Stripe's `amount_reversed` on
+ * the transfer decides what's left to send, so a replay sends nothing. Never throws;
+ * a failure is recorded on the payment for the console.
+ *
+ * @param {{ id:string, payoutCents:number|null, transferId:string|null, reversedCents:number }} pay
+ */
+async function reverseClubDeskPayout(pay, targetCents, reason) {
+  const payout = Number(pay?.payoutCents || 0);
+  const target = Math.min(payout, Math.max(0, Math.round(Number(targetCents) || 0)));
+  if (!pay?.transferId || target - Number(pay?.reversedCents || 0) <= 0) return { reversedCents: 0 };
+  try {
+    // Stripe's own count is the truth (our row could lag a crashed write).
+    const transfer = await stripe.transfers.retrieve(pay.transferId);
+    const already = Number(transfer?.amount_reversed || 0);
+    const amount = target - already;
+    if (amount <= 0) {
+      await supabase.from("auction_desk_payments").update({ reversed_cents: Math.min(payout, already) }).eq("id", pay.id);
+      return { reversedCents: 0 };
+    }
+    const reversal = await stripe.transfers.createReversal(
+      pay.transferId,
+      { amount, metadata: { reason, deskPaymentId: String(pay.id) } },
+      // Keyed on where it starts and ends, so a retry of this exact step
+      // returns the same reversal instead of sending another.
+      { idempotencyKey: `club-desk-reversal-${pay.id}-${already}-${target}` },
+    );
+    await supabase.from("auction_desk_payments")
+      .update({ reversed_cents: target, reversal_error: null })
+      .eq("id", pay.id).lt("reversed_cents", target);
+    return { reversedCents: amount, reversalId: reversal?.id };
+  } catch (e) {
+    console.error("[Club desk] payout reversal failed:", pay.id, pay.transferId, "target", target, e?.message || e);
+    await supabase.from("auction_desk_payments")
+      .update({ reversal_error: String(e?.message || e || "Reversal failed").slice(0, 500) })
+      .eq("id", pay.id);
+    return { reversedCents: 0, error: e?.message || String(e) };
+  }
+}
+
+/** The club's share of a refund: its payout, scaled by how much of the charge came back. */
+function clubDeskRefundTarget(pay, refundedCents, chargeCents) {
+  const payout = Number(pay?.payoutCents || 0);
+  const total = Number(chargeCents) || Number(pay?.totalCents) || 0;
+  if (!payout || !total) return 0;
+  return Math.min(payout, Math.round(payout * (Math.min(Number(refundedCents) || 0, total) / total)));
 }
 
 /**
@@ -4976,26 +5064,43 @@ async function handleClubDeskCard(req, res) {
       return res.status(402).json({ error: `The charge is ${intent.status}. Use the QR instead.`, code: "CHARGE_FAILED" });
     }
     await supabase.rpc("desk_attach_stripe", { p_payment: begun.paymentId, p_payment_intent: intent.id, p_session: null });
-    await settleClubDeskPayment(begun.paymentId, intent);
+    try {
+      await settleClubDeskPayment(begun.paymentId, intent);
+    } catch (e) {
+      // The card WAS charged. Never report a failure here: a retry would void
+      // this payment and charge again. The payment_intent.succeeded webhook
+      // retries the settle until the lots are marked.
+      console.error("[Club desk] saved card charged but settle failed; webhook will retry:", begun.paymentId, intent.id, e?.message || e);
+    }
     return res.status(200).json({ ok: true, paid: true, totalCents: plan.buyerTotalCents, paymentId: begun.paymentId });
   }
 
   // Checkout on the bidder's phone.
   const appUrl = process.env.APP_URL || "https://aquacellum.com";
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    line_items: [
-      { price_data: { currency: "usd", product_data: { name: `${auction.title}: ${(owed || []).length} lot${(owed || []).length === 1 ? "" : "s"}`.slice(0, 120), description: `Bidder #${bidder.bidder_number} · ${bidder.name}`.slice(0, 200) }, unit_amount: goods }, quantity: 1 },
-      ...(plan.processingFeeCents > 0 ? [{ price_data: { currency: "usd", product_data: { name: "Card processing fee" }, unit_amount: plan.processingFeeCents }, quantity: 1 }] : []),
-    ],
-    payment_intent_data: { transfer_group: transferGroup, description, metadata, ...(bidder.email ? { receipt_email: bidder.email } : {}) },
-    metadata,
-    ...(bidder.email ? { customer_email: bidder.email } : {}),
-    payment_method_types: ["card"],
-    expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
-    success_url: `${appUrl}/app/auction-night/${auction.id}/room?paid=${bidder.bidder_number}`,
-    cancel_url: `${appUrl}/app/auction-night/${auction.id}/room`,
-  });
+  let session;
+  try {
+    session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      line_items: [
+        { price_data: { currency: "usd", product_data: { name: `${auction.title}: ${(owed || []).length} lot${(owed || []).length === 1 ? "" : "s"}`.slice(0, 120), description: `Bidder #${bidder.bidder_number} · ${bidder.name}`.slice(0, 200) }, unit_amount: goods }, quantity: 1 },
+        ...(plan.processingFeeCents > 0 ? [{ price_data: { currency: "usd", product_data: { name: "Card processing fee" }, unit_amount: plan.processingFeeCents }, quantity: 1 }] : []),
+      ],
+      payment_intent_data: { transfer_group: transferGroup, description, metadata, ...(bidder.email ? { receipt_email: bidder.email } : {}) },
+      metadata,
+      ...(bidder.email ? { customer_email: bidder.email } : {}),
+      payment_method_types: ["card"],
+      // Stripe's floor is 30 minutes after creation; a minute of slack keeps
+      // clock skew from rejecting every QR.
+      expires_at: Math.floor(Date.now() / 1000) + 31 * 60,
+      success_url: `${appUrl}/app/auction-night/${auction.id}/room?paid=${bidder.bidder_number}`,
+      cancel_url: `${appUrl}/app/auction-night/${auction.id}/room`,
+    });
+  } catch (err) {
+    // No QR exists, so free the lots (otherwise cash is blocked until Cancel).
+    await supabase.rpc("desk_fail_payment", { p_payment: begun.paymentId, p_error: String(err?.message || "Checkout failed").slice(0, 200) });
+    console.error("[Club desk] checkout create failed:", begun.paymentId, err?.message || err);
+    return res.status(502).json({ error: "Couldn't start the card payment. Try again, or take cash.", code: "CHECKOUT_FAILED" });
+  }
   await supabase.rpc("desk_attach_stripe", { p_payment: begun.paymentId, p_payment_intent: null, p_session: session.id });
   return res.status(200).json({ ok: true, checkoutUrl: session.url, paymentId: begun.paymentId, totalCents: plan.buyerTotalCents });
 }

@@ -15,12 +15,14 @@ import {
   parseLotImport,
 } from "../../api/_lib/auctionNight.js";
 import { resolveCommerceRoute } from "../services/commerceRoute.js";
+import { cardPaymentIssues } from "../services/auctionNightPayments.js";
 
 const read = (p) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
 const STRIPE = strip(read("../../api/stripe.js"));
 const DETAIL = strip(read("../../api/storefront-detail.js"));
 const SQL = read("../../supabase/migrations/20260929_club_auction_night.sql");
+const SERIALIZE_SQL = read("../../supabase/migrations/20260930_club_desk_serialize.sql");
 
 function fn(src, name) {
   const start = src.indexOf(`async function ${name}(`) > -1 ? src.indexOf(`async function ${name}(`) : src.indexOf(`function ${name}(`);
@@ -221,5 +223,108 @@ describe("club night migration", () => {
   });
   it("undo refuses once money has moved", () => {
     expect(SQL).toMatch(/l\.status = 'sold_live' and l\.desk_payment_id is null/);
+  });
+});
+
+describe("desk serialization (20260930)", () => {
+  const body = (name) => {
+    const start = SERIALIZE_SQL.indexOf(`function public.${name}(`);
+    expect(start, `${name} redefined`).toBeGreaterThan(-1);
+    return SERIALIZE_SQL.slice(start, SERIALIZE_SQL.indexOf("$$;", start));
+  };
+  for (const name of ["desk_record_cash", "desk_begin_card_payment"]) {
+    it(`${name} locks the bidder, then the lots, before reserving`, () => {
+      const b = body(name);
+      const bidderLock = b.search(/from public\.auction_bidders where id = p_bidder for update/);
+      const lotLock = b.search(/desk_payment_id is null\s+for update/);
+      const reserve = b.indexOf("select array_agg(id)");
+      expect(bidderLock).toBeGreaterThan(-1);
+      expect(lotLock).toBeGreaterThan(bidderLock);
+      expect(reserve).toBeGreaterThan(lotLock);
+    });
+  }
+  it("is listed in the migration order", () => {
+    expect(read("../../../supabase/migration-order.json")).toContain("frontend/supabase/migrations/20260930_club_desk_serialize.sql");
+  });
+});
+
+describe("desk payouts, refunds and disputes (20260930)", () => {
+  const REFUND_SQL = read("../../supabase/migrations/20260930_club_desk_refunds.sql");
+  it("records the club transfer, or why it failed", () => {
+    const settle = fn(STRIPE, "settleClubDeskPayment");
+    expect(settle).toMatch(/const transfer = await createSellerTransfer/);
+    expect(settle).toMatch(/stripe_transfer_id: transfer\?\.id/);
+    expect(settle).toMatch(/transfer_error: String\(/);
+  });
+  it("only a paid desk payment is refunded, and a full refund takes its lots off the report", () => {
+    expect(REFUND_SQL).toMatch(/stripe_payment_intent = p_payment_intent and status in \('paid', 'refunded'\)\s+for update/);
+    expect(REFUND_SQL).toMatch(/update public\.auction_lots set status = 'refunded'\s+where desk_payment_id = d\.id and status = 'handed_off'/);
+    expect(REFUND_SQL).toMatch(/least\(total_cents,/);
+    expect(buildConsignorReport({ lots: [{ id: "a", status: "refunded", hammer_cents: 1000 }], payments: [] }).totals.lotsSold).toBe(0);
+  });
+  it("keeps the new functions server-only", () => {
+    expect(REFUND_SQL).toMatch(/revoke execute on function public\.%s from public, anon, authenticated/);
+    expect(REFUND_SQL).toContain("'desk_record_refund(text, integer, boolean)'");
+    expect(REFUND_SQL).toContain("'desk_record_dispute(text)'");
+    expect(read("../../../supabase/migration-order.json")).toContain("frontend/supabase/migrations/20260930_club_desk_refunds.sql");
+  });
+  it("the refund and dispute webhooks take the club's share back", () => {
+    expect(STRIPE).toMatch(/desk_record_refund[\s\S]{0,400}reverseClubDeskPayout\(deskPay, clubDeskRefundTarget\(deskPay, charge\.amount_refunded, charge\.amount\), "refund"\)/);
+    expect(STRIPE).toMatch(/desk_record_dispute[\s\S]{0,600}reverseClubDeskPayout\(deskPay, Number\(deskPay\.payoutCents \|\| 0\), "dispute"\)/);
+  });
+  it("reversal is idempotent and trusts Stripe's own count", () => {
+    const rev = fn(STRIPE, "reverseClubDeskPayout");
+    expect(rev).toMatch(/stripe\.transfers\.retrieve\(pay\.transferId\)/);
+    expect(rev).toMatch(/const already = Number\(transfer\?\.amount_reversed \|\| 0\);\s*const amount = target - already;/);
+    expect(rev).toMatch(/idempotencyKey: `club-desk-reversal-\$\{pay\.id\}-\$\{already\}-\$\{target\}`/);
+    expect(rev).toMatch(/reversal_error/);
+  });
+  it("the club's share of a refund scales with the refund, capped at the payout", () => {
+    const src = fn(STRIPE, "clubDeskRefundTarget");
+    const target = new Function(`${src}; return clubDeskRefundTarget;`)();
+    const pay = { payoutCents: 9700, totalCents: 10330 };
+    expect(target(pay, 10330, 10330)).toBe(9700);
+    expect(target(pay, 5165, 10330)).toBe(4850);
+    expect(target(pay, 99999, 10330)).toBe(9700);
+    expect(target({ payoutCents: null, totalCents: 100 }, 100, 100)).toBe(0);
+  });
+});
+
+describe("card payment issues for the report", () => {
+  const bidders = [{ id: "b1", bidder_number: 7 }];
+  it("flags failed payouts, disputes, refunds and failed reversals; ignores cash and unpaid", () => {
+    const out = cardPaymentIssues([
+      { id: "p1", bidder_id: "b1", method: "card_checkout", status: "paid", payout_cents: 970, transfer_error: "no funds" },
+      { id: "p2", bidder_id: "b1", method: "card_saved", status: "refunded", total_cents: 1033, refunded_cents: 1033, reversed_cents: 970 },
+      { id: "p3", bidder_id: "b1", method: "card_checkout", status: "paid", total_cents: 1033, payout_cents: 970, disputed_at: "x", refunded_cents: 0 },
+      { id: "p4", bidder_id: "b1", method: "card_checkout", status: "paid", refunded_cents: 500, reversed_cents: 0, reversal_error: "x" },
+      { id: "p5", bidder_id: "b1", method: "cash", status: "paid", transfer_error: "n/a" },
+      { id: "p6", bidder_id: "b1", method: "card_checkout", status: "void", transfer_error: "n/a" },
+    ], bidders);
+    expect(out.map((i) => i.id)).toEqual(["p1-t", "p2-r", "p3-d", "p4-r", "p4-v"]);
+    expect(out[0]).toMatchObject({ tone: "err" });
+    expect(out[0].text).toContain("#7: $9.70");
+    expect(out[1].text).toContain("in full");
+  });
+  it("the report panel shows them", () => {
+    const desk = read("../components/auctions/AuctionNightDesk.jsx");
+    expect(desk).toMatch(/cardPaymentIssues\(data\.payments, data\.bidders\)/);
+  });
+});
+
+describe("desk card failure handling", () => {
+  it("a charged saved card is never reported as failed", () => {
+    const b = fn(STRIPE, "handleClubDeskCard");
+    expect(b).toMatch(/try \{\s*await settleClubDeskPayment\(begun\.paymentId, intent\);\s*\} catch/);
+  });
+  it("a failed checkout create frees the lots", () => {
+    const b = fn(STRIPE, "handleClubDeskCard");
+    expect(b).toMatch(/checkout\.sessions\.create[\s\S]*\} catch \(err\) \{[\s\S]{0,200}desk_fail_payment/);
+  });
+  it("the QR expiry clears Stripe's 30-minute floor", () => {
+    const b = fn(STRIPE, "handleClubDeskCard");
+    const m = b.match(/expires_at: Math\.floor\(Date\.now\(\) \/ 1000\) \+ (\d+) \* 60/);
+    expect(m).not.toBeNull();
+    expect(Number(m[1])).toBeGreaterThan(30);
   });
 });

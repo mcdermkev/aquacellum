@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import { CheckCircle, CreditCard, DownloadSimple, Money, Printer, QrCode } from "@phosphor-icons/react";
 import { deskCancel, deskCard, deskCash } from "../../services/auctionNightApi";
+import { cardPaymentIssues } from "../../services/auctionNightPayments";
 import { centsToDollars } from "../../services/auctionsApi";
 import { Note } from "./AuctionNightUi";
 
@@ -208,6 +209,7 @@ function csvCell(v) {
 export function ReportPanel({ data }) {
   const { rows, totals } = data.report;
   const $ = (c) => centsToDollars(c);
+  const issues = cardPaymentIssues(data.payments, data.bidders);
 
   const download = () => {
     const lines = [["Brought by", "Lots sold", "Sold", "Club keeps", "Card fees", "Owed to them", "Still unpaid"]];
@@ -230,6 +232,11 @@ export function ReportPanel({ data }) {
         <div className="an-stat"><b>{$(totals.clubCents)}</b><span>Club keeps</span></div>
         <div className="an-stat"><b>{$(totals.unpaidCents)}</b><span>Not paid yet</span></div>
       </div>
+      {issues.length > 0 && (
+        <div className="an-stack">
+          {issues.map((i) => <Note key={i.id} tone={i.tone}>{i.text}</Note>)}
+        </div>
+      )}
       <div className="an-card an-stack">
         <div className="an-row" style={{ justifyContent: "space-between" }}>
           <h2 className="an-h" style={{ margin: 0 }}>What the club owes each consignor</h2>

@@ -4166,7 +4166,7 @@ async function handleClubAuctionConsole(req, res) {
       .select("id, lot_number, title, description, photos, status, starting_bid_cents, reserve_cents, high_bid_cents, high_bidder_wallet, bid_count, hammer_cents, sold_to_bidder_id, winner_wallet, consignor_name, club_split_percent, payment_method, desk_payment_id, ends_at, closed_at")
       .eq("auction_id", id).neq("status", "cancelled").order("lot_number", { ascending: true }),
     supabase.from("auction_bidders").select("id, bidder_number, name, phone, email, wallet, created_at").eq("auction_id", id).order("bidder_number"),
-    supabase.from("auction_desk_payments").select("id, bidder_id, method, status, lot_ids, goods_cents, platform_fee_cents, processing_fee_cents, total_cents, created_at, paid_at, last_error").eq("auction_id", id).order("created_at", { ascending: false }).limit(500),
+    supabase.from("auction_desk_payments").select("id, bidder_id, method, status, lot_ids, goods_cents, platform_fee_cents, processing_fee_cents, total_cents, created_at, paid_at, last_error, payout_cents, transfer_error, reversed_cents, reversal_error, refunded_cents, refunded_at, disputed_at").eq("auction_id", id).order("created_at", { ascending: false }).limit(500),
     supabase.from("schools").select("id, name, slug").eq("id", auction.school_id).maybeSingle(),
     supabase.from("seller_stripe_accounts").select("onboarding_complete").eq("wallet_address", auction.host_wallet).maybeSingle(),
   ]);
