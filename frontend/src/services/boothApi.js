@@ -244,7 +244,10 @@ export function createHelperInvite(opts = {}) {
   return staffCall("booth-staff-invite", { method: "POST", body: {}, ...opts });
 }
 
-/** Seller: current helpers. → { helpers: [{ wallet, name, addedAt }] } */
+/**
+ * Seller: current helpers, with the cash sales each rang up recently.
+ * → { salesWindowHours, helpers: [{ wallet, name, addedAt, cashSales: { count, totalCents } | null }] }
+ */
 export function listHelpers(opts = {}) {
   return staffCall("booth-staff-list", opts);
 }

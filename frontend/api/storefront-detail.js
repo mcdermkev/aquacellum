@@ -3050,13 +3050,56 @@ async function handleBoothStaffList(req, res) {
     return res.status(500).json({ error: "Could not load helpers." });
   }
   const names = await boothDisplayNames((data || []).map((r) => r.staff_wallet));
+  const sales = await boothHelperCashSales(sellerWallet);
   return res.status(200).json({
     ok: true,
+    // Window the per-helper totals cover, so the UI can say so plainly.
+    salesWindowHours: BOOTH_HELPER_SALES_WINDOW_HOURS,
     helpers: (data || []).map((r) => {
       const w = String(r.staff_wallet).toLowerCase();
-      return { wallet: w, name: names[w] || null, addedAt: r.added_at };
+      // sales is null when the lookup failed: the list still loads, the UI just
+      // omits the totals rather than showing a misleading 0.
+      const s = sales ? sales[w] || { count: 0, totalCents: 0 } : null;
+      return { wallet: w, name: names[w] || null, addedAt: r.added_at, cashSales: s };
     }),
   });
+}
+
+const BOOTH_HELPER_SALES_WINDOW_HOURS = 24;
+
+/**
+ * Cash sales each helper rang up for this seller in the last 24 hours, keyed by
+ * lowercase helper wallet: { [wallet]: { count, totalCents } }.
+ *
+ * Read-only accountability for the seller (record-sale stamps
+ * metadata.recordedBy on helper sales). Scoped to the caller's own booth.
+ * Only current helpers are shown, so a removed helper's sales drop off the
+ * list (they stay in the orders table). Returns null on error.
+ */
+async function boothHelperCashSales(sellerWallet) {
+  const since = new Date(Date.now() - BOOTH_HELPER_SALES_WINDOW_HOURS * 3600 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from("orders")
+    .select("total_paid_cents, metadata")
+    .ilike("seller_wallet", sellerWallet)
+    .eq("metadata->>source", "booth")
+    .eq("metadata->>rail", "cash")
+    .not("metadata->>recordedBy", "is", null)
+    .gte("created_at", since)
+    .limit(2000);
+  if (error) {
+    console.error("[booth-staff-list] helper sales lookup failed:", error.message);
+    return null;
+  }
+  const out = {};
+  for (const row of data || []) {
+    const by = String(row.metadata?.recordedBy || "").toLowerCase();
+    if (!by) continue;
+    const bucket = out[by] || (out[by] = { count: 0, totalCents: 0 });
+    bucket.count += 1;
+    bucket.totalCents += Number(row.total_paid_cents) || 0;
+  }
+  return out;
 }
 
 /** POST { wallet } — seller removes a helper. Takes effect on their next sale. */

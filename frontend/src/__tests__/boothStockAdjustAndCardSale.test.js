@@ -144,7 +144,11 @@ describe("server-only RPC lockdown migration", () => {
 
 describe("adjust-inventory endpoint", () => {
   const CODE = strip(read("../../api/storefront-detail.js"));
-  const fn = CODE.slice(CODE.indexOf("async function handleAdjustInventory("), CODE.indexOf("async function handlePublishTank("));
+  // Just this handler: from its declaration to the next top-level function.
+  // (Slicing to a named neighbour broke when other handlers were added between.)
+  const start = CODE.indexOf("async function handleAdjustInventory(");
+  const nextFn = CODE.slice(start + 1).search(/\n(?:async\s+)?function\s/);
+  const fn = CODE.slice(start, nextFn > -1 ? start + 1 + nextFn : undefined);
 
   it("is routed", () => {
     expect(CODE).toMatch(/case "adjust-inventory":\s*return handleAdjustInventory\(req, res\);/);

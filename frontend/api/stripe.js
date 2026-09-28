@@ -71,6 +71,11 @@ try {
   console.error("[Stripe] Failed to initialize Stripe SDK:", e.message);
 }
 
+// Where Stripe Connect onboarding sends the seller back: the Payouts section,
+// which re-checks their status on load. The old default (aquadex.fish) has no
+// DNS, so a seller finishing onboarding landed on a dead page.
+const CONNECT_RETURN_BASE = `${process.env.APP_URL || "https://aquacellum.com"}/app/breeder-terminal?section=payouts`;
+
 const supabase = createClient(
   process.env.SUPABASE_URL || "",
   process.env.SUPABASE_SERVICE_KEY || ""
@@ -875,7 +880,7 @@ async function handleWebhook(req, res) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 async function handleConnectOnboard(req, res) {
-  if (handleCorsPreFlight(req, res, { methods: "POST, GET, OPTIONS" })) return;
+  if (handleCorsPreFlight(req, res, { methods: "POST, GET, OPTIONS", headers: "Content-Type, Authorization" })) return;
 
   // ─── GET: Check onboarding status for a seller ───────────────────────────
   if (req.method === "GET") {
@@ -910,7 +915,8 @@ async function handleConnectOnboard(req, res) {
         onboardingComplete: isComplete,
         chargesEnabled: account.charges_enabled,
         payoutsEnabled: account.payouts_enabled,
-        stripeAccountId: data.stripe_account_id,
+        // stripeAccountId intentionally omitted: this GET is unauthenticated
+        // (buyers' pages ask "can this seller take cards?") and nothing reads it.
       });
     } catch (err) {
       console.error("[Stripe Connect] Status check failed:", err);
@@ -923,16 +929,24 @@ async function handleConnectOnboard(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { walletAddress, email, displayName } = req.body;
-
-  if (!walletAddress) {
-    return res.status(400).json({ error: "Missing walletAddress" });
+  // Auth: the payout account is keyed to the SESSION wallet, never the body.
+  // Previously any caller could create/resume onboarding for any wallet — and a
+  // wallet with no row yet could have an attacker's Stripe account attached, so
+  // that seller's payouts would go to the attacker. The body's walletAddress is
+  // still accepted as a consistency check: a mismatch means the UI thinks it is
+  // a different seller than the signed-in one, so refuse rather than guess.
+  const sessionWallet = await requireWalletFromSession(req, res);
+  if (!sessionWallet) return;
+  const { walletAddress: bodyWallet, email, displayName } = req.body || {};
+  if (bodyWallet && String(bodyWallet).toLowerCase() !== sessionWallet) {
+    return res.status(403).json({ error: "Signed in as a different account than this store.", code: "WALLET_MISMATCH" });
   }
+  const walletAddress = sessionWallet;
 
   const RETURN_URL =
-    process.env.STRIPE_CONNECT_RETURN_URL || "https://aquadex.fish/seller/onboarding-complete";
+    process.env.STRIPE_CONNECT_RETURN_URL || `${CONNECT_RETURN_BASE}&stripe=return`;
   const REFRESH_URL =
-    process.env.STRIPE_CONNECT_REFRESH_URL || "https://aquadex.fish/seller/onboarding-refresh";
+    process.env.STRIPE_CONNECT_REFRESH_URL || `${CONNECT_RETURN_BASE}&stripe=refresh`;
 
   try {
     const { data: existing } = await supabase
@@ -1007,7 +1021,7 @@ async function handleConnectOnboard(req, res) {
 // once onboarding is complete (charges/payouts enabled), which matches the
 // button's own gating (it renders only when onboardingComplete is true).
 async function handleConnectDashboard(req, res) {
-  if (handleCorsPreFlight(req, res, { methods: "POST, GET, OPTIONS" })) return;
+  if (handleCorsPreFlight(req, res, { methods: "POST, GET, OPTIONS", headers: "Content-Type, Authorization" })) return;
   if (req.method !== "POST" && req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -1015,9 +1029,15 @@ async function handleConnectDashboard(req, res) {
     return res.status(500).json({ error: "Stripe not configured" });
   }
 
-  const wallet = (req.method === "GET" ? req.query.wallet : req.body?.walletAddress) || "";
-  if (!wallet) {
-    return res.status(400).json({ error: "Missing walletAddress" });
+  // Auth: a login link signs the holder into the seller's Stripe Express
+  // dashboard (payout history, bank details). Stripe requires the platform to
+  // authenticate the user before issuing one, so the wallet comes from the
+  // verified session only. A supplied wallet must match it.
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+  const claimed = req.method === "GET" ? req.query.wallet : req.body?.walletAddress;
+  if (claimed && String(claimed).toLowerCase() !== wallet) {
+    return res.status(403).json({ error: "Signed in as a different account than this store.", code: "WALLET_MISMATCH" });
   }
 
   try {

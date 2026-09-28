@@ -820,9 +820,12 @@ export async function checkSellerStatus(walletAddress) {
  */
 export async function startSellerOnboarding({ walletAddress, email, displayName }) {
   try {
+    // The server attaches the payout account to the signed-in wallet only.
+    const token = await getSessionToken();
+    if (!token) return { success: false, error: "Please sign in again to set up payouts." };
     const response = await fetch(`${API_BASE}/stripe?action=connect-onboard`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ walletAddress, email, displayName }),
     });
 
@@ -855,9 +858,12 @@ export async function getSellerDashboardLink(walletAddress) {
     // Server-side createLoginLink — the only URL that actually authenticates the
     // seller into their Stripe Express dashboard. (A hand-built
     // connect.stripe.com/express/<id> link does not.)
+    // A login link opens the seller's payout dashboard, so it needs their session.
+    const token = await getSessionToken();
+    if (!token) return { success: false, error: "Please sign in again to open your Stripe dashboard." };
     const response = await fetch(`${API_BASE}/stripe?action=connect-dashboard`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ walletAddress }),
     });
     const data = await response.json();

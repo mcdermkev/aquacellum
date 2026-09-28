@@ -151,6 +151,31 @@ describe("record-sale: helper acting for a seller", () => {
   });
 });
 
+describe("seller sees who rang up what", () => {
+  it("helper totals come from the seller's own booth cash orders only", () => {
+    const f = fn(API, "boothHelperCashSales");
+    expect(f).toMatch(/\.from\("orders"\)/);
+    expect(f).toMatch(/\.ilike\("seller_wallet", sellerWallet\)/);
+    expect(f).toMatch(/\.eq\("metadata->>source", "booth"\)/);
+    expect(f).toMatch(/\.eq\("metadata->>rail", "cash"\)/);
+    expect(f).toMatch(/if \(error\) \{[\s\S]*return null;/);
+  });
+
+  it("the list attaches totals per helper and never fakes a zero on error", () => {
+    const f = fn(API, "handleBoothStaffList");
+    expect(f).toMatch(/await boothHelperCashSales\(sellerWallet\)/);
+    expect(f).toMatch(/const s = sales \? sales\[w\] \|\| \{ count: 0, totalCents: 0 \} : null;/);
+  });
+
+  it("formats the line plainly", async () => {
+    const { formatHelperSales } = await import("../components/breeder/BoothHelpers.jsx");
+    expect(formatHelperSales(null)).toBeNull();
+    expect(formatHelperSales({ count: 0, totalCents: 0 })).toBe("No cash sales in the last 24 hours");
+    expect(formatHelperSales({ count: 1, totalCents: 1500 })).toBe("1 cash sale · $15.00 in the last 24 hours");
+    expect(formatHelperSales({ count: 3, totalCents: 4500 }, 24)).toBe("3 cash sales · $45.00 in the last 24 hours");
+  });
+});
+
 describe("seller-only actions stay seller-only", () => {
   it("adjust-inventory uses the session wallet as the owner, with no forSeller path", () => {
     const f = fn(API, "handleAdjustInventory");

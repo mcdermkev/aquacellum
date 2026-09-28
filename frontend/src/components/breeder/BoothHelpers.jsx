@@ -26,8 +26,22 @@ function formatCountdown(ms) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
+/**
+ * "3 cash sales · $45.00 in the last 24 hours". null when the server couldn't
+ * load totals, so we show nothing rather than a misleading zero.
+ */
+export function formatHelperSales(cashSales, windowHours = 24) {
+  if (!cashSales) return null;
+  const { count = 0, totalCents = 0 } = cashSales;
+  const span = `in the last ${windowHours} hours`;
+  if (!count) return `No cash sales ${span}`;
+  const dollars = (totalCents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
+  return `${count} cash ${count === 1 ? "sale" : "sales"} · ${dollars} ${span}`;
+}
+
 export function BoothHelpers({ onClose }) {
   const [helpers, setHelpers] = useState([]);
+  const [salesWindowHours, setSalesWindowHours] = useState(24);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [invite, setInvite] = useState(null); // { qr, expiresAt, knownBefore:Set }
@@ -41,6 +55,7 @@ export function BoothHelpers({ onClose }) {
     const r = await listHelpers();
     if (r.success) {
       setHelpers(r.helpers || []);
+      if (Number.isFinite(r.salesWindowHours)) setSalesWindowHours(r.salesWindowHours);
       setError(null);
     } else if (!r.offline) {
       setError(r.error || "Could not load helpers.");
@@ -171,11 +186,18 @@ export function BoothHelpers({ onClose }) {
             <p style={{ color: "var(--text-muted)", margin: 0 }}>No helpers yet.</p>
           ) : (
             <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {helpers.map((h) => (
+              {helpers.map((h) => {
+                const salesLine = formatHelperSales(h.cashSales, salesWindowHours);
+                return (
                 <li key={h.wallet} style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
                   <span style={{ flex: 1, minWidth: 0, color: "#fff", fontSize: "0.95rem" }}>
                     {h.name || "Helper"}{" "}
                     <span style={{ color: "var(--text-muted)", fontFamily: "'JetBrains Mono', monospace", fontSize: "0.8rem" }}>{shortWallet(h.wallet)}</span>
+                    {salesLine && (
+                      <span style={{ display: "block", color: "var(--text-secondary)", fontSize: "0.85rem", marginTop: "0.15rem" }}>
+                        {salesLine}
+                      </span>
+                    )}
                   </span>
                   <button
                     type="button"
@@ -187,7 +209,8 @@ export function BoothHelpers({ onClose }) {
                     {confirmRemove === h.wallet ? "Tap again to remove" : "Remove"}
                   </button>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
         </div>
