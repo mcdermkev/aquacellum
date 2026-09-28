@@ -14,6 +14,7 @@ import {
   mapNightDbError,
   parseLotImport,
 } from "../../api/_lib/auctionNight.js";
+import { resolveCommerceRoute } from "../services/commerceRoute.js";
 
 const read = (p) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
@@ -189,6 +190,25 @@ describe("club desk card payments", () => {
     expect(STRIPE).toMatch(/metadata\?\.purpose === CLUB_DESK_PURPOSE[\s\S]{0,200}settleClubDeskPayment\(metadata\.deskPaymentId, paymentIntent\)/);
     expect(STRIPE).toContain('status(500).json({ error: "club desk settle failed" })');
     expect(STRIPE).toMatch(/metadata\.purpose === CLUB_DESK_PURPOSE[\s\S]{0,200}desk_fail_payment/);
+  });
+});
+
+describe("auction night routes", () => {
+  const ID = "0b8f2c1e-1234-4abc-9def-0123456789ab";
+  it("home, console and room render full screen", () => {
+    expect(resolveCommerceRoute("/app/auction-night")).toMatchObject({ kind: "auction-night-home", fullScreen: true });
+    expect(resolveCommerceRoute(`/app/auction-night/${ID}`)).toMatchObject({ kind: "auction-night-console", auctionId: ID, fullScreen: true });
+    expect(resolveCommerceRoute(`/app/auction-night/${ID}/room`)).toMatchObject({ kind: "auction-night-room", auctionId: ID, fullScreen: true });
+  });
+  it("anything else is not found", () => {
+    expect(resolveCommerceRoute("/app/auction-night/nope").kind).toBe("not-found");
+    expect(resolveCommerceRoute(`/app/auction-night/${ID}/desk`).kind).toBe("not-found");
+    expect(resolveCommerceRoute(`/app/auction-night/${ID}/room/x`).kind).toBe("not-found");
+  });
+  it("the room screen never needs a session; the console never sends amounts", () => {
+    const api = read("../services/auctionNightApi.js");
+    expect(api).toMatch(/getRoom = \(auctionId\) =>[\s\S]{0,160}auth: "none"/);
+    expect(api).toMatch(/deskCard = \(bidderId, mode\) =>[\s\S]{0,120}body: \{ bidderId, mode \}/);
   });
 });
 

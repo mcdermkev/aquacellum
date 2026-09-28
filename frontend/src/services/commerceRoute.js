@@ -128,6 +128,25 @@ export function resolveCommerceRoute(pathname = "", validDashboardTabs = []) {
       };
     // Public auctions (docs/AUCTIONS_SPEC.md §1). Browsing and lot pages are
     // public; "mine" needs a verified session.
+    // Club auction night (docs/AUCTIONS_SPEC.md §9): a full-screen console for
+    // organizers, and a public room screen for the projector and phones.
+    // Rendered outside the app shell; the page handles its own sign-in.
+    case "auction-night": {
+      const [, , third] = segments;
+      if (!rawIdentity) return { kind: "auction-night-home", tab: "auctions", bypassLanding: true, fullScreen: true };
+      const auctionId = decodeSegment(rawIdentity);
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(auctionId || "");
+      if (!isUuid || segments.length > 3 || (third && third !== "room")) {
+        return { kind: "not-found", tab: "auctions", requestedPath: normalized, bypassLanding: true };
+      }
+      return {
+        kind: third === "room" ? "auction-night-room" : "auction-night-console",
+        tab: "auctions",
+        auctionId,
+        bypassLanding: true,
+        fullScreen: true,
+      };
+    }
     case "auctions": {
       if (segments.length > 2) {
         return { kind: "not-found", tab: "directory", requestedPath: normalized, bypassLanding: true };

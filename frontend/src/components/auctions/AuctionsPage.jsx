@@ -86,6 +86,12 @@ function AuctionTabs({ view, statusFilter, onNavigate, signedIn }) {
       {tab("Live lots", view === "auctions" && statusFilter === "live", () => onNavigate("/app/auctions"))}
       {tab("Ended", view === "auctions" && statusFilter === "ended", () => onNavigate("/app/auctions?status=ended"))}
       {signedIn && tab("My bids & wins", view === "auctions-mine", () => onNavigate("/app/auctions/mine"))}
+      {/* Full-screen club console lives outside the shell, so a plain link. */}
+      {signedIn && (
+        <a className="btn-secondary" href="/app/auction-night" style={{ minHeight: TAP, padding: "0 1rem", fontWeight: 600, display: "inline-flex", alignItems: "center", textDecoration: "none" }}>
+          Run a club auction
+        </a>
+      )}
     </div>
   );
 }

@@ -114,6 +114,10 @@ const StorefrontContent = lazy(() =>
 );
 
 // Public auctions: browse, lot page + bidding, my bids/wins (docs/AUCTIONS_SPEC.md)
+// Club auction night: full-screen organizer console + public room screen (§9)
+const AuctionNight = lazy(() =>
+  import("./components/auctions/AuctionNight").then((m) => ({ default: m.AuctionNight }))
+);
 const AuctionsPage = lazy(() =>
   import("./components/auctions/AuctionsPage").then((m) => ({ default: m.AuctionsPage }))
 );
@@ -1371,6 +1375,22 @@ export default function App() {
     return (
       <Suspense fallback={<div style={{ padding: "2rem", color: "#9fb4c7" }}>Loading Living Tank preview…</div>}>
         <LivingTankPreview />
+      </Suspense>
+    );
+  }
+
+  // Club auction night runs full screen, outside the app shell (a projector, a
+  // clerk laptop, a phone at the desk). It handles its own sign-in.
+  if (commerceRoute?.fullScreen) {
+    const paid = new URLSearchParams(location.search).get("paid");
+    return (
+      <Suspense fallback={<div style={{ minHeight: "100vh", background: "#041019" }} />}>
+        <AuctionNight
+          view={commerceRoute.kind}
+          auctionId={commerceRoute.auctionId || null}
+          paidNumber={/^\d{1,4}$/.test(paid || "") ? paid : null}
+          onNavigate={(path) => navigate(path)}
+        />
       </Suspense>
     );
   }

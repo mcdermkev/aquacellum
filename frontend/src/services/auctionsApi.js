@@ -24,6 +24,9 @@ async function getSessionToken() {
   }
 }
 
+/** Shared with auctionNightApi.js so both use the one registered getter. */
+export const getSessionTokenForApi = getSessionToken;
+
 async function call(path, { method = "GET", body, auth = "optional", fetchImpl = fetch } = {}) {
   const token = auth === "none" ? null : await getSessionToken();
   if (auth === "required" && !token) return { success: false, code: "NO_SESSION", error: "Sign in to continue." };
