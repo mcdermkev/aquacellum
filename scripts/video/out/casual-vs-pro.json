@@ -1,0 +1,90 @@
+{
+  "id": "casual-vs-pro",
+  "youtubeTitle": "Casual Hobbyist Mode vs Pro Breeder Mode in Aquacellum",
+  "youtubeDescription": "Explore the differences between Casual Hobbyist and Pro Breeder modes in the Aquacellum app. Learn how each mode tailors the experience to fit your aquarium goals. From simplified dashboards to advanced genetics tools, there's something for everyone.",
+  "tags": [
+    "aquarium",
+    "fish breeding",
+    "casual mode",
+    "pro mode",
+    "app demo",
+    "fish care",
+    "pedigree tools",
+    "aquacellum"
+  ],
+  "chapters": [
+    {
+      "time": "0:00",
+      "label": "Introduction"
+    },
+    {
+      "time": "0:45",
+      "label": "Casual Hobbyist Mode Overview"
+    },
+    {
+      "time": "2:00",
+      "label": "Pro Breeder Mode Features"
+    },
+    {
+      "time": "3:30",
+      "label": "Choosing Your Mode"
+    }
+  ],
+  "beats": [
+    {
+      "onScreen": "The Aquacellum dashboard with Echo floating onscreen.",
+      "narration": "Welcome to Aquacellum. The app that adapts to your aquarium journey, whether you're a casual hobbyist or a pro breeder.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Header UI showing the mode toggle between Casual Hobbyist and Pro Breeder.",
+      "narration": "You can switch between Casual Hobbyist mode and Pro Breeder mode anytime. The toggle is right in the header.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Casual Hobbyist dashboard view with simplified labels: My Aquariums, Fish Finder, Breeder Store.",
+      "narration": "In Casual Hobbyist mode, the focus is on care and discovery. Labels are simplified, and advanced tools stay out of sight.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Fish Finder tab open, showing species compatibility information.",
+      "narration": "The Fish Finder is your guide to species compatibility. Ideal for planning your next addition.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Switch to Pro Breeder mode. Dashboard updates with new tabs: Breeder Tools, Breeder Terminal.",
+      "narration": "Pro Breeder mode unlocks advanced tools for pedigree tracking, spawning data, and genetics.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Breeder Tools tab open, showing genetic charts and spawning history.",
+      "narration": "Use Breeder Tools to trace lineage and monitor spawning cycles. Designed for precision breeding.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Breeder Terminal tab open, showing seller workspace with listings.",
+      "narration": "The Breeder Terminal is your workspace for managing marketplace listings. Available to beta users for now.",
+      "honesty": "gated"
+    },
+    {
+      "onScreen": "Incoming tab open with in-transit fish tracking.",
+      "narration": "The Incoming tab keeps track of fish in transit. It appears only when shipments are active.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Settings tab open, showing mode toggle and preferences.",
+      "narration": "You can customize your experience in Settings. Switch modes or fine-tune your preferences anytime.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Echo floating onscreen as the camera pans back to the dashboard.",
+      "narration": "Whether you're here for the joy of aquariums or the science of breeding, Aquacellum grows with you.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "End screen with Aquacellum logo and call to action.",
+      "narration": "Explore both modes and find what works for you. Download Aquacellum today.",
+      "honesty": "live"
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "id": "breeder-tools",
+  "youtubeTitle": "Aquacellum Pro: Breeder Tools Demo",
+  "youtubeDescription": "Explore Aquacellum's breeder tools for professionals. From spawning dashboards to genetic insights, these features help breed and manage aquatics with precision. Available exclusively in the Pro mode.",
+  "tags": [
+    "aquarium",
+    "fish breeding",
+    "genetics",
+    "spawning tools",
+    "professional aquarist",
+    "pedigree",
+    "lineage tracking",
+    "aquaculture tools"
+  ],
+  "chapters": [
+    {
+      "time": "0:00",
+      "label": "Introduction"
+    },
+    {
+      "time": "0:45",
+      "label": "Registering Specimens"
+    },
+    {
+      "time": "1:30",
+      "label": "Lineage Viewer"
+    },
+    {
+      "time": "2:15",
+      "label": "The Spawning Wizard"
+    },
+    {
+      "time": "3:30",
+      "label": "Genetics Insights"
+    },
+    {
+      "time": "4:15",
+      "label": "Grow-out Management"
+    },
+    {
+      "time": "5:00",
+      "label": "Morph Verification"
+    }
+  ],
+  "beats": [
+    {
+      "onScreen": "Aquacellum Pro logo and a breeder dashboard overview.",
+      "narration": "Aquacellum Pro delivers a suite of tools for breeders. Manage specimens, track lineage, and predict genetics with precision.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Register screen: entering specimen details and minting a certificate.",
+      "narration": "Start with Register. This feature lets you mint a birth certificate for a specimen, recording its origin in your breeding records.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Lineage viewer: multi-generation pedigree tree with specimen details.",
+      "narration": "Use the Lineage viewer to explore a specimen's pedigree. See multi-generation trees and track ancestry without missing connections.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Spawning Wizard dashboard: pair selection, tank setup, genetic analysis.",
+      "narration": "Next is the Spawning Wizard. Pair breeders, assign tanks, and analyze genetic markers. Offspring are registered automatically.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Genetics screen: trait predictions and COI calculator with risk bands.",
+      "narration": "Genetics tools predict traits and measure inbreeding risk. The COI calculator highlights risks for first-cousin, half-sib, and full-sib pairings.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Grow-out funnel: eggs, fry, survival rates, and batch yield charts.",
+      "narration": "The grow-out panel tracks your yield. Measure survival rates, checkpoint history, and chart progress over time.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Morph submission screen: adding details for verification.",
+      "narration": "Submit new morphs for verification. Pending submissions are marked with an unread badge for easy tracking.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Sale demo: sealed pedigree document included in a listing.",
+      "narration": "Pedigree data travels with your listings. Each sale includes a sealed, tamper-evident document and its ancestor chain.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Breeder achievements screen: milestones and unlocked tracking rewards.",
+      "narration": "Achievements track your milestones as a breeder. Log progress and unlock rewards over time.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Closing screen: Aquacellum Pro logo, tagline, and call to action.",
+      "narration": "Aquacellum Pro is built for breeders. Unlock precision tools to manage your aquatics with care. Try it today.",
+      "honesty": "live"
+    }
+  ]
+}

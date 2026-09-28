@@ -1,0 +1,85 @@
+{
+  "id": "poseidon-echo",
+  "youtubeTitle": "Meet Poseidon & Echo: Aquarium Guidance Made Simple",
+  "youtubeDescription": "Explore how Poseidon guides you through your aquarium journey. Meet Echo, your casual-mode companion, evolving alongside your progress. A quick look at features that keep your experience smooth and connected.",
+  "tags": [
+    "aquarium",
+    "fish breeding",
+    "aquarist",
+    "Poseidon AI",
+    "Echo companion",
+    "offline-first",
+    "XP tiers",
+    "gas-sponsored",
+    "feedback"
+  ],
+  "chapters": [
+    {
+      "time": "0:00",
+      "label": "Introduction"
+    },
+    {
+      "time": "0:45",
+      "label": "Poseidon AI: Your Floating Guide"
+    },
+    {
+      "time": "2:00",
+      "label": "Echo: Evolving Casual Companion"
+    },
+    {
+      "time": "3:15",
+      "label": "Seamless Offline Performance"
+    },
+    {
+      "time": "3:45",
+      "label": "Wrap-Up"
+    }
+  ],
+  "beats": [
+    {
+      "onScreen": "App logo animates into Poseidon AI interface; Echo drifts by casually.",
+      "narration": "Welcome to Aquacellum. Here, Poseidon and Echo help you navigate the depths of aquarium care.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Poseidon AI interface overlay opens over an active tank view.",
+      "narration": "Poseidon is your global assistant. Always floating, always reachable. Whether you're in casual or pro mode, it's there to guide you.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "User toggles Poseidon AI on and off in the settings menu.",
+      "narration": "You can toggle Poseidon in your settings. Keep it active when you need real-time help.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Echo floats gently near the dashboard in casual mode.",
+      "narration": "If you're in casual mode, Echo joins you. A quiet companion with gentle nudges and rare animations.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Echo subtly whispers a proactive nudge to the user.",
+      "narration": "Echo evolves as you progress. From Shallow to Hadal, it mirrors your growth and becomes more dynamic over time.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "XP bar and tier badge update as the user earns points.",
+      "narration": "Your XP bar keeps track of your progress. Unlock new tiers as you explore and learn.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Feedback widget shown floating in the corner.",
+      "narration": "Need to report a bug or improve a feature? Use the feedback widget, always ready to listen.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Offline-first sync demo: user makes changes without a connection.",
+      "narration": "Everything happens offline first. Your data writes instantly and syncs in the background. No wallet prompts, no gas fees.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Poseidon AI gently closes; Echo waves goodbye in casual mode.",
+      "narration": "Whether you're here for guidance or company, Aquacellum adapts to you. Start your journey today.",
+      "honesty": "live"
+    }
+  ]
+}

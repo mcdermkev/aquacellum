@@ -1,0 +1,94 @@
+{
+  "id": "settings-privacy",
+  "youtubeTitle": "Settings & Privacy in Aquacellum",
+  "youtubeDescription": "Explore the settings menu in Aquacellum to customize your experience. Learn how to manage backups, alerts, accessibility, and your privacy. Make the app work for you.",
+  "tags": [
+    "Aquarium app",
+    "Fishkeeping",
+    "Settings",
+    "Privacy",
+    "Customization",
+    "Backup",
+    "Accessibility",
+    "Notifications",
+    "Aquacellum"
+  ],
+  "chapters": [
+    {
+      "time": "0:00",
+      "label": "Introduction"
+    },
+    {
+      "time": "0:25",
+      "label": "Experience Mode & Account Settings"
+    },
+    {
+      "time": "0:55",
+      "label": "Alerts & Notifications"
+    },
+    {
+      "time": "1:25",
+      "label": "Accessibility Options"
+    },
+    {
+      "time": "1:55",
+      "label": "Fishroom & Aquariums"
+    },
+    {
+      "time": "2:25",
+      "label": "Backup & Privacy"
+    }
+  ],
+  "beats": [
+    {
+      "onScreen": "Main settings menu scrolling view.",
+      "narration": "Welcome to the settings menu in Aquacellum. Here, you’ll find tools to tailor the app to your needs.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Focus on 'You' section: Experience Mode toggle and Account settings.",
+      "narration": "Start with Experience Mode. Switch between Casual and Pro styles, or replay onboarding anytime. Your account settings are just below.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Highlight Notifications settings with quiet hours toggle.",
+      "narration": "Next, manage alerts. Enable push notifications by category. Set quiet hours to avoid interruptions.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Scroll through Accessibility options: font size, high contrast, haptics.",
+      "narration": "Accessibility options adapt the interface to your preferences. Adjust font size, enable high contrast, or reduce motion effects.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Show 'Your Fishroom' section: Backup/Sync and active tank selector.",
+      "narration": "In Your Fishroom, sync and back up your tank data instantly. Choose your active tank for focused updates.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Highlight Discovery section with gated features labeled clearly.",
+      "narration": "Discovery tools like saved searches and watchlists unlock with experience points. Check your progress to access them.",
+      "honesty": "gated"
+    },
+    {
+      "onScreen": "Scroll to App section: Backup and Reset options.",
+      "narration": "Under App settings, export or import a JSON backup of your data. Reset the app if needed.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Focus on Privacy & Data section: GDPR tools.",
+      "narration": "Privacy and data controls are at the bottom. Export your data or delete your account whenever you choose.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Full settings menu overview.",
+      "narration": "Every setting is here to help you customize your experience. Make Aquacellum work for you.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Aquacellum logo and calm ocean visuals.",
+      "narration": "Explore your settings today. Your aquarium, your way.",
+      "honesty": "n/a"
+    }
+  ]
+}

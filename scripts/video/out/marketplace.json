@@ -1,0 +1,85 @@
+{
+  "id": "marketplace",
+  "youtubeTitle": "How to Browse & Buy on Aquacellum Marketplace",
+  "youtubeDescription": "Explore the breeder marketplace. Search, filter, and buy listings. Learn how checkout works for single or batch purchases.",
+  "tags": [
+    "aquarium",
+    "fish breeding",
+    "marketplace",
+    "buy fish",
+    "seller tools",
+    "species finder",
+    "watchlist",
+    "filters"
+  ],
+  "chapters": [
+    {
+      "time": "0:00",
+      "label": "Introduction to the Marketplace"
+    },
+    {
+      "time": "0:45",
+      "label": "Search and Filter Options"
+    },
+    {
+      "time": "1:30",
+      "label": "Browsing Listings and Wanted Board"
+    },
+    {
+      "time": "2:15",
+      "label": "Checkout Process"
+    }
+  ],
+  "beats": [
+    {
+      "onScreen": "Overview of the Marketplace tabs: Listings and Wanted board.",
+      "narration": "Welcome to the Aquacellum Marketplace. Here, you can browse breeder listings or post what you're looking for on the Wanted board.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Search bar and filters in action: family, price range, species.",
+      "narration": "Use the search bar and filters to narrow your options. Filter by fish family, species, or price range.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Saving a search and adding listings to a watchlist.",
+      "narration": "Save searches for later. Add listings to your watchlist to track them easily.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Species filter powered by Fish Finder.",
+      "narration": "The species filter connects to Fish Finder. Pinpoint the exact species you're after.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Seller filter with mastery chips displayed.",
+      "narration": "Filter listings by seller. Mastery chips show their tier and expertise with specific species.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Opening a product detail modal for a listing.",
+      "narration": "Tap a listing to view details. Check description, pricing, and seller info.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Demonstrating single-item checkout.",
+      "narration": "Ready to buy? Checkout is simple for single-item purchases.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Consolidated checkout for multiple listings from the same seller.",
+      "narration": "Buying multiple items from one seller? Consolidated checkout saves time.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Batch or fry purchase process showcased.",
+      "narration": "For breeders, batch or fry purchases are supported too.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Closing screen with Marketplace tab highlighted.",
+      "narration": "Explore the Marketplace and find what you need. Start browsing today.",
+      "honesty": "live"
+    }
+  ]
+}

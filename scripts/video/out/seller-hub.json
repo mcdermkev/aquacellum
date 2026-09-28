@@ -1,0 +1,91 @@
+{
+  "id": "seller-hub",
+  "youtubeTitle": "Seller Hub Demo: Listings, Shipping, Payouts",
+  "youtubeDescription": "Explore Seller Hub, your workspace for managing listings, shipping, and payouts. Learn how to fulfill orders, set up your storefront, and track your earnings securely. Perfect for breeders and sellers using Aquacellum Pro.",
+  "tags": [
+    "Seller Hub",
+    "Aquarium Marketplace",
+    "Fish Breeding",
+    "Shipping Tools",
+    "Stripe Connect",
+    "Analytics",
+    "Promotions",
+    "Listings"
+  ],
+  "chapters": [
+    {
+      "time": "0:00",
+      "label": "Welcome to Seller Hub"
+    },
+    {
+      "time": "0:40",
+      "label": "Manage Orders"
+    },
+    {
+      "time": "1:15",
+      "label": "Create and Edit Listings"
+    },
+    {
+      "time": "2:00",
+      "label": "Storefront Setup"
+    },
+    {
+      "time": "2:40",
+      "label": "Shipping Tools"
+    },
+    {
+      "time": "3:20",
+      "label": "Advanced Analytics"
+    },
+    {
+      "time": "4:00",
+      "label": "Secure Payouts"
+    },
+    {
+      "time": "5:10",
+      "label": "Grow Your Business"
+    }
+  ],
+  "beats": [
+    {
+      "onScreen": "Overview of Seller Hub interface with side navigation.",
+      "narration": "Welcome to Seller Hub, your workspace for breeding and selling. Everything you need is here: listings, shipping, payouts, and more.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Orders tab: filters for fulfillment and status; buying shipping labels and confirming pickups.",
+      "narration": "Manage orders with flexible filters. Buy shipping labels, confirm pickups, and track status all in one place.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Listings tab: creating or editing a listing, batch wizard overview.",
+      "narration": "Create and edit your listings with ease. Use the batch wizard for faster updates when managing multiple items.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Storefront setup: customizing a public store and adding featured collections.",
+      "narration": "Set up your storefront and showcase your featured collections. Control how your store appears to buyers.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Shipping tab: private address entry, parcel presets, pickup-spot setup.",
+      "narration": "Simplify shipping. Enter your private ship-from address, save parcel presets, or set public pickup spots for buyers.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Analytics tab: basic seller analytics view and CSV export option.",
+      "narration": "Track your performance with seller analytics. Export data to CSV for deeper insights. Advanced export unlocks with Pelagic+.",
+      "honesty": "gated"
+    },
+    {
+      "onScreen": "Payouts tab: Stripe Connect onboarding flow and balance chips.",
+      "narration": "Onboard with Stripe Connect to manage payouts. View protected, available, and frozen balances easily within the hub.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Closing shot: Seller Hub dashboard with highlights of key features.",
+      "narration": "Seller Hub is your partner in growing your business. Explore its features and make selling simpler today.",
+      "honesty": "live"
+    }
+  ]
+}

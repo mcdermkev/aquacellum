@@ -1,0 +1,98 @@
+{
+  "id": "aquariums",
+  "youtubeTitle": "Your Tank Logbook, Done Right",
+  "youtubeDescription": "Explore the My Aquariums tab — a local-first logbook designed for precision and ease. Track your tanks, fish, and care routines with layouts and tools that adapt to your workflow. Perfect for aquarists of all levels.",
+  "tags": [
+    "aquariums",
+    "fishkeeping",
+    "tank management",
+    "aquarist tools",
+    "water testing",
+    "fish care",
+    "tank logging",
+    "Poseidon AI"
+  ],
+  "chapters": [
+    {
+      "time": "0:00",
+      "label": "Intro"
+    },
+    {
+      "time": "0:40",
+      "label": "Tank Views and Layouts"
+    },
+    {
+      "time": "1:30",
+      "label": "Quick Logging Features"
+    },
+    {
+      "time": "2:15",
+      "label": "Bulk Logging and Templates"
+    },
+    {
+      "time": "3:00",
+      "label": "Tank Details and QR Tools"
+    },
+    {
+      "time": "4:00",
+      "label": "Closing"
+    }
+  ],
+  "beats": [
+    {
+      "onScreen": "Echo swims by, introducing the episode.",
+      "narration": "Welcome to My Aquariums — your tank logbook, done right.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Show the List layout, then switch to Tree hierarchy view.",
+      "narration": "Your tanks are organized with three layout choices. List view keeps things simple. Tree view maps your facility, room by room — even rack by rack — with health flags at every level.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Show Quick Log drawer with water test options and color-coded ranges.",
+      "narration": "Quick Log lets you record a water test or care action in seconds. Safe ranges are color-coded, so you know at a glance how your tank is doing.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Demonstrate bulk logging for a rack and show saved templates.",
+      "narration": "Bulk logging saves time. Apply actions to a tank, rack, or room at once. Feed, water change, treatment — all with your saved templates.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Open the inline Add Tank drawer and add a tank.",
+      "narration": "Adding a new tank or fish is quick and inline. No extra screens or steps.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Scan a tank QR code with a camera and jump to its details.",
+      "narration": "Each tank can have its own QR label. Scan to jump directly to that tank's details.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Show tank details: About tab for casual mode, Overview tab for pro mode.",
+      "narration": "Tank details adapt to your style. Casual mode keeps it simple. Pro mode gives you telemetry grids, specimen tools, and detailed histories.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Open the Share to Reef button and post a tank update.",
+      "narration": "The Share to Reef button lets you post updates to your social Current. Show off your progress or ask for advice.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Highlight embedded tools: Tank Cam setup, Care Coach, Fry Nursery.",
+      "narration": "Embedded tools are here when you need them. From Tank Cam setup to Fry Nursery, it’s all built in.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Return to Echo companion and sidebar widgets.",
+      "narration": "Echo is always here to keep you company, alongside widgets like the Zone Leaderboard and Reward Credits.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Echo waves goodbye as Poseidon closes.",
+      "narration": "Try My Aquariums today. Your tanks deserve the care you give them.",
+      "honesty": "live"
+    }
+  ]
+}

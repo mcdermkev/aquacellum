@@ -1,0 +1,83 @@
+{
+  "id": "trailer",
+  "youtubeTitle": "Aquacellum: Your Aquarium Companion",
+  "youtubeDescription": "Discover Aquacellum, the app for aquarium enthusiasts and pro breeders alike. Navigate tanks, species, and tools with ease. Choose your mode and explore at your own pace.",
+  "tags": [
+    "aquarium",
+    "fish breeding",
+    "aquascaping",
+    "species catalog",
+    "fish care",
+    "community",
+    "breeding tools",
+    "marketplace",
+    "aquarist app",
+    "aquarium hobby"
+  ],
+  "chapters": [
+    {
+      "time": "0:00",
+      "label": "Welcome to Aquacellum"
+    },
+    {
+      "time": "0:35",
+      "label": "Modes and Dashboard"
+    },
+    {
+      "time": "1:15",
+      "label": "Companion Features"
+    }
+  ],
+  "beats": [
+    {
+      "onScreen": "Echo companion swims across the screen, introducing the app softly.",
+      "narration": "Welcome to Aquacellum. Your aquarium journey starts here.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "The app's dashboard, showing tabs in Casual Hobbyist mode.",
+      "narration": "Aquacellum adapts to you. Casual mode or Pro Breeder tools—your choice.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Tabs for tanks, gallery, breeder tools, marketplace, and social reef.",
+      "narration": "Navigate tanks, species, tools, and a thriving community—all from one dashboard.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "A user toggles to Pro mode, unlocking advanced tools.",
+      "narration": "Switch modes anytime. Pro unlocks breeding insights, genetics, and seller tools.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Poseidon AI floating in the interface, answering a care question.",
+      "narration": "Poseidon guides you. Tap for advice, or chat live in your tanks.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Echo whispers a nudge, pointing to a tank's care log.",
+      "narration": "Echo keeps casual mode friendly. Evolving as you grow.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Marketplace tab displays fish listings and buyer tools.",
+      "narration": "Browse, buy, and track orders. Pro sellers access the Breeder Terminal.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "The Reef tab with social posts and care tips.",
+      "narration": "Connect with aquarists. Share, learn, and grow together.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Settings tab showing mode toggle and Echo preferences.",
+      "narration": "Personalize your experience. Switch modes, refine Echo, or give feedback.",
+      "honesty": "live"
+    },
+    {
+      "onScreen": "Echo swims by as Poseidon gives a closing note.",
+      "narration": "Start your journey with Aquacellum. Dive in today.",
+      "honesty": "live"
+    }
+  ]
+}
