@@ -410,8 +410,15 @@
       background: radial-gradient(ellipse at center, transparent 50%, rgba(4,14,12,0.5) 100%);
     }
 
+    /* Photo well is a flex leftover rectangle (card is 3/4). Media must NOT
+       contribute intrinsic height — a real <video> (Betta splendens 4768) with
+       preload=none / 16:9 would otherwise crush .main-img into a thin sliver
+       at the top of the well. Stack img + video absolute, same as species.html
+       .hero-image-wrap. Missing clips stay out of the DOM (no 404 src). */
     .card-image {
-      flex: 1;
+      flex: 1 1 0;
+      min-height: 0;
+      min-width: 0;
       position: relative;
       overflow: hidden;
       background: rgba(0,0,0,0.3);
@@ -419,22 +426,27 @@
       align-items: center;
       justify-content: center;
     }
-    .card-image .blur-bg {
+    .card-image .blur-bg,
+    .card-image .main-img,
+    .card-image .card-video {
       position: absolute;
-      inset: -20px;
-      width: calc(100% + 40px);
-      height: calc(100% + 40px);
-      object-fit: cover;
-      filter: blur(20px) brightness(0.5) saturate(1.3);
-      transform: scale(1.1);
-    }
-    .card-image .main-img {
-      position: relative;
-      z-index: 1;
+      inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
       object-position: center 40%;
+      border: 0;
+      min-width: 0;
+      min-height: 0;
+    }
+    .card-image .blur-bg {
+      z-index: 0;
+      filter: blur(20px) brightness(0.5) saturate(1.3);
+      transform: scale(1.15);
+      pointer-events: none;
+    }
+    .card-image .main-img {
+      z-index: 1;
       transition: transform 0.45s cubic-bezier(0.4,0,0.2,1);
     }
     .species-card:hover .card-image .main-img {
@@ -445,10 +457,6 @@
       opacity: 0.4;
     }
     .card-image .card-video {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      object-fit: cover;
       z-index: 2;
       opacity: 0;
       transition: opacity 0.3s ease;
@@ -562,6 +570,43 @@
     .card-avail:hover {
       background: rgba(45,212,191,0.16);
       border-color: rgba(45,212,191,0.4);
+    }
+    /* Living keepers — separate from .card-avail (sellerCount). Hidden when 0/null. */
+    .card-living {
+      display: inline-block;
+      margin-top: 6px;
+      margin-right: 6px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: #a7f3d0;
+      background: rgba(16,185,129,0.08);
+      border: 1px solid rgba(16,185,129,0.22);
+      border-radius: 20px;
+      padding: 2px 8px;
+    }
+    .card-incomplete {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: #fcd34d;
+      background: rgba(251,191,36,0.08);
+      border: 1px solid rgba(251,191,36,0.22);
+      border-radius: 20px;
+      padding: 2px 8px;
+    }
+    .card-kind {
+      display: inline-block;
+      margin-top: 6px;
+      margin-right: 6px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 2px 8px;
+      text-transform: capitalize;
     }
 
     /* =========================================
@@ -740,7 +785,9 @@
       overflow: hidden;
     }
     .flip-front-image {
-      flex: 1;
+      flex: 1 1 0;
+      min-height: 0;
+      min-width: 0;
       position: relative;
       overflow: hidden;
       background: rgba(0,0,0,0.3);
@@ -748,22 +795,26 @@
       align-items: center;
       justify-content: center;
     }
-    .flip-front-image .blur-bg {
-      position: absolute;
-      inset: -20px;
-      width: calc(100% + 40px);
-      height: calc(100% + 40px);
-      object-fit: cover;
-      filter: blur(20px) brightness(0.5) saturate(1.3);
-      transform: scale(1.1);
-    }
+    .flip-front-image .blur-bg,
     .flip-front-image .main-img {
-      position: relative;
-      z-index: 1;
+      position: absolute;
+      inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
       object-position: center 40%;
+      border: 0;
+      min-width: 0;
+      min-height: 0;
+    }
+    .flip-front-image .blur-bg {
+      z-index: 0;
+      filter: blur(20px) brightness(0.5) saturate(1.3);
+      transform: scale(1.15);
+      pointer-events: none;
+    }
+    .flip-front-image .main-img {
+      z-index: 1;
     }
     .flip-front-image .placeholder-icon {
       font-size: 4rem;
@@ -1021,8 +1072,8 @@
           <div class="db-stat-label">Families</div>
         </div>
         <div class="db-stat">
-          <div class="db-stat-num" id="statValidated">100%</div>
-          <div class="db-stat-label">FishBase Validated</div>
+          <div class="db-stat-num" id="statValidated">Live</div>
+          <div class="db-stat-label">Published profiles</div>
         </div>
       </div>
 
@@ -1038,7 +1089,7 @@
     <div class="filters-bar">
       <div class="search-wrap">
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" class="search-input" id="searchInput" placeholder="Search name, temperament, diet, size...">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search name, alias, temperament, diet, size...">
       </div>
       <select class="filter-select" id="familyFilter">
         <option value="">All Families</option>
@@ -1134,6 +1185,7 @@
 
   <!-- Canonical difficulty contract (shared with the in-app catalog) -->
   <script src="/js/species-catalog.js"></script>
+  <script src="/js/species-videos.js"></script>
 
   <!-- Canonical sexing contract (shared with the in-app SexingGuide). Kept in
        lockstep by the parity test in src/services/sexingGuide.test.js, so this
@@ -1157,24 +1209,64 @@
     let currentSort = 'popular';
     let availabilityByName = {}; // Fish Finder T4c: public marketplace availability, keyed by lowercased scientific name
 
-    // Species that have videos — these are the most popular aquarium fish
-    const videoSlugs = new Set([
-      'ancistrus-cirrhosus','biotodoma-cupido','botia-striata','carassius-auratus',
-      'chromobotia-macracanthus','corydoras-aeneus','corydoras-paleatus','corydoras-panda',
-      'crossocheilus-oblongus','danio-margaritatus','danio-rerio','epalzeorhynchos-bicolor',
-      'fundulopanchax-gardneri','gymnocorymbus-ternetzi','hypancistrus-zebra',
-      'hyphessobrycon-amandae','hyphessobrycon-eques','hyphessobrycon-erythrostigma',
-      'hyphessobrycon-megalopterus','inpaichthys-kerri','iriatherina-werneri',
-      'limia-melanogaster','melanotaenia-boesemani','mikrogeophagus-altispinosus',
-      'mikrogeophagus-ramirezi','osteoglossum-bicirrhosum','otocinclus-vittatus',
-      'pangio-kuhlii','paracheirodon-axelrodi','paracheirodon-innesi','pethia-conchonius',
-      'phenacogrammus-interruptus','poecilia-reticulata','poecilia-sphenops',
-      'poecilia-velifera','poecilia-wingei','pterophyllum-scalare','puntigrus-tetrazona',
-      'puntius-titteya','rasbora-trilineata','symphysodon-aequifasciatus',
-      'synodontis-nigriventris','tanichthys-albonubes','thorichthys-meeki',
-      'trichogaster-chuna','trichogaster-lalius','trichopodus-leerii',
-      'trigonostigma-heteromorpha','xiphophorus-hellerii','xiphophorus-maculatus'
-    ]);
+    // Videos come from files on disk (see /js/species-videos.js). Never inject
+    // a missing src — that 404'd ~263 of ~315 photo cards.
+    function hasSpeciesVideo(sp) {
+      return !!(window.AquadexSpeciesVideos && window.AquadexSpeciesVideos.has(sp && sp.scientificName));
+    }
+    function speciesVideoSrc(sp) {
+      return (window.AquadexSpeciesVideos && window.AquadexSpeciesVideos.src(sp && sp.scientificName)) || null;
+    }
+
+    function cardKindOf(sp) {
+      const k = String(sp.cardKind || sp.card_kind || sp.type || '').toLowerCase();
+      if (k === 'plant' || k === 'invert' || k === 'fish') return k;
+      return 'fish';
+    }
+
+    const PLACEHOLDER_TEXT = new Set(['', 'information arriving soon', 'generic biotope details', '—', 'todo']);
+    function realValue(val) {
+      if (val == null) return null;
+      const s = String(val).trim();
+      if (!s || PLACEHOLDER_TEXT.has(s.toLowerCase())) return null;
+      return val;
+    }
+
+    // Fish missing diet/reproduction are incomplete. Plants and inverts are not
+    // — those sections do not apply. Encyclopedia keys (origin, tankmates, …)
+    // are never required; Betta splendens (4768) is the gold-standard card and
+    // has no encyclopedia block.
+    function isCareIncomplete(sp) {
+      const kind = cardKindOf(sp);
+      if (kind === 'plant' || kind === 'invert') return false;
+      const hasDiet = !!(realValue(sp.diet?.fooditems) || realValue(sp.diet?.trophicLevel) || realValue(sp.diet?.feedingPlaybook));
+      const hasRepro = !!(realValue(sp.reproduction?.spawningTrait) || realValue(sp.reproduction?.layoutRequirement) || realValue(sp.reproduction?.comments));
+      return !hasDiet || !hasRepro;
+    }
+
+    function livingChipsHtml(sp) {
+      const chips = [];
+      const keepers = Number(sp.keepersRunning);
+      const specimens = Number(sp.specimensKept);
+      const tanks = Number(sp.tanksKeeping);
+      if (keepers > 0) chips.push(`<span class="card-living">${keepers} keeper${keepers === 1 ? '' : 's'}</span>`);
+      if (specimens > 0) chips.push(`<span class="card-living">${specimens} kept</span>`);
+      if (tanks > 0) chips.push(`<span class="card-living">${tanks} tank${tanks === 1 ? '' : 's'}</span>`);
+      return chips.join('');
+    }
+
+    async function fetchSpeciesCatalog() {
+      try {
+        const res = await fetch('/api/species?catalog=true');
+        if (res.ok) {
+          const json = await res.json();
+          if (Array.isArray(json.data) && json.data.length) return json.data;
+        }
+      } catch (e) { /* fall through to JSON cache */ }
+      const res = await fetch('/fishbase_master.json?v=2');
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      return res.json();
+    }
 
     // ---- Helpers ----
     // Escape catalog prose before it goes into markup. The sexing descriptions
@@ -1260,9 +1352,7 @@
 
     async function init() {
       try {
-        const res = await fetch('/fishbase_master.json?v=2');
-        if (!res.ok) throw new Error(`Server returned ${res.status}`);
-        allSpecies = await res.json();
+        allSpecies = await fetchSpeciesCatalog();
 
         document.getElementById('statTotal').textContent = allSpecies.length + '+';
         const families = [...new Set(allSpecies.map(s => s.family).filter(f => f && f !== 'Information arriving soon' && f !== ''))];
@@ -1307,11 +1397,13 @@
       filteredSpecies = allSpecies.filter(sp => {
         if (query) {
           // Build comprehensive searchable text
+          const aliases = Array.isArray(sp.commonAliases) ? sp.commonAliases.join(' ') : '';
           const searchable = [
             sp.commonName || '',
             sp.scientificName || '',
             sp.genus || '',
             sp.family || '',
+            aliases,
             // Temperament / behavior keywords
             sp.ecology?.socialBehavior || '',
             // Diet type
@@ -1348,19 +1440,16 @@
           case 'popular': {
             // Priority: fish with videos > fish with good photos > other fish > invertebrates/plants
             const isPlantOrInvert = (sp) => {
-              const fam = (sp.family || '').toLowerCase();
-              const type = (sp.type || '').toLowerCase();
-              return type === 'plant' || fam === 'atyidae' || fam === 'palaemonidae' || fam === 'ampullariidae' || fam === 'planorbidae' || fam === 'neritidae' || fam === 'thiaridae' || fam === 'physidae' || fam === 'ambystomatidae' || sp.scientificName?.match(/^(Neocaridina|Caridina|Palaemonetes|Pomacea|Melanoides|Planorbella|Neritina|Physella|Lemna|Taxiphyllum|Ludwigia|Cryptocoryne|Leptochilus|Echinodorus|Anubias|Limnobium|Vallisneria|Hygrophila|Vesicularia|Bucephalandra|Bacopa|Ambystoma)/);
+              const kind = cardKindOf(sp);
+              return kind === 'plant' || kind === 'invert';
             };
             const piA = isPlantOrInvert(a) ? 1 : 0;
             const piB = isPlantOrInvert(b) ? 1 : 0;
             if (piA !== piB) return piA - piB;
 
             // Species with videos first (video = popular fish)
-            const slugA = a.scientificName?.toLowerCase().replace(/\s+/g, '-') || '';
-            const slugB = b.scientificName?.toLowerCase().replace(/\s+/g, '-') || '';
-            const vidA = videoSlugs.has(slugA) ? 0 : 1;
-            const vidB = videoSlugs.has(slugB) ? 0 : 1;
+            const vidA = hasSpeciesVideo(a) ? 0 : 1;
+            const vidB = hasSpeciesVideo(b) ? 0 : 1;
             if (vidA !== vidB) return vidA - vidB;
 
             // Then species with wikimedia (good) photos before specimen/AI photos
@@ -1435,8 +1524,7 @@
         const badgeClass = getDifficultyClass(difficulty);
         const tierClass = getTierClass(difficulty);
         const hasImage = sp.masterPhotoUrl && sp.masterPhotoUrl !== '';
-        const videoSlug = sp.scientificName.toLowerCase().replace(/\s+/g, '-');
-        const videoPath = `/videos/species/${videoSlug}.mp4`;
+        const videoPath = speciesVideoSrc(sp);
 
         // Sexing badge — only for species we have actually documented. A grey
         // "not documented" pill on the other 296 cards would be noise on a
@@ -1446,8 +1534,11 @@
           ? `<span class="card-sexing-badge ${sexing.badgeClass}" title="${escapeAttr(window.SexingGuide.sexingBlurb(sexing))}">♂♀ ${window.SexingGuide.sexingShortLabel(sexing)}</span>`
           : '';
 
+        const videoHtml = videoPath
+          ? `<video class="card-video" src="${videoPath}" muted loop playsinline preload="none"></video>`
+          : '';
         const imageHtml = hasImage
-          ? `<img class="blur-bg" src="${sp.masterPhotoUrl}" alt="" aria-hidden="true"><img class="main-img" src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="lazy"><video class="card-video" src="${videoPath}" muted loop playsinline preload="metadata"></video>`
+          ? `<img class="blur-bg" src="${sp.masterPhotoUrl}" alt="" aria-hidden="true"><img class="main-img" src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="lazy">${videoHtml}`
           : `<span class="placeholder-icon">🐟</span>`;
 
         // Contextual metadata based on view mode
@@ -1502,8 +1593,17 @@
         }
 
         const avail = availabilityByName[(sp.scientificName || '').toLowerCase()];
-        const availHtml = avail
-          ? `<a href="/app/gallery?species=${encodeURIComponent(sp.scientificName)}" class="card-avail" onclick="event.stopPropagation()" title="See sellers in the app">🛒 ${avail.sellerCount} seller${avail.sellerCount === 1 ? '' : 's'}${avail.fromPriceDisplay ? ` · from ${avail.fromPriceDisplay}` : ''}</a>`
+        const sellerCount = avail && Number(avail.sellerCount) > 0 ? Number(avail.sellerCount) : 0;
+        const availHtml = sellerCount
+          ? `<a href="/app/gallery?species=${encodeURIComponent(sp.scientificName)}" class="card-avail" onclick="event.stopPropagation()" title="See sellers in the app">🛒 ${sellerCount} seller${sellerCount === 1 ? '' : 's'}${avail.fromPriceDisplay ? ` · from ${avail.fromPriceDisplay}` : ''}</a>`
+          : '';
+        const kind = cardKindOf(sp);
+        const kindHtml = (kind === 'plant' || kind === 'invert')
+          ? `<span class="card-kind">${kind}</span>`
+          : '';
+        const livingHtml = livingChipsHtml(sp);
+        const incompleteHtml = isCareIncomplete(sp)
+          ? `<span class="card-incomplete">Care profile incomplete</span>`
           : '';
 
         return `
@@ -1519,7 +1619,7 @@
               <div class="card-common-name">${sp.commonName || 'Unknown'}</div>
               <div class="card-sci-name">${sp.scientificName}</div>
               ${metaHtml}
-              ${availHtml}
+              ${kindHtml}${livingHtml}${availHtml}${incompleteHtml}
               <div class="card-cta">View Details →</div>
               <a href="/species/${toSlug(sp.scientificName)}" class="card-cta" style="display:block;margin-top:2px;color:var(--emerald-400);opacity:0.7;font-size:0.64rem;" onclick="event.stopPropagation()">Full Profile ↗</a>
             </div>
@@ -1602,7 +1702,7 @@
         <div class="flip-front-info">
           <div class="flip-front-common">${sp.commonName || 'Unknown'}</div>
           <div class="flip-front-sci">${sp.scientificName}</div>
-          <div class="flip-front-family">${sp.family || ''} · SpecCode ${sp.specCode || '—'}</div>
+          <div class="flip-front-family">${sp.family || ''}</div>
           ${vibe ? `<div class="flip-front-vibe">"${vibe}"</div>` : ''}
         </div>
         <div class="flip-hint">
@@ -1613,6 +1713,15 @@
       // Build BACK
       const temp = sp.tankMetrics?.tempRangeCelsius;
       const ph = sp.tankMetrics?.phRange;
+      const hardness = realValue(sp.ecology?.hardnessRange);
+
+      const backParams = [];
+      if (temp && temp[0] != null && temp[1] != null) backParams.push({ label: 'Temp', value: temp[0] + '–' + temp[1] + '°C' });
+      if (ph && ph[0] != null && ph[1] != null) backParams.push({ label: 'pH', value: ph[0] + '–' + ph[1] });
+      if (sp.maxLengthCm) backParams.push({ label: 'Max Size', value: sp.maxLengthCm + ' cm' });
+      if (sp.tankMetrics?.minVolumeGallons) backParams.push({ label: 'Min Volume', value: sp.tankMetrics.minVolumeGallons + ' gal' });
+      if (hardness) backParams.push({ label: 'Hardness', value: hardness });
+      if (difficulty && difficulty !== 'Unknown') backParams.push({ label: 'Difficulty', value: difficulty });
 
       let backHtml = `
         <div class="flip-back-scroll">
@@ -1620,36 +1729,20 @@
           <div class="flip-back-title">${sp.commonName || 'Unknown'}</div>
           <div class="flip-back-sci">${sp.scientificName}</div>
         </div>
-        <div class="flip-back-content">
+        <div class="flip-back-content">`;
+
+      if (backParams.length) {
+        backHtml += `
           <div class="back-section">
             <div class="back-section-title">Tank Parameters</div>
             <div class="back-params">
-              <div class="back-param">
-                <div class="back-param-label">Temp</div>
-                <div class="back-param-value">${temp ? temp[0] + '–' + temp[1] + '°C' : '—'}</div>
-              </div>
-              <div class="back-param">
-                <div class="back-param-label">pH</div>
-                <div class="back-param-value">${ph ? ph[0] + '–' + ph[1] : '—'}</div>
-              </div>
-              <div class="back-param">
-                <div class="back-param-label">Max Size</div>
-                <div class="back-param-value">${sp.maxLengthCm ? sp.maxLengthCm + ' cm' : '—'}</div>
-              </div>
-              <div class="back-param">
-                <div class="back-param-label">Min Volume</div>
-                <div class="back-param-value">${sp.tankMetrics?.minVolumeGallons ? sp.tankMetrics.minVolumeGallons + ' gal' : '—'}</div>
-              </div>
-              <div class="back-param">
-                <div class="back-param-label">Hardness</div>
-                <div class="back-param-value">${sp.ecology?.hardnessRange || '—'}</div>
-              </div>
-              <div class="back-param">
-                <div class="back-param-label">Difficulty</div>
-                <div class="back-param-value">${difficulty}</div>
-              </div>
+              ${backParams.map((p) => `<div class="back-param">
+                <div class="back-param-label">${p.label}</div>
+                <div class="back-param-value">${p.value}</div>
+              </div>`).join('')}
             </div>
           </div>`;
+      }
 
       // Helper: filter out placeholder text
       const real = (val) => val && val !== 'Information arriving soon' && val !== 'Generic Biotope Details' ? val : null;

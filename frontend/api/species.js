@@ -15,6 +15,7 @@
  *   GET  /api/species?id={specCode|slug}    → single species detail
  *   GET  /api/species?random=true&count=1-10 → random species (demos, bots)
  *   GET  /api/species?stats=true            → catalog-wide stats
+ *   GET  /api/species?catalog=true          → full Spec-Dex catalog (live species_profiles, JSON fallback)
  *   POST /api/species?action=request-key    → { email, appName?, appUrl? } → issues a free API key
  *
  * Breeders Council curation (see _lib/speciesCuration.js and
@@ -35,8 +36,6 @@
  *   SUPABASE_SERVICE_KEY — Supabase service role key
  */
 
-import { readFileSync } from "fs";
-import { join } from "path";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { checkRateLimit } from "./_lib/rateLimiter.js";
@@ -47,6 +46,7 @@ import {
   handleQueue,
   handlePromote,
 } from "./_lib/speciesCuration.js";
+import { loadSpeciesCatalog, toSlug } from "./_lib/loadSpeciesCatalog.js";
 import {
   buildSpeciesAvailability,
   serializePublicAvailability,
@@ -84,53 +84,15 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
 let catalog = null;
 let bySpecCode = null;
 let bySlug = null;
+let catalogSource = "fishbase_master.json";
 
-function toSlug(name) {
-  return (name || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
-
-function loadCatalog() {
+async function loadCatalog() {
   if (catalog) return catalog;
-
-  const candidatePaths = [
-    join(process.cwd(), "public", "fishbase_master.json"),
-    join(process.cwd(), "..", "public", "fishbase_master.json"),
-    join(process.cwd(), "frontend", "public", "fishbase_master.json"),
-  ];
-
-  let raw = null;
-  for (const p of candidatePaths) {
-    try {
-      raw = readFileSync(p, "utf-8");
-      break;
-    } catch {
-      continue;
-    }
-  }
-
-  if (!raw) {
-    console.error("[species api] fishbase_master.json not found in any expected path");
-    catalog = [];
-    bySpecCode = new Map();
-    bySlug = new Map();
-    return catalog;
-  }
-
-  catalog = JSON.parse(raw);
-  bySpecCode = new Map();
-  bySlug = new Map();
-
-  for (const sp of catalog) {
-    if (sp.specCode != null) bySpecCode.set(String(sp.specCode), sp);
-    const slug = toSlug(sp.scientificName);
-    if (slug) bySlug.set(slug, sp);
-    const commonSlug = toSlug(sp.commonName);
-    if (commonSlug && !bySlug.has(commonSlug)) bySlug.set(commonSlug, sp);
-  }
-
+  const loaded = await loadSpeciesCatalog();
+  catalog = loaded.catalog;
+  bySpecCode = loaded.bySpecCode;
+  bySlug = loaded.bySlug;
+  catalogSource = loaded.source;
   return catalog;
 }
 
@@ -153,6 +115,10 @@ const ALL_FIELDS = [
   "diet",
   "reproduction",
   "personality",
+  "commonAliases",
+  "cardKind",
+  "conservationStatus",
+  "living",
   "links",
 ];
 
@@ -222,6 +188,16 @@ function toPublicSpecies(sp, fields) {
           description: sp.personality.flavorText?.casual ?? null,
         }
       : null,
+    commonAliases: Array.isArray(sp.commonAliases) ? sp.commonAliases : [],
+    cardKind: sp.cardKind || "fish",
+    conservationStatus: sp.conservationStatus || sp.origin?.iucnStatus || null,
+    living: {
+      keepersRunning: sp.keepersRunning ?? null,
+      specimensKept: sp.specimensKept ?? null,
+      tanksKeeping: sp.tanksKeeping ?? null,
+      lastLoggedAt: sp.lastLoggedAt ?? null,
+      lastSpawnAt: sp.lastSpawnAt ?? null,
+    },
     links: {
       // Growth hooks: every consumer of this API sees a path back to the app.
       viewOnAquacellum: `${BASE_URL}/species/${slug}`,
@@ -261,11 +237,13 @@ function applyFilters(list, query) {
   const q = (query.q || query.search || "").trim().toLowerCase();
   if (q) {
     result = result.filter((sp) => {
+      const aliases = Array.isArray(sp.commonAliases) ? sp.commonAliases : [];
       return (
         (sp.commonName && sp.commonName.toLowerCase().includes(q)) ||
         (sp.scientificName && sp.scientificName.toLowerCase().includes(q)) ||
         (sp.genus && sp.genus.toLowerCase().includes(q)) ||
-        (sp.family && sp.family.toLowerCase().includes(q))
+        (sp.family && sp.family.toLowerCase().includes(q)) ||
+        aliases.some((a) => String(a).toLowerCase().includes(q))
       );
     });
   }
@@ -456,6 +434,12 @@ export default async function handler(req, res) {
     return handleAvailability(req, res);
   }
 
+  // Full catalog in the Spec-Dex record shape (species_profiles live, JSON
+  // fallback). Public pages fetch this instead of fishbase_master.json.
+  if (req.query.catalog === "true") {
+    return handleCatalog(req, res);
+  }
+
   const action = (req.query.action || "").toLowerCase();
   if (action === "request-key") {
     return handleRequestKey(req, res);
@@ -465,7 +449,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed. Use GET." });
   }
 
-  loadCatalog();
+  await loadCatalog();
 
   const caller = await resolveCaller(req);
   const rl = checkRateLimit(caller.rateLimitKey, {
@@ -517,6 +501,31 @@ export default async function handler(req, res) {
 // empty aggregate (never an error page) on missing env / query failure.
 
 const AVAILABILITY_MAX_ROWS = 5000; // generous ceiling; the aggregate collapses per-species
+
+async function handleCatalog(req, res) {
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed. Use GET." });
+  }
+  try {
+    await loadCatalog();
+    res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600");
+    return res.status(200).json({
+      data: catalog,
+      count: catalog.length,
+      source: catalogSource,
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error("[species catalog] failed:", err?.message || err);
+    return res.status(200).json({
+      data: [],
+      count: 0,
+      source: "error",
+      generatedAt: new Date().toISOString(),
+      degraded: true,
+    });
+  }
+}
 
 async function handleAvailability(req, res) {
   if (req.method !== "GET") {
