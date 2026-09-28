@@ -146,6 +146,7 @@
     "frontend/supabase/migrations/20260927_booth_staff.sql",
     "frontend/supabase/migrations/20260927_inventory_ledger_hardening.sql",
     "frontend/supabase/migrations/20260929_stock_holds_and_refund_restock.sql",
-    "frontend/supabase/migrations/20260929_seller_events.sql"
+    "frontend/supabase/migrations/20260929_seller_events.sql",
+    "frontend/supabase/migrations/20260929_auction_rpc_lockdown.sql"
   ]
 }
