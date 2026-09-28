@@ -86,7 +86,8 @@ import {
   SALES_CHANNEL,
 } from "./_lib/sellerEvents.js";
 import { FEE_RAIL, resolveFeePolicy } from "../src/services/feePolicy.js";
-import { mapAuctionDbError, parseLotListQuery, validateLotInput } from "./_lib/auctionLots.js";
+import { mapAuctionDbError, parseLotListQuery, validateLotInput, cleanPhotos } from "./_lib/auctionLots.js";
+import { buildConsignorReport, clubCardFeePercent, mapNightDbError, MAX_IMPORT_LOTS } from "./_lib/auctionNight.js";
 import {
   createShowcaseMediaHandler,
   createShowcaseRoomHandler,
@@ -246,6 +247,33 @@ export default async function handler(req, res) {
       return handleAuctionCancelLot(req, res);
     case "my-auctions":
       return handleMyAuctions(req, res);
+    // ── Club auction night (docs/AUCTIONS_SPEC.md §9) ──
+    case "club-auction-home":
+      return handleClubAuctionHome(req, res);
+    case "club-create":
+      return handleClubCreate(req, res);
+    case "club-auction-create":
+      return handleClubAuctionCreate(req, res);
+    case "club-auction":
+      return handleClubAuctionConsole(req, res);
+    case "club-lot-add":
+      return handleClubLotAdd(req, res);
+    case "club-lot-update":
+      return handleClubLotUpdate(req, res);
+    case "club-lot-remove":
+      return handleClubLotRemove(req, res);
+    case "club-bidder-add":
+      return handleClubBidderAdd(req, res);
+    case "club-current-lot":
+      return handleClubCurrentLot(req, res);
+    case "club-lot-result":
+      return handleClubLotResult(req, res);
+    case "club-lot-undo":
+      return handleClubLotUndo(req, res);
+    case "club-desk-cash":
+      return handleClubDeskCash(req, res);
+    case "auction-room":
+      return handleAuctionRoom(req, res);
     // ── Aquadex tank QR: publish a tank, and the public read behind the label ──
     case "publish-tank":
       return handlePublishTank(req, res);
@@ -4018,4 +4046,341 @@ async function handleMyAuctions(req, res) {
   }));
 
   return res.status(200).json({ ok: true, selling, bidding });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CLUB AUCTION NIGHT — organizer console + public room screen
+// (docs/AUCTIONS_SPEC.md §9, migration 20260929_club_auction_night.sql)
+//
+// Every write passes the verified session wallet as p_actor; each database
+// function checks it's a club organizer (founder or elder). Card payments at the
+// desk live in api/stripe.js (club-desk-card).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function nightError(res, error, label) {
+  const mapped = mapNightDbError(error?.message);
+  if (mapped.status >= 500) console.error(`[${label}] failed:`, error?.message);
+  return res.status(mapped.status).json({ error: mapped.error, code: mapped.code });
+}
+
+/** GET — clubs I run and their auctions, plus whether card payments can be taken. */
+async function handleClubAuctionHome(req, res) {
+  if (!boothStaffPreamble(req, res, "GET")) return;
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+
+  const [founded, elder] = await Promise.all([
+    supabase.from("schools").select("id, name, slug, school_type").ilike("founder_wallet", wallet),
+    supabase.from("school_members").select("school_id, role").ilike("wallet_address", wallet).in("role", ["founder", "elder"]),
+  ]);
+  if (founded.error || elder.error) return res.status(500).json({ error: "Could not load your clubs." });
+  const ids = new Set([...(founded.data || []).map((s) => s.id), ...(elder.data || []).map((m) => m.school_id)]);
+  let clubs = founded.data || [];
+  const missing = [...ids].filter((id) => !clubs.some((c) => c.id === id));
+  if (missing.length) {
+    const { data } = await supabase.from("schools").select("id, name, slug, school_type").in("id", missing);
+    clubs = clubs.concat(data || []);
+  }
+
+  let auctions = [];
+  if (ids.size) {
+    const { data } = await supabase
+      .from("auctions")
+      .select("id, school_id, title, format, status, event_at, online_ends_at, created_at")
+      .in("school_id", [...ids])
+      .eq("host_type", "club")
+      .order("event_at", { ascending: false })
+      .limit(50);
+    auctions = data || [];
+  }
+  const { data: payouts } = await supabase.from("seller_stripe_accounts").select("onboarding_complete").eq("wallet_address", wallet).maybeSingle();
+
+  return res.status(200).json({
+    ok: true,
+    clubs: clubs.map((c) => ({ id: c.id, name: c.name, slug: c.slug })),
+    auctions: auctions.map((a) => ({
+      id: a.id, clubId: a.school_id, title: a.title, format: a.format, status: a.status,
+      eventAt: a.event_at, onlineEndsAt: a.online_ends_at,
+    })),
+    payoutsReady: !!payouts?.onboarding_complete,
+  });
+}
+
+/** POST { name } — start a club; you become its founder. */
+async function handleClubCreate(req, res) {
+  if (!boothStaffPreamble(req, res, "POST")) return;
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+  const { name } = parseJsonBody(req);
+  const { data, error } = await supabase.rpc("create_auction_club", { p_actor: wallet, p_name: String(name || "") });
+  if (error) return nightError(res, error, "club-create");
+  return res.status(200).json({ ok: true, clubId: data });
+}
+
+/** POST — create a club auction (live, hybrid, or timed). */
+async function handleClubAuctionCreate(req, res) {
+  if (!boothStaffPreamble(req, res, "POST")) return;
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+  const b = parseJsonBody(req);
+  if (!UUID_RE.test(String(b.clubId || ""))) return res.status(400).json({ error: "Pick a club.", code: "CLUB_REQUIRED" });
+  const title = String(b.title || "").trim();
+  if (!title || title.length > 120) return res.status(400).json({ error: "Give the auction a name (up to 120 characters).", code: "TITLE" });
+  const format = ["live", "hybrid", "timed"].includes(b.format) ? b.format : "live";
+  const eventAt = Date.parse(String(b.eventAt || ""));
+  if (!Number.isFinite(eventAt)) return res.status(400).json({ error: "Pick the auction date and time.", code: "EVENT_TIME" });
+  const onlineEndsAt = b.onlineEndsAt ? Date.parse(String(b.onlineEndsAt)) : NaN;
+
+  const { data, error } = await supabase.rpc("create_club_auction", {
+    p_actor: wallet,
+    p_school: b.clubId,
+    p_title: title,
+    p_description: String(b.description || "").slice(0, 4000),
+    p_format: format,
+    p_event_at: new Date(eventAt).toISOString(),
+    p_online_ends_at: Number.isFinite(onlineEndsAt) ? new Date(onlineEndsAt).toISOString() : null,
+    p_pickup_location: String(b.pickupLocation || "").slice(0, 200),
+    p_pickup_notes: String(b.pickupNotes || "").slice(0, 1000),
+    p_default_split: Math.min(100, Math.max(0, Math.round(Number(b.defaultSplitPercent) || 0))),
+    p_members_only_bidding: b.membersOnlyBidding === true,
+  });
+  if (error) return nightError(res, error, "club-auction-create");
+  return res.status(200).json({ ok: true, auctionId: data });
+}
+
+/** GET ?id= — everything the organizer console needs (reserves, bidders, desk, report). */
+async function handleClubAuctionConsole(req, res) {
+  if (!boothStaffPreamble(req, res, "GET")) return;
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+  const id = String(req.query?.id || "");
+  if (!UUID_RE.test(id)) return res.status(400).json({ error: "Invalid auction id." });
+
+  const { data: auction } = await supabase.from("auctions").select("*").eq("id", id).maybeSingle();
+  if (!auction || auction.host_type !== "club") return res.status(404).json({ error: "Auction not found." });
+  const { data: isOrganizer } = await supabase.rpc("auction_is_club_organizer", { p_school: auction.school_id, p_wallet: wallet });
+  if (!isOrganizer) return res.status(403).json({ error: "Only a club organizer can open this.", code: "NOT_ORGANIZER" });
+
+  const [lotsR, biddersR, paymentsR, clubR, payoutR] = await Promise.all([
+    supabase.from("auction_lots")
+      .select("id, lot_number, title, description, photos, status, starting_bid_cents, reserve_cents, high_bid_cents, high_bidder_wallet, bid_count, hammer_cents, sold_to_bidder_id, winner_wallet, consignor_name, club_split_percent, payment_method, desk_payment_id, ends_at, closed_at")
+      .eq("auction_id", id).neq("status", "cancelled").order("lot_number", { ascending: true }),
+    supabase.from("auction_bidders").select("id, bidder_number, name, phone, email, wallet, created_at").eq("auction_id", id).order("bidder_number"),
+    supabase.from("auction_desk_payments").select("id, bidder_id, method, status, lot_ids, goods_cents, platform_fee_cents, processing_fee_cents, total_cents, created_at, paid_at, last_error").eq("auction_id", id).order("created_at", { ascending: false }).limit(500),
+    supabase.from("schools").select("id, name, slug").eq("id", auction.school_id).maybeSingle(),
+    supabase.from("seller_stripe_accounts").select("onboarding_complete").eq("wallet_address", auction.host_wallet).maybeSingle(),
+  ]);
+  if (lotsR.error || biddersR.error || paymentsR.error) {
+    console.error("[club-auction] load failed:", (lotsR.error || biddersR.error || paymentsR.error).message);
+    return res.status(500).json({ error: "Could not load the auction." });
+  }
+
+  // Which bidders hold a saved card (for one-tap charging at the desk).
+  const wallets = (biddersR.data || []).map((b) => b.wallet).filter(Boolean);
+  const cards = new Set();
+  if (wallets.length) {
+    const { data } = await supabase.from("buyer_payment_methods").select("wallet_address, payment_method_id").in("wallet_address", wallets);
+    for (const c of data || []) if (c.payment_method_id) cards.add(String(c.wallet_address).toLowerCase());
+  }
+
+  const lots = lotsR.data || [];
+  const payments = paymentsR.data || [];
+  return res.status(200).json({
+    ok: true,
+    auction: {
+      id: auction.id, title: auction.title, description: auction.description, format: auction.format, status: auction.status,
+      eventAt: auction.event_at, onlineEndsAt: auction.online_ends_at, currentLotId: auction.current_lot_id,
+      pickupLocation: auction.pickup_location, pickupNotes: auction.pickup_notes,
+      defaultSplitPercent: auction.default_club_split_percent, membersOnlyBidding: auction.members_only_bidding,
+      isPayoutHost: auction.host_wallet === wallet,
+    },
+    club: clubR.data ? { id: clubR.data.id, name: clubR.data.name, slug: clubR.data.slug } : null,
+    cardPaymentsReady: !!payoutR.data?.onboarding_complete,
+    cardFeePercent: clubCardFeePercent(4),
+    lots,
+    bidders: (biddersR.data || []).map((b) => ({ ...b, hasCard: !!(b.wallet && cards.has(b.wallet)) })),
+    payments,
+    report: buildConsignorReport({ lots, payments }),
+    serverTime: new Date().toISOString(),
+  });
+}
+
+/** POST { auctionId, lots: [{ title, startingBidCents, consignorName, splitPercent, description, photo, reserveCents }] } */
+async function handleClubLotAdd(req, res) {
+  if (!boothStaffPreamble(req, res, "POST")) return;
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+  const { auctionId, lots } = parseJsonBody(req);
+  if (!UUID_RE.test(String(auctionId || ""))) return res.status(400).json({ error: "Invalid auction id." });
+  const list = Array.isArray(lots) ? lots.slice(0, MAX_IMPORT_LOTS) : [];
+  if (!list.length) return res.status(400).json({ error: "Add at least one lot.", code: "NO_LOTS" });
+
+  const added = [];
+  for (const lot of list) {
+    const title = String(lot?.title || "").trim();
+    if (!title || title.length > 120) return res.status(400).json({ error: `Lot titles are 1–120 characters ("${title.slice(0, 30)}…").`, code: "TITLE", added });
+    const start = Math.round(Number(lot.startingBidCents) || 100);
+    const photos = cleanPhotos(lot.photo ? [lot.photo] : []);
+    const { data, error } = await supabase.rpc("add_club_lot", {
+      p_actor: wallet,
+      p_auction: auctionId,
+      p_title: title,
+      p_description: String(lot.description || "").slice(0, 4000) || null,
+      p_photos: photos || [],
+      p_starting_bid: Math.max(100, start),
+      p_reserve: lot.reserveCents ? Math.max(100, Math.round(Number(lot.reserveCents))) : null,
+      p_consignor_name: lot.consignorName ? String(lot.consignorName).slice(0, 80) : null,
+      p_consignor_wallet: null,
+      p_split_percent: lot.splitPercent == null || lot.splitPercent === "" ? null : Math.round(Number(lot.splitPercent)),
+      p_quantity: 1,
+    });
+    if (error) {
+      const mapped = mapNightDbError(error.message);
+      return res.status(mapped.status).json({ error: mapped.error, code: mapped.code, added });
+    }
+    added.push(data);
+  }
+  return res.status(200).json({ ok: true, added });
+}
+
+async function handleClubLotUpdate(req, res) {
+  if (!boothStaffPreamble(req, res, "POST")) return;
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+  const b = parseJsonBody(req);
+  if (!UUID_RE.test(String(b.lotId || ""))) return res.status(400).json({ error: "Invalid lot id." });
+  const { error } = await supabase.rpc("update_club_lot", {
+    p_actor: wallet,
+    p_lot: b.lotId,
+    p_title: b.title == null ? null : String(b.title).slice(0, 120),
+    p_description: b.description == null ? null : String(b.description).slice(0, 4000),
+    p_starting_bid: b.startingBidCents == null ? null : Math.round(Number(b.startingBidCents)),
+    p_consignor_name: b.consignorName == null ? null : String(b.consignorName).slice(0, 80),
+    p_split_percent: b.splitPercent == null || b.splitPercent === "" ? null : Math.round(Number(b.splitPercent)),
+  });
+  if (error) return nightError(res, error, "club-lot-update");
+  return res.status(200).json({ ok: true });
+}
+
+async function handleClubLotRemove(req, res) {
+  if (!boothStaffPreamble(req, res, "POST")) return;
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+  const { lotId } = parseJsonBody(req);
+  if (!UUID_RE.test(String(lotId || ""))) return res.status(400).json({ error: "Invalid lot id." });
+  const { error } = await supabase.rpc("remove_club_lot", { p_actor: wallet, p_lot: lotId });
+  if (error) return nightError(res, error, "club-lot-remove");
+  return res.status(200).json({ ok: true });
+}
+
+/** POST { auctionId, name, phone?, email?, number? } — give someone a bidder number. */
+async function handleClubBidderAdd(req, res) {
+  if (!boothStaffPreamble(req, res, "POST")) return;
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+  const b = parseJsonBody(req);
+  if (!UUID_RE.test(String(b.auctionId || ""))) return res.status(400).json({ error: "Invalid auction id." });
+  const name = String(b.name || "").trim();
+  if (!name || name.length > 80) return res.status(400).json({ error: "Enter the bidder's name.", code: "NAME" });
+  const number = b.number == null || b.number === "" ? null : Math.round(Number(b.number));
+  if (number != null && !(number >= 1 && number <= 9999)) return res.status(400).json({ error: "Bidder numbers are 1–9999.", code: "NUMBER" });
+  const { data, error } = await supabase.rpc("register_auction_bidder", {
+    p_actor: wallet,
+    p_auction: b.auctionId,
+    p_name: name,
+    p_phone: b.phone ? String(b.phone).slice(0, 40) : null,
+    p_email: b.email ? String(b.email).slice(0, 200) : null,
+    p_wallet: null,
+    p_number: number,
+  });
+  if (error) return nightError(res, error, "club-bidder-add");
+  return res.status(200).json({ ok: true, ...data });
+}
+
+async function handleClubCurrentLot(req, res) {
+  if (!boothStaffPreamble(req, res, "POST")) return;
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+  const { lotId } = parseJsonBody(req);
+  if (!UUID_RE.test(String(lotId || ""))) return res.status(400).json({ error: "Invalid lot id." });
+  const { error } = await supabase.rpc("set_auction_current_lot", { p_actor: wallet, p_lot: lotId });
+  if (error) return nightError(res, error, "club-current-lot");
+  return res.status(200).json({ ok: true });
+}
+
+/** POST { lotId, outcome: 'sold'|'online'|'passed', bidderNumber?, hammerCents? } */
+async function handleClubLotResult(req, res) {
+  if (!boothStaffPreamble(req, res, "POST")) return;
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+  const b = parseJsonBody(req);
+  if (!UUID_RE.test(String(b.lotId || ""))) return res.status(400).json({ error: "Invalid lot id." });
+  if (!["sold", "online", "passed"].includes(b.outcome)) return res.status(400).json({ error: "Unknown outcome." });
+
+  let bidderId = null;
+  let hammer = null;
+  if (b.outcome === "sold") {
+    hammer = Math.round(Number(b.hammerCents));
+    if (!Number.isInteger(hammer) || hammer < 100) return res.status(400).json({ error: "Enter the winning price.", code: "PRICE" });
+    const number = Math.round(Number(b.bidderNumber));
+    const { data: lot } = await supabase.from("auction_lots").select("auction_id").eq("id", b.lotId).maybeSingle();
+    if (!lot) return res.status(404).json({ error: "Lot not found." });
+    const { data: bidder } = await supabase.from("auction_bidders").select("id").eq("auction_id", lot.auction_id).eq("bidder_number", number).maybeSingle();
+    if (!bidder) return res.status(404).json({ error: `There's no bidder number ${Number.isFinite(number) ? number : ""}.`.trim(), code: "UNKNOWN_BIDDER" });
+    bidderId = bidder.id;
+  }
+  const { data, error } = await supabase.rpc("record_live_lot_result", {
+    p_actor: wallet, p_lot: b.lotId, p_outcome: b.outcome, p_bidder: bidderId, p_hammer: hammer,
+  });
+  if (error) return nightError(res, error, "club-lot-result");
+  return res.status(200).json({ ok: true, ...data });
+}
+
+async function handleClubLotUndo(req, res) {
+  if (!boothStaffPreamble(req, res, "POST")) return;
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+  const { lotId } = parseJsonBody(req);
+  if (!UUID_RE.test(String(lotId || ""))) return res.status(400).json({ error: "Invalid lot id." });
+  const { error } = await supabase.rpc("undo_live_lot_result", { p_actor: wallet, p_lot: lotId });
+  if (error) return nightError(res, error, "club-lot-undo");
+  return res.status(200).json({ ok: true });
+}
+
+/** POST { bidderId } — the bidder paid cash for everything they won. */
+async function handleClubDeskCash(req, res) {
+  if (!boothStaffPreamble(req, res, "POST")) return;
+  const wallet = await requireWalletFromSession(req, res);
+  if (!wallet) return;
+  const { bidderId } = parseJsonBody(req);
+  if (!UUID_RE.test(String(bidderId || ""))) return res.status(400).json({ error: "Invalid bidder." });
+  const { data, error } = await supabase.rpc("desk_record_cash", { p_actor: wallet, p_bidder: bidderId });
+  if (error) return nightError(res, error, "club-desk-cash");
+  return res.status(200).json({ ok: true, ...data });
+}
+
+/** GET ?id= — public room screen: the lot selling now. Polled every couple of seconds. */
+async function handleAuctionRoom(req, res) {
+  setCorsHeaders(req, res, { methods: "GET, OPTIONS" });
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "GET") return res.status(405).json({ error: "method_not_allowed" });
+  const id = String(req.query?.id || "");
+  if (!UUID_RE.test(id)) return res.status(400).json({ error: "Invalid auction id." });
+  const { data, error } = await supabase.from("auction_room_public").select("*").eq("auction_id", id).maybeSingle();
+  if (error) return res.status(500).json({ error: "Could not load the room." });
+  if (!data) return res.status(404).json({ error: "Auction not found." });
+  res.setHeader("Cache-Control", "public, s-maxage=1, stale-while-revalidate=2");
+  return res.status(200).json({
+    ok: true,
+    room: {
+      auctionId: data.auction_id, title: data.title, clubName: data.club_name, format: data.format,
+      lotCount: Number(data.lot_count || 0), lotsLeft: Number(data.lots_left || 0),
+      lot: data.lot_id ? {
+        id: data.lot_id, number: data.lot_number, title: data.lot_title,
+        photo: Array.isArray(data.photos) ? data.photos[0] || null : null, quantity: data.quantity,
+        startingBidCents: data.starting_bid_cents, onlineBidCents: data.high_bid_cents,
+        state: data.lot_state, soldForCents: data.sold_for_cents, soldToNumber: data.sold_to_number,
+      } : null,
+    },
+  });
 }

@@ -67,6 +67,7 @@ import {
   chargeFailureMessage,
   planAuctionCharge,
 } from "./_lib/auctionMoney.js";
+import { clubCardFeePercent } from "./_lib/auctionNight.js";
 import { createSellerTransfer } from "./_lib/sellerTransfer.js";
 
 let stripe;
@@ -442,6 +443,19 @@ async function handleWebhook(req, res) {
       // them (chargeAuctionLotV2). Nothing to settle here.
       if (metadata?.purpose === AUCTION_PAYMENT_PURPOSE) {
         return res.status(200).json({ received: true, action: "auction_recorded_by_sweep" });
+      }
+
+      // Club auction night: a bidder paid their desk total (QR checkout, or a
+      // saved card already settled by the desk call — then this is a replay).
+      if (metadata?.purpose === CLUB_DESK_PURPOSE && metadata.deskPaymentId) {
+        try {
+          const r = await settleClubDeskPayment(metadata.deskPaymentId, paymentIntent);
+          return res.status(200).json({ received: true, action: r.replay ? "club_desk_replay" : "club_desk_paid" });
+        } catch (e) {
+          // Let Stripe retry: the buyer paid and the lots must be marked.
+          console.error("[Club desk] webhook settle failed:", metadata.deskPaymentId, e?.message || e);
+          return res.status(500).json({ error: "club desk settle failed" });
+        }
       }
 
       if (!purchaseType || !metadata?.buyerWallet) {
@@ -933,6 +947,11 @@ async function handleWebhook(req, res) {
       // harmless if it never fires (the TTL is the backstop either way).
       const session = event.data.object;
       const metadata = session.metadata || {};
+      // A desk QR nobody paid: free the bidder's lots for another payment.
+      if (metadata.purpose === CLUB_DESK_PURPOSE && metadata.deskPaymentId) {
+        await supabase.rpc("desk_fail_payment", { p_payment: metadata.deskPaymentId, p_error: "Checkout expired" });
+        return res.status(200).json({ received: true, action: "club_desk_expired" });
+      }
       if (isCanonicalSettlementEnabled() && metadata.reservationGroupId) {
         try {
           const released = await releaseCheckoutReservations({ supabase, metadata, now: Date.now() });
@@ -3367,6 +3386,10 @@ export default async function handler(req, res) {
       return handleAuctionSweep(req, res);
     case "auction-pay":
       return handleAuctionPay(req, res);
+    case "club-desk-card":
+      return handleClubDeskCard(req, res);
+    case "club-desk-cancel":
+      return handleClubDeskCancel(req, res);
     default:
       return res.status(400).json({ error: `Unknown action: ${action}` });
   }
@@ -4750,4 +4773,229 @@ async function retryAuctionPaymentsFor(wallet) {
   } catch (e) {
     console.warn("[Auction] retry lookup failed:", e?.message || e);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CLUB AUCTION NIGHT — card payments at the checkout desk
+// (docs/AUCTIONS_SPEC.md §9, migration 20260929_club_auction_night.sql)
+//
+//   club-desk-card  POST { bidderId, mode: "checkout" | "saved" }   (organizer)
+//     checkout → a Stripe Checkout link for the bidder's total, shown as a QR
+//                they scan and pay on their own phone. Settled by the webhook.
+//     saved    → charge the bidder's saved card right now.
+//
+// The fish are handed over in the room, so there is no hold: once paid, the
+// club's payout account is sent (goods − our club-rate fee) immediately. The
+// buyer pays the card processing fee on top, same as everywhere else.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const CLUB_DESK_PURPOSE = "aquadex_club_desk";
+
+async function clubDeskFeePlan(hostWallet, goodsCents) {
+  const event = await findActiveSellerEvent(supabase, hostWallet);
+  const policy = resolveFeePolicy({
+    rail: event ? FEE_RAIL.CARD_EVENT : FEE_RAIL.CARD,
+    eventId: event ? event.id : null,
+    standardPercent: PLATFORM_FEE_PERCENT,
+    eventPercent: EVENT_FEE_PERCENT,
+  });
+  const feePercent = clubCardFeePercent(policy.feePercent);
+  const plan = planAuctionCharge({ hammerCents: goodsCents, feePercent, stripeRate: STRIPE_FEE_RATE, stripeFixedCents: STRIPE_FEE_FIXED_CENTS });
+  return { ...plan, feePercent };
+}
+
+/** Pay the club once a desk payment is paid. Idempotent per PaymentIntent. */
+async function settleClubDeskPayment(paymentId, paymentIntent) {
+  const { data: settled, error } = await supabase.rpc("desk_mark_payment_paid", { p_payment: paymentId, p_payment_intent: paymentIntent.id });
+  if (error) {
+    // The desk moved on (a newer payment replaced this one, or it was marked
+    // failed) but the buyer paid anyway. Those lots are no longer this
+    // payment's, so give the money back instead of keeping it or retrying forever.
+    if (/payment is (void|failed)/i.test(error.message || "")) {
+      await stripe.refunds.create(
+        { payment_intent: paymentIntent.id, metadata: { reason: "club_desk_superseded", deskPaymentId: String(paymentId) } },
+        { idempotencyKey: `club-desk-refund-${paymentIntent.id}` },
+      );
+      console.warn("[Club desk] paid a superseded desk payment; refunded:", paymentId, paymentIntent.id);
+      return { refunded: true };
+    }
+    throw new Error(error.message);
+  }
+  if (settled?.replay) return { replay: true };
+  const md = paymentIntent.metadata || {};
+  const payoutCents = Number(settled.goodsCents) - Number(settled.platformFeeCents);
+  if (md.clubStripeAccountId && payoutCents > 0) {
+    try {
+      await createSellerTransfer(stripe, {
+        sellerStripeAccountId: md.clubStripeAccountId,
+        amountCents: payoutCents,
+        transferGroup: md.transferGroup,
+        reference: paymentIntent.id,
+      });
+    } catch (e) {
+      // Paid and handed over; the transfer can be retried from the Stripe
+      // dashboard. Loud, but never un-pays the buyer.
+      console.error("[Club desk] PAID but club transfer failed:", paymentId, paymentIntent.id, e?.message || e);
+    }
+  }
+  return { paid: true, payoutCents };
+}
+
+/**
+ * Close every open desk QR for a bidder and release its lots, so the desk can
+ * start a fresh payment (or take cash). Refuses if a QR was actually paid.
+ * When `fail` is set, the pending payments are marked failed here too.
+ */
+async function closePendingDeskCheckouts(bidderId, { fail = false } = {}) {
+  const { data: pendingPays } = await supabase.from("auction_desk_payments")
+    .select("id, stripe_session_id").eq("bidder_id", bidderId).eq("status", "pending");
+  for (const p of pendingPays || []) {
+    if (p.stripe_session_id) {
+      try {
+        await stripe.checkout.sessions.expire(p.stripe_session_id);
+      } catch (err) {
+        const s = await stripe.checkout.sessions.retrieve(p.stripe_session_id).catch(() => null);
+        if (s?.status === "complete" || s?.payment_status === "paid") {
+          return { ok: false, code: "ALREADY_PAID", error: "Their QR payment just came through. Refresh the desk." };
+        }
+        if (s?.status !== "expired") {
+          console.error("[Club desk] could not close old checkout:", p.stripe_session_id, err?.message || err);
+          return { ok: false, code: "OLD_CHECKOUT_OPEN", error: "Couldn't cancel their earlier QR. Try again in a moment." };
+        }
+      }
+    }
+    if (fail) await supabase.rpc("desk_fail_payment", { p_payment: p.id, p_error: "Cancelled at the desk" });
+  }
+  return { ok: true, closed: (pendingPays || []).length };
+}
+
+/** POST { bidderId } — cancel a bidder's open card payment (e.g. they'd rather pay cash). */
+async function handleClubDeskCancel(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (!stripe) return res.status(500).json({ error: "Stripe not configured" });
+  const actor = await requireWalletFromSession(req, res);
+  if (!actor) return;
+  const { bidderId } = req.body || {};
+  if (!/^[0-9a-f-]{36}$/i.test(String(bidderId || ""))) return res.status(400).json({ error: "Invalid bidder." });
+  const { data: bidder } = await supabase.from("auction_bidders").select("id, auction_id").eq("id", bidderId).maybeSingle();
+  if (!bidder) return res.status(404).json({ error: "There's no such bidder.", code: "UNKNOWN_BIDDER" });
+  const { data: auction } = await supabase.from("auctions").select("school_id, host_type").eq("id", bidder.auction_id).maybeSingle();
+  if (!auction || auction.host_type !== "club") return res.status(404).json({ error: "Auction not found." });
+  const { data: isOrganizer } = await supabase.rpc("auction_is_club_organizer", { p_school: auction.school_id, p_wallet: actor });
+  if (!isOrganizer) return res.status(403).json({ error: "Only a club organizer can take payments.", code: "NOT_ORGANIZER" });
+  const closed = await closePendingDeskCheckouts(bidder.id, { fail: true });
+  if (!closed.ok) return res.status(409).json({ error: closed.error, code: closed.code });
+  return res.status(200).json({ ok: true, cancelled: closed.closed });
+}
+
+async function handleClubDeskCard(req, res) {
+  if (handleCorsPreFlight(req, res, { methods: "POST, OPTIONS", headers: "Content-Type, Authorization" })) return;
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (!stripe) return res.status(500).json({ error: "Stripe not configured" });
+
+  const actor = await requireWalletFromSession(req, res);
+  if (!actor) return;
+  const { bidderId, mode } = req.body || {};
+  if (!/^[0-9a-f-]{36}$/i.test(String(bidderId || ""))) return res.status(400).json({ error: "Invalid bidder." });
+  if (mode !== "checkout" && mode !== "saved") return res.status(400).json({ error: "Unknown payment mode." });
+
+  // Totals come from the database, never the request.
+  const { data: bidder } = await supabase.from("auction_bidders").select("id, auction_id, bidder_number, name, wallet, email").eq("id", bidderId).maybeSingle();
+  if (!bidder) return res.status(404).json({ error: "There's no such bidder.", code: "UNKNOWN_BIDDER" });
+  const { data: auction } = await supabase.from("auctions").select("id, title, host_wallet, school_id, host_type").eq("id", bidder.auction_id).maybeSingle();
+  if (!auction || auction.host_type !== "club") return res.status(404).json({ error: "Auction not found." });
+  const { data: isOrganizer } = await supabase.rpc("auction_is_club_organizer", { p_school: auction.school_id, p_wallet: actor });
+  if (!isOrganizer) return res.status(403).json({ error: "Only a club organizer can take payments.", code: "NOT_ORGANIZER" });
+
+  const { data: club } = await supabase.from("seller_stripe_accounts").select("stripe_account_id, onboarding_complete").eq("wallet_address", auction.host_wallet).maybeSingle();
+  if (!club?.stripe_account_id || !club.onboarding_complete) {
+    return res.status(409).json({ error: "The club's payout account isn't set up, so take cash for now.", code: "CLUB_PAYOUTS_REQUIRED" });
+  }
+
+  const { data: owed } = await supabase.from("auction_lots").select("hammer_cents").eq("sold_to_bidder_id", bidder.id).eq("status", "sold_live");
+  const goods = (owed || []).reduce((s, l) => s + (l.hammer_cents || 0), 0);
+  if (!(goods >= 100)) return res.status(409).json({ error: "This bidder has nothing left to pay.", code: "NOTHING_TO_PAY" });
+  const plan = await clubDeskFeePlan(auction.host_wallet, goods);
+
+  // Starting over voids this bidder's pending payment. Close its QR first so
+  // the old link can't be paid as well; if it already was paid, stop here.
+  const closed = await closePendingDeskCheckouts(bidder.id);
+  if (!closed.ok) return res.status(409).json({ error: closed.error, code: closed.code });
+
+  const { data: begun, error: beginError } = await supabase.rpc("desk_begin_card_payment", {
+    p_actor: actor,
+    p_bidder: bidder.id,
+    p_method: mode === "saved" ? "card_saved" : "card_checkout",
+    p_platform_fee: plan.platformFeeCents,
+    p_processing_fee: plan.processingFeeCents,
+  });
+  if (beginError) return res.status(409).json({ error: beginError.message, code: "DESK_BEGIN_FAILED" });
+  if (Number(begun.goodsCents) !== goods) {
+    // A lot was paid or undone between our read and the reservation. Start over.
+    await supabase.rpc("desk_fail_payment", { p_payment: begun.paymentId, p_error: "Totals changed; start again" });
+    return res.status(409).json({ error: "The total changed. Tap card again.", code: "TOTAL_CHANGED" });
+  }
+
+  const transferGroup = `club_${begun.paymentId}`;
+  const metadata = {
+    purpose: CLUB_DESK_PURPOSE,
+    deskPaymentId: String(begun.paymentId),
+    auctionId: String(auction.id),
+    bidderNumber: String(bidder.bidder_number),
+    goodsCents: String(goods),
+    feePercent: String(plan.feePercent),
+    platformFeeCents: String(plan.platformFeeCents),
+    processingFeeCents: String(plan.processingFeeCents),
+    clubStripeAccountId: String(club.stripe_account_id),
+    transferGroup,
+  };
+  const description = `${auction.title} — bidder #${bidder.bidder_number}`.slice(0, 200);
+
+  if (mode === "saved") {
+    const { data: pm } = bidder.wallet
+      ? await supabase.from("buyer_payment_methods").select("stripe_customer_id, payment_method_id").eq("wallet_address", bidder.wallet).maybeSingle()
+      : { data: null };
+    if (!pm?.payment_method_id) {
+      await supabase.rpc("desk_fail_payment", { p_payment: begun.paymentId, p_error: "No saved card" });
+      return res.status(409).json({ error: "This bidder has no saved card. Use the QR instead.", code: "NO_SAVED_CARD" });
+    }
+    let intent;
+    try {
+      intent = await stripe.paymentIntents.create({
+        amount: plan.buyerTotalCents, currency: "usd", customer: pm.stripe_customer_id, payment_method: pm.payment_method_id,
+        off_session: true, confirm: true, transfer_group: transferGroup, description, metadata,
+      }, { idempotencyKey: `club-desk-${begun.paymentId}` });
+    } catch (err) {
+      const reason = chargeFailureMessage(err);
+      await supabase.rpc("desk_fail_payment", { p_payment: begun.paymentId, p_error: reason });
+      return res.status(402).json({ error: reason, code: "CHARGE_FAILED" });
+    }
+    if (intent.status !== "succeeded") {
+      await supabase.rpc("desk_fail_payment", { p_payment: begun.paymentId, p_error: `Payment ${intent.status}` });
+      return res.status(402).json({ error: `The charge is ${intent.status}. Use the QR instead.`, code: "CHARGE_FAILED" });
+    }
+    await supabase.rpc("desk_attach_stripe", { p_payment: begun.paymentId, p_payment_intent: intent.id, p_session: null });
+    await settleClubDeskPayment(begun.paymentId, intent);
+    return res.status(200).json({ ok: true, paid: true, totalCents: plan.buyerTotalCents, paymentId: begun.paymentId });
+  }
+
+  // Checkout on the bidder's phone.
+  const appUrl = process.env.APP_URL || "https://aquacellum.com";
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    line_items: [
+      { price_data: { currency: "usd", product_data: { name: `${auction.title}: ${(owed || []).length} lot${(owed || []).length === 1 ? "" : "s"}`.slice(0, 120), description: `Bidder #${bidder.bidder_number} · ${bidder.name}`.slice(0, 200) }, unit_amount: goods }, quantity: 1 },
+      ...(plan.processingFeeCents > 0 ? [{ price_data: { currency: "usd", product_data: { name: "Card processing fee" }, unit_amount: plan.processingFeeCents }, quantity: 1 }] : []),
+    ],
+    payment_intent_data: { transfer_group: transferGroup, description, metadata, ...(bidder.email ? { receipt_email: bidder.email } : {}) },
+    metadata,
+    ...(bidder.email ? { customer_email: bidder.email } : {}),
+    payment_method_types: ["card"],
+    expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
+    success_url: `${appUrl}/app/auction-night/${auction.id}/room?paid=${bidder.bidder_number}`,
+    cancel_url: `${appUrl}/app/auction-night/${auction.id}/room`,
+  });
+  await supabase.rpc("desk_attach_stripe", { p_payment: begun.paymentId, p_payment_intent: null, p_session: session.id });
+  return res.status(200).json({ ok: true, checkoutUrl: session.url, paymentId: begun.paymentId, totalCents: plan.buyerTotalCents });
 }
