@@ -53,6 +53,10 @@ describe("routes", () => {
     expect(r).toContain("/auctions/:id->/app/auctions/:id");
   });
 
+  it("a buyer arriving from a lot link isn't greeted by the changelog modal", () => {
+    expect(APP).toMatch(/!\["product", "auctions", "auction-lot", "auctions-mine"\]\.includes\(commerceRoute\?\.kind\) && <WhatsNewModal \/>/);
+  });
+
   it("App renders the auctions page for all three kinds and adds a nav tab", () => {
     expect(APP).toMatch(/commerceRoute\?\.kind === "auctions" \|\| commerceRoute\?\.kind === "auction-lot" \|\| commerceRoute\?\.kind === "auctions-mine"/);
     expect(APP).toMatch(/id: "auctions",\s+icon: "🔨",\s+label: "Auctions"/);

@@ -1948,7 +1948,7 @@ export default function App() {
           arriving from the marketplace lands on the listing, not a changelog.
           It only defers: the seen-flag isn't written, so it surfaces on the next
           normal app entry. */}
-      {commerceRoute?.kind !== "product" && <WhatsNewModal />}
+      {!["product", "auctions", "auction-lot", "auctions-mine"].includes(commerceRoute?.kind) && <WhatsNewModal />}
 
       {/* Persistent cart drawer (Task 10) — displayTank feeds the Task 11
           add-on tank-fit signal; the drawer degrades gracefully to a
