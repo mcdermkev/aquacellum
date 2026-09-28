@@ -1,13 +1,12 @@
 /**
  * Guest/card checkout of a batch must size its stock hold from the inventory of
- * record, not only the chain.
+ * record, capped by the chain for batches that exist on-chain.
  *
  * Found live (2026-09-26): Steve's batch listings 8000001–8000007 exist only
  * off-chain, so `batchListings(id).quantity` is 0 and every checkout of them was
- * refused OUT_OF_STOCK while the database said 2–4 left. These pin the fix in
- * `resolveReservationTargets` (frontend/api/stripe.js): read
- * `aquadex_listings.quantity_remaining` first, fall back to the chain only when
- * that column is NULL/unreadable, and never invent stock.
+ * refused OUT_OF_STOCK while the database said 2–4 left. Review (2026-09-28):
+ * crypto purchases lower the chain but not quantity_remaining, so for real
+ * on-chain batches the smaller of the two must win.
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -34,17 +33,18 @@ describe("resolveReservationTargets — batch stock source", () => {
     expect(batch).toMatch(/\.eq\("id",\s*String\(it\.listingId\)\)/);
   });
 
-  it("consults the inventory of record BEFORE the chain", () => {
-    const db = batch.indexOf("quantity_remaining");
-    const chain = batch.indexOf("batchListings(");
-    expect(db).toBeGreaterThan(-1);
-    expect(chain).toBeGreaterThan(db);
+  it("only uses the chain for batches that actually exist on-chain (non-zero seller)", () => {
+    expect(batch).toMatch(/!\/\^0x0\{40\}\$\/i\.test\(String\(b\.seller\)\)/);
   });
 
-  it("falls back to the chain only when the column gave no answer", () => {
-    // `stock` starts unknown (null), the chain read is guarded by `stock === null`.
-    expect(batch).toMatch(/let stock = null;/);
-    expect(batch).toMatch(/if \(stock === null\)\s*\{[\s\S]*batchListings\(/);
+  it("takes the smaller of DB and chain when both are known, and the chain when the DB is NULL", () => {
+    expect(batch).toMatch(/if \(stock === null\) stock = chain \?\? 0;/);
+    expect(batch).toMatch(/else if \(chain !== null\) stock = Math\.min\(stock, chain\);/);
+  });
+
+  it("bounds the chain read so a slow RPC cannot stall checkout", () => {
+    expect(batch).toMatch(/Promise\.race\(/);
+    expect(CODE).toMatch(/const CHAIN_STOCK_TIMEOUT_MS = \d+;/);
   });
 
   it("treats a NULL column as unknown, not as zero or unlimited", () => {

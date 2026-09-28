@@ -3061,6 +3061,37 @@ async function handleGuestHandoffConfirm(req, res) {
     return res.status(400).json({ error: "Order is missing payout details" });
   }
 
+  // Never pay out for a fish that isn't there. A batch card sale's stock is
+  // decremented by the webhook; re-run that here (idempotent on stripe:<pi>) so
+  // an oversold sale (e.g. sold for cash at the booth first) or a missed
+  // decrement is caught before money moves.
+  if (md.purchaseType === "batch") {
+    let inv;
+    try {
+      inv = await recordCardSaleInventory({
+        supabase,
+        metadata: md,
+        paymentIntentId: order.stripe_payment_intent,
+        releaseHolds: isCanonicalSettlementEnabled()
+          ? (m) => releaseCheckoutReservations({ supabase, metadata: m, now: Date.now() })
+          : null,
+      });
+    } catch (e) {
+      inv = { applied: false, error: e?.message || String(e) };
+    }
+    if (inv.oversold) {
+      console.error(`[Guest Handoff] Refusing release: oversold card sale ${order.stripe_payment_intent}`);
+      return res.status(409).json({
+        error: "This fish was already sold when this payment came in. Refund the buyer instead of handing off.",
+        code: "OVERSOLD",
+      });
+    }
+    if (!inv.applied && inv.error) {
+      console.error(`[Guest Handoff] Stock check failed for ${order.stripe_payment_intent}:`, inv.error);
+      return res.status(503).json({ error: "Couldn't confirm stock for this order. Try again.", code: "STOCK_CHECK_UNAVAILABLE" });
+    }
+  }
+
   // Release: transfer the held funds to the seller (no on-chain step for a guest
   // batch/pickup order). Idempotency is guarded by the order-status check above.
   let transferId;
@@ -3305,20 +3336,22 @@ async function resolveAuthoritativeListing({ id, isBatch = false }) {
  * for a starting checkout, so the reserve_stock oversell guard has a real
  * denominator. Specimen/shipping/pickup/multi are unique NFTs (stock 1 each).
  *
- * A batch's on-hand count comes from the inventory of record first —
+ * A batch's on-hand count is the inventory of record —
  * `aquadex_listings.quantity_remaining` (20260916_inventory_of_record.sql), the
- * column the booth cash-sale RPC decrements — and only falls back to the on-chain
- * `batchListings(id).quantity` when that column is NULL or unreadable.
+ * column booth and card sales decrement — capped by the on-chain
+ * `batchListings(id).quantity` when an on-chain batch exists (crypto purchases
+ * lower the chain but not the column). A NULL column defers to the chain.
  *
- * Why this order: off-chain batch listings (e.g. the seeded 8000001–8000007) have
- * no on-chain batch at all, so the chain read returns 0 and every guest checkout
- * of them was refused as OUT_OF_STOCK. A NULL column still defers to the chain
- * rather than guessing, so on-chain batches are unaffected until backfilled.
+ * Why: off-chain batch listings (e.g. the seeded 8000001–8000007) have no on-chain
+ * batch, so trusting only the chain (0) refused every guest checkout of them as
+ * OUT_OF_STOCK; trusting only the DB could oversell a drifted on-chain batch.
  *
  * @param {string} purchaseType
  * @param {Array<Object>} items
  * @returns {Promise<Array<{ sku:string, quantity:number, totalStock:number }>>}
  */
+const CHAIN_STOCK_TIMEOUT_MS = 3000;
+
 async function resolveReservationTargets(purchaseType, items) {
   if (purchaseType === "batch") {
     const it = items[0];
@@ -3336,16 +3369,25 @@ async function resolveReservationTargets(purchaseType, items) {
     } catch (e) {
       console.warn("[Checkout] Could not read inventory-of-record stock:", e.message);
     }
-    if (stock === null) {
-      try {
-        const marketplace = getMarketplaceContract();
-        const b = await marketplace.batchListings(Number(it.listingId));
-        stock = Number(b.quantity.toString());
-      } catch (e) {
-        console.warn("[Checkout] Could not resolve batch stock on-chain:", e.message);
-        stock = 0;
-      }
+    // The chain is also authoritative for batches that exist on-chain: crypto
+    // purchases lower it without touching quantity_remaining. So when an on-chain
+    // batch exists (non-zero seller), take the smaller of the two. Off-chain
+    // batches read back an empty struct (zero seller) and keep the DB value.
+    let chain = null;
+    try {
+      const marketplace = getMarketplaceContract();
+      // Bounded: a slow RPC must not stall checkout. On timeout the DB value stands.
+      const b = await Promise.race([
+        marketplace.batchListings(Number(it.listingId)),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("chain read timed out")), CHAIN_STOCK_TIMEOUT_MS)),
+      ]);
+      const onChain = b && b.seller && !/^0x0{40}$/i.test(String(b.seller));
+      if (onChain) chain = Number(b.quantity.toString());
+    } catch (e) {
+      console.warn("[Checkout] Could not resolve batch stock on-chain:", e.message);
     }
+    if (stock === null) stock = chain ?? 0;
+    else if (chain !== null) stock = Math.min(stock, chain);
     return [{ sku: String(it.listingId), quantity: Number(it.quantity) || 1, totalStock: stock }];
   }
   if (purchaseType === "multi") {

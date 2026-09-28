@@ -30,14 +30,25 @@ describe("createSellerTransfer", () => {
     const stripe = fakeStripe();
     await createSellerTransfer(stripe, BASE);
     expect(stripe.paymentIntents.retrieve).toHaveBeenCalledWith("pi_1");
-    expect(stripe.transfers.create).toHaveBeenCalledWith({
-      amount: 961,
-      currency: "usd",
-      destination: "acct_seller",
-      source_transaction: "ch_123",
-      transfer_group: "grp_1",
-      metadata: { reference: "pi_1" },
-    });
+    expect(stripe.transfers.create).toHaveBeenCalledWith(
+      {
+        amount: 961,
+        currency: "usd",
+        destination: "acct_seller",
+        source_transaction: "ch_123",
+        transfer_group: "grp_1",
+        metadata: { reference: "pi_1" },
+      },
+      { idempotencyKey: "payout:pi_1" }
+    );
+  });
+
+  it("uses one idempotency key per PaymentIntent, so a double release can't pay twice", async () => {
+    const stripe = fakeStripe();
+    await createSellerTransfer(stripe, BASE);
+    await createSellerTransfer(stripe, BASE);
+    const keys = stripe.transfers.create.mock.calls.map((c) => c[1]?.idempotencyKey);
+    expect(keys).toEqual(["payout:pi_1", "payout:pi_1"]);
   });
 
   it("accepts an expanded latest_charge object", async () => {

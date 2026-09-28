@@ -108,10 +108,10 @@ describe("booth staff endpoints", () => {
     expect(fn(API, "handleBoothStaffRemove")).toMatch(/\.ilike\("seller_wallet", sellerWallet\)/);
   });
 
-  it("membership check fails closed", () => {
+  it("membership check never grants on error (returns null = unknown → 503)", () => {
     const f = fn(API, "isActiveBoothStaff");
     expect(f).toMatch(/\.is\("revoked_at", null\)/);
-    expect(f).toMatch(/if \(error\) \{[\s\S]*return false;/);
+    expect(f).toMatch(/if \(error\) \{[\s\S]*return null;/);
     expect(f).toMatch(/seller === staff\) return false/);
   });
 

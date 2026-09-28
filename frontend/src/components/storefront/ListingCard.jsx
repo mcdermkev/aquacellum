@@ -34,7 +34,8 @@ export function ListingCard({ listing, onOpenListing, casualMode = true, commerc
     : listing.priceCentsUSD != null
       ? (Number(listing.priceCentsUSD) / 100).toFixed(2)
       : parseFloat(listing.price || 0).toFixed(2);
-  const quantityRemaining = listing.quantityRemaining || listing.quantity || 1;
+  // `??`, not `||`: a sold-out 0 must stay 0, not become the original count or 1.
+  const quantityRemaining = listing.quantityRemaining ?? listing.quantity ?? 1;
 
   const handleBuyClick = (e) => {
     e.stopPropagation();

@@ -101,6 +101,8 @@
     .card-sci { font-size: 0.68rem; font-style: italic; color: var(--violet-400); margin-top: 2px; }
     .card-cta { font-size: 0.65rem; font-weight: 600; color: var(--violet-300); opacity: 0; transition: opacity 0.3s; margin-top: 6px; }
     .listing-card:hover .card-cta { opacity: 1; }
+    .listing-card--sold-out .card-image img { filter: grayscale(0.7); opacity: 0.6; }
+    .listing-card--sold-out .card-cta { opacity: 1; color: #fca5a5; }
     /* =========================================
        REVIEWS & EMPTY/LOADING STATES
     ========================================= */
@@ -280,6 +282,25 @@
       };
     }
 
+    // Live stock for a listing. Booth and card sales decrement quantity_remaining;
+    // data.quantity is the ORIGINAL count and is only a legacy fallback.
+    // Returns null when stock is unknown (never 0).
+    function liveStock(row, data) {
+      const d = data || {};
+      if (Number.isFinite(d.quantityRemaining)) return Math.max(0, Math.floor(d.quantityRemaining));
+      const column = row && row.quantity_remaining;
+      if (column != null && column !== '' && Number.isFinite(Number(column))) return Math.max(0, Math.floor(Number(column)));
+      const legacy = d.quantity;
+      if (legacy != null && legacy !== '' && Number.isFinite(Number(legacy))) return Math.max(0, Math.floor(Number(legacy)));
+      return null;
+    }
+
+    function listingCta(item) {
+      if (item.stock === 0) return 'Sold out';
+      if (!item.isBatch) return 'View listing →';
+      return item.stock == null ? 'Choose quantity →' : `${item.stock} available · Choose quantity →`;
+    }
+
     function normalizeApiListing(listing) {
       // The endpoint returns a nested public response. Keep compatibility with
       // display-safe projected rows without ever reading the raw table.
@@ -295,7 +316,7 @@
         scientificName: normalized.species?.scientificName || normalized.scientificName,
         priceUsd: normalized.price?.approximateUsd ?? normalized.priceUsd,
         isBatch: normalized.type === 'batch' || normalized.isBatch === true,
-        quantity: normalized.quantity,
+        stock: liveStock(listing, normalized),
         imageUrl: normalized.imageUrl || normalized.photoUrl,
         sireId: pedigree.sireId ?? normalized.sireId,
         damId: pedigree.damId ?? normalized.damId,
@@ -611,7 +632,12 @@
       const info = element('div', 'card-info');
       info.append(element('div', 'card-name', item.commonName || 'Unknown Species'));
       if (item.scientificName) info.append(element('div', 'card-sci', item.scientificName));
-      info.append(element('div', 'card-cta', item.isBatch ? 'Choose quantity →' : 'View listing →'));
+      info.append(element('div', 'card-cta', listingCta(item)));
+      if (item.stock === 0) {
+        // Keep the listing on the page; just make it clear nothing is left to buy.
+        card.classList.add('listing-card--sold-out');
+        card.setAttribute('aria-label', `${item.commonName || 'Listing'} (sold out)`);
+      }
       card.append(imageArea, info);
       return card;
     }

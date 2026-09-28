@@ -35,6 +35,9 @@ export async function createSellerTransfer(stripe, { sellerStripeAccountId, amou
     }
   }
 
+  // One payout per PaymentIntent. The idempotency key makes a double-submitted
+  // release (two taps, a retry) return the SAME transfer instead of paying twice.
+  const options = typeof reference === "string" && reference ? { idempotencyKey: `payout:${reference}` } : undefined;
   return stripe.transfers.create({
     amount: amountCents,
     currency: "usd",
@@ -42,5 +45,5 @@ export async function createSellerTransfer(stripe, { sellerStripeAccountId, amou
     ...(source ? { source_transaction: source } : {}),
     ...(transferGroup ? { transfer_group: transferGroup } : {}),
     metadata: { reference: reference || "" },
-  });
+  }, options);
 }

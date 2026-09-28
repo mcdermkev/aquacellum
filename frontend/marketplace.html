@@ -53,6 +53,7 @@
 
     .market-btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--market-line); background: transparent; color: #fff; font-weight: 700; font-size: .82rem; text-decoration: none; cursor: pointer; transition: transform .2s, border-color .2s, background .2s; }
     .market-btn:hover { transform: translateY(-1px); border-color: rgba(255,255,255,.28); }
+    .market-btn:disabled, .market-btn[aria-disabled="true"] { opacity: .55; cursor: not-allowed; transform: none; }
     .market-btn--bright { background: var(--market-lime); color: #11130a; border-color: var(--market-lime); }
     .market-btn--solid { background: #fff; color: #111; border-color: #fff; }
 
@@ -583,12 +584,38 @@
       return "Provenance not documented";
     }
 
+    // Live stock for a listing read from aquadex_listings_public. Booth and card
+    // sales decrement quantity_remaining; data.quantity is the ORIGINAL count and
+    // is only a legacy fallback. Returns null when stock is unknown (never 0).
+    function liveStock(row, data) {
+      const d = data || {};
+      if (Number.isFinite(d.quantityRemaining)) return Math.max(0, Math.floor(d.quantityRemaining));
+      const column = row && row.quantity_remaining;
+      if (column != null && column !== "" && Number.isFinite(Number(column))) return Math.max(0, Math.floor(Number(column)));
+      const legacy = d.quantity;
+      if (legacy != null && legacy !== "" && Number.isFinite(Number(legacy))) return Math.max(0, Math.floor(Number(legacy)));
+      return null;
+    }
+
+    function isSoldOut(item) {
+      return item.stock === 0;
+    }
+
+    // What one checkout buys for a batch: the listed pack, capped at live stock.
     function packSize(item) {
-      const qty = Number(item.quantity || 0);
-      return item.isBatch && qty > 0 ? qty : 0;
+      if (!item.isBatch || !item.stock) return 0;
+      const pack = Number(item.quantity) || 0;
+      return pack > 0 ? Math.min(pack, item.stock) : item.stock;
+    }
+
+    function availableLabel(item) {
+      if (isSoldOut(item)) return "Sold out";
+      if (!item.isBatch) return "1 specimen";
+      return item.stock == null ? "Ask breeder" : `${item.stock} fish`;
     }
 
     function cardBadgeLabel(item) {
+      if (isSoldOut(item)) return "Sold out";
       const qty = packSize(item);
       if (qty) return `Pack of ${qty}`;
       if (Number(item.sireId || 0) && Number(item.damId || 0)) return "Documented parents";
@@ -672,6 +699,7 @@
             price: data.price ?? row.price,
             isBatch: data.isBatch ?? row.is_batch ?? false,
             createdAt: data.createdAt || row.created_at,
+            stock: liveStock(row, data),
           };
         });
       } catch (error) {
@@ -853,7 +881,13 @@
       seller.append(sellerNode, element("span", "product-card__fulfillment", fulfillmentLabel(item)));
       body.append(seller);
       const actions = element("div", "product-card__actions");
-      const continueLink = element("a", "market-btn market-btn--solid", item.isBatch ? "Choose quantity" : "View listing"); continueLink.href = listingAppUrl(item);
+      let continueLink;
+      if (isSoldOut(item)) {
+        // Keep the listing visible, but there is nothing left to buy.
+        continueLink = element("button", "market-btn market-btn--solid", "Sold out"); continueLink.type = "button"; continueLink.disabled = true;
+      } else {
+        continueLink = element("a", "market-btn market-btn--solid", item.isBatch ? "Choose quantity" : "View listing"); continueLink.href = listingAppUrl(item);
+      }
       const details = element("button", "market-btn", "Details"); details.type = "button"; details.addEventListener("click", () => openProduct(item));
       actions.append(continueLink, details); body.append(actions);
       card.append(visual, body);
@@ -921,8 +955,12 @@
       const price = document.getElementById("dialogPrice"); price.replaceChildren();
       if (item.isBatch) {
         price.append(document.createTextNode(`${formatPrice(item)} each`));
-        const packQty = Number(item.quantity || 0);
-        if (item.packTotalUsd && packQty) price.append(element("span", "dialog-price__total", ` · pack of ${packQty} = $${item.packTotalUsd}`));
+        const packQty = packSize(item);
+        // packTotalUsd is priced for the original pack; recompute when live stock caps it.
+        const packTotal = packQty && packQty === Number(item.quantity) && item.packTotalUsd
+          ? item.packTotalUsd
+          : (packQty && priceNumber(item) > 0 ? (priceNumber(item) * packQty).toFixed(2) : "");
+        if (packTotal) price.append(element("span", "dialog-price__total", ` · pack of ${packQty} = $${packTotal}`));
       } else {
         price.textContent = formatPrice(item);
       }
@@ -940,7 +978,7 @@
       const facts = document.getElementById("dialogFacts"); facts.replaceChildren();
       const values = [
         ["Fulfillment", fulfillmentLabel(item)],
-        ["Available", item.isBatch ? `${Number(item.quantity || 0)} fish` : "1 specimen"],
+        ["Available", availableLabel(item)],
       ];
       const isMedaka = String(item.scientificName || "").toLowerCase() === "oryzias latipes";
       if (isMedaka) MEDAKA_CARE.forEach((pair) => values.push(pair));
@@ -952,22 +990,29 @@
       if (store) { seller.setAttribute("href", storefrontUrl(store, item.seller)); seller.removeAttribute("aria-disabled"); }
       else { seller.removeAttribute("href"); seller.setAttribute("aria-disabled", "true"); }
 
-      const buy = document.getElementById("dialogBuy"); buy.textContent = item.isBatch ? "Choose quantity & continue" : "Continue to listing"; buy.href = listingAppUrl(item);
+      const soldOut = isSoldOut(item);
+      const buy = document.getElementById("dialogBuy"); buy.textContent = item.isBatch ? "Choose quantity & continue" : "Continue to listing";
+      if (soldOut) { buy.removeAttribute("href"); buy.setAttribute("aria-disabled", "true"); }
+      else { buy.href = listingAppUrl(item); buy.removeAttribute("aria-disabled"); }
       const guide = document.getElementById("dialogGuide");
       if (meta && meta.guide) { guide.setAttribute("href", meta.guide); guide.style.display = ""; }
       else { guide.style.display = "none"; }
       // Guest checkout (no login) is offered for local-pickup / batch listings.
       // For those, the guest form is the primary CTA and the app link is
-      // demoted to a secondary "sign in" option.
+      // demoted to a secondary "sign in" option. Sold-out listings get neither.
       const guestForm = document.getElementById("dialogGuest");
-      const guestEligible = !!item.isBatch || isLocalPickup(item);
+      const guestEligible = !soldOut && (!!item.isBatch || isLocalPickup(item));
       document.getElementById("guestBuyError").textContent = "";
-      if (guestEligible) {
+      if (soldOut) {
+        guestForm.style.display = "none";
+        buy.textContent = "Sold out";
+      } else if (guestEligible) {
         guestForm.style.display = "flex";
         guestForm.dataset.listingId = String(item.listingId ?? item.id ?? "");
         guestForm.dataset.tokenId = String(item.tokenId ?? item.id ?? "");
         guestForm.dataset.seller = item.seller || "";
-        guestForm.dataset.qty = String(item.quantity || 1);
+        // Capped at live stock so the guest never requests fish that are gone.
+        guestForm.dataset.qty = String(packSize(item) || 1);
         guestForm.dataset.name = item.commonName || "Fish";
         guestForm.dataset.image = speciesImage(item) || "";
         guestForm.dataset.batch = item.isBatch ? "1" : "";
@@ -977,7 +1022,7 @@
         buy.textContent = item.isBatch ? "Choose quantity & continue" : "Continue to listing";
       }
 
-      document.getElementById("dialogNote").textContent = item.isBatch ? "The next screen lets you choose an exact quantity before checkout. Availability and price are rechecked before payment." : "Availability and price are rechecked before payment. Sign in is requested only for protected actions.";
+      document.getElementById("dialogNote").textContent = soldOut ? "This listing is sold out. Save it to check back if the breeder restocks." : item.isBatch ? "The next screen lets you choose an exact quantity before checkout. Availability and price are rechecked before payment." : "Availability and price are rechecked before payment. Sign in is requested only for protected actions.";
       dialog.showModal();
     }
 

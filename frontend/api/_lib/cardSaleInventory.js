@@ -17,7 +17,10 @@
  * keeping the committed hold would count the same fish twice — so after a
  * successful decrement the hold is released. Nothing downstream consumes a
  * committed hold (handoff/refund paths do not read it), so releasing is safe.
- * If the decrement fails, the hold is left committed: it still protects the unit.
+ * If the decrement fails, the hold is left committed. Note it only blocks OTHER
+ * CARD checkouts — booth cash sales don't read holds, so a cash sale can still
+ * take the unit. That case surfaces as `oversold`, and guest handoff confirm
+ * re-runs this (idempotently) and refuses to release money for an oversold sale.
  *
  * Singles are out of scope: their hold is sized at 1 independent of the column,
  * and the on-chain / release flows own their lifecycle.
@@ -62,8 +65,9 @@ export async function recordCardSaleInventory({ supabase, metadata, paymentInten
   let holdsReleased = false;
   if (typeof releaseHolds === "function" && md.reservationGroupId) {
     try {
-      await releaseHolds(md);
-      holdsReleased = true;
+      // releaseCheckoutReservations reports failure as { ok:false }, not a throw.
+      const r = await releaseHolds(md);
+      holdsReleased = !(r && r.ok === false);
     } catch {
       // Best-effort: a stuck committed hold only under-sells, it cannot oversell.
     }

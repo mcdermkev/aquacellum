@@ -515,7 +515,10 @@ async function handleStorefrontDetail(req, res) {
         image_cid: d.imageCid || null,
         image_url: d.photoUrl || d.imageUrl || null,
         quantity: d.quantity || 0,
-        quantity_remaining: d.quantityRemaining || d.quantity || 0,
+        // Live stock: the inventory-of-record column first (booth and card sales
+        // decrement it), then the blob. `??`, not `||`, so a sold-out 0 stays 0
+        // instead of falling back to the original listed quantity.
+        quantity_remaining: row.quantity_remaining ?? d.quantityRemaining ?? d.quantity ?? 0,
         pedigree: (d.sireId || d.damId) ? { sireId: d.sireId, damId: d.damId } : null,
         shipping_available: d.isShipping || false,
         local_pickup: d.localPickup || false,
@@ -2564,7 +2567,9 @@ function mapListingForResponse(listing, wallet) {
     imageUrl: listing.image_cid
       ? `${IPFS_GATEWAY}/${listing.image_cid}`
       : listing.image_url || null,
-    quantity: listing.is_batch ? (listing.quantity_remaining || listing.quantity || 0) : 1,
+    // Live remaining stock for batches (0 = sold out; `??` keeps it 0).
+    quantity: listing.is_batch ? Number(listing.quantity_remaining ?? listing.quantity ?? 0) : 1,
+    quantityRemaining: listing.is_batch ? Number(listing.quantity_remaining ?? listing.quantity ?? 0) : 1,
     pedigree: listing.pedigree || null,
     shippingAvailable: listing.shipping_available || false,
     localPickup: listing.local_pickup || false,
@@ -2656,8 +2661,23 @@ async function handleRecordSale(req, res) {
   let recordedBy = null;
   if (forSeller && String(forSeller).toLowerCase() !== sessionWallet) {
     const target = String(forSeller).toLowerCase();
-    if (!(await isActiveBoothStaff(target, sessionWallet))) {
+    const member = await isActiveBoothStaff(target, sessionWallet);
+    if (member === null) {
+      // Lookup failed — transient. 503 so the offline outbox keeps the sale and
+      // retries, instead of discarding a fish that physically sold.
+      return res.status(503).json({ error: "Couldn't check helper access. The sale is saved and will retry.", code: "STAFF_CHECK_UNAVAILABLE" });
+    }
+    if (!member) {
       return res.status(403).json({ error: "You're not a helper for this booth.", code: "NOT_BOOTH_STAFF" });
+    }
+    // Helpers ring up ordinary sales, not stock control: a real price, a
+    // bounded quantity. Zeroing stock or a $0 "sale" is the seller's −/+ job.
+    const helperQty = Math.round(Number(quantity) || 1);
+    if (helperQty < 1 || helperQty > MAX_HELPER_SALE_QUANTITY) {
+      return res.status(400).json({ error: `Helpers can ring up 1–${MAX_HELPER_SALE_QUANTITY} at a time.`, code: "HELPER_QUANTITY_LIMIT" });
+    }
+    if (!(Math.round(Number(unitPriceCents) || 0) > 0)) {
+      return res.status(400).json({ error: "A helper sale needs a price.", code: "HELPER_PRICE_REQUIRED" });
     }
     sellerWallet = target;
     recordedBy = sessionWallet;
@@ -2665,6 +2685,12 @@ async function handleRecordSale(req, res) {
 
   if (!saleId || typeof saleId !== "string" || saleId.length > 128) {
     return res.status(400).json({ error: "saleId is required", code: "SALE_ID_REQUIRED" });
+  }
+  // Server-minted sale ids live in reserved namespaces (card webhook `stripe:<pi>`,
+  // stock audit `adjust:`). A client-chosen id there could pre-empt a card sale's
+  // decrement, so refuse it. Booth ids are UUIDs / `booth-…`.
+  if (/^(stripe|adjust):/i.test(saleId)) {
+    return res.status(400).json({ error: "Invalid saleId", code: "SALE_ID_RESERVED" });
   }
   if (listingId == null || String(listingId).trim() === "") {
     return res.status(400).json({ error: "listingId is required", code: "LISTING_REQUIRED" });
@@ -2708,6 +2734,9 @@ async function handleRecordSale(req, res) {
       }
       if (/not found/i.test(msg)) {
         return res.status(404).json({ error: "Listing not found.", code: "LISTING_NOT_FOUND" });
+      }
+      if (/already used for a different sale/i.test(msg)) {
+        return res.status(409).json({ error: "That sale id was already used.", code: "SALE_ID_CONFLICT" });
       }
       console.error("[record-sale] decrement failed:", msg);
       return res.status(500).json({ error: "Could not record the sale.", code: "DECREMENT_FAILED" });
@@ -2916,13 +2945,18 @@ async function handleAdjustInventory(req, res) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const BOOTH_INVITE_TTL_MS = 15 * 60 * 1000;
+const MAX_HELPER_SALE_QUANTITY = 10;
 const WALLET_RE = /^0x[0-9a-f]{40}$/;
 
 function hashInviteToken(token) {
   return crypto.createHash("sha256").update(String(token), "utf8").digest("hex");
 }
 
-/** True when `staffWallet` currently helps at `sellerWallet`'s booth. */
+/**
+ * true  — `staffWallet` currently helps at `sellerWallet`'s booth
+ * false — it does not
+ * null  — the lookup failed (callers answer 503, never grant access)
+ */
 async function isActiveBoothStaff(sellerWallet, staffWallet) {
   const seller = String(sellerWallet || "").toLowerCase();
   const staff = String(staffWallet || "").toLowerCase();
@@ -2936,7 +2970,7 @@ async function isActiveBoothStaff(sellerWallet, staffWallet) {
     .limit(1);
   if (error) {
     console.error("[booth-staff] membership check failed:", error.message);
-    return false; // fail closed
+    return null; // unknown — never treated as a grant
   }
   return Array.isArray(data) && data.length > 0;
 }
@@ -3116,7 +3150,9 @@ async function handleBoothStaffInventory(req, res) {
 
   const seller = String(req.query?.seller || "").toLowerCase();
   if (!WALLET_RE.test(seller)) return res.status(400).json({ error: "seller is required", code: "SELLER_REQUIRED" });
-  if (!(await isActiveBoothStaff(seller, staffWallet))) {
+  const member = await isActiveBoothStaff(seller, staffWallet);
+  if (member === null) return res.status(503).json({ error: "Couldn't check helper access. Try again.", code: "STAFF_CHECK_UNAVAILABLE" });
+  if (!member) {
     return res.status(403).json({ error: "You're not a helper for this booth.", code: "NOT_BOOTH_STAFF" });
   }
 
@@ -3306,6 +3342,53 @@ async function handlePublishTank(req, res) {
  * carry the seller wallet, which the marketplace already publishes for every
  * active listing — see the publish handler.)
  */
+/**
+ * Overlay live stock, availability and price onto a published tank snapshot's
+ * commerce lines. Pure w.r.t. the snapshot (returns a copy). Best-effort: if the
+ * lookup fails the snapshot is returned unchanged — checkout re-validates price
+ * and stock server-side regardless, so a stale page can never oversell.
+ */
+async function withLiveCommerce(snapshot, ownerWallet) {
+  const snap = snapshot && typeof snapshot === "object" ? snapshot : {};
+  const lines = Array.isArray(snap.commerce) ? snap.commerce : [];
+  const ids = [...new Set(lines.map((l) => String(l?.listingId || "")).filter(Boolean))];
+  if (!ids.length) return snap;
+  const owner = String(ownerWallet || "").toLowerCase();
+  try {
+    const { data: rows, error } = await supabase
+      .from("aquadex_listings")
+      .select("id, seller_address, is_active, quantity_remaining, price, data")
+      .in("id", ids);
+    if (error) throw error;
+    const byId = new Map();
+    for (const r of rows || []) {
+      if (String(r.seller_address).toLowerCase() !== owner) continue;
+      byId.set(String(r.id), r);
+    }
+    return {
+      ...snap,
+      commerce: lines.map((line) => {
+        const r = byId.get(String(line?.listingId));
+        if (!r) return { ...line, quantityRemaining: 0, available: false };
+        let d = r.data;
+        if (typeof d === "string") { try { d = JSON.parse(d); } catch { d = {}; } }
+        d = d && typeof d === "object" ? d : {};
+        const remaining = r.quantity_remaining == null ? null : Number(r.quantity_remaining);
+        const priceCents = Number(d.priceCentsUSD ?? Math.round(Number(r.price || 0) * 100)) || line.priceCents || 0;
+        return {
+          ...line,
+          priceCents,
+          quantityRemaining: remaining,
+          available: r.is_active !== false && (remaining == null || remaining > 0),
+        };
+      }),
+    };
+  } catch (err) {
+    console.warn("[public-tank] live stock refresh failed:", err?.message || err);
+    return snap;
+  }
+}
+
 async function handlePublicTank(req, res) {
   setCorsHeaders(req, res, { methods: "GET, OPTIONS" });
   if (req.method === "OPTIONS") return res.status(204).end();
@@ -3320,7 +3403,7 @@ async function handlePublicTank(req, res) {
   try {
     const { data: row } = await supabase
       .from("published_tanks")
-      .select("token, snapshot, is_public, updated_at")
+      .select("token, owner_wallet, snapshot, is_public, updated_at")
       .eq("token", token)
       .maybeSingle();
 
@@ -3329,6 +3412,12 @@ async function handlePublicTank(req, res) {
     if (!row || row.is_public !== true) {
       return res.status(404).json({ error: "not_found" });
     }
+
+    // The snapshot freezes WHICH fish are in the tank; stock and price must be
+    // live, or a label keeps saying "4 left" (and offering Buy) after booth and
+    // card sales. Only the owner's own listings are refreshed; a listing that is
+    // gone or inactive is shown as unavailable rather than dropped.
+    const tank = await withLiveCommerce(row.snapshot, row.owner_wallet);
 
     // Unlike the showcase handler (which forces private, no-store), a booth label
     // gets scanned repeatedly by different phones and SHOULD cache briefly.
@@ -3340,7 +3429,7 @@ async function handlePublicTank(req, res) {
       .then(() => {})
       .catch(() => {});
 
-    return res.status(200).json({ token: row.token, tank: row.snapshot, updatedAt: row.updated_at });
+    return res.status(200).json({ token: row.token, tank, updatedAt: row.updated_at });
   } catch (err) {
     console.error("[public-tank] unexpected:", err?.message || err);
     return res.status(500).json({ error: "unavailable" });

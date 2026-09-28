@@ -42,6 +42,10 @@ const PERMANENT_CODES = Object.freeze([
   "RAIL_NOT_ALLOWED",
   // The seller removed this helper; replaying won't change that.
   "NOT_BOOTH_STAFF",
+  "SALE_ID_RESERVED",
+  "SALE_ID_CONFLICT",
+  "HELPER_QUANTITY_LIMIT",
+  "HELPER_PRICE_REQUIRED",
 ]);
 
 function defaultTable() {
