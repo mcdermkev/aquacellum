@@ -280,3 +280,27 @@ export async function fetchHelperInventory(sellerWallet, opts = {}) {
   if (!r.success) throw new Error(r.error || "Could not load inventory.");
   return r.rows || [];
 }
+
+// ─── Seller events ("I'm at an event") ──────────────────────────────────────
+// Seller-only. While an event is on, all the seller's card sales get the event
+// rate (decided server-side), and the booth shows a live in-person vs online report.
+
+/** → { current, events, eventFeePercent } */
+export function listEvents(opts = {}) {
+  return staffCall("booth-events", opts);
+}
+
+/** Switch event mode on. → { event, eventFeePercent } */
+export function startEvent({ name, location = "", endsAt }, opts = {}) {
+  return staffCall("booth-event-start", { method: "POST", body: { name, location, endsAt }, ...opts });
+}
+
+/** Switch event mode off. */
+export function endEvent(opts = {}) {
+  return staffCall("booth-event-end", { method: "POST", body: {}, ...opts });
+}
+
+/** What sold during an event (default: the current or latest). → { event, report, generatedAt } */
+export function fetchEventReport(eventId = null, opts = {}) {
+  return staffCall("booth-event-report", { query: eventId ? `&id=${encodeURIComponent(eventId)}` : "", ...opts });
+}

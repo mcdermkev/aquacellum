@@ -79,6 +79,14 @@ import { ethers } from "ethers";
 import crypto from "node:crypto";
 import { setCorsHeaders, handleCorsPreFlight } from "./_lib/cors.js";
 import {
+  buildEventReport,
+  eventWindow,
+  isEventActive,
+  validateEventInput,
+  SALES_CHANNEL,
+} from "./_lib/sellerEvents.js";
+import { FEE_RAIL, resolveFeePolicy } from "../src/services/feePolicy.js";
+import {
   createShowcaseMediaHandler,
   createShowcaseRoomHandler,
   createShowcaseVideoTokenHandler,
@@ -215,6 +223,15 @@ export default async function handler(req, res) {
       return handleBoothStaffContext(req, res);
     case "booth-staff-inventory":
       return handleBoothStaffInventory(req, res);
+    // ── Seller event mode (reduced card fee) + live in-person vs online report ──
+    case "booth-events":
+      return handleBoothEvents(req, res);
+    case "booth-event-start":
+      return handleBoothEventStart(req, res);
+    case "booth-event-end":
+      return handleBoothEventEnd(req, res);
+    case "booth-event-report":
+      return handleBoothEventReport(req, res);
     // ── Aquadex tank QR: publish a tank, and the public read behind the label ──
     case "publish-tank":
       return handlePublishTank(req, res);
@@ -2791,7 +2808,17 @@ async function handleRecordSale(req, res) {
         quantity: qty,
         items: [{ listingId: String(listingId), quantity: qty, priceCents: unitCents }],
         notes: note ? String(note).slice(0, 500) : null,
-        metadata: { saleId, rail: "cash", source: "booth", ...(recordedBy ? { recordedBy } : {}) },
+        metadata: {
+          saleId,
+          rail: "cash",
+          source: "booth",
+          // Booth cash is in person by definition (event report).
+          salesChannel: SALES_CHANNEL.IN_PERSON,
+          channelSource: "booth",
+          listingId: String(listingId),
+          goodsCents: totalCents,
+          ...(recordedBy ? { recordedBy } : {}),
+        },
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -3487,4 +3514,196 @@ async function handlePublicTank(req, res) {
     console.error("[public-tank] unexpected:", err?.message || err);
     return res.status(500).json({ error: "unavailable" });
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SELLER EVENTS — "I'm at an event" + the live event report
+// (AQUASHELLA_FEEDBACK.md §8, migration 20260929_seller_events.sql)
+//
+// While a seller's event is on, all their card sales get the reduced event fee
+// (resolved in api/stripe.js from the seller, not from anything the buyer sends).
+// The report splits the event's sales into in person (booth cash, booth Card
+// button, tank QR labels) and online, per fish, so the seller sees what moves
+// at events. Seller-only: the wallet is always the verified session.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const SELLER_EVENT_COLUMNS = "id, name, location, started_at, ends_at, ended_at";
+const MAX_REPORT_ORDERS = 5000;
+
+/** The rate the checkout will actually apply for an event sale (same policy call). */
+function eventFeePercent() {
+  return resolveFeePolicy({
+    rail: FEE_RAIL.CARD_EVENT,
+    eventId: "preview",
+    standardPercent: 4,
+    eventPercent: Number(process.env.EVENT_FEE_PERCENT) || 2,
+  }).feePercent;
+}
+
+function publicSellerEvent(row, now = Date.now()) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    location: row.location || null,
+    startedAt: row.started_at,
+    endsAt: row.ends_at,
+    endedAt: row.ended_at || null,
+    active: isEventActive(row, now),
+  };
+}
+
+/** GET — the seller's current event (if any) and recent ones. */
+async function handleBoothEvents(req, res) {
+  if (!boothStaffPreamble(req, res, "GET")) return;
+  const sellerWallet = await requireWalletFromSession(req, res);
+  if (!sellerWallet) return;
+
+  const { data, error } = await supabase
+    .from("seller_events")
+    .select(SELLER_EVENT_COLUMNS)
+    .eq("seller_wallet", sellerWallet)
+    .order("started_at", { ascending: false })
+    .limit(20);
+  if (error) {
+    console.error("[booth-events] failed:", error.message);
+    return res.status(500).json({ error: "Could not load your events." });
+  }
+  const now = Date.now();
+  const events = (data || []).map((r) => publicSellerEvent(r, now));
+  return res.status(200).json({
+    ok: true,
+    current: events.find((e) => e.active) || null,
+    events,
+    eventFeePercent: eventFeePercent(),
+  });
+}
+
+/** POST { name, location?, endsAt } — switch event mode on. Closes any open event first. */
+async function handleBoothEventStart(req, res) {
+  if (!boothStaffPreamble(req, res, "POST")) return;
+  const sellerWallet = await requireWalletFromSession(req, res);
+  if (!sellerWallet) return;
+
+  const now = Date.now();
+  const checked = validateEventInput(parseJsonBody(req), now);
+  if (!checked.ok) return res.status(400).json({ error: checked.error, code: checked.code });
+
+  const nowIso = new Date(now).toISOString();
+  const { error: closeError } = await supabase
+    .from("seller_events")
+    .update({ ended_at: nowIso })
+    .eq("seller_wallet", sellerWallet)
+    .is("ended_at", null);
+  if (closeError) {
+    console.error("[booth-event-start] closing previous failed:", closeError.message);
+    return res.status(500).json({ error: "Could not start the event." });
+  }
+
+  const { data, error } = await supabase
+    .from("seller_events")
+    .insert({
+      seller_wallet: sellerWallet,
+      name: checked.value.name,
+      location: checked.value.location,
+      started_at: nowIso,
+      ends_at: checked.value.endsAt,
+    })
+    .select(SELLER_EVENT_COLUMNS)
+    .single();
+  if (error) {
+    // Two taps racing: the unique open-event index lets only one through.
+    if (/duplicate key|uq_seller_events_open/i.test(error.message || "")) {
+      return res.status(409).json({ error: "An event is already on. Refresh and try again.", code: "EVENT_ALREADY_ON" });
+    }
+    console.error("[booth-event-start] insert failed:", error.message);
+    return res.status(500).json({ error: "Could not start the event." });
+  }
+  return res.status(200).json({ ok: true, event: publicSellerEvent(data, now), eventFeePercent: eventFeePercent() });
+}
+
+/** POST — switch event mode off. Card sales go back to the standard rate. */
+async function handleBoothEventEnd(req, res) {
+  if (!boothStaffPreamble(req, res, "POST")) return;
+  const sellerWallet = await requireWalletFromSession(req, res);
+  if (!sellerWallet) return;
+
+  const nowIso = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("seller_events")
+    .update({ ended_at: nowIso })
+    .eq("seller_wallet", sellerWallet)
+    .is("ended_at", null)
+    .select(SELLER_EVENT_COLUMNS);
+  if (error) {
+    console.error("[booth-event-end] failed:", error.message);
+    return res.status(500).json({ error: "Could not end the event." });
+  }
+  return res.status(200).json({ ok: true, event: publicSellerEvent((data || [])[0] || null) });
+}
+
+/**
+ * GET ?id=<eventId> — what sold during the event, in person vs online, per fish.
+ * Without an id: the current event, else the most recent one.
+ */
+async function handleBoothEventReport(req, res) {
+  if (!boothStaffPreamble(req, res, "GET")) return;
+  const sellerWallet = await requireWalletFromSession(req, res);
+  if (!sellerWallet) return;
+
+  const id = String(req.query?.id || "").trim();
+  if (id && !/^[0-9a-f-]{36}$/i.test(id)) {
+    return res.status(400).json({ error: "Invalid event id.", code: "EVENT_ID_INVALID" });
+  }
+
+  let query = supabase.from("seller_events").select(SELLER_EVENT_COLUMNS).eq("seller_wallet", sellerWallet);
+  query = id ? query.eq("id", id) : query.order("started_at", { ascending: false }).limit(1);
+  const { data: rows, error: eventError } = await query;
+  if (eventError) {
+    console.error("[booth-event-report] event lookup failed:", eventError.message);
+    return res.status(500).json({ error: "Could not load the event." });
+  }
+  const event = (rows || [])[0];
+  if (!event) return res.status(404).json({ error: "No event found.", code: "EVENT_NOT_FOUND" });
+
+  const now = Date.now();
+  const { startMs, endMs } = eventWindow(event, now);
+  const [ordersResult, listingsResult] = await Promise.all([
+    supabase
+      .from("orders")
+      .select("id, order_type, status, quantity, items, metadata, subtotal_cents, total_paid_cents, created_at")
+      .ilike("seller_wallet", sellerWallet)
+      .gte("created_at", new Date(startMs).toISOString())
+      .lte("created_at", new Date(endMs).toISOString())
+      .limit(MAX_REPORT_ORDERS),
+    supabase
+      .from("aquadex_listings")
+      .select("id, common_name, quantity_remaining, data")
+      .eq("seller_address", sellerWallet),
+  ]);
+  if (ordersResult.error) {
+    console.error("[booth-event-report] orders lookup failed:", ordersResult.error.message);
+    return res.status(500).json({ error: "Could not load the event's sales." });
+  }
+
+  const listings = {};
+  for (const row of listingsResult.data || []) {
+    let data = row.data;
+    if (typeof data === "string") {
+      try { data = JSON.parse(data); } catch { data = null; }
+    }
+    listings[String(row.id)] = {
+      name: row.common_name || data?.commonName || `Listing ${row.id}`,
+      remaining: row.quantity_remaining == null ? null : Number(row.quantity_remaining),
+    };
+  }
+
+  const orders = ordersResult.data || [];
+  return res.status(200).json({
+    ok: true,
+    event: publicSellerEvent(event, now),
+    report: buildEventReport({ orders, listings }),
+    truncated: orders.length >= MAX_REPORT_ORDERS,
+    generatedAt: new Date(now).toISOString(),
+  });
 }

@@ -287,6 +287,9 @@
             buyerWallet: 'guest',
             sellerWallet: line.sellerWallet,
             items: [item],
+            // A printed tank label is scanned at the booth: an in-person sale
+            // (reporting only; the fee is decided server-side from the seller).
+            salesChannel: 'tank',
             successUrl: `${window.location.origin}/checkout-success.html?session_id={CHECKOUT_SESSION_ID}`,
             cancelUrl: window.location.href,
           }),

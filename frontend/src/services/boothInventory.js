@@ -79,9 +79,13 @@ export function normalizeBoothLines(rows) {
     .filter(Boolean);
 }
 
-/** The product path a Card sale is handed off to (existing guest checkout). */
+/**
+ * The product path a Card sale is handed off to (existing guest checkout).
+ * `?via=booth` marks the checkout as an in-person sale for the event report
+ * (see rememberSalesChannelFromUrl in stripePayments.js). Reporting only.
+ */
 export function boothProductPath(line) {
-  return `/app/products/${encodeURIComponent(line?.listingKey || "")}`;
+  return `/app/products/${encodeURIComponent(line?.listingKey || "")}?via=booth`;
 }
 
 /**

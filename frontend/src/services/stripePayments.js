@@ -50,6 +50,50 @@ async function getSessionToken() {
   }
 }
 
+// ─── Sales channel (event report only) ─────────────────────────────────────
+// The booth's Card button opens the product page with ?via=booth in a new tab.
+// The buyer then goes product → cart → checkout, so the hint is kept for this
+// tab (sessionStorage) for an hour. It only labels the sale in person vs online
+// for the seller's event report; the server never prices anything off it.
+
+const SALES_CHANNEL_KEY = "aq.salesChannel";
+const SALES_CHANNEL_TTL_MS = 60 * 60 * 1000;
+const KNOWN_CHANNELS = new Set(["booth", "tank"]);
+
+function safeSessionStorage() {
+  try {
+    return typeof window !== "undefined" ? window.sessionStorage : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Remember `?via=booth` from the current URL. Call on navigation. */
+export function rememberSalesChannelFromUrl(search = typeof window !== "undefined" ? window.location.search : "", storage = safeSessionStorage(), now = Date.now()) {
+  if (!storage) return null;
+  const via = new URLSearchParams(search || "").get("via");
+  if (!via || !KNOWN_CHANNELS.has(via)) return null;
+  try {
+    storage.setItem(SALES_CHANNEL_KEY, JSON.stringify({ via, at: now }));
+  } catch {
+    return null;
+  }
+  return via;
+}
+
+/** The remembered channel if still fresh, else null. */
+export function currentSalesChannel(storage = safeSessionStorage(), now = Date.now()) {
+  if (!storage) return null;
+  try {
+    const saved = JSON.parse(storage.getItem(SALES_CHANNEL_KEY) || "null");
+    if (!saved || !KNOWN_CHANNELS.has(saved.via)) return null;
+    if (!(now - Number(saved.at) < SALES_CHANNEL_TTL_MS)) return null;
+    return saved.via;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Canonical release-authorization message. MUST match the server builder in
  * frontend/api/stripe.js byte-for-byte, or the recovered signer won't match and
@@ -711,13 +755,16 @@ async function _createCheckout(payload, autoRedirect = true, localOnly = null) {
     // verified identity onto the order — this is what enables popup-free release
     // later. Omitted for guests / logged-out buyers (they sign at release).
     const token = await getSessionToken();
+    // Opened from the booth's Card button → an in-person sale (event report only).
+    const channel = currentSalesChannel();
+    const body = channel && !payload.salesChannel ? { ...payload, salesChannel: channel } : payload;
     const response = await fetch(`${API_BASE}/stripe?action=create-checkout`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
     });
 
     const data = await response.json();

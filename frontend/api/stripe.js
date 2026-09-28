@@ -60,6 +60,7 @@ import { resolveFeePolicy, FEE_RAIL } from "../src/services/feePolicy.js";
 // failed every webhook (2026-09-26).
 import { readRawBody } from "./_lib/rawBody.js";
 import { recordCardSaleInventory, restockRefundedCardSale } from "./_lib/cardSaleInventory.js";
+import { cardOrderMetadata, findActiveSellerEvent, normalizeSalesChannel } from "./_lib/sellerEvents.js";
 import { createSellerTransfer } from "./_lib/sellerTransfer.js";
 
 let stripe;
@@ -550,6 +551,7 @@ async function handleWebhook(req, res) {
             fulfillment_type: "in_person",
             stripe_session_id: metadata.stripeSessionId || null,
             stripe_payment_intent: paymentIntentId,
+            metadata: cardOrderMetadata(metadata),
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           }, { onConflict: "stripe_payment_intent", ignoreDuplicates: true });
@@ -665,6 +667,7 @@ async function handleWebhook(req, res) {
             stripe_payment_intent: paymentIntentId,
             on_chain_token_id: metadata.tokenId ? Number(metadata.tokenId) : null,
             tx_hash: settlement.txHash,
+            metadata: cardOrderMetadata(metadata),
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           }, { onConflict: "stripe_payment_intent", ignoreDuplicates: true });
@@ -4062,9 +4065,14 @@ async function handleCreateCheckout(req, res) {
     // to the standard rate. A request with no eventTideId produces byte-identical
     // math to the pre-policy behaviour.
     const verifiedEventTideId = await verifyEventFeeEligibility(req.body.eventTideId, sellerWallet);
+    // Seller event mode (AQUASHELLA_FEEDBACK.md §8): while the seller has an
+    // event switched on, ALL their card sales get the event rate, wherever the
+    // buyer is. Looked up server-side from the seller; fails closed to standard.
+    const sellerEvent = verifiedEventTideId ? null : await findActiveSellerEvent(supabase, sellerWallet);
+    const eventId = verifiedEventTideId || (sellerEvent ? sellerEvent.id : null);
     const feePolicy = resolveFeePolicy({
-      rail: verifiedEventTideId ? FEE_RAIL.CARD_EVENT : FEE_RAIL.CARD,
-      eventId: verifiedEventTideId,
+      rail: eventId ? FEE_RAIL.CARD_EVENT : FEE_RAIL.CARD,
+      eventId,
       standardPercent: PLATFORM_FEE_PERCENT,
       eventPercent: EVENT_FEE_PERCENT,
     });
@@ -4112,6 +4120,12 @@ async function handleCreateCheckout(req, res) {
     metadata.sellerPayoutCents = String(sellerPayoutCents);
     metadata.processingFeeCents = String(processingFeeCents);
     metadata.transferGroup = transferGroup;
+    // Reporting only (booth event report): where the checkout started, and the
+    // seller event it fell in. Never affects the charge or the payout.
+    const channel = normalizeSalesChannel(req.body.salesChannel);
+    metadata.salesChannel = channel.channel;
+    metadata.channelSource = channel.source;
+    if (sellerEvent) metadata.eventId = String(sellerEvent.id);
     if (appliedPromotion) {
       // Stamped for the webhook's idempotent used_count redemption + receipts.
       metadata.promotionId = String(appliedPromotion.promotionId);

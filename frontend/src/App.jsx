@@ -9,6 +9,7 @@ import { CartButton } from "./components/cart/CartButton";
 import { CartDrawer } from "./components/cart/CartDrawer";
 import { useCart } from "./contexts/CartContext";
 import { canonicalProductPath, resolveCommerceRoute } from "./services/commerceRoute";
+import { rememberSalesChannelFromUrl } from "./services/stripePayments";
 import { useFontSettings } from "./hooks/useFontSettings";
 import { useHighContrast } from "./hooks/useHighContrast";
 import { SpecimenDetailModal } from "./components/SpecimenDetailModal";
@@ -346,6 +347,11 @@ export default function App() {
   const navScrollRef = useScrollAffordance();
 
   const location = useLocation();
+  // Booth Card button → ?via=booth: label this tab's checkout as in person
+  // (seller event report only; never affects price or fee).
+  useEffect(() => {
+    rememberSalesChannelFromUrl(location.search);
+  }, [location.search]);
   const commerceRoute = useMemo(
     () => resolveCommerceRoute(location.pathname, VALID_TABS),
     [location.pathname],

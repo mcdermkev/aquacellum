@@ -52,6 +52,7 @@ import {
   QrCode,
   Printer,
   UsersThree,
+  CalendarCheck,
 } from "@phosphor-icons/react";
 
 import { supabase } from "../../services/supabaseClient";
@@ -62,12 +63,14 @@ import {
   fetchHelperInventory,
   joinBooth,
   listBoothsIHelp,
+  listEvents,
   publishTank,
   recordCashSale,
   sendQueuedSale,
 } from "../../services/boothApi";
 import { useAuth } from "../../contexts/AuthContext";
 import { BoothHelpers } from "./BoothHelpers";
+import { BoothEvents } from "./BoothEvents";
 import {
   countQueuedSales,
   isPermanentFailure,
@@ -156,6 +159,10 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
   const [actingFor, setActingFor] = useState(null);
   const [helpersOpen, setHelpersOpen] = useState(false);
   const [joinNotice, setJoinNotice] = useState(null);
+  // Seller event mode: while on, card sales get the event rate (server-decided).
+  const [eventsOpen, setEventsOpen] = useState(false);
+  const [currentEvent, setCurrentEvent] = useState(null);
+  const [eventFeePercent, setEventFeePercent] = useState(null);
   const helping = !!actingFor;
   const helpingName = helping
     ? (staffBooths.find((b) => b.wallet === actingFor)?.name || shortWallet(actingFor))
@@ -188,6 +195,19 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
     })();
     return () => { cancelled = true; };
   }, [walletAccount, sessionBridgeReady]);
+
+  const refreshEvent = useCallback(async () => {
+    const r = await listEvents();
+    if (r.success) {
+      setCurrentEvent(r.current || null);
+      if (Number.isFinite(r.eventFeePercent)) setEventFeePercent(r.eventFeePercent);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!walletAccount || !sessionBridgeReady || helping) return;
+    refreshEvent();
+  }, [walletAccount, sessionBridgeReady, helping, refreshEvent]);
 
   const inventory = useQuery({
     queryKey: ["boothInventory", walletAccount ? String(walletAccount).toLowerCase() : null, actingFor],
@@ -411,6 +431,24 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
             {!helping && (
               <button
                 type="button"
+                className={currentEvent ? "btn-primary" : "btn-secondary"}
+                onClick={() => setEventsOpen(true)}
+                aria-label={currentEvent ? `Event on: ${currentEvent.name}` : "Events"}
+                title="Events"
+                style={{
+                  minHeight: TAP_MIN,
+                  minWidth: TAP_MIN,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <CalendarCheck size={20} weight="bold" />
+              </button>
+            )}
+            {!helping && (
+              <button
+                type="button"
                 className="btn-secondary"
                 onClick={() => setHelpersOpen(true)}
                 aria-label="Booth helpers"
@@ -467,6 +505,36 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
             </button>
           </div>
         </div>
+
+        {currentEvent && !helping && (
+          <button
+            type="button"
+            onClick={() => setEventsOpen(true)}
+            style={{
+              marginTop: "0.75rem",
+              width: "100%",
+              minHeight: TAP_MIN,
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              padding: "0.5rem 0.75rem",
+              borderRadius: "10px",
+              border: "1px solid rgba(134, 239, 172, 0.35)",
+              background: "rgba(134, 239, 172, 0.1)",
+              color: "#86efac",
+              fontSize: "0.95rem",
+              fontWeight: 600,
+              textAlign: "left",
+              cursor: "pointer",
+            }}
+          >
+            <CalendarCheck size={20} weight="duotone" />
+            <span style={{ flex: 1 }}>
+              At {currentEvent.name}
+              {eventFeePercent != null ? ` · ${eventFeePercent}% card fee` : ""} · see what&apos;s selling
+            </span>
+          </button>
+        )}
 
         {/* Switch between your own booth and a booth you help at. */}
         {staffBooths.length > 0 && (
@@ -718,6 +786,13 @@ export function BoothInventory({ walletAccount, casualModeActive = false }) {
       )}
 
       {helpersOpen && !helping && <BoothHelpers onClose={() => setHelpersOpen(false)} />}
+
+      {eventsOpen && !helping && (
+        <BoothEvents
+          onClose={() => { setEventsOpen(false); refreshEvent(); }}
+          onChange={refreshEvent}
+        />
+      )}
 
       {/* ── Publish Tank Modal ─────────────────────────────────────────── */}
       {publishModalOpen && !helping && (
