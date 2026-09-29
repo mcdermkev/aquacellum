@@ -3,834 +3,683 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Find Local Breeders — Aquacellum</title>
-  <meta name="description" content="Find verified aquarium fish breeders near you. Interactive map of local hobbyist breeders with live listings, specialties, ratings, and storefront links.">
+  <title>Find a Breeder | Aquacellum</title>
+  <meta name="description" content="Browse the aquarium fish breeders who run storefronts on Aquacellum. See where they are, what they keep, and visit their stores.">
   <meta name="keywords" content="fish breeders near me, local aquarium breeders, buy fish locally, find fish breeder, aquarium fish seller map">
-  <meta property="og:title" content="Find Local Breeders — Aquacellum">
-  <meta property="og:description" content="Discover verified fish breeders in your area. Browse storefronts, see specialties, and buy tank-raised fish with escrow protection.">
+  <meta property="og:title" content="Find a Breeder | Aquacellum">
+  <meta property="og:description" content="The breeders with storefronts on Aquacellum, on a map. Visit a store to see what they have.">
   <meta property="og:type" content="website">
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/shared.css">
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-
-  <style>
-    /* =========================================
-       BREEDERS MAP — PAGE-SPECIFIC STYLES
-    ========================================= */
-    body {
-      display: flex; flex-direction: column;
-      height: 100%;
-      padding-bottom: env(safe-area-inset-bottom, 0);
-    }
-    html { height: 100%; }
-    #site-nav .nav { flex-shrink: 0; }
-
-    /* =========================================
-       MAIN LAYOUT — Split Panel
-    ========================================= */
-    .main-layout { display: flex; flex: 1; overflow: hidden; position: relative; }
-
-    /* Sidebar */
-    .sidebar {
-      width: 420px; flex-shrink: 0; display: flex; flex-direction: column;
-      background: var(--bg-deep); border-right: 1px solid var(--glass-border);
-      overflow: hidden; z-index: 10; transition: width 0.3s ease;
-    }
-    .sidebar-header { padding: 20px 20px 0; flex-shrink: 0; }
-    .sidebar-title { font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; }
-    .sidebar-subtitle { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 16px; }
-
-    /* Search & Controls */
-    .search-bar { position: relative; margin-bottom: 12px; }
-    .search-bar svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
-    .search-input {
-      width: 100%; padding: 11px 16px 11px 40px; font-size: 0.85rem; color: var(--text-primary);
-      background: #fff; border: 1px solid var(--line);
-      border-radius: 10px; outline: none; transition: var(--transition);
-    }
-    .search-input:focus { border-color: var(--violet-500); box-shadow: 0 0 0 3px rgba(139,92,246,0.1); }
-    .search-input::placeholder { color: var(--text-muted); }
-
-    .controls-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-    .locate-btn {
-      display: flex; align-items: center; gap: 6px; padding: 8px 14px;
-      font-size: 0.72rem; font-weight: 600; color: var(--emerald-300);
-      background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.2);
-      border-radius: 8px; transition: var(--transition); white-space: nowrap;
-    }
-    .locate-btn:hover { background: rgba(52,211,153,0.15); border-color: rgba(52,211,153,0.4); transform: translateY(-1px); }
-    .locate-btn.active { background: rgba(52,211,153,0.15); border-color: var(--emerald-400); box-shadow: var(--shadow-sm); }
-    .filter-chip {
-      padding: 7px 12px; border-radius: 20px; font-size: 0.68rem; font-weight: 600;
-      color: var(--text-secondary); background: #fff;
-      border: 1px solid var(--line); cursor: pointer; transition: all 0.2s; white-space: nowrap;
-    }
-    .filter-chip:hover { color: var(--violet-300); border-color: rgba(139,92,246,0.25); background: rgba(139,92,246,0.06); }
-    .filter-chip.active { color: var(--violet-300); background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.3); }
-
-    .results-count { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 12px; padding: 0 2px; }
-    /* Breeder Cards in Sidebar */
-    .breeder-list { flex: 1; overflow-y: auto; padding: 0 20px 20px; scrollbar-width: thin; scrollbar-color: rgba(139,92,246,0.2) transparent; }
-    .breeder-list::-webkit-scrollbar { width: 4px; }
-    .breeder-list::-webkit-scrollbar-track { background: transparent; }
-    .breeder-list::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 4px; }
-
-    .breeder-card {
-      padding: 16px; margin-bottom: 10px; background: var(--glass-bg);
-      border: 1px solid var(--line); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);
-      cursor: pointer; transition: var(--transition); position: relative;
-    }
-    .breeder-card:hover { border-color: rgba(139,92,246,0.3); background: #fff; box-shadow: var(--shadow-md); transform: translateX(3px); }
-    .breeder-card.active { border-color: var(--violet-400); background: #f7f4ff; box-shadow: var(--shadow-md); }
-    .breeder-card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-    .breeder-card-avatar {
-      width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
-      background: linear-gradient(135deg, var(--violet-500), var(--purple-400));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.85rem; font-weight: 700; color: #fff;
-      border: 2px solid rgba(139,92,246,0.3);
-    }
-    .breeder-card-avatar.master { border-color: var(--amber-400); }
-    .breeder-card-info { flex: 1; min-width: 0; }
-    .breeder-card-name { font-family: 'Outfit', sans-serif; font-size: 0.9rem; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .breeder-card-location { font-size: 0.68rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; margin-top: 2px; }
-    .breeder-card-badges { display: flex; gap: 4px; flex-shrink: 0; }
-    .breeder-card-badge {
-      font-size: 0.55rem; font-weight: 700; padding: 3px 7px; border-radius: 10px;
-      text-transform: uppercase; letter-spacing: 0.03em;
-    }
-    .badge-master { background: rgba(251,191,36,0.12); border: 1px solid rgba(217,119,6,0.35); color: var(--amber-300); }
-    .badge-verified { background: rgba(52,211,153,0.1); border: 1px solid rgba(5,150,105,0.3); color: var(--emerald-300); }
-    .badge-ships { background: rgba(96,165,250,0.1); border: 1px solid rgba(37,99,235,0.3); color: #1d4ed8; }
-
-    .breeder-card-stats { display: flex; gap: 12px; margin-bottom: 8px; }
-    .breeder-stat { display: flex; align-items: center; gap: 4px; }
-    .breeder-stat-value { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: 600; color: var(--text-primary); }
-    .breeder-stat-label { font-size: 0.6rem; color: var(--text-muted); }
-    .breeder-stat-icon { font-size: 0.7rem; }
-
-    .breeder-card-specialties { display: flex; gap: 4px; flex-wrap: wrap; }
-    .specialty-chip {
-      font-size: 0.58rem; font-weight: 600; padding: 3px 8px; border-radius: 10px;
-      background: rgba(139,92,246,0.06); border: 1px solid rgba(139,92,246,0.15); color: var(--violet-300);
-    }
-
-    .breeder-card-cta {
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-      width: 100%; padding: 8px; margin-top: 10px;
-      font-size: 0.72rem; font-weight: 600; color: var(--violet-300);
-      background: rgba(139,92,246,0.06); border: 1px solid rgba(139,92,246,0.15);
-      border-radius: 8px; transition: var(--transition);
-      opacity: 0; transform: translateY(4px);
-    }
-    .breeder-card:hover .breeder-card-cta { opacity: 1; transform: translateY(0); }
-    .breeder-card-cta:hover { background: rgba(139,92,246,0.12); border-color: rgba(139,92,246,0.35); }
-
-    /* Distance badge */
-    .distance-badge {
-      position: absolute; top: 12px; right: 12px;
-      font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; font-weight: 600;
-      padding: 3px 8px; border-radius: 10px;
-      background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.2); color: var(--emerald-300);
-    }
-    /* =========================================
-       MAP CONTAINER
-    ========================================= */
-    .map-container { flex: 1; position: relative; min-height: 400px; }
-    #map { width: 100%; height: 100%; background: var(--bg-deep); }
-
-    /* Map chrome (light tiles, no dimming filter) */
-    .leaflet-container { background: var(--bg-deep); }
-    .leaflet-control-zoom { border: 1px solid var(--line) !important; border-radius: 10px !important; overflow: hidden; box-shadow: var(--shadow-sm) !important; }
-    .leaflet-control-zoom a { background: #fff !important; color: var(--text-primary) !important; border-color: var(--line) !important; width: 34px !important; height: 34px !important; line-height: 34px !important; font-size: 16px !important; }
-    .leaflet-control-zoom a:hover { background: #f5f3ff !important; color: var(--violet-300) !important; }
-    .leaflet-popup-content-wrapper { background: #fff !important; border: 1px solid var(--line) !important; border-radius: 14px !important; box-shadow: var(--shadow-lg) !important; }
-    .leaflet-popup-tip { background: #fff !important; border: 1px solid var(--line) !important; }
-    .leaflet-popup-content { margin: 14px 16px !important; color: var(--text-primary) !important; font-family: 'Inter', sans-serif !important; }
-
-    /* Custom marker */
-    .custom-marker {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--violet-500), var(--purple-400));
-      border: 3px solid #fff; box-shadow: 0 4px 12px rgba(var(--ink-rgb),0.25);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.7rem; font-weight: 700; color: #fff;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .custom-marker:hover { transform: scale(1.2); box-shadow: 0 6px 18px rgba(var(--ink-rgb),0.3); }
-    .custom-marker.master-marker {
-      background: linear-gradient(135deg, var(--amber-400), #f59e0b);
-      border-color: #fff;
-      box-shadow: 0 4px 12px rgba(var(--ink-rgb),0.25);
-    }
-    .custom-marker.master-marker:hover { box-shadow: 0 6px 18px rgba(var(--ink-rgb),0.3); }
-    .custom-marker.active-marker { transform: scale(1.3); box-shadow: 0 0 0 3px rgba(139,92,246,0.35), 0 6px 18px rgba(var(--ink-rgb),0.3); border-color: #fff; }
-    .custom-marker.master-marker.active-marker { box-shadow: 0 0 0 3px rgba(245,158,11,0.4), 0 6px 18px rgba(var(--ink-rgb),0.3); border-color: #fff; }
-
-    /* User location pulse */
-    .user-location-marker {
-      width: 20px; height: 20px; border-radius: 50%;
-      background: var(--blue-400); border: 3px solid #fff;
-      box-shadow: 0 0 0 8px rgba(96,165,250,0.2), 0 2px 8px rgba(0,0,0,0.3);
-      animation: location-pulse 2s ease-in-out infinite;
-    }
-    @keyframes location-pulse {
-      0%, 100% { box-shadow: 0 0 0 8px rgba(96,165,250,0.2), 0 2px 8px rgba(0,0,0,0.3); }
-      50% { box-shadow: 0 0 0 16px rgba(96,165,250,0.1), 0 2px 8px rgba(0,0,0,0.3); }
-    }
-
-    /* Map overlay controls */
-    .map-overlay-controls {
-      position: absolute; top: 16px; right: 16px; z-index: 800;
-      display: flex; flex-direction: column; gap: 8px;
-    }
-    .map-overlay-btn {
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-      padding: 10px 16px; font-size: 0.72rem; font-weight: 600;
-      color: var(--text-primary); background: rgba(255,255,255,0.95); border: 1px solid var(--line); box-shadow: var(--shadow-sm);
-      border-radius: 10px; backdrop-filter: blur(12px); transition: var(--transition);
-      white-space: nowrap;
-    }
-    .map-overlay-btn:hover { border-color: rgba(139,92,246,0.35); background: rgba(139,92,246,0.1); }
-    .map-stat-overlay {
-      position: absolute; bottom: 16px; left: 16px; z-index: 800;
-      display: flex; gap: 8px; flex-wrap: wrap;
-    }
-    .map-stat-pill {
-      padding: 8px 14px; font-size: 0.68rem; font-weight: 600;
-      color: var(--text-secondary); background: rgba(255,255,255,0.95);
-      border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow-sm);
-      backdrop-filter: blur(12px);
-    }
-    .map-stat-pill strong { color: var(--violet-300); margin-right: 4px; }
-    /* =========================================
-       EMPTY & LOADING STATES
-    ========================================= */
-    .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 24px; color: var(--text-secondary); }
-    .loading-spinner { width: 32px; height: 32px; border: 3px solid rgba(167,139,250,0.15); border-top-color: var(--violet-400); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .empty-state { text-align: center; padding: 60px 24px; color: var(--text-muted); }
-    .empty-state h3 { font-family: 'Outfit', sans-serif; font-size: 1rem; color: var(--text-secondary); margin-bottom: 6px; }
-    .empty-state p { font-size: 0.78rem; }
-
-    /* =========================================
-       MOBILE: Stack layout — map-first experience
-    ========================================= */
-    .mobile-toggle {
-      display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 900;
-      padding: 12px 24px; font-size: 0.8rem; font-weight: 700; color: #fff;
-      background: linear-gradient(135deg, var(--violet-600), var(--purple-400));
-      border-radius: 50px; box-shadow: 0 8px 30px rgba(139,92,246,0.4);
-      transition: var(--transition);
-      -webkit-tap-highlight-color: transparent;
-    }
-    .mobile-toggle:hover { transform: translateX(-50%) translateY(-2px); }
-    .mobile-toggle:active { transform: translateX(-50%) scale(0.95); }
-
-    @media (max-width: 900px) {
-      .main-layout { flex-direction: column-reverse; }
-      .sidebar {
-        width: 100%; max-height: 45vh; border-right: none;
-        border-top: 1px solid var(--glass-border); border-bottom: none;
-        overflow: hidden; transition: max-height 0.35s ease;
-      }
-      .sidebar.collapsed { max-height: 0; padding: 0; }
-      .sidebar.expanded { max-height: 85vh; }
-      .map-container { min-height: 55vh; flex: 1; }
-      .mobile-toggle { display: block; }
-      .map-stat-overlay { bottom: 70px; left: 12px; }
-      .sidebar-title { font-size: 1.1rem; }
-      .sidebar-subtitle { font-size: 0.72rem; margin-bottom: 12px; }
-      .controls-row { gap: 6px; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 6px;
-        scrollbar-width: none; -ms-overflow-style: none; }
-      .controls-row::-webkit-scrollbar { display: none; }
-      .filter-chip { flex-shrink: 0; padding: 8px 14px; font-size: 0.7rem; }
-      .locate-btn { flex-shrink: 0; padding: 9px 14px; }
-      .breeder-card { padding: 14px; margin-bottom: 8px; }
-      .breeder-card-top { gap: 10px; }
-      .breeder-card-avatar { width: 38px; height: 38px; font-size: 0.8rem; }
-      .breeder-card-name { font-size: 0.85rem; }
-      .breeder-card-stats { gap: 10px; flex-wrap: wrap; }
-      .breeder-card-cta { opacity: 1; transform: translateY(0); padding: 10px; font-size: 0.75rem; }
-    }
-    @media (max-width: 480px) {
-      .sidebar-header { padding: 14px 14px 0; }
-      .breeder-list { padding: 0 14px 14px; }
-      .breeder-card { padding: 12px; }
-      .breeder-card-avatar { width: 34px; height: 34px; font-size: 0.75rem; }
-      .breeder-card-name { font-size: 0.82rem; }
-      .breeder-card-badges { gap: 3px; }
-      .breeder-card-badge { font-size: 0.5rem; padding: 2px 6px; }
-      .breeder-card-stats { gap: 8px; }
-      .breeder-stat-value { font-size: 0.65rem; }
-      .breeder-stat-label { font-size: 0.55rem; }
-      .specialty-chip { font-size: 0.55rem; padding: 2px 6px; }
-      .search-input { padding: 12px 16px 12px 40px; font-size: 0.88rem; }
-      .map-stat-pill { padding: 6px 10px; font-size: 0.6rem; }
-      .mobile-toggle { padding: 12px 22px; font-size: 0.78rem; bottom: 16px; }
-      .sidebar { max-height: 40vh; }
-      .sidebar.expanded { max-height: 80vh; }
-      .map-container { min-height: 60vh; }
-      .distance-badge { font-size: 0.55rem; padding: 2px 6px; top: 10px; right: 10px; }
-    }
-    /* Touch-friendly tap targets */
-    @media (pointer: coarse) {
-      .filter-chip { min-height: 36px; display: flex; align-items: center; }
-      .locate-btn { min-height: 36px; }
-      .breeder-card-cta { min-height: 40px; }
-      .sort-chip { min-height: 36px; }
-    }
-  </style>
   <link rel="canonical" href="https://aquacellum.com/breeders">
   <meta property="og:url" content="https://aquacellum.com/breeders">
   <meta property="og:site_name" content="Aquacellum">
   <meta property="og:image" content="https://aquacellum.com/og-banner.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Find Local Breeders — Aquacellum">
-  <meta name="twitter:description" content="Discover verified fish breeders in your area. Browse storefronts, see specialties, and buy tank-raised fish with escrow protection.">
+  <meta name="twitter:title" content="Find a Breeder | Aquacellum">
+  <meta name="twitter:description" content="The breeders with storefronts on Aquacellum, on a map. Visit a store to see what they have.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/shared.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+
+  <style>
+    /* Find a Breeder (Daylight). Normal document flow: nav, hero, directory
+       (list + map), notes, footer. The old page pinned body to 100% height and
+       gave the map flex:1, so on phones the footer ate the whole viewport and
+       the map/list computed to 0px. Nothing here depends on body height. */
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--text-primary); font-family: "DM Sans", sans-serif; }
+    a { color: inherit; }
+    button, input { font: inherit; color: inherit; }
+    .bd-wrap { width: min(1320px, calc(100% - 40px)); margin: 0 auto; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    .bd-btn { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--text-primary); font-weight: 700; font-size: .8rem; text-decoration: none; cursor: pointer; transition: transform .2s, border-color .2s, box-shadow .2s, background .2s; }
+    .bd-btn:hover { transform: translateY(-1px); border-color: rgba(var(--ink-rgb),.28); box-shadow: var(--shadow-sm); }
+    .bd-btn:focus-visible { outline: 3px solid rgba(13,148,136,.45); outline-offset: 2px; }
+    .bd-btn--teal { background: #0f766e; border-color: #0f766e; color: #fff; }
+    .bd-btn--teal:hover { background: #115e59; border-color: #115e59; }
+    .bd-btn[aria-pressed="true"] { background: #0f766e; border-color: #0f766e; color: #fff; }
+
+    /* Hero */
+    .bd-hero { position: relative; padding: 72px 0 40px; border-bottom: 1px solid var(--line); overflow: hidden; }
+    .bd-hero::before { content: ""; position: absolute; inset: 0; background:
+      radial-gradient(circle at 12% 0%, rgba(245,158,11,.10), transparent 42%),
+      linear-gradient(130deg, #ffffff 0%, #f5f9fa 55%, #eaf3f5 100%); }
+    .bd-hero__inner { position: relative; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+    .bd-eyebrow { display: flex; align-items: center; gap: 10px; color: #0f766e; font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 18px; }
+    .bd-eyebrow::before { content: ""; width: 34px; height: 1px; background: currentColor; }
+    .bd-hero h1 { margin: 0; font-family: "Manrope", sans-serif; font-size: clamp(2.6rem, 6vw, 5.2rem); line-height: .95; letter-spacing: -.055em; font-weight: 700; }
+    .bd-hero h1 em { font-style: normal; color: #0f766e; }
+    .bd-hero__copy { margin: 22px 0 0; max-width: 600px; color: var(--text-secondary); font-size: clamp(.98rem, 1.4vw, 1.12rem); line-height: 1.65; }
+    .bd-stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); background: rgba(255,255,255,.85); box-shadow: var(--shadow-sm); }
+    .bd-stat { padding: 18px 12px; text-align: center; border-right: 1px solid var(--line); }
+    .bd-stat:last-child { border-right: 0; }
+    .bd-stat strong { display: block; font-family: "Manrope", sans-serif; font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+    .bd-stat span { color: var(--text-muted); font-size: .66rem; text-transform: uppercase; letter-spacing: .12em; }
+
+    /* Directory */
+    .bd-directory { padding: 36px 0 64px; }
+    .bd-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+    .bd-search { position: relative; flex: 1 1 280px; }
+    .bd-search svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+    .bd-search input { width: 100%; min-height: 44px; padding: 0 14px 0 40px; border: 1px solid var(--line); border-radius: 999px; background: #fff; outline: none; font-size: .88rem; }
+    .bd-search input:focus { border-color: #0d9488; box-shadow: 0 0 0 3px rgba(20,184,166,.18); }
+    .bd-search input::placeholder { color: var(--text-muted); }
+    .bd-count { color: var(--text-muted); font-size: .76rem; margin-left: auto; }
+    .bd-status { min-height: 1.2em; color: var(--text-secondary); font-size: .76rem; margin: -6px 0 12px; }
+
+    .bd-split { display: grid; grid-template-columns: minmax(320px, 420px) minmax(0, 1fr); gap: 16px; height: clamp(480px, calc(100vh - 190px), 760px); }
+    .bd-list { overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 2px 6px 2px 2px; scrollbar-width: thin; }
+    .bd-map { position: relative; border: 1px solid var(--line); background: var(--bg-deep); box-shadow: var(--shadow-sm); overflow: hidden; }
+    #map { position: absolute; inset: 0; }
+    .bd-map__note { position: absolute; left: 12px; bottom: 12px; z-index: 800; max-width: calc(100% - 24px); padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.95); box-shadow: var(--shadow-sm); color: var(--text-secondary); font-size: .72rem; line-height: 1.4; }
+    .bd-map__note:empty { display: none; }
+
+    /* Breeder cards */
+    .bd-card { position: relative; border: 1px solid var(--line); background: #fff; box-shadow: var(--shadow-sm); transition: border-color .2s, box-shadow .2s; }
+    .bd-card:hover { border-color: rgba(var(--ink-rgb),.2); box-shadow: var(--shadow-md); }
+    .bd-card.is-active { border-color: #0d9488; box-shadow: 0 0 0 2px rgba(13,148,136,.25), var(--shadow-md); }
+    .bd-card__banner { position: relative; height: 96px; background: linear-gradient(140deg, #dff1f3, #eef6f8); overflow: hidden; }
+    .bd-card__banner img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .bd-card__body { padding: 0 18px 18px; }
+    .bd-card__head { display: flex; align-items: end; gap: 12px; margin-top: -26px; }
+    .bd-avatar { position: relative; flex: none; width: 56px; height: 56px; border-radius: 50%; border: 3px solid #fff; box-shadow: var(--shadow-sm); background: linear-gradient(135deg, #0d9488, #0369a1); color: #fff; display: grid; place-items: center; font-family: "Manrope", sans-serif; font-size: 1.1rem; font-weight: 800; overflow: hidden; }
+    .bd-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .bd-distance { margin-left: auto; margin-bottom: 4px; padding: 4px 9px; border-radius: 999px; background: rgba(13,148,136,.08); border: 1px solid rgba(13,148,136,.25); color: #0f766e; font-size: .66rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .bd-card h2 { margin: 12px 0 2px; font-family: "Manrope", sans-serif; font-size: 1.15rem; letter-spacing: -.02em; }
+    .bd-card__loc { display: flex; align-items: center; gap: 5px; color: var(--text-secondary); font-size: .76rem; }
+    .bd-card__loc--none { color: var(--text-muted); font-style: italic; }
+    .bd-card__bio { margin: 10px 0 0; color: var(--text-secondary); font-size: .8rem; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .bd-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .bd-tag { padding: 4px 9px; border: 1px solid var(--line); border-radius: 999px; background: #f5f9fa; color: var(--text-secondary); font-size: .66rem; }
+    .bd-facts { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--text-muted); font-size: .72rem; }
+    .bd-facts strong { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .bd-card__actions { display: flex; gap: 8px; margin-top: 14px; }
+    .bd-card__actions .bd-btn { flex: 1; }
+
+    .bd-panel { padding: 40px 22px; border: 1px dashed var(--line); background: #fff; text-align: center; }
+    .bd-panel h2 { margin: 0 0 8px; font-family: "Manrope", sans-serif; font-size: 1.1rem; }
+    .bd-panel p { margin: 0 auto; max-width: 340px; color: var(--text-secondary); font-size: .82rem; line-height: 1.55; }
+    .bd-panel .bd-btn { margin-top: 16px; }
+    .bd-skeleton { height: 250px; border: 1px solid var(--line); background: linear-gradient(100deg, #eef4f6 20%, #f9fbfc 42%, #eef4f6 64%); background-size: 300% 100%; animation: bd-shimmer 1.4s infinite; }
+    @keyframes bd-shimmer { to { background-position: -150% 0; } }
+
+    /* Leaflet chrome */
+    .leaflet-container { font-family: "DM Sans", sans-serif; background: var(--bg-deep); }
+    /* Calm the standard OSM palette so it sits in the Daylight theme. Tiles only; pins keep full color. */
+    .leaflet-tile-pane { filter: saturate(.55) brightness(1.04) contrast(.96); }
+    .leaflet-control-zoom { border: 1px solid var(--line) !important; border-radius: 10px !important; overflow: hidden; box-shadow: var(--shadow-sm) !important; }
+    .leaflet-control-zoom a { width: 34px !important; height: 34px !important; line-height: 34px !important; color: var(--text-primary) !important; }
+    .leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: var(--shadow-lg); }
+    .leaflet-popup-content { margin: 14px 16px; color: var(--text-primary); }
+    .bd-pin { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #0d9488, #0369a1); border: 3px solid #fff; box-shadow: 0 4px 12px rgba(var(--ink-rgb),.3); color: #fff; display: grid; place-items: center; font: 800 .74rem "Manrope", sans-serif; transition: transform .2s; }
+    .bd-pin.is-active { transform: scale(1.25); background: linear-gradient(135deg, #d97706, #b45309); }
+    .bd-you { width: 18px; height: 18px; border-radius: 50%; background: #2563eb; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(37,99,235,.2); }
+    .bd-pop h3 { margin: 0 0 3px; font-family: "Manrope", sans-serif; font-size: .95rem; }
+    .bd-pop p { margin: 0 0 10px; color: var(--text-secondary); font-size: .74rem; }
+    .bd-pop a { display: inline-flex; padding: 7px 12px; border-radius: 999px; background: #0f766e; color: #fff !important; font-size: .74rem; font-weight: 700; text-decoration: none; }
+
+    /* Notes */
+    .bd-notes { padding: 0 0 80px; }
+    .bd-notes__grid { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); background: #fff; box-shadow: var(--shadow-sm); }
+    .bd-note { padding: 26px; border-right: 1px solid var(--line); }
+    .bd-note:last-child { border-right: 0; }
+    .bd-note h2 { margin: 0 0 8px; font-family: "Manrope", sans-serif; font-size: 1rem; }
+    .bd-note p { margin: 0; color: var(--text-secondary); font-size: .8rem; line-height: 1.6; }
+    .bd-note a { color: #0f766e; font-weight: 700; }
+
+    @media (max-width: 900px) {
+      .bd-hero { padding: 48px 0 28px; }
+      .bd-hero__inner { grid-template-columns: 1fr; gap: 26px; }
+      /* Phones: map on top at a fixed height, then the list in normal flow. */
+      .bd-split { display: flex; flex-direction: column; height: auto; }
+      .bd-map { order: -1; height: 320px; flex: none; }
+      .bd-list { overflow: visible; padding: 0; }
+      .bd-notes__grid { grid-template-columns: 1fr; }
+      .bd-note { border-right: 0; border-bottom: 1px solid var(--line); }
+      .bd-note:last-child { border-bottom: 0; }
+    }
+    @media (max-width: 480px) {
+      .bd-wrap { width: calc(100% - 24px); }
+      .bd-stat strong { font-size: 1.3rem; }
+      .bd-stat span { font-size: .58rem; letter-spacing: .08em; }
+      .bd-map { height: 280px; }
+      .bd-count { margin-left: 0; width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
 </head>
 <body>
-
-  <!-- ========== NAVIGATION ========== -->
   <header id="site-nav"></header>
 
-  <!-- ========== MAIN LAYOUT ========== -->
-  <div class="main-layout">
-
-    <!-- Sidebar: Search + Breeder Cards -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <h1 class="sidebar-title">Find Local Breeders</h1>
-        <p class="sidebar-subtitle">Discover verified hobbyist breeders near you</p>
-
-        <div class="search-bar">
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" class="search-input" id="searchInput" placeholder="Search by name, species, or location..." oninput="applyFilters()">
+  <main>
+    <section class="bd-hero">
+      <div class="bd-wrap bd-hero__inner">
+        <div>
+          <div class="bd-eyebrow">Breeder directory</div>
+          <h1>Find a <em>breeder.</em></h1>
+          <p class="bd-hero__copy">These are the breeders who run a storefront on Aquacellum. Each pin sits on the town or city the breeder put in their profile, never a street address. A breeder who has not added a location is still listed, just without a pin.</p>
         </div>
-
-        <div class="controls-row">
-          <button class="locate-btn" id="locateBtn" onclick="locateMe()">
-            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
-            Near Me
-          </button>
-          <button class="filter-chip" onclick="toggleFilter(this, 'master')">🏆 Master</button>
-          <button class="filter-chip" onclick="toggleFilter(this, 'ships')">🚚 Ships</button>
-          <button class="filter-chip" onclick="toggleFilter(this, 'cichlids')">🐠 Cichlids</button>
-          <button class="filter-chip" onclick="toggleFilter(this, 'livebearers')">🐟 Livebearers</button>
-          <button class="filter-chip" onclick="toggleFilter(this, 'plecos')">🪨 Plecos</button>
-          <button class="filter-chip" onclick="toggleFilter(this, 'bettas')">💜 Bettas</button>
-        </div>
-
-        <div class="results-count" id="resultsCount">Loading breeders...</div>
-      </div>
-
-      <!-- Breeder Cards -->
-      <div class="breeder-list" id="breederList">
-        <div class="loading-state" id="loadingState">
-          <div class="loading-spinner"></div>
-          <p>Finding breeders...</p>
+        <div class="bd-stats" aria-live="polite">
+          <div class="bd-stat"><strong id="statStores">&ndash;</strong><span>Storefronts</span></div>
+          <div class="bd-stat"><strong id="statPinned">&ndash;</strong><span>On the map</span></div>
+          <div class="bd-stat"><strong id="statListings">&ndash;</strong><span>Live listings</span></div>
         </div>
       </div>
-    </aside>
+    </section>
 
-    <!-- Map -->
-    <div class="map-container">
-      <div id="map"></div>
-      <div class="map-stat-overlay" id="mapStats"></div>
-    </div>
-  </div>
+    <section class="bd-directory bd-wrap" aria-labelledby="directoryHeading">
+      <h2 id="directoryHeading" class="sr-only">Breeders</h2>
+      <div class="bd-toolbar">
+        <label class="bd-search">
+          <span class="sr-only">Search breeders</span>
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" id="searchInput" placeholder="Search by name, fish, or town" autocomplete="off">
+        </label>
+        <button type="button" class="bd-btn" id="locateBtn" aria-pressed="false">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
+          <span id="locateLabel">Sort by distance</span>
+        </button>
+        <span class="bd-count" id="resultsCount" aria-live="polite">Loading breeders</span>
+      </div>
+      <p class="bd-status" id="statusLine" role="status"></p>
 
-  <!-- Mobile toggle -->
-  <button class="mobile-toggle" id="mobileToggle" onclick="toggleMobileView()">📋 Show List</button>
+      <div class="bd-split">
+        <div class="bd-list" id="breederList" aria-busy="true">
+          <div class="bd-skeleton"></div>
+          <div class="bd-skeleton"></div>
+        </div>
+        <div class="bd-map">
+          <div id="map" role="region" aria-label="Map of breeder locations"></div>
+          <div class="bd-map__note" id="mapNote"></div>
+        </div>
+      </div>
+    </section>
 
-  <!-- ========== FOOTER ========== -->
+    <section class="bd-notes bd-wrap" aria-label="About this directory">
+      <div class="bd-notes__grid">
+        <div class="bd-note">
+          <h2>Real storefronts only</h2>
+          <p>Every breeder here has an active Aquacellum storefront. There are no sample or placeholder breeders. If the list is short, that is because the directory is new.</p>
+        </div>
+        <div class="bd-note">
+          <h2>Locations are approximate</h2>
+          <p>Breeders type their own location. We place the pin on that town or city, so it shows the area, not a home. Contact the breeder through their store to arrange pickup.</p>
+        </div>
+        <div class="bd-note">
+          <h2>Buying and selling</h2>
+          <p>Open a storefront to see live listings and buy. <a href="/how-it-works">How buying works</a>. Breeding fish yourself? <a href="/my-store">Set up your storefront</a> and you will appear here.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
   <footer id="site-footer"></footer>
 
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="/js/nav.js"></script>
   <script src="/js/footer.js"></script>
-  <script src="/js/reveal.js"></script>
-
+  <script src="/js/public-listings.js"></script>
   <script>
-    // ── Configuration ──────────────────────────────────────────────────────
-    const SUPABASE_URL = 'https://yahsdztnvsykzecjatsl.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaHNkenRudnN5a3plY2phdHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQwMDgsImV4cCI6MjA5NjA3MDAwOH0.3anqDFU9hUjZg2AFWJlXSBbwSM-knNrmb-uQ_Baq98I';
+    "use strict";
 
-    // ── State ──────────────────────────────────────────────────────────────
-    let map;
-    let allBreeders = [];
-    let filteredBreeders = [];
-    let markers = [];
-    let userLocation = null;
-    let userLocationMarker = null;
-    let activeFilters = new Set();
-    let activeCard = null;
+    const SUPABASE_URL = "https://yahsdztnvsykzecjatsl.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaHNkenRudnN5a3plY2phdHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQwMDgsImV4cCI6MjA5NjA3MDAwOH0.3anqDFU9hUjZg2AFWJlXSBbwSM-knNrmb-uQ_Baq98I";
+    const US_CENTER = [39.828, -98.58];
 
-    // ── Alias Generator ───────────────────────────────────────────────────
-    const ADJECTIVES = ["Coral","Sapphire","Drift","Lunar","Ember","Misty","Crystal","Tide","Storm","Solar","Velvet","Copper","Silver","Frost","Dusk","Reef","Azure","Pearl","Golden","Moss","Jade","Cobalt","Crimson","Opal","Indigo"];
-    const FISH_NAMES = ["Tetra","Guppy","Betta","Pleco","Rasbora","Danio","Cory","Molly","Barb","Loach","Killi","Goby","Wrasse","Tang","Angel","Discus","Oscar","Arowana","Pike","Darter"];
+    const state = { breeders: [], listingCounts: {}, query: "", userLocation: null, activeKey: null, loadFailed: false };
+    let map = null;
+    let pinLayer = null;
+    let youMarker = null;
+    const markersByKey = new Map();
 
-    function generateAlias(address) {
-      if (!address || address.length < 10) return "Unknown Keeper";
-      const n = address.toLowerCase().replace("0x", "");
-      const adj = ADJECTIVES[parseInt(n.slice(0, 4), 16) % ADJECTIVES.length];
-      const fish = FISH_NAMES[parseInt(n.slice(4, 8), 16) % FISH_NAMES.length];
-      const num = (parseInt(n.slice(8, 12), 16) % 9000) + 1000;
-      return `${adj} ${fish} ${num}`;
-    }
-
-    // ── Known city coordinates for geocoding locations ─────────────────────
-    const CITY_COORDS = {
-      'atlanta': [33.749, -84.388], 'austin': [30.267, -97.743], 'boston': [42.361, -71.058],
-      'chicago': [41.878, -87.630], 'dallas': [32.777, -96.797], 'denver': [39.739, -104.990],
-      'detroit': [42.331, -83.046], 'houston': [29.760, -95.370], 'los angeles': [34.052, -118.244],
-      'miami': [25.762, -80.192], 'minneapolis': [44.978, -93.265], 'nashville': [36.163, -86.781],
-      'new york': [40.713, -74.006], 'orlando': [28.538, -81.379], 'philadelphia': [39.952, -75.164],
-      'phoenix': [33.449, -112.074], 'portland': [45.523, -122.676], 'san diego': [32.716, -117.161],
-      'san francisco': [37.775, -122.419], 'seattle': [47.606, -122.332], 'tampa': [27.951, -82.458],
-      'washington': [38.907, -77.037], 'charlotte': [35.227, -80.843], 'indianapolis': [39.768, -86.158],
-      'columbus': [39.961, -82.999], 'pittsburgh': [40.441, -79.996], 'raleigh': [35.780, -78.639],
-      'salt lake city': [40.760, -111.891], 'st louis': [38.627, -90.199], 'sacramento': [38.582, -121.494],
-      'las vegas': [36.170, -115.140], 'milwaukee': [43.039, -87.907], 'kansas city': [39.100, -94.578],
-      'virginia': [37.540, -77.436], 'florida': [27.665, -81.516], 'texas': [31.969, -99.902],
-      'california': [36.778, -119.418], 'ohio': [40.417, -82.907], 'georgia': [32.166, -82.900],
-      'north carolina': [35.760, -79.019], 'michigan': [44.314, -85.603], 'pennsylvania': [41.204, -77.194],
-      'new jersey': [40.059, -74.405], 'tennessee': [35.518, -86.580], 'illinois': [40.633, -89.399],
-      'usa': [39.828, -98.580], 'united states': [39.828, -98.580],
+    // ── Gazetteer ─────────────────────────────────────────────────────────
+    // Breeder locations are free text ("Toms River, NJ", "Bronx ny"). We resolve
+    // them against a small list of town/city centroids, then fall back to the
+    // state centroid. No network geocoder, and never a street-level point. If a
+    // location matches nothing, the breeder is listed without a pin.
+    const CITIES = {
+      "new york": [40.713, -74.006], "nyc": [40.713, -74.006], "manhattan": [40.783, -73.971],
+      "bronx": [40.845, -73.865], "the bronx": [40.845, -73.865], "brooklyn": [40.678, -73.944],
+      "queens": [40.728, -73.795], "staten island": [40.579, -74.151], "long island": [40.789, -73.135],
+      "yonkers": [40.931, -73.899], "buffalo": [42.886, -78.878], "rochester": [43.156, -77.609],
+      "albany": [42.653, -73.756], "syracuse": [43.049, -76.147],
+      "toms river": [39.954, -74.198], "newark": [40.736, -74.172], "jersey city": [40.728, -74.078],
+      "trenton": [40.217, -74.743], "edison": [40.519, -74.412], "paterson": [40.917, -74.172],
+      "cherry hill": [39.935, -75.031], "brick": [40.06, -74.137], "lakewood": [40.098, -74.218],
+      "freehold": [40.26, -74.274], "princeton": [40.357, -74.667], "hoboken": [40.744, -74.032],
+      "atlantic city": [39.364, -74.423], "philadelphia": [39.952, -75.164], "pittsburgh": [40.441, -79.996],
+      "boston": [42.361, -71.058], "providence": [41.824, -71.413], "hartford": [41.765, -72.685],
+      "baltimore": [39.29, -76.612], "washington": [38.907, -77.037], "washington dc": [38.907, -77.037],
+      "richmond": [37.541, -77.436], "charlotte": [35.227, -80.843], "raleigh": [35.78, -78.639],
+      "atlanta": [33.749, -84.388], "miami": [25.762, -80.192], "orlando": [28.538, -81.379],
+      "tampa": [27.951, -82.458], "jacksonville": [30.332, -81.656], "nashville": [36.163, -86.781],
+      "chicago": [41.878, -87.63], "detroit": [42.331, -83.046], "columbus": [39.961, -82.999],
+      "cleveland": [41.499, -81.694], "cincinnati": [39.103, -84.512], "indianapolis": [39.768, -86.158],
+      "milwaukee": [43.039, -87.907], "minneapolis": [44.978, -93.265], "st louis": [38.627, -90.199],
+      "kansas city": [39.1, -94.578], "dallas": [32.777, -96.797], "houston": [29.76, -95.37],
+      "austin": [30.267, -97.743], "san antonio": [29.424, -98.494], "denver": [39.739, -104.99],
+      "phoenix": [33.449, -112.074], "las vegas": [36.17, -115.14], "salt lake city": [40.76, -111.891],
+      "los angeles": [34.052, -118.244], "san diego": [32.716, -117.161], "san francisco": [37.775, -122.419],
+      "san jose": [37.338, -121.886], "sacramento": [38.582, -121.494], "portland": [45.523, -122.676],
+      "seattle": [47.606, -122.332],
     };
+    const STATES = {
+      al: ["alabama", 32.806, -86.791], ak: ["alaska", 61.37, -152.404], az: ["arizona", 33.729, -111.431],
+      ar: ["arkansas", 34.97, -92.373], ca: ["california", 36.116, -119.682], co: ["colorado", 39.06, -105.311],
+      ct: ["connecticut", 41.598, -72.755], de: ["delaware", 39.319, -75.507], fl: ["florida", 27.766, -81.687],
+      ga: ["georgia", 33.041, -83.643], hi: ["hawaii", 21.094, -157.498], id: ["idaho", 44.24, -114.479],
+      il: ["illinois", 40.349, -88.986], in: ["indiana", 39.849, -86.258], ia: ["iowa", 42.011, -93.21],
+      ks: ["kansas", 38.527, -96.726], ky: ["kentucky", 37.668, -84.67], la: ["louisiana", 31.169, -91.868],
+      me: ["maine", 44.693, -69.382], md: ["maryland", 39.064, -76.802], ma: ["massachusetts", 42.23, -71.53],
+      mi: ["michigan", 43.327, -84.536], mn: ["minnesota", 45.694, -93.9], ms: ["mississippi", 32.742, -89.679],
+      mo: ["missouri", 38.456, -92.288], mt: ["montana", 46.922, -110.454], ne: ["nebraska", 41.125, -98.268],
+      nv: ["nevada", 38.314, -117.055], nh: ["new hampshire", 43.452, -71.564], nj: ["new jersey", 40.299, -74.521],
+      nm: ["new mexico", 34.841, -106.249], ny: ["new york state", 42.166, -74.948], nc: ["north carolina", 35.63, -79.806],
+      nd: ["north dakota", 47.529, -99.784], oh: ["ohio", 40.389, -82.765], ok: ["oklahoma", 35.565, -96.929],
+      or: ["oregon", 44.572, -122.071], pa: ["pennsylvania", 40.591, -77.21], ri: ["rhode island", 41.681, -71.512],
+      sc: ["south carolina", 33.857, -80.945], sd: ["south dakota", 44.3, -99.439], tn: ["tennessee", 35.748, -86.692],
+      tx: ["texas", 31.054, -97.563], ut: ["utah", 40.15, -111.862], vt: ["vermont", 44.046, -72.711],
+      va: ["virginia", 37.769, -78.17], wa: ["washington state", 47.401, -121.49], wv: ["west virginia", 38.491, -80.954],
+      wi: ["wisconsin", 44.269, -89.617], wy: ["wyoming", 42.756, -107.302], dc: ["district of columbia", 38.907, -77.037],
+    };
+    const STATE_BY_NAME = Object.fromEntries(Object.entries(STATES).map(([code, [name]]) => [name.replace(/ state$/, ""), code]));
 
-    function geocodeLocation(location) {
-      if (!location) return null;
-      const loc = location.toLowerCase().trim();
-      // Direct match
-      if (CITY_COORDS[loc]) return CITY_COORDS[loc];
-      // Partial match
-      for (const [key, coords] of Object.entries(CITY_COORDS)) {
-        if (loc.includes(key) || key.includes(loc)) return coords;
+    function geocode(location) {
+      const text = String(location || "").toLowerCase().replace(/[^a-z0-9\s,]/g, " ").replace(/\s+/g, " ").trim();
+      if (!text) return null;
+      const full = text.replace(/,/g, " ").replace(/\s+/g, " ").trim();
+      if (CITIES[full]) return { coords: CITIES[full], precision: "city" };
+
+      // Split off a trailing state ("toms river, nj", "bronx ny", "austin texas", "usa").
+      let words = full.split(" ").filter((w) => w && w !== "usa" && w !== "us");
+      let stateCode = null;
+      for (let take = Math.min(2, words.length); take >= 1 && !stateCode; take -= 1) {
+        const tail = words.slice(-take).join(" ");
+        if (take === 1 && STATES[tail]) stateCode = tail;
+        else if (STATE_BY_NAME[tail]) stateCode = STATE_BY_NAME[tail];
+        if (stateCode) words = words.slice(0, -take);
       }
-      // Try splitting on comma and matching parts
-      const parts = loc.split(',').map(p => p.trim());
-      for (const part of parts) {
-        if (CITY_COORDS[part]) return CITY_COORDS[part];
-        for (const [key, coords] of Object.entries(CITY_COORDS)) {
-          if (part.includes(key) || key.includes(part)) return coords;
-        }
-      }
+      const city = words.join(" ");
+      if (city && CITIES[city]) return { coords: CITIES[city], precision: "city" };
+      if (stateCode) return { coords: [STATES[stateCode][1], STATES[stateCode][2]], precision: "state" };
       return null;
     }
-    // ── Initialize Map ───────────────────────────────────────────────────
-    function initMap() {
-      map = L.map('map', {
-        center: [39.828, -98.580], // Center of US
-        zoom: 4,
-        zoomControl: true,
-        attributionControl: false,
-      });
 
-      // Light tiles (CartoDB Positron)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        subdomains: 'abcd',
-        maxZoom: 19,
-      }).addTo(map);
-
-      // Re-add attribution in a subtle way
-      L.control.attribution({ position: 'bottomright', prefix: false })
-        .addAttribution('&copy; <a href="https://carto.com/" style="color:#4a3f6b">CARTO</a>')
-        .addTo(map);
+    // ── Helpers ───────────────────────────────────────────────────────────
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text != null) node.textContent = String(text);
+      return node;
     }
-
-    // ── Fetch Breeders ────────────────────────────────────────────────────
-    async function fetchBreeders() {
+    function safeImage(url) {
+      if (!url || typeof url !== "string" || !url.trim()) return "";
       try {
-        // Fetch breeder profiles that have storefronts active
-        const profilesRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/breeder_profiles?storefront_active=eq.true&select=wallet_address,display_name,slug,bio,location,specialties,is_master_breeder,avatar_cid,current_tier`,
-          { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
-        );
-
-        let profiles = [];
-        if (profilesRes.ok) profiles = await profilesRes.json();
-
-        // Fetch stats for these breeders
-        let statsMap = {};
-        if (profiles.length > 0) {
-          const wallets = profiles.map(p => `"${p.wallet_address}"`).join(',');
-          const statsRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/breeder_stats?wallet_address=in.(${wallets})&select=wallet_address,total_sales,total_listings,avg_rating,review_count,species_count`,
-            { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
-          );
-          if (statsRes.ok) {
-            const stats = await statsRes.json();
-            stats.forEach(s => { statsMap[s.wallet_address] = s; });
-          }
-        }
-
-        // Also fetch from basic profiles table for those without breeder_profiles
-        const basicRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/profiles?select=wallet_address,display_name,avatar_url,bio`,
-          { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
-        );
-        let basicProfiles = [];
-        if (basicRes.ok) basicProfiles = await basicRes.json();
-
-        // Merge: breeder_profiles take priority
-        const breederWallets = new Set(profiles.map(p => p.wallet_address));
-        const merged = profiles.map(p => ({
-          wallet: p.wallet_address,
-          name: p.display_name || generateAlias(p.wallet_address),
-          slug: p.slug,
-          bio: p.bio || '',
-          location: p.location || '',
-          specialties: p.specialties || [],
-          isMaster: p.is_master_breeder || false,
-          tier: p.current_tier || 'Shallow',
-          coords: geocodeLocation(p.location),
-          stats: statsMap[p.wallet_address] || { total_sales: 0, total_listings: 0, avg_rating: 0, review_count: 0, species_count: 0 },
-        }));
-
-        // Filter to those with valid coordinates
-        allBreeders = merged.filter(b => b.coords !== null);
-
-        // If we have very few, add some reasonable spread for demo purposes
-        if (allBreeders.length === 0) {
-          allBreeders = generateDemoBreeders();
-        }
-
-      } catch (e) {
-        console.warn('Failed to fetch breeders:', e);
-        allBreeders = generateDemoBreeders();
-      }
-
-      document.getElementById('loadingState').style.display = 'none';
-      applyFilters();
-      updateMapStats();
+        const parsed = new URL(String(url || ""), window.location.origin);
+        return parsed.protocol === "https:" || parsed.origin === window.location.origin ? parsed.href : "";
+      } catch { return ""; }
     }
-
-    // ── Demo breeders for when database is empty ──────────────────────────
-    function generateDemoBreeders() {
-      const demos = [
-        { name: 'Coral Cichlid 4201', slug: 'coral-cichlid', location: 'Austin, TX', coords: [30.267, -97.743], specialties: ['Cichlids', 'Apistogramma'], isMaster: true, bio: 'Specializing in dwarf cichlids since 2019. Fourth-generation Triple Red Apistogramma line.', stats: { total_sales: 47, total_listings: 12, avg_rating: 4.9, review_count: 38, species_count: 8 } },
-        { name: 'Sapphire Betta 7832', slug: 'sapphire-betta', location: 'Portland, OR', coords: [45.523, -122.676], specialties: ['Bettas', 'Wild Types', 'Halfmoon'], isMaster: false, bio: 'Platinum dumbo and galaxy koi lines. Every betta hand-raised in individual conditioned tanks.', stats: { total_sales: 23, total_listings: 6, avg_rating: 4.7, review_count: 19, species_count: 4 } },
-        { name: 'Drift Pleco 5519', slug: 'drift-pleco', location: 'Miami, FL', coords: [25.762, -80.192], specialties: ['Plecos', 'L-Numbers', 'Corydoras'], isMaster: true, bio: 'One of few documented captive breeders of Gold Nugget L018. Cave-spawned in dedicated systems.', stats: { total_sales: 89, total_listings: 24, avg_rating: 5.0, review_count: 72, species_count: 15 } },
-        { name: 'Tidal Guppy 3044', slug: 'tidal-guppy', location: 'Denver, CO', coords: [39.739, -104.990], specialties: ['Livebearers', 'Guppies', 'Endlers'], isMaster: false, bio: 'Sixth-generation Moscow Blue and pure N-class Endler Tiger lines. Colony-separated for genetic purity.', stats: { total_sales: 156, total_listings: 30, avg_rating: 4.8, review_count: 120, species_count: 6 } },
-        { name: 'Crystal Rasbora 9187', slug: 'crystal-rasbora', location: 'Seattle, WA', coords: [47.606, -122.332], specialties: ['Nano Fish', 'Rasboras', 'Shrimp'], isMaster: false, bio: 'Tank-bred nano species selected for enhanced coloration. Perfect for planted nano setups.', stats: { total_sales: 34, total_listings: 8, avg_rating: 4.6, review_count: 28, species_count: 10 } },
-        { name: 'Ember Discus 6620', slug: 'ember-discus', location: 'Atlanta, GA', coords: [33.749, -84.388], specialties: ['Discus', 'Angelfish', 'Cichlids'], isMaster: true, bio: 'Pigeon Blood and Electric Blue Acara lines. Raised worm-free from F2 with strong parental instincts.', stats: { total_sales: 62, total_listings: 15, avg_rating: 4.9, review_count: 55, species_count: 7 } },
-        { name: 'Frost Killi 2298', slug: 'frost-killi', location: 'Chicago, IL', coords: [41.878, -87.630], specialties: ['Killifish', 'Rare Species'], isMaster: false, bio: 'Breeding rare annual and semi-annual killifish. Eggs and adults available seasonally.', stats: { total_sales: 18, total_listings: 5, avg_rating: 4.5, review_count: 14, species_count: 12 } },
-        { name: 'Reef Cory 4455', slug: 'reef-cory', location: 'Philadelphia, PA', coords: [39.952, -75.164], specialties: ['Corydoras', 'Catfish'], isMaster: false, bio: 'Dedicated corydoras breeder with 9 species in rotation. All tank-raised on live foods.', stats: { total_sales: 41, total_listings: 9, avg_rating: 4.8, review_count: 33, species_count: 9 } },
-        { name: 'Golden Oscar 8811', slug: 'golden-oscar', location: 'Houston, TX', coords: [29.760, -95.370], specialties: ['Large Cichlids', 'Oscars', 'Severums'], isMaster: false, bio: 'Large new-world cichlid specialist. Oscars, severums, and chocolate cichlids from proven pairs.', stats: { total_sales: 28, total_listings: 7, avg_rating: 4.4, review_count: 22, species_count: 5 } },
-        { name: 'Jade Tetra 1177', slug: 'jade-tetra', location: 'San Francisco, CA', coords: [37.775, -122.419], specialties: ['Tetras', 'Planted Tank Fish'], isMaster: false, bio: 'Selectively bred tetras for planted aquascapes. Enhanced greens and schooling genetics.', stats: { total_sales: 55, total_listings: 14, avg_rating: 4.7, review_count: 44, species_count: 11 } },
-        { name: 'Azure Angel 5533', slug: 'azure-angel', location: 'Nashville, TN', coords: [36.163, -86.781], specialties: ['Angelfish', 'Breeding Pairs'], isMaster: true, bio: 'Established angelfish and albino kribensis lines. Strong pair bonds and proven parental care.', stats: { total_sales: 73, total_listings: 18, avg_rating: 4.9, review_count: 61, species_count: 4 } },
-        { name: 'Velvet Molly 3366', slug: 'velvet-molly', location: 'Phoenix, AZ', coords: [33.449, -112.074], specialties: ['Livebearers', 'Mollies', 'Swordtails'], isMaster: false, bio: 'High-volume livebearer breeder. Hardy mollies and swordtails bred for retail and hobbyist supply.', stats: { total_sales: 92, total_listings: 22, avg_rating: 4.6, review_count: 75, species_count: 7 } },
-      ];
-      return demos.map((d, i) => ({ ...d, wallet: `0x${i.toString(16).padStart(40, 'a')}`, tier: d.isMaster ? 'Abyssal' : 'Coral' }));
+    function storePath(breeder) {
+      return breeder.slug ? `/store/${encodeURIComponent(breeder.slug)}` : "";
     }
-    // ── Filtering ───────────────────────────────────────────────────────
-    function toggleFilter(btn, filter) {
-      btn.classList.toggle('active');
-      if (activeFilters.has(filter)) activeFilters.delete(filter);
-      else activeFilters.add(filter);
-      applyFilters();
+    function initials(name) {
+      return String(name || "?").trim().charAt(0).toUpperCase() || "?";
     }
-
-    function applyFilters() {
-      const query = (document.getElementById('searchInput').value || '').toLowerCase().trim();
-
-      filteredBreeders = allBreeders.filter(b => {
-        // Text search
-        if (query) {
-          const searchable = [b.name, b.location, ...(b.specialties || []), b.bio].join(' ').toLowerCase();
-          if (!searchable.includes(query)) return false;
-        }
-        // Chip filters
-        if (activeFilters.has('master') && !b.isMaster) return false;
-        if (activeFilters.has('ships')) return true; // All breeders can potentially ship, keep for now
-        if (activeFilters.has('cichlids')) {
-          const specs = (b.specialties || []).join(' ').toLowerCase();
-          if (!specs.includes('cichlid') && !specs.includes('apisto') && !specs.includes('discus') && !specs.includes('angel') && !specs.includes('oscar')) return false;
-        }
-        if (activeFilters.has('livebearers')) {
-          const specs = (b.specialties || []).join(' ').toLowerCase();
-          if (!specs.includes('livebearer') && !specs.includes('guppy') && !specs.includes('molly') && !specs.includes('platy') && !specs.includes('swordtail') && !specs.includes('endler')) return false;
-        }
-        if (activeFilters.has('plecos')) {
-          const specs = (b.specialties || []).join(' ').toLowerCase();
-          if (!specs.includes('pleco') && !specs.includes('l-number') && !specs.includes('catfish') && !specs.includes('corydoras')) return false;
-        }
-        if (activeFilters.has('bettas')) {
-          const specs = (b.specialties || []).join(' ').toLowerCase();
-          if (!specs.includes('betta')) return false;
-        }
-        return true;
-      });
-
-      // Sort by distance if user location is known
-      if (userLocation) {
-        filteredBreeders.forEach(b => {
-          b.distance = getDistance(userLocation, b.coords);
-        });
-        filteredBreeders.sort((a, b) => a.distance - b.distance);
-      } else {
-        // Sort by rating/sales
-        filteredBreeders.sort((a, b) => (b.stats.total_sales || 0) - (a.stats.total_sales || 0));
-      }
-
-      renderBreederList();
-      renderMarkers();
-      document.getElementById('resultsCount').textContent = `${filteredBreeders.length} breeder${filteredBreeders.length !== 1 ? 's' : ''} found`;
-    }
-
-    // ── Haversine distance (miles) ────────────────────────────────────────
-    function getDistance(from, to) {
-      const R = 3959; // Earth radius in miles
+    function distanceMiles(from, to) {
+      const R = 3959;
       const dLat = (to[0] - from[0]) * Math.PI / 180;
       const dLon = (to[1] - from[1]) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(from[0] * Math.PI / 180) * Math.cos(to[0] * Math.PI / 180) *
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(from[0] * Math.PI / 180) * Math.cos(to[0] * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
-    function formatDistance(miles) {
-      if (miles < 1) return '< 1 mi';
-      if (miles < 100) return Math.round(miles) + ' mi';
-      return Math.round(miles) + ' mi';
-    }
-    // ── Render Breeder Cards ─────────────────────────────────────────────
-    function renderBreederList() {
-      const container = document.getElementById('breederList');
-
-      if (filteredBreeders.length === 0) {
-        container.innerHTML = '<div class="empty-state"><h3>No breeders found</h3><p>Try adjusting your search or filters.</p></div>';
-        return;
+    // ── Data ──────────────────────────────────────────────────────────────
+    // Source of truth: the public storefront discovery endpoint (the same one
+    // marketplace.html uses). If it is unreachable (e.g. the local dev server,
+    // which does not serve /api), read the same breeder_profiles rows directly
+    // with the anon key, selecting display fields only. Nothing is invented.
+    async function fetchStorefronts() {
+      try {
+        const res = await fetch("/api/storefront-detail?action=discover&limit=50");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!Array.isArray(data.storefronts)) throw new Error("bad payload");
+        return data.storefronts.map((s) => ({
+          wallet: String(s.walletAddress || "").toLowerCase(),
+          slug: s.slug || "",
+          name: s.displayName || "Aquacellum breeder",
+          bio: s.bio || "",
+          location: s.location || "",
+          specialties: Array.isArray(s.specialties) ? s.specialties : [],
+          avatarUrl: s.avatarUrl || "",
+          bannerUrl: s.bannerUrl || "",
+          totalSales: Number(s.stats?.totalSales) || 0,
+        }));
+      } catch (apiError) {
+        const select = "wallet_address,slug,display_name,bio,location,specialties,avatar_url,banner_url";
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/breeder_profiles?storefront_active=eq.true&select=${select}&order=updated_at.desc&limit=50`, {
+          headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+        });
+        if (!res.ok) throw new Error(`storefronts unavailable (${apiError.message}; rest HTTP ${res.status})`);
+        const rows = await res.json();
+        return (Array.isArray(rows) ? rows : []).map((p) => ({
+          wallet: String(p.wallet_address || "").toLowerCase(),
+          slug: p.slug || "",
+          name: p.display_name || "Aquacellum breeder",
+          bio: p.bio || "",
+          location: p.location || "",
+          specialties: Array.isArray(p.specialties) ? p.specialties : [],
+          avatarUrl: p.avatar_url || "",
+          bannerUrl: p.banner_url || "",
+          totalSales: 0,
+        }));
       }
-
-      container.innerHTML = filteredBreeders.map((b, idx) => {
-        const initial = b.name.charAt(0).toUpperCase();
-        const ratingStars = b.stats.avg_rating > 0 ? '⭐ ' + b.stats.avg_rating.toFixed(1) : '';
-        const distanceHtml = (userLocation && b.distance != null) ? `<span class="distance-badge">${formatDistance(b.distance)}</span>` : '';
-        const storeUrl = b.slug ? `/store/${b.slug}` : '/marketplace';
-
-        let badgesHtml = '';
-        if (b.isMaster) badgesHtml += '<span class="breeder-card-badge badge-master">Master</span>';
-        badgesHtml += '<span class="breeder-card-badge badge-verified">Verified</span>';
-
-        const specialtiesHtml = (b.specialties || []).slice(0, 4).map(s =>
-          `<span class="specialty-chip">${s}</span>`
-        ).join('');
-
-        return `
-          <div class="breeder-card" data-idx="${idx}" onclick="selectBreeder(${idx})">
-            ${distanceHtml}
-            <div class="breeder-card-top">
-              <div class="breeder-card-avatar ${b.isMaster ? 'master' : ''}">${initial}</div>
-              <div class="breeder-card-info">
-                <div class="breeder-card-name">${b.name}</div>
-                <div class="breeder-card-location">📍 ${b.location || 'Location not set'}</div>
-              </div>
-              <div class="breeder-card-badges">${badgesHtml}</div>
-            </div>
-            <div class="breeder-card-stats">
-              ${ratingStars ? `<div class="breeder-stat"><span class="breeder-stat-icon">⭐</span><span class="breeder-stat-value">${b.stats.avg_rating.toFixed(1)}</span><span class="breeder-stat-label">(${b.stats.review_count})</span></div>` : ''}
-              <div class="breeder-stat"><span class="breeder-stat-icon">🐟</span><span class="breeder-stat-value">${b.stats.species_count}</span><span class="breeder-stat-label">species</span></div>
-              <div class="breeder-stat"><span class="breeder-stat-icon">📦</span><span class="breeder-stat-value">${b.stats.total_listings}</span><span class="breeder-stat-label">listings</span></div>
-              <div class="breeder-stat"><span class="breeder-stat-icon">✓</span><span class="breeder-stat-value">${b.stats.total_sales}</span><span class="breeder-stat-label">sales</span></div>
-            </div>
-            <div class="breeder-card-specialties">${specialtiesHtml}</div>
-            <a href="${storeUrl}" class="breeder-card-cta" onclick="event.stopPropagation()">
-              View Storefront →
-            </a>
-          </div>`;
-      }).join('');
     }
 
-    // ── Render Map Markers ────────────────────────────────────────────────
-    function renderMarkers() {
-      // Clear existing markers
-      markers.forEach(m => map.removeLayer(m));
-      markers = [];
-
-      filteredBreeders.forEach((b, idx) => {
-        if (!b.coords) return;
-
-        const markerEl = document.createElement('div');
-        markerEl.className = `custom-marker ${b.isMaster ? 'master-marker' : ''}`;
-        markerEl.textContent = b.name.charAt(0);
-
-        const icon = L.divIcon({
-          html: markerEl.outerHTML,
-          className: '', // Remove default leaflet icon class
-          iconSize: [36, 36],
-          iconAnchor: [18, 18],
-        });
-
-        const marker = L.marker(b.coords, { icon }).addTo(map);
-
-        // Popup content
-        const popupHtml = `
-          <div style="min-width:200px;">
-            <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:0.9rem;margin-bottom:4px;">${b.name}</div>
-            <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:8px;">📍 ${b.location}</div>
-            ${b.stats.avg_rating > 0 ? `<div style="font-size:0.72rem;margin-bottom:6px;">⭐ ${b.stats.avg_rating.toFixed(1)} · ${b.stats.review_count} reviews · ${b.stats.total_sales} sales</div>` : ''}
-            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px;">${(b.specialties || []).map(s => `<span style="font-size:0.6rem;padding:2px 7px;border-radius:8px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);color:var(--violet-300);">${s}</span>`).join('')}</div>
-            <a href="${b.slug ? '/store/' + b.slug : '/marketplace'}" style="display:block;text-align:center;padding:7px 14px;font-size:0.72rem;font-weight:600;color:#fff;background:linear-gradient(135deg,#7c3aed,#a855f7);border-radius:8px;">View Storefront →</a>
-          </div>
-        `;
-        marker.bindPopup(popupHtml, { closeButton: false, maxWidth: 280 });
-
-        marker.on('click', () => {
-          selectBreeder(idx, false);
-        });
-
-        markers.push(marker);
+    async function fetchListingCounts() {
+      if (!window.AquadexPublicListings) return null;
+      const rows = await window.AquadexPublicListings.fetchRows({
+        supabaseUrl: SUPABASE_URL,
+        anonKey: SUPABASE_ANON_KEY,
+        query: "is_active=eq.true&select=seller_address&limit=1000",
       });
+      const counts = {};
+      rows.forEach((row) => {
+        const seller = String(row.seller_address || "").toLowerCase();
+        if (seller) counts[seller] = (counts[seller] || 0) + 1;
+      });
+      return counts;
     }
-    // ── Select Breeder ──────────────────────────────────────────────────
-    function selectBreeder(idx, panMap = true) {
-      const b = filteredBreeders[idx];
-      if (!b) return;
 
-      // Highlight card
-      document.querySelectorAll('.breeder-card').forEach(c => c.classList.remove('active'));
-      const card = document.querySelector(`.breeder-card[data-idx="${idx}"]`);
-      if (card) {
-        card.classList.add('active');
-        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-
-      // Highlight marker
-      markers.forEach((m, i) => {
-        const el = m.getElement();
-        if (el) {
-          const inner = el.querySelector('.custom-marker');
-          if (inner) inner.classList.toggle('active-marker', i === idx);
+    // ── Rendering ─────────────────────────────────────────────────────────
+    function visibleBreeders() {
+      const q = state.query.trim().toLowerCase();
+      const list = state.breeders.filter((b) => {
+        if (!q) return true;
+        return [b.name, b.location, b.bio, ...b.specialties].join(" ").toLowerCase().includes(q);
+      });
+      list.forEach((b) => { b.distance = state.userLocation && b.geo ? distanceMiles(state.userLocation, b.geo.coords) : null; });
+      list.sort((a, b) => {
+        if (state.userLocation) {
+          if (a.distance == null && b.distance == null) return a.name.localeCompare(b.name);
+          if (a.distance == null) return 1;
+          if (b.distance == null) return -1;
+          return a.distance - b.distance;
         }
+        return (state.listingCounts[b.wallet] || 0) - (state.listingCounts[a.wallet] || 0) || a.name.localeCompare(b.name);
+      });
+      return list;
+    }
+
+    function buildCard(b) {
+      const card = el("article", "bd-card");
+      card.dataset.key = b.key;
+      if (b.key === state.activeKey) card.classList.add("is-active");
+
+      const banner = el("div", "bd-card__banner");
+      const bannerSrc = safeImage(b.bannerUrl);
+      if (bannerSrc) {
+        const img = el("img");
+        img.src = bannerSrc; img.alt = ""; img.loading = "lazy";
+        img.addEventListener("error", () => img.remove(), { once: true });
+        banner.append(img);
+      }
+      card.append(banner);
+
+      const body = el("div", "bd-card__body");
+      const head = el("div", "bd-card__head");
+      const avatar = el("div", "bd-avatar");
+      const avatarSrc = safeImage(b.avatarUrl);
+      if (avatarSrc) {
+        const img = el("img");
+        img.src = avatarSrc; img.alt = ""; img.loading = "lazy";
+        img.addEventListener("error", () => { img.remove(); avatar.textContent = initials(b.name); }, { once: true });
+        avatar.append(img);
+      } else {
+        avatar.textContent = initials(b.name);
+      }
+      head.append(avatar);
+      if (b.distance != null) head.append(el("span", "bd-distance", b.distance < 1 ? "under 1 mi" : `about ${Math.round(b.distance)} mi`));
+      body.append(head);
+
+      body.append(el("h2", "", b.name));
+      if (b.location) {
+        const loc = el("div", "bd-card__loc");
+        loc.append(el("span", "", "📍"), document.createTextNode(b.location));
+        if (!b.geo) loc.append(el("span", "", " (not on map)"));
+        else if (b.geo.precision === "state") loc.append(el("span", "", " (state-level pin)"));
+        body.append(loc);
+      } else {
+        body.append(el("div", "bd-card__loc bd-card__loc--none", "No location added, so no map pin"));
+      }
+      if (b.bio) body.append(el("p", "bd-card__bio", b.bio));
+
+      if (b.specialties.length) {
+        const tags = el("div", "bd-tags");
+        b.specialties.slice(0, 5).forEach((s) => tags.append(el("span", "bd-tag", s)));
+        body.append(tags);
+      }
+
+      const facts = el("div", "bd-facts");
+      const listings = state.listingCounts[b.wallet];
+      if (listings != null || !state.countsFailed) {
+        const f = el("span");
+        f.append(el("strong", "", listings || 0), document.createTextNode(` live listing${listings === 1 ? "" : "s"}`));
+        facts.append(f);
+      }
+      if (b.totalSales > 0) {
+        const f = el("span");
+        f.append(el("strong", "", b.totalSales), document.createTextNode(` completed sale${b.totalSales === 1 ? "" : "s"}`));
+        facts.append(f);
+      }
+      if (facts.childNodes.length) body.append(facts);
+
+      const actions = el("div", "bd-card__actions");
+      const href = storePath(b);
+      if (href) {
+        const visit = el("a", "bd-btn bd-btn--teal", "Visit storefront");
+        visit.href = href;
+        actions.append(visit);
+      }
+      if (b.geo) {
+        const show = el("button", "bd-btn", "Show on map");
+        show.type = "button";
+        show.addEventListener("click", () => focusBreeder(b.key, true));
+        actions.append(show);
+      }
+      body.append(actions);
+      card.append(body);
+      return card;
+    }
+
+    function renderList() {
+      const container = document.getElementById("breederList");
+      container.setAttribute("aria-busy", "false");
+      container.replaceChildren();
+      const list = visibleBreeders();
+
+      if (state.loadFailed) {
+        const panel = el("div", "bd-panel");
+        panel.append(el("h2", "", "We could not load the breeder list"), el("p", "", "This is a connection problem on our side, not an empty directory. Try again in a moment, or browse listings on the marketplace."));
+        const retry = el("button", "bd-btn bd-btn--teal", "Try again");
+        retry.type = "button";
+        retry.addEventListener("click", () => load());
+        panel.append(retry);
+        container.append(panel);
+      } else if (!state.breeders.length) {
+        const panel = el("div", "bd-panel");
+        panel.append(el("h2", "", "No storefronts yet"), el("p", "", "No breeder has opened a public storefront yet. If you breed fish, yours can be the first."));
+        const cta = el("a", "bd-btn bd-btn--teal", "Set up a storefront");
+        cta.href = "/my-store";
+        panel.append(cta);
+        container.append(panel);
+      } else if (!list.length) {
+        const panel = el("div", "bd-panel");
+        panel.append(el("h2", "", "No breeders match that search"), el("p", "", "Try a different name, fish, or town."));
+        container.append(panel);
+      } else {
+        list.forEach((b) => container.append(buildCard(b)));
+      }
+
+      const total = state.breeders.length;
+      document.getElementById("resultsCount").textContent = state.loadFailed ? "" :
+        (list.length === total ? `${total} breeder${total === 1 ? "" : "s"}` : `${list.length} of ${total} breeders`);
+      renderPins(list);
+    }
+
+    function renderStats() {
+      const pinned = state.breeders.filter((b) => b.geo).length;
+      document.getElementById("statStores").textContent = state.loadFailed ? "–" : state.breeders.length;
+      document.getElementById("statPinned").textContent = state.loadFailed ? "–" : pinned;
+      const counts = state.listingCounts;
+      const live = state.breeders.reduce((sum, b) => sum + (counts[b.wallet] || 0), 0);
+      document.getElementById("statListings").textContent = state.countsFailed || state.loadFailed ? "–" : live;
+    }
+
+    // ── Map ───────────────────────────────────────────────────────────────
+    function initMap() {
+      if (!window.L) {
+        document.getElementById("mapNote").textContent = "The map could not load. The list still shows every breeder.";
+        return;
+      }
+      map = L.map("map", { center: US_CENTER, zoom: 4, zoomControl: true, scrollWheelZoom: false });
+      // OpenStreetMap standard tiles: no API key, attribution required
+      // (https://operations.osmfoundation.org/policies/tiles/). The old CARTO
+      // basemap now demands an API key and rendered "API KEY REQUIRED" tiles.
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        referrerPolicy: "strict-origin-when-cross-origin",
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(map);
+      map.attributionControl.setPrefix(false);
+      map.on("focus", () => map.scrollWheelZoom.enable());
+      map.on("blur", () => map.scrollWheelZoom.disable());
+      pinLayer = L.layerGroup().addTo(map);
+    }
+
+    function renderPins(list) {
+      if (!map) return;
+      pinLayer.clearLayers();
+      markersByKey.clear();
+      const pinned = list.filter((b) => b.geo);
+      pinned.forEach((b) => {
+        const icon = L.divIcon({
+          html: `<div class="bd-pin${b.key === state.activeKey ? " is-active" : ""}"></div>`,
+          className: "",
+          iconSize: [34, 34],
+          iconAnchor: [17, 17],
+          popupAnchor: [0, -16],
+        });
+        const marker = L.marker(b.geo.coords, { icon, title: b.name, alt: b.name, keyboard: true });
+        marker.on("add", () => {
+          const pin = marker.getElement()?.querySelector(".bd-pin");
+          if (pin) pin.textContent = initials(b.name);
+        });
+        const pop = el("div", "bd-pop");
+        pop.append(el("h3", "", b.name), el("p", "", b.geo.precision === "state" ? `${b.location} (approximate, state level)` : b.location));
+        const href = storePath(b);
+        if (href) { const a = el("a", "", "Visit storefront"); a.href = href; pop.append(a); }
+        marker.bindPopup(pop, { closeButton: false, maxWidth: 260 });
+        marker.on("click", () => focusBreeder(b.key, false));
+        marker.addTo(pinLayer);
+        markersByKey.set(b.key, marker);
       });
 
-      // Pan map
-      if (panMap && b.coords) {
-        map.flyTo(b.coords, 10, { duration: 0.8 });
-        markers[idx]?.openPopup();
-      }
+      const note = document.getElementById("mapNote");
+      const unpinned = list.length - pinned.length;
+      if (state.loadFailed) note.textContent = "";
+      else if (!state.breeders.length) note.textContent = "No storefronts to show yet.";
+      else if (!pinned.length) note.textContent = "None of these breeders has added a location yet, so there are no pins.";
+      else if (unpinned > 0) note.textContent = `${unpinned} breeder${unpinned === 1 ? " has" : "s have"} no location and ${unpinned === 1 ? "is" : "are"} listed without a pin.`;
+      else note.textContent = "";
 
-      activeCard = idx;
+      if (!state.fitted && pinned.length) {
+        state.fitted = true;
+        fitTo(pinned.map((b) => b.geo.coords));
+      }
     }
 
-    // ── Geolocation ──────────────────────────────────────────────────────
-    function locateMe() {
-      const btn = document.getElementById('locateBtn');
+    function fitTo(points) {
+      if (!map || !points.length) return;
+      if (points.length === 1) map.setView(points[0], 8);
+      else map.fitBounds(L.latLngBounds(points), { padding: [50, 50], maxZoom: 9 });
+    }
 
-      if (userLocation) {
-        // Toggle off
-        userLocation = null;
-        btn.classList.remove('active');
-        if (userLocationMarker) { map.removeLayer(userLocationMarker); userLocationMarker = null; }
-        applyFilters();
-        map.flyTo([39.828, -98.580], 4, { duration: 0.8 });
+    function focusBreeder(key, panMap) {
+      state.activeKey = key;
+      document.querySelectorAll(".bd-card").forEach((c) => c.classList.toggle("is-active", c.dataset.key === key));
+      markersByKey.forEach((m, k) => m.getElement()?.querySelector(".bd-pin")?.classList.toggle("is-active", k === key));
+      const marker = markersByKey.get(key);
+      if (panMap && marker && map) {
+        map.flyTo(marker.getLatLng(), Math.max(map.getZoom(), 9), { duration: 0.7 });
+        marker.openPopup();
+        if (window.matchMedia("(max-width: 900px)").matches) document.getElementById("map").scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+
+    // ── Distance sort ─────────────────────────────────────────────────────
+    function toggleLocate() {
+      const btn = document.getElementById("locateBtn");
+      const label = document.getElementById("locateLabel");
+      const status = document.getElementById("statusLine");
+      if (state.userLocation) {
+        state.userLocation = null;
+        btn.setAttribute("aria-pressed", "false");
+        label.textContent = "Sort by distance";
+        status.textContent = "";
+        if (youMarker && map) { map.removeLayer(youMarker); youMarker = null; }
+        renderList();
         return;
       }
-
-      if (!navigator.geolocation) {
-        alert('Geolocation is not supported by your browser.');
-        return;
-      }
-
-      btn.textContent = '⏳ Locating...';
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          userLocation = [pos.coords.latitude, pos.coords.longitude];
-          btn.classList.add('active');
-          btn.innerHTML = '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg> Near Me ✓';
-
-          // Add user marker
-          const userIcon = L.divIcon({
-            html: '<div class="user-location-marker"></div>',
-            className: '',
-            iconSize: [20, 20],
-            iconAnchor: [10, 10],
-          });
-          userLocationMarker = L.marker(userLocation, { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
-          userLocationMarker.bindPopup('<div style="font-size:0.75rem;font-weight:600;color:var(--text-primary);">📍 You are here</div>', { closeButton: false });
-
-          map.flyTo(userLocation, 7, { duration: 1.2 });
-          applyFilters();
-        },
-        (err) => {
-          btn.innerHTML = '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg> Near Me';
-          console.warn('Geolocation failed:', err.message);
-          alert('Unable to get your location. Please allow location access and try again.');
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
+      if (!navigator.geolocation) { status.textContent = "Your browser does not share location, so distance sorting is unavailable."; return; }
+      label.textContent = "Locating";
+      navigator.geolocation.getCurrentPosition((pos) => {
+        state.userLocation = [pos.coords.latitude, pos.coords.longitude];
+        btn.setAttribute("aria-pressed", "true");
+        label.textContent = "Sorted by distance";
+        status.textContent = "Distances are measured to each breeder's town, and your location stays in this browser.";
+        if (map) {
+          if (youMarker) map.removeLayer(youMarker);
+          youMarker = L.marker(state.userLocation, { icon: L.divIcon({ html: '<div class="bd-you"></div>', className: "", iconSize: [18, 18], iconAnchor: [9, 9] }), zIndexOffset: 1000, title: "Your location" }).addTo(map);
+          const pts = state.breeders.filter((b) => b.geo).map((b) => b.geo.coords);
+          fitTo([state.userLocation, ...pts]);
+        }
+        renderList();
+      }, () => {
+        label.textContent = "Sort by distance";
+        status.textContent = "Location access was blocked or timed out. You can still search by town.";
+      }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 });
     }
 
-    // ── Map Stats ─────────────────────────────────────────────────────────
-    function updateMapStats() {
-      const totalBreeders = allBreeders.length;
-      const totalSpecies = new Set(allBreeders.flatMap(b => b.specialties || [])).size;
-      const masterCount = allBreeders.filter(b => b.isMaster).length;
-
-      document.getElementById('mapStats').innerHTML = `
-        <div class="map-stat-pill"><strong>${totalBreeders}</strong> Breeders</div>
-        <div class="map-stat-pill"><strong>${totalSpecies}+</strong> Specialties</div>
-        <div class="map-stat-pill"><strong>${masterCount}</strong> Master Breeders</div>
-      `;
-    }
-
-    // ── Mobile Toggle ─────────────────────────────────────────────────────
-    let mobileView = 'map'; // 'map' | 'list' | 'expanded'
-    function toggleMobileView() {
-      const sidebar = document.getElementById('sidebar');
-      const btn = document.getElementById('mobileToggle');
-
-      if (mobileView === 'map') {
-        // Show list (split view)
-        sidebar.classList.remove('collapsed');
-        sidebar.classList.remove('expanded');
-        mobileView = 'list';
-        btn.textContent = '🗺️ Full Map';
-      } else if (mobileView === 'list') {
-        // Expand list full screen
-        sidebar.classList.add('expanded');
-        mobileView = 'expanded';
-        btn.textContent = '🗺️ Show Map';
+    // ── Boot ──────────────────────────────────────────────────────────────
+    async function load() {
+      state.loadFailed = false;
+      state.fitted = false;
+      const [storesResult, countsResult] = await Promise.allSettled([fetchStorefronts(), fetchListingCounts()]);
+      if (storesResult.status === "fulfilled") {
+        state.breeders = storesResult.value.map((b, i) => ({ ...b, key: b.slug || b.wallet || `b${i}`, geo: geocode(b.location) }));
       } else {
-        // Back to map only
-        sidebar.classList.add('collapsed');
-        sidebar.classList.remove('expanded');
-        mobileView = 'map';
-        btn.textContent = '📋 Show Breeders';
+        console.warn("[breeders] could not load storefronts:", storesResult.reason?.message || storesResult.reason);
+        state.breeders = [];
+        state.loadFailed = true;
       }
+      state.countsFailed = countsResult.status !== "fulfilled" || !countsResult.value;
+      state.listingCounts = state.countsFailed ? {} : countsResult.value;
+      renderStats();
+      renderList();
     }
 
-    // On mobile, start with map showing and list collapsed
-    function initMobileState() {
-      if (window.innerWidth <= 900) {
-        const sidebar = document.getElementById('sidebar');
-        sidebar.classList.add('collapsed');
-        mobileView = 'map';
-        document.getElementById('mobileToggle').textContent = '📋 Show Breeders';
-      }
-    }
+    document.getElementById("searchInput").addEventListener("input", (e) => { state.query = e.target.value; renderList(); });
+    document.getElementById("locateBtn").addEventListener("click", toggleLocate);
+    window.addEventListener("resize", () => { if (map) map.invalidateSize(); });
 
-    // Leaflet needs to know when the map container resizes
-    window.addEventListener('resize', () => { if (map) setTimeout(() => map.invalidateSize(), 100); });
-    // Also after toggling mobile view
-    const origToggle = toggleMobileView;
-    toggleMobileView = function() {
-      origToggle();
-      if (map) setTimeout(() => map.invalidateSize(), 350);
-    };
-
-    // ── Boot ───────────────────────────────────────────────────────────────
     initMap();
-    initMobileState();
-    fetchBreeders();
+    load();
   </script>
-
 </body>
 </html>
