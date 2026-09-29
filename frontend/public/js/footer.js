@@ -1,6 +1,9 @@
 /**
  * Aquacellum — Shared Footer Component
  * Injects a consistent footer across all pages.
+ *
+ * The React app renders the same columns and links (src/components/AppFooter.jsx).
+ * Change both together.
  * 
  * Usage: Add <footer id="site-footer"></footer> in your HTML,
  *        then <script src="/js/footer.js"></script> before </body>.
@@ -18,9 +21,9 @@
       <div class="footer-inner">
         <div class="footer-grid">
           <div class="footer-brand">
-            <a href="/index.html" class="nav-logo" style="margin-bottom:4px">
-              <div class="nav-logo-mark">
-                <svg width="22" height="22" viewBox="0 0 38 38" fill="none">
+            <a href="/" class="nav-logo" style="margin-bottom:4px" aria-label="Aquacellum home">
+              <div class="nav-logo-mark" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 38 38" fill="none" focusable="false">
                   <defs>
                     <linearGradient id="ft-grad" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stop-color="#2dd4bf"/>
@@ -56,7 +59,7 @@
             <a href="/compare.html">Compare Species</a>
             <a href="/breeders.html">Find Breeders</a>
             <a href="/poseidon.html">Poseidon AI</a>
-            <a href="/app.html">Open the App</a>
+            <a href="/app">Open the App</a>
           </div>
 
           <div class="footer-col">

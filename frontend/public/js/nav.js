@@ -1,17 +1,22 @@
 /**
  * Aquacellum — Shared Navigation Component
  * Injects a consistent, responsive navigation bar across all pages.
- * 
+ *
  * Usage: Add <header id="site-nav"></header> in your HTML,
  *        then <script src="/js/nav.js"></script> before </body>.
+ *
+ * ONE PRODUCT. The React app (/app/*) draws the same bar: same logo mark, same
+ * 64px white translucent strip, same type (see .app-topbar in
+ * src/styles/index.css and src/components/AppTopBar.jsx). If you change the
+ * lockup or the link set here, change it there too.
  */
 
 (function () {
   'use strict';
 
   // Ordered to match product priority: Database (top-of-funnel) → Marketplace
-  // (conversion) → everything else. Keep this list short — anything niche goes
-  // in SECONDARY_LINKS (mobile menu + footer still surface those).
+  // (conversion) → the app's community destinations. Keep this list short;
+  // anything niche goes in SECONDARY_LINKS (mobile menu + footer surface those).
   const NAV_LINKS = [
     { href: '/database.html', label: 'Database' },
     { href: '/marketplace.html', label: 'Marketplace' },
@@ -31,36 +36,61 @@
     { href: '/legal.html', label: 'Legal' },
   ];
 
-  function getCurrentPage() {
-    const path = window.location.pathname;
-    // Normalize: /index.html and / both mean home
-    if (path === '/' || path === '/index.html') return '/index.html';
-    return path;
+  // Detail pages light up the section they belong to.
+  const SECTION_ALIASES = {
+    '/species': '/database',
+    '/compare': '/database',
+    '/store': '/marketplace',
+  };
+
+  // "/database.html", "/database" and "/database/" are the same page (the host
+  // serves clean URLs), and "/" is "/index".
+  function normalize(path) {
+    let p = String(path || '/').split(/[?#]/)[0];
+    if (p.length > 1) p = p.replace(/\/+$/, '');
+    p = p.replace(/\.html$/, '');
+    if (p === '' || p === '/index') p = '/';
+    return p;
+  }
+
+  function currentSection() {
+    const p = normalize(window.location.pathname);
+    return SECTION_ALIASES[p] || p;
   }
 
   function isActive(href) {
-    const current = getCurrentPage();
-    return current === href;
+    return normalize(href) === currentSection();
+  }
+
+  // The app writes this flag on mount (App.jsx). A returning keeper gets a
+  // direct way back to their tanks instead of a generic "Open the app".
+  function isReturningUser() {
+    try { return localStorage.getItem('aquadex_entered_dashboard') === 'true'; } catch { return false; }
+  }
+
+  function linkHTML(l) {
+    const active = isActive(l.href);
+    return `<a href="${l.href}"${active ? ' class="active" aria-current="page"' : ''}>${l.label}</a>`;
   }
 
   function buildNav() {
     const target = document.getElementById('site-nav');
     if (!target) return;
 
-    const linksHTML = NAV_LINKS.map(l =>
-      `<a href="${l.href}" class="${isActive(l.href) ? 'active' : ''}">${l.label}</a>`
-    ).join('');
+    const cta = isReturningUser()
+      ? { href: '/app/tanks', label: 'My tanks' }
+      : { href: '/app', label: 'Open the app' };
 
-    const mobileLinksHTML = NAV_LINKS.concat(SECONDARY_LINKS).map(l =>
-      `<a href="${l.href}" class="${isActive(l.href) ? 'active' : ''}">${l.label}</a>`
-    ).join('');
+    const linksHTML = NAV_LINKS.map(linkHTML).join('');
+    const mobilePrimaryHTML = NAV_LINKS.map(linkHTML).join('');
+    const mobileSecondaryHTML = SECONDARY_LINKS.map(linkHTML).join('');
 
     target.innerHTML = `
-      <nav class="nav" role="navigation" aria-label="Main navigation">
+      <nav class="nav" aria-label="Main navigation">
         <div class="nav-inner">
-          <a href="/index.html" class="nav-logo" aria-label="Aquacellum Home">
-            <div class="nav-logo-mark">
-              <svg width="22" height="22" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <a href="/" class="nav-logo" aria-label="Aquacellum home">
+            <div class="nav-logo-mark" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
                 <defs>
                   <linearGradient id="nav-grad" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stop-color="#2dd4bf"/>
@@ -87,37 +117,49 @@
             ${linksHTML}
           </div>
 
-          <a href="/app" class="nav-cta">
-            Open the app
-          </a>
+          <a href="${cta.href}" class="nav-cta">${cta.label}</a>
 
-          <button class="nav-mobile-toggle" id="navMobileToggle" aria-label="Toggle menu" aria-expanded="false">
-            <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <button type="button" class="nav-mobile-toggle" id="navMobileToggle" aria-label="Open menu" aria-expanded="false" aria-controls="navMobileMenu">
+            <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
               <path d="M4 6h16M4 12h16M4 18h16"/>
             </svg>
           </button>
         </div>
       </nav>
-      <div class="nav-mobile-menu" id="navMobileMenu" role="menu">
-        ${mobileLinksHTML}
-      </div>
+      <nav class="nav-mobile-menu" id="navMobileMenu" aria-label="Site menu" hidden>
+        <a href="${cta.href}" class="nav-mobile-cta">${cta.label}</a>
+        ${mobilePrimaryHTML}
+        <div class="nav-mobile-divider" role="presentation"></div>
+        ${mobileSecondaryHTML}
+      </nav>
     `;
 
-    // Mobile toggle
     const toggle = document.getElementById('navMobileToggle');
     const menu = document.getElementById('navMobileMenu');
-    if (toggle && menu) {
-      toggle.addEventListener('click', () => {
-        const isOpen = menu.classList.toggle('open');
-        toggle.setAttribute('aria-expanded', isOpen);
-      });
+    if (!toggle || !menu) return;
+
+    function setOpen(open, { restoreFocus = false } = {}) {
+      menu.hidden = !open;
+      menu.classList.toggle('open', open);
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      if (!open && restoreFocus) toggle.focus();
     }
 
-    // Close mobile menu on link click
-    if (menu) {
-      menu.querySelectorAll('a').forEach(a => {
-        a.addEventListener('click', () => menu.classList.remove('open'));
-      });
+    toggle.addEventListener('click', () => setOpen(menu.hidden));
+
+    // Close on link click, on Escape, and if the viewport grows past the
+    // breakpoint (the desktop links take over there).
+    menu.querySelectorAll('a').forEach((a) => {
+      a.addEventListener('click', () => setOpen(false));
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !menu.hidden) setOpen(false, { restoreFocus: true });
+    });
+    if (window.matchMedia) {
+      const mq = window.matchMedia('(min-width: 769px)');
+      const onChange = (e) => { if (e.matches) setOpen(false); };
+      if (mq.addEventListener) mq.addEventListener('change', onChange);
     }
   }
 

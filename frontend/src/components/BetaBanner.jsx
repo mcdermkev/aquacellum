@@ -1,208 +1,103 @@
 import React, { useState } from "react";
 
 const DISMISS_KEY = "aquadex_beta_banner_dismissed";
-const SEEN_COUNT_KEY = "aquadex_beta_banner_seen_count";
 
 /**
- * BetaBanner — Persistent but dismissible notice for beta testers.
- * Explains testnet status, data expectations, known limitations,
- * and experimental features.
+ * BetaBanner — a one-line strip above the top bar for beta testers: test mode,
+ * how to report issues, and a "Known limitations" disclosure. Dismissible.
  *
- * Auto-expands the "Known Limitations" section for the first 3 sessions,
- * then collapses by default to reduce visual noise.
+ * It used to be a card inside the page that auto-expanded its limitations list
+ * for the first three sessions, which pushed the whole app down on every early
+ * visit. Now it is a strip the width of the page (the same place a site notice
+ * sits on the public pages), and the list opens only when asked for.
  */
 export function BetaBanner() {
   const [dismissed, setDismissed] = useState(() => {
-    return localStorage.getItem(DISMISS_KEY) === "true";
+    try { return localStorage.getItem(DISMISS_KEY) === "true"; } catch { return false; }
   });
-
-  const [expanded, setExpanded] = useState(() => {
-    const count = parseInt(localStorage.getItem(SEEN_COUNT_KEY) || "0", 10);
-    // Auto-expand for the first 3 sessions
-    return count < 3;
-  });
-
-  // Track session views
-  useState(() => {
-    const count = parseInt(localStorage.getItem(SEEN_COUNT_KEY) || "0", 10);
-    localStorage.setItem(SEEN_COUNT_KEY, String(count + 1));
-  });
+  const [expanded, setExpanded] = useState(false);
 
   if (dismissed) return null;
 
   const handleDismiss = () => {
-    localStorage.setItem(DISMISS_KEY, "true");
+    try { localStorage.setItem(DISMISS_KEY, "true"); } catch { /* private mode */ }
     setDismissed(true);
   };
 
   return (
-    <div style={styles.banner} role="status" aria-label="Beta notice">
-      <div style={styles.content}>
-        <div style={styles.topRow}>
-          <div style={styles.badge}>BETA</div>
-          <p style={styles.text}>
-            You're part of the Aquacellum closed beta — thank you for helping us build this!
-            Everything is in <strong>test mode</strong> (no real money involved).
-            Tap the <strong>Feedback</strong> button anytime to report issues or share ideas.
-          </p>
-          <button
-            onClick={handleDismiss}
-            style={styles.closeBtn}
-            aria-label="Dismiss beta notice"
-            title="Dismiss"
-          >
-            &times;
-          </button>
-        </div>
-
-        {/* Expandable Known Limitations */}
+    <div className="beta-strip" role="region" aria-label="Beta notice">
+      <div className="beta-strip-row">
+        <span className="beta-strip-badge">BETA</span>
+        <p className="beta-strip-text">
+          <span className="beta-strip-long">
+            You're in the Aquacellum closed beta. Everything runs in <strong>test mode</strong>, no real money.
+            Use the <strong>Feedback</strong> button to report issues.
+          </span>
+          {/* Phones: the same facts, short enough for one line. */}
+          <span className="beta-strip-short"><strong>Test mode</strong>, no real money</span>
+        </p>
         <button
+          type="button"
           onClick={() => setExpanded(!expanded)}
-          style={styles.expandToggle}
+          className="beta-strip-toggle"
           aria-expanded={expanded}
           aria-controls="beta-limitations"
         >
-          <span style={styles.expandIcon}>{expanded ? "▾" : "▸"}</span>
-          Known Beta Limitations
+          <span className="beta-strip-long">Known limitations</span>
+          <span className="beta-strip-short">Limitations</span>
+          <span aria-hidden="true" className="beta-strip-caret">{expanded ? "▴" : "▾"}</span>
         </button>
-
-        {expanded && (
-          <ul id="beta-limitations" style={styles.limitationsList}>
-            <li style={{...styles.limitationItem, marginBottom: "0.4rem", fontSize: "0.72rem", color: "var(--text-muted)", fontStyle: "italic" }}>
-              What this means for you: everything works, but these are the rough edges we're still smoothing out.
-            </li>
-            <li style={styles.limitationItem}>
-              <span style={styles.limitationIcon}>🔐</span>
-              <span>
-                <strong>Tank data isn't fully private yet.</strong> We're building the auth bridge now — for this beta, 
-                don't store anything sensitive in tank notes or profiles.
-              </span>
-            </li>
-            <li style={styles.limitationItem}>
-              <span style={styles.limitationIcon}>🏆</span>
-              <span>
-                <strong>XP & leaderboards are for fun right now.</strong> They're stored locally and can be edited 
-                in DevTools. We'll verify all scores server-side before issuing any real rewards.
-              </span>
-            </li>
-            <li style={styles.limitationItem}>
-              <span style={styles.limitationIcon}>⛽</span>
-              <span>
-                <strong>Background sync may be slow during peak hours.</strong> Everything saves instantly on your device, 
-                but syncing to our servers might take a moment during busy periods. If something seems stuck, just retry.
-              </span>
-            </li>
-            <li style={styles.limitationItem}>
-              <span style={styles.limitationIcon}>🔄</span>
-              <span>
-                <strong>We may need to reset data between updates.</strong> Use Settings → Export to back up regularly.
-                We'll always give advance notice before any planned reset.
-              </span>
-            </li>
-            <li style={styles.limitationItem}>
-              <span style={styles.limitationIcon}>🤖</span>
-              <span>
-                <strong>Poseidon is smart but not perfect.</strong> AI advice is grounded in our species database, 
-                but always cross-reference with your own experience for sensitive species.
-              </span>
-            </li>
-          </ul>
-        )}
+        <button
+          type="button"
+          onClick={handleDismiss}
+          className="beta-strip-close"
+          aria-label="Dismiss beta notice"
+          title="Dismiss"
+        >
+          &times;
+        </button>
       </div>
+
+      <ul id="beta-limitations" className="beta-strip-list" hidden={!expanded}>
+        <li className="beta-strip-lead">
+          What this means for you: everything works, but these are the rough edges we're still smoothing out.
+        </li>
+        <li>
+          <span aria-hidden="true">🔐</span>
+          <span>
+            <strong>Tank data isn't fully private yet.</strong> We're building the auth bridge now. For this beta,
+            don't store anything sensitive in tank notes or profiles.
+          </span>
+        </li>
+        <li>
+          <span aria-hidden="true">🏆</span>
+          <span>
+            <strong>XP and leaderboards are for fun right now.</strong> They're stored locally and can be edited
+            in DevTools. We'll verify all scores server-side before issuing any real rewards.
+          </span>
+        </li>
+        <li>
+          <span aria-hidden="true">⛽</span>
+          <span>
+            <strong>Background sync may be slow during peak hours.</strong> Everything saves instantly on your device,
+            but syncing to our servers might take a moment during busy periods. If something seems stuck, retry.
+          </span>
+        </li>
+        <li>
+          <span aria-hidden="true">🔄</span>
+          <span>
+            <strong>We may need to reset data between updates.</strong> Use Settings → Export to back up regularly.
+            We'll always give advance notice before any planned reset.
+          </span>
+        </li>
+        <li>
+          <span aria-hidden="true">🤖</span>
+          <span>
+            <strong>Poseidon is smart but not perfect.</strong> AI advice is grounded in our species database,
+            but always cross-reference with your own experience for sensitive species.
+          </span>
+        </li>
+      </ul>
     </div>
   );
 }
-
-const styles = {
-  banner: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "0",
-    padding: "0.75rem 1.25rem",
-    marginBottom: "1rem",
-    borderRadius: "10px",
-    background: "linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(56, 189, 248, 0.04) 100%)",
-    border: "1px solid rgba(56, 189, 248, 0.2)",
-    backdropFilter: "blur(8px)",
-  },
-  content: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "0.5rem",
-    flex: 1,
-    minWidth: 0,
-  },
-  topRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "0.75rem",
-  },
-  badge: {
-    flexShrink: 0,
-    fontSize: "0.65rem",
-    fontWeight: 700,
-    letterSpacing: "0.1em",
-    color: "#fff",
-    backgroundColor: "var(--accent-blue-fill)",
-    padding: "0.2rem 0.5rem",
-    borderRadius: "4px",
-  },
-  text: {
-    margin: 0,
-    fontSize: "0.82rem",
-    color: "var(--text-muted)",
-    lineHeight: 1.5,
-    flex: 1,
-  },
-  closeBtn: {
-    flexShrink: 0,
-    background: "none",
-    border: "none",
-    color: "var(--text-muted)",
-    fontSize: "1.25rem",
-    cursor: "pointer",
-    padding: "0.25rem 0.5rem",
-    borderRadius: "4px",
-    lineHeight: 1,
-  },
-  expandToggle: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "0.4rem",
-    background: "none",
-    border: "none",
-    color: "var(--accent-blue)",
-    fontSize: "0.75rem",
-    fontWeight: 500,
-    cursor: "pointer",
-    padding: "0.25rem 0",
-    fontFamily: "'Plus Jakarta Sans', sans-serif",
-  },
-  expandIcon: {
-    fontSize: "0.7rem",
-    lineHeight: 1,
-  },
-  limitationsList: {
-    listStyle: "none",
-    margin: "0.25rem 0 0 0",
-    padding: "0.5rem 0.75rem",
-    display: "flex",
-    flexDirection: "column",
-    gap: "0.5rem",
-    borderTop: "1px solid rgba(56, 189, 248, 0.1)",
-    paddingTop: "0.6rem",
-  },
-  limitationItem: {
-    display: "flex",
-    alignItems: "flex-start",
-    gap: "0.5rem",
-    fontSize: "0.78rem",
-    color: "var(--text-muted)",
-    lineHeight: 1.4,
-  },
-  limitationIcon: {
-    flexShrink: 0,
-    fontSize: "0.85rem",
-    marginTop: "0.05rem",
-  },
-};

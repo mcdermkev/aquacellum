@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspens
 import { useNavigate, useLocation } from "react-router-dom";
 import "./styles/index.css";
 import "./styles/storefront-setup.css";
-import { GlobeHemisphereWest } from "@phosphor-icons/react";
 import { ConnectWallet } from "./components/ConnectWallet";
 import { useScrollAffordance } from "./hooks/useScrollAffordance";
 import { CartButton } from "./components/cart/CartButton";
@@ -21,7 +20,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import managerAbi from "./abi/AquadexManager.json";
 import marketplaceAbi from "./abi/AquadexMarketplace.json";
 import { useXPSync } from "./hooks/useXPSync";
-import { ModeSegmentedControl } from "./components/ModeSegmentedControl";
+import { AppTopBar } from "./components/AppTopBar";
+import { AppFooter } from "./components/AppFooter";
 import { ProfileHub } from "./components/ProfileHub";
 import { StarterQuestCard } from "./components/StarterQuestCard";
 import { CasualBottomNav } from "./components/CasualBottomNav";
@@ -1063,7 +1063,7 @@ export default function App() {
       && (!account || (commerceRoute.requiresVerifiedSession && !authenticated));
     if (lacksCommerceAccess) {
       const titles = {
-        checkout: "Sign in with your Aquadex account to continue to checkout",
+        checkout: "Sign in with your Aquacellum account to continue to checkout",
         orders: "Sign in to view your orders",
         messages: "Sign in to view your messages",
         "breeder-terminal": "Sign in to manage your storefront",
@@ -1084,7 +1084,7 @@ export default function App() {
           <CommerceRouteNotice
             title="Live availability check required"
             message={isOnline
-              ? "Aquadex is loading the authoritative marketplace catalog. Checkout stays blocked until that check succeeds."
+              ? "Aquacellum is loading the authoritative marketplace catalog. Checkout stays blocked until that check succeeds."
               : "Reconnect to the internet before checkout. Offline cart snapshots can be edited, but they cannot start payment."}
             actionLabel="Review cart"
             onAction={() => navigateCommerce("/app/cart")}
@@ -1412,238 +1412,53 @@ export default function App() {
   return (
     <>
     <NetworkStatusBanner />
-    <div className={casualModeActive ? "app-content app-content--casual" : "app-content"} style={{ padding: "2rem max(2rem, (100vw - 1200px) / 2)", minHeight: "100vh" }}>
+    <div className={casualModeActive ? "app-content app-content--casual" : "app-content"}>
       <BetaBanner />
-      {/* Premium Header Nav Bar — Redesigned v2 */}
-      <header 
-        className={`aquadex-header glass-card ${casualModeActive ? "aquadex-header--casual" : "aquadex-header--pro"}`}
-        style={{ 
-          display: "flex", 
-          flexDirection: "column",
-          padding: "0",
-          marginBottom: "2rem",
-          borderRadius: "var(--radius-md)",
-          overflow: "visible",
-          border: casualModeActive 
-            ? "1px solid rgba(56, 189, 248, 0.12)" 
-            : "1px solid rgba(168, 85, 247, 0.15)",
-          boxShadow: casualModeActive
-            ? "var(--glass-shadow)"
-            : "var(--glass-shadow)",
-          transition: "border-color 0.35s ease, box-shadow 0.35s ease",
+      {/* ONE PRODUCT. The app's top bar is the public site nav (public/js/nav.js):
+          same 64px white strip, same Aquacellum lockup going home to "/", same
+          type. The app's own controls sit on the right. Styles: .app-topbar in
+          styles/index.css. */}
+      <AppTopBar
+        casualModeActive={casualModeActive}
+        onToggleMode={(newCasualVal) => {
+          setCasualModeActive(newCasualVal);
+          localStorage.setItem("aquadex_casual_mode", newCasualVal.toString());
         }}
       >
-        {/* Main header content area */}
-        <div className="aquadex-header-main" style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "1rem 1.5rem",
-          gap: "1rem",
-          flexWrap: "wrap",
-        }}>
-          {/* Zone 1: Logo + Identity */}
-          <div className="aquadex-header-identity" style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: "0" }}>
-            <div style={{
-              background: casualModeActive 
-                ? "linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)"
-                : "linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)",
-              width: "36px",
-              height: "36px",
-              borderRadius: "10px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: casualModeActive 
-                ? "0 2px 8px rgba(3, 105, 161, 0.25)"
-                : "0 2px 8px rgba(124, 58, 237, 0.25)",
-              transition: "background 0.35s ease, box-shadow 0.35s ease",
-              flexShrink: 0,
-            }}>
-              <GlobeHemisphereWest size={18} weight="duotone" color="#fff" />
-            </div>
-            <div style={{ minWidth: "0" }}>
-              <h1 className="aquadex-header-title" style={{ 
-                fontSize: "1.25rem", 
-                fontWeight: "700", 
-                letterSpacing: "0.04em", 
-                color: "var(--text-primary)", 
-                margin: 0,
-                lineHeight: "1.2"
-              }}>
-                AQUADEX
-              </h1>
-              <span style={{ 
-                fontSize: "0.6rem", 
-                color: "var(--text-muted)", 
-                letterSpacing: "0.08em", 
-                textTransform: "uppercase", 
-                display: "block",
-                lineHeight: "1.4"
-              }}>
-                {casualModeActive ? "Digital Aquarium Log" : "Breeder Protocol"}
-              </span>
-            </div>
-          </div>
-
-          {/* Zone 2: Mode Segmented Control (center) */}
-          <div className="aquadex-header-mode" style={{ 
-            flex: "0 1 380px", 
-            display: "flex", 
-            justifyContent: "center",
-            minWidth: "200px"
-          }}>
-            <ModeSegmentedControl 
-              casualModeActive={casualModeActive}
-              onToggle={(newCasualVal) => {
-                setCasualModeActive(newCasualVal);
-                localStorage.setItem("aquadex_casual_mode", newCasualVal.toString());
-              }}
-            />
-          </div>
-
-          {/* Zone 3: Status + Wallet (right) */}
-          <div className="aquadex-header-status" style={{ 
-            display: "flex", 
-            alignItems: "center", 
-            gap: "0.75rem",
-            flexShrink: 0,
-          }}>
-            {!isOnline && (
-              <span style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.35rem",
-                padding: "0.3rem 0.65rem",
-                background: "rgba(248, 113, 113, 0.08)",
-                border: "1px solid rgba(248, 113, 113, 0.2)",
-                borderRadius: "50px",
-                color: "var(--accent-red)",
-                fontSize: "0.65rem",
-                fontWeight: "600",
-              }}>
-                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--accent-red)" }} />
-                Offline
-              </span>
-            )}
-            {isOnline && (
-              <button
-                onClick={() => queryClient.invalidateQueries()}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.35rem",
-                  padding: "0.3rem 0.65rem",
-                  background: "rgba(52, 211, 153, 0.04)",
-                  border: "1px solid rgba(52, 211, 153, 0.15)",
-                  borderRadius: "50px",
-                  color: "var(--text-muted)",
-                  fontSize: "0.65rem",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                  minHeight: "30px",
-                }}
-                aria-label="Sync status — click to refresh"
-                title="Synced — click to refresh"
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(52, 211, 153, 0.4)"; e.currentTarget.style.color = "var(--text-primary)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(52, 211, 153, 0.15)"; e.currentTarget.style.color = "var(--text-muted)"; }}
-              >
-                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--accent-green)", boxShadow: "0 0 4px var(--accent-green)" }} />
-                <span className="sync-status-text">{casualModeActive ? "Saved" : "Synced"}</span>
-              </button>
-            )}
-            <CartButton onOpen={() => setIsCartOpen(true)} />
-            <ConnectWallet 
-              onConnected={handleWalletConnected} 
-              onDisconnected={handleWalletDisconnected} 
-              casualModeActive={casualModeActive}
-              triggerLoginOnEntry={triggerLoginOnEntry}
-              clearTriggerLogin={() => setTriggerLoginOnEntry(false)}
-            />
-          </div>
-        </div>
-
-        {/* XP Progress Bar — full-width at header bottom */}
-        <div className="aquadex-header-xp" style={{
-          display: "flex",
-          alignItems: "center",
-          padding: casualModeActive ? "0.5rem 1.5rem 0.65rem" : "0.35rem 1.5rem 0.45rem",
-          gap: "0.75rem",
-          borderTop: "1px solid rgba(var(--ink-rgb), 0.09)",
-          background: "var(--bg-band)",
-          opacity: casualModeActive ? 1 : 0.7,
-          borderRadius: "0 0 var(--radius-md) var(--radius-md)",
-        }}>
-          {/* Level badge */}
-          <span style={{ 
-            fontSize: "0.7rem", 
-            fontWeight: "600", 
-            color: casualModeActive ? "var(--accent-amber)" : "var(--text-secondary)",
-            whiteSpace: "nowrap",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.35rem",
-          }}>
-            {casualModeActive ? `✨ Lvl ${levelInfo.level}` : `Tier ${levelInfo.level}`}
-            {casualModeActive && (
-              <span style={{ color: "var(--text-muted)", fontWeight: "400", fontSize: "0.65rem" }}>
-                {levelInfo.badge}
-              </span>
-            )}
+        {!isOnline && (
+          <span className="app-topbar-status app-topbar-status--offline" role="status">
+            <span className="app-topbar-status-dot" aria-hidden="true" />
+            <span>Offline</span>
           </span>
-
-          {/* Species count chip */}
-          {speciesCount > 0 && (
-            <span style={{
-              fontSize: "0.62rem",
-              fontWeight: "500",
-              color: "var(--accent-green)",
-              background: "rgba(52, 211, 153, 0.08)",
-              border: "1px solid rgba(52, 211, 153, 0.2)",
-              borderRadius: "12px",
-              padding: "0.1rem 0.45rem",
-              whiteSpace: "nowrap",
-            }}>
-              🐠 {speciesCount} species
-            </span>
-          )}
-
-          {/* Progress bar */}
-          <div style={{ 
-            flex: 1, 
-            height: "4px", 
-            background: "rgba(var(--ink-rgb), 0.04)", 
-            borderRadius: "10px", 
-            overflow: "hidden",
-            position: "relative",
-          }}>
-            <div style={{ 
-              width: `${levelInfo.nextLevelXp ? ((xp - levelInfo.baseXp) / (levelInfo.nextLevelXp - levelInfo.baseXp)) * 100 : 100}%`, 
-              height: "100%", 
-              background: casualModeActive 
-                ? "linear-gradient(90deg, #fbbf24, #f59e0b)"
-                : "linear-gradient(90deg, #a855f7, #7c3aed)",
-              borderRadius: "10px",
-              boxShadow: casualModeActive 
-                ? "none"
-                : "none",
-              transition: "width 0.4s ease-out, background 0.35s ease"
-            }} />
-          </div>
-
-          {/* XP count */}
-          <span style={{ 
-            fontSize: "0.65rem", 
-            color: "var(--text-muted)", 
-            fontFamily: "monospace",
-            whiteSpace: "nowrap",
-          }}>
-            {xp} / {levelInfo.nextLevelXp || "MAX"} {casualModeActive ? "pts" : "XP"}
-          </span>
+        )}
+        {isOnline && (
+          <button
+            type="button"
+            className="app-topbar-status"
+            onClick={() => queryClient.invalidateQueries()}
+            aria-label={casualModeActive ? "Saved. Refresh data" : "Synced. Refresh data"}
+            title={casualModeActive ? "Saved. Click to refresh" : "Synced. Click to refresh"}
+          >
+            <span className="app-topbar-status-dot" aria-hidden="true" />
+            <span className="sync-status-text">{casualModeActive ? "Saved" : "Synced"}</span>
+          </button>
+        )}
+        <CartButton onOpen={() => setIsCartOpen(true)} />
+        <div className="app-topbar-account">
+          <ConnectWallet 
+            onConnected={handleWalletConnected} 
+            onDisconnected={handleWalletDisconnected} 
+            casualModeActive={casualModeActive}
+            triggerLoginOnEntry={triggerLoginOnEntry}
+            clearTriggerLogin={() => setTriggerLoginOnEntry(false)}
+          />
         </div>
-      </header>
+      </AppTopBar>
 
-      {/* Tabs Subnavigation — Premium Glassmorphic Pill Bar */}
+      {/* The app's own sections, as a flat strip under the top bar (the public
+          nav's link style), with progress at its right end. */}
+      <div className={`app-subnav ${casualModeActive ? "app-subnav--casual" : "app-subnav--pro"}`}>
+        <div className="app-subnav-inner">
       {account && (
         <nav
           aria-label="Main navigation"
@@ -1653,8 +1468,7 @@ export default function App() {
           // removed its scroll listener, and did not react to resize or to the tab
           // count changing with mode/role. useScrollAffordance handles all three.
           ref={navScrollRef}
-          className={`aquadex-nav glass-card ${casualModeActive ? "aquadex-nav--casual" : "aquadex-nav--pro"}`}
-          style={{ marginBottom: "2rem" }}
+          className={`aquadex-nav ${casualModeActive ? "aquadex-nav--casual" : "aquadex-nav--pro"}`}
         >
           {/* Tab helper: render a single pill button */}
           {[
@@ -1684,13 +1498,14 @@ export default function App() {
               return (
                 <button
                   key={tab.id}
+                  type="button"
                   data-tour-id={tab.tourId || undefined}
                   onClick={() => handleTabChange(tab.id)}
                   className={`aquadex-nav-tab${isActive ? " aquadex-nav-tab--active" : ""}`}
                   aria-current={isActive ? "page" : undefined}
                   style={{ position: "relative" }}
                 >
-                  <span className="aquadex-nav-tab-icon">{tab.icon}</span>
+                  <span className="aquadex-nav-tab-icon" aria-hidden="true">{tab.icon}</span>
                   <span className="aquadex-nav-tab-label">{tab.label}</span>
                   {tab.badge && (
                     <span
@@ -1721,6 +1536,38 @@ export default function App() {
         </nav>
       )}
 
+          {/* Progress — was a full-width row inside the old header card. */}
+          {(() => {
+            const span = levelInfo.nextLevelXp ? levelInfo.nextLevelXp - levelInfo.baseXp : 0;
+            const pct = span > 0 ? Math.max(0, Math.min(100, ((xp - levelInfo.baseXp) / span) * 100)) : 100;
+            return (
+              <div className="app-xp">
+                <span className={`app-xp-level${casualModeActive ? " app-xp-level--casual" : ""}`}>
+                  {casualModeActive ? `✨ Lvl ${levelInfo.level}` : `Tier ${levelInfo.level}`}
+                  {casualModeActive && <span className="app-xp-badge">{levelInfo.badge}</span>}
+                </span>
+                {speciesCount > 0 && (
+                  <span className="app-xp-species">🐠 {speciesCount} species</span>
+                )}
+                <div
+                  className="app-xp-track"
+                  role="progressbar"
+                  aria-label={casualModeActive ? "Progress to next level" : "Progress to next tier"}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(pct)}
+                >
+                  <div className={`app-xp-fill${casualModeActive ? "" : " app-xp-fill--pro"}`} style={{ width: `${pct}%` }} />
+                </div>
+                <span className="app-xp-count">
+                  {xp} / {levelInfo.nextLevelXp || "MAX"} {casualModeActive ? "pts" : "XP"}
+                </span>
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+
       {/* Casual mobile bottom tab bar (hidden on wider screens + in Pro via CSS) */}
       {account && casualModeActive && (
         <CasualBottomNav
@@ -1731,7 +1578,7 @@ export default function App() {
       )}
 
       {/* Main Content Area */}
-      <main style={{ perspective: "1000px" }}>
+      <main className="app-main" style={{ perspective: "1000px" }}>
         <style>
           {`
             @keyframes pulse-glow {
@@ -1816,7 +1663,7 @@ export default function App() {
           backdropFilter: "blur(12px)",
           fontSize: "0.82rem",
           color: "var(--text-primary)",
-          fontFamily: "'Plus Jakarta Sans', sans-serif",
+          fontFamily: "inherit",
           maxWidth: "90vw",
         }}>
           {syncStatus === "syncing" && (
@@ -1927,16 +1774,12 @@ export default function App() {
       </div>
 
       {/* Footer */}
-      <footer style={{ marginTop: "5rem", textAlign: "center", paddingBottom: "2rem" }}>
-        <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-          Aquadex Protocol © {new Date().getFullYear()} — Digital aquarium management and specimen registries.
-        </p>
+      {/* Footer — the public site footer (public/js/footer.js), same links. */}
+      <AppFooter onNavigate={(path) => { navigate(path); window.scrollTo(0, 0); }}>
         {lastSyncedAt && account && (
-          <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", opacity: 0.6, marginTop: "0.4rem" }}>
-            ☁️ Last synced: {formatSyncTime(lastSyncedAt)}
-          </p>
+          <span className="app-footer-sync">Last synced: {formatSyncTime(lastSyncedAt)}</span>
         )}
-      </footer>
+      </AppFooter>
 
       {/* Specimen Detail Modal Overlay */}
       {selectedSpecimenId && (

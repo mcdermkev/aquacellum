@@ -58,7 +58,8 @@ export async function seed(page, fixture) {
 /** Reload so the app's queries (useUserTanks etc.) re-mount against seeded data. */
 export async function reloadDashboard(page) {
   await page.reload();
-  await page.getByText("AQUADEX", { exact: true }).first().waitFor({ state: "visible" });
+  // The app's top bar wordmark (AppTopBar.jsx), the same lockup as the public nav.
+  await page.getByText("AQUACELLUM", { exact: true }).first().waitFor({ state: "visible" });
 }
 
 /** Read a Dexie table (or a filtered slice of it) from in-page state for assertions. */

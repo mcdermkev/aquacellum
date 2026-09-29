@@ -14,7 +14,34 @@
    500/600 for buttons, bars and dots.
 
    Tints: use rgba(var(--ink-rgb), a) where v1 used rgba(255,255,255,a).
+
+   ONE PRODUCT (2026-09-29). The React app at /app/* uses the same type pair
+   (Inter for text, Outfit for display), the same 64px top bar and logo lockup,
+   and the same footer links (src/styles/index.css: .app-topbar, .app-footer).
+   Same-origin navigations between these pages and the app cross-fade via the
+   View Transitions rule below. Keep the two sides in step.
    ========================================= */
+
+/* The shared type pair. Same URL most pages already <link>, so the browser
+   reuses the response; pages that load other families (marketplace, order)
+   still get the nav and footer in the right fonts. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ─── CROSS-PAGE TRANSITIONS ─────────────── */
+/* Same-origin navigations (public page <-> public page <-> /app) cross-fade in
+   browsers that support cross-document view transitions; others navigate as
+   before. The top bar carries one name on both sides so it holds still while
+   the page under it changes. */
+@view-transition { navigation: auto; }
+.nav { view-transition-name: site-header; }
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: 180ms; }
+@media (prefers-reduced-motion: reduce) {
+  @view-transition { navigation: none; }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+}
 
 /* ─── DESIGN TOKENS ─────────────────────── */
 :root {
@@ -238,6 +265,10 @@ ul, ol { list-style: none; }
 .border-cyan:hover, .border-amber:hover { box-shadow: var(--shadow-md) !important; }
 
 /* ─── NAVIGATION ─────────────────────────── */
+/* nav.js renders .nav INSIDE <header id="site-nav">, so .nav's own sticky was
+   bounded by that header and never actually stuck. The header is the sticky
+   box; it also keeps the mobile menu attached under the bar. */
+#site-nav { position: sticky; top: 0; z-index: 1000; }
 .nav {
   position: sticky;
   top: 0;
@@ -348,6 +379,15 @@ ul, ol { list-style: none; }
   backdrop-filter: blur(16px);
 }
 .nav-mobile-menu.open { display: block; }
+.nav-mobile-menu[hidden] { display: none; }
+.nav-mobile-menu .nav-mobile-cta {
+  margin-bottom: 8px;
+  text-align: center;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #0d9488, #0284c7);
+}
+.nav-mobile-menu .nav-mobile-cta:hover { color: #fff; background: linear-gradient(135deg, #0f766e, #0369a1); }
 .nav-mobile-menu a {
   display: block;
   padding: 10px 14px;
