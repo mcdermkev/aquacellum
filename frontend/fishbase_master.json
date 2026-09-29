@@ -23730,7 +23730,7 @@
     "family": "Nothobranchiidae",
     "type": "fish",
     "maxLengthCm": 6,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/fundulopanchax-scheeli.jpg",
     "tankMetrics": {
       "difficulty": "Intermediate"
     },
@@ -24661,7 +24661,7 @@
     "family": "Callichthyidae",
     "type": "fish",
     "maxLengthCm": 5.8,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/corydoras-melanotaenia.jpg",
     "tankMetrics": {
       "difficulty": "Unknown"
     },
@@ -24759,7 +24759,7 @@
     "family": "Callichthyidae",
     "type": "fish",
     "maxLengthCm": 5.48,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/corydoras-acutus.jpg",
     "tankMetrics": {
       "difficulty": "Unknown"
     },
@@ -25690,7 +25690,7 @@
     "family": "Osphronemidae",
     "type": "fish",
     "maxLengthCm": 5,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/betta-rubra.jpg",
     "tankMetrics": {
       "difficulty": "Unknown"
     },
@@ -25788,7 +25788,7 @@
     "family": "Osphronemidae",
     "type": "fish",
     "maxLengthCm": 5.49,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/betta-taeniata.jpg",
     "tankMetrics": {
       "difficulty": "Unknown"
     },
@@ -27112,7 +27112,7 @@
     "family": "Pomacentridae",
     "type": "fish",
     "maxLengthCm": 11,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/amphiprion-ocellaris.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -27180,7 +27180,7 @@
     "family": "Pomacentridae",
     "type": "fish",
     "maxLengthCm": 11,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/amphiprion-percula.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -27248,7 +27248,7 @@
     "family": "Pomacentridae",
     "type": "fish",
     "maxLengthCm": 17,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/amphiprion-biaculeatus.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -27316,7 +27316,7 @@
     "family": "Pomacentridae",
     "type": "fish",
     "maxLengthCm": 7,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/chrysiptera-parasema.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -27384,7 +27384,7 @@
     "family": "Pomacentridae",
     "type": "fish",
     "maxLengthCm": 10,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/chromis-viridis.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -27452,7 +27452,7 @@
     "family": "Pomacentridae",
     "type": "fish",
     "maxLengthCm": 10,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/dascyllus-aruanus.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -27520,7 +27520,7 @@
     "family": "Acanthuridae",
     "type": "fish",
     "maxLengthCm": 20,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/zebrasoma-flavescens.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -27588,7 +27588,7 @@
     "family": "Acanthuridae",
     "type": "fish",
     "maxLengthCm": 31,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/paracanthurus-hepatus.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -27656,7 +27656,7 @@
     "family": "Acanthuridae",
     "type": "fish",
     "maxLengthCm": 54,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/acanthurus-leucosternon.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         24,
@@ -27724,7 +27724,7 @@
     "family": "Acanthuridae",
     "type": "fish",
     "maxLengthCm": 36.7,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/zebrasoma-xanthurum.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -27792,7 +27792,7 @@
     "family": "Pomacanthidae",
     "type": "fish",
     "maxLengthCm": 15,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/centropyge-loriculus.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -27861,7 +27861,7 @@
     "family": "Pomacanthidae",
     "type": "fish",
     "maxLengthCm": 11.5,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/centropyge-bispinosa.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -27929,7 +27929,7 @@
     "family": "Pomacanthidae",
     "type": "fish",
     "maxLengthCm": 40,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/pomacanthus-imperator.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -27997,7 +27997,7 @@
     "family": "Grammatidae",
     "type": "fish",
     "maxLengthCm": 8,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/gramma-loreto.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -28065,7 +28065,7 @@
     "family": "Pseudochromidae",
     "type": "fish",
     "maxLengthCm": 6.3,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/pseudochromis-fridmani.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -28133,7 +28133,7 @@
     "family": "Callionymidae",
     "type": "fish",
     "maxLengthCm": 7,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/synchiropus-splendidus.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -28201,7 +28201,7 @@
     "family": "Gobiidae",
     "type": "fish",
     "maxLengthCm": 5,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/elacatinus-oceanops.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -28269,7 +28269,7 @@
     "family": "Microdesmidae",
     "type": "fish",
     "maxLengthCm": 9,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/nemateleotris-magnifica.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -28337,7 +28337,7 @@
     "family": "Gobiidae",
     "type": "fish",
     "maxLengthCm": 15,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/amblygobius-phalaena.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -28405,7 +28405,7 @@
     "family": "Blenniidae",
     "type": "fish",
     "maxLengthCm": 14,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/salarias-fasciatus.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -28474,7 +28474,7 @@
     "family": "Blenniidae",
     "type": "fish",
     "maxLengthCm": 11,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/ecsenius-bicolor.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -28542,7 +28542,7 @@
     "family": "Apogonidae",
     "type": "fish",
     "maxLengthCm": 8.6,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/pterapogon-kauderni.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         24,
@@ -28610,7 +28610,7 @@
     "family": "Apogonidae",
     "type": "fish",
     "maxLengthCm": 8.5,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/sphaeramia-nematoptera.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -28678,7 +28678,7 @@
     "family": "Scorpaenidae",
     "type": "fish",
     "maxLengthCm": 45.7,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/pterois-volitans.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -28746,7 +28746,7 @@
     "family": "Labridae",
     "type": "fish",
     "maxLengthCm": 14,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/labroides-dimidiatus.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -28814,7 +28814,7 @@
     "family": "Labridae",
     "type": "fish",
     "maxLengthCm": 12,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/halichoeres-chrysus.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -28882,7 +28882,7 @@
     "family": "Anthiadidae",
     "type": "fish",
     "maxLengthCm": 15,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/pseudanthias-squamipinnis.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -28950,7 +28950,7 @@
     "family": "Chaetodontidae",
     "type": "fish",
     "maxLengthCm": 20,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/chelmon-rostratus.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         24,
@@ -29019,7 +29019,7 @@
     "family": "Syngnathidae",
     "type": "fish",
     "maxLengthCm": 30,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/hippocampus-kuda.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         22,
@@ -29088,7 +29088,7 @@
     "family": "Siganidae",
     "type": "fish",
     "maxLengthCm": 25,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/siganus-vulpinus.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -29156,7 +29156,7 @@
     "family": "Cirrhitidae",
     "type": "fish",
     "maxLengthCm": 13,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/oxycirrhites-typus.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -29224,7 +29224,7 @@
     "family": "Tetraodontidae",
     "type": "fish",
     "maxLengthCm": 11,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/canthigaster-valentini.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -29292,7 +29292,7 @@
     "family": "Opistognathidae",
     "type": "fish",
     "maxLengthCm": 10,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/opistognathus-aurifrons.jpg",
     "tankMetrics": {
       "tempRangeCelsius": [
         23,
@@ -29359,7 +29359,7 @@
     "family": "Acroporidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/acropora-millepora.jpg",
     "tankMetrics": {
       "minVolumeGallons": 30,
       "tempRangeCelsius": [
@@ -29419,7 +29419,7 @@
     "family": "Acroporidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/montipora-capricornis.jpg",
     "tankMetrics": {
       "minVolumeGallons": 20,
       "tempRangeCelsius": [
@@ -29479,7 +29479,7 @@
     "family": "Acroporidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/montipora-digitata.jpg",
     "tankMetrics": {
       "minVolumeGallons": 20,
       "tempRangeCelsius": [
@@ -29539,7 +29539,7 @@
     "family": "Pocilloporidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/seriatopora-hystrix.jpg",
     "tankMetrics": {
       "minVolumeGallons": 30,
       "tempRangeCelsius": [
@@ -29599,7 +29599,7 @@
     "family": "Pocilloporidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/stylophora-pistillata.jpg",
     "tankMetrics": {
       "minVolumeGallons": 20,
       "tempRangeCelsius": [
@@ -29659,7 +29659,7 @@
     "family": "Pocilloporidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/pocillopora-damicornis.jpg",
     "tankMetrics": {
       "minVolumeGallons": 20,
       "tempRangeCelsius": [
@@ -29719,7 +29719,7 @@
     "family": "Euphylliidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/euphyllia-glabrescens.jpg",
     "tankMetrics": {
       "minVolumeGallons": 30,
       "tempRangeCelsius": [
@@ -29779,7 +29779,7 @@
     "family": "Euphylliidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/fimbriaphyllia-ancora.jpg",
     "tankMetrics": {
       "minVolumeGallons": 30,
       "tempRangeCelsius": [
@@ -29839,7 +29839,7 @@
     "family": "Dendrophylliidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/duncanopsammia-axifuga.jpg",
     "tankMetrics": {
       "minVolumeGallons": 20,
       "tempRangeCelsius": [
@@ -29899,7 +29899,7 @@
     "family": "Fungiidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/fungia-fungites.jpg",
     "tankMetrics": {
       "minVolumeGallons": 30,
       "tempRangeCelsius": [
@@ -29959,7 +29959,7 @@
     "family": "Merulinidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/trachyphyllia-geoffroyi.jpg",
     "tankMetrics": {
       "minVolumeGallons": 30,
       "tempRangeCelsius": [
@@ -30019,7 +30019,7 @@
     "family": "Lobophylliidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/micromussa-lordhowensis.jpg",
     "tankMetrics": {
       "minVolumeGallons": 20,
       "tempRangeCelsius": [
@@ -30079,7 +30079,7 @@
     "family": "Merulinidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/caulastraea-furcata.jpg",
     "tankMetrics": {
       "minVolumeGallons": 20,
       "tempRangeCelsius": [
@@ -30139,7 +30139,7 @@
     "family": "Plerogyridae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/blastomussa-wellsi.jpg",
     "tankMetrics": {
       "minVolumeGallons": 20,
       "tempRangeCelsius": [
@@ -30199,7 +30199,7 @@
     "family": "Sarcophytidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/sarcophyton-glaucum.jpg",
     "tankMetrics": {
       "minVolumeGallons": 20,
       "tempRangeCelsius": [
@@ -30259,7 +30259,7 @@
     "family": "Sarcophytidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/sclerophytum-flexibile.jpg",
     "tankMetrics": {
       "minVolumeGallons": 20,
       "tempRangeCelsius": [
@@ -30319,7 +30319,7 @@
     "family": "Xeniidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/xenia-umbellata.jpg",
     "tankMetrics": {
       "minVolumeGallons": 10,
       "tempRangeCelsius": [
@@ -30379,7 +30379,7 @@
     "family": "Clavulariidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/clavularia-viridis.jpg",
     "tankMetrics": {
       "minVolumeGallons": 10,
       "tempRangeCelsius": [
@@ -30439,7 +30439,7 @@
     "family": "Briareidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/briareum-violaceum.jpg",
     "tankMetrics": {
       "minVolumeGallons": 10,
       "tempRangeCelsius": [
@@ -30499,7 +30499,7 @@
     "family": "Zoanthidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/zoanthus-sociatus.jpg",
     "tankMetrics": {
       "minVolumeGallons": 10,
       "tempRangeCelsius": [
@@ -30559,7 +30559,7 @@
     "family": "Sphenopidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/palythoa-grandis.jpg",
     "tankMetrics": {
       "minVolumeGallons": 10,
       "tempRangeCelsius": [
@@ -30619,7 +30619,7 @@
     "family": "Discosomidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/discosoma-nummiforme.jpg",
     "tankMetrics": {
       "minVolumeGallons": 10,
       "tempRangeCelsius": [
@@ -30679,7 +30679,7 @@
     "family": "Discosomidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/rhodactis-indosinensis.jpg",
     "tankMetrics": {
       "minVolumeGallons": 10,
       "tempRangeCelsius": [
@@ -30739,7 +30739,7 @@
     "family": "Ricordeidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/ricordea-florida.jpg",
     "tankMetrics": {
       "minVolumeGallons": 20,
       "tempRangeCelsius": [
@@ -30799,7 +30799,7 @@
     "family": "Actiniidae (Coral)",
     "type": "coral",
     "maxLengthCm": null,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/entacmaea-quadricolor.jpg",
     "tankMetrics": {
       "minVolumeGallons": 30,
       "tempRangeCelsius": [
@@ -30859,7 +30859,7 @@
     "family": "Lysmatidae (Invertebrate)",
     "type": "invertebrate",
     "maxLengthCm": 6,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/lysmata-amboinensis.jpg",
     "tankMetrics": {
       "minVolumeGallons": 20,
       "tempRangeCelsius": [
@@ -30915,7 +30915,7 @@
     "family": "Lysmatidae (Invertebrate)",
     "type": "invertebrate",
     "maxLengthCm": 5,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/lysmata-debelius.jpg",
     "tankMetrics": {
       "minVolumeGallons": 20,
       "tempRangeCelsius": [
@@ -30971,7 +30971,7 @@
     "family": "Lysmatidae (Invertebrate)",
     "type": "invertebrate",
     "maxLengthCm": 5,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/lysmata-wurdemanni.jpg",
     "tankMetrics": {
       "minVolumeGallons": 10,
       "tempRangeCelsius": [
@@ -31027,7 +31027,7 @@
     "family": "Stenopodidae (Invertebrate)",
     "type": "invertebrate",
     "maxLengthCm": 7,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/stenopus-hispidus.jpg",
     "tankMetrics": {
       "minVolumeGallons": 30,
       "tempRangeCelsius": [
@@ -31083,7 +31083,7 @@
     "family": "Trochidae (Invertebrate)",
     "type": "invertebrate",
     "maxLengthCm": 3,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/trochus-histrio.jpg",
     "tankMetrics": {
       "minVolumeGallons": 10,
       "tempRangeCelsius": [
@@ -31139,7 +31139,7 @@
     "family": "Turbinidae (Invertebrate)",
     "type": "invertebrate",
     "maxLengthCm": 5,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/lithopoma-tectum.jpg",
     "tankMetrics": {
       "minVolumeGallons": 10,
       "tempRangeCelsius": [
@@ -31195,7 +31195,7 @@
     "family": "Nassariidae (Invertebrate)",
     "type": "invertebrate",
     "maxLengthCm": 2,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/phrontis-vibex.jpg",
     "tankMetrics": {
       "minVolumeGallons": 10,
       "tempRangeCelsius": [
@@ -31251,7 +31251,7 @@
     "family": "Diogenidae (Invertebrate)",
     "type": "invertebrate",
     "maxLengthCm": 2.5,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/clibanarius-tricolor.jpg",
     "tankMetrics": {
       "minVolumeGallons": 10,
       "tempRangeCelsius": [
@@ -31307,7 +31307,7 @@
     "family": "Mithracidae (Invertebrate)",
     "type": "invertebrate",
     "maxLengthCm": 5,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/mithraculus-sculptus.jpg",
     "tankMetrics": {
       "minVolumeGallons": 20,
       "tempRangeCelsius": [
@@ -31363,7 +31363,7 @@
     "family": "Temnopleuridae (Invertebrate)",
     "type": "invertebrate",
     "maxLengthCm": 5,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/mespilia-globulus.jpg",
     "tankMetrics": {
       "minVolumeGallons": 30,
       "tempRangeCelsius": [
@@ -31419,7 +31419,7 @@
     "family": "Cardiidae (Invertebrate)",
     "type": "invertebrate",
     "maxLengthCm": 35,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/tridacna-maxima.jpg",
     "tankMetrics": {
       "minVolumeGallons": 50,
       "tempRangeCelsius": [
@@ -31475,7 +31475,7 @@
     "family": "Ophidiasteridae (Invertebrate)",
     "type": "invertebrate",
     "maxLengthCm": 30,
-    "masterPhotoUrl": "",
+    "masterPhotoUrl": "/species-images/linckia-laevigata.jpg",
     "tankMetrics": {
       "minVolumeGallons": 75,
       "tempRangeCelsius": [

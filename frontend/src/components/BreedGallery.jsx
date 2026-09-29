@@ -21,6 +21,7 @@ import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";
 import { getPersonality } from "../utils/personality";
 import { SpeciesInsights } from "./reef/SpeciesInsights";
 import { SpeciesCardPremium } from "./SpeciesCardPremium";
+import { SpeciesPhotoCredit } from "./SpeciesPhotoCredit";
 import { buildGlobalCatalog, CARE_LABELS } from "../services/speciesCatalog";
 import { assessSpeciesFit } from "../services/speciesFit";
 import { CasualSpeciesDetail } from "./finder/CasualSpeciesDetail";
@@ -844,8 +845,11 @@ export function BreedGallery({
               position: "absolute",
               bottom: "1rem",
               left: "1.5rem",
+              right: "1.5rem",
               display: "flex",
               alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
               gap: "0.75rem",
             }}>
               <span style={{
@@ -859,6 +863,7 @@ export function BreedGallery({
               }}>
                 🛡️ Verified Master Photo
               </span>
+              <SpeciesPhotoCredit scientificName={selectedBreed.scientificName} style={{ textAlign: "right" }} />
             </div>
           </div>
         )}

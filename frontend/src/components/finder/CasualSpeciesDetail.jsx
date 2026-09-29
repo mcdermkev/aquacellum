@@ -14,6 +14,7 @@ import { DETAIL_COPY } from "./finderCopy";
 import { useUnitPrefs } from "../../hooks/useUnitPrefs";
 import { formatTemperatureRange } from "../../utils/units";
 import { SexingGuide } from "../SexingGuide";
+import { SpeciesPhotoCredit } from "../SpeciesPhotoCredit";
 import "./CasualSpeciesDetail.css";
 
 const isPlantEntry = (item) => !!item && item.type === "plant";
@@ -162,6 +163,12 @@ export function CasualSpeciesDetail({
 
         <h2 className="csd-name">{breed.commonName}</h2>
         <p className="csd-sci">{breed.scientificName}</p>
+        {fullProfile.masterPhotoUrl && (
+          <SpeciesPhotoCredit
+            scientificName={breed.scientificName}
+            style={{ color: "var(--text-muted)", marginBottom: "0.5rem" }}
+          />
+        )}
 
         <div className="csd-meta-row">
           {breed.difficulty?.label && (
