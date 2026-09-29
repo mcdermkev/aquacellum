@@ -43,8 +43,8 @@
               </div>
             </a>
             <p class="footer-brand-desc">
-              The intelligent platform for aquarium hobbyists and professional breeders. 
-              Track lineage, trade specimens, and discover 300+ species.
+              The go-to place for everything fish: look up 500+ freshwater and saltwater
+              species, buy from breeders, bid in auctions, and log your tanks.
             </p>
           </div>
 

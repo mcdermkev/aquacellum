@@ -88,9 +88,8 @@
             ${linksHTML}
           </div>
 
-          <a href="/index.html#waitlist" class="nav-cta">
-            <span class="pulse-dot"></span>
-            Join Beta
+          <a href="/app" class="nav-cta">
+            Open the app
           </a>
 
           <button class="nav-mobile-toggle" id="navMobileToggle" aria-label="Toggle menu" aria-expanded="false">

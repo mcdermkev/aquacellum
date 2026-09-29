@@ -13,7 +13,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 
-const PUBLIC_PAGES = ["marketplace.html", "species.html", "store.html", "database.html"];
+const PUBLIC_PAGES = ["index.html", "marketplace.html", "species.html", "store.html", "database.html"];
 
 function readFrontendFile(relative) {
   return readFileSync(fileURLToPath(new URL(`../../${relative}`, import.meta.url)), "utf8");
@@ -37,7 +37,7 @@ describe("public pages never read the raw aquadex_listings table", () => {
     });
   }
 
-  for (const page of ["marketplace.html", "species.html", "store.html"]) {
+  for (const page of ["index.html", "marketplace.html", "species.html", "store.html"]) {
     it(`${page} loads the shared helper before using it`, () => {
       // HTML comments are stripped first: they mention the global by name, and
       // a comment is not a call site.

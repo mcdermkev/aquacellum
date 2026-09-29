@@ -1946,7 +1946,11 @@
       cta.href = `/compare.html?s1=${compareSlots[0]}`;
     }
 
-    // Init
+    // Init. `?q=` pre-fills the search (the homepage links here with its query).
+    (function prefillQuery() {
+      const q = new URLSearchParams(window.location.search).get('q');
+      if (q) document.getElementById('searchInput').value = q.slice(0, 100);
+    })();
     init();
   </script>
   <script src="/js/nav.js"></script>

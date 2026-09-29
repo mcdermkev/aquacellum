@@ -109,6 +109,14 @@ const SEAM_BASELINE = [
 
   // ── Explained: the other side is outside this codebase ──────────────────
   {
+    id: "writtenNeverRead:aquadex_entered_dashboard",
+    verdict: "expected",
+    note:
+      "App.jsx writes it on mount; the reader is the static homepage (frontend/index.html, " +
+      "renderWelcome), which the analyzer does not scan. It switches the homepage bar to " +
+      "'Welcome back' shortcuts into the visitor's tanks, orders and store.",
+  },
+  {
     id: "readNeverWritten:aquacellum-reef-auth",
     verdict: "expected",
     note:

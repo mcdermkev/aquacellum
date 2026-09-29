@@ -21,8 +21,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import managerAbi from "./abi/AquadexManager.json";
 import marketplaceAbi from "./abi/AquadexMarketplace.json";
 import { useXPSync } from "./hooks/useXPSync";
-import { LandingHobbyist } from "./components/LandingHobbyist";
-import { LandingBreeder } from "./components/LandingBreeder";
 import { ModeSegmentedControl } from "./components/ModeSegmentedControl";
 import { ProfileHub } from "./components/ProfileHub";
 import { StarterQuestCard } from "./components/StarterQuestCard";
@@ -486,15 +484,13 @@ export default function App() {
     if (saved !== null) return saved === "true";
     return true;
   });
-  const [enteredDashboard, setEnteredDashboard] = useState(() => {
-    return localStorage.getItem("aquadex_entered_dashboard") === "true";
-  });
+  // No first-run landing screen: the homepage (index.html) is the front door, so
+  // /app opens straight into the app. The flag is still written because the
+  // homepage reads it to greet returning users with shortcuts into their data.
+  useEffect(() => {
+    try { localStorage.setItem("aquadex_entered_dashboard", "true"); } catch { /* private mode */ }
+  }, []);
   const [triggerLoginOnEntry, setTriggerLoginOnEntry] = useState(false);
-  // View mode (hobbyist | breeder) is derived from the ?view= query param.
-  // location.search updates on router navigation and browser back/forward, so
-  // no manual popstate listener is needed.
-  const viewParam = new URLSearchParams(location.search).get("view") || "hobbyist";
-
   const [displayTank, setDisplayTank] = useState(() => {
     const cached = localStorage.getItem("aquadex_display_tank");
     if (cached) {
@@ -1411,30 +1407,6 @@ export default function App() {
     );
   }
 
-  // Explicit public commerce routes enter the shared shell directly. Protected
-  // routes render the shell's sign-in recovery without losing their URL.
-  const bypassFirstRunLanding = !!commerceRoute || (isBareAppPath && legacyHashTab === "directory");
-  if (!enteredDashboard && !bypassFirstRunLanding) {
-    if (viewParam === "breeder") {
-      return (
-        <LandingBreeder 
-          onEnter={() => {
-            setEnteredDashboard(true);
-            localStorage.setItem("aquadex_entered_dashboard", "true");
-          }} 
-        />
-      );
-    } else {
-      return (
-        <LandingHobbyist 
-          onEnter={() => {
-            setEnteredDashboard(true);
-            localStorage.setItem("aquadex_entered_dashboard", "true");
-          }} 
-        />
-      );
-    }
-  }
 
 
   return (
