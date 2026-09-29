@@ -19,93 +19,261 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="preload" href="/species-index.json" as="fetch" crossorigin>
+  <link rel="preload" href="/home-videos.json" as="fetch" crossorigin>
   <link rel="stylesheet" href="/css/shared.css">
+  <script>
+    // Scroll reveals are opt-in: without JS, or with reduced motion, everything is simply visible.
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
+      document.documentElement.classList.add("fd-motion");
+    }
+  </script>
 
   <style>
-    /* Front door. Functional first: search, stock, auctions, tools. Daylight theme
-       (shared.css v2): white cards on pale aqua, deep-sea ink, teal accent. */
-    :root { --fd-muted: var(--text-muted); --fd-line: var(--line); --fd-card: #ffffff; }
+    /* Front door. Functional first: search, stock, auctions, tools, install.
+       Daylight theme (shared.css v2) with marketplace.html's editorial type and real photos. */
     main { position: relative; z-index: 1; }
-    .fd-wrap { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-    .fd-section { padding: 40px 0; }
-    .fd-section + .fd-section { border-top: 1px solid var(--fd-line); }
-    .fd-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-    .fd-head h2 { font-family: 'Outfit', sans-serif; font-size: clamp(1.25rem, 2.6vw, 1.6rem); color: var(--text-primary); margin: 0; }
-    .fd-link { color: var(--teal-300); font-weight: 600; font-size: 0.9rem; text-decoration: none; }
-    .fd-link:hover, .fd-link:focus-visible { text-decoration: underline; }
-    a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--teal-300); outline-offset: 2px; }
-
-    /* Welcome / returning bar */
-    .fd-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: center; padding: 10px 16px; margin-top: 16px;
-      border: 1px solid var(--fd-line); border-radius: 12px; background: #f0fdfa; color: var(--text-secondary); font-size: 0.88rem; }
-    .fd-bar a { color: var(--teal-300); font-weight: 600; text-decoration: none; }
-    .fd-bar a:hover { text-decoration: underline; }
-
-    /* Search */
-    .fd-search { padding: 36px 0 28px; text-align: center; }
-    .fd-search h1 { font-family: 'Outfit', sans-serif; font-size: clamp(1.9rem, 5vw, 3rem); line-height: 1.1; margin: 0 0 10px; color: var(--text-primary); letter-spacing: -0.02em; }
-    .fd-search .fd-sub { color: var(--text-secondary); font-size: 1rem; margin: 0 auto 22px; max-width: 640px; }
-    .fd-form { display: flex; gap: 8px; max-width: 680px; margin: 0 auto; }
-    .fd-form input { flex: 1; min-width: 0; padding: 14px 16px; font-size: 1.05rem; color: var(--text-primary); background: #fff;
-      border: 1px solid rgba(var(--ink-rgb), 0.22); border-radius: 12px; box-shadow: var(--shadow-sm); }
-    .fd-form input:focus { border-color: var(--teal-400); box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2); outline: none; }
-    .fd-form input::placeholder { color: var(--fd-muted); }
-    .fd-form button { padding: 0 20px; font-weight: 700; border-radius: 12px; border: 0; cursor: pointer; color: #fff;
-      background: linear-gradient(135deg, #0d9488, #0284c7); font-size: 1rem; }
-    .fd-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 14px auto 0; }
-    .fd-chip { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--fd-line); background: #fff;
-      color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; cursor: pointer; }
-    .fd-chip[aria-pressed="true"] { background: #ccfbf1; border-color: rgba(13, 148, 136, 0.5); color: var(--teal-300); }
-    .fd-meta { color: var(--fd-muted); font-size: 0.85rem; margin: 18px 0 10px; text-align: left; }
-
-    /* Cards */
-    .fd-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
-    .fd-card { display: flex; flex-direction: column; height: 100%; border: 1px solid var(--fd-line); border-radius: 14px; overflow: hidden;
-      background: var(--fd-card); color: inherit; text-decoration: none; box-shadow: var(--shadow-sm); transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; }
-    .fd-card:hover { border-color: rgba(13, 148, 136, 0.4); transform: translateY(-2px); box-shadow: var(--shadow-md); }
-    .fd-thumb { aspect-ratio: 4 / 3; background: linear-gradient(180deg, #ecfeff, #e0f2f1); display: flex; align-items: center; justify-content: center; font-size: 2rem; overflow: hidden; }
-    .fd-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .fd-body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
-    .fd-name { font-weight: 700; color: var(--text-primary); font-size: 0.95rem; line-height: 1.3; }
-    .fd-sci { font-style: italic; color: var(--fd-muted); font-size: 0.8rem; }
-    .fd-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-    .fd-tag { font-size: 0.7rem; padding: 2px 7px; border-radius: 999px; background: #f5f9fa; color: var(--text-secondary); border: 1px solid var(--fd-line); }
-    .fd-tag--sale { background: #ecfdf5; border-color: #a7f3d0; color: var(--emerald-300); font-weight: 600; }
-    .fd-tag--marine { color: var(--ocean-300); }
-    .fd-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: auto; padding-top: 6px; }
-    .fd-price { font-weight: 800; color: var(--emerald-300); font-size: 1rem; }
-    .fd-small { color: var(--fd-muted); font-size: 0.78rem; }
-    .fd-empty { padding: 20px; border: 1px dashed var(--fd-line); border-radius: 14px; color: var(--text-secondary); text-align: center; }
-    .fd-empty a { color: var(--teal-300); }
-
-    /* Tools */
-    .fd-tools { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
-    .fd-tool { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border: 1px solid var(--fd-line); border-radius: 14px;
-      background: var(--fd-card); text-decoration: none; color: inherit; }
-    .fd-tool:hover { border-color: rgba(13, 148, 136, 0.4); box-shadow: var(--shadow-md); }
-    .fd-tool-icon { font-size: 1.4rem; line-height: 1; }
-    .fd-tool strong { display: block; color: var(--text-primary); font-size: 0.95rem; }
-    .fd-tool span { color: var(--text-secondary); font-size: 0.82rem; }
-
-    /* Install (install-cta.js needs these ids) */
-    .fd-install { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 16px;
-      border: 1px solid var(--fd-line); border-radius: 14px; background: var(--fd-card); }
-    .fd-install p { margin: 0; color: var(--text-secondary); font-size: 0.9rem; }
-    #installBtn { display: none; }
-    #installIos, #installDone { display: none; color: var(--text-secondary); font-size: 0.85rem; }
-
+    main [hidden] { display: none !important; }
+    .fd-wrap { width: min(1280px, calc(100% - 40px)); margin: 0 auto; }
+    .fd-display { font-family: "Manrope", "Outfit", sans-serif; }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--teal-300); outline-offset: 3px; }
     .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-    @media (max-width: 560px) {
-      .fd-form { flex-direction: column; }
-      .fd-form button { padding: 12px; }
-      .fd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-      .fd-body { padding: 8px 9px 10px; }
-      .fd-name { font-size: 0.86rem; }
+    .fd-link { display: inline-flex; align-items: center; gap: 6px; color: var(--teal-300); font-weight: 700; font-size: .88rem;
+      text-decoration: none; border-bottom: 1px solid rgba(15, 118, 110, .4); padding-bottom: 2px; transition: border-color .2s; }
+    .fd-link:hover, .fd-link:focus-visible { border-bottom-color: var(--teal-300); }
+
+    /* ── 1. Hero + search ─────────────────────────────────────────── */
+    .fd-hero { position: relative; isolation: isolate; overflow: hidden; border-bottom: 1px solid var(--line); }
+    .fd-hero__bg, .fd-hero__bg img { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .fd-hero__bg { z-index: -2; }
+    .fd-hero__bg img { object-fit: cover; object-position: 70% 55%; }
+    /* Light scrim: solid enough on the left that the search reads at full contrast. */
+    .fd-hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background:
+      linear-gradient(90deg, rgba(255,255,255,.97) 0%, rgba(255,255,255,.93) 40%, rgba(255,255,255,.72) 64%, rgba(255,255,255,.34) 100%),
+      linear-gradient(0deg, rgba(245,249,250,1) 0%, rgba(245,249,250,0) 26%); }
+    .fd-hero__grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 56px; align-items: center; padding: 52px 0 48px; }
+    .fd-eyebrow { display: flex; align-items: center; gap: 10px; color: var(--teal-300); font-size: .74rem; font-weight: 800;
+      letter-spacing: .16em; text-transform: uppercase; margin-bottom: 20px; }
+    .fd-eyebrow::before { content: ""; width: 34px; height: 1px; background: currentColor; }
+    .fd-hero h1 { font-family: "Manrope", "Outfit", sans-serif; font-weight: 800; font-size: clamp(2.3rem, 6.2vw, 5.2rem);
+      line-height: .96; letter-spacing: -.055em; color: var(--text-primary); margin: 0 0 20px; }
+    .fd-hero h1 em { font-style: normal; color: var(--teal-300); }
+    .fd-sub { color: var(--text-secondary); font-size: clamp(1rem, 1.5vw, 1.16rem); line-height: 1.6; max-width: 560px; margin: 0 0 28px; }
+    .fd-sub strong { color: var(--text-primary); }
+
+    .fd-form { position: relative; display: flex; align-items: center; max-width: 660px; padding: 6px; background: #fff;
+      border: 1px solid rgba(var(--ink-rgb), .16); border-radius: 999px; box-shadow: var(--shadow-md); transition: border-color .2s, box-shadow .2s; }
+    .fd-form:focus-within { border-color: var(--teal-400); box-shadow: 0 0 0 4px rgba(20, 184, 166, .22), var(--shadow-md); }
+    .fd-form__icon { position: absolute; left: 22px; top: 50%; width: 20px; height: 20px; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+    .fd-form input { flex: 1; min-width: 0; padding: 13px 12px 13px 50px; font: inherit; font-size: 1.08rem; color: var(--text-primary);
+      background: transparent; border: 0; outline: none; }
+    .fd-form input::placeholder { color: var(--text-muted); }
+    .fd-form button { flex: none; min-height: 48px; padding: 0 26px; border-radius: 999px; background: var(--teal-300); color: #fff;
+      font-weight: 700; font-size: 1rem; transition: background .2s; }
+    .fd-form button:hover { background: #115e59; }
+
+    .fd-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+    .fd-chip { min-height: 38px; padding: 0 15px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.92);
+      color: var(--text-secondary); font-size: .85rem; font-weight: 600; transition: border-color .2s, color .2s, background .2s; }
+    .fd-chip:hover { border-color: rgba(15, 118, 110, .45); color: var(--teal-300); }
+    .fd-chip[aria-pressed="true"] { background: var(--teal-300); border-color: var(--teal-300); color: #fff; }
+
+    .fd-bar { display: inline-flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin-top: 22px; padding: 9px 16px;
+      border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.9); color: var(--text-secondary); font-size: .86rem;
+      box-shadow: var(--shadow-sm); }
+    .fd-bar a { color: var(--teal-300); font-weight: 700; text-decoration: none; }
+    .fd-bar a:hover { text-decoration: underline; }
+
+    /* Portrait "window" onto a real pond. Poster image first; the clip loads after the page on wide screens only. */
+    .fd-window { position: relative; margin: 0; aspect-ratio: 3 / 4; border-radius: 22px; overflow: hidden; background: #0b2530;
+      border: 6px solid #fff; box-shadow: var(--shadow-lg); }
+    .fd-window__media, .fd-window__media img, .fd-window__media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .fd-window__media video { opacity: 0; transition: opacity .6s ease; }
+    .fd-window__media video.is-playing { opacity: 1; }
+    .fd-window__cap { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 2px; padding: 48px 16px 14px;
+      background: linear-gradient(to top, rgba(11,37,48,.88), rgba(11,37,48,0)); color: #fff; font-size: .8rem; line-height: 1.4; }
+    .fd-window__cap a { color: #fff; font-weight: 700; font-size: .9rem; text-decoration: underline; text-underline-offset: 3px; }
+    .fd-window__toggle { position: absolute; top: 10px; right: 10px; z-index: 2; width: 38px; height: 38px; display: grid; place-items: center;
+      border-radius: 50%; background: rgba(255,255,255,.94); color: var(--text-primary); font-size: .78rem; box-shadow: var(--shadow-sm); }
+
+    /* Results */
+    .fd-results { padding: 28px 0 76px; }
+    .fd-results__head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px 20px; margin-bottom: 18px; }
+    .fd-meta { color: var(--text-primary); font-size: .92rem; font-weight: 600; }
+    .fd-hint { color: var(--text-muted); font-size: .84rem; font-weight: 400; margin-left: 8px; }
+    .fd-hint::before { content: "·"; margin-right: 8px; }
+
+    /* ── Cards (species, listings, lots) ──────────────────────────── */
+    .fd-grid { display: grid; gap: 20px 16px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .fd-grid > li { min-width: 0; }
+    .fd-card { display: flex; flex-direction: column; height: 100%; overflow: hidden; color: inherit; text-decoration: none; background: #fff;
+      border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-sm); transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+    .fd-thumb { position: relative; aspect-ratio: 4 / 3; overflow: hidden; display: grid; place-items: center;
+      background: radial-gradient(circle at 50% 35%, #ffffff, #e3eff2 70%); }
+    .fd-thumb img, .fd-thumb video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .fd-thumb img { transition: transform .5s ease; }
+    .fd-thumb video { opacity: 0; transition: opacity .3s ease; }
+    .fd-thumb video.is-playing { opacity: 1; }
+    .fd-thumb__icon { font-size: 2.6rem; }
+    .fd-badges { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 2; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
+    .fd-badge { padding: 4px 9px; border-radius: 999px; background: rgba(255,255,255,.95); color: var(--text-primary); font-size: .68rem; font-weight: 700;
+      line-height: 1.3; box-shadow: var(--shadow-sm); }
+    .fd-badge--sale { color: var(--emerald-300); }
+    .fd-badge--video { color: var(--ocean-300); }
+    .fd-body { flex: 1; display: flex; flex-direction: column; gap: 3px; padding: 13px 15px 15px; }
+    .fd-name { font-family: "Manrope", "Outfit", sans-serif; font-size: 1rem; font-weight: 800; letter-spacing: -.01em; line-height: 1.25; color: var(--text-primary); }
+    .fd-sci { color: var(--text-muted); font-size: .8rem; font-style: italic; }
+    .fd-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+    .fd-tag { padding: 2px 8px; border-radius: 999px; background: #f5f9fa; border: 1px solid var(--line); color: var(--text-secondary); font-size: .7rem; }
+    .fd-tag--marine { color: var(--ocean-300); }
+    .fd-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: auto; padding-top: 10px; }
+    .fd-price { font-family: "Manrope", "Outfit", sans-serif; font-weight: 800; font-size: 1.05rem; color: var(--text-primary); }
+    .fd-small { color: var(--text-muted); font-size: .78rem; }
+    @media (hover: hover) {
+      .fd-card:hover { transform: translateY(-4px); border-color: rgba(var(--ink-rgb), .18); box-shadow: var(--shadow-md); }
+      .fd-card:hover .fd-thumb img { transform: scale(1.04); }
     }
-    @media (prefers-reduced-motion: reduce) { .fd-card { transition: none; } .fd-card:hover { transform: none; } }
+    .fd-card:focus-visible { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+
+    .fd-empty { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 32px 24px; text-align: center;
+      background: #fff; border: 1px dashed rgba(var(--ink-rgb), .2); border-radius: 18px; color: var(--text-secondary); }
+    .fd-empty__icon { font-size: 2rem; }
+    .fd-empty strong { font-family: "Manrope", "Outfit", sans-serif; font-size: 1.1rem; color: var(--text-primary); }
+    .fd-empty p { max-width: 520px; }
+    .fd-empty__links { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-top: 4px; }
+
+    /* ── Sections ─────────────────────────────────────────────────── */
+    .fd-section { padding: 84px 0; }
+    .fd-section--tint { background: var(--bg-deep); border-block: 1px solid var(--line); }
+    .fd-head { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px 32px; margin-bottom: 32px; }
+    .fd-kicker { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; color: var(--teal-300); font-size: .72rem; font-weight: 800;
+      letter-spacing: .14em; text-transform: uppercase; }
+    .fd-kicker::before { content: ""; width: 26px; height: 1px; background: currentColor; }
+    .fd-kicker--violet { color: var(--violet-300); }
+    .fd-kicker--ocean { color: var(--ocean-300); }
+    .fd-head h2 { font-family: "Manrope", "Outfit", sans-serif; font-weight: 800; font-size: clamp(2rem, 4.2vw, 3.4rem); line-height: 1;
+      letter-spacing: -.045em; color: var(--text-primary); }
+    .fd-intro { max-width: 540px; margin-top: 14px; color: var(--text-secondary); line-height: 1.6; }
+
+    /* Real photos from one breeder's fish room, as a slow reel. */
+    .fd-reel { margin-top: 56px; }
+    .fd-reel__cap { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px 20px; margin-bottom: 14px;
+      color: var(--text-secondary); font-size: .92rem; }
+    .fd-reel__cap strong { color: var(--text-primary); }
+    .fd-reel__actions { display: flex; align-items: baseline; gap: 16px; }
+    .fd-reel__toggle { min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(var(--ink-rgb), .2); background: #fff;
+      color: var(--text-secondary); font-size: .78rem; font-weight: 600; }
+    .fd-reel__viewport { overflow: hidden; border-radius: 16px;
+      -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+      mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent); }
+    .fd-reel__track { display: flex; gap: 12px; width: max-content; }
+    .fd-motion .fd-reel__track.is-looping { animation: fd-marquee 80s linear infinite; }
+    .fd-reel__viewport:hover .fd-reel__track, .fd-reel__track.is-paused { animation-play-state: paused !important; }
+    .fd-reel__set { display: flex; gap: 12px; }
+    .fd-reel__set li { flex: none; width: 184px; aspect-ratio: 3 / 4; overflow: hidden; border-radius: 14px; background: #d9e8ec; box-shadow: var(--shadow-sm); }
+    .fd-reel__set img { width: 100%; height: 100%; object-fit: cover; }
+    @keyframes fd-marquee { to { transform: translateX(calc(-50% - 6px)); } }
+
+    /* Tools */
+    .fd-tools { display: grid; gap: 14px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .fd-tool { display: flex; flex-direction: column; gap: 10px; min-height: 196px; padding: 22px; color: inherit; text-decoration: none; background: #fff;
+      border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-sm); transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+    .fd-tool__icon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 13px; font-size: 1.35rem; background: #dff3ef; }
+    .fd-tool:nth-child(4n+2) .fd-tool__icon { background: #e6f0fb; }
+    .fd-tool:nth-child(4n+3) .fd-tool__icon { background: #fdf1dc; }
+    .fd-tool:nth-child(4n+4) .fd-tool__icon { background: #efeafb; }
+    .fd-tool__title { font-family: "Manrope", "Outfit", sans-serif; font-weight: 800; font-size: 1.04rem; color: var(--text-primary); }
+    .fd-tool__desc { color: var(--text-secondary); font-size: .86rem; line-height: 1.5; }
+    .fd-tool__go { margin-top: auto; color: var(--teal-300); font-weight: 700; font-size: .82rem; }
+    @media (hover: hover) {
+      .fd-tool:hover { transform: translateY(-4px); border-color: rgba(var(--ink-rgb), .18); box-shadow: var(--shadow-md); }
+    }
+
+    /* Install (install-cta.js needs these ids) */
+    .fd-install-wrap { padding: 84px 0; }
+    .fd-install { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1.4fr) auto; align-items: center; gap: 24px 40px;
+      padding: 52px; border-radius: 26px; color: #fff; box-shadow: var(--shadow-md);
+      background: linear-gradient(135deg, #0f766e 0%, #0e7490 60%, #0369a1 100%); }
+    .fd-install h2 { font-family: "Manrope", "Outfit", sans-serif; font-weight: 800; font-size: clamp(1.8rem, 3.8vw, 3rem); line-height: 1;
+      letter-spacing: -.045em; color: #fff; }
+    .fd-install p { margin-top: 14px; max-width: 560px; color: rgba(255,255,255,.94); line-height: 1.6; }
+    .fd-install__actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: flex-end; }
+    .fd-btn { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 20px; border-radius: 999px;
+      font-weight: 700; font-size: .92rem; text-decoration: none; border: 1px solid rgba(255,255,255,.7); color: #fff; transition: transform .2s, background .2s; }
+    .fd-btn:hover { transform: translateY(-1px); background: rgba(255,255,255,.1); }
+    .fd-btn--light { background: #fff; color: var(--text-primary); border-color: #fff; }
+    .fd-btn--light:hover { background: #f0fdfa; }
+    .fd-install a:focus-visible, .fd-install button:focus-visible { outline-color: #fff; }
+    #installBtn { display: none; }
+    #installIos, #installDone { display: none; color: #fff; font-size: .9rem; }
+
+    /* ── Motion (only with .fd-motion, which is never set under reduced motion) ── */
+    .fd-motion .fd-reveal { opacity: 0; transform: translateY(14px); transition: opacity .4s ease, transform .4s ease; }
+    .fd-motion .fd-reveal.is-in { opacity: 1; transform: none; }
+    .fd-motion .fd-grid > li.fd-in { animation: fd-rise .45s ease both; animation-delay: calc(var(--i, 0) * 40ms); }
+    .fd-motion .fd-hero__main > * { animation: fd-rise .6s ease both; }
+    .fd-motion .fd-hero__main > :nth-child(2) { animation-delay: .06s; }
+    .fd-motion .fd-hero__main > :nth-child(3) { animation-delay: .12s; }
+    .fd-motion .fd-hero__main > :nth-child(n+4) { animation-delay: .18s; }
+    .fd-motion .fd-hero__bg img { animation: fd-drift 28s ease-in-out infinite alternate; }
+    @keyframes fd-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    @keyframes fd-drift { from { transform: scale(1); } to { transform: scale(1.06) translateX(-1%); } }
+
+    /* ── Responsive ──────────────────────────────────────────────── */
+    @media (max-width: 1099px) {
+      .fd-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 999px) {
+      .fd-hero__grid { grid-template-columns: minmax(0, 1fr); }
+      .fd-window { display: none; }
+      .fd-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 760px) {
+      .fd-wrap { width: calc(100% - 28px); }
+      .fd-hero::before { background: linear-gradient(180deg, rgba(255,255,255,.9) 0%, rgba(255,255,255,.82) 55%, rgba(245,249,250,.96) 100%); }
+      .fd-hero__bg img { object-position: 50% 40%; }
+      .fd-hero__grid { padding: 36px 0 30px; }
+      .fd-eyebrow { margin-bottom: 14px; }
+      .fd-sub { margin-bottom: 20px; }
+      .fd-form input { padding-left: 44px; font-size: 1rem; }
+      .fd-form__icon { left: 18px; }
+      .fd-form button { padding: 0 18px; min-height: 44px; }
+      .fd-chips { flex-wrap: nowrap; overflow-x: auto; margin-inline: -14px; padding: 2px 14px; scrollbar-width: none; }
+      .fd-chips::-webkit-scrollbar { display: none; }
+      .fd-chip { flex: none; }
+      .fd-bar { border-radius: 14px; }
+      .fd-hint { display: block; margin: 2px 0 0; }
+      .fd-hint::before { content: none; }
+      .fd-section, .fd-install-wrap { padding: 56px 0; }
+      .fd-results { padding-bottom: 56px; }
+      .fd-head { flex-direction: column; align-items: flex-start; margin-bottom: 24px; }
+      .fd-install { grid-template-columns: 1fr; padding: 32px 22px; }
+      .fd-install__actions { justify-content: flex-start; }
+      .fd-reel__set li { width: 140px; }
+    }
+    @media (max-width: 699px) {
+      .fd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 10px; }
+      .fd-body { padding: 10px 11px 12px; }
+      .fd-name { font-size: .9rem; }
+      .fd-badges { top: 7px; left: 7px; right: 7px; gap: 4px; }
+      .fd-badge { font-size: .64rem; padding: 3px 7px; }
+      .fd-tools { grid-template-columns: 1fr; }
+      .fd-tool { min-height: 0; flex-direction: row; flex-wrap: wrap; align-items: flex-start; padding: 16px; }
+      .fd-tool__icon { width: 40px; height: 40px; }
+      .fd-tool__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+      .fd-tool__go { display: none; }
+    }
+    @media (min-width: 700px) { .fd-tool__text { display: flex; flex-direction: column; gap: 6px; } }
+    @media (prefers-reduced-motion: reduce) {
+      .fd-card, .fd-tool, .fd-thumb img, .fd-btn { transition: none; }
+      .fd-card:hover, .fd-tool:hover, .fd-card:focus-visible { transform: none; }
+      .fd-card:hover .fd-thumb img { transform: none; }
+      .fd-reel__track { animation: none !important; }
+      .fd-reel__viewport { overflow-x: auto; -webkit-mask-image: none; mask-image: none; }
+      .fd-reel__toggle { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -113,52 +281,114 @@
 
   <main id="main">
     <!-- 1. Database search -->
-    <section class="fd-search" aria-labelledby="searchHeading">
-      <div class="fd-wrap">
-        <h1 id="searchHeading">Look up any fish, coral or plant</h1>
-        <p class="fd-sub"><span id="speciesCount">500+</span> freshwater and saltwater species with care ranges, tank size, and who has them for sale.</p>
+    <section aria-labelledby="searchHeading">
+      <div class="fd-hero">
+        <picture class="fd-hero__bg" aria-hidden="true">
+          <source media="(max-width: 760px)" srcset="https://aquacellum.com/showcase-media/steve/posters/VID_20260901_115511_370.jpg">
+          <img src="https://aquacellum.com/showcase-media/steve/hero/show-pond-flag.jpg" alt="" width="1080" height="810" fetchpriority="high" decoding="async">
+        </picture>
+        <div class="fd-wrap fd-hero__grid">
+          <div class="fd-hero__main">
+            <p class="fd-eyebrow">Species database</p>
+            <h1 id="searchHeading">Look up any fish,<br><em>coral or plant.</em></h1>
+            <p class="fd-sub"><strong id="speciesCount">500+</strong> freshwater and saltwater species with care ranges, tank size, and who has them for sale.</p>
 
-        <form class="fd-form" role="search" id="searchForm" action="/database.html" method="get">
-          <label for="q" class="visually-hidden">Search species by common or scientific name</label>
-          <input id="q" name="q" type="search" autocomplete="off" enterkeyhint="search"
-                 placeholder="Try betta, clownfish, zoanthid, java fern…">
-          <button type="submit">Search</button>
-        </form>
+            <form class="fd-form" role="search" id="searchForm" action="/database.html" method="get">
+              <svg class="fd-form__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+              <label for="q" class="visually-hidden">Search species by common or scientific name</label>
+              <input id="q" name="q" type="search" autocomplete="off" enterkeyhint="search"
+                     placeholder="Try betta, clownfish, zoanthid, java fern…">
+              <button type="submit">Search</button>
+            </form>
 
-        <div class="fd-chips" role="group" aria-label="Filter species">
-          <button type="button" class="fd-chip" data-filter="all" aria-pressed="true">All</button>
-          <button type="button" class="fd-chip" data-filter="fresh" aria-pressed="false">Freshwater</button>
-          <button type="button" class="fd-chip" data-filter="marine" aria-pressed="false">Saltwater</button>
-          <button type="button" class="fd-chip" data-filter="reef" aria-pressed="false">Corals &amp; inverts</button>
-          <button type="button" class="fd-chip" data-filter="plant" aria-pressed="false">Plants</button>
-          <button type="button" class="fd-chip" data-filter="beginner" aria-pressed="false">Beginner</button>
-          <button type="button" class="fd-chip" data-filter="forsale" aria-pressed="false">For sale now</button>
+            <div class="fd-chips" role="group" aria-label="Filter species">
+              <button type="button" class="fd-chip" data-filter="all" aria-pressed="true">All</button>
+              <button type="button" class="fd-chip" data-filter="fresh" aria-pressed="false">Freshwater</button>
+              <button type="button" class="fd-chip" data-filter="marine" aria-pressed="false">Saltwater</button>
+              <button type="button" class="fd-chip" data-filter="reef" aria-pressed="false">Corals &amp; inverts</button>
+              <button type="button" class="fd-chip" data-filter="plant" aria-pressed="false">Plants</button>
+              <button type="button" class="fd-chip" data-filter="beginner" aria-pressed="false">Beginner</button>
+              <button type="button" class="fd-chip" data-filter="forsale" aria-pressed="false">For sale now</button>
+            </div>
+
+            <div id="welcomeBar" class="fd-bar" hidden></div>
+          </div>
+
+          <!-- Shown on wide screens only; the lazy poster is not fetched while hidden. -->
+          <figure class="fd-window" id="heroWindow">
+            <div class="fd-window__media">
+              <img src="https://aquacellum.com/showcase-media/steve/posters/VID_20260901_115511_370.jpg" width="640" height="853" loading="lazy" decoding="async"
+                   alt="A planted show pond with orange, red and darker medaka moving through the plants">
+            </div>
+            <button type="button" class="fd-window__toggle" id="heroToggle" aria-label="Pause the pond video" hidden><span aria-hidden="true">❚❚</span></button>
+            <figcaption class="fd-window__cap">
+              <span>A breeder's show pond in New Jersey</span>
+              <a href="/showcase/ggstevericefishnj">GG Steve Rice Fish NJ →</a>
+            </figcaption>
+          </figure>
         </div>
+      </div>
 
-        <div id="welcomeBar" class="fd-bar" hidden></div>
-
-        <p class="fd-meta" id="resultMeta" aria-live="polite">Loading species…</p>
+      <div class="fd-wrap fd-results">
+        <div class="fd-results__head">
+          <p><span class="fd-meta" id="resultMeta" aria-live="polite">Loading species…</span> <span class="fd-hint" id="videoHint" hidden></span></p>
+          <a class="fd-link" id="fullDbLink" href="/database.html">Open the full database with more filters →</a>
+        </div>
         <ul class="fd-grid" id="speciesResults" aria-label="Species results"></ul>
-        <p style="margin-top:14px;text-align:left;"><a class="fd-link" id="fullDbLink" href="/database.html">Open the full database with more filters →</a></p>
       </div>
     </section>
 
     <!-- 2. Marketplace -->
-    <section class="fd-section" aria-labelledby="stockHeading">
+    <section class="fd-section fd-section--tint" aria-labelledby="stockHeading">
       <div class="fd-wrap">
-        <div class="fd-head">
-          <h2 id="stockHeading">In stock now</h2>
+        <div class="fd-head fd-reveal">
+          <div>
+            <p class="fd-kicker">Marketplace</p>
+            <h2 id="stockHeading">In stock now</h2>
+            <p class="fd-intro">The newest live listings from independent breeders. Sold-out batches drop off on their own.</p>
+          </div>
           <a class="fd-link" href="/marketplace.html">All listings and breeder shops →</a>
         </div>
         <ul class="fd-grid" id="stockGrid" aria-live="polite"></ul>
+
+        <div class="fd-reel fd-reveal" aria-labelledby="reelLabel">
+          <div class="fd-reel__cap">
+            <p id="reelLabel"><strong>From one breeder's fish room.</strong> GG Steve Rice Fish NJ raises medaka lines in New Jersey.</p>
+            <div class="fd-reel__actions">
+              <button type="button" class="fd-reel__toggle" id="reelToggle" aria-pressed="false" hidden>Pause photos</button>
+              <a class="fd-link" href="/showcase/ggstevericefishnj">See his lines →</a>
+            </div>
+          </div>
+          <div class="fd-reel__viewport">
+            <div class="fd-reel__track" id="reelTrack">
+              <ul class="fd-reel__set">
+                <!-- Photos not already used as listing thumbnails above, so the reel adds something. -->
+                <li><img src="https://aquacellum.com/showcase-media/steve/proof/saffire-pink-closeup.jpg" alt="Close-up of a Pink Saffire medaka" loading="lazy" decoding="async"></li>
+                <li><img src="https://aquacellum.com/showcase-media/steve/posters/VID_20260901_115451_294.jpg" alt="Gladio, a silvery-white long-fin medaka in a planted tank" loading="lazy" decoding="async"></li>
+                <li><img src="https://aquacellum.com/showcase-media/steve/hero/show-pond-blue.jpg" alt="The planted show pond under blue light" loading="lazy" decoding="async"></li>
+                <li><img src="https://aquacellum.com/showcase-media/steve/lines/pink-saffire/IMG_20260907_165711_348.jpg" alt="Pink Saffire medaka" loading="lazy" decoding="async"></li>
+                <li><img src="https://aquacellum.com/showcase-media/steve/posters/VID_20260901_115510_666.jpg" alt="A small school of translucent Shinkai medaka in a dark tank" loading="lazy" decoding="async"></li>
+                <li><img src="https://aquacellum.com/showcase-media/steve/lines/echos-of-the-moon/IMG_20260907_170845_261.jpg" alt="Echos of the Moon medaka" loading="lazy" decoding="async"></li>
+                <li><img src="https://aquacellum.com/showcase-media/steve/posters/VID_20260901_115521_154.jpg" alt="Yellow-gold medaka near the surface of a green-water tub" loading="lazy" decoding="async"></li>
+                <li><img src="https://aquacellum.com/showcase-media/steve/lines/gladio/IMG_20260907_170232_694.jpg" alt="Gladio medaka" loading="lazy" decoding="async"></li>
+                <li><img src="https://aquacellum.com/showcase-media/steve/lines/shinkai/IMG_20260907_171554_134.jpg" alt="Shinkai medaka" loading="lazy" decoding="async"></li>
+                <li><img src="https://aquacellum.com/showcase-media/steve/lines/pink-saffire/IMG_20260907_165711_384.jpg" alt="Pink Saffire medaka" loading="lazy" decoding="async"></li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- 3. Auctions -->
     <section class="fd-section" aria-labelledby="auctionHeading">
       <div class="fd-wrap">
-        <div class="fd-head">
-          <h2 id="auctionHeading">Auctions</h2>
+        <div class="fd-head fd-reveal">
+          <div>
+            <p class="fd-kicker fd-kicker--violet">Auctions</p>
+            <h2 id="auctionHeading">Bidding now</h2>
+            <p class="fd-intro">Timed lots from sellers and clubs, ending soonest first.</p>
+          </div>
           <a class="fd-link" href="/app/auctions">All auctions →</a>
         </div>
         <ul class="fd-grid" id="auctionGrid" aria-live="polite"></ul>
@@ -166,32 +396,40 @@
     </section>
 
     <!-- 4. Tools -->
-    <section class="fd-section" aria-labelledby="toolsHeading">
+    <section class="fd-section fd-section--tint" aria-labelledby="toolsHeading">
       <div class="fd-wrap">
-        <div class="fd-head"><h2 id="toolsHeading">Tools</h2></div>
-        <div class="fd-tools">
-          <a class="fd-tool" href="/app/tanks"><span class="fd-tool-icon" aria-hidden="true">📓</span><div><strong>Log your tanks</strong><span>Water tests, feedings and maintenance, with alerts when something drifts.</span></div></a>
-          <a class="fd-tool" href="/app/gallery"><span class="fd-tool-icon" aria-hidden="true">✅</span><div><strong>Will it fit my tank?</strong><span>Check a species against your tank size, temperature and pH.</span></div></a>
-          <a class="fd-tool" href="/compare.html"><span class="fd-tool-icon" aria-hidden="true">⚖️</span><div><strong>Compare species</strong><span>Side-by-side care ranges before you buy.</span></div></a>
-          <a class="fd-tool" href="/poseidon.html"><span class="fd-tool-icon" aria-hidden="true">💬</span><div><strong>Ask Poseidon</strong><span>Care questions answered from the species data.</span></div></a>
-          <a class="fd-tool" href="/breeders.html"><span class="fd-tool-icon" aria-hidden="true">📍</span><div><strong>Find breeders</strong><span>Independent breeders and their shops.</span></div></a>
-          <a class="fd-tool" href="/marketplace.html#wanted"><span class="fd-tool-icon" aria-hidden="true">🔎</span><div><strong>Wanted requests</strong><span>See what keepers are looking for, or post your own.</span></div></a>
-          <a class="fd-tool" href="/app/directory"><span class="fd-tool-icon" aria-hidden="true">🏷️</span><div><strong>Sell fish, frags or plants</strong><span>List a pack, a fry batch or coral frags. Cash sales are free.</span></div></a>
-          <a class="fd-tool" href="/app/auction-night"><span class="fd-tool-icon" aria-hidden="true">🔨</span><div><strong>Run a club auction</strong><span>Lots, paddles, clerk and checkout desk for auction night.</span></div></a>
+        <div class="fd-head fd-reveal">
+          <div>
+            <p class="fd-kicker fd-kicker--ocean">Tools</p>
+            <h2 id="toolsHeading">For keepers and breeders</h2>
+          </div>
+        </div>
+        <div class="fd-tools fd-reveal">
+          <a class="fd-tool" href="/app/tanks"><span class="fd-tool__icon" aria-hidden="true">📓</span><span class="fd-tool__text"><span class="fd-tool__title">Log your tanks</span><span class="fd-tool__desc">Water tests, feedings and maintenance, with alerts when something drifts.</span></span><span class="fd-tool__go" aria-hidden="true">Open →</span></a>
+          <a class="fd-tool" href="/app/gallery"><span class="fd-tool__icon" aria-hidden="true">✅</span><span class="fd-tool__text"><span class="fd-tool__title">Will it fit my tank?</span><span class="fd-tool__desc">Check a species against your tank size, temperature and pH.</span></span><span class="fd-tool__go" aria-hidden="true">Open →</span></a>
+          <a class="fd-tool" href="/compare.html"><span class="fd-tool__icon" aria-hidden="true">⚖️</span><span class="fd-tool__text"><span class="fd-tool__title">Compare species</span><span class="fd-tool__desc">Side-by-side care ranges before you buy.</span></span><span class="fd-tool__go" aria-hidden="true">Open →</span></a>
+          <a class="fd-tool" href="/poseidon.html"><span class="fd-tool__icon" aria-hidden="true">💬</span><span class="fd-tool__text"><span class="fd-tool__title">Ask Poseidon</span><span class="fd-tool__desc">Care questions answered from the species data.</span></span><span class="fd-tool__go" aria-hidden="true">Open →</span></a>
+          <a class="fd-tool" href="/breeders.html"><span class="fd-tool__icon" aria-hidden="true">📍</span><span class="fd-tool__text"><span class="fd-tool__title">Find breeders</span><span class="fd-tool__desc">Independent breeders and their shops.</span></span><span class="fd-tool__go" aria-hidden="true">Open →</span></a>
+          <a class="fd-tool" href="/marketplace.html#wanted"><span class="fd-tool__icon" aria-hidden="true">🔎</span><span class="fd-tool__text"><span class="fd-tool__title">Wanted requests</span><span class="fd-tool__desc">See what keepers are looking for, or post your own.</span></span><span class="fd-tool__go" aria-hidden="true">Open →</span></a>
+          <a class="fd-tool" href="/app/directory"><span class="fd-tool__icon" aria-hidden="true">🏷️</span><span class="fd-tool__text"><span class="fd-tool__title">Sell fish, frags or plants</span><span class="fd-tool__desc">List a pack, a fry batch or coral frags. Cash sales are free.</span></span><span class="fd-tool__go" aria-hidden="true">Open →</span></a>
+          <a class="fd-tool" href="/app/auction-night"><span class="fd-tool__icon" aria-hidden="true">🔨</span><span class="fd-tool__text"><span class="fd-tool__title">Run a club auction</span><span class="fd-tool__desc">Lots, paddles, clerk and checkout desk for auction night.</span></span><span class="fd-tool__go" aria-hidden="true">Open →</span></a>
         </div>
       </div>
     </section>
 
     <!-- 5. Install -->
-    <section class="fd-section" aria-label="Install the app">
+    <section class="fd-install-wrap" aria-labelledby="installHeading">
       <div class="fd-wrap">
-        <div class="fd-install">
-          <p>Put Aquacellum on your home screen. It works offline for tank logs and at shows.</p>
+        <div class="fd-install fd-reveal">
           <div>
-            <button id="installBtn" class="btn btn-teal btn-sm" type="button" onclick="triggerInstall()">Install the app</button>
+            <h2 id="installHeading">Put Aquacellum on your home screen.</h2>
+            <p>It works offline for tank logs and at shows.</p>
+          </div>
+          <div class="fd-install__actions">
+            <button id="installBtn" class="fd-btn fd-btn--light" type="button" onclick="triggerInstall()">Install the app</button>
             <span id="installIos">In Safari, tap Share, then “Add to Home Screen”.</span>
             <span id="installDone">Installed. Open it from your home screen.</span>
-            <a id="installFallback" class="fd-link" href="/app">Open the app →</a>
+            <a id="installFallback" class="fd-btn" href="/app">Open the app →</a>
           </div>
         </div>
       </div>
@@ -208,9 +446,25 @@
     const SUPABASE_URL = "https://yahsdztnvsykzecjatsl.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaHNkenRudnN5a3plY2phdHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQwMDgsImV4cCI6MjA5NjA3MDAwOH0.3anqDFU9hUjZg2AFWJlXSBbwSM-knNrmb-uQ_Baq98I";
 
-    const DEFAULT_LIMIT = 12;
+    const STEVE_MEDIA = "https://aquacellum.com/showcase-media/steve";
+    const HERO_VIDEO = `${STEVE_MEDIA}/videos/VID_20260901_115511_370.mp4`;
+    const HERO_POSTER = `${STEVE_MEDIA}/posters/VID_20260901_115511_370.jpg`;
+
+    const DEFAULT_LIMIT = window.matchMedia("(max-width: 560px)").matches ? 8 : 12;
     const SEARCH_LIMIT = 24;
-    const state = { species: [], bySci: new Map(), availability: {}, filter: "all", query: "" };
+    const state = { species: [], bySci: new Map(), availability: {}, videos: new Set(), filter: "all", query: "" };
+
+    // ── Motion and data budget ──────────────────────────────────────────────
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const canHover = window.matchMedia("(hover: hover) and (pointer: fine)");
+    function motionOK() { return !reducedMotion.matches; }
+    /** Data saver or a slow connection: no autoplaying clips at all. */
+    function lightData() {
+      const c = navigator.connection;
+      return !!c && (c.saveData === true || /2g|3g/.test(String(c.effectiveType || "")));
+    }
+    /** Can a species clip play here? Hover on desktop, one-in-view on touch. */
+    function clipsEnabled() { return motionOK() && (canHover.matches || (!lightData() && "IntersectionObserver" in window)); }
 
     // ── Small DOM helpers (textContent only; listing data is user-authored) ──
     function el(tag, className, text) {
@@ -228,17 +482,23 @@
     }
     function thumb(url, alt, fallback) {
       const box = el("div", "fd-thumb");
+      const icon = () => { const s = el("span", "fd-thumb__icon", fallback); s.setAttribute("aria-hidden", "true"); return s; };
       const src = safeImage(url);
       if (src) {
         const img = el("img");
         img.src = src; img.alt = alt || ""; img.loading = "lazy"; img.decoding = "async";
-        img.addEventListener("error", () => { img.remove(); box.textContent = fallback; }, { once: true });
+        img.addEventListener("error", () => { img.replaceWith(icon()); }, { once: true });
         box.append(img);
       } else {
-        box.textContent = fallback;
-        box.setAttribute("aria-hidden", "true");
+        box.append(icon());
       }
       return box;
+    }
+    function badges(box, list) {
+      if (!list.length) return;
+      const wrap = el("div", "fd-badges");
+      for (const [cls, text] of list) wrap.append(el("span", `fd-badge${cls ? ` fd-badge--${cls}` : ""}`, text));
+      box.append(wrap);
     }
     function money(cents) {
       const n = Number(cents);
@@ -248,6 +508,17 @@
     function typeIcon(t) {
       return t === "plant" ? "🌿" : t === "coral" ? "🪸" : t === "invertebrate" ? "🦐" : "🐟";
     }
+    function emptyState(icon, title, text, links) {
+      const li = el("li", "fd-empty");
+      const i = el("span", "fd-empty__icon", icon); i.setAttribute("aria-hidden", "true");
+      li.append(i, el("strong", "", title), el("p", "", text));
+      const row = el("div", "fd-empty__links");
+      for (const [href, label] of links) { const a = el("a", "fd-link", label); a.href = href; row.append(a); }
+      li.append(row);
+      return li;
+    }
+    /** Staggered entrance for freshly rendered cards (CSS only animates under .fd-motion). */
+    function rise(li, i) { li.classList.add("fd-in"); li.style.setProperty("--i", String(Math.min(i, 11))); }
 
     // ── Returning vs new visitor ────────────────────────────────────────────
     function renderWelcome() {
@@ -267,7 +538,89 @@
       bar.hidden = false;
     }
 
+    // ── Species clips: hover on desktop, at most one in view on touch ───────
+    function clipFor(card) {
+      let v = card.querySelector("video");
+      if (v || card.dataset.noVideo) return v;
+      v = document.createElement("video");
+      v.muted = true; v.defaultMuted = true; v.loop = true; v.playsInline = true;
+      v.setAttribute("playsinline", ""); v.setAttribute("aria-hidden", "true");
+      v.preload = "none"; // nothing downloads until the first play
+      v.src = `/videos/species/${card.dataset.video}.mp4`;
+      v.addEventListener("playing", () => v.classList.add("is-playing"));
+      v.addEventListener("error", () => { card.dataset.noVideo = "1"; v.remove(); }, { once: true });
+      card.querySelector(".fd-thumb").append(v);
+      return v;
+    }
+    function playCard(card) {
+      if (!card || !card.dataset.video || card.dataset.noVideo || !motionOK()) return;
+      const v = clipFor(card);
+      if (!v) return;
+      const p = v.play();
+      if (p && p.catch) p.catch(() => { /* interrupted by pause, or autoplay refused */ });
+    }
+    function stopCard(card) {
+      const v = card && card.querySelector("video");
+      if (!v) return;
+      v.pause(); v.classList.remove("is-playing");
+    }
+    function wireHoverClips(list) {
+      const cardOf = (node) => (node && node.closest ? node.closest(".fd-card[data-video]") : null);
+      list.addEventListener("pointerover", (e) => {
+        if (!canHover.matches || e.pointerType === "touch") return;
+        const card = cardOf(e.target);
+        if (card && !card.contains(e.relatedTarget)) playCard(card);
+      });
+      list.addEventListener("pointerout", (e) => {
+        const card = cardOf(e.target);
+        if (card && !card.contains(e.relatedTarget)) stopCard(card);
+      });
+      list.addEventListener("focusin", (e) => { if (canHover.matches) playCard(cardOf(e.target)); });
+      list.addEventListener("focusout", (e) => {
+        const card = cardOf(e.target);
+        if (card && !card.contains(e.relatedTarget)) stopCard(card);
+      });
+    }
+    /** Touch screens: only the single most-visible clip card near the middle plays, after a short dwell. */
+    const touchClips = (() => {
+      if (canHover.matches || !("IntersectionObserver" in window)) return null;
+      const seen = new Map();
+      let current = null, timer = 0;
+      function pick() {
+        const mid = window.innerHeight / 2;
+        let best = null, bestDist = Infinity;
+        for (const [card, ratio] of seen) {
+          if (!card.isConnected) { seen.delete(card); continue; }
+          if (ratio < 0.9) continue;
+          const r = card.getBoundingClientRect();
+          const dist = Math.abs(r.top + r.height / 2 - mid);
+          if (dist < bestDist) { bestDist = dist; best = card; }
+        }
+        return best;
+      }
+      function schedule() {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          const next = pick();
+          if (next === current) return;
+          if (current) stopCard(current);
+          current = next;
+          if (next) playCard(next);
+        }, 700);
+      }
+      const io = new IntersectionObserver((entries) => {
+        for (const en of entries) { if (en.isIntersecting) seen.set(en.target, en.intersectionRatio); else seen.delete(en.target); }
+        schedule();
+      }, { threshold: [0, 0.5, 0.9, 1] });
+      window.addEventListener("scroll", () => { if (seen.size) schedule(); }, { passive: true });
+      return {
+        reset() { io.disconnect(); seen.clear(); if (current) stopCard(current); current = null; },
+        observe(card) { if (motionOK() && !lightData()) io.observe(card); },
+      };
+    })();
+
     // ── 1. Species search ───────────────────────────────────────────────────
+    function hasVideo(sp) { return state.videos.has(sp.u); }
     function matchesFilter(sp) {
       switch (state.filter) {
         case "fresh": return sp.w === "fresh" || sp.w === "brackish";
@@ -288,19 +641,29 @@
       if ((sp.f || "").toLowerCase().includes(q)) return 4;
       return -1;
     }
-    /** Empty query: what's for sale first, then beginner-friendly species with photos. */
-    function defaultRank(sp) {
-      const sale = state.availability[sp.s.toLowerCase()] ? 0 : 1;
-      const photo = sp.p ? 0 : 1;
-      const easy = sp.d === "Beginner" ? 0 : sp.d === "Intermediate" ? 1 : 2;
-      return sale * 100 + photo * 10 + easy;
+    /** Stable per-day shuffle of the clip species, so the front row changes from one day to the next. */
+    const DAY = Math.floor(Date.now() / 86400000);
+    function dailyOrder(slug) {
+      let h = 2166136261 ^ DAY;
+      for (let i = 0; i < slug.length; i += 1) h = Math.imul(h ^ slug.charCodeAt(i), 16777619);
+      return h >>> 0;
+    }
+    /** Empty query: species with clips first, then what's for sale, then beginner-friendly species with photos. */
+    function defaultCompare(a, b) {
+      const va = hasVideo(a) ? 0 : 1, vb = hasVideo(b) ? 0 : 1;
+      if (va !== vb) return va - vb;
+      const sa = state.availability[a.s.toLowerCase()] ? 0 : 1, sb = state.availability[b.s.toLowerCase()] ? 0 : 1;
+      if (sa !== sb) return sa - sb;
+      if (va === 0) return dailyOrder(a.u) - dailyOrder(b.u);
+      const pa = a.p ? 0 : 1, pb = b.p ? 0 : 1;
+      if (pa !== pb) return pa - pb;
+      const ease = (d) => (d === "Beginner" ? 0 : d === "Intermediate" ? 1 : 2);
+      return ease(a.d) - ease(b.d) || a.n.localeCompare(b.n);
     }
     function currentResults() {
       const q = state.query.trim().toLowerCase();
       const pool = state.species.filter(matchesFilter);
-      if (!q) {
-        return { rows: pool.slice().sort((a, b) => defaultRank(a) - defaultRank(b) || a.n.localeCompare(b.n)), total: pool.length, limit: DEFAULT_LIMIT };
-      }
+      if (!q) return { rows: pool.slice().sort(defaultCompare), total: pool.length, limit: DEFAULT_LIMIT };
       const hits = [];
       for (const sp of pool) { const r = score(sp, q); if (r >= 0) hits.push([r, sp]); }
       hits.sort((a, b) => a[0] - b[0] || a[1].n.localeCompare(b[1].n));
@@ -309,42 +672,53 @@
     function speciesCard(sp) {
       const li = el("li");
       const a = el("a", "fd-card"); a.href = `/species/${sp.u}`;
-      a.append(thumb(sp.p, sp.n, typeIcon(sp.t)));
+      const box = thumb(sp.p, sp.n, typeIcon(sp.t));
+      const marks = [];
+      if (hasVideo(sp) && clipsEnabled()) { a.dataset.video = sp.u; marks.push(["video", "▶ Video"]); }
+      const avail = state.availability[sp.s.toLowerCase()];
+      if (avail) marks.push(["sale", `For sale${avail.fromPriceDisplay ? ` from ${avail.fromPriceDisplay}` : ""}`]);
+      badges(box, marks);
+      a.append(box);
       const body = el("div", "fd-body");
-      body.append(el("div", "fd-name", sp.n), el("div", "fd-sci", sp.s));
+      body.append(el("h3", "fd-name", sp.n), el("div", "fd-sci", sp.s));
       const tags = el("div", "fd-tags");
       tags.append(el("span", `fd-tag${sp.w === "marine" ? " fd-tag--marine" : ""}`, sp.w === "marine" ? "Saltwater" : sp.w === "brackish" ? "Brackish" : "Freshwater"));
       if (sp.d) tags.append(el("span", "fd-tag", sp.d));
       if (sp.g) tags.append(el("span", "fd-tag", `${sp.g}+ gal`));
-      const avail = state.availability[sp.s.toLowerCase()];
-      if (avail) {
-        const from = avail.fromPriceDisplay ? ` from ${avail.fromPriceDisplay}` : "";
-        tags.append(el("span", "fd-tag fd-tag--sale", `For sale${from}`));
-      }
       body.append(tags);
       a.append(body); li.append(a);
       return li;
     }
-    function renderSpecies() {
+    function renderSpecies(animate = true) {
       const list = document.getElementById("speciesResults");
       const meta = document.getElementById("resultMeta");
+      const hint = document.getElementById("videoHint");
       const { rows, total, limit } = currentResults();
+      if (touchClips) touchClips.reset();
       list.replaceChildren();
       const q = state.query.trim();
+      let clips = 0;
       if (!total) {
         meta.textContent = q ? `No species match “${q}”.` : "No species in this filter yet.";
-        const li = el("li", "fd-empty");
-        li.style.gridColumn = "1 / -1";
-        li.append(document.createTextNode("Try a common name, a genus, or a family. Missing something? "));
-        const ask = el("a", "", "Ask Poseidon"); ask.href = "/poseidon.html"; li.append(ask);
-        list.append(li);
+        list.append(emptyState("🔍", q ? "Nothing by that name yet" : "Nothing here yet",
+          "Try a common name, a genus, or a family. Missing something?", [["/poseidon.html", "Ask Poseidon"], ["/database.html", "Browse the full database"]]));
       } else {
         const shown = Math.min(total, limit);
         meta.textContent = q
           ? `${total} match${total === 1 ? "" : "es"} for “${q}”${total > shown ? `, showing ${shown}` : ""}`
           : `${total} species${total > shown ? `, showing ${shown}` : ""}`;
-        rows.slice(0, limit).forEach((sp) => list.append(speciesCard(sp)));
+        rows.slice(0, limit).forEach((sp, i) => {
+          const li = speciesCard(sp);
+          if (animate) rise(li, i);
+          list.append(li);
+          const card = li.firstChild;
+          if (card.dataset.video) { clips += 1; if (touchClips) touchClips.observe(card); }
+        });
       }
+      hint.hidden = !clips;
+      hint.textContent = canHover.matches
+        ? "Cards marked Video play a short clip while you point at them."
+        : "Cards marked Video play a short clip when one is fully in view.";
       const link = document.getElementById("fullDbLink");
       link.href = q ? `/database.html?q=${encodeURIComponent(q)}` : "/database.html";
     }
@@ -359,9 +733,17 @@
       document.querySelectorAll(".fd-chip").forEach((chip) => chip.setAttribute("aria-pressed", String(chip.dataset.filter === filter)));
       renderSpecies(); syncUrl();
     }
+    async function loadVideoList() {
+      try {
+        const res = await fetch("/home-videos.json");
+        if (!res.ok) return;
+        const slugs = await res.json();
+        if (Array.isArray(slugs)) state.videos = new Set(slugs.map(String));
+      } catch { /* clips are optional; photos still show */ }
+    }
     async function loadSpecies() {
       try {
-        const res = await fetch("/species-index.json");
+        const [res] = await Promise.all([fetch("/species-index.json"), loadVideoList()]);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         state.species = await res.json();
         state.species.forEach((sp) => state.bySci.set(sp.s.toLowerCase(), sp));
@@ -377,7 +759,7 @@
         if (!res.ok) return;
         const data = await res.json();
         state.availability = data.byScientificName || {};
-        if (state.species.length) renderSpecies();
+        if (state.species.length) renderSpecies(false);
       } catch { /* the "for sale" pill is optional */ }
     }
 
@@ -396,21 +778,22 @@
       a.href = `/app/products/${encodeURIComponent(key)}`;
       const sp = state.bySci.get(String(item.scientificName || "").toLowerCase());
       const isFrag = item.listingKind === "coral_frag";
-      a.append(thumb(item.photoUrl || (sp && sp.p), item.commonName, isFrag ? "🪸" : typeIcon(sp && sp.t)));
+      const box = thumb(item.photoUrl || (sp && sp.p), item.commonName, isFrag ? "🪸" : typeIcon(sp && sp.t));
+      const marks = [];
+      if (isFrag) marks.push(["", "Coral frag"]);
+      marks.push(["", item.isShipping === true ? "Ships" : item.isShipping === false ? "Local pickup" : "Ask seller"]);
+      badges(box, marks);
+      a.append(box);
       const body = el("div", "fd-body");
-      body.append(el("div", "fd-name", item.commonName || "Aquarium livestock"));
+      body.append(el("h3", "fd-name", item.commonName || "Aquarium livestock"));
       if (item.scientificName) body.append(el("div", "fd-sci", item.scientificName));
-      const tags = el("div", "fd-tags");
-      if (isFrag) tags.append(el("span", "fd-tag", "Coral frag"));
-      tags.append(el("span", "fd-tag", item.isShipping === true ? "Ships" : item.isShipping === false ? "Local pickup" : "Ask seller"));
-      body.append(tags);
+      if (item.sellerName) body.append(el("div", "fd-small", item.sellerName));
       const row = el("div", "fd-row");
       const cents = Number(item.priceCentsUSD) || Math.round(Number(item.price) * 100);
       const unit = isFrag ? " / frag" : item.isBatch ? " ea" : "";
       row.append(el("span", "fd-price", money(cents) ? `${money(cents)}${unit}` : "Ask seller"));
       if (item.stock != null && item.isBatch) row.append(el("span", "fd-small", `${item.stock} left`));
       body.append(row);
-      if (item.sellerName) body.append(el("div", "fd-small", item.sellerName));
       a.append(body); li.append(a);
       return li;
     }
@@ -436,13 +819,11 @@
       }).filter((item) => item.stock !== 0).slice(0, 8);
       grid.replaceChildren();
       if (!items.length) {
-        const li = el("li", "fd-empty"); li.style.gridColumn = "1 / -1";
-        li.append(document.createTextNode("Nothing listed right now. "));
-        const a = el("a", "", "Be the first to list"); a.href = "/app/directory"; li.append(a);
-        grid.append(li);
+        grid.append(emptyState("🐟", "Nothing listed right now", "Breeders list packs, fry batches and frags here as they have them.",
+          [["/app/directory", "Be the first to list"], ["/marketplace.html#wanted", "Post a wanted request"]]));
         return;
       }
-      items.forEach((item) => grid.append(listingCard(item)));
+      items.forEach((item, i) => { const li = listingCard(item); rise(li, i); grid.append(li); });
     }
 
     // ── 3. Auctions ─────────────────────────────────────────────────────────
@@ -457,9 +838,12 @@
     function lotCard(lot) {
       const li = el("li");
       const a = el("a", "fd-card"); a.href = `/app/auctions/${encodeURIComponent(lot.id)}`;
-      a.append(thumb(Array.isArray(lot.photos) ? lot.photos[0] : "", lot.title, "🔨"));
+      const box = thumb(Array.isArray(lot.photos) ? lot.photos[0] : "", lot.title, "🔨");
+      const when = lot.status === "upcoming" ? "Starts soon" : lot.endsAt ? endsIn(lot.endsAt) : "";
+      if (when) badges(box, [["", when]]);
+      a.append(box);
       const body = el("div", "fd-body");
-      body.append(el("div", "fd-name", lot.title || "Auction lot"));
+      body.append(el("h3", "fd-name", lot.title || "Auction lot"));
       const host = lot.club?.name || lot.seller?.name || lot.auctionTitle;
       if (host) body.append(el("div", "fd-small", host));
       const row = el("div", "fd-row");
@@ -467,8 +851,6 @@
       row.append(el("span", "fd-price", money(high || lot.startingBidCents) || "Open"));
       row.append(el("span", "fd-small", `${Number(lot.bidCount) || 0} bid${Number(lot.bidCount) === 1 ? "" : "s"}`));
       body.append(row);
-      const when = lot.status === "upcoming" ? "Starts soon" : lot.endsAt ? endsIn(lot.endsAt) : "";
-      if (when) body.append(el("div", "fd-small", when));
       a.append(body); li.append(a);
       return li;
     }
@@ -481,13 +863,68 @@
       } catch { lots = []; }
       grid.replaceChildren();
       if (!lots.length) {
-        const li = el("li", "fd-empty"); li.style.gridColumn = "1 / -1";
-        li.append(document.createTextNode("No auctions running right now. Sellers can list a timed lot, and clubs can run auction night, from the app. "));
-        const a = el("a", "", "Start one"); a.href = "/app/auctions"; li.append(a);
-        grid.append(li);
+        grid.append(emptyState("🔨", "No auctions running right now",
+          "Sellers can list a timed lot, and clubs can run auction night, from the app.",
+          [["/app/auctions", "Start one"], ["/app/auction-night", "Run a club auction"]]));
         return;
       }
-      lots.forEach((lot) => grid.append(lotCard(lot)));
+      lots.forEach((lot, i) => { const li = lotCard(lot); rise(li, i); grid.append(li); });
+    }
+
+    // ── Hero pond clip: poster first, clip after load on wide screens only ──
+    function initHeroVideo() {
+      const fig = document.getElementById("heroWindow");
+      const btn = document.getElementById("heroToggle");
+      if (!fig || !window.matchMedia("(min-width: 1000px)").matches || !motionOK() || lightData()) return;
+      const v = document.createElement("video");
+      v.muted = true; v.defaultMuted = true; v.loop = true; v.playsInline = true;
+      v.setAttribute("playsinline", ""); v.setAttribute("aria-hidden", "true");
+      v.preload = "none"; v.poster = HERO_POSTER; v.src = HERO_VIDEO;
+      let userPaused = false, inView = true;
+      const play = () => { if (!userPaused && inView && !document.hidden) { const p = v.play(); if (p && p.catch) p.catch(() => {}); } };
+      const setLabel = () => {
+        btn.setAttribute("aria-label", userPaused ? "Play the pond video" : "Pause the pond video");
+        btn.firstElementChild.textContent = userPaused ? "▶" : "❚❚";
+      };
+      v.addEventListener("playing", () => { v.classList.add("is-playing"); btn.hidden = false; });
+      v.addEventListener("error", () => { v.remove(); btn.hidden = true; }, { once: true });
+      btn.addEventListener("click", () => {
+        userPaused = !userPaused; setLabel();
+        if (userPaused) v.pause(); else play();
+      });
+      fig.querySelector(".fd-window__media").append(v);
+      if ("IntersectionObserver" in window) {
+        new IntersectionObserver(([en]) => { inView = en.isIntersecting; if (inView) play(); else v.pause(); }).observe(fig);
+      }
+      document.addEventListener("visibilitychange", () => { if (document.hidden) v.pause(); else play(); });
+      play();
+    }
+
+    // ── Motion: scroll reveals and the photo reel ───────────────────────────
+    function initReveal() {
+      const nodes = document.querySelectorAll(".fd-reveal");
+      if (!document.documentElement.classList.contains("fd-motion")) return;
+      const io = new IntersectionObserver((entries) => {
+        for (const en of entries) if (en.isIntersecting) { en.target.classList.add("is-in"); io.unobserve(en.target); }
+      }, { rootMargin: "0px 0px -6% 0px" });
+      nodes.forEach((n) => io.observe(n));
+    }
+    function initReel() {
+      const track = document.getElementById("reelTrack");
+      const btn = document.getElementById("reelToggle");
+      if (!track || !motionOK()) return;
+      // A second, hidden copy makes the loop seamless; screen readers get the first set only.
+      const copy = track.firstElementChild.cloneNode(true);
+      copy.setAttribute("aria-hidden", "true");
+      copy.querySelectorAll("img").forEach((img) => { img.alt = ""; });
+      track.append(copy);
+      track.classList.add("is-looping");
+      btn.hidden = false;
+      btn.addEventListener("click", () => {
+        const paused = track.classList.toggle("is-paused");
+        btn.setAttribute("aria-pressed", String(paused));
+        btn.textContent = paused ? "Play photos" : "Pause photos";
+      });
     }
 
     // ── Wire up ─────────────────────────────────────────────────────────────
@@ -505,7 +942,7 @@
       let timer = null;
       input.addEventListener("input", () => {
         clearTimeout(timer);
-        timer = setTimeout(() => { state.query = input.value; renderSpecies(); syncUrl(); }, 120);
+        timer = setTimeout(() => { state.query = input.value; renderSpecies(false); syncUrl(); }, 120);
       });
       // Results are live on this page; Enter keeps you here (no-JS falls back to the database page).
       document.getElementById("searchForm").addEventListener("submit", (e) => {
@@ -513,12 +950,20 @@
         document.getElementById("resultMeta").scrollIntoView({ block: "nearest" });
       });
       document.querySelectorAll(".fd-chip").forEach((chip) => chip.addEventListener("click", () => setFilter(chip.dataset.filter)));
+      wireHoverClips(document.getElementById("speciesResults"));
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) document.querySelectorAll(".fd-card video").forEach((v) => v.pause());
+      });
 
       renderWelcome();
       loadSpecies();
       loadAvailability();
       loadStock();
       loadAuctions();
+      initReveal();
+      initReel();
+      const startHero = () => setTimeout(initHeroVideo, 250);
+      if (document.readyState === "complete") startHero(); else window.addEventListener("load", startHero, { once: true });
     })();
   </script>
   <script src="/js/nav.js"></script>
