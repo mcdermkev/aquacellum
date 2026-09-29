@@ -474,7 +474,8 @@
 
         <h3>4. Who can see what</h3>
         <ul>
-          <li><strong>Public:</strong> your profile's display name, avatar, bio, XP and local zone.</li>
+          <li><strong>Public:</strong> your profile's account address, display name, avatar, bio, XP and tier, depth score, tank and species counts, whether you accept mentees, local zone, and when you joined.</li>
+          <li><strong>Private:</strong> your email, notification and privacy settings, and the rest of your profile. Only you (and our server) can read them.</li>
           <li><strong>Listings are public.</strong> Anyone can see a listing's species, price, quantity, photos, care ranges, and the seller's display name and account address. The public version of a listing never includes a location.</li>
           <li><strong>Pickup locations</strong> are shared only between the buyer and seller of that order. The exception is auctions: an auction lot shows the pickup location the seller or club enters.</li>
           <li><strong>Sellers' ship-from addresses</strong> are private. They're used only to get shipping rates and buy labels, and are never shown to buyers.</li>
@@ -502,9 +503,9 @@
               <tr><td><a href="https://posthog.com/privacy" target="_blank" rel="noopener">PostHog</a></td><td>Product analytics in the app (see <a href="#cookies">Cookies &amp; Local Storage</a>). Purchase events include the order type and amount.</td></tr>
               <tr><td><a href="https://cloud.google.com/terms/cloud-privacy-notice" target="_blank" rel="noopener">Google Cloud</a></td><td>Runs our AI features on Google's Gemini models (see below).</td></tr>
               <tr><td><a href="https://www.coinbase.com/legal/privacy" target="_blank" rel="noopener">Coinbase Developer Platform</a></td><td>Submits and pays for testnet transactions from your account.</td></tr>
-              <tr><td><a href="https://discord.com/privacy" target="_blank" rel="noopener">Discord</a></td><td>Feedback you send is posted to our team's private channel.</td></tr>
+              <tr><td><a href="https://discord.com/privacy" target="_blank" rel="noopener">Discord</a></td><td>Feedback you send goes to our server, which posts it to our team's private channel.</td></tr>
               <tr><td>Browser push services</td><td>If you turn on push notifications, your browser's maker (for example Google, Mozilla or Apple) delivers them.</td></tr>
-              <tr><td>Public page assets</td><td>Our public pages load fonts from Google Fonts, the map library from unpkg, map tiles from CARTO, and some species pages embed YouTube videos. These services receive your IP address when they load.</td></tr>
+              <tr><td>Public page assets</td><td>Our public pages load fonts from Google Fonts, the map library from unpkg, map tiles from OpenStreetMap (also used by the local breeder map in the app), and some species pages embed YouTube videos. These services receive your IP address when they load.</td></tr>
             </tbody>
           </table>
         </div>
@@ -524,7 +525,15 @@
           <li><strong>Download your Reef data:</strong> Settings → Your Data downloads a JSON file of your profile, posts, comments, reactions, follows, notifications and connection requests.</li>
           <li><strong>Clear this device:</strong> Settings → Clear this device deletes the copy of your data stored in this browser. It does not delete your account, and synced data comes back when you sign in again.</li>
           <li><strong>Email and push:</strong> Settings → Notifications. The weekly digest email also has a link to turn it off.</li>
-          <li><strong>Delete your account:</strong> email <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a> from the address on your account. We'll delete your profile, logbook data, listings and posts. We keep order and payment records we need for accounting, refunds, disputes and the law, and Stripe keeps its own records. Testnet records can't be deleted.</li>
+          <li><strong>Delete your account:</strong> Settings → Your Data (Data &amp; Privacy in Pro mode) → Delete My Account, or email <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a> from the address on your account.
+            <ul>
+              <li>For 30 days after you ask, nothing changes. Your account keeps working and you can cancel the request in the same place.</li>
+              <li>After 30 days, a daily job deletes your profile details (name, photo, bio, email and settings), synced tanks, livestock and care logs, Reef posts, comments, reactions and follows, direct messages, club and event activity, notifications, XP history, Echo companion data, your storefront page and store settings, pickup spots, parcel presets and ship-from address, saved payment method reference, carts, and photos you uploaded for posts, specimens and certificates.</li>
+              <li>We keep orders, payments, refunds, payouts, shipping labels and auction results (including the email on an order) for accounting, tax and disputes. We also keep moderation reports and account restrictions, reward credit records, species and morph suggestions you contributed, and your listings switched off so nobody can buy them. These stay linked to your wallet address on a closed-account marker.</li>
+              <li>If you have a Fish Room showcase page, our team removes it by hand, and the account closes once that is done.</li>
+              <li>Data saved in your browser stays until you clear it (Settings → Clear this device). Stripe and Privy keep their own records under their own policies. Testnet records can't be deleted.</li>
+            </ul>
+          </li>
           <li><strong>Access or correct your data:</strong> email us and we'll help.</li>
         </ul>
         <p>Depending on where you live, you may have other privacy rights. Email <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a> to use them.</p>

@@ -738,7 +738,7 @@
       grid.replaceChildren();
       try {
         const headers = { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/wanted_listings?status=eq.open&order=created_at.desc&limit=6`, { headers });
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/wanted_listings?select=id,species_name,notes,max_price_cents,created_at&is_active=eq.true&order=created_at.desc&limit=6`, { headers });
         const rows = res.ok ? await res.json() : [];
         if (!rows.length) {
           grid.append(emptyPanel("No open requests yet", "Be the first keeper to tell breeders what you are looking for."));
@@ -754,10 +754,14 @@
       const card = element("article", "wanted-card");
       card.append(element("div", "wanted-card__label", "Keeper request"));
       card.append(element("h3", "", row.species_name || "Aquarium livestock"));
-      card.append(element("p", "", row.description || "A keeper is looking for this species."));
+      card.append(element("p", "", row.notes || "A keeper is looking for this species."));
       const footer = element("div", "wanted-card__footer");
-      footer.append(element("span", "", row.max_budget ? `Up to $${Number(row.max_budget).toFixed(0)}` : "Budget flexible"));
-      footer.append(element("span", "", row.location || "Location flexible"));
+      const cents = Number(row.max_price_cents);
+      footer.append(element("span", "", cents > 0 ? `Up to $${(cents / 100).toFixed(cents % 100 ? 2 : 0)}` : "Budget flexible"));
+      const posted = row.created_at ? new Date(row.created_at) : null;
+      footer.append(element("span", "", posted && !Number.isNaN(posted.getTime())
+        ? `Posted ${posted.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+        : ""));
       card.append(footer);
       return card;
     }

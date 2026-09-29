@@ -4,6 +4,7 @@ import { db } from "../db";
 import aquadexAbi from "../abi/AquadexManager.json";
 import { getProvider } from "../utils/smartAccount";
 import { listPublishedSpeciesProfiles } from "../services/speciesCurationApi";
+import { readCatalogViaMulticall } from "../services/contractCatalogReader";
 
 /**
  * Merge curator-authored profiles over the static reference catalog.
@@ -135,11 +136,13 @@ export function useContractSpecies(contractAddress) {
       const totalCount = Number(nextId) - 1;
       if (totalCount <= 0) return [];
 
-      // Fetch all species data in parallel (batched to avoid rate limits)
+      // One Multicall3 request per 100 species. Falls back to single calls
+      // (10 species at a time) when Multicall3 is unavailable.
       const BATCH_SIZE = 10;
-      const allResults = [];
+      const batched = await readCatalogViaMulticall(contract, totalCount);
+      const allResults = batched || [];
 
-      for (let batchStart = 1; batchStart <= totalCount; batchStart += BATCH_SIZE) {
+      for (let batchStart = 1; !batched && batchStart <= totalCount; batchStart += BATCH_SIZE) {
         const batchEnd = Math.min(batchStart + BATCH_SIZE - 1, totalCount);
         const batchPromises = [];
 

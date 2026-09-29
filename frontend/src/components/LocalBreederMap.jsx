@@ -470,8 +470,15 @@ export function LocalBreederMap({ contractAddress, marketplaceAddress, walletAcc
         mapContainerRef.current.innerHTML = "";
         mapContainerRef.current._leaflet_id = null;
       }
-      const map = L.map(mapContainerRef.current, { center: [userLocation.lat, userLocation.lng], zoom: 12, zoomControl: true, attributionControl: false });
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", { subdomains: "abcd", maxZoom: 19 }).addTo(map);
+      const map = L.map(mapContainerRef.current, { center: [userLocation.lat, userLocation.lng], zoom: 12, zoomControl: true });
+      // OpenStreetMap tiles, same as breeders.html: no API key, attribution
+      // required. The CARTO basemap now demands a key and renders error tiles.
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        referrerPolicy: "strict-origin-when-cross-origin",
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(map);
+      map.attributionControl.setPrefix(false);
       // User location marker
       L.circleMarker([userLocation.lat, userLocation.lng], { radius: 8, fillColor: "#0284c7", fillOpacity: 1, color: "#fff", weight: 2 }).addTo(map).bindPopup("You are here");
       // No seller-dot markers: the discovery radar plots no fabricated seller
