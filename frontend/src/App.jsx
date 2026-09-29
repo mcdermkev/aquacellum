@@ -118,6 +118,10 @@ const StorefrontContent = lazy(() =>
 const AuctionNight = lazy(() =>
   import("./components/auctions/AuctionNight").then((m) => ({ default: m.AuctionNight }))
 );
+// Service pros: client tanks + visit log, and the client's history link
+const ServicePro = lazy(() =>
+  import("./components/service/ServicePro").then((m) => ({ default: m.ServicePro }))
+);
 const AuctionsPage = lazy(() =>
   import("./components/auctions/AuctionsPage").then((m) => ({ default: m.AuctionsPage }))
 );
@@ -1381,6 +1385,18 @@ export default function App() {
 
   // Club auction night runs full screen, outside the app shell (a projector, a
   // clerk laptop, a phone at the desk). It handles its own sign-in.
+  if (commerceRoute?.fullScreen && String(commerceRoute.kind).startsWith("service-")) {
+    return (
+      <Suspense fallback={<div style={{ minHeight: "100vh", background: "#041019" }} />}>
+        <ServicePro
+          view={commerceRoute.kind}
+          clientId={commerceRoute.clientId || null}
+          shareToken={commerceRoute.shareToken || null}
+          onNavigate={(path) => navigate(path)}
+        />
+      </Suspense>
+    );
+  }
   if (commerceRoute?.fullScreen) {
     const paid = new URLSearchParams(location.search).get("paid");
     return (

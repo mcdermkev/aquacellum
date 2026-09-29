@@ -1807,6 +1807,18 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
           </button>
         )}
 
+        {/* Service pros: clients' tanks live in their own full-screen tool
+            (docs/SERVICE_PROS_SPEC.md), so a plain link out of the shell. */}
+        <a
+          href="/app/service"
+          className={`tank-action-pill tank-action-pill--secondary${casualModeActive ? " tank-action-pill--casual-secondary" : " tank-action-pill--pro-secondary"}`}
+          style={{ textDecoration: "none" }}
+          aria-label="Client tanks: for people who service other people's tanks"
+        >
+          <span aria-hidden="true">🧰</span>
+          <span>Client tanks</span>
+        </a>
+
         {/* Register / Add Tank */}
         <button
           className={`tank-action-pill tank-action-pill--register${casualModeActive ? " tank-action-pill--casual" : " tank-action-pill--pro"}`}

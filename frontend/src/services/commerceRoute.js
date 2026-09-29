@@ -147,6 +147,24 @@ export function resolveCommerceRoute(pathname = "", validDashboardTabs = []) {
         fullScreen: true,
       };
     }
+    // Service pros (docs/SERVICE_PROS_SPEC.md): a full-screen tool for people
+    // who maintain tanks for clients, plus the client's read-only history link.
+    case "service": {
+      const [, , third] = segments;
+      if (!rawIdentity) return { kind: "service-home", tab: "directory", bypassLanding: true, fullScreen: true };
+      if (rawIdentity === "view") {
+        const shareToken = decodeSegment(third);
+        if (segments.length !== 3 || !/^[A-Za-z0-9_-]{32}$/.test(shareToken || "")) {
+          return { kind: "not-found", tab: "directory", requestedPath: normalized, bypassLanding: true };
+        }
+        return { kind: "service-history", tab: "directory", shareToken, bypassLanding: true, fullScreen: true };
+      }
+      const clientId = decodeSegment(rawIdentity);
+      if (segments.length !== 2 || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientId || "")) {
+        return { kind: "not-found", tab: "directory", requestedPath: normalized, bypassLanding: true };
+      }
+      return { kind: "service-client", tab: "directory", clientId, bypassLanding: true, fullScreen: true };
+    }
     case "auctions": {
       if (segments.length > 2) {
         return { kind: "not-found", tab: "directory", requestedPath: normalized, bypassLanding: true };

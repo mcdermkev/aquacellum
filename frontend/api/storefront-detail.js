@@ -95,6 +95,7 @@ import {
   createShowcaseVideoTokenHandler,
 } from "./_lib/showcasePublicHandlers.js";
 import { getCuratedEntry } from "./_lib/showcaseCurated.js";
+import { createServiceProHandlers } from "./_lib/servicePros.js";
 import {
   readCuratedVisibility,
   writeCuratedVisibility,
@@ -136,6 +137,19 @@ const supabase = createClient(
 const handleShowcaseRoom = createShowcaseRoomHandler({ supabase, setCorsHeaders });
 const handleShowcaseMedia = createShowcaseMediaHandler({ supabase, setCorsHeaders });
 const handleShowcaseVideoToken = createShowcaseVideoTokenHandler({ supabase });
+
+// Service pros: client tanks + visit log (docs/SERVICE_PROS_SPEC.md). The
+// helpers passed in are hoisted function declarations further down this file.
+const servicePro = createServiceProHandlers({
+  supabase,
+  requireWalletFromSession: (req, res) => requireWalletFromSession(req, res),
+  preamble: (req, res, methods) => boothStaffPreamble(req, res, methods),
+  parseJsonBody: (req) => parseJsonBody(req),
+  displayNames: (wallets) => boothDisplayNames(wallets),
+  setCorsHeaders,
+  newShareToken: () => crypto.randomBytes(24).toString("base64url"),
+  appUrl: process.env.APP_URL || "https://aquacellum.com",
+});
 
 // Protocol constants
 const CHAIN_ID = 84532; // Base Sepolia
@@ -275,6 +289,27 @@ export default async function handler(req, res) {
       return handleClubDeskCash(req, res);
     case "auction-room":
       return handleAuctionRoom(req, res);
+    // ── Service pros: client tanks + visit log (docs/SERVICE_PROS_SPEC.md) ──
+    case "service-home":
+      return servicePro.home(req, res);
+    case "service-client":
+      return servicePro.client(req, res);
+    case "service-client-save":
+      return servicePro.clientSave(req, res);
+    case "service-client-archive":
+      return servicePro.clientArchive(req, res);
+    case "service-site-save":
+      return servicePro.siteSave(req, res);
+    case "service-tank-save":
+      return servicePro.tankSave(req, res);
+    case "service-visit-add":
+      return servicePro.visitAdd(req, res);
+    case "service-visit-delete":
+      return servicePro.visitDelete(req, res);
+    case "service-share":
+      return servicePro.share(req, res);
+    case "service-history":
+      return servicePro.history(req, res);
     // ── Aquadex tank QR: publish a tank, and the public read behind the label ──
     case "publish-tank":
       return handlePublishTank(req, res);

@@ -1,0 +1,19 @@
+/* Service pros: small additions on top of the auction-night look (auctionNight.css). */
+.sp-tasks { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.sp-task { min-height: 40px; }
+.sp-task[aria-pressed="true"] { background: linear-gradient(135deg, rgba(45, 212, 191, 0.3), rgba(56, 189, 248, 0.24)); border-color: rgba(45, 212, 191, 0.6); }
+.sp-note { min-height: 84px; resize: vertical; font-family: inherit; }
+.sp-readings { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.5rem; }
+.sp-tank { border: 1px solid var(--an-line); border-radius: 16px; padding: 0.9rem 1rem; background: var(--an-card-hi); }
+.sp-visit { border-top: 1px solid rgba(148, 210, 230, 0.1); padding: 0.6rem 0; }
+.sp-visit:first-child { border-top: 0; }
+.sp-chip-overdue { background: rgba(251, 113, 133, 0.18); color: #fecdd3; }
+.sp-chip-soon { background: rgba(251, 191, 36, 0.18); color: #fde68a; }
+.sp-chip-ok { background: rgba(74, 222, 128, 0.16); color: #bbf7d0; }
+
+@media print {
+  .an { background: #fff !important; color: #111 !important; }
+  .an-card, .sp-tank { background: #fff !important; border-color: #ccc !important; color: #111 !important; backdrop-filter: none !important; }
+  .an-soft, .an-muted, .an-sub { color: #444 !important; }
+  .an-noprint { display: none !important; }
+}
