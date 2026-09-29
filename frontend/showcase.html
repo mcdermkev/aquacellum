@@ -3,102 +3,269 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Showcase — Aquacellum</title>
-  <meta name="description" content="A public window into a living aquarium — see the tanks, fish, and available marketplace offerings on Aquacellum.">
-  <meta property="og:title" content="Aquarium Showcase — Aquacellum">
-  <meta property="og:description" content="A public window into a living aquarium. See its tanks, fish, and available marketplace offerings.">
+  <title>Fish Room | Aquacellum</title>
+  <meta name="description" content="A public window into a breeder's fish room on Aquacellum. See the tanks, the fish, short clips from the room, and what is for sale.">
+  <meta property="og:title" content="Fish Room | Aquacellum">
+  <meta property="og:description" content="A public window into a breeder's fish room. See the tanks, the fish, and what is for sale.">
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Aquacellum">
   <meta property="og:image" content="/icons/icon-512.png">
   <meta name="twitter:card" content="summary_large_image">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/shared.css">
 
   <style>
-    .showcase-hero { padding: 2.5rem 0 1.5rem; }
-    .showcase-kicker { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--violet-300, #c4b5fd); }
-    .showcase-title { font-family: 'Outfit', sans-serif; font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; color: #fff; margin: 0.4rem 0 0.6rem; }
-    .showcase-desc { font-size: 0.95rem; line-height: 1.65; color: var(--text-secondary); max-width: 680px; }
-    .showcase-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1.1rem; min-height: 42px; }
-    .showcase-store-link { display: inline-flex; align-items: center; padding: 10px 18px; border-radius: 11px; font-size: 0.82rem; font-weight: 700; color: #061c18; text-decoration: none; background: linear-gradient(135deg, var(--emerald-400, #34d399), var(--teal-500, #14b8a6)); }
-    .showcase-store-link:hover { filter: brightness(1.08); }
-    .showcase-hero-media { display: none; margin: 0 0 2rem; border-radius: 18px; overflow: hidden; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); aspect-ratio: 16 / 7; }
-    .showcase-hero-media.visible { display: block; }
-    .showcase-hero-media img { width: 100%; height: 100%; display: block; object-fit: cover; }
-    .video-gallery { display: none; margin: 0 0 3rem; }
-    .video-gallery.visible { display: block; }
-    .video-gallery__title { font-family: 'Outfit', sans-serif; color: #fff; font-size: 1.45rem; margin: 0 0 1rem; }
-    .video-gallery__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
-    .video-card { padding: 14px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; }
-    .video-card video { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 10px; background: #000; }
-    .video-card h3 { color: #fff; font-family: 'Outfit', sans-serif; font-size: 1rem; margin: .8rem 0 .35rem; }
-    .video-card p { color: var(--text-secondary); font-size: .8rem; line-height: 1.5; margin: 0; }
-    .video-card button { margin-top: .7rem; padding: 8px 13px; border-radius: 9px; border: 1px solid rgba(139,92,246,.35); background: rgba(139,92,246,.12); color: #ddd6fe; font-weight: 700; cursor: pointer; }
-    .video-card button:disabled { opacity: .55; cursor: wait; }
+    /* Fish Room (Daylight). Everything below renders from the showcase
+       publication API (/api/storefront-detail?action=showcase-room). Live
+       stock is read from the public listings view via /js/public-listings.js. */
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--text-primary); font-family: "DM Sans", sans-serif; }
+    a { color: inherit; }
+    button { font: inherit; color: inherit; }
+    .sc-wrap { width: min(1320px, calc(100% - 40px)); margin: 0 auto; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
-    .tank-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin: 1.5rem 0 3rem; }
-    .tank-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-md, 16px); overflow: hidden; backdrop-filter: blur(12px); transition: var(--transition); }
-    .tank-card:hover { border-color: rgba(139,92,246,0.25); transform: translateY(-2px); }
-    .tank-card__visual { height: 180px; display: flex; align-items: center; justify-content: center; font-size: 2.6rem; background: linear-gradient(135deg, rgba(96,165,250,0.10), rgba(52,211,153,0.06)); }
-    .tank-card__visual img { width: 100%; height: 100%; object-fit: cover; }
-    .tank-card__body { padding: 16px 18px 20px; }
-    .tank-card__label { font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 700; color: #fff; margin: 0; }
-    .tank-card__caption { font-size: 0.82rem; line-height: 1.55; color: var(--text-secondary); margin-top: 6px; }
-    .tank-facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-    .tank-fact { padding: 3px 10px; border-radius: 50px; font-size: 0.65rem; font-weight: 600; background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.2); color: var(--violet-300, #c4b5fd); }
-    .specimen-list { list-style: none; margin: 14px 0 0; padding: 12px 0 0; border-top: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 10px; }
-    .specimen-item { display: flex; flex-direction: column; gap: 2px; }
-    .specimen-name { font-size: 0.85rem; font-weight: 600; color: var(--text-primary, #f8fafc); }
-    .specimen-species { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
-    .specimen-meta { font-size: 0.7rem; color: var(--text-muted); }
-    .specimen-story { font-size: 0.78rem; line-height: 1.5; color: var(--text-secondary); }
-    .tank-commerce { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.25); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-    .tank-commerce__info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-    .tank-commerce__pack { font-size: 0.82rem; font-weight: 700; color: var(--emerald-300, #6ee7b7); }
-    .tank-commerce__meta { font-size: 0.7rem; color: var(--text-muted); }
-    .tank-commerce__buy { flex-shrink: 0; padding: 8px 16px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; text-decoration: none; background: linear-gradient(135deg, var(--emerald-400, #34d399), var(--teal-500, #14b8a6)); color: #04231a; }
-    .tank-commerce__buy:hover { filter: brightness(1.08); }
-    .tank-guide-link { display: inline-block; margin-top: 14px; font-size: 0.78rem; font-weight: 700; text-decoration: none; color: var(--violet-300, #c4b5fd); }
-    .tank-guide-link:hover { filter: brightness(1.15); }
-    .state-panel { max-width: 560px; margin: 5rem auto; text-align: center; padding: 0 1rem; }
-    .state-panel h3 { font-family: 'Outfit', sans-serif; font-size: 1.3rem; color: #fff; margin-bottom: 0.6rem; }
-    .state-panel p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
-    @media (max-width: 640px) {
-      .showcase-hero { padding-top: 1.75rem; }
-      .showcase-hero-media { aspect-ratio: 4 / 3; }
-      .tank-grid { grid-template-columns: 1fr; }
+    .sc-btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--text-primary); font-weight: 700; font-size: .82rem; text-decoration: none; cursor: pointer; transition: transform .2s, border-color .2s, box-shadow .2s, background .2s; white-space: nowrap; }
+    .sc-btn:hover { transform: translateY(-1px); border-color: rgba(var(--ink-rgb),.28); box-shadow: var(--shadow-sm); }
+    .sc-btn--teal { background: #0f766e; border-color: #0f766e; color: #fff; }
+    .sc-btn--teal:hover { background: #115e59; border-color: #115e59; }
+    .sc-btn--ink { background: var(--text-primary); border-color: var(--text-primary); color: #fff; }
+    .sc-btn:focus-visible, .sc-link:focus-visible, .sc-play:focus-visible, .sc-clip-toggle:focus-visible { outline: 3px solid rgba(13,148,136,.45); outline-offset: 2px; }
+    .sc-link { display: inline-flex; align-items: center; gap: 6px; color: #0f766e; font-size: .8rem; font-weight: 700; text-decoration: none; border-bottom: 1px solid rgba(15,118,110,.35); padding-bottom: 2px; }
+    .sc-link:hover { border-bottom-color: #0f766e; }
+
+    /* Loading / error panel */
+    .sc-state { max-width: 560px; margin: 0 auto; padding: 120px 20px; text-align: center; }
+    .sc-state h3 { font-family: "Manrope", sans-serif; font-size: 1.5rem; letter-spacing: -.02em; margin-bottom: .6rem; }
+    .sc-state p { color: var(--text-secondary); line-height: 1.6; }
+    .sc-state__links { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+
+    /* Hero */
+    .sc-hero { position: relative; border-bottom: 1px solid var(--line); overflow: hidden; }
+    .sc-hero::before { content: ""; position: absolute; inset: 0; background:
+      radial-gradient(circle at 8% 0%, rgba(245,158,11,.10), transparent 42%),
+      radial-gradient(circle at 92% 100%, rgba(13,148,136,.10), transparent 45%),
+      linear-gradient(130deg, #ffffff 0%, #f5f9fa 55%, #eaf3f5 100%); }
+    .sc-hero__inner { position: relative; display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); gap: 56px; align-items: center; padding: 56px 0 64px; min-height: min(700px, calc(100vh - 150px)); }
+    .sc-hero--solo .sc-hero__inner { grid-template-columns: minmax(0, 1fr); min-height: 0; padding: 80px 0; }
+    .sc-eyebrow { display: flex; align-items: center; gap: 10px; color: #0f766e; font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 20px; }
+    .sc-eyebrow::before { content: ""; width: 34px; height: 1px; background: currentColor; }
+    .sc-hero h1 { margin: 0; font-family: "Manrope", sans-serif; font-size: clamp(2.6rem, 5.6vw, 5.4rem); line-height: .95; letter-spacing: -.055em; font-weight: 700; overflow-wrap: anywhere; }
+    .sc-hero__copy { margin: 24px 0 0; max-width: 560px; color: var(--text-secondary); font-size: clamp(1rem, 1.4vw, 1.14rem); line-height: 1.65; }
+    .sc-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; min-height: 44px; }
+    .sc-hero__meta { margin-top: 18px; color: var(--text-muted); font-size: .8rem; }
+
+    .sc-stage { position: relative; padding: 0 0 40px 40px; }
+    .sc-hero__photo { margin: 0; aspect-ratio: 5 / 4; overflow: hidden; border: 1px solid var(--line); background: var(--bg-deep); box-shadow: var(--shadow-lg); opacity: 0; transition: opacity .6s ease; }
+    .sc-hero__photo.visible { opacity: 1; }
+    .sc-hero__photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .sc-hero__clip { position: absolute; left: 0; bottom: 0; width: 34%; aspect-ratio: 3 / 4; margin: 0; overflow: hidden; border: 6px solid #fff; background: #0b2530; box-shadow: var(--shadow-lg); }
+    .sc-hero__clip video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .sc-hero__clip figcaption { position: absolute; left: 8px; top: 8px; right: 8px; padding: 5px 9px; width: fit-content; max-width: calc(100% - 16px); border-radius: 999px; background: rgba(255,255,255,.94); color: var(--text-primary); font-size: .66rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sc-stage--clip-only { padding: 0; display: flex; justify-content: center; }
+    .sc-stage--clip-only .sc-hero__clip { position: relative; width: min(360px, 70%); }
+    .sc-clip-toggle { position: absolute; right: 8px; bottom: 8px; min-height: 32px; padding: 0 12px; border: 0; border-radius: 999px; background: rgba(255,255,255,.94); color: var(--text-primary); box-shadow: var(--shadow-sm); font-size: .68rem; font-weight: 700; cursor: pointer; }
+
+    /* Stats */
+    .sc-stats { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); background: #fff; }
+    .sc-stat { padding: 22px 8px; text-align: center; border-right: 1px solid var(--line); }
+    .sc-stat:last-child { border-right: 0; }
+    .sc-stats[data-count="3"] { grid-template-columns: repeat(3, 1fr); }
+    .sc-stats[data-count="2"] { grid-template-columns: repeat(2, 1fr); }
+    .sc-stat strong { display: block; font-family: "Manrope", sans-serif; font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+    .sc-stat span { color: var(--text-muted); font-size: .66rem; text-transform: uppercase; letter-spacing: .12em; }
+
+    /* Sections */
+    .sc-section { padding: 80px 0; }
+    .sc-section--tint { background: var(--bg-deep); border-block: 1px solid var(--line); }
+    .sc-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 30px; }
+    .sc-kicker { color: #6d28d9; font-size: .7rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 10px; }
+    .sc-section h2 { margin: 0; font-family: "Manrope", sans-serif; font-size: clamp(1.9rem, 3.8vw, 3.4rem); line-height: 1; letter-spacing: -.045em; }
+    .sc-intro { max-width: 520px; margin: 0; color: var(--text-secondary); line-height: 1.65; font-size: .92rem; }
+
+    /* Tank / line cards */
+    .sc-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 34px 20px; }
+    .sc-card { min-width: 0; display: flex; flex-direction: column; scroll-margin-top: 90px; }
+    .sc-card__media { position: relative; aspect-ratio: 4 / 5; overflow: hidden; border: 1px solid var(--line); background: var(--bg-deep); box-shadow: var(--shadow-sm); transition: box-shadow .25s; }
+    .sc-card:hover .sc-card__media { box-shadow: var(--shadow-md); }
+    .sc-card__media img, .sc-hover-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .45s, opacity .3s; }
+    .sc-hover-video { opacity: 0; }
+    .is-playing > .sc-hover-video { opacity: 1; }
+    .sc-card:hover .sc-card__media img { transform: scale(1.03); }
+    .sc-card__placeholder { position: absolute; inset: 0; display: grid; place-items: center; font-size: 3rem; background: radial-gradient(circle at 50% 35%, #ffffff, #e3eff2 68%); }
+    .sc-badges { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 2; display: flex; flex-wrap: wrap; gap: 6px; }
+    .sc-badge { padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,.94); border: 1px solid rgba(var(--ink-rgb),.08); box-shadow: var(--shadow-sm); font-size: .66rem; font-weight: 700; color: var(--text-primary); }
+    .sc-badge--live { background: #0f766e; border-color: #0f766e; color: #fff; }
+    .sc-clip-hint { position: absolute; right: 12px; bottom: 12px; z-index: 2; padding: 5px 9px; border-radius: 999px; background: rgba(var(--ink-rgb),.66); color: #fff; font-size: .64rem; font-weight: 600; transition: opacity .3s; }
+    .is-playing > .sc-clip-hint { opacity: 0; }
+    .sc-card__body { padding: 16px 2px 0; display: flex; flex-direction: column; flex: 1; }
+    .sc-card__row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .sc-card h3 { margin: 0; font-family: "Manrope", sans-serif; font-size: 1.3rem; letter-spacing: -.025em; }
+    .sc-card__price { flex: none; font-weight: 700; font-size: .9rem; font-variant-numeric: tabular-nums; }
+    .sc-card__sci { margin-top: 3px; color: var(--text-muted); font-size: .74rem; }
+    .sc-card__sci i { font-style: italic; }
+    .sc-card__desc { margin: 12px 0 0; color: var(--text-secondary); font-size: .86rem; line-height: 1.6; }
+    .sc-facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .sc-fact { padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; background: #f5f9fa; color: var(--text-secondary); font-size: .68rem; }
+    .sc-specimens { list-style: none; margin: 14px 0 0; padding: 12px 0 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+    .sc-specimen { display: flex; flex-direction: column; gap: 2px; font-size: .78rem; color: var(--text-secondary); line-height: 1.5; }
+    .sc-specimen strong { color: var(--text-primary); font-size: .84rem; }
+    .sc-commerce { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 3px; font-size: .78rem; color: var(--text-secondary); }
+    .sc-commerce strong { color: var(--text-primary); font-size: .86rem; }
+    .sc-card__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: auto; padding-top: 16px; }
+
+    /* Featured first tank: a wide split card */
+    .sc-card--feature { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); gap: 36px; align-items: center; }
+    .sc-card--feature .sc-card__media { aspect-ratio: 16 / 10; }
+    .sc-card--feature .sc-card__body { padding: 0; }
+    .sc-card--feature h3 { font-size: clamp(1.6rem, 3vw, 2.4rem); letter-spacing: -.04em; }
+    .sc-card--feature .sc-card__desc { font-size: .95rem; }
+
+    /* Clip gallery */
+    .sc-clips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px 20px; }
+    .sc-clip { min-width: 0; }
+    .sc-clip__frame { position: relative; aspect-ratio: 4 / 5; overflow: hidden; border: 1px solid var(--line); background: #0b2530; box-shadow: var(--shadow-sm); }
+    .sc-clip__frame .sc-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+    .sc-clip__frame.is-full .sc-hover-video { opacity: 1; object-fit: contain; background: #0b2530; }
+    .sc-clip__frame.is-full .sc-poster { display: none; }
+    .sc-clip__frame > video[controls] { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #0b2530; }
+    .sc-play { position: absolute; left: 12px; bottom: 12px; z-index: 3; min-height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; border: 0; border-radius: 999px; background: rgba(255,255,255,.95); color: var(--text-primary); box-shadow: var(--shadow-sm); font-size: .74rem; font-weight: 700; cursor: pointer; }
+    .sc-play:disabled { opacity: .7; cursor: wait; }
+    .sc-play__icon { font-size: .7rem; }
+    .sc-clip h3 { margin: 14px 0 4px; font-family: "Manrope", sans-serif; font-size: 1.05rem; letter-spacing: -.02em; }
+    .sc-clip p { margin: 0; color: var(--text-secondary); font-size: .8rem; line-height: 1.55; }
+
+    /* Breeder band */
+    .sc-breeder { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); border: 1px solid var(--line); background: #fff; box-shadow: var(--shadow-sm); }
+    .sc-breeder--text { grid-template-columns: minmax(0, 1fr); }
+    .sc-breeder__photo { position: relative; min-height: 340px; background: var(--bg-deep); overflow: hidden; }
+    .sc-breeder__photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .sc-breeder__body { padding: 40px; display: flex; flex-direction: column; justify-content: center; }
+    .sc-breeder h3 { margin: 0; font-family: "Manrope", sans-serif; font-size: clamp(1.6rem, 3vw, 2.4rem); letter-spacing: -.04em; }
+    .sc-breeder__loc { margin-top: 6px; color: var(--text-secondary); font-size: .86rem; }
+    .sc-breeder p { margin: 16px 0 0; color: var(--text-secondary); line-height: 1.65; font-size: .92rem; max-width: 560px; }
+    .sc-breeder__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+    .sc-note { margin-top: 22px; color: var(--text-muted); font-size: .76rem; line-height: 1.6; max-width: 760px; }
+
+    /* Scroll entrance, only when motion is allowed and JS is running */
+    .sc-motion .sc-rise { opacity: 0; transform: translateY(18px); transition: opacity .55s ease, transform .55s cubic-bezier(.2,.7,.2,1); transition-delay: calc(var(--i, 0) * 60ms); }
+    .sc-motion .sc-rise.is-in { opacity: 1; transform: none; }
+
+    @media (max-width: 1060px) {
+      .sc-grid, .sc-clips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 860px) {
+      .sc-hero__inner { grid-template-columns: minmax(0, 1fr); gap: 30px; padding: 40px 0 44px; min-height: 0; }
+      .sc-stage { padding: 0 0 28px 0; }
+      .sc-hero__photo { aspect-ratio: 4 / 3; }
+      .sc-hero__clip { left: auto; right: 14px; width: 36%; border-width: 4px; }
+      .sc-stats { grid-template-columns: repeat(2, 1fr); }
+      .sc-stat:nth-child(2) { border-right: 0; }
+      .sc-stat:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .sc-section { padding: 56px 0; }
+      .sc-head { flex-direction: column; align-items: start; }
+      .sc-card--feature { grid-template-columns: minmax(0, 1fr); gap: 0; }
+      .sc-card--feature .sc-card__body { padding: 16px 2px 0; }
+      .sc-breeder { grid-template-columns: minmax(0, 1fr); }
+      .sc-breeder__photo { min-height: 240px; }
+      .sc-breeder__body { padding: 26px; }
+    }
+    @media (max-width: 560px) {
+      .sc-wrap { width: calc(100% - 24px); }
+      .sc-grid { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+      .sc-card__media { aspect-ratio: 1 / 1; }
+      /* Clips become a swipeable filmstrip on phones */
+      .sc-clips { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; margin-right: -12px; scrollbar-width: thin; }
+      .sc-clip { flex: 0 0 76%; scroll-snap-align: start; }
+      .sc-btn { flex: 1 1 auto; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+      .sc-card:hover .sc-card__media img { transform: none; }
     }
   </style>
 </head>
 <body>
   <header id="site-nav"></header>
 
-  <div id="loadingState" class="state-panel">
-    <h3>Loading showcase…</h3>
-    <p>Fetching this aquarium's public window.</p>
+  <div id="loadingState" class="sc-state" role="status">
+    <h3>Loading the fish room</h3>
+    <p>Fetching this room's public page.</p>
   </div>
 
-  <main id="showcaseContent" class="container" style="display:none;">
-    <header class="showcase-hero">
-      <div class="showcase-kicker">Aquarium Showcase</div>
-      <h1 class="showcase-title" id="roomTitle"></h1>
-      <p class="showcase-desc" id="roomDesc" style="display:none;"></p>
-      <div class="showcase-actions" id="showcaseActions"></div>
-    </header>
-    <div class="showcase-hero-media" id="roomHero"></div>
-    <section class="video-gallery" id="videoGallery" aria-labelledby="videoGalleryTitle">
-      <h2 class="video-gallery__title" id="videoGalleryTitle">From the fish room</h2>
-      <div class="video-gallery__grid" id="videoGalleryGrid"></div>
+  <main id="showcaseContent" style="display:none;">
+    <section class="sc-hero" id="heroSection" aria-labelledby="roomTitle">
+      <div class="sc-wrap sc-hero__inner">
+        <div>
+          <div class="sc-eyebrow">Fish Room</div>
+          <h1 id="roomTitle"></h1>
+          <p class="sc-hero__copy" id="roomDesc" style="display:none;"></p>
+          <div class="sc-actions" id="showcaseActions"></div>
+          <p class="sc-hero__meta" id="roomMeta" hidden></p>
+        </div>
+        <div class="sc-stage" id="heroStage">
+          <figure class="sc-hero__photo" id="roomHero"></figure>
+          <figure class="sc-hero__clip" id="heroClip" hidden></figure>
+        </div>
+      </div>
+      <div class="sc-stats" id="roomStats" aria-live="polite">
+        <div class="sc-stat"><strong id="statTanks">&ndash;</strong><span>On show</span></div>
+        <div class="sc-stat"><strong id="statClips">&ndash;</strong><span>Clips</span></div>
+        <div class="sc-stat"><strong id="statLive">&ndash;</strong><span>Available now</span></div>
+        <div class="sc-stat"><strong id="statFrom">&ndash;</strong><span>Packs from</span></div>
+      </div>
     </section>
-    <div class="tank-grid" id="tankGrid"></div>
+
+    <section class="sc-section" id="tanks" aria-labelledby="tanksHeading">
+      <div class="sc-wrap">
+        <div class="sc-head">
+          <div>
+            <div class="sc-kicker">In the room</div>
+            <h2 id="tanksHeading">Tanks and lines</h2>
+          </div>
+          <p class="sc-intro" id="tanksIntro">Each tank as the breeder shows it. Hover a photo to play a clip where there is one. Prices come from the breeder's listings, and stock is read live, so it can change.</p>
+        </div>
+        <div class="sc-grid" id="tankGrid" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="sc-section sc-section--tint" id="videoGallery" aria-labelledby="videoGalleryTitle" hidden>
+      <div class="sc-wrap">
+        <div class="sc-head">
+          <div>
+            <div class="sc-kicker">From the fish room</div>
+            <h2 id="videoGalleryTitle">Watch the fish</h2>
+          </div>
+          <p class="sc-intro">Short clips filmed in the room. They preview without sound on hover. Press play to watch with sound and controls.</p>
+        </div>
+        <div class="sc-clips" id="videoGalleryGrid"></div>
+      </div>
+    </section>
+
+    <section class="sc-section" id="breederSection" aria-labelledby="breederHeading">
+      <div class="sc-wrap">
+        <div class="sc-head">
+          <div>
+            <div class="sc-kicker" id="breederKicker">The breeder</div>
+            <h2 id="breederHeading">Buy from this room</h2>
+          </div>
+        </div>
+        <div class="sc-breeder sc-breeder--text" id="breederBand">
+          <div class="sc-breeder__body" id="breederBody"></div>
+        </div>
+        <p class="sc-note">Photos and clips on this page come from the breeder's own room. Names are the breeder's own and describe how the fish look. They are not a pedigree or a genetics test.</p>
+      </div>
+    </section>
   </main>
 
   <footer id="site-footer"></footer>
   <script src="/js/nav.js"></script>
   <script src="/js/footer.js"></script>
-  <script src="/js/reveal.js"></script>
+  <!-- Display-safe listing reads (never the raw listings table). -->
+  <script src="/js/public-listings.js"></script>
   <script type="module">
     import Hls from 'hls.js';
     import {
@@ -109,6 +276,23 @@
       safePublicImageUrl,
     } from '/src/services/showcasePublic.js';
 
+    // Public anon key (same one every public page uses); it can only read the
+    // aquadex_listings_public projection.
+    const SUPABASE_URL = 'https://yahsdztnvsykzecjatsl.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaHNkenRudnN5a3plY2phdHNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQwMDgsImV4cCI6MjA5NjA3MDAwOH0.3anqDFU9hUjZg2AFWJlXSBbwSM-knNrmb-uQ_Baq98I';
+    const ORIGIN = window.location.origin;
+
+    // ── Motion and data budget ─────────────────────────────────────────
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const canHover = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const motionOK = () => !reducedMotion.matches;
+    /** Data saver or a slow connection: no clips start on their own. */
+    function lightData() {
+      const c = navigator.connection;
+      return !!c && (c.saveData === true || /2g|3g/.test(String(c.effectiveType || '')));
+    }
+    if (motionOK() && 'IntersectionObserver' in window) document.documentElement.classList.add('sc-motion');
+
     function element(tag, className, text) {
       const node = document.createElement(tag);
       if (className) node.className = className;
@@ -116,43 +300,191 @@
       return node;
     }
 
+    function link(className, label, href) {
+      const a = element('a', className, label);
+      a.href = href;
+      return a;
+    }
+
+    const money = (dollars) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(dollars);
+    const normTitle = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+
     function showState(title, body) {
       const panel = document.getElementById('loadingState');
-      panel.replaceChildren(element('h3', '', title), element('p', '', body));
+      const links = element('div', 'sc-state__links');
+      links.append(link('sc-btn sc-btn--teal', 'Browse the marketplace', '/marketplace'), link('sc-btn', 'Breed gallery', '/breeds.html'));
+      panel.replaceChildren(element('h3', '', title), element('p', '', body), links);
       panel.style.display = '';
       document.getElementById('showcaseContent').style.display = 'none';
     }
 
-    function enhanceMeta(room) {
+    function enhanceMeta(room, heroSrc) {
       if (room.title) {
-        document.title = `${room.title} — Showcase | Aquacellum`;
-        document.querySelector('meta[property="og:title"]')?.setAttribute('content', `${room.title} — Aquacellum`);
+        document.title = `${room.title} | Fish Room | Aquacellum`;
+        document.querySelector('meta[property="og:title"]')?.setAttribute('content', `${room.title} | Aquacellum`);
       }
       if (room.description) {
         document.querySelector('meta[name="description"]')?.setAttribute('content', room.description);
         document.querySelector('meta[property="og:description"]')?.setAttribute('content', room.description);
       }
+      if (heroSrc && !heroSrc.includes('/api/')) document.querySelector('meta[property="og:image"]')?.setAttribute('content', heroSrc);
     }
 
+    // ── Scroll entrance ────────────────────────────────────────────────
+    const riseObserver = document.documentElement.classList.contains('sc-motion')
+      ? new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-in');
+          riseObserver.unobserve(entry.target);
+        });
+      }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' })
+      : null;
+    function rise(node, index) {
+      if (!riseObserver) return;
+      node.classList.add('sc-rise');
+      node.style.setProperty('--i', String(index % 3));
+      riseObserver.observe(node);
+    }
+
+    // ── Hover clips: hover/focus on desktop, one-in-view on touch ──────
+    function hoverClip(frame, src, poster) {
+      let video = null;
+      function ensure() {
+        if (video || frame.dataset.noClip) return video;
+        video = element('video', 'sc-hover-video');
+        video.muted = true; video.defaultMuted = true; video.loop = true; video.playsInline = true;
+        video.setAttribute('playsinline', ''); video.setAttribute('aria-hidden', 'true');
+        video.preload = 'none'; // nothing downloads until the first play
+        if (poster) video.poster = poster;
+        video.src = src;
+        video.addEventListener('playing', () => frame.classList.add('is-playing'));
+        video.addEventListener('error', () => { frame.dataset.noClip = '1'; frame.classList.remove('is-playing'); video.remove(); video = null; }, { once: true });
+        frame.append(video);
+        return video;
+      }
+      function play() {
+        if (!motionOK() || frame.dataset.full) return;
+        const v = ensure();
+        if (!v) return;
+        const p = v.play();
+        if (p && p.catch) p.catch(() => { /* interrupted or refused */ });
+      }
+      function stop() {
+        if (!video || frame.dataset.full) return;
+        video.pause();
+        frame.classList.remove('is-playing');
+      }
+      return { play, stop, ensure };
+    }
+
+    const touchClips = (() => {
+      if (canHover.matches || !('IntersectionObserver' in window)) return null;
+      const clips = new WeakMap();
+      let current = null;
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          const clip = clips.get(entry.target);
+          if (!clip) return;
+          if (entry.intersectionRatio >= 0.75) {
+            if (current && current !== clip) current.stop();
+            current = clip;
+            if (!lightData()) clip.play();
+          } else if (current === clip) {
+            clip.stop();
+            current = null;
+          }
+        });
+      }, { threshold: [0, 0.75] });
+      return { observe(frame, clip) { clips.set(frame, clip); io.observe(frame); } };
+    })();
+
+    function wireHoverClip(card, frame, clip) {
+      card.addEventListener('pointerenter', (e) => { if (canHover.matches && e.pointerType !== 'touch') clip.play(); });
+      card.addEventListener('pointerleave', () => clip.stop());
+      card.addEventListener('focusin', () => { if (canHover.matches) clip.play(); });
+      card.addEventListener('focusout', (e) => { if (!card.contains(e.relatedTarget)) clip.stop(); });
+      if (touchClips) touchClips.observe(frame, clip);
+    }
+
+    // ── Hero ───────────────────────────────────────────────────────────
     function renderRoomHero(room) {
       const container = document.getElementById('roomHero');
       const hero = room.hero;
       const directImage = safePublicImageUrl(hero?.image, window.location.origin);
       const src = directImage || heroProxyPath(hero?.assetId);
-      if (!src) return;
+      if (!src) { container.hidden = true; return ''; }
       const image = element('img');
       image.src = src;
-      image.alt = typeof hero?.alt === 'string' && hero.alt.trim() ? hero.alt.trim() : `${room.title || 'Aquarium'} showcase`;
+      image.alt = typeof hero?.alt === 'string' && hero.alt.trim() ? hero.alt.trim() : `${room.title || 'Aquarium'} fish room`;
+      image.decoding = 'async';
+      image.setAttribute('fetchpriority', 'high');
       const x = Number(hero.focalPoint?.x);
       const y = Number(hero.focalPoint?.y);
       if (Number.isFinite(x) && Number.isFinite(y) && x >= 0 && x <= 1 && y >= 0 && y <= 1) {
         image.style.objectPosition = `${x * 100}% ${y * 100}%`;
       }
       image.addEventListener('load', () => container.classList.add('visible'));
-      image.addEventListener('error', () => container.replaceChildren());
+      image.addEventListener('error', () => { container.replaceChildren(); container.hidden = true; });
       container.replaceChildren(image);
+      return src;
     }
 
+    /** The room's first direct clip plays, muted and looping, beside the hero photo. */
+    function renderHeroClip(room) {
+      const figure = document.getElementById('heroClip');
+      const videos = Array.isArray(room.videos) ? room.videos : [];
+      const item = videos.find((v) => safePublicImageUrl(v?.src, ORIGIN));
+      if (!item) return false;
+      const video = element('video');
+      video.muted = true; video.defaultMuted = true; video.loop = true; video.playsInline = true;
+      video.setAttribute('playsinline', '');
+      video.preload = 'none';
+      const poster = safePublicImageUrl(item.poster, ORIGIN);
+      if (poster) video.poster = poster;
+      video.src = safePublicImageUrl(item.src, ORIGIN);
+      video.setAttribute('aria-label', item.alt || item.title || 'Clip from the fish room');
+      const caption = element('figcaption', '', item.title || 'From the fish room');
+      const toggle = element('button', 'sc-clip-toggle', 'Play clip');
+      toggle.type = 'button';
+      toggle.setAttribute('aria-pressed', 'false');
+      let userPaused = false;
+      const setPlaying = (playing) => {
+        toggle.textContent = playing ? 'Pause clip' : 'Play clip';
+        toggle.setAttribute('aria-pressed', String(playing));
+      };
+      video.addEventListener('play', () => setPlaying(true));
+      video.addEventListener('pause', () => setPlaying(false));
+      const start = () => { const p = video.play(); if (p && p.catch) p.catch(() => setPlaying(false)); };
+      toggle.addEventListener('click', () => {
+        if (video.paused) { userPaused = false; start(); } else { userPaused = true; video.pause(); }
+      });
+      figure.replaceChildren(video, caption, toggle);
+      figure.hidden = false;
+
+      // Starts on its own only when motion is allowed and data is not tight,
+      // after the page has loaded, and only while it is on screen.
+      if (motionOK() && !lightData()) {
+        const autoplay = () => {
+          if ('IntersectionObserver' in window) {
+            new IntersectionObserver((entries) => {
+              entries.forEach((entry) => {
+                if (entry.isIntersecting && !userPaused && motionOK()) start();
+                else if (!entry.isIntersecting) video.pause();
+              });
+            }, { threshold: 0.35 }).observe(figure);
+          } else {
+            start();
+          }
+        };
+        if (document.readyState === 'complete') autoplay();
+        else window.addEventListener('load', autoplay, { once: true });
+      }
+      reducedMotion.addEventListener?.('change', () => { if (!motionOK()) { userPaused = true; video.pause(); } });
+      return true;
+    }
+
+    // ── Signed (Mux) playback, for clips that have no direct file ──────
     const activeHls = new Set();
 
     function attachSignedPlayback(video, playbackUrl) {
@@ -193,8 +525,17 @@
         video.play().catch(() => {});
       } catch {
         button.disabled = false;
-        button.textContent = 'Playback unavailable — retry';
+        button.textContent = 'Playback unavailable. Retry';
       }
+    }
+
+    function playButton(label) {
+      const button = element('button', 'sc-play');
+      button.type = 'button';
+      const icon = element('span', 'sc-play__icon', '\u25B6');
+      icon.setAttribute('aria-hidden', 'true');
+      button.append(icon, element('span', '', label));
+      return button;
     }
 
     function renderVideoGallery(room) {
@@ -203,39 +544,62 @@
       grid.replaceChildren();
       const videos = Array.isArray(room.videos) ? room.videos : [];
       if (!videos.length) {
-        section.classList.remove('visible');
+        section.hidden = true;
         return;
       }
-      videos.forEach((item) => {
-        const card = element('article', 'video-card');
-        const video = element('video');
-        video.controls = true;
-        video.playsInline = true;
-        video.setAttribute('aria-label', item.alt || item.title || 'Fish room video');
-        const title = element('h3', '', item.title || 'Fish room video');
+      videos.forEach((item, index) => {
+        const card = element('article', 'sc-clip');
+        const frame = element('div', 'sc-clip__frame');
+        const title = item.title || 'Fish room clip';
+        const label = item.alt || title;
         // Curated direct-file playback: a plain same-origin MP4 with a poster,
         // no signed-token dance. Falls back to the Mux secure-token path when a
         // clip is only available as a signed videoId.
         const directSrc = safePublicImageUrl(item.src, window.location.origin);
         if (directSrc) {
-          video.preload = 'metadata';
           const posterUrl = safePublicImageUrl(item.poster, window.location.origin);
-          if (posterUrl) video.poster = posterUrl;
-          video.src = directSrc;
-          card.append(video, title);
-          if (item.caption) card.append(element('p', '', item.caption));
+          if (posterUrl) {
+            const poster = element('img', 'sc-poster');
+            poster.src = posterUrl; poster.alt = ''; poster.loading = 'lazy'; poster.decoding = 'async';
+            frame.append(poster);
+          }
+          const clip = hoverClip(frame, directSrc, posterUrl);
+          const button = playButton('Play with sound');
+          button.setAttribute('aria-label', `Play ${title} with sound`);
+          button.addEventListener('click', () => {
+            const video = clip.ensure();
+            if (!video) { button.remove(); return; }
+            frame.dataset.full = '1';
+            frame.classList.add('is-playing', 'is-full');
+            video.controls = true;
+            video.muted = false;
+            video.loop = false;
+            video.removeAttribute('aria-hidden');
+            video.setAttribute('aria-label', label);
+            video.play().catch(() => {});
+            button.remove();
+            video.focus();
+          });
+          frame.append(button);
+          wireHoverClip(card, frame, clip);
         } else {
+          const video = element('video');
+          video.controls = true;
+          video.playsInline = true;
           video.preload = 'none';
-          card.append(video, title);
-          if (item.caption) card.append(element('p', '', item.caption));
-          const button = element('button', '', 'Load secure video');
+          video.setAttribute('aria-label', label);
+          frame.append(video);
+          const button = element('button', 'sc-play', 'Load secure video');
           button.type = 'button';
           button.addEventListener('click', () => loadVideoPlayback({ roomSlug: room.slug, item, video, button }));
-          card.append(button);
+          frame.append(button);
         }
+        card.append(frame, element('h3', '', title));
+        if (item.caption) card.append(element('p', '', item.caption));
+        rise(card, index);
         grid.append(card);
       });
-      section.classList.add('visible');
+      section.hidden = false;
     }
 
     window.addEventListener('pagehide', () => {
@@ -243,158 +607,358 @@
       activeHls.clear();
     }, { once: true });
 
+    // ── Actions and the breeder's store ────────────────────────────────
     function renderActions(room) {
       const container = document.getElementById('showcaseActions');
+      container.replaceChildren();
       const actions = Array.isArray(room.actions) ? room.actions : [];
-      if (actions.length) {
-        container.replaceChildren();
-        actions.forEach((action) => {
-          const href = safePublicImageUrl(action?.href, window.location.origin);
-          if (!href || typeof action?.label !== 'string' || !action.label.trim()) return;
-          const link = element('a', 'showcase-store-link', action.label.trim());
-          link.href = href;
-          container.append(link);
-        });
-        return;
-      }
-      // No curated actions — best-effort "Shop [breeder]" link if a store resolves.
-      addStoreLink(room.slug);
+      actions.forEach((action) => {
+        const href = safePublicImageUrl(action?.href, window.location.origin);
+        if (!href || typeof action?.label !== 'string' || !action.label.trim()) return;
+        const primary = container.childElementCount === 0;
+        container.append(link(primary ? 'sc-btn sc-btn--teal' : 'sc-btn', action.label.trim(), href));
+      });
+      return container.childElementCount > 0;
     }
 
-    async function addStoreLink(roomSlug) {
-      if (!roomSlug) return;
+    /** Best-effort store lookup. A missing store never blocks the showcase. */
+    async function loadStore(roomSlug) {
+      if (!roomSlug) return null;
       try {
         const response = await fetch(`/api/storefront-detail?id=${encodeURIComponent(roomSlug)}`);
-        if (!response.ok) return;
+        if (!response.ok) return null;
         const payload = await response.json();
         const storePath = matchingStorePath(payload, roomSlug);
-        if (!storePath) return;
-        const name = payload.breeder.displayName || 'this breeder';
-        const link = element('a', 'showcase-store-link', `Shop ${name}`);
-        link.href = storePath;
-        document.getElementById('showcaseActions').replaceChildren(link);
-      } catch { /* a missing store never blocks the showcase */ }
+        if (!storePath) return null;
+        return { storePath, breeder: payload.breeder || {} };
+      } catch {
+        return null;
+      }
     }
 
-    function buildFacts(facts) {
-      const wrap = element('div', 'tank-facts');
-      if (!facts) return wrap;
-      if (Number(facts.volumeLiters) > 0) wrap.append(element('span', 'tank-fact', `${facts.volumeLiters} L`));
-      if (facts.tankType) wrap.append(element('span', 'tank-fact', String(facts.tankType)));
-      if (Number.isFinite(Number(facts.inhabitantCount))) {
-        const count = Number(facts.inhabitantCount);
-        wrap.append(element('span', 'tank-fact', `${count} inhabitant${count === 1 ? '' : 's'}`));
+    function guidePathFrom(room) {
+      const tanks = Array.isArray(room.tanks) ? room.tanks : [];
+      for (const tank of tanks) {
+        const href = safePublicImageUrl(tank?.guideUrl, window.location.origin);
+        if (!href) continue;
+        const url = new URL(href);
+        if (url.origin === window.location.origin) return url.pathname;
       }
-      return wrap;
+      return '';
+    }
+
+    function renderBreederBand(room, store, heroSrc) {
+      const band = document.getElementById('breederBand');
+      const body = document.getElementById('breederBody');
+      body.replaceChildren();
+      const breeder = store?.breeder || {};
+      const name = breeder.displayName || room.title || 'This breeder';
+      const photoSrc = safePublicImageUrl(breeder.bannerUrl, ORIGIN) || heroSrc;
+
+      band.querySelector('.sc-breeder__photo')?.remove();
+      if (store && photoSrc) {
+        const photo = element('div', 'sc-breeder__photo');
+        const img = element('img');
+        img.src = photoSrc; img.alt = `${name} fish room`; img.loading = 'lazy'; img.decoding = 'async';
+        img.addEventListener('error', () => { photo.remove(); band.classList.add('sc-breeder--text'); }, { once: true });
+        photo.append(img);
+        band.prepend(photo);
+        band.classList.remove('sc-breeder--text');
+      } else {
+        band.classList.add('sc-breeder--text');
+      }
+
+      body.append(element('h3', '', name));
+      if (breeder.location) body.append(element('div', 'sc-breeder__loc', breeder.location));
+      if (breeder.bio) body.append(element('p', '', breeder.bio));
+      else if (!store) body.append(element('p', '', 'This room does not have a public store linked yet. You can still browse other breeders and lines.'));
+
+      const actions = element('div', 'sc-breeder__actions');
+      if (store) actions.append(link('sc-btn sc-btn--teal', 'Visit the store', store.storePath));
+      else actions.append(link('sc-btn sc-btn--teal', 'Browse the marketplace', '/marketplace'));
+      actions.append(link('sc-btn', 'Breed gallery', '/breeds.html'));
+      const guide = guidePathFrom(room);
+      if (guide) actions.append(link('sc-btn', /medaka/i.test(guide) ? 'Medaka morph guide' : 'Morph guide', guide));
+      body.append(actions);
+
+      document.getElementById('breederHeading').textContent = store ? 'Buy from this room' : 'Keep exploring';
+    }
+
+    // ── Tanks ──────────────────────────────────────────────────────────
+    function factList(facts) {
+      const list = [];
+      if (!facts) return list;
+      if (Number(facts.volumeLiters) > 0) list.push(`${facts.volumeLiters} L`);
+      if (facts.tankType) list.push(String(facts.tankType));
+      if (Number.isFinite(Number(facts.inhabitantCount)) && facts.inhabitantCount !== null && facts.inhabitantCount !== '') {
+        const count = Number(facts.inhabitantCount);
+        list.push(`${count} inhabitant${count === 1 ? '' : 's'}`);
+      }
+      return list;
     }
 
     function buildSpecimen(specimen) {
-      const item = element('li', 'specimen-item');
-      item.append(element('span', 'specimen-name', specimen.publicName || 'Unnamed specimen'));
+      const item = element('li', 'sc-specimen');
+      item.append(element('strong', '', specimen.publicName || 'Unnamed specimen'));
       const speciesLabel = specimen.species?.commonName || specimen.species?.scientificName;
-      if (speciesLabel) item.append(element('span', 'specimen-species', speciesLabel));
-      const metadata = [specimen.sex, specimen.lifeStage].filter(Boolean).join(' · ');
-      if (metadata) item.append(element('span', 'specimen-meta', metadata));
-      if (specimen.story) item.append(element('span', 'specimen-story', specimen.story));
+      const metadata = [speciesLabel, specimen.sex, specimen.lifeStage].filter(Boolean).join(' · ');
+      if (metadata) item.append(element('span', '', metadata));
+      if (specimen.story) item.append(element('span', '', specimen.story));
       return item;
     }
 
     function formatCents(cents) {
       const value = Number(cents);
-      return Number.isFinite(value) && value > 0
-        ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value / 100)
-        : null;
+      return Number.isFinite(value) && value > 0 ? money(value / 100) : null;
     }
 
     function fulfillmentLabel(value) {
       if (value === 'shipping') return 'Ships';
       if (value === 'pickup') return 'Local pickup';
-      return 'Ask seller';
+      return 'Ask the seller';
     }
 
-    function buildCommerce(commerce) {
-      const wrap = element('div', 'tank-commerce');
-      const info = element('div', 'tank-commerce__info');
+    /** Listing id behind a canonical batch product path, for the live stock read. */
+    function listingIdOf(path) {
+      const match = /^\/app\/products\/batch-([1-9][0-9]*)$/.exec(canonicalProductPath(path));
+      return match ? match[1] : null;
+    }
+
+    function buildCommerce(commerce, card) {
+      const wrap = element('div', 'sc-commerce');
       const packCount = Number(commerce.packSize);
-      const packText = commerce.isBatch && Number.isFinite(packCount) && packCount > 0 ? `Pack of ${packCount}` : 'Available now';
+      const packText = commerce.isBatch && Number.isFinite(packCount) && packCount > 0 ? `Pack of ${packCount}` : 'Listed for sale';
       const price = formatCents(commerce.priceCents);
-      info.append(
-        element('span', 'tank-commerce__pack', price ? `${packText} — ${price}` : packText),
-        element('span', 'tank-commerce__meta', fulfillmentLabel(commerce.fulfillment)),
-      );
-      wrap.append(info);
+      wrap.append(element('strong', '', `${packText} · ${fulfillmentLabel(commerce.fulfillment)}`));
+      const live = element('span', 'sc-commerce__live');
+      live.hidden = true;
+      wrap.append(live);
+      const actions = element('div', 'sc-card__actions');
       const buyPath = canonicalProductPath(commerce.buyPath);
       if (buyPath) {
-        const buy = element('a', 'tank-commerce__buy', 'View & buy');
-        buy.href = buyPath;
-        wrap.append(buy);
+        const buy = link('sc-btn sc-btn--teal', 'View and buy', buyPath);
+        buy.dataset.role = 'buy';
+        actions.append(buy);
+        const id = listingIdOf(buyPath);
+        if (id) card.dataset.listingId = id;
       }
-      return wrap;
+      return { wrap, actions, price };
     }
 
-    function buildTank(tank) {
-      const card = element('article', 'tank-card');
+    function placeholderNode() {
+      const placeholder = element('div', 'sc-card__placeholder', '🐟');
+      placeholder.setAttribute('aria-hidden', 'true');
+      return placeholder;
+    }
+
+    function buildTank(tank, index, clipsByTitle, featured) {
+      const card = element('article', featured ? 'sc-card sc-card--feature' : 'sc-card');
       // Anchor for per-tank deep links (#tank-<slug>). Hash-only on purpose:
       // the room handler only consults curated data when no `tank` param is
       // present, so a &tank= request against a curated room would 404.
       if (tank.slug) card.id = `tank-${tank.slug}`;
-      const visual = element('div', 'tank-card__visual');
+      const label = tank.label || tank.slug || 'Tank';
+
+      const media = element('div', 'sc-card__media');
       const imageUrl = safePublicImageUrl(tank.photo || tank.commerce?.photoUrl, window.location.origin);
       if (imageUrl) {
         const image = element('img');
         image.src = imageUrl;
-        image.alt = tank.label || 'Aquarium';
+        image.alt = label;
         image.loading = 'lazy';
-        visual.append(image);
+        image.decoding = 'async';
+        image.addEventListener('error', () => { image.replaceWith(placeholderNode()); }, { once: true });
+        media.append(image);
       } else {
-        visual.textContent = '🐟';
+        media.append(placeholderNode());
+      }
+      const badges = element('div', 'sc-badges');
+      media.append(badges);
+
+      // A clip whose title matches this tank's label plays on hover.
+      const clipItem = clipsByTitle.get(normTitle(tank.label));
+      if (clipItem) {
+        const clip = hoverClip(media, safePublicImageUrl(clipItem.src, ORIGIN), safePublicImageUrl(clipItem.poster, ORIGIN) || imageUrl);
+        media.append(element('span', 'sc-clip-hint', canHover.matches ? 'Hover to play' : 'Clip'));
+        wireHoverClip(card, media, clip);
       }
 
-      const body = element('div', 'tank-card__body');
-      body.append(element('h2', 'tank-card__label', tank.label || tank.slug || 'Tank'));
-      if (tank.caption) body.append(element('p', 'tank-card__caption', tank.caption));
-      body.append(buildFacts(tank.facts));
+      const body = element('div', 'sc-card__body');
+      const row = element('div', 'sc-card__row');
+      row.append(element('h3', '', label));
+      body.append(row);
+
       const specimens = Array.isArray(tank.specimens) ? tank.specimens : [];
-      if (specimens.length) {
-        const list = element('ul', 'specimen-list');
+      const species = specimens.map((s) => s?.species).find((s) => s?.scientificName || s?.commonName);
+      if (species) {
+        const sci = element('div', 'sc-card__sci');
+        if (species.scientificName) sci.append(element('i', '', species.scientificName));
+        if (species.scientificName && species.commonName) sci.append(document.createTextNode(' · '));
+        if (species.commonName) sci.append(document.createTextNode(species.commonName));
+        body.append(sci);
+      }
+      if (tank.caption) body.append(element('p', 'sc-card__desc', tank.caption));
+
+      const facts = factList(tank.facts);
+      if (facts.length) {
+        const wrap = element('div', 'sc-facts');
+        facts.forEach((fact) => wrap.append(element('span', 'sc-fact', fact)));
+        body.append(wrap);
+      }
+
+      // Show the fish list when it says more than the tank label already does.
+      const telling = specimens.filter((s) => s && (s.sex || s.lifeStage || normTitle(s.publicName) !== normTitle(tank.label)));
+      if (telling.length) {
+        const list = element('ul', 'sc-specimens');
+        list.setAttribute('aria-label', `Fish in ${label}`);
         specimens.forEach((specimen) => list.append(buildSpecimen(specimen)));
         body.append(list);
+      } else if (!tank.caption && specimens[0]?.story) {
+        body.append(element('p', 'sc-card__desc', specimens[0].story));
       }
-      if (tank.commerce && typeof tank.commerce === 'object') body.append(buildCommerce(tank.commerce));
+
+      let actions = element('div', 'sc-card__actions');
+      if (tank.commerce && typeof tank.commerce === 'object') {
+        const commerce = buildCommerce(tank.commerce, card);
+        if (commerce.price) row.append(element('span', 'sc-card__price', commerce.price));
+        body.append(commerce.wrap);
+        actions = commerce.actions;
+      }
       const guideHref = safePublicImageUrl(tank.guideUrl, window.location.origin);
-      if (guideHref) {
-        const guide = element('a', 'tank-guide-link', 'Learn about this morph →');
-        guide.href = guideHref;
-        body.append(guide);
-      }
-      card.append(visual, body);
+      if (guideHref) actions.append(link('sc-link', 'Morph guide', guideHref));
+      if (actions.childElementCount) body.append(actions);
+
+      card.append(media, body);
+      rise(card, index);
       return card;
     }
 
+    // ── Live stock from the public listings view ───────────────────────
+    async function loadLiveStock(ids) {
+      if (!ids.length || !window.AquadexPublicListings) return null;
+      const rows = await window.AquadexPublicListings.fetchRows({
+        supabaseUrl: SUPABASE_URL,
+        anonKey: SUPABASE_ANON_KEY,
+        query: `id=in.(${ids.join(',')})&is_active=eq.true&select=id,price,data`,
+      });
+      // fetchRows returns [] on any failure; an empty result is "unknown", not "sold out".
+      if (!rows.length) return null;
+      const byId = new Map();
+      rows.forEach((row) => {
+        const data = window.AquadexPublicListings.parseRow(row) || {};
+        const qty = Number(data.quantityRemaining ?? data.quantity ?? 0);
+        const price = Number(data.price ?? row.price ?? (data.priceCentsUSD ? data.priceCentsUSD / 100 : 0));
+        if (qty > 0 && price > 0) byId.set(String(row.id), { qty, price });
+      });
+      return byId;
+    }
+
+    function applyLiveStock(byId) {
+      let live = 0;
+      document.querySelectorAll('#tankGrid [data-listing-id]').forEach((card) => {
+        const stock = byId.get(card.dataset.listingId);
+        const badges = card.querySelector('.sc-badges');
+        badges?.querySelector('[data-role="stock"]')?.remove();
+        const badge = element('span', stock ? 'sc-badge sc-badge--live' : 'sc-badge', stock ? `${stock.qty} fish available` : 'Not listed right now');
+        badge.dataset.role = 'stock';
+        badges?.prepend(badge);
+        const liveLine = card.querySelector('.sc-commerce__live');
+        if (liveLine) {
+          liveLine.textContent = stock ? `${stock.qty} fish in stock at ${money(stock.price)} each` : 'Not available right now';
+          liveLine.hidden = false;
+        }
+        const buy = card.querySelector('[data-role="buy"]');
+        if (buy) {
+          buy.textContent = stock ? 'View and buy' : 'View listing';
+          buy.classList.toggle('sc-btn--teal', !!stock);
+        }
+        if (stock) live += 1;
+      });
+      document.getElementById('statLive').textContent = String(live);
+    }
+
+    function renderStats(room) {
+      const tanks = Array.isArray(room.tanks) ? room.tanks : [];
+      const videos = Array.isArray(room.videos) ? room.videos : [];
+      document.getElementById('statTanks').textContent = String(tanks.length);
+      document.getElementById('statClips').textContent = String(videos.length);
+      const prices = tanks.map((t) => Number(t?.commerce?.priceCents)).filter((c) => Number.isFinite(c) && c > 0);
+      const statFrom = document.getElementById('statFrom');
+      if (prices.length) statFrom.textContent = money(Math.min(...prices) / 100);
+      else statFrom.closest('.sc-stat').hidden = true;
+      if (!tanks.some((t) => t?.commerce)) document.getElementById('statLive').closest('.sc-stat').hidden = true;
+      const stats = document.getElementById('roomStats');
+      stats.dataset.count = String([...stats.children].filter((c) => !c.hidden).length);
+    }
+
     function render(room) {
-      enhanceMeta(room);
-      document.getElementById('roomTitle').textContent = room.title || 'Aquarium Showcase';
+      if (!canHover.matches) {
+        document.getElementById('tanksIntro').textContent = "Each tank as the breeder shows it. Where there is a clip, it plays as you scroll to it. Prices come from the breeder's listings, and stock is read live, so it can change.";
+        document.querySelector('#videoGallery .sc-intro').textContent = 'Short clips filmed in the room. They preview without sound. Press play to watch with sound and controls.';
+      }
+      if (!motionOK()) {
+        document.getElementById('tanksIntro').textContent = "Each tank as the breeder shows it. Prices come from the breeder's listings, and stock is read live, so it can change.";
+        document.querySelector('#videoGallery .sc-intro').textContent = 'Short clips filmed in the room. Press play to watch with sound and controls.';
+      }
+      document.getElementById('roomTitle').textContent = room.title || 'Fish Room';
       const description = document.getElementById('roomDesc');
       if (room.description) {
         description.textContent = room.description;
         description.style.display = '';
       }
-      renderRoomHero(room);
+      const heroSrc = renderRoomHero(room);
+      const hasClip = renderHeroClip(room);
+      const stage = document.getElementById('heroStage');
+      if (!heroSrc && !hasClip) {
+        stage.hidden = true;
+        document.getElementById('heroSection').classList.add('sc-hero--solo');
+      } else if (!heroSrc) {
+        stage.classList.add('sc-stage--clip-only');
+      }
+      enhanceMeta(room, heroSrc);
       renderVideoGallery(room);
-      renderActions(room);
+      const hasActions = renderActions(room);
+      renderStats(room);
+
+      const videos = Array.isArray(room.videos) ? room.videos : [];
+      const clipsByTitle = new Map();
+      videos.forEach((v) => { if (v?.title && safePublicImageUrl(v.src, ORIGIN)) clipsByTitle.set(normTitle(v.title), v); });
 
       const grid = document.getElementById('tankGrid');
       grid.replaceChildren();
       const tanks = Array.isArray(room.tanks) ? room.tanks : [];
-      if (tanks.length) tanks.forEach((tank) => grid.append(buildTank(tank)));
-      else grid.append(element('p', 'showcase-desc', "This showcase doesn't have any public tanks yet."));
+      if (tanks.length) {
+        tanks.forEach((tank, index) => grid.append(buildTank(tank, index, clipsByTitle, index === 0 && tanks.length > 1)));
+      } else {
+        const empty = element('p', 'sc-intro', "This room doesn't have any public tanks yet.");
+        document.getElementById('tanksIntro').hidden = true;
+        grid.append(empty);
+      }
 
+      renderBreederBand(room, null, heroSrc);
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('showcaseContent').style.display = '';
 
       // The grid exists only now, so the browser's own hash scroll already ran
       // and found nothing. Do it ourselves once the cards are in the document.
       scrollToHashTarget();
+
+      loadStore(room.slug).then((store) => {
+        if (!store) return;
+        if (!hasActions) {
+          const name = store.breeder.displayName || 'this breeder';
+          document.getElementById('showcaseActions').append(link('sc-btn sc-btn--teal', `Shop ${name}`, store.storePath));
+        }
+        if (store.breeder.location) {
+          const meta = document.getElementById('roomMeta');
+          meta.textContent = store.breeder.location;
+          meta.hidden = false;
+        }
+        renderBreederBand(room, store, heroSrc);
+      });
+
+      const ids = [...new Set([...grid.querySelectorAll('[data-listing-id]')].map((card) => card.dataset.listingId))];
+      loadLiveStock(ids).then((byId) => { if (byId) applyLiveStock(byId); }).catch(() => {});
     }
 
     function scrollToHashTarget() {
@@ -404,21 +968,21 @@
       try { id = decodeURIComponent(hash.slice(1)); } catch { return; }
       if (!id) return;
       const target = document.getElementById(id);
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (target) target.scrollIntoView({ behavior: motionOK() ? 'smooth' : 'auto', block: 'start' });
     }
 
     async function init() {
       const slug = roomSlugFromPath(window.location.pathname);
-      if (!slug) return showState('Showcase not found', 'No valid showcase was specified in the address.');
+      if (!slug) return showState('Fish room not found', 'No valid room was given in the address.');
       try {
         const response = await fetch(`/api/storefront-detail?action=showcase-room&room=${encodeURIComponent(slug)}`);
-        if (response.status === 404) return showState('Showcase not available', "This showcase is private or doesn't exist.");
-        if (!response.ok) return showState('Showcase unavailable', 'Please try again in a moment.');
+        if (response.status === 404) return showState('Fish room not available', "This room is private or doesn't exist.");
+        if (!response.ok) return showState('Fish room unavailable', 'Please try again in a moment.');
         const payload = await response.json();
-        if (!payload?.room) return showState('Showcase unavailable', 'The showcase data could not be read.');
+        if (!payload?.room) return showState('Fish room unavailable', 'The room data could not be read.');
         render(payload.room);
       } catch {
-        showState('Showcase unavailable', 'Please try again in a moment.');
+        showState('Fish room unavailable', 'Please try again in a moment.');
       }
     }
 

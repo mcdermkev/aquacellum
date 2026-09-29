@@ -833,7 +833,7 @@ export function ShowcaseOwnerBuilder() {
       <div className="glass-card" style={panel}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
           <div>
-            <h3 style={{ color: "var(--text-primary)", margin: "0 0 .35rem" }}>Steve Showcase Owner Builder</h3>
+            <h3 style={{ color: "var(--text-primary)", margin: "0 0 .35rem" }}>Fish Room owner tools</h3>
             <div style={{ color: "var(--text-muted)", fontSize: ".78rem" }}>Authenticated owner: <code>{normalizedAccount}</code></div>
           </div>
           <button type="button" className="btn-secondary" onClick={refreshOwnerState} disabled={phase === "bootstrapping"}>Refresh server state</button>
@@ -888,10 +888,11 @@ export function ShowcaseOwnerBuilder() {
       {localPreview && (
         <div className="glass-card" style={{ ...panel, padding: "clamp(.8rem, 2vw, 1.4rem)" }}>
           <div style={{ marginBottom: "1rem" }}>
-            <div style={{ color: "var(--accent-green)", fontSize: ".78rem", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase" }}>
-              Private device preview — not imported or published
+            <div style={{ display: "flex", alignItems: "center", gap: ".6rem", color: "var(--accent-teal)", fontSize: ".7rem", fontWeight: 800, letterSpacing: ".16em", textTransform: "uppercase" }}>
+              <span aria-hidden="true" style={{ width: "28px", height: "1px", background: "currentColor" }} />
+              Private device preview. Not imported or published
             </div>
-            <h2 style={{ color: "var(--text-primary)", margin: ".35rem 0" }}>{localPreview.title}</h2>
+            <h2 style={{ color: "var(--text-primary)", margin: ".6rem 0 .4rem", fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "clamp(1.6rem, 3.6vw, 2.4rem)", lineHeight: 1, letterSpacing: "-.04em" }}>{localPreview.title}</h2>
             <p style={{ color: "var(--text-secondary)", margin: 0 }}>{localPreview.description}</p>
             <p style={{ color: "var(--text-muted)", fontSize: ".82rem", marginBottom: 0 }}>
               Showing {localPreview.tanks.length} real My Aquariums tanks and their active local fish. Existing device photos appear automatically; missing media stays missing.
@@ -907,7 +908,7 @@ export function ShowcaseOwnerBuilder() {
 
       {openConflicts.length > 0 && (
         <div className="glass-card" style={{ ...panel, borderColor: "rgba(248,113,113,.45)" }}>
-          <h4 style={{ color: "var(--accent-red)", marginTop: 0 }}>Identity conflict — stopped</h4>
+          <h4 style={{ color: "var(--accent-red)", marginTop: 0 }}>Identity conflict. Stopped</h4>
           {openConflicts.map((conflict) => <div key={conflict.conflictId} style={{ color: "var(--text-secondary)" }}>{conflict.reason} ({conflict.candidateCount} candidates)</div>)}
         </div>
       )}

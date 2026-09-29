@@ -6,8 +6,10 @@
 // assert verified genetics, lineage, or trait heritability — where a claim is a
 // naming/appearance description rather than an established fact, it reads that way.
 //
-// Photos reuse the same static assets served for the showcase, so there is no
-// second media pipeline. The guide grows by adding entries here.
+// Photos and clips reuse the same static assets served for the showcase, so
+// there is no second media pipeline. `video` is set only where the breeder has a
+// real clip of that line (the same files the Fish Room gallery plays). Page copy
+// follows the house style: no em dashes. The guide grows by adding entries here.
 
 export const MEDAKA_SPECIES = {
   commonName: "Japanese rice fish",
@@ -22,14 +24,15 @@ export const MEDAKA_MORPHS = [
     name: "Pink Saffire",
     breeder: "Steve",
     photo: "/showcase-media/steve/lines/pink-saffire/IMG_20260907_165711_303.jpg",
-    alt: "Pink Saffire medaka — soft pink/lavender body with blue eyes",
+    alt: "Pink Saffire medaka with a soft pink/lavender body and blue eyes",
     productPath: "/app/products/batch-8000001",
+    video: null,
     traits: [
       { label: "Color", value: "Pink / lavender" },
       { label: "Eyes", value: "Blue" },
     ],
     description:
-      "A soft pink-to-lavender medaka with striking blue eyes — one of Steve's signature color lines. The colour reads pastel in daylight and deepens under warmer lighting.",
+      "A soft pink-to-lavender medaka with striking blue eyes, one of Steve's signature color lines. The color reads pastel in daylight and deepens under warmer lighting.",
   },
   {
     slug: "echos-of-the-moon",
@@ -38,6 +41,7 @@ export const MEDAKA_MORPHS = [
     photo: "/showcase-media/steve/lines/echos-of-the-moon/IMG_20260907_171300_216.jpg",
     alt: "Echos of the Moon medaka line",
     productPath: "/app/products/batch-8000003",
+    video: null,
     traits: [
       { label: "Type", value: "Keeper line" },
     ],
@@ -49,8 +53,12 @@ export const MEDAKA_MORPHS = [
     name: "Gladio",
     breeder: "Steve",
     photo: "/showcase-media/steve/lines/gladio/IMG_20260907_170316_911.jpg",
-    alt: "Gladio medaka — silvery-white with long flowing fins",
+    alt: "Gladio medaka, silvery-white with long flowing fins",
     productPath: "/app/products/batch-8000002",
+    video: {
+      src: "/showcase-media/steve/videos/VID_20260901_115451_294.mp4",
+      poster: "/showcase-media/steve/posters/VID_20260901_115451_294.jpg",
+    },
     traits: [
       { label: "Color", value: "Silvery-white" },
       { label: "Fins", value: "Long-fin" },
@@ -63,8 +71,12 @@ export const MEDAKA_MORPHS = [
     name: "Shinkai",
     breeder: "Steve",
     photo: "/showcase-media/steve/lines/shinkai/IMG_20260907_171554_047.jpg",
-    alt: "Shinkai medaka — silvery, translucent",
+    alt: "Shinkai medaka, silvery and translucent",
     productPath: "/app/products/batch-8000004",
+    video: {
+      src: "/showcase-media/steve/videos/VID_20260901_115510_666.mp4",
+      poster: "/showcase-media/steve/posters/VID_20260901_115510_666.jpg",
+    },
     traits: [
       { label: "Color", value: "Silvery / translucent" },
     ],
@@ -76,8 +88,12 @@ export const MEDAKA_MORPHS = [
     name: "Long Fin Red Emperor",
     breeder: "Steve",
     photo: "/showcase-media/steve/posters/VID_20260901_115510_665.jpg",
-    alt: "Long Fin Red Emperor medaka — orange/crimson with a dark tail",
+    alt: "Long Fin Red Emperor medaka, orange/crimson with a dark tail",
     productPath: "/app/products/batch-8000005",
+    video: {
+      src: "/showcase-media/steve/videos/VID_20260901_115510_665.mp4",
+      poster: "/showcase-media/steve/posters/VID_20260901_115510_665.jpg",
+    },
     traits: [
       { label: "Color", value: "Orange / crimson" },
       { label: "Fins", value: "Long-fin" },
@@ -90,14 +106,18 @@ export const MEDAKA_MORPHS = [
     name: "Blue Aurora Lam\u00e9",
     breeder: "Steve",
     photo: "/showcase-media/steve/posters/VID_20260901_115521_576.jpg",
-    alt: "Blue Aurora Lam\u00e9 medaka — electric blue with metallic shimmer",
+    alt: "Blue Aurora Lam\u00e9 medaka, electric blue with a metallic shimmer",
     productPath: "/app/products/batch-8000006",
+    video: {
+      src: "/showcase-media/steve/videos/VID_20260901_115521_576.mp4",
+      poster: "/showcase-media/steve/posters/VID_20260901_115521_576.jpg",
+    },
     traits: [
       { label: "Color", value: "Electric blue" },
       { label: "Scales", value: "Lam\u00e9 (metallic)" },
     ],
     description:
-      "Vivid electric-blue fish with the \u201Clam\u00e9\u201D trait — a metallic, reflective shimmer along the back that flashes as they turn. Shown here as growing juveniles.",
+      "Vivid electric-blue fish with the \u201Clam\u00e9\u201D trait, a metallic, reflective shimmer along the back that flashes as they turn. Shown here as growing juveniles.",
   },
 ];
 

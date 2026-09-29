@@ -21,7 +21,7 @@ const STEVE_ROOM = {
     slug: "ggstevericefishnj",
     title: "GG Steve Rice Fish NJ",
     description:
-      "Japanese rice fish (medaka) bred by Steve in New Jersey. A look inside the fish room — the planted show pond, the outdoor breeding tubs, and the lines he is working.",
+      "Japanese rice fish (medaka) bred by Steve in New Jersey. A look inside the fish room: the planted show pond, the outdoor breeding tubs, and the lines he is working.",
     hero: {
       image: `${MEDIA}/hero/show-pond-flag.jpg`,
       alt: "Steve's planted medaka show pond",
@@ -82,7 +82,7 @@ const STEVE_ROOM = {
         guideUrl: "/medaka-morphs",
         commerce: { isBatch: true, packSize: 4, priceCents: 4000, price: "40.00", fulfillment: "pickup", buyPath: "/app/products/batch-8000007" },
         label: "The Show Pond",
-        caption: "The planted display — a mix of Steve's lines under blue light.",
+        caption: "The planted display, a mix of Steve's lines under blue light.",
         photo: `${MEDIA}/hero/show-pond-blue.jpg`,
         facts: { tankType: "Planted display" },
         specimens: [

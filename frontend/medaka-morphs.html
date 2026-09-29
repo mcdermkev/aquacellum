@@ -3,76 +3,165 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Medaka Morph Guide — Aquacellum</title>
-  <meta name="description" content="A plain-language reference to Japanese rice fish (medaka) morphs — colors, fins, and traits — from Aquacellum's breeders.">
-  <meta property="og:title" content="Medaka Morph Guide — Aquacellum">
-  <meta property="og:description" content="Learn the medaka morphs — Pink Saffire, Shinkai, Gladio and more — then see them in a breeder's room and on the marketplace.">
+  <title>Medaka Morph Guide | Aquacellum</title>
+  <meta name="description" content="A plain-language reference to Japanese rice fish (medaka) morphs: colors, fins, and traits, from Aquacellum's breeders.">
+  <meta property="og:title" content="Medaka Morph Guide | Aquacellum">
+  <meta property="og:description" content="Learn the medaka morphs, including Pink Saffire, Shinkai and Gladio, then see them in a breeder's fish room and on the marketplace.">
   <meta property="og:type" content="website">
-  <meta property="og:image" content="/icons/icon-512.png">
+  <meta property="og:site_name" content="Aquacellum">
+  <link rel="canonical" href="https://aquacellum.com/medaka-morphs">
+  <meta property="og:url" content="https://aquacellum.com/medaka-morphs">
+  <meta property="og:image" content="https://aquacellum.com/showcase-media/steve/lines/pink-saffire/IMG_20260907_165711_303.jpg">
   <meta name="twitter:card" content="summary_large_image">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/shared.css">
 
   <style>
-    .guide-hero { padding: 2.5rem 0 1rem; }
-    .guide-kicker { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--violet-300); }
-    .guide-title { font-family: 'Outfit', sans-serif; font-size: clamp(2rem, 5vw, 3.25rem); font-weight: 800; color: var(--text-primary); margin: 0.4rem 0 0.6rem; }
-    .guide-desc { font-size: 0.95rem; line-height: 1.65; color: var(--text-secondary); max-width: 720px; }
-    .guide-species-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 1rem; padding: 9px 16px; border-radius: 11px; font-size: 0.82rem; font-weight: 700; text-decoration: none; color: var(--ocean-300); background: #fff; border: 1px solid rgba(14,165,233,0.35); box-shadow: var(--shadow-sm); }
-    .guide-species-link:hover { background: #f0f9ff; box-shadow: var(--shadow-md); }
+    /* Medaka Morph Guide (Daylight). Built from src/data/medakaMorphs.js; the
+       photos and clips are the breeder's own showcase media. */
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--text-primary); font-family: "DM Sans", sans-serif; }
+    a { color: inherit; }
+    .mg-wrap { width: min(1320px, calc(100% - 40px)); margin: 0 auto; }
 
-    .morph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 22px; margin: 1.75rem 0 3rem; }
-    .morph-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius-md, 16px); overflow: hidden; box-shadow: var(--shadow-sm); transition: box-shadow 0.2s ease; scroll-margin-top: 90px; }
-    .morph-card:hover { box-shadow: var(--shadow-md); }
-    .morph-card__photo { height: 200px; background: linear-gradient(135deg, rgba(14,165,233,0.10), rgba(16,185,129,0.08)); display: flex; align-items: center; justify-content: center; font-size: 2.6rem; }
-    .morph-card__photo img { width: 100%; height: 100%; object-fit: cover; }
-    .morph-card__body { padding: 16px 18px 20px; }
-    .morph-card__name { font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin: 0; }
-    .morph-card__species { font-size: 0.72rem; color: var(--text-muted); font-style: italic; margin: 2px 0 0; }
-    .morph-traits { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
-    .morph-trait { padding: 3px 10px; border-radius: 50px; font-size: 0.66rem; font-weight: 600; background: var(--violet-100); border: 1px solid rgba(139,92,246,0.25); color: var(--violet-300); }
-    .morph-trait strong { color: var(--text-primary); font-weight: 700; }
-    .morph-desc { font-size: 0.86rem; line-height: 1.6; color: var(--text-secondary); margin: 0 0 14px; }
-    .morph-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-    .morph-btn { display: inline-flex; align-items: center; padding: 8px 14px; border-radius: 10px; font-size: 0.78rem; font-weight: 700; text-decoration: none; }
-    .morph-btn--room { color: #fff; background: linear-gradient(135deg, #0f766e, #047857); }
-    .morph-btn--market { color: var(--violet-300); background: #fff; border: 1px solid rgba(139,92,246,0.4); }
-    .morph-btn--room:hover { filter: brightness(1.1); }
-    .morph-btn--market:hover { background: var(--violet-100); }
-    .guide-note { max-width: 720px; margin: 0 0 3rem; font-size: 0.78rem; line-height: 1.6; color: var(--text-muted); padding: 12px 14px; border-radius: 12px; background: #fff; border: 1px solid var(--line); }
-    @media (max-width: 640px) { .morph-grid { grid-template-columns: 1fr; } }
+    .mg-btn { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--text-primary); font-weight: 700; font-size: .8rem; text-decoration: none; transition: transform .2s, border-color .2s, box-shadow .2s, background .2s; white-space: nowrap; }
+    .mg-btn:hover { transform: translateY(-1px); border-color: rgba(var(--ink-rgb),.28); box-shadow: var(--shadow-sm); }
+    .mg-btn--teal { background: #0f766e; border-color: #0f766e; color: #fff; }
+    .mg-btn--teal:hover { background: #115e59; border-color: #115e59; }
+    .mg-btn:focus-visible, .mg-link:focus-visible { outline: 3px solid rgba(13,148,136,.45); outline-offset: 2px; }
+    .mg-link { color: #0f766e; font-size: .8rem; font-weight: 700; text-decoration: none; border-bottom: 1px solid rgba(15,118,110,.35); padding-bottom: 2px; }
+    .mg-link:hover { border-bottom-color: #0f766e; }
+
+    /* Hero */
+    .mg-hero { position: relative; border-bottom: 1px solid var(--line); overflow: hidden; }
+    .mg-hero::before { content: ""; position: absolute; inset: 0; background:
+      radial-gradient(circle at 10% 0%, rgba(245,158,11,.10), transparent 40%),
+      linear-gradient(130deg, #ffffff 0%, #f5f9fa 55%, #eaf3f5 100%); }
+    .mg-hero__inner { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: center; padding: 64px 0 60px; }
+    .mg-eyebrow { display: flex; align-items: center; gap: 10px; color: #0f766e; font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 20px; }
+    .mg-eyebrow::before { content: ""; width: 34px; height: 1px; background: currentColor; }
+    .mg-hero h1 { margin: 0; font-family: "Manrope", sans-serif; font-size: clamp(2.6rem, 6vw, 5.4rem); line-height: .94; letter-spacing: -.06em; font-weight: 700; }
+    .mg-hero h1 em { font-style: normal; color: #0f766e; }
+    .mg-hero__copy { margin: 24px 0 0; max-width: 560px; color: var(--text-secondary); font-size: clamp(1rem, 1.4vw, 1.12rem); line-height: 1.65; }
+    .mg-hero__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+    .mg-mosaic { display: grid; grid-template-columns: 1.2fr .8fr; grid-template-rows: 1fr 1fr; gap: 10px; aspect-ratio: 5 / 4; }
+    .mg-mosaic a { position: relative; display: block; overflow: hidden; border: 1px solid var(--line); background: var(--bg-deep); box-shadow: var(--shadow-sm); }
+    .mg-mosaic a:first-child { grid-row: 1 / 3; }
+    .mg-mosaic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .45s; }
+    .mg-mosaic a:hover img { transform: scale(1.03); }
+    .mg-mosaic span { position: absolute; left: 10px; bottom: 10px; padding: 5px 9px; border-radius: 999px; background: rgba(255,255,255,.94); box-shadow: var(--shadow-sm); font-size: .68rem; font-weight: 700; }
+
+    /* Morphs */
+    .mg-section { padding: 72px 0; }
+    .mg-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
+    .mg-kicker { color: #6d28d9; font-size: .7rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 10px; }
+    .mg-section h2 { margin: 0; font-family: "Manrope", sans-serif; font-size: clamp(1.9rem, 3.8vw, 3.2rem); line-height: 1; letter-spacing: -.045em; }
+    .mg-intro { max-width: 520px; margin: 0; color: var(--text-secondary); line-height: 1.65; font-size: .92rem; }
+    .mg-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 34px 20px; }
+    .mg-card { min-width: 0; display: flex; flex-direction: column; scroll-margin-top: 90px; }
+    .mg-card__media { position: relative; aspect-ratio: 4 / 5; overflow: hidden; border: 1px solid var(--line); background: var(--bg-deep); box-shadow: var(--shadow-sm); transition: box-shadow .25s; }
+    .mg-card:hover .mg-card__media { box-shadow: var(--shadow-md); }
+    .mg-card__media img, .mg-card__media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .45s, opacity .3s; }
+    .mg-card__media video { opacity: 0; }
+    .mg-card__media.is-playing video { opacity: 1; }
+    .mg-card:hover .mg-card__media img { transform: scale(1.03); }
+    .mg-card__placeholder { position: absolute; inset: 0; display: grid; place-items: center; font-size: 3rem; }
+    .mg-hint { position: absolute; right: 12px; bottom: 12px; z-index: 2; padding: 5px 9px; border-radius: 999px; background: rgba(var(--ink-rgb),.66); color: #fff; font-size: .64rem; font-weight: 600; transition: opacity .3s; }
+    .mg-card__media.is-playing .mg-hint { opacity: 0; }
+    .mg-card__body { padding: 16px 2px 0; display: flex; flex-direction: column; flex: 1; }
+    .mg-card h3 { margin: 0; font-family: "Manrope", sans-serif; font-size: 1.3rem; letter-spacing: -.025em; }
+    .mg-card__sci { margin-top: 3px; color: var(--text-muted); font-size: .74rem; }
+    .mg-card__sci i { font-style: italic; }
+    .mg-traits { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .mg-trait { padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; background: #f5f9fa; color: var(--text-secondary); font-size: .68rem; }
+    .mg-trait strong { color: var(--text-primary); font-weight: 700; }
+    .mg-card__desc { margin: 12px 0 0; color: var(--text-secondary); font-size: .86rem; line-height: 1.6; }
+    .mg-card__by { margin-top: 12px; color: var(--text-muted); font-size: .72rem; }
+    .mg-card__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: auto; padding-top: 16px; }
+
+    .mg-note { max-width: 760px; margin: 40px 0 0; padding: 16px 18px; border: 1px solid var(--line); background: #fff; color: var(--text-secondary); font-size: .8rem; line-height: 1.6; }
+    .mg-note a { color: #0f766e; font-weight: 700; }
+
+    @media (max-width: 1060px) { .mg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 820px) {
+      .mg-hero__inner { grid-template-columns: minmax(0, 1fr); gap: 30px; padding: 44px 0 40px; }
+      .mg-section { padding: 56px 0; }
+      .mg-head { flex-direction: column; align-items: start; }
+    }
+    @media (max-width: 560px) {
+      .mg-wrap { width: calc(100% - 24px); }
+      .mg-grid { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+      .mg-card__media { aspect-ratio: 1 / 1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+      .mg-card:hover .mg-card__media img, .mg-mosaic a:hover img { transform: none; }
+    }
   </style>
 </head>
 <body>
   <header id="site-nav"></header>
 
-  <main class="container">
-    <header class="guide-hero">
-      <div class="guide-kicker">Reference</div>
-      <h1 class="guide-title">Medaka Morph Guide</h1>
-      <p class="guide-desc" id="guideIntro"></p>
-      <a class="guide-species-link" id="speciesLink" href="/species/oryzias-latipes">
-        📖 <span id="speciesLinkLabel">Species care &amp; facts</span>
-      </a>
-    </header>
+  <main>
+    <section class="mg-hero" aria-labelledby="guideTitle">
+      <div class="mg-wrap mg-hero__inner">
+        <div>
+          <div class="mg-eyebrow">Reference</div>
+          <h1 id="guideTitle">Medaka <em>morph guide</em></h1>
+          <p class="mg-hero__copy" id="guideIntro"></p>
+          <div class="mg-hero__actions">
+            <a class="mg-btn mg-btn--teal" href="#morphs">See the morphs</a>
+            <a class="mg-btn" id="speciesLink" href="/species/oryzias-latipes"><span id="speciesLinkLabel">Care sheet</span></a>
+            <a class="mg-btn" href="/breeds.html">Breed gallery</a>
+          </div>
+        </div>
+        <div class="mg-mosaic" id="mosaic" aria-label="Morph photos"></div>
+      </div>
+    </section>
 
-    <div class="morph-grid" id="morphGrid"></div>
+    <section class="mg-section" id="morphs" aria-labelledby="morphsHeading">
+      <div class="mg-wrap">
+        <div class="mg-head">
+          <div>
+            <div class="mg-kicker">The morphs</div>
+            <h2 id="morphsHeading">What each line looks like</h2>
+          </div>
+          <p class="mg-intro" id="morphsIntro">Each entry is the breeder's own fish, photographed in their tanks and tubs. Where there is a clip, hover the photo to watch it.</p>
+        </div>
+        <div class="mg-grid" id="morphGrid"></div>
 
-    <p class="guide-note">
-      These entries describe how each breeder keeps and names their line, alongside general facts about
-      Japanese rice fish. They are keeper descriptions, not verified genetic or lineage claims.
-    </p>
+        <p class="mg-note">
+          These entries describe how each breeder keeps and names their line, alongside general facts about
+          Japanese rice fish. They are keeper descriptions, not verified genetic or lineage claims.
+          For every photo of a line, see the <a href="/breeds.html">breed gallery</a>.
+        </p>
+      </div>
+    </section>
   </main>
 
   <footer id="site-footer"></footer>
   <script src="/js/nav.js"></script>
   <script src="/js/footer.js"></script>
-  <script src="/js/reveal.js"></script>
   <script type="module">
     import { MEDAKA_MORPHS, MEDAKA_SPECIES } from '/src/data/medakaMorphs.js';
+
+    // The breeder behind each line (store and fish room slugs are the real ones).
+    const BREEDERS = {
+      Steve: { name: 'GG Steve Rice Fish NJ', slug: 'ggstevericefishnj' },
+    };
+    const PRODUCT_PATH = /^\/app\/products\/(single|batch)-[1-9][0-9]*$/;
+    const SAFE_MEDIA = /^\/[A-Za-z0-9._\/-]+$/;
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const canHover = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const motionOK = () => !reducedMotion.matches;
+    function lightData() {
+      const c = navigator.connection;
+      return !!c && (c.saveData === true || /2g|3g/.test(String(c.effectiveType || '')));
+    }
 
     function element(tag, className, text) {
       const node = document.createElement(tag);
@@ -80,73 +169,158 @@
       if (text != null) node.textContent = String(text);
       return node;
     }
+    function link(className, label, href) {
+      const a = element('a', className, label);
+      a.href = href;
+      return a;
+    }
+    const safeMedia = (src) => (typeof src === 'string' && SAFE_MEDIA.test(src) ? src : '');
 
     document.getElementById('guideIntro').textContent =
-      `Medaka (${MEDAKA_SPECIES.commonName}, ${MEDAKA_SPECIES.scientificName}) come in a growing range of hobbyist color and fin morphs. This guide explains the lines shown across the breeder showcases — what to look for, and where to see and buy them.`;
+      `Medaka (${MEDAKA_SPECIES.commonName}, ${MEDAKA_SPECIES.scientificName}) come in a growing range of hobbyist color and fin morphs. This guide explains the lines kept by breeders on Aquacellum: what to look for, and where to see and buy them.`;
 
     const speciesLink = document.getElementById('speciesLink');
     speciesLink.href = MEDAKA_SPECIES.href;
-    document.getElementById('speciesLinkLabel').textContent =
-      `${MEDAKA_SPECIES.commonName} — care & facts`;
+    document.getElementById('speciesLinkLabel').textContent = `${MEDAKA_SPECIES.commonName} care sheet`;
+
+    if (!motionOK()) {
+      document.getElementById('morphsIntro').textContent = "Each entry is the breeder's own fish, photographed in their tanks and tubs.";
+    } else if (!canHover.matches) {
+      document.getElementById('morphsIntro').textContent = "Each entry is the breeder's own fish, photographed in their tanks and tubs. Where there is a clip, it plays as you scroll to it.";
+    }
+
+    // ── Hero mosaic: three real line photos ─────────────────────────────
+    const mosaic = document.getElementById('mosaic');
+    MEDAKA_MORPHS.filter((m) => safeMedia(m.photo)).slice(0, 3).forEach((morph, i) => {
+      const a = element('a');
+      a.href = `#${morph.slug}`;
+      a.setAttribute('aria-label', `Jump to ${morph.name}`);
+      const img = element('img');
+      img.src = safeMedia(morph.photo); img.alt = ''; img.decoding = 'async';
+      if (i === 0) img.setAttribute('fetchpriority', 'high');
+      a.append(img, element('span', '', morph.name));
+      mosaic.append(a);
+    });
+    if (!mosaic.childElementCount) mosaic.hidden = true;
+
+    // ── Hover clips (desktop hover/focus, one in view on touch) ─────────
+    function hoverClip(frame, src, poster) {
+      let video = null;
+      function ensure() {
+        if (video || frame.dataset.noClip) return video;
+        video = element('video');
+        video.muted = true; video.defaultMuted = true; video.loop = true; video.playsInline = true;
+        video.setAttribute('playsinline', ''); video.setAttribute('aria-hidden', 'true');
+        video.preload = 'none';
+        if (poster) video.poster = poster;
+        video.src = src;
+        video.addEventListener('playing', () => frame.classList.add('is-playing'));
+        video.addEventListener('error', () => { frame.dataset.noClip = '1'; frame.classList.remove('is-playing'); video.remove(); video = null; }, { once: true });
+        frame.append(video);
+        return video;
+      }
+      return {
+        play() {
+          if (!motionOK()) return;
+          const v = ensure();
+          const p = v && v.play();
+          if (p && p.catch) p.catch(() => {});
+        },
+        stop() {
+          if (!video) return;
+          video.pause();
+          frame.classList.remove('is-playing');
+        },
+      };
+    }
+    const touchClips = (() => {
+      if (canHover.matches || !('IntersectionObserver' in window)) return null;
+      const clips = new WeakMap();
+      let current = null;
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          const clip = clips.get(entry.target);
+          if (!clip) return;
+          if (entry.intersectionRatio >= 0.75) {
+            if (current && current !== clip) current.stop();
+            current = clip;
+            if (!lightData()) clip.play();
+          } else if (current === clip) { clip.stop(); current = null; }
+        });
+      }, { threshold: [0, 0.75] });
+      return { observe(frame, clip) { clips.set(frame, clip); io.observe(frame); } };
+    })();
 
     function buildTrait(trait) {
-      const span = element('span', 'morph-trait');
+      const span = element('span', 'mg-trait');
       span.append(element('strong', '', trait.label + ': '), document.createTextNode(trait.value));
       return span;
     }
 
     function buildMorph(morph) {
-      const card = element('article', 'morph-card');
+      const card = element('article', 'mg-card');
       card.id = morph.slug;
+      const breeder = BREEDERS[morph.breeder] || null;
 
-      const photo = element('div', 'morph-card__photo');
-      if (morph.photo) {
+      const media = element('div', 'mg-card__media');
+      const photo = safeMedia(morph.photo);
+      if (photo) {
         const img = element('img');
-        img.src = morph.photo;
-        img.alt = morph.alt || morph.name;
-        img.loading = 'lazy';
-        photo.append(img);
+        img.src = photo; img.alt = morph.alt || morph.name; img.loading = 'lazy'; img.decoding = 'async';
+        media.append(img);
       } else {
-        photo.textContent = '🐟';
+        const ph = element('div', 'mg-card__placeholder', '🐟');
+        ph.setAttribute('aria-hidden', 'true');
+        media.append(ph);
+      }
+      const clipSrc = safeMedia(morph.video?.src);
+      if (clipSrc) {
+        const clip = hoverClip(media, clipSrc, safeMedia(morph.video.poster) || photo);
+        media.append(element('span', 'mg-hint', canHover.matches ? 'Hover to play' : 'Clip'));
+        card.addEventListener('pointerenter', (e) => { if (canHover.matches && e.pointerType !== 'touch') clip.play(); });
+        card.addEventListener('pointerleave', () => clip.stop());
+        card.addEventListener('focusin', () => { if (canHover.matches) clip.play(); });
+        card.addEventListener('focusout', (e) => { if (!card.contains(e.relatedTarget)) clip.stop(); });
+        if (touchClips) touchClips.observe(media, clip);
       }
 
-      const body = element('div', 'morph-card__body');
-      body.append(element('h2', 'morph-card__name', morph.name));
-      body.append(element('p', 'morph-card__species', `${MEDAKA_SPECIES.commonName} · ${MEDAKA_SPECIES.scientificName}`));
+      const body = element('div', 'mg-card__body');
+      body.append(element('h3', '', morph.name));
+      const sci = element('div', 'mg-card__sci');
+      sci.append(element('i', '', MEDAKA_SPECIES.scientificName), document.createTextNode(` · ${MEDAKA_SPECIES.commonName}`));
+      body.append(sci);
 
-      const traits = Array.isArray(morph.traits) ? morph.traits : [];
+      const traits = (Array.isArray(morph.traits) ? morph.traits : []).filter((t) => t?.label && t?.value);
       if (traits.length) {
-        const wrap = element('div', 'morph-traits');
-        traits.forEach((trait) => { if (trait?.label && trait?.value) wrap.append(buildTrait(trait)); });
+        const wrap = element('div', 'mg-traits');
+        traits.forEach((trait) => wrap.append(buildTrait(trait)));
         body.append(wrap);
       }
+      if (morph.description) body.append(element('p', 'mg-card__desc', morph.description));
+      if (breeder) body.append(element('div', 'mg-card__by', `Kept by ${breeder.name}`));
 
-      if (morph.description) body.append(element('p', 'morph-desc', morph.description));
-
-      const actions = element('div', 'morph-actions');
-      if (morph.showcaseUrl) {
-        const room = element('a', 'morph-btn morph-btn--room', "See it in Steve's room");
-        room.href = morph.showcaseUrl;
-        actions.append(room);
-      }
-      const marketHref = typeof morph.productPath === 'string' && /^\/app\/products\/(single|batch)-[1-9][0-9]*$/.test(morph.productPath)
-        ? morph.productPath : '/marketplace';
-      const market = element('a', 'morph-btn morph-btn--market', morph.productPath ? 'See it on the marketplace' : 'Browse the marketplace');
-      market.href = marketHref;
-      actions.append(market);
+      const actions = element('div', 'mg-card__actions');
+      const productPath = typeof morph.productPath === 'string' && PRODUCT_PATH.test(morph.productPath) ? morph.productPath : '';
+      actions.append(productPath
+        ? link('mg-btn mg-btn--teal', 'Buy from the breeder', productPath)
+        : link('mg-btn mg-btn--teal', 'Browse the marketplace', '/marketplace'));
+      if (breeder) actions.append(link('mg-link', 'See it in the fish room', `/showcase/${breeder.slug}#tank-${morph.slug}`));
+      actions.append(link('mg-link', 'All photos', `/breeds.html#line-${morph.slug}`));
       body.append(actions);
 
-      card.append(photo, body);
+      card.append(media, body);
       return card;
     }
 
     const grid = document.getElementById('morphGrid');
-    MEDAKA_MORPHS.forEach((morph) => grid.append(buildMorph({ showcaseUrl: '/showcase/ggstevericefishnj', ...morph })));
+    MEDAKA_MORPHS.forEach((morph) => grid.append(buildMorph(morph)));
 
     // Deep-link: if the URL has a #slug, scroll it into view after render.
     if (window.location.hash) {
-      const target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      let id = '';
+      try { id = decodeURIComponent(window.location.hash.slice(1)); } catch { /* malformed hash */ }
+      const target = id && document.getElementById(id);
+      if (target) target.scrollIntoView({ behavior: motionOK() ? 'smooth' : 'auto', block: 'start' });
     }
   </script>
 </body>

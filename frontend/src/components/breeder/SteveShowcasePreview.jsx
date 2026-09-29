@@ -6,7 +6,8 @@ import { readOwnerShowcaseTanks } from "../../services/showcaseDatasetV3";
 import { readLocalShowcasePreview } from "../../services/showcaseLocalPreview";
 
 /**
- * SteveShowcasePreview — the simple "here's my room" view.
+ * SteveShowcasePreview: the simple "here's my room" view. Its header uses the
+ * same Daylight treatment as the public Fish Room page.
  *
  * The point of the showcase is to show off a fish room. This does exactly that
  * and nothing else: as soon as Steve opens the tab (already logged in), it reads
@@ -16,6 +17,33 @@ import { readLocalShowcasePreview } from "../../services/showcaseLocalPreview";
  * advanced tools. This is the everyday, easy path.
  */
 const panel = { padding: "1.15rem", border: "1px solid var(--glass-border)", borderRadius: "12px" };
+
+// Daylight styles that echo the public Fish Room page (showcase.html).
+const hero = {
+  display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem", flexWrap: "wrap",
+  padding: "clamp(1rem, 3vw, 1.8rem)",
+  background: "radial-gradient(circle at 8% 0%, rgba(245,158,11,.10), transparent 42%), linear-gradient(130deg, #ffffff 0%, #f5f9fa 55%, var(--bg-band) 100%)",
+  borderBottom: "1px solid var(--line)",
+};
+const eyebrow = {
+  display: "flex", alignItems: "center", gap: ".6rem", color: "var(--accent-teal)",
+  fontSize: ".7rem", fontWeight: 800, letterSpacing: ".16em", textTransform: "uppercase", marginBottom: ".7rem",
+};
+const title = {
+  color: "var(--text-primary)", margin: 0, fontFamily: "var(--font-display)", fontWeight: 700,
+  fontSize: "clamp(1.8rem, 4vw, 2.8rem)", lineHeight: 1, letterSpacing: "-.04em",
+};
+const pill = {
+  minHeight: "42px", display: "inline-flex", alignItems: "center", padding: "0 16px", borderRadius: "999px",
+  border: "1px solid var(--line)", background: "#fff", color: "var(--text-primary)",
+  fontWeight: 700, fontSize: ".8rem", textDecoration: "none",
+};
+const pillTeal = { ...pill, background: "var(--accent-teal)", borderColor: "var(--accent-teal)", color: "#fff" };
+const stats = { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", borderBottom: "1px solid var(--line)", background: "#fff" };
+const stat = { padding: ".9rem .5rem", textAlign: "center", borderRight: "1px solid var(--line)" };
+const statValue = { display: "block", fontFamily: "var(--font-display)", fontSize: "1.4rem", color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" };
+const srOnly = { position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" };
+const statLabel = { color: "var(--text-muted)", fontSize: ".64rem", textTransform: "uppercase", letterSpacing: ".12em" };
 
 // This curated showcase and the wallet allowed to flip its public/private state.
 const SHOWCASE_SLUG = "ggstevericefishnj";
@@ -120,30 +148,41 @@ export function SteveShowcasePreview() {
   const fishCount = (preview?.tanks || []).reduce((sum, tank) => sum + (tank.specimens?.length || 0), 0);
 
   return (
-    <div className="glass-card" style={{ ...panel, padding: "clamp(.8rem, 2vw, 1.4rem)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem", flexWrap: "wrap" }}>
-        <div>
-          <h2 style={{ color: "var(--text-primary)", margin: ".2rem 0" }}>{preview?.title || "Your fish room"}</h2>
-          <p style={{ color: "var(--text-secondary)", margin: 0 }}>
+    <div className="glass-card" style={{ ...panel, padding: 0, overflow: "hidden" }}>
+      {/* Header mirrors the public Fish Room hero (/showcase/<slug>): eyebrow,
+          display title, plain description, and the same pill buttons. */}
+      <div style={hero}>
+        <div style={{ minWidth: 0, flex: "1 1 320px" }}>
+          <div style={eyebrow}>
+            <span aria-hidden="true" style={{ width: "28px", height: "1px", background: "currentColor" }} />
+            Fish Room{isOwner && isPublic !== null ? ` · ${isPublic ? "Public" : "Private"}` : ""}
+          </div>
+          <h2 style={title}>{preview?.title || "Your fish room"}</h2>
+          <p style={{ color: "var(--text-secondary)", margin: ".6rem 0 0", maxWidth: "620px", lineHeight: 1.6 }}>
             {preview?.description || "A live view of your tanks and fish, straight from My Aquariums."}
           </p>
-          {phase === "ready" && (
-            <p style={{ color: "var(--text-muted)", fontSize: ".82rem", marginBottom: 0 }}>
-              {tankCount} tank{tankCount === 1 ? "" : "s"} · {fishCount} fish · your tank photos appear automatically.
-            </p>
+          {isOwner && isPublic && (
+            <div style={{ display: "flex", gap: ".6rem", flexWrap: "wrap", marginTop: "1rem" }}>
+              <a href={`/showcase/${SHOWCASE_SLUG}`} target="_blank" rel="noopener noreferrer" style={pillTeal}>
+                View the public page<span style={srOnly}> (opens in a new tab)</span>
+              </a>
+              <a href={`/store/${SHOWCASE_SLUG}`} target="_blank" rel="noopener noreferrer" style={pill}>
+                View the store<span style={srOnly}> (opens in a new tab)</span>
+              </a>
+            </div>
           )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: ".6rem", flexWrap: "wrap" }}>
           {isOwner && isPublic !== null && (
             <div style={{ display: "flex", alignItems: "center", gap: ".5rem" }}>
-              <span style={{ fontSize: ".8rem", fontWeight: 600, color: isPublic ? "var(--accent-green, #34d399)" : "var(--text-muted)" }}>
+              <span style={{ fontSize: ".8rem", fontWeight: 600, color: isPublic ? "var(--accent-green)" : "var(--text-muted)" }}>
                 {isPublic ? "Public" : "Private"}
               </span>
               <button
                 type="button"
                 role="switch"
                 aria-checked={isPublic}
-                aria-label={isPublic ? "Showcase is public — click to make private" : "Showcase is private — click to make public"}
+                aria-label={isPublic ? "Showcase is public. Click to make it private" : "Showcase is private. Click to make it public"}
                 onClick={toggleVisibility}
                 disabled={visBusy}
                 title={isPublic
@@ -169,18 +208,30 @@ export function SteveShowcasePreview() {
           )}
         </div>
       </div>
-      {isOwner && (
-        <p style={{ color: "var(--text-muted)", fontSize: ".78rem", margin: ".5rem 0 0" }}>
-          {isPublic === null
-            ? ""
-            : isPublic
-              ? <>Your showcase is live at <code>/showcase/{SHOWCASE_SLUG}</code>. Anyone with the link can view it.</>
-              : "Your showcase is private — only you can see it. Flip the switch to publish it."}
-          {visError && <span role="alert" style={{ color: "var(--accent-red)", marginLeft: ".5rem" }}>{visError}</span>}
-        </p>
+
+      {phase === "ready" && (
+        <div style={stats} aria-label="Room summary">
+          <div style={stat}><strong style={statValue}>{tankCount}</strong><span style={statLabel}>{tankCount === 1 ? "Tank" : "Tanks"}</span></div>
+          <div style={{ ...stat, borderRight: 0 }}><strong style={statValue}>{fishCount}</strong><span style={statLabel}>Fish</span></div>
+        </div>
       )}
 
-      <div style={{ marginTop: "1rem" }}>
+      <div style={{ padding: "clamp(.8rem, 2vw, 1.4rem)" }}>
+        {isOwner && (
+          <p style={{ color: "var(--text-muted)", fontSize: ".78rem", margin: "0 0 1rem" }}>
+            {isPublic === null
+              ? ""
+              : isPublic
+                ? <>Your showcase is live at <code>/showcase/{SHOWCASE_SLUG}</code>. Anyone with the link can view it.</>
+                : "Your showcase is private, so only you can see it. Flip the switch to publish it."}
+            {visError && <span role="alert" style={{ color: "var(--accent-red)", marginLeft: ".5rem" }}>{visError}</span>}
+          </p>
+        )}
+        {phase === "ready" && (
+          <p style={{ color: "var(--text-muted)", fontSize: ".82rem", margin: "0 0 1rem" }}>
+            Your tanks and fish from My Aquariums. Tank photos appear automatically.
+          </p>
+        )}
         {phase === "loading" && <p style={{ color: "var(--text-secondary)" }}>Loading your room…</p>}
 
         {phase === "sign-in" && (

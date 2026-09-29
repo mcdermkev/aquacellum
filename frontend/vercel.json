@@ -8,7 +8,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://stream.mux.com; media-src 'self' https://stream.mux.com blob:; worker-src 'self' blob:"
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://stream.mux.com https://yahsdztnvsykzecjatsl.supabase.co; media-src 'self' https://stream.mux.com blob:; worker-src 'self' blob:"
         },
         { "key": "Referrer-Policy", "value": "no-referrer" },
         { "key": "X-Content-Type-Options", "value": "nosniff" }
@@ -24,7 +24,8 @@
     { "path": "/api/stripe?action=auto-release", "schedule": "0 9 * * *" },
     { "path": "/api/retention", "schedule": "0 15 * * *" },
     { "path": "/api/retention?action=weekly-digest", "schedule": "30 10 * * 0" },
-    { "path": "/api/stripe?action=auction-sweep", "schedule": "15 8 * * *" }
+    { "path": "/api/stripe?action=auction-sweep", "schedule": "15 8 * * *" },
+    { "path": "/api/retention?action=purge-deletions", "schedule": "45 7 * * *" }
   ],
   "redirects": [
     { "source": "/tanks", "destination": "/app/tanks", "permanent": false },

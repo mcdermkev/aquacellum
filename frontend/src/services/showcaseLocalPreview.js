@@ -52,7 +52,7 @@ export async function readLocalShowcasePreview({ ownerAddress, selectedTankIds }
 
   return {
     title: "GG Steve Rice Fish NJ",
-    description: "Steve's Medaka fish room — private device preview.",
+    description: "Steve's Medaka fish room. Private device preview.",
     tanks: tanks.map((tank) => {
       const specimens = new Map();
       for (const specimen of Array.isArray(tank.specimens) ? tank.specimens : []) {
