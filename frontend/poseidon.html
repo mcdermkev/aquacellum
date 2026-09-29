@@ -264,7 +264,7 @@
     }
     // History goes in the shape the gateway expects (sender: user | poseidon).
     var history = messages.filter(function (m) { return m.role !== 'note'; }).slice(-6).map(function (m) {
-      return { sender: m.role === 'user' ? 'user' : 'poseidon', text: m.text };
+      return { sender: m.role === 'user' ? 'user' : 'poseidon', text: String(m.text).slice(0, 2000) };
     });
     messages.push({ role: 'user', text: text });
     input.value = '';
@@ -282,6 +282,8 @@
       var data = r.data;
       if (r.res.status === 429 || (data && data.rateLimited)) {
         messages.push({ role: 'note', text: 'Poseidon has hit the hourly limit for this connection. Try again a little later.' });
+      } else if (r.res.status === 413) {
+        messages.push({ role: 'note', text: 'That question is too long. Please keep it under 1000 characters.' });
       } else if (!r.res.ok || !data || typeof data.message !== 'string') {
         messages.push({ role: 'note', text: 'Poseidon could not be reached just now. Please try again in a moment.' });
       } else if (data.offline || data.error) {
@@ -290,7 +292,7 @@
         recordUse();
         var answer = salvage(data.message);
         messages.push({ role: 'ai', text: answer.text });
-        if (answer.cut) messages.push({ role: 'note', text: 'That answer was cut off. Asking a narrower question usually helps.' });
+        if (answer.cut || data.truncated) messages.push({ role: 'note', text: 'That answer was cut off. Asking a narrower question usually helps.' });
       }
     }).catch(function () {
       messages.push({ role: 'note', text: 'Poseidon could not be reached. Check your connection and try again.' });
@@ -300,8 +302,9 @@
     });
   }
 
-  // When the model's JSON is truncated, the gateway passes the raw text through
-  // as `message`, so it can arrive as '{ "message": "...' with no end. Show the
+  // The gateway now always sends clean text and flags a cut-off answer with
+  // `truncated: true`. This stays as a guard for an older deployment, which could
+  // pass cut-off model JSON through as '{ "message": "...' with no end: show the
   // prose inside it rather than raw JSON, and say when it was cut short.
   function salvage(msg) {
     var m = /^\s*\{\s*"message"\s*:\s*"((?:[^"\\]|\\.)*)("?)/.exec(msg);

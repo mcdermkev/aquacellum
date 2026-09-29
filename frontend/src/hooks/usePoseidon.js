@@ -16,15 +16,69 @@ import { POSEIDON_ACTION } from '../utils/poseidonActions';
  */
 
 const POSEIDON_API_URL = '/api/ai?action=poseidon';
-// Kept in sync with the server-side gate in api/ai.js
-// (checkRateLimit `poseidon:${ip}`, maxRequests: 30). This is the client-side
-// pre-check and the number shown in the "queries remaining" counter — if it
-// disagrees with the server the counter lies about the real budget. Change both.
+// Kept in sync with the server-side gate (api/_lib/aiRateLimit.js POSEIDON_RATE,
+// max 30 per hour). This is the client-side pre-check and the number shown in
+// the "queries remaining" counter — if it disagrees with the server the counter
+// lies about the real budget. Change both.
 const MAX_REQUESTS_PER_HOUR = 30;
+// Longest question a person can type. The server caps `message` at 4000 because
+// other callers wrap species data around theirs (api/_lib/poseidonGateway.js).
+export const MAX_QUESTION_CHARS = 1000;
+export const HISTORY_TURN_CHARS = 2000;
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const SESSION_STORAGE_KEY = 'aquadex_poseidon_conversation';
 const RATE_LIMIT_STORAGE_KEY = 'aquadex_poseidon_rate_limit';
 const SESSION_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes — conversations expire after inactivity
+
+// Optional Privy access-token getter. When registered (AuthContext, like the
+// other services' setSessionTokenGetter), the token rides as a bearer header so
+// the server counts a signed-in user by account instead of by shared IP.
+let _sessionTokenGetter = null;
+export function setPoseidonSessionTokenGetter(getter) {
+  _sessionTokenGetter = typeof getter === 'function' ? getter : null;
+}
+
+async function authHeaders() {
+  if (!_sessionTokenGetter) return {};
+  try {
+    const token = await _sessionTokenGetter();
+    return typeof token === 'string' && token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Read the gateway's reply text. The server now always sends clean text, but a
+ * cached or older deployment could still pass cut-off model JSON through as
+ * `message` ('{"message": "...' with no end). Show the prose inside it instead
+ * of raw JSON.
+ *
+ * @returns {{ text: string, cut: boolean }}
+ */
+export function readPoseidonText(message) {
+  const msg = typeof message === 'string' ? message : '';
+  const m = /^\s*\{\s*"message"\s*:\s*"((?:[^"\\]|\\.)*)("?)/.exec(msg);
+  if (!m) return { text: msg, cut: false };
+  const body = m[1].replace(/\\u[0-9a-fA-F]{0,3}$|\\$/, '');
+  let text;
+  try {
+    text = JSON.parse(`"${body}"`);
+  } catch {
+    text = body.replace(/\\n/g, '\n').replace(/\\"/g, '"');
+  }
+  return { text: text.trim() || msg, cut: m[2] !== '"' };
+}
+
+/** Text shown for a reply, with a short note when it was cut short. */
+export function poseidonReplyText(data, mode) {
+  const { text, cut } = readPoseidonText(data?.message);
+  if (!data?.truncated && !cut) return text;
+  const note = mode === 'pro'
+    ? '[TRUNCATED] Response hit the output limit. Narrow the query.'
+    : '(That answer got cut short. Asking a narrower question usually helps.)';
+  return `${text}\n\n${note}`;
+}
 
 /**
  * Load persisted request timestamps from localStorage for rate limiting.
@@ -274,14 +328,31 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
       }
     }
 
+    // Length check (the server enforces its own cap; this keeps the budget intact
+    // and says why instead of failing the request).
+    if (text.trim().length > MAX_QUESTION_CHARS) {
+      const tooLong = {
+        id: `pos-${Date.now()}`,
+        sender: 'poseidon',
+        text: mode === 'pro'
+          ? `[REJECTED] Query exceeds ${MAX_QUESTION_CHARS} characters. Shorten and retry.`
+          : `That question is a bit long for me. Please keep it under ${MAX_QUESTION_CHARS} characters.`,
+        timestamp: Date.now(),
+        intent: 'too_long',
+        action: { type: 'NONE', payload: {} },
+      };
+      setMessages(prev => [...prev, tooLong]);
+      return tooLong;
+    }
+
     // Rate limit check
     if (!checkRateLimit()) {
       const rateLimitResponse = {
         id: `pos-${Date.now()}`,
         sender: 'poseidon',
         text: mode === 'pro'
-          ? '[RATE LIMIT] Query quota exceeded (20/hr). Retry after cooldown.'
-          : '🌊 I need a breather! You\'ve hit the hourly limit (20 questions). Try again in a bit.',
+          ? `[RATE LIMIT] Query quota exceeded (${MAX_REQUESTS_PER_HOUR}/hr). Retry after cooldown.`
+          : `🌊 I need a breather. You've hit the hourly limit (${MAX_REQUESTS_PER_HOUR} questions). Try again in a bit.`,
         timestamp: Date.now(),
         intent: 'rate_limited',
         action: { type: 'NONE', payload: {} },
@@ -305,14 +376,16 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
       const sessionData = await gatherSessionContext();
 
       // Build conversation history for multi-turn (last 6 messages)
+      // Each turn trimmed to what the server forwards anyway (2000 chars,
+      // api/_lib/poseidonGateway.js HISTORY_TURN_CHARS).
       const conversationHistory = messages.slice(-6).map(m => ({
         sender: m.sender,
-        text: m.text,
+        text: String(m.text || '').slice(0, HISTORY_TURN_CHARS),
       }));
 
       const response = await fetch(POSEIDON_API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({
           message: text.trim(),
           mode: mode === 'pro' ? 'pro' : 'casual',
@@ -321,11 +394,35 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
         }),
       });
 
+      const data = await response.json().catch(() => null);
+
+      // 429/413/400 carry a readable `message` in the normal reply shape. Show
+      // it rather than the generic offline notice, and keep the connection
+      // marked online: the gateway answered.
       if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
+        if (!data || typeof data.message !== 'string') {
+          throw new Error(`API returned ${response.status}`);
+        }
+        if (response.status === 429 || data.rateLimited) {
+          // The server's shared count is the real budget; show it as spent.
+          setRequestsRemaining(0);
+        }
+        const noticeMsg = {
+          id: `pos-${Date.now()}`,
+          sender: 'poseidon',
+          text: data.message,
+          timestamp: Date.now(),
+          intent: response.status === 429 ? 'rate_limited' : 'fallback_unknown',
+          action: { type: 'NONE', payload: {} },
+          echoReaction: data.echoReaction,
+        };
+        setMessages(prev => [...prev, noticeMsg]);
+        return noticeMsg;
       }
 
-      const data = await response.json();
+      if (!data || typeof data.message !== 'string') {
+        throw new Error('Unreadable response');
+      }
 
       // Track successful request for rate limiting (only if not an error response)
       if (!data.error && !data.offline) {
@@ -337,7 +434,8 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
       const poseidonMsg = {
         id: `pos-${Date.now()}`,
         sender: 'poseidon',
-        text: data.message,
+        text: poseidonReplyText(data, mode),
+        truncated: !!data.truncated,
         timestamp: Date.now(),
         intent: data.intent,
         action: data.action,
@@ -372,7 +470,7 @@ export function usePoseidon({ tankId, mode = 'casual', walletAddress, persistKey
     } finally {
       setIsLoading(false);
     }
-  }, [mode, messages, gatherSessionContext, checkRateLimit]);
+  }, [mode, messages, gatherSessionContext, checkRateLimit, updateRequestsRemaining]);
 
   /**
    * Clear conversation history (also clears persistence).

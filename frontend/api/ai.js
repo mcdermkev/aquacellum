@@ -9,11 +9,12 @@
  *   POST /api/ai?action=identify-fish    → Identify a fish from a photo (Echo's eyes)
  *   POST /api/ai?action=suggest-species  → Taxonomic verification via WoRMS + Gemini
  *   POST /api/ai?action=poseidon         → Poseidon AI gateway (Gemini + species RAG)
- *   GET  /api/ai?action=poseidon         → Poseidon health check (config + relayer balance)
+ *   GET  /api/ai?action=poseidon         → Poseidon static status (no model call)
+ *   GET  /api/ai?action=poseidon&deep=1  → Model + relayer check (Bearer CRON_SECRET)
  *
  * The two IMAGE actions (`alt-text`, `identify-fish`) require a signed-in account
  * and carry a per-account daily quota — see `_lib/aiAccess.js`. The text actions
- * keep their original per-IP limit. Vision costs materially more per call, and an
+ * keep a per-IP limit; Poseidon's is shared across instances (`_lib/aiRateLimit.js`). Vision costs materially more per call, and an
  * anonymous caller cannot be told apart from a script.
  */
 
@@ -21,11 +22,21 @@ import { vertexGenerateContent, isVertexConfigured } from './_lib/vertexClient.j
 import { modelFor, configuredModels, expiringModels, AI_TASKS } from './_lib/aiModels.js';
 import { handleCorsPreFlight, setCorsHeaders } from './_lib/cors.js';
 import { buildSpeciesContext } from './_lib/speciesIndex.js';
-import { checkRateLimit } from './_lib/rateLimiter.js';
+import { enforcePoseidonLimit, POSEIDON_RATE } from './_lib/aiRateLimit.js';
+import {
+  POSEIDON_LIMITS,
+  validatePoseidonRequest,
+  buildPoseidonGenerationConfig,
+  interpretPoseidonResult,
+  shouldRetryPoseidon,
+  pickPoseidonOutcome,
+  shapePoseidonReply,
+} from './_lib/poseidonGateway.js';
 import { requireAccount, enforceAccountQuota, AI_QUOTAS } from './_lib/aiAccess.js';
 import { resolveImagePart } from './_lib/imageInput.js';
 import { groundCandidates } from './_lib/identifyGrounding.js';
 import { ethers } from 'ethers';
+import { timingSafeEqual } from 'crypto';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ALT-TEXT HANDLER
@@ -460,7 +471,7 @@ export default async function handler(req, res) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // POSEIDON HANDLER (previously /api/poseidon)
 // Poseidon AI Gateway — routes user queries to Gemini with species RAG context.
-// GET → health check (config status + relayer wallet balance).
+// GET → static status; ?deep=1 with CRON_SECRET → model + relayer check.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
@@ -475,15 +486,15 @@ const POSEIDON_SYSTEM_PROMPT = `You are Poseidon, the AI assistant for the Aquac
 - You NEVER provide veterinary medical diagnoses. If asked about sick fish, recommend consulting a qualified aquatic veterinarian.
 - You are deeply knowledgeable about tropical freshwater species (cichlids, tetras, livebearers, corydoras, plecos, bettas, gouramis, barbs, rasboras, loaches, rainbowfish) and popular marine fish (clownfish, damsels, tangs, dwarf angels, gobies, blennies, wrasses, cardinalfish).
 
-## PROTOCOL RULES YOU MUST FOLLOW
-1. Temperature values use ×10 integer scaling on-chain (23.5°C = 235). When discussing temperatures, use normal decimal notation for the user but note the scaled value if relevant.
-2. pH values use ×10 integer scaling on-chain (7.2 = 72).
-3. Salinity (Specific Gravity) uses ×10,000 scaling (1.0240 = 10240).
-4. Nitrogen compounds (ammonia, nitrite, nitrate) use ×100 scaling in ppm (0.25 ppm = 25).
-5. Species must be referenced by FishBase specCode as primary key when available.
-6. Freshwater and saltwater fish never share a tank. Always check a tank's water type before recommending a species for it. For saltwater tanks, the key tests are salinity (1.023–1.026 SG), alkalinity (7–12 dKH), calcium (380–450 ppm), magnesium (1250–1400 ppm), nitrate and phosphate. Corals and invertebrates aren't in the Aquadex yet: give general guidance only and say so.
-7. Compatibility assessments must consider: temperature overlap, pH overlap, minimum tank volume, aggression/temperament, and adult size.
-8. When species data is provided in the context below, ALWAYS use those values as ground truth. Do not override them with general knowledge.
+## UNITS AND WORDING
+1. Give every value in the units people use at the tank: temperature in °F with °C in brackets (for example "76–80°F (24–27°C)"), pH as a plain decimal (6.8), ammonia, nitrite and nitrate in ppm, salinity as specific gravity (1.025), hardness in dGH/dKH, tank size in gallons with liters.
+2. Never show stored or scaled numbers (such as 235 for 23.5°C, 72 for pH 7.2, or 220–280 for a temperature range) and never describe a value as being "on the Aquadex system", "on-chain" or in "protocol units". Every number in the context below is already in normal units.
+3. In casual mode do not mention blockchain, tokens, contracts, specCodes or internal IDs. If you need to name the source, say "the Aquacellum species guide". In pro mode you may show a species' specCode (the Aquacellum catalog ID, not always the FishBase SpecCode) or a token ID when it helps.
+
+## HUSBANDRY RULES YOU MUST FOLLOW
+4. Freshwater and saltwater fish never share a tank. Always check a tank's water type before recommending a species for it. For saltwater tanks, the key tests are salinity (1.023–1.026 SG), alkalinity (7–12 dKH), calcium (380–450 ppm), magnesium (1250–1400 ppm), nitrate and phosphate. The species guide covers some corals and invertebrates. When one is in the context below, use that record. When it is not, give general guidance only and say that the species is not in the guide.
+5. Compatibility assessments must consider: temperature overlap, pH overlap, minimum tank volume, aggression/temperament, and adult size.
+6. When species data is provided in the context below, ALWAYS use those values as ground truth. Do not override them with general knowledge.
 
 ## AVAILABLE ACTIONS
 You can instruct the frontend to perform these actions by including an "action" object in your response:
@@ -491,7 +502,7 @@ You can instruct the frontend to perform these actions by including an "action" 
 - LOG_HUSBANDRY: Log a care event (feeding, water change, glass cleaning, water test, medication, etc.)
 - QUERY_COMPATIBILITY: Check if species X is compatible with the user's current tank parameters and inhabitants.
 - SUGGEST_SPECIES: Recommend species based on tank parameters and existing inhabitants.
-- LOG_WATER_PARAMS: Record a water parameter snapshot (temp, pH, ammonia, nitrite, nitrate).
+- LOG_WATER_PARAMS: Record a water parameter snapshot. Payload fields are plain decimals: temp in °C (convert from °F), ph, ammonia, nitrite, nitrate in ppm, salinity as specific gravity. Leave out any value the user did not give.
 - NONE: No action needed (informational response only).
 
 ## RESPONSE FORMAT
@@ -515,10 +526,10 @@ Always respond with valid JSON matching this schema:
 }
 
 ## BEHAVIORAL GUIDELINES
-- Be concise. Hobbyists want quick answers, not essays.
+- Be concise. Hobbyists want quick answers, not essays. Keep "message" under about 200 words unless the user asks for detail.
 - When you lack certainty about a species fact, say so. Never fabricate care parameters.
 - GROUNDING RULE: if the context includes species data, treat those values as ground truth. If it does NOT include data for a species the user asks about, do NOT invent numeric care parameters (temperature, pH, hardness, adult size, diet specifics). Say plainly that you're not certain, give only general guidance, and suggest they verify against a trusted source or add the species so you can ground the answer. Wrong numbers can kill fish — an honest "I'm not sure" is always better than a confident guess.
-- If the user mentions a species, try to reference its specCode from the provided species database context.
+- In pro mode, when the user mentions a species, reference its specCode from the provided species database context. In casual mode use its common and scientific name only.
 - Proactively warn about common mistakes: overstocking, pH crashes, ammonia spikes, incompatible tankmates.
 - In casual mode: warm, encouraging, use 1-2 relevant emoji per response. Think "knowledgeable friend at the fish store."
 - In pro mode: clinical, data-forward, no emoji. Think "facility operations terminal."
@@ -540,15 +551,33 @@ function buildUserContext(sessionData) {
 
   if (sessionData.tanks && sessionData.tanks.length > 0) {
     parts.push("\n## USER'S TANKS");
+    // Stored readings are fixed-point (×10 temp/pH, ×100 nitrogen, ×10000 SG).
+    // Convert them here so the model only ever sees normal units.
+    const num = (v, div) => (v == null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v) / div);
     for (const tank of sessionData.tanks.slice(0, 5)) {
       const waterType = ["Freshwater", "Saltwater", "Brackish", "Pond"][Number(tank.tankType)] || "Freshwater";
-      parts.push(`- Tank "${tank.name}" (${tank.volumeLiters}L, ${waterType})`);
-      if (tank.logs && tank.logs.length > 0) {
-        const latest = tank.logs[tank.logs.length - 1];
-        parts.push(`  Last reading: ${(latest.tempCelsiusX10 / 10).toFixed(1)}°C, pH ${(latest.phX10 / 10).toFixed(1)}, NH₃ ${(latest.ammoniaPpmX100 / 100).toFixed(2)}ppm`);
+      const liters = num(tank.volumeLiters, 1);
+      const size = liters ? `${Math.round(liters / 3.78541)} gal / ${Math.round(liters)} L` : 'size unknown';
+      parts.push(`- Tank "${String(tank.name || 'Unnamed').slice(0, 80)}" (${size}, ${waterType})`);
+      if (Array.isArray(tank.logs) && tank.logs.length > 0) {
+        const latest = tank.logs[tank.logs.length - 1] || {};
+        const c = num(latest.tempCelsiusX10, 10);
+        const ph = num(latest.phX10, 10);
+        const nh3 = num(latest.ammoniaPpmX100, 100);
+        const sg = num(latest.salinitySgX10000, 10000);
+        const reading = [
+          c != null ? `${(c * 9 / 5 + 32).toFixed(1)}°F (${c.toFixed(1)}°C)` : null,
+          ph != null ? `pH ${ph.toFixed(1)}` : null,
+          nh3 != null ? `ammonia ${nh3.toFixed(2)} ppm` : null,
+          sg != null ? `salinity ${sg.toFixed(3)} SG` : null,
+        ].filter(Boolean);
+        if (reading.length) parts.push(`  Last reading: ${reading.join(', ')}`);
       }
-      if (tank.specimens && tank.specimens.length > 0) {
-        parts.push(`  Inhabitants: ${tank.specimens.map(s => s.commonName || s.scientificName).join(', ')}`);
+      if (Array.isArray(tank.specimens) && tank.specimens.length > 0) {
+        const names = tank.specimens.slice(0, 30)
+          .map((s) => String(s?.commonName || s?.scientificName || '').slice(0, 80))
+          .filter(Boolean);
+        if (names.length) parts.push(`  Inhabitants: ${names.join(', ')}`);
       }
     }
   }
@@ -557,7 +586,7 @@ function buildUserContext(sessionData) {
     parts.push("\n## RECENT ACTIVITY (last 5 actions)");
     for (const log of sessionData.recentLogs.slice(0, 5)) {
       const date = new Date(log.timestamp * 1000).toLocaleDateString();
-      parts.push(`- [${date}] ${log.actionType}: ${log.details}`);
+      parts.push(`- [${date}] ${String(log.actionType || '').slice(0, 60)}: ${String(log.details || '').slice(0, 200)}`);
     }
   }
 
@@ -670,19 +699,11 @@ async function handleListingDescriptionDraft(req, res) {
   if (handleCorsPreFlight(req, res, { methods: 'POST, OPTIONS' })) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
-  const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
-    || req.headers['x-real-ip']
-    || req.socket?.remoteAddress
-    || 'unknown';
-  const { allowed, remaining, resetIn } = checkRateLimit(`poseidon-listing-desc:${clientIp}`, {
-    maxRequests: 30,
-    windowMs: 60 * 60 * 1000,
-  });
-  res.setHeader('X-RateLimit-Limit', '30');
-  res.setHeader('X-RateLimit-Remaining', String(remaining));
-  res.setHeader('X-RateLimit-Reset', String(resetIn));
-  if (!allowed) {
-    return res.status(429).json({ description: null, error: `Rate limited. Retry in ${resetIn}s.` });
+  // Shared limiter (see _lib/aiRateLimit.js), own scope so drafting and chat
+  // never draw on each other's budget.
+  const limit = await enforcePoseidonLimit(req, res, 'poseidon-listing-desc');
+  if (!limit.allowed) {
+    return res.status(429).json({ description: null, error: `Rate limited. Retry in ${limit.resetIn}s.` });
   }
 
   const rawFacts = req.body?.groundingFacts;
@@ -748,8 +769,8 @@ async function handleListingDescriptionDraft(req, res) {
 }
 
 async function handlePoseidon(req, res) {
-  // GET requests → health check (previously /api/poseidon-health)
-  if (req.method === 'GET') {
+  // GET/HEAD → cheap static status. No model call, no identities (see handlePoseidonHealth).
+  if (req.method === 'GET' || req.method === 'HEAD') {
     return handlePoseidonHealth(req, res);
   }
 
@@ -760,7 +781,7 @@ async function handlePoseidon(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed. Use GET for health check or POST for queries.' });
   }
 
-  const { message, mode, sessionData, conversationHistory, intent } = req.body || {};
+  const { message, mode, intent } = req.body || {};
 
   // ─── Grounded listing-description intent (Task 9 Increment 2 §2.3) ────────
   // A separate, stricter contract from the conversational flow below. Bypasses
@@ -774,34 +795,29 @@ async function handlePoseidon(req, res) {
   }
 
   if (!message || typeof message !== 'string') {
-    return res.status(400).json({ error: 'Missing required field: message' });
+    return res.status(400).json(poseidonNotice(mode, 'Missing required field: message', { error: true, code: 'message_required' }));
   }
 
-  // ─── Rate Limiting: 30 requests per hour per IP (no auth on this endpoint) ─
-  const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
-    || req.headers['x-real-ip']
-    || req.socket?.remoteAddress
-    || 'unknown';
-  const { allowed, remaining, resetIn } = checkRateLimit(`poseidon:${clientIp}`, {
-    maxRequests: 30,
-    windowMs: 60 * 60 * 1000, // 1 hour
-  });
+  // ─── Size caps (before anything is counted or spent) ──────────────────────
+  const input = validatePoseidonRequest(req.body);
+  if (!input.ok) {
+    const text = input.status === 413
+      ? (mode === 'pro'
+        ? `[REJECTED] ${input.error}`
+        : `That is more than I can read in one go. Please keep questions under ${POSEIDON_LIMITS.QUESTION_CHARS} characters.`)
+      : input.error;
+    return res.status(input.status).json(poseidonNotice(mode, text, { error: true, code: input.code }));
+  }
 
-  res.setHeader('X-RateLimit-Limit', '30');
-  res.setHeader('X-RateLimit-Remaining', String(remaining));
-  res.setHeader('X-RateLimit-Reset', String(resetIn));
-
-  if (!allowed) {
-    return res.status(429).json({
-      message: mode === 'pro'
-        ? `[RATE LIMITED] 30 queries/hour exceeded. Retry in ${resetIn}s.`
-        : `🌊 You've been asking a lot of great questions! I need a short break — try again in ${Math.ceil(resetIn / 60)} minutes.`,
-      intent: "fallback_unknown",
-      action: { type: "NONE", payload: {} },
-      echoReaction: { mood: "calm", glowActive: false, glowColor: "", swimSpeedMultiplier: 0.5, durationMs: 2000 },
-      confidence: 0.0,
-      rateLimited: true,
-    });
+  // ─── Rate limit: 30 per hour, shared across instances (_lib/aiRateLimit.js) ─
+  // Keyed by hashed IP, or by wallet when a verified Privy session is present.
+  const limit = await enforcePoseidonLimit(req, res, 'poseidon');
+  if (!limit.allowed) {
+    return res.status(429).json(poseidonNotice(mode,
+      mode === 'pro'
+        ? `[RATE LIMITED] ${POSEIDON_RATE.max} queries/hour exceeded. Retry in ${limit.resetIn}s.`
+        : `🌊 You've been asking a lot of great questions! I need a short break. Try again in ${Math.ceil(limit.resetIn / 60)} minutes.`,
+      { rateLimited: true, echoReaction: { mood: "calm", glowActive: false, glowColor: "", swimSpeedMultiplier: 0.5, durationMs: 2000 } }));
   }
 
   // Fallback: if Vertex AI isn't configured, return a structured offline response
@@ -812,20 +828,18 @@ async function handlePoseidon(req, res) {
       'GOOGLE_APPLICATION_CREDENTIALS:', !!(process.env.GOOGLE_APPLICATION_CREDENTIALS && process.env.GOOGLE_APPLICATION_CREDENTIALS.trim()),
       'GEMINI_API_KEY:', !!(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim())
     );
-    return res.status(200).json({
-      message: mode === 'pro'
-        ? "[POSEIDON OFFLINE] AI backend not configured (no Vertex credentials or GEMINI_API_KEY in this environment). Set them in the deploy env — see the GET /api/ai?action=poseidon health check."
+    return res.status(200).json(poseidonNotice(mode,
+      mode === 'pro'
+        ? "[POSEIDON OFFLINE] AI backend not configured (no Vertex credentials or GEMINI_API_KEY in this environment)."
         : "🌊 Poseidon is taking a quick breather and can't answer right now. Please try again shortly.",
-      intent: "fallback_unknown",
-      action: { type: "NONE", payload: {} },
-      echoReaction: { mood: "calm", glowActive: false, glowColor: "", swimSpeedMultiplier: 1.0, durationMs: 1500 },
-      confidence: 0.0,
-      offline: true
-    });
+      { offline: true }));
   }
 
+  const { history, sessionData } = input;
+  const cleanMessage = input.message;
+
   // --- RAG: Build species context from the curated catalog ---
-  const speciesContext = buildSpeciesContext(message, sessionData || {}, mode || 'casual');
+  const speciesContext = buildSpeciesContext(cleanMessage, sessionData || {}, mode || 'casual');
 
   // Build the user's tank/activity context
   const userContext = sessionData ? buildUserContext(sessionData) : '';
@@ -838,19 +852,13 @@ async function handlePoseidon(req, res) {
   // Build conversation messages for multi-turn context
   const messages = [
     { role: "user", parts: [{ text: POSEIDON_SYSTEM_PROMPT }] },
-    { role: "model", parts: [{ text: "Understood. I am Poseidon, ready to assist with freshwater and saltwater aquarium management. I will follow all protocol rules, use provided species data as ground truth, and respond in the specified JSON format." }] },
+    { role: "model", parts: [{ text: "Understood. I am Poseidon, ready to assist with freshwater and saltwater aquarium management. I will follow all the rules, use normal units, use provided species data as ground truth, and respond in the specified JSON format." }] },
   ];
 
-  // Add conversation history (last 6 turns max to stay within token budget)
-  if (conversationHistory && Array.isArray(conversationHistory)) {
-    const recentHistory = conversationHistory.slice(-6);
-    for (const turn of recentHistory) {
-      if (turn.sender === 'user') {
-        messages.push({ role: "user", parts: [{ text: turn.text }] });
-      } else if (turn.sender === 'poseidon') {
-        messages.push({ role: "model", parts: [{ text: turn.text }] });
-      }
-    }
+  // Conversation history, already trimmed by validatePoseidonRequest
+  // (last 6 turns, each capped) so one request's token cost stays bounded.
+  for (const turn of history) {
+    messages.push({ role: turn.sender === 'user' ? "user" : "model", parts: [{ text: turn.text }] });
   }
 
   // Assemble the current prompt with all RAG context
@@ -858,87 +866,58 @@ async function handlePoseidon(req, res) {
     personaInstruction,
     userContext ? `\n${userContext}` : '',
     speciesContext ? `\n${speciesContext}` : '',
-    `\n## USER MESSAGE\n${message}`
+    `\n## USER MESSAGE\n${cleanMessage}`
   ].filter(Boolean).join('\n');
 
   messages.push({ role: "user", parts: [{ text: currentPrompt }] });
 
-  try {
-    const geminiResponse = await vertexGenerateContent(modelFor('CHAT'), {
-        contents: messages,
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: "object",
-            properties: {
-              message: { type: "string" },
-              intent: { type: "string" },
-              action: {
-                type: "object",
-                properties: {
-                  type: { type: "string" },
-                  payload: { type: "object" }
-                },
-                required: ["type"]
-              },
-              echoReaction: {
-                type: "object",
-                properties: {
-                  mood: { type: "string" },
-                  glowActive: { type: "boolean" },
-                  glowColor: { type: "string" },
-                  swimSpeedMultiplier: { type: "number" },
-                  durationMs: { type: "number" }
-                }
-              },
-              confidence: { type: "number" },
-              sources: { type: "array", items: { type: "string" } }
-            },
-            required: ["message", "intent", "action"]
-          },
-          temperature: 0.7,
-          maxOutputTokens: 1024,
-        },
-        safetySettings: [
-          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
-          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
-          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
-          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
-        ]
+  const chatModel = modelFor('CHAT');
+  const callOnce = async (attemptIndex) => {
+    const geminiResponse = await vertexGenerateContent(chatModel, {
+      contents: messages,
+      generationConfig: buildPoseidonGenerationConfig(chatModel.model, attemptIndex),
+      safetySettings: [
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
+      ]
     });
 
     if (!geminiResponse.ok) {
       const errText = await geminiResponse.text();
-      console.error(`[Poseidon Gateway] Gemini API error ${geminiResponse.status}:`, errText);
+      console.error(`[Poseidon Gateway] Gemini API error ${geminiResponse.status}:`, errText.slice(0, 500));
       throw new Error(`Gemini API returned ${geminiResponse.status}`);
     }
+    return interpretPoseidonResult(await geminiResponse.json());
+  };
 
-    const result = await geminiResponse.json();
-    const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!responseText) {
-      throw new Error('Empty response from Gemini');
+  try {
+    const first = await callOnce(0);
+    let retry = null;
+    if (shouldRetryPoseidon(first)) {
+      // Cut off by the output cap. One more try with thinking off and more room.
+      console.warn('[Poseidon Gateway] Reply hit MAX_TOKENS; retrying once with a larger budget.');
+      try {
+        retry = await callOnce(1);
+      } catch (retryErr) {
+        console.error('[Poseidon Gateway] Retry failed:', retryErr.message || retryErr);
+      }
     }
 
-    let parsed;
-    try {
-      parsed = JSON.parse(responseText);
-    } catch {
-      // If Gemini returns non-JSON despite schema enforcement, wrap it
-      parsed = {
-        message: responseText,
-        intent: "general_knowledge",
-        action: { type: "NONE", payload: {} },
-        echoReaction: { mood: "calm", glowActive: false, glowColor: "", swimSpeedMultiplier: 1.0, durationMs: 1500 },
-        confidence: 0.5
-      };
+    const outcome = pickPoseidonOutcome(first, retry);
+    if (outcome?.kind === 'ok') {
+      if (outcome.reply.truncated) console.warn('[Poseidon Gateway] Returning a truncated reply.');
+      return res.status(200).json(outcome.reply);
     }
-
-    // Ensure required fields exist
-    if (!parsed.action) parsed.action = { type: "NONE", payload: {} };
-    if (!parsed.echoReaction) parsed.echoReaction = { mood: "calm", glowActive: false, glowColor: "", swimSpeedMultiplier: 1.0, durationMs: 1500 };
-
-    return res.status(200).json(parsed);
+    if (outcome?.kind === 'blocked') {
+      return res.status(200).json(poseidonNotice(mode,
+        mode === 'pro'
+          ? '[DECLINED] Query blocked by the content filter. Rephrase and retry.'
+          : "🌊 I can't answer that one. Try asking it a different way.",
+        { blocked: true }));
+    }
+    throw new Error(`Unusable model reply (finishReason: ${first?.finishReason || retry?.finishReason || 'unknown'})`);
 
   } catch (error) {
     console.error('[Poseidon Gateway] Error:', error.message || error);
@@ -947,171 +926,154 @@ async function handlePoseidon(req, res) {
     const isDev = process.env.VERCEL_ENV !== 'production';
     const debugHint = isDev ? ` (Debug: ${error.message})` : '';
 
-    return res.status(200).json({
-      message: mode === 'pro'
+    return res.status(200).json(poseidonNotice(mode,
+      mode === 'pro'
         ? `[POSEIDON ERROR] Backend intelligence layer unreachable. Retry or use local command mode.${debugHint}`
-        : `🌊 Sorry, I'm having trouble connecting to my knowledge base right now. Try again in a moment!${debugHint}`,
-      intent: "fallback_unknown",
-      action: { type: "NONE", payload: {} },
-      echoReaction: { mood: "confused", glowActive: false, glowColor: "", swimSpeedMultiplier: 0.8, durationMs: 2000 },
-      confidence: 0.0,
-      error: true
-    });
+        : `🌊 Sorry, I'm having trouble connecting to my knowledge base right now. Try again in a moment.${debugHint}`,
+      { error: true, echoReaction: { mood: "confused", glowActive: false, glowColor: "", swimSpeedMultiplier: 0.8, durationMs: 2000 } }));
   }
 }
 
+/**
+ * A gateway-authored reply (rate limit, offline, error, rejected input) in the
+ * same shape as a model reply, so every client reads one format.
+ */
+function poseidonNotice(mode, message, extra = {}) {
+  const { echoReaction, ...flags } = extra;
+  return {
+    ...shapePoseidonReply({
+      message,
+      intent: "fallback_unknown",
+      confidence: 0,
+      echoReaction: echoReaction || { mood: "calm", glowActive: false, glowColor: "", swimSpeedMultiplier: 1.0, durationMs: 1500 },
+    }),
+    ...flags,
+  };
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
-// Poseidon Health Check (previously GET /api/poseidon and /api/poseidon-health)
-// GET /api/ai?action=poseidon — config status + relayer wallet balance
+// Poseidon Health Check
+// GET|HEAD /api/ai?action=poseidon          → static status, free, public
+// GET /api/ai?action=poseidon&deep=1        → model reachability + relayer balance,
+//                                             Bearer CRON_SECRET only
 // ═══════════════════════════════════════════════════════════════════════════════
+
+/** Constant-time check of `Authorization: Bearer <CRON_SECRET>`. Disabled when CRON_SECRET is unset. */
+function isCronAuthorized(req) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return false;
+  const header = req.headers?.authorization || req.headers?.Authorization || '';
+  const expected = Buffer.from(`Bearer ${secret}`);
+  const given = Buffer.from(String(header));
+  return given.length === expected.length && timingSafeEqual(given, expected);
+}
 
 async function handlePoseidonHealth(req, res) {
   setCorsHeaders(req, res, { methods: 'GET, OPTIONS' });
   if (req.method === 'OPTIONS') return res.status(204).end();
+  res.setHeader('Cache-Control', 'no-store');
 
-  const gcpProjectId = process.env.GCP_PROJECT_ID;
-  const gcpLocation = process.env.GCP_LOCATION;
+  const configured = isVertexConfigured();
+
+  // The public check used to make a paid Vertex call per model on every hit and
+  // return the service-account email and relayer address. Anyone could run up
+  // the bill or read those identities. It now reads config flags only.
+  const deep = req.method === 'GET' && (req.query?.deep === '1' || req.query?.deep === 'true');
+  if (!deep) {
+    if (req.method === 'HEAD') return res.status(200).end();
+    return res.status(200).json({
+      status: configured ? 'configured' : 'not_configured',
+      service: 'poseidon',
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  if (!isCronAuthorized(req)) {
+    return res.status(401).json({ error: 'Deep health check requires authorization.' });
+  }
+
+  // ── Deep check (operators only) ─────────────────────────────────────────────
   const hasServiceAccountJson = !!(process.env.GCP_SERVICE_ACCOUNT_JSON && process.env.GCP_SERVICE_ACCOUNT_JSON.trim());
   const hasCredentialsFile = !!(process.env.GOOGLE_APPLICATION_CREDENTIALS && process.env.GOOGLE_APPLICATION_CREDENTIALS.trim());
   const hasGeminiKey = !!(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.trim());
 
-  // Try to parse the service account JSON to check validity
   let serviceAccountParseable = false;
-  let serviceAccountEmail = null;
-  let parseError = null;
-
   if (hasServiceAccountJson) {
     try {
-      const parsed = JSON.parse(process.env.GCP_SERVICE_ACCOUNT_JSON);
+      JSON.parse(process.env.GCP_SERVICE_ACCOUNT_JSON);
       serviceAccountParseable = true;
-      serviceAccountEmail = parsed.client_email || null;
-      if (parsed.private_key) {
-        const hasRealNewlines = parsed.private_key.includes('\n');
-        const hasLiteralBackslashN = parsed.private_key.includes('\\n');
-        parseError = `private_key: realNewlines=${hasRealNewlines}, literalBackslashN=${hasLiteralBackslashN}, length=${parsed.private_key.length}`;
-      }
-    } catch (e) {
-      parseError = e.message;
+    } catch {
       try {
-        const unescaped = process.env.GCP_SERVICE_ACCOUNT_JSON.replace(/\\n/g, '\n');
-        const parsed = JSON.parse(unescaped);
+        JSON.parse(process.env.GCP_SERVICE_ACCOUNT_JSON.replace(/\\n/g, '\n'));
         serviceAccountParseable = true;
-        serviceAccountEmail = parsed.client_email || null;
-        parseError = 'Fixed with \\n unescape';
-      } catch (e2) {
-        parseError = `Primary: ${e.message} | Unescape attempt: ${e2.message}`;
+      } catch {
+        serviceAccountParseable = false;
       }
     }
   }
 
-  const configured = isVertexConfigured();
-
-  // If configured, ping EVERY model production is actually configured to use.
-  //
-  // This used to ping a hardcoded 'gemini-2.5-flash' — its own second copy of the
-  // name. So changing the chat model without also editing this line left the
-  // health check reporting green for a model nothing used, which is precisely the
-  // blind spot you don't want during a retirement. It now reads the same registry
-  // the request handlers do, so a retired or mislocated model shows up here first.
-  let vertexTest = null;
+  // Ping EVERY model production is actually configured to use, from the same
+  // registry the request handlers read, so a retired or mislocated model shows
+  // up here first.
   let modelChecks = [];
   if (configured) {
     const pingOne = async (cfg) => {
       try {
-        const res = await vertexGenerateContent(cfg, {
+        const r = await vertexGenerateContent(cfg, {
           contents: [{ role: 'user', parts: [{ text: 'Say OK' }] }],
           generationConfig: { maxOutputTokens: 5 },
         });
-        if (res.status === 200) {
-          const data = await res.json();
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          return { ...cfg, ok: true, status: 200, response: text || '(empty)' };
-        }
-        const errBody = await res.text();
-        return { ...cfg, ok: false, status: res.status, error: errBody.slice(0, 300) };
+        if (r.status === 200) return { ...cfg, ok: true, status: 200 };
+        const errBody = await r.text();
+        return { ...cfg, ok: false, status: r.status, error: errBody.slice(0, 300) };
       } catch (e) {
         return { ...cfg, ok: false, error: e.message };
       }
     };
-
     modelChecks = await Promise.all(configuredModels().map(pingOne));
-
-    // Keep the original single-model shape so existing readers of this endpoint
-    // (foundersAnalytics' "Poseidon AI" check) don't break; it now reflects the
-    // CHAT model specifically rather than a hardcoded name.
-    const chatCfg = modelFor('CHAT');
-    const chatCheck = modelChecks.find((c) => c.model === chatCfg.model && c.location === chatCfg.location);
-    if (chatCheck) {
-      vertexTest = chatCheck.ok
-        ? { success: true, status: 200, response: chatCheck.response }
-        : { success: false, status: chatCheck.status, error: chatCheck.error };
-    }
   }
 
-  // Announced retirements, surfaced rather than living only in an email.
-  const modelsExpiringSoon = expiringModels(60);
+  const chatCfg = modelFor('CHAT');
+  const chatCheck = modelChecks.find((c) => c.model === chatCfg.model && c.location === chatCfg.location);
+  const vertexTest = chatCheck
+    ? (chatCheck.ok ? { success: true, status: 200 } : { success: false, status: chatCheck.status ?? null, error: chatCheck.error })
+    : null;
 
-  // Relayer Wallet Balance Check
-  let relayerHealth = null;
+  // Relayer balance. Status and balance only; the address is not returned.
+  let relayerHealth;
   const RELAYER_PRIVATE_KEY = process.env.RELAYER_PRIVATE_KEY;
   const RPC_URL = process.env.RPC_URL || "https://sepolia.base.org";
-
   if (RELAYER_PRIVATE_KEY) {
     try {
       const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
       const wallet = new ethers.Wallet(RELAYER_PRIVATE_KEY, provider);
-      const balance = await provider.getBalance(wallet.address);
-      const balanceEth = parseFloat(ethers.utils.formatEther(balance));
-
+      const balanceEth = parseFloat(ethers.utils.formatEther(await provider.getBalance(wallet.address)));
       const WARNING_THRESHOLD = 0.01;
       const CRITICAL_THRESHOLD = 0.002;
-
-      let status = "healthy";
-      if (balanceEth < CRITICAL_THRESHOLD) {
-        status = "critical";
-      } else if (balanceEth < WARNING_THRESHOLD) {
-        status = "low";
-      }
-
       relayerHealth = {
-        status,
-        address: wallet.address,
+        status: balanceEth < CRITICAL_THRESHOLD ? "critical" : balanceEth < WARNING_THRESHOLD ? "low" : "healthy",
         balanceEth: balanceEth.toFixed(6),
         network: "Base Sepolia (84532)",
-        warningThreshold: `${WARNING_THRESHOLD} ETH`,
-        criticalThreshold: `${CRITICAL_THRESHOLD} ETH`,
       };
     } catch (e) {
-      relayerHealth = {
-        status: "error",
-        error: e.message,
-      };
+      relayerHealth = { status: "error", error: e.message };
     }
   } else {
-    relayerHealth = {
-      status: "not_configured",
-      error: "RELAYER_PRIVATE_KEY not set",
-    };
+    relayerHealth = { status: "not_configured" };
   }
 
   return res.status(200).json({
     status: configured ? 'configured' : 'not_configured',
     checks: {
-      gcpProjectId: gcpProjectId || '(not set)',
-      gcpLocation: gcpLocation || '(not set, defaults to us-central1)',
+      gcpProjectIdSet: !!process.env.GCP_PROJECT_ID,
+      gcpLocation: process.env.GCP_LOCATION || '(not set, defaults to us-central1)',
       hasServiceAccountJson,
-      serviceAccountJsonLength: hasServiceAccountJson ? process.env.GCP_SERVICE_ACCOUNT_JSON.length : 0,
       serviceAccountParseable,
-      serviceAccountEmail,
-      parseError,
       hasCredentialsFile,
       hasGeminiKey,
       isVertexConfigured: configured,
     },
     vertexTest,
-    // Per-task model configuration and a live reachability ping for each distinct
-    // model. `source` says whether it came from an env override or the pinned
-    // default, so a deploy-time change is visible without reading the code.
     models: {
       byTask: AI_TASKS.map((task) => {
         const cfg = modelFor(task);
@@ -1121,7 +1083,7 @@ async function handlePoseidonHealth(req, res) {
         model: c.model, location: c.location, tasks: c.tasks,
         ok: c.ok, status: c.status ?? null, error: c.error ?? null,
       })),
-      expiringSoon: modelsExpiringSoon,
+      expiringSoon: expiringModels(60),
     },
     relayer: relayerHealth,
     timestamp: new Date().toISOString(),

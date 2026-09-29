@@ -115,6 +115,8 @@ describe("listing_description intent — graceful degradation, never blocks on A
 
 describe("listing_description intent — rate limited independently from the conversational endpoint", () => {
   it("uses a distinct rate-limit key so drafting can't be starved by/starve chat traffic", () => {
-    expect(SOURCE).toContain("poseidon-listing-desc:");
+    // Scope passed to the shared limiter (_lib/aiRateLimit.js); chat uses 'poseidon'.
+    expect(SOURCE).toContain("enforcePoseidonLimit(req, res, 'poseidon-listing-desc')");
+    expect(SOURCE).toContain("enforcePoseidonLimit(req, res, 'poseidon')");
   });
 });

@@ -73,6 +73,8 @@ import { setSessionTokenGetter as setShowcaseOwnerSessionTokenGetter } from "../
 // Public auctions: bidding, listing a lot and the saved card all derive the
 // wallet from this token (docs/AUCTIONS_SPEC.md §8).
 import { setSessionTokenGetter as setAuctionsSessionTokenGetter } from "../services/auctionsApi";
+// Poseidon: with a token the server rate-limits by account instead of shared IP.
+import { setPoseidonSessionTokenGetter } from "../hooks/usePoseidon";
 import { ensureProfile, updateProfile } from "../services/reefApi";
 import { identifyUser, resetAnalyticsIdentity, trackEvent } from "../services/analytics";
 import { isE2EMode, E2E_STUB_ACCOUNT } from "../utils/e2eMode";
@@ -551,6 +553,7 @@ function PrivyAuthProvider({ children }) {
       setShowcaseOwnerSessionTokenGetter(getAccessToken);
       setBoothSessionTokenGetter(getAccessToken);
       setAuctionsSessionTokenGetter(getAccessToken);
+      setPoseidonSessionTokenGetter(getAccessToken);
       setSessionBridgeReady(true);
     } else {
       setSessionTokenGetter(null);
@@ -571,6 +574,7 @@ function PrivyAuthProvider({ children }) {
       setShowcaseOwnerSessionTokenGetter(null);
       setBoothSessionTokenGetter(null);
       setAuctionsSessionTokenGetter(null);
+      setPoseidonSessionTokenGetter(null);
       setSessionBridgeReady(false);
     }
     return () => {
@@ -592,6 +596,7 @@ function PrivyAuthProvider({ children }) {
       setShowcaseOwnerSessionTokenGetter(null);
       setBoothSessionTokenGetter(null);
       setAuctionsSessionTokenGetter(null);
+      setPoseidonSessionTokenGetter(null);
       setSessionBridgeReady(false);
     };
   }, [privyAuthenticated, getAccessToken, getSigner]);
