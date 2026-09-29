@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { awardXp } from "../utils/xp";
+import { TANK_TYPE_OPTIONS } from "../utils/tankUtils";
 import { relayRegisterTanksBulk, buildBulkTankName, MAX_BULK_TANKS } from "../services/relayer";
 
 /**
@@ -14,11 +15,8 @@ import { relayRegisterTanksBulk, buildBulkTankName, MAX_BULK_TANKS } from "../se
  */
 
 const CONTAINMENT_TYPES = ["Tank", "Tub", "Basket"];
-const WATER_TYPES = [
-  { label: "Freshwater", value: "0" },
-  { label: "Brackish", value: "2" },
-  { label: "Pond", value: "3" },
-];
+// One list for every tank form (tankUtils), so a water type can't go missing in one place.
+const WATER_TYPES = TANK_TYPE_OPTIONS.map((o) => ({ label: o.label, value: String(o.id) }));
 const CONFIRM_THRESHOLD = 12; // above this, require an explicit confirm click
 const GAL_TO_L = 3.78541;
 

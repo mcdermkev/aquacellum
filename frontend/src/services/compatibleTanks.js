@@ -15,7 +15,7 @@
  * so it can't fabricate a false "unsafe" verdict.
  */
 
-import { evaluateTankFit } from "./addOnRecommender.js";
+import { evaluateTankFit, tankWaterType } from "./addOnRecommender.js";
 import { normalizeSpeciesProfile } from "./shippingSafety.js";
 
 const LITERS_TO_GALLONS = 0.264172;
@@ -39,7 +39,7 @@ export function tankFitInputs(tank) {
     : log.temp != null ? Number(log.temp) : undefined;
   const ph = log.phX10 != null ? Number(log.phX10) / 10
     : log.ph != null ? Number(log.ph) : undefined;
-  return { volume: Number.isFinite(gallons) ? Math.round(gallons) : 0, temp, ph };
+  return { volume: Number.isFinite(gallons) ? Math.round(gallons) : 0, temp, ph, waterType: tankWaterType(tank?.tankType) };
 }
 
 /**

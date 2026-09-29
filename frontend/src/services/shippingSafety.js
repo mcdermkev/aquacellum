@@ -100,10 +100,17 @@ export function normalizeSpeciesProfile(record = {}) {
     record.behavior?.temperament || record.ecology?.socialBehavior || record.temperamentText || "";
   const temperament = classifyTemperament(temperamentText);
 
+  // Habitat from FishBase (docs/SALTWATER_SPEC.md): "freshwater" | "brackish" |
+  // "marine". Null when the record doesn't say, so the fit check can't guess.
+  const waterTypes = Array.isArray(record.waterTypes) && record.waterTypes.length
+    ? record.waterTypes.filter((w) => w === "freshwater" || w === "brackish" || w === "marine")
+    : null;
+
   return {
     speciesId: num(record.speciesId ?? record.specCode),
     scientificName: record.scientificName || null,
     commonName: record.commonName || null,
+    waterTypes: waterTypes && waterTypes.length ? waterTypes : null,
     adultSizeCm,
     tempRange,
     phRange,

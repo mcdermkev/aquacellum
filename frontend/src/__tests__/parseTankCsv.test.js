@@ -124,10 +124,12 @@ describe("rowToTankSpec", () => {
     expect(rowToTankSpec(["A", "10", "Freshwater"], mapping).spec.tankType).toBe(0);
   });
 
-  it("maps saltwater to Freshwater WITH a warning (never silently mislabels)", () => {
-    const { spec, warnings } = rowToTankSpec(["A", "10", "Saltwater"], mapping);
-    expect(spec.tankType).toBe(0);
-    expect(warnings.join(" ")).toMatch(/saltwater/i);
+  it("maps saltwater, marine and reef to Saltwater (1) with no warning", () => {
+    for (const word of ["Saltwater", "salt water", "Marine", "Reef", "SW", "FOWLR"]) {
+      const { spec, warnings } = rowToTankSpec(["A", "10", word], mapping);
+      expect(spec.tankType, word).toBe(1);
+      expect(warnings.join(" "), word).not.toMatch(/supported/i);
+    }
   });
 
   it("maps containment strings to codes", () => {

@@ -73,7 +73,8 @@ describe("why the active-tank control must normalize (the silent failure)", () =
 
   it("converts litres to gallons and lifts water params out of latestLog", () => {
     // 20 L ≈ 5.28 gal → 5; the x10 fixed-point log fields become real units.
-    expect(tankFitInputs(TINY_TANK_RECORD)).toEqual({ volume: 5, temp: 18, ph: 8.2 });
+    // waterType comes from tankType (none set here → freshwater): docs/SALTWATER_SPEC.md.
+    expect(tankFitInputs(TINY_TANK_RECORD)).toEqual({ volume: 5, temp: 18, ph: 8.2, waterType: "freshwater" });
   });
 
   it("never reports a volume the record does not have", () => {

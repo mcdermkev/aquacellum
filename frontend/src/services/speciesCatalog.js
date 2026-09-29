@@ -148,6 +148,16 @@ export const CARE_BADGE_CLASS = Object.freeze(["easy", "medium", "hard", "expert
 // fabricated for card display ONLY; `entry.profile` carries the honest nulls.
 const DISPLAY_TEMP_FALLBACK = Object.freeze([22.0, 28.0]);
 const DISPLAY_PH_FALLBACK = Object.freeze([6.5, 7.5]);
+// Marine-only species get general reef-aquarium ranges instead, so a
+// clownfish card never shows freshwater pH (docs/SALTWATER_SPEC.md).
+const MARINE_DISPLAY_TEMP_FALLBACK = Object.freeze([24.0, 27.0]);
+const MARINE_DISPLAY_PH_FALLBACK = Object.freeze([8.0, 8.4]);
+
+/** "marine" when a record lives only in salt water, else "freshwater". */
+export function catalogWaterGroup(record = {}) {
+  const types = Array.isArray(record.waterTypes) ? record.waterTypes : [];
+  return types.includes("marine") && !types.includes("freshwater") ? "marine" : "freshwater";
+}
 
 /**
  * Project one curated catalog record (fishbase_master.json shape) into the
@@ -166,6 +176,9 @@ export function toCatalogEntry(record = {}) {
   const specCode = record.specCode ?? record.speciesId;
   // App parity: a missing difficulty historically counted as "easy".
   const rawDifficulty = tm.difficulty || "easy";
+  const waterGroup = catalogWaterGroup(record);
+  const DISPLAY_TEMP = waterGroup === "marine" ? MARINE_DISPLAY_TEMP_FALLBACK : DISPLAY_TEMP_FALLBACK;
+  const DISPLAY_PH = waterGroup === "marine" ? MARINE_DISPLAY_PH_FALLBACK : DISPLAY_PH_FALLBACK;
 
   return {
     speciesId: specCode,
@@ -174,15 +187,17 @@ export function toCatalogEntry(record = {}) {
     commonName: record.commonName,
     canonicalIpfsUri: "ipfs://placeholder",
     careLevel: difficultyToCareLevel(rawDifficulty),
-    minTemp: tm.tempRangeCelsius?.[0] ?? DISPLAY_TEMP_FALLBACK[0],
-    maxTemp: tm.tempRangeCelsius?.[1] ?? DISPLAY_TEMP_FALLBACK[1],
-    minPh: tm.phRange?.[0] ?? DISPLAY_PH_FALLBACK[0],
-    maxPh: tm.phRange?.[1] ?? DISPLAY_PH_FALLBACK[1],
+    minTemp: tm.tempRangeCelsius?.[0] ?? DISPLAY_TEMP[0],
+    maxTemp: tm.tempRangeCelsius?.[1] ?? DISPLAY_TEMP[1],
+    minPh: tm.phRange?.[0] ?? DISPLAY_PH[0],
+    maxPh: tm.phRange?.[1] ?? DISPLAY_PH[1],
     specimenCount: 0,
     isGlobal: true,
     // ── New, non-breaking ──────────────────────────────────────────────────
     difficulty: normalizeDifficulty(rawDifficulty),
     profile: normalizeSpeciesProfile(record),
+    waterGroup,
+    reefSafe: record.marine?.reefSafe ?? null,
   };
 }
 

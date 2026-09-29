@@ -733,8 +733,9 @@ db.version(22).stores({
 //       unchanged; Dexie stores it automatically.
 //   MIGRATION (idempotent, non-destructive)
 //   - Saltwater removal: any tank with tankType === 1 (legacy saltwater) is
-//       converted to Freshwater (0). Aquacellum is freshwater-only; index 1 is
-//       retired. See tankUtils.TANK_TYPE_OPTIONS.
+//       converted to Freshwater (0). This ran once, for people upgrading from
+//       before v23. Saltwater is offered again from 2026-09-30 and new tanks
+//       keep index 1 (tankUtils.TANK_TYPE_OPTIONS, docs/SALTWATER_SPEC.md).
 //   - Backfill actionLogs.payload from parseable `details` (skips rows that
 //       already have a payload).
 //   - Seed paramReadings from historical water-test actionLogs where temp/pH can

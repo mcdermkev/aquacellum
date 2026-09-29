@@ -31,10 +31,10 @@ import "./LivingTank.css";
  *   showLabel    — render the frosted stat label (default true)
  */
 
-// Water-column gradients per tank type. Saltwater (1) is removed from the
-// product; any legacy index falls back to the Freshwater gradient below.
+// Water-column gradients per tank type. Unknown indices fall back to Freshwater.
 const TYPE_WATER = {
   0: ["#2183c0", "#0f4d78", "#082f4a"], // Freshwater — blue
+  1: ["#1fb6d8", "#0a6f9e", "#063d63"], // Saltwater — bright reef cyan
   2: ["#7a8a3f", "#4a5722", "#232b12"], // Brackish — tannin green/amber
   3: ["#3f9a68", "#236641", "#123723"], // Pond — green
 };

@@ -78,7 +78,12 @@ export function speciesProfileForFit(entry, { fishbaseData = [] } = {}) {
     ? Number(base.adultSizeCm)
     : (isNum(master?.maxLengthCm) ? Number(master.maxLengthCm) : null);
 
-  return { ...base, minVolumeGallons, adultSizeCm };
+  // On-chain entries carry no habitat; the curated record does (docs/SALTWATER_SPEC.md).
+  const waterTypes = Array.isArray(base.waterTypes) && base.waterTypes.length
+    ? base.waterTypes
+    : (Array.isArray(master?.waterTypes) && master.waterTypes.length ? master.waterTypes : null);
+
+  return { ...base, minVolumeGallons, adultSizeCm, waterTypes };
 }
 
 /**

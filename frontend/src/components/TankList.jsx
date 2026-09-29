@@ -64,7 +64,8 @@ import { LivingTank } from "./logbook/LivingTank";
 import { deriveTankHealth } from "../utils/tankHealth";
 import { getOrInitTankSchedules } from "../services/tankSchedules";
 import { getTankPhoto, putTankPhoto, putSpecimenPhoto, resolveSpecimenPhoto } from "../services/tankMedia";
-import { isInsideEnvelope, getTrackBackground, CONTAINMENT_TYPES, getWaterEnvelope, tankTypeLabel } from "../utils/tankUtils";
+import { isInsideEnvelope, getTrackBackground, CONTAINMENT_TYPES, getWaterEnvelope, tankTypeLabel, isSaltwaterTank, marineLogFields, marineFormFromLog } from "../utils/tankUtils";
+import { MarineReadingTile, MarineTestFields } from "./MarineTestFields";
 export function TankList({ contractAddress, walletAccount, onViewLineage, onListOnMarketplace, onSelectSpecimen, casualModeActive = false }) {
   const queryClient = useQueryClient();
   // Settings → Units & Formatting. `primaryTempUnit` collapses "both" to the
@@ -1012,7 +1013,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       gh: lastLog?.ghX10 ? (lastLog.ghX10/10).toString() : "8.0",
       kh: lastLog?.khX10 ? (lastLog.khX10/10).toString() : "5.0",
       tal: lastLog?.talPpm ? lastLog.talPpm.toString() : "80",
-      notes: ""
+      notes: "",
+      ...marineFormFromLog(lastLog, activeTank.tankType),
     });
     setQuickLogMode("water_test");
     setBulkLogScope("single");
@@ -1183,19 +1185,25 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       const ghX10 = Math.round(parseFloat(formData.gh) * 10);
       const khX10 = Math.round(parseFloat(formData.kh) * 10);
       const talPpm = Math.round(parseFloat(formData.tal));
+      // Saltwater fields (docs/SALTWATER_SPEC.md): salinity has an on-chain slot;
+      // calcium, magnesium and phosphate are local, like GH/KH.
+      const marine = marineLogFields(formData);
 
       for (const tank of targets) {
+        // A bulk log can span water types: each tank gets the fields that apply to it.
+        const salt = isSaltwaterTank(tank);
         const result = await relayLogWaterParameters({
           tankId: tank.id,
           tempCelsiusX10,
           phX10,
-          salinitySgX10000: 0,
+          salinitySgX10000: salt ? marine.salinitySgX10000 : 0,
           ammoniaPpmX100,
           nitritePpmX100,
           nitratePpmX100,
-          ghX10,
+          ghX10: salt ? null : ghX10,
           khX10,
-          talPpm,
+          talPpm: salt ? null : talPpm,
+          ...(salt ? { caPpm: marine.caPpm, mgPpm: marine.mgPpm, po4PpmX100: marine.po4PpmX100 } : {}),
           notes: formData.notes,
         });
 
@@ -3192,6 +3200,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             </div>
                           </div>
                         )}
+                        {isSaltwaterTank(activeTank) && <MarineReadingTile tank={activeTank} />}
                       </div>
 
                       {getChemistryAlerts(activeTank).length > 0 && (
@@ -4585,6 +4594,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                               kh: lastLog.khX10 ? (lastLog.khX10/10).toString() : formData.kh,
                               tal: lastLog.talPpm ? lastLog.talPpm.toString() : formData.tal,
                               notes: formData.notes,
+                              ...marineFormFromLog(lastLog, activeTank.tankType),
                             });
                           }}
                           style={{
@@ -4695,7 +4705,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     </div>
                   </div>
 
+                  {/* ── Saltwater: salinity, alkalinity and the reef elements (docs/SALTWATER_SPEC.md) ── */}
+                  {isSaltwaterTank(selectedLogTank) && (
+                    <MarineTestFields formData={formData} setFormData={setFormData} env={_env} />
+                  )}
+
                   {/* ── Hardness & alkalinity bars (GH / KH / Total Alkalinity) ── */}
+                  {!isSaltwaterTank(selectedLogTank) && (
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", marginBottom: "0.25rem" }}>
@@ -4776,6 +4792,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       <span style={{ fontSize: "0.6rem", color: "var(--text-muted)" }}>Total alkalinity (as CaCO₃)</span>
                     </div>
                   </div>
+                  )}
 
                   <div>
                     <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.25rem" }}>Observations Notes</label>

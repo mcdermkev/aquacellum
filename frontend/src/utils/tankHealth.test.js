@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { getWaterEnvelope, evaluateReading, tankTypeLabel, tankTypeIcon, NITROGEN_LIMITS } from "./tankUtils";
 import { scoreToAmbient, normalizeReading, deriveTankHealth } from "./tankHealth";
 
-describe("tankUtils — envelopes & saltwater removal", () => {
+describe("tankUtils — envelopes & water types", () => {
   it("freshwater (0) envelope carries temp/pH + nitrogen limits", () => {
     const env = getWaterEnvelope(0);
     expect(env).toMatchObject({ tempMin: 22, tempMax: 26, phMin: 6.5, phMax: 7.8 });
@@ -10,10 +10,10 @@ describe("tankUtils — envelopes & saltwater removal", () => {
     expect(env.nitrateMax).toBe(20);
   });
 
-  it("reserved saltwater index (1) falls back to freshwater", () => {
-    expect(getWaterEnvelope(1)).toEqual(getWaterEnvelope(0));
-    expect(tankTypeLabel(1)).toBe("Freshwater");
-    expect(tankTypeIcon(1)).toBe("💧");
+  it("saltwater (1) has its own marine envelope and label", () => {
+    expect(getWaterEnvelope(1)).toMatchObject({ phMin: 7.9, phMax: 8.5, salinityMin: 1.023, salinityMax: 1.026, ghMin: null });
+    expect(tankTypeLabel(1)).toBe("Saltwater");
+    expect(tankTypeIcon(1)).toBe("🐠");
   });
 
   it("brackish (2) and pond (3) have their own ranges", () => {

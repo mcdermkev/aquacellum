@@ -107,13 +107,13 @@ const MOCK_JOURNAL = [
   { key: "j5", kind: "clean", icon: "🧹", title: "Cleaned the tank", detail: "Scraped algae off the front glass", ms: Date.now() - 5 * 86400 * 1000 },
 ];
 
-// Saltwater (index 1) intentionally omitted — Aquacellum is freshwater-focused.
 const TYPES = [
   { value: 0, label: "Freshwater" },
+  { value: 1, label: "Saltwater" },
   { value: 2, label: "Brackish" },
   { value: 3, label: "Pond" },
 ];
-const TYPE_CYCLE = TYPES.map((t) => t.value); // [0, 2, 3] — used to vary the demo strips
+const TYPE_CYCLE = TYPES.map((t) => t.value); // [0, 1, 2, 3] — used to vary the demo strips
 
 export function LivingTankPreview() {
   const [score, setScore] = useState(85);

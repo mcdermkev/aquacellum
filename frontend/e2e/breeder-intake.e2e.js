@@ -87,7 +87,7 @@ test.describe("Rack stamping (bulk tank create)", () => {
 });
 
 test.describe("Tank CSV import", () => {
-  test("I3. imports valid rows, skips a nameless one, and warns on saltwater", async ({ page }, testInfo) => {
+  test("I3. imports valid rows, skips a nameless one, and keeps saltwater", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name === "mobile-chromium", DESKTOP_ONLY_REASON);
     await proFacilityTree(page);
     const before = await readOwnedTanks(page);
@@ -95,7 +95,7 @@ test.describe("Tank CSV import", () => {
     await page.getByRole("button", { name: /Import Tanks/i }).click();
     await expect(page.getByRole("heading", { name: /Import tanks/i })).toBeVisible();
 
-    // Row 3 has no name (must be skipped); row 2 is saltwater (imports + warns).
+    // Row 3 has no name (must be skipped); row 2 is saltwater (imports as saltwater).
     await page.locator("#import-tanks-paste").fill(
       [
         "Name,Volume,Water,Group,Room,Rack",
@@ -109,7 +109,7 @@ test.describe("Tank CSV import", () => {
     await expect(page.getByText(/2 ready/)).toBeVisible();
     await expect(page.getByText(/1 skipped/)).toBeVisible();
     await expect(page.getByText(/Missing tank name/i)).toBeVisible();
-    await expect(page.getByText(/Saltwater isn't supported/i)).toBeVisible();
+    await expect(page.getByText(/Saltwater isn't supported/i)).toHaveCount(0);
 
     await page.getByRole("button", { name: /^Import 2 tanks$/ }).click();
     await expect(page.getByText(/Imported 2 tanks/i)).toBeVisible({ timeout: 15_000 });
@@ -119,9 +119,9 @@ test.describe("Tank CSV import", () => {
     const names = after.slice(0, 2).map((t) => t.name).sort();
     expect(names).toEqual(["Betta A1", "Reef Thing"]);
 
-    // Saltwater never lands as a saltwater tank — it is mapped to Freshwater (0).
+    // Saltwater lands as a saltwater tank (on-chain index 1): docs/SALTWATER_SPEC.md.
     const reef = after.find((t) => t.name === "Reef Thing");
-    expect(reef.tankType).toBe(0);
+    expect(reef.tankType).toBe(1);
     // 5 gal -> liters, so the gallons->liters conversion actually ran.
     const betta = after.find((t) => t.name === "Betta A1");
     expect(betta.volumeLiters).toBe(Math.round(5 * 3.78541));

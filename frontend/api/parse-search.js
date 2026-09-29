@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     // Check if the query directly mentions species in our catalog
     const mentionedSpecies = findSpeciesInQuery(query, 3);
 
-    const systemPrompt = `You are a search query parser for Aquacellum, a freshwater aquarium species database with 326 species.
+    const systemPrompt = `You are a search query parser for Aquacellum, an aquarium species database of freshwater and saltwater fish.
 
 Parse the user's natural language search query into structured filters. Return ONLY valid JSON matching this schema:
 

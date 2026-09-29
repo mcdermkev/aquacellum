@@ -1,7 +1,7 @@
 /**
  * species.js — Public Species Database API (Vercel Serverless Function)
  *
- * A free, public, read-only API over Aquacellum's 326-species freshwater
+ * A free, public, read-only API over Aquacellum's freshwater and saltwater
  * catalog (FishBase/WoRMS-validated). This is a growth channel: every
  * response links back to aquadex.fish so third-party sites, bots, and
  * tools that embed this data drive traffic to the app and marketplace.

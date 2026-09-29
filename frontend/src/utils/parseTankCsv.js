@@ -132,9 +132,8 @@ function cell(row, idx) {
 function parseTankType(str) {
   const s = str.toLowerCase().trim();
   if (!s) return { code: 0, warning: null };
-  if (s.includes("salt") || s.includes("marine") || s.includes("reef")) {
-    // Saltwater is unsupported product-wide; never mislabel, but don't drop it.
-    return { code: 0, warning: `Saltwater isn't supported; imported as Freshwater` };
+  if (s.includes("salt") || s.includes("marine") || s.includes("reef") || s === "sw" || s === "fowlr") {
+    return { code: 1, warning: null };
   }
   const match = TANK_TYPE_OPTIONS.find((o) => o.label.toLowerCase() === s || s.startsWith(o.label.toLowerCase()));
   if (match) return { code: match.id, warning: null };

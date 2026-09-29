@@ -58,8 +58,8 @@ test.describe("Phase A — Living Tank preview (no auth)", () => {
     const initialCount = await livingTanks.count();
     expect(initialCount).toBeGreaterThanOrEqual(3); // card + hero + at least one strip
 
-    // Water-type buttons render from TYPES = [Freshwater, Brackish, Pond].
-    for (const label of ["Freshwater", "Brackish", "Pond"]) {
+    // Water-type buttons render from TYPES = [Freshwater, Saltwater, Brackish, Pond].
+    for (const label of ["Freshwater", "Saltwater", "Brackish", "Pond"]) {
       await page.getByRole("button", { name: label, exact: true }).click();
       // Instances remain visible after switching tank type.
       await expect(livingTanks.first()).toBeVisible();

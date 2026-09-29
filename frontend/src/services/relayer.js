@@ -881,6 +881,9 @@ export async function relayLogWaterParameters({
   ghX10,
   khX10,
   talPpm,
+  caPpm,
+  mgPpm,
+  po4PpmX100,
   notes = "",
 } = {}) {
   try {
@@ -907,6 +910,10 @@ export async function relayLogWaterParameters({
     if (ghX10 !== undefined && ghX10 !== null) log.ghX10 = ghX10;
     if (khX10 !== undefined && khX10 !== null) log.khX10 = khX10;
     if (talPpm !== undefined && talPpm !== null) log.talPpm = talPpm;
+    // Saltwater reef elements: local-only for the same reason (docs/SALTWATER_SPEC.md).
+    if (caPpm !== undefined && caPpm !== null) log.caPpm = caPpm;
+    if (mgPpm !== undefined && mgPpm !== null) log.mgPpm = mgPpm;
+    if (po4PpmX100 !== undefined && po4PpmX100 !== null) log.po4PpmX100 = po4PpmX100;
 
     const logs = tank.logs || [];
     logs.push(log);

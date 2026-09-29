@@ -151,6 +151,82 @@ export function explainTankFlags(tank, opts = {}) {
     });
   }
 
+  // ── Saltwater (docs/SALTWATER_SPEC.md). Bounds are null for other water
+  // types, so these never fire on a freshwater tank.
+  const outside = (v, min, max) => has(v) && min != null && max != null && (Number(v) < min || Number(v) > max);
+
+  if (outside(r.salinity, env.salinityMin, env.salinityMax)) {
+    const high = Number(r.salinity) > env.salinityMax;
+    items.push({
+      id: "salinity",
+      severity: "caution",
+      label: high ? "Salinity too high" : "Salinity too low",
+      observed: `${Number(r.salinity).toFixed(3)} SG`,
+      target: `${env.salinityMin}\u2013${env.salinityMax} SG`,
+      why: high
+        ? "Salinity creeps up as water evaporates and leaves the salt behind; corals and inverts are the first to suffer."
+        : "Low salinity stresses marine fish and can kill corals and inverts, which can't adjust the way fish can.",
+      action: high
+        ? "Top off with fresh RO/DI water (never salt water) and correct slowly, a few points a day."
+        : "Raise it slowly with properly mixed salt water during water changes. Check your refractometer is calibrated.",
+    });
+  }
+
+  if (outside(r.kh, env.khMin, env.khMax) && env.salinityMin != null) {
+    const high = Number(r.kh) > env.khMax;
+    items.push({
+      id: "alkalinity",
+      severity: "caution",
+      label: high ? "Alkalinity above range" : "Alkalinity below range",
+      observed: `${Number(r.kh).toFixed(1)} dKH`,
+      target: `${env.khMin}\u2013${env.khMax} dKH`,
+      why: "Corals use alkalinity to build their skeletons, and swings of more than about 1 dKH a day stress them more than the level itself.",
+      action: high
+        ? "Hold off on alkalinity dosing and let the tank use it up; don't chase it down fast."
+        : "Dose an alkalinity supplement in small daily steps, and test again before changing the dose.",
+    });
+  }
+
+  if (outside(r.ca, env.caMin, env.caMax)) {
+    const high = Number(r.ca) > env.caMax;
+    items.push({
+      id: "calcium",
+      severity: "caution",
+      label: high ? "Calcium above range" : "Calcium below range",
+      observed: `${Number(r.ca).toFixed(0)} ppm`,
+      target: `${env.caMin}\u2013${env.caMax} ppm`,
+      why: "Stony corals, clams and coralline algae pull calcium from the water as they grow.",
+      action: high
+        ? "Pause calcium dosing; high calcium can drag alkalinity down."
+        : "Dose calcium gradually and keep alkalinity in range alongside it.",
+    });
+  }
+
+  if (outside(r.mg, env.mgMin, env.mgMax)) {
+    const high = Number(r.mg) > env.mgMax;
+    items.push({
+      id: "magnesium",
+      severity: "caution",
+      label: high ? "Magnesium above range" : "Magnesium below range",
+      observed: `${Number(r.mg).toFixed(0)} ppm`,
+      target: `${env.mgMin}\u2013${env.mgMax} ppm`,
+      why: "Magnesium keeps calcium and alkalinity stable; when it's low, those two become hard to hold.",
+      action: high ? "Stop magnesium dosing; water changes bring it back down." : "Correct magnesium first, then calcium and alkalinity.",
+    });
+  }
+
+  if (has(r.po4) && env.po4Max != null && Number(r.po4) > env.po4Max) {
+    items.push({
+      id: "phosphate",
+      severity: "caution",
+      label: "Phosphate above target",
+      observed: `${Number(r.po4).toFixed(2)} ppm`,
+      target: `\u2264 ${env.po4Max} ppm`,
+      why: "Phosphate fuels nuisance algae and slows coral growth.",
+      action: "Feed a little less, rinse frozen food, and consider a phosphate remover (GFO) or more frequent water changes.",
+    });
+  }
+
   // Overdue maintenance schedules.
   for (const o of Array.isArray(health.overdue) ? health.overdue : []) {
     const g = scheduleGuidance(o.kind);

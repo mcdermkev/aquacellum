@@ -100,10 +100,9 @@ export async function handlePoseidonAction(actionPayload) {
         const volumeLiters = Math.round(volumeGallons * 3.78541);
         const ownerAddress = actionPayload.walletAddress || "0x0000000000000000000000000000000000000000";
 
-        // Aquacellum is freshwater-only — saltwater is removed from the product.
-        // Freshwater is enum index 0 (the previous `? 2 : 1` mapping was a bug:
-        // it stored "freshwater" as index 1, which is actually Saltwater).
-        const tankType = 0; // Freshwater
+        // Enum index: 0 Freshwater, 1 Saltwater (docs/SALTWATER_SPEC.md). Only an
+        // explicit marine word picks saltwater; everything else stays freshwater.
+        const tankType = /\b(salt\s*water|saltwater|marine|reef|fowlr)\b/i.test(rawQuery) ? 1 : 0;
 
         // Parse temperature (10x scaling)
         let tempCelsiusX10 = 245; // 24.5 C default

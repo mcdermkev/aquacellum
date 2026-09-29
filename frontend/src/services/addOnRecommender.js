@@ -54,10 +54,61 @@ const CAUTION_SCORE_THRESHOLD = 80;
  * @param {{volume:number, temp:number, ph:number}|null|undefined} displayTank
  * @returns {{ score:number, verdict:('blocked'|'caution'|'ok'), reasons:string[] }}
  */
+/** Tank type index (on-chain enum) → the habitat it provides. Pond is fresh water. */
+export function tankWaterType(tankType) {
+  switch (Number(tankType)) {
+    case 1: return "marine";
+    case 2: return "brackish";
+    default: return "freshwater";
+  }
+}
+
+/**
+ * Does a species' habitat suit a tank's water? (docs/SALTWATER_SPEC.md)
+ * Fresh ↔ marine is a hard mismatch; a freshwater-only fish in a brackish tank
+ * is a caution. Unknown on either side is never blocking.
+ * @param {string[]|null} speciesWaterTypes - "freshwater" | "brackish" | "marine"
+ * @param {string|null|undefined} tankWater - tankWaterType() output
+ * @returns {{ verdict:('ok'|'caution'|'blocked'), reason:(string|null) }}
+ */
+export function waterTypeFit(speciesWaterTypes, tankWater) {
+  const types = Array.isArray(speciesWaterTypes) ? speciesWaterTypes : [];
+  if (!types.length || !tankWater) return { verdict: "ok", reason: null };
+  if (types.includes(tankWater)) return { verdict: "ok", reason: null };
+  if (tankWater === "marine") {
+    return { verdict: "blocked", reason: "This is a freshwater species and the tank is saltwater." };
+  }
+  if (tankWater === "freshwater" && !types.includes("freshwater")) {
+    return { verdict: "blocked", reason: "This is a saltwater species and the tank is freshwater." };
+  }
+  // A brackish tank and a species that isn't listed for brackish water.
+  return { verdict: "caution", reason: "This species isn't recorded in brackish water; check it tolerates salt before adding." };
+}
+
 export function evaluateTankFit(speciesProfile = {}, displayTank) {
   if (!displayTank) {
     return { score: 0, verdict: "caution", reasons: ["No tank context provided."] };
   }
+
+  // Water type first: no temperature or volume makes a marine fish fit a
+  // freshwater tank. Only applies when both sides are known.
+  const water = waterTypeFit(speciesProfile.waterTypes, displayTank.waterType);
+  if (water.verdict === "blocked") {
+    return { score: 0, verdict: "blocked", reasons: [water.reason] };
+  }
+  const waterCaution = water.verdict === "caution" ? water.reason : null;
+  const withWater = (result) => {
+    if (!waterCaution) return result;
+    return {
+      ...result,
+      verdict: result.verdict === "blocked" ? "blocked" : "caution",
+      reasons: result.verdict === "ok" ? [waterCaution] : [...result.reasons, waterCaution],
+    };
+  };
+  return withWater(evaluateTankFitCore(speciesProfile, displayTank));
+}
+
+function evaluateTankFitCore(speciesProfile, displayTank) {
 
   const knownVolume = typeof speciesProfile.minVolumeGallons === "number" && Number.isFinite(speciesProfile.minVolumeGallons);
   const minVolumeGallons = knownVolume ? speciesProfile.minVolumeGallons : DEFAULT_MIN_VOLUME_GALLONS;

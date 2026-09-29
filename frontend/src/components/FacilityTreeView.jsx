@@ -9,7 +9,7 @@ import { putTankPhoto } from "../services/tankMedia";
 import { db } from "../db";
 import { useContractSpecies } from "../hooks/useSpeciesData";
 import { useTankGroups } from "../hooks/useTankGroups";
-import { tankTypeLabel } from "../utils/tankUtils";
+import { TANK_TYPE_OPTIONS, tankTypeLabel } from "../utils/tankUtils";
 import { useUnitPrefs } from "../hooks/useUnitPrefs";
 import { formatVolume } from "../utils/units";
 import { BulkTankModal } from "./BulkTankModal";
@@ -761,11 +761,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
                     onChange={(e) => setRegisterForm({ ...registerForm, tankType: e.target.value })}
                     style={{ width: "100%", padding: "0.5rem", background: "rgba(8,12,20,0.9)", border: "1px solid var(--glass-border)", color: "#fff", borderRadius: "4px" }}
                   >
-                    {[
-                      { label: "Freshwater", value: "0" },
-                      { label: "Brackish", value: "2" },
-                      { label: "Pond", value: "3" }
-                    ].map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    {TANK_TYPE_OPTIONS.map((opt) => <option key={opt.id} value={String(opt.id)}>{opt.label}</option>)}
                   </select>
                 </div>
                 <div>

@@ -10,6 +10,7 @@ import { useDex } from "../../hooks/useDex";
 import { XP_ACTIONS } from "../../utils/xp";
 import { buildGlobalCatalog } from "../../services/speciesCatalog";
 import { tankFitInputs } from "../../services/compatibleTanks";
+import { WATER_FILTERS, filterByWater, withMarineGlobals } from "./waterFilter";
 import { summarizeAvailability } from "../../services/speciesAvailability";
 import { rankSpeciesMatches } from "./matchRanking";
 import { DISCOVERY_INTENTS, filterByIntent } from "./discoveryIntents";
@@ -98,10 +99,20 @@ export function FishFinder({
   // One source of candidates: prefer the on-chain registered catalog when
   // non-empty, else fall back to the curated global catalog. Keeps this
   // simple per the T5 spec — no merge of both.
-  const candidates = useMemo(() => {
-    if (Array.isArray(contractSpecies) && contractSpecies.length > 0) return contractSpecies;
-    return buildGlobalCatalog(fishbaseData);
+  // Saltwater (docs/SALTWATER_SPEC.md): marine species aren't registered on
+  // chain yet, so they're appended from the curated catalog.
+  const allCandidates = useMemo(() => {
+    const globals = buildGlobalCatalog(fishbaseData);
+    if (Array.isArray(contractSpecies) && contractSpecies.length > 0) return withMarineGlobals(contractSpecies, globals);
+    return globals;
   }, [contractSpecies, fishbaseData]);
+  // "all" by default: the fit check already ranks wrong-water species last
+  // for the selected tank, so the chips are for browsing.
+  const [waterFilter, setWaterFilter] = useState("all");
+  const candidates = useMemo(
+    () => filterByWater(allCandidates, waterFilter, fishbaseData),
+    [allCandidates, waterFilter, fishbaseData]
+  );
 
   const isLoadingCandidates = speciesLoading || contractLoading;
 
@@ -141,8 +152,14 @@ export function FishFinder({
     }
   };
 
+  // waterType lets the fit check keep marine fish out of freshwater tanks and
+  // vice versa (docs/SALTWATER_SPEC.md). Taken from the selected tank when the
+  // shared displayTank predates it.
   const tankContext = displayTank
-    ? { volume: displayTank.volume, temp: displayTank.temp, ph: displayTank.ph }
+    ? {
+        volume: displayTank.volume, temp: displayTank.temp, ph: displayTank.ph,
+        waterType: displayTank.waterType || (selectedTank ? tankFitInputs(selectedTank).waterType : undefined),
+      }
     : null;
 
   // Species already residing in the selected tank — excluded from "fish to
@@ -251,7 +268,9 @@ export function FishFinder({
   const usingContractCatalog = Array.isArray(contractSpecies) && contractSpecies.length > 0;
 
   const handleSelectMatch = (entry) => {
-    if (usingContractCatalog) {
+    // Appended marine entries are curated-only, so they can't open the
+    // on-chain detail; they take the global path like the no-contract case.
+    if (usingContractCatalog && !entry?.isGlobal) {
       setMatchPreselectId(entry.speciesId);
     } else if (browseSectionRef.current) {
       browseSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -284,7 +303,7 @@ export function FishFinder({
         casualModeActive={true}
         isOwned={false}
         ownedCount={0}
-        viewMode={usingContractCatalog ? "contract" : "global"}
+        viewMode={usingContractCatalog && !entry.isGlobal ? "contract" : "global"}
         searchTerm=""
         onSelect={() => handleSelectMatch(entry)}
         fit={fit}
@@ -363,6 +382,22 @@ export function FishFinder({
       {/* ── "Find my next fish" — guided discovery (T7) ─────────────────── */}
       <div className="fish-finder__discovery">
         <h2 className="fish-finder__home-title">{FINDER_COPY.discovery.title}</h2>
+        <div className="fish-finder__intent-chips" role="group" aria-label="Water type">
+          {WATER_FILTERS.map((w) => {
+            const active = waterFilter === w.id;
+            return (
+              <button
+                key={w.id}
+                type="button"
+                className={`fish-finder__intent-chip${active ? " fish-finder__intent-chip--active" : ""}`}
+                aria-pressed={active}
+                onClick={() => setWaterFilter(w.id)}
+              >
+                <span aria-hidden="true">{w.icon}</span> {w.label}
+              </button>
+            );
+          })}
+        </div>
         <div className="fish-finder__intent-chips" role="group" aria-label={FINDER_COPY.discovery.chipsAria}>
           {DISCOVERY_INTENTS.map((intent) => (
             <button

@@ -67,10 +67,21 @@ export function normalizeReading(reading) {
   const tal = reading.tal !== undefined ? num(reading.tal)
     : reading.talPpm !== undefined ? num(reading.talPpm) : undefined;
 
+  // Saltwater (docs/SALTWATER_SPEC.md). Salinity is specific gravity; the
+  // on-chain log carries it ×10000, and older writers put a 1.0000 (or 0)
+  // placeholder there on every log, so only a real brackish/marine value counts.
+  const scaledSg = num(reading.salinitySgX10000);
+  const salinity = reading.salinity !== undefined ? num(reading.salinity)
+    : scaledSg !== undefined && scaledSg > 10010 && scaledSg <= 10500 ? scaledSg / 10000 : undefined;
+  const ca = reading.ca !== undefined ? num(reading.ca) : num(reading.caPpm);
+  const mg = reading.mg !== undefined ? num(reading.mg) : num(reading.mgPpm);
+  const po4 = reading.po4 !== undefined ? num(reading.po4)
+    : reading.po4PpmX100 !== undefined ? num(reading.po4PpmX100) / 100 : undefined;
+
   const timestamp = num(reading.timestamp);
 
-  if ([temp, ph, ammonia, nitrite, nitrate, gh, kh, tal].every((v) => v === undefined)) return null;
-  return { temp, ph, ammonia, nitrite, nitrate, gh, kh, tal, timestamp };
+  if ([temp, ph, ammonia, nitrite, nitrate, gh, kh, tal, salinity, ca, mg, po4].every((v) => v === undefined)) return null;
+  return { temp, ph, ammonia, nitrite, nitrate, gh, kh, tal, salinity, ca, mg, po4, timestamp };
 }
 
 /**
@@ -114,8 +125,8 @@ export function deriveTankHealth(tank, opts = {}) {
   const tankType = tank?.tankType;
 
   const latest = pickLatest(readings, tank?.latestLog);
-  const { flags: paramFlags, tempOk, phOk, ammoniaOk, nitriteOk, nitrateOk } =
-    latest ? evaluateReading(tankType, latest) : { flags: [], tempOk: true, phOk: true, ammoniaOk: true, nitriteOk: true, nitrateOk: true };
+  const { flags: paramFlags, tempOk, phOk, ammoniaOk, nitriteOk, nitrateOk, salinityOk = true } =
+    latest ? evaluateReading(tankType, latest) : { flags: [], tempOk: true, phOk: true, ammoniaOk: true, nitriteOk: true, nitrateOk: true, salinityOk: true };
 
   // Overdue schedules
   const nowSec = toSeconds(now);
@@ -133,6 +144,8 @@ export function deriveTankHealth(tank, opts = {}) {
   if (!nitrateOk) score -= 15;
   if (!tempOk) score -= 15;
   if (!phOk) score -= 15;
+  // Salinity out of range stresses marine life as much as a temp or pH drift.
+  if (!salinityOk) score -= 15;
   score -= Math.min(30, overdue.length * 10); // overdue maintenance drags it down, capped
   // Detectable ammonia or nitrite is an acute emergency (fish-lethal), not a
   // "drifting" nudge — force it into the alert band regardless of other factors.
