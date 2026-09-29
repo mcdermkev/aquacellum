@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Legal — Aquacellum</title>
-  <meta name="description" content="Terms of Service, Privacy Policy, Beta Program Terms, and Community Guidelines for Aquacellum.">
+  <title>Legal and Policies | Aquacellum</title>
+  <meta name="description" content="Aquacellum's terms, marketplace fees and buyer protection, privacy policy, cookies and local storage, beta terms, and community guidelines. Card payments through Stripe (test mode during beta), and which services handle your data.">
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -163,10 +163,35 @@
     }
     .legal-warning p { color: #92400e; margin-bottom: 0; }
 
+    .legal-content > .legal-callout { margin: 0 0 56px; }
+    .legal-content > .legal-callout p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7; }
+    .legal-content > .legal-callout strong { color: var(--text-primary); }
+    .legal-content > .legal-callout a { color: var(--teal-300); text-decoration: underline; text-underline-offset: 3px; }
+
+    .page-header p.legal-updated {
+      display: inline-block;
+      margin: 20px auto 0;
+      padding: 6px 14px;
+      border-radius: 100px;
+      background: #fff;
+      border: 1px solid var(--line);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .legal-table-wrap { overflow-x: auto; margin: 8px 0 20px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fff; }
+    .legal-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    .legal-table th, .legal-table td { text-align: left; vertical-align: top; padding: 12px 16px; border-bottom: 1px solid var(--line); line-height: 1.6; color: var(--text-secondary); }
+    .legal-table th { font-family: 'Outfit', sans-serif; font-weight: 700; color: var(--text-primary); background: #f5fafb; font-size: 0.82rem; }
+    .legal-table tr:last-child td { border-bottom: none; }
+    .legal-table td:first-child { color: var(--text-primary); font-weight: 600; white-space: nowrap; }
+    @media (max-width: 560px) { .legal-table td:first-child { white-space: normal; } }
+
     /* Footer */
     .footer { border-top: 1px solid var(--line); padding: 48px 0; background: #fff; }
     .footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
-    .footer-links { display: flex; gap: 24px; }
+    .footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 24px; }
     .footer-links a { font-size: 0.8rem; color: var(--text-muted); transition: color 0.2s; }
     .footer-links a:hover { color: var(--text-secondary); }
     .footer-copy { font-size: 0.78rem; color: var(--text-muted); }
@@ -181,8 +206,10 @@
   <meta property="og:site_name" content="Aquacellum">
   <meta property="og:image" content="https://aquacellum.com/og-banner.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Legal — Aquacellum">
-  <meta name="twitter:description" content="Terms of Service, Privacy Policy, Beta Program Terms, and Community Guidelines for Aquacellum.">
+  <meta property="og:title" content="Legal and Policies | Aquacellum">
+  <meta property="og:description" content="Terms, marketplace fees and buyer protection, privacy, cookies, beta terms, and community guidelines for Aquacellum.">
+  <meta name="twitter:title" content="Legal and Policies | Aquacellum">
+  <meta name="twitter:description" content="Terms, marketplace fees and buyer protection, privacy, cookies, beta terms, and community guidelines for Aquacellum.">
 </head>
 <body>
 
@@ -230,332 +257,421 @@
   <!-- Page Header -->
   <section class="page-header">
     <div class="container">
-      <h1 class="font-display">Legal & Policies</h1>
-      <p>Everything you need to know about using Aquacellum, how we handle your data, and what we expect from our community.</p>
+      <h1 class="font-display">Legal &amp; Policies</h1>
+      <p>How Aquacellum works, what we charge, how we handle your data, and what we expect from the community. Written in plain language for the beta.</p>
+      <p class="legal-updated">Last updated: September 29, 2026</p>
     </div>
   </section>
 
   <!-- Section Navigation -->
   <div class="container">
-    <div class="section-nav">
+    <nav class="section-nav" aria-label="Policy sections">
       <a href="#terms">Terms of Service</a>
-      <a href="#privacy">Privacy & Data Collection</a>
-      <a href="#beta">Beta Program Terms</a>
+      <a href="#marketplace">Marketplace &amp; Fees</a>
+      <a href="#privacy">Privacy &amp; Data</a>
+      <a href="#cookies">Cookies &amp; Local Storage</a>
+      <a href="#beta">Beta Terms</a>
       <a href="#community">Community Guidelines</a>
-    </div>
+    </nav>
   </div>
 
   <!-- Legal Content -->
   <div class="container">
     <div class="legal-content">
 
+      <div class="legal-callout">
+        <p><strong>About this page.</strong> Aquacellum is in beta. This page is our plain-language summary of how the service works today and the rules for using it. It is not legal advice. If something here doesn't match what you see in the product, email <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a> and we'll fix it.</p>
+      </div>
+
       <!-- ========== TERMS OF SERVICE ========== -->
       <section class="legal-section" id="terms">
         <h2>Terms of Service</h2>
-        <p class="legal-meta">Effective Date: June 6, 2026 · Last Updated: June 6, 2026</p>
+        <p class="legal-meta">Last updated: September 29, 2026</p>
 
-        <p>Welcome to Aquacellum ("we," "us," "our"). By accessing or using the Aquacellum platform at <strong>aquacellum.com</strong> (the "Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the Service.</p>
+        <p>These terms cover your use of Aquacellum at <strong>aquacellum.com</strong> (the "Service"), run by Aquacellum ("we," "us," "our"). By using the Service you agree to them. If you don't agree, please don't use the Service.</p>
 
-        <h3>1. Eligibility</h3>
-        <p>You must be at least <strong>13 years of age</strong> to use Aquacellum. If you are between 13 and 18, you represent that your parent or legal guardian has reviewed and agreed to these Terms on your behalf. We do not knowingly collect personal information from children under 13.</p>
+        <h3>1. What Aquacellum is</h3>
+        <p>Aquacellum is a species database, a tank logbook, a marketplace for live aquatic animals and related goods, online and club auctions, a community space called The Reef (posts, clubs, events and direct messages), and AI helpers called Poseidon and Echo.</p>
 
-        <h3>2. Account & Wallet Responsibility</h3>
-        <p>When you connect a wallet or create an account through our embedded wallet provider (Privy), you are responsible for:</p>
+        <h3>2. Who can use it</h3>
+        <p>You must be at least <strong>13 years old</strong> to use Aquacellum. If you are under 18, a parent or legal guardian must agree to these terms for you. Selling and receiving payouts requires a Stripe account, and Stripe verifies sellers and sets its own eligibility rules.</p>
+
+        <h3>3. Your account</h3>
+        <p>You sign in with your email or your Google account through our sign-in provider, Privy. Privy also creates a wallet address for your account, which we use as your account ID. You don't need to hold crypto or manage that wallet yourself.</p>
         <ul>
-          <li>Maintaining the security of your login credentials, passkeys, and wallet recovery methods.</li>
-          <li>All activity that occurs under your account or wallet address.</li>
-          <li>Notifying us immediately if you suspect unauthorized access.</li>
+          <li>Keep your email or Google account secure. Anyone who can get into it can get into your Aquacellum account.</li>
+          <li>You're responsible for activity under your account.</li>
+          <li>Tell us at <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a> if you think someone else has used it.</li>
         </ul>
-        <p>We are not responsible for any loss resulting from unauthorized use of your account or wallet.</p>
 
-        <h3>3. Beta Disclaimer</h3>
-        <div class="legal-warning">
-          <p><strong>⚠️ Aquacellum is currently in beta testing on the Base Sepolia testnet.</strong> All tokens, transactions, and marketplace activity use testnet ETH with no real-world monetary value. Features may change, break, or be removed without notice. Data collected during beta may be wiped before mainnet launch.</p>
-        </div>
-
-        <h3>4. Acceptable Use</h3>
+        <h3>4. Acceptable use</h3>
         <p>You agree not to:</p>
         <ul>
-          <li>Create fraudulent specimen listings or falsify lineage/pedigree data.</li>
-          <li>Use the marketplace to sell non-aquatic goods or services.</li>
-          <li>Harass, threaten, or abuse other users on The Reef social layer.</li>
-          <li>Attempt to exploit, reverse-engineer, or attack the smart contracts or platform infrastructure.</li>
-          <li>Use automated bots or scripts to manipulate XP, badges, voting, or marketplace behavior.</li>
-          <li>Post content that violates any applicable law or regulation.</li>
-          <li>Impersonate other users, curators, or team members.</li>
+          <li>Create fake or misleading listings, or falsify lineage, pedigree or breeding records.</li>
+          <li>List anything other than aquatic animals, plants, and aquarium or pond goods.</li>
+          <li>Sell animals you aren't legally allowed to sell or ship (see <a href="#marketplace">Marketplace &amp; Fees</a>).</li>
+          <li>Place bids you don't intend to pay for, bid on your own lots, or arrange shill bids.</li>
+          <li>Use bots or scripts to manipulate XP, badges, votes, bids or listings.</li>
+          <li>Harass, threaten or abuse other people, or impersonate other users or our team.</li>
+          <li>Attack, probe, overload or try to get around the security of the Service.</li>
+          <li>Post anything illegal, or anything you don't have the right to share.</li>
         </ul>
 
-        <h3>5. Intellectual Property</h3>
-        <p>The Aquacellum brand, logo, UI design system, smart contract architecture, species catalog data, and all original content are the property of Aquacellum and its founders. You may not reproduce, distribute, or create derivative works from our proprietary materials without written permission.</p>
-        <p>Content you create (posts, photos, species insights, comments) remains yours. By posting on The Reef, you grant Aquacellum a non-exclusive, worldwide, royalty-free license to display, distribute, and store that content within the platform.</p>
+        <h3>5. Your content and ours</h3>
+        <p>Content you create (posts, photos, listings, tank logs, comments) stays yours. By posting it on the Service you give us a non-exclusive, worldwide, royalty-free license to store, display and distribute it within the Service so we can run it. You can ask us to delete your account (see <a href="#privacy">Privacy &amp; Data</a>).</p>
+        <p>The Aquacellum name, logo, design and original writing are ours. Please don't copy them without permission. Species care data is checked against <strong>FishBase</strong> and <strong>WoRMS</strong>. Species photos belong to their photographers (from iNaturalist and Wikimedia Commons contributors, among others) and are used under the Creative Commons licenses we record for each photo and credit alongside it in the app.</p>
 
-        <h3>6. Marketplace & Transactions</h3>
-        <p>Aquacellum provides a peer-to-peer marketplace for aquatic specimens. We are a platform facilitator, not a party to any transaction between users. We do not guarantee:</p>
+        <h3>6. Care information and AI</h3>
+        <p>Species care information, Poseidon's answers and Echo's photo identifications are general guidance. They are <strong>not veterinary advice</strong> and they can be wrong. A photo identification is a suggestion, not a verdict. For a sick or injured animal, talk to a qualified aquatic veterinarian.</p>
+
+        <h3>7. The marketplace</h3>
+        <p>Sellers sell directly to buyers. We provide the listings, checkout, payment holding, shipping labels and a claims process, but we are not the seller and we don't take ownership of the animals. We don't guarantee the health, genetics or identity of any animal, that a shipment will arrive, or how any buyer or seller will behave. The payment, fee and protection rules are in <a href="#marketplace">Marketplace &amp; Fees</a>.</p>
+
+        <h3>8. Beta</h3>
+        <div class="legal-warning">
+          <p><strong>Aquacellum is in beta.</strong> Stripe is in test mode, so no real money moves yet. Features may change, break or be removed, and data may need to be reset. See <a href="#beta">Beta Terms</a>.</p>
+        </div>
+
+        <h3>9. Limitation of liability</h3>
+        <p>To the maximum extent the law allows:</p>
         <ul>
-          <li>The health, quality, or genetic accuracy of any listed specimen.</li>
-          <li>Successful delivery of shipped specimens.</li>
-          <li>The behavior or reliability of any buyer or seller.</li>
+          <li>The Service is provided "as is" and "as available," without warranties of any kind.</li>
+          <li>We are not liable for lost data, or for the health of your animals, breeding results or conditions in your tanks.</li>
+          <li>We are not liable for problems caused by services we rely on, such as Stripe, Privy, carriers or hosting providers.</li>
+          <li>Our total liability for any claim will not exceed $100 USD.</li>
         </ul>
-        <p>Disputes between users are handled through our escrow and transit safety window systems. We reserve the right to mediate disputes at our discretion but are not obligated to do so.</p>
 
-        <h3>7. Protocol Fees</h3>
-        <p>Marketplace transactions are subject to a <strong>4% protocol fee</strong> (2% during active expo events). Fee splits are outlined publicly and may change with advance notice. During beta, all fees are collected in testnet ETH with no real value.</p>
-
-        <h3>8. Limitation of Liability</h3>
-        <p>To the maximum extent permitted by law:</p>
+        <h3>10. Suspension and termination</h3>
+        <p>We may suspend or close accounts that break these terms or the <a href="#community">Community Guidelines</a>, or that put other users at risk. If we close your account:</p>
         <ul>
-          <li>Aquacellum is provided "as is" and "as available" without warranties of any kind.</li>
-          <li>We are not liable for any loss of data, tokens, or digital assets.</li>
-          <li>We are not liable for livestock health outcomes, breeding results, or environmental conditions in your aquarium.</li>
-          <li>We do not provide veterinary, financial, or legal advice. Poseidon AI outputs are informational only.</li>
-          <li>Our total liability for any claim shall not exceed $100 USD.</li>
+          <li>You lose access to the Service.</li>
+          <li>We may remove your listings, posts and profile.</li>
+          <li>We keep order and payment records we need for accounting, refunds, disputes and the law.</li>
+          <li>Records already written to the test blockchain can't be removed (see <a href="#privacy">Privacy &amp; Data</a>).</li>
         </ul>
 
-        <h3>9. Termination</h3>
-        <p>We may suspend or terminate your access to the Service at any time, with or without cause, including for violation of these Terms or our Community Guidelines. Upon termination:</p>
-        <ul>
-          <li>Your access to the platform will be revoked.</li>
-          <li>On-chain records (specimen registrations, transactions) remain immutable on the blockchain.</li>
-          <li>Off-chain data (profile, posts, photos) may be deleted at our discretion.</li>
-        </ul>
+        <h3>11. Governing law</h3>
+        <p>These terms are governed by the laws of the <strong>State of New York, United States</strong>, without regard to conflict of law rules. Disputes will be resolved in the state or federal courts located in New York County, New York.</p>
 
-        <h3>10. Governing Law</h3>
-        <p>These Terms are governed by the laws of the <strong>State of New York, United States</strong>, without regard to conflict of law principles. Any disputes shall be resolved in the state or federal courts located in New York County, NY.</p>
+        <h3>12. Changes</h3>
+        <p>We'll update these terms as the product changes and change the "Last updated" date above. For material changes we'll also tell you in the app or by email. If you keep using the Service after a change, the new terms apply.</p>
 
-        <h3>11. Changes to Terms</h3>
-        <p>We may update these Terms at any time. Material changes will be communicated via the platform or email. Continued use after changes constitutes acceptance of the revised Terms.</p>
-
-        <h3>12. Contact</h3>
-        <p>Questions about these Terms? Contact us at <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a>.</p>
+        <h3>13. Contact</h3>
+        <p>Questions about these terms: <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a>.</p>
       </section>
 
-      <!-- ========== PRIVACY & DATA COLLECTION ========== -->
+      <!-- ========== MARKETPLACE & FEES ========== -->
+      <section class="legal-section" id="marketplace">
+        <h2>Marketplace, Fees &amp; Buyer Protection</h2>
+        <p class="legal-meta">Last updated: September 29, 2026</p>
+
+        <div class="legal-warning">
+          <p><strong>Beta:</strong> Stripe is in test mode. Checkouts, holds and payouts run end to end, but no real money moves and no real card is charged. Everything below describes how payments work on the site.</p>
+        </div>
+
+        <h3>1. How payments work</h3>
+        <ul>
+          <li><strong>Card only, through Stripe.</strong> You enter your card on Stripe's own checkout page. We never see or store your full card number.</li>
+          <li><strong>No crypto.</strong> Payments are in US dollars. They don't use a blockchain, and you don't need a wallet.</li>
+          <li><strong>Held until handoff or arrival.</strong> For shipped orders, local pickup and batch orders, we hold the payment. When the handoff or arrival is confirmed, we transfer the seller's share to their Stripe account.</li>
+          <li><strong>Sellers are paid through Stripe Connect.</strong> Sellers set up a Stripe Express account. Stripe collects their identity and bank details, not us.</li>
+          <li><strong>Guest checkout.</strong> Some local-pickup orders can be bought without an account. We ask for your email so Stripe can send a receipt and we can email you a link to your order and pickup code.</li>
+        </ul>
+
+        <h3>2. Fees</h3>
+        <div class="legal-table-wrap">
+          <table class="legal-table">
+            <thead>
+              <tr><th scope="col">Who</th><th scope="col">What you pay</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Buyers</td><td>No platform fee. You pay a card processing fee of about 2.9% + $0.30, worked out to cover Stripe's charge. It's shown as its own line at checkout.</td></tr>
+              <tr><td>Shipping</td><td>The live carrier rate for your order, plus a $2 handling fee. We buy the label.</td></tr>
+              <tr><td>Sellers, card sales</td><td>4% of the sale price.</td></tr>
+              <tr><td>Sellers, at an event</td><td>2% on card sales made while you're checked in to a live expo event on Aquacellum.</td></tr>
+              <tr><td>Sellers, cash sales</td><td>0% on cash sales you record yourself. No money passes through us.</td></tr>
+              <tr><td>Club auction desk</td><td>3% on card payments taken at a club auction night's checkout desk (1.5% at an event). Cash has no fee.</td></tr>
+              <tr><td>Auctions</td><td>The seller fee applies to the hammer price only. A club may add a buyer's premium of 0% to 25%, which the club keeps, and chooses whether the bidder or the club pays card processing.</td></tr>
+              <tr><td>Subscriptions</td><td>None.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>If we change a fee, we'll update this page before the change applies.</p>
+
+        <h3>3. Local pickup</h3>
+        <p>Your pickup code is on your order page and in your order email. At the meetup, show the code to the seller and they scan it. That confirms the handoff, completes the sale and releases payment to the seller. Only show your code once you have the animals.</p>
+
+        <h3>4. Buyer protection for shipped orders</h3>
+        <ul>
+          <li><strong>Report within 48 hours of delivery.</strong> A seller may offer a longer window, never a shorter one.</li>
+          <li><strong>Include at least 2 photos and a description</strong> of the problem.</li>
+          <li><strong>The seller has 24 hours to respond.</strong> After that, the claim comes to us for review.</li>
+          <li><strong>The outcome is a refund, a replacement, or denied,</strong> decided for each affected item. Healthy items in the same order go through as normal.</li>
+          <li>While a claim is open, the seller's payout for that order is paused.</li>
+        </ul>
+        <p>This process doesn't take away any rights you have under the law or with your card issuer.</p>
+
+        <h3>5. Auctions</h3>
+        <ul>
+          <li><strong>Bidding needs a card on file.</strong> A bid is a commitment to buy.</li>
+          <li><strong>Anti-sniping:</strong> a bid in the last 2 minutes pushes the end time to 2 minutes after that bid, up to 60 minutes past the original end.</li>
+          <li><strong>The winner's card is charged automatically</strong> when the lot closes. If the charge fails, the winner has 24 hours to update their card and pay, or the lot goes back to the seller.</li>
+          <li><strong>The money is held until pickup,</strong> then paid to the seller.</li>
+        </ul>
+
+        <h3>6. Selling live animals</h3>
+        <p>Sellers are responsible for what they list and ship. By listing, you agree that:</p>
+        <ul>
+          <li><strong>It's legal.</strong> You follow federal, state and local rules for the animals you sell and where you ship them. Some states restrict or ban certain species, and some species need permits. Protected species (for example under CITES) need the right paperwork, or can't be sold at all.</li>
+          <li><strong>The listing is accurate.</strong> Species, size, sex, quantity, health and photos honestly describe what the buyer will get.</li>
+          <li><strong>Animals are packed humanely.</strong> Use proper bags, insulation, heat or cold packs for the weather, and only carriers and services that accept live animals.</li>
+          <li><strong>You follow through.</strong> Ship or hand off what you sold, and respond to claims.</li>
+        </ul>
+        <p>Buyers are responsible for checking that they can legally keep a species where they live, and for being available to receive a shipment or meet for pickup.</p>
+        <p>We may remove listings or restrict sellers that break these rules.</p>
+      </section>
+
+      <!-- ========== PRIVACY & DATA ========== -->
       <section class="legal-section" id="privacy">
-        <h2>Privacy Policy & Data Collection</h2>
-        <p class="legal-meta">Effective Date: June 6, 2026 · Last Updated: June 6, 2026</p>
+        <h2>Privacy &amp; Data</h2>
+        <p class="legal-meta">Last updated: September 29, 2026</p>
 
-        <p>This Privacy Policy explains what information Aquacellum collects, how we use it, and your rights regarding your data.</p>
+        <p>This section explains what we collect, where it's stored, who can see it, and which outside services handle it for us.</p>
 
-        <h3>1. Information We Collect</h3>
-
-        <p><strong>Information you provide directly:</strong></p>
+        <h3>1. What we collect</h3>
         <ul>
-          <li>Display name and bio (chosen during onboarding)</li>
-          <li>Email address (if provided for waitlist or account recovery)</li>
-          <li>Profile avatar photos</li>
-          <li>Tank data, water parameters, action logs, and specimen records</li>
-          <li>Posts, comments, species insights, and photos shared on The Reef</li>
-          <li>Marketplace listings and transaction details</li>
+          <li><strong>Account:</strong> your email address (from your email or Google sign-in) and the wallet address Privy creates as your account ID.</li>
+          <li><strong>Profile:</strong> display name, bio, avatar, and your XP. If you set a local zone, we save a coarse area code (a grid cell, not your address).</li>
+          <li><strong>Tank logbook:</strong> tanks, livestock, water tests, care logs, notes, schedules, spawns and photos you add.</li>
+          <li><strong>Marketplace:</strong> listings, orders, and payment records (amounts, fees and Stripe reference numbers, never card numbers). Shipping addresses for rates and labels. Pickup spots and times. For sellers, your Stripe account ID and the email and name used to set it up.</li>
+          <li><strong>Community:</strong> posts, comments, reactions, follows, club and event activity, and direct messages.</li>
+          <li><strong>Feedback:</strong> anything you send through the Feedback button, including an optional screenshot.</li>
+          <li><strong>Usage:</strong> pages viewed, clicks and named actions in the app (see <a href="#cookies">Cookies &amp; Local Storage</a>).</li>
+          <li><strong>Notifications:</strong> if you turn on push notifications, your browser's push address and browser type.</li>
+          <li><strong>Location, only if you use it:</strong> "Near me" on the breeders map uses your device location in your browser to center the map. Event hosts can set an event's location.</li>
+          <li><strong>Technical data:</strong> the services below receive your IP address and browser details as part of normal web requests. We use IP addresses for rate limiting.</li>
         </ul>
 
-        <p><strong>Information collected automatically:</strong></p>
+        <h3>2. How we use it</h3>
         <ul>
-          <li>Wallet address (via Privy embedded wallet or MetaMask connection)</li>
-          <li>Device type and browser information (for responsive rendering)</li>
-          <li>Approximate geographic location (for Tides event proximity and marketplace radar — fuzzed to a 1–3 mile radius, never exact)</li>
-          <li>Push notification subscription tokens (if you opt in to Web Push)</li>
+          <li>To run the features you use: your logbook, listings, checkout, payouts, shipping labels, auctions and The Reef.</li>
+          <li>To send email: order confirmations, auction results and account notices. Care-streak reminders and "we miss you" emails are on by default and can be turned off in Settings → Notifications. The weekly digest is only sent if you turn it on.</li>
+          <li>To send push notifications, if you turn them on.</li>
+          <li>To answer AI requests (see below).</li>
+          <li>To understand how the app is used and fix problems.</li>
+          <li>To prevent fraud and abuse, and to handle claims and disputes.</li>
+        </ul>
+        <p>We don't sell your personal information, and we don't use advertising networks or cross-site ad trackers.</p>
+
+        <h3>3. Where your data is stored</h3>
+        <ul>
+          <li><strong>In your browser:</strong> your tank logbook is saved on your device first (in the browser's IndexedDB storage), so it works offline.</li>
+          <li><strong>In your account:</strong> when you're signed in, your tanks, livestock, care logs, spawns and grow-out records sync automatically to your account in our database (Supabase), so they show up on your other devices. Some photos stay on the device where you took them.</li>
+          <li><strong>In our database:</strong> profiles, listings, orders, payment records, pickup details, Reef posts and messages.</li>
+          <li><strong>In file storage:</strong> photos you upload for listings, specimens, Reef posts and feedback.</li>
+          <li><strong>On a public test blockchain:</strong> see section 5.</li>
         </ul>
 
-        <p><strong>Information we do NOT collect:</strong></p>
+        <h3>4. Who can see what</h3>
         <ul>
-          <li>We do not run any analytics or tracking scripts (no Google Analytics, no Plausible, no Vercel Analytics).</li>
-          <li>We do not use cookies for advertising or cross-site tracking.</li>
-          <li>We do not collect your exact home or facility address.</li>
-          <li>We do not sell, rent, or share your personal data with advertisers.</li>
+          <li><strong>Public:</strong> your profile's display name, avatar, bio, XP and local zone.</li>
+          <li><strong>Listings are public.</strong> Anyone can see a listing's species, price, quantity, photos, care ranges, and the seller's display name and account address. The public version of a listing never includes a location.</li>
+          <li><strong>Pickup locations</strong> are shared only between the buyer and seller of that order. The exception is auctions: an auction lot shows the pickup location the seller or club enters.</li>
+          <li><strong>Sellers' ship-from addresses</strong> are private. They're used only to get shipping rates and buy labels, and are never shown to buyers.</li>
+          <li><strong>Uploaded photos</strong> are stored at public web addresses, so anyone with the link can view them. Don't upload photos with personal information in them.</li>
+          <li><strong>Reef posts and comments</strong> can be seen by other people, depending on the feature and your settings. Direct messages can only be read by the people in the conversation.</li>
         </ul>
 
-        <h3>2. How We Use Your Information</h3>
+        <h3>5. Testnet records</h3>
+        <p>Some records are also written to <strong>Base Sepolia</strong>, a public test blockchain: tank registrations (name, type, volume, and any facility, room or rack labels), specimen records (species, birth date, breeder account and parents), and listing and ownership changes. We submit these for you and cover the cost, so you don't need crypto or a wallet of your own. Test network records have no monetary value.</p>
+        <p>Anything written there is <strong>public and can't be deleted</strong>, by us or anyone else. Don't put personal information in tank names or facility labels.</p>
+
+        <h3>6. Services that handle your data</h3>
+        <div class="legal-table-wrap">
+          <table class="legal-table">
+            <thead>
+              <tr><th scope="col">Service</th><th scope="col">What it does for us</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><a href="https://www.privy.io/privacy-policy" target="_blank" rel="noopener">Privy</a></td><td>Sign-in with email or Google, and your account's wallet address.</td></tr>
+              <tr><td><a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase</a></td><td>Our database, file storage for photos, and notification delivery.</td></tr>
+              <tr><td><a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">Vercel</a></td><td>Hosts the website and our server functions.</td></tr>
+              <tr><td><a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe</a></td><td>Card payments, receipts, saved cards for auctions, seller onboarding and payouts (Stripe Connect Express).</td></tr>
+              <tr><td><a href="https://www.shipengine.com/privacy-policy/" target="_blank" rel="noopener">ShipEngine</a></td><td>Address checks, shipping rates, labels and tracking. The carrier on your label receives the shipping details.</td></tr>
+              <tr><td><a href="https://resend.com/legal/privacy-policy" target="_blank" rel="noopener">Resend</a></td><td>Sends our emails.</td></tr>
+              <tr><td><a href="https://posthog.com/privacy" target="_blank" rel="noopener">PostHog</a></td><td>Product analytics in the app (see <a href="#cookies">Cookies &amp; Local Storage</a>). Purchase events include the order type and amount.</td></tr>
+              <tr><td><a href="https://cloud.google.com/terms/cloud-privacy-notice" target="_blank" rel="noopener">Google Cloud</a></td><td>Runs our AI features on Google's Gemini models (see below).</td></tr>
+              <tr><td><a href="https://www.coinbase.com/legal/privacy" target="_blank" rel="noopener">Coinbase Developer Platform</a></td><td>Submits and pays for testnet transactions from your account.</td></tr>
+              <tr><td><a href="https://discord.com/privacy" target="_blank" rel="noopener">Discord</a></td><td>Feedback you send is posted to our team's private channel.</td></tr>
+              <tr><td>Browser push services</td><td>If you turn on push notifications, your browser's maker (for example Google, Mozilla or Apple) delivers them.</td></tr>
+              <tr><td>Public page assets</td><td>Our public pages load fonts from Google Fonts, the map library from unpkg, map tiles from CARTO, and some species pages embed YouTube videos. These services receive your IP address when they load.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>7. AI features</h3>
+        <p>Poseidon (chat), Echo's photo identification and automatic photo descriptions run on Google's Gemini models through Google Cloud. Depending on the feature, we send:</p>
         <ul>
-          <li><strong>Platform operation:</strong> To display your profile, render your tanks and species data, process marketplace transactions, and deliver notifications.</li>
-          <li><strong>AI features:</strong> Your tank data and text inputs may be processed by Gemini AI (via Google Cloud) to provide Poseidon responses, alt-text generation, and species suggestions. We do not send your personal identity to AI services — only operational data like species names, water parameters, and your natural-language queries.</li>
-          <li><strong>Social features:</strong> To display your posts, comments, and profile on The Reef to other users based on your visibility settings.</li>
-          <li><strong>Security:</strong> To detect and prevent fraud, abuse, and unauthorized access.</li>
+          <li>Your message and the last few turns of the conversation.</li>
+          <li>A summary of your tanks: names, volumes, water type, latest water reading, inhabitants and your most recent care logs.</li>
+          <li>A photo, when you ask Echo to identify a fish or when we describe a photo for screen readers.</li>
+        </ul>
+        <p>We don't include your name, email or account address in AI requests. Don't type personal information into Poseidon.</p>
+
+        <h3>8. Your choices</h3>
+        <ul>
+          <li><strong>Back up your logbook:</strong> Settings → Backup &amp; Restore downloads a JSON file of the tanks, logs, species, listings, grow-out records and profile saved in this browser, and can restore from it.</li>
+          <li><strong>Download your Reef data:</strong> Settings → Your Data downloads a JSON file of your profile, posts, comments, reactions, follows, notifications and connection requests.</li>
+          <li><strong>Clear this device:</strong> Settings → Clear this device deletes the copy of your data stored in this browser. It does not delete your account, and synced data comes back when you sign in again.</li>
+          <li><strong>Email and push:</strong> Settings → Notifications. The weekly digest email also has a link to turn it off.</li>
+          <li><strong>Delete your account:</strong> email <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a> from the address on your account. We'll delete your profile, logbook data, listings and posts. We keep order and payment records we need for accounting, refunds, disputes and the law, and Stripe keeps its own records. Testnet records can't be deleted.</li>
+          <li><strong>Access or correct your data:</strong> email us and we'll help.</li>
+        </ul>
+        <p>Depending on where you live, you may have other privacy rights. Email <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a> to use them.</p>
+
+        <h3>9. Children</h3>
+        <p>Aquacellum is not meant for children under 13, and we don't knowingly collect their personal information. If we learn that a child under 13 has an account, we'll delete it. If you think that's happened, email <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a>.</p>
+
+        <h3>10. Security</h3>
+        <p>Card details are handled by Stripe. Our database uses access rules so that, for example, pickup locations and ship-from addresses can only be read through our server. Service keys stay on our servers. No system is perfectly secure. If a breach affects your data, we'll tell you.</p>
+
+        <h3>11. Changes and contact</h3>
+        <p>We'll update this section as the product changes and change the "Last updated" date. Privacy questions and data requests: <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a>.</p>
+      </section>
+
+      <!-- ========== COOKIES & LOCAL STORAGE ========== -->
+      <section class="legal-section" id="cookies">
+        <h2>Cookies &amp; Local Storage</h2>
+        <p class="legal-meta">Last updated: September 29, 2026</p>
+
+        <p>Aquacellum's own code doesn't set cookies. We do save data in your browser's local storage and IndexedDB, and some services we use set their own cookies.</p>
+
+        <h3>1. What we save in your browser</h3>
+        <ul>
+          <li>Your offline tank logbook: tanks, livestock, care logs, water tests, schedules and some photos.</li>
+          <li>Settings and preferences, such as units, display mode and dismissed notices.</li>
+          <li>Your cart, watchlist, saved searches and wishlist.</li>
+          <li>Drafts and a cache of species data, so pages load faster and work offline.</li>
         </ul>
 
-        <h3>3. Data Storage & Third-Party Services</h3>
-        <p>Your data is stored across the following services:</p>
+        <h3>2. Analytics (PostHog)</h3>
+        <p>Inside the app, PostHog records pages viewed, clicks and named actions (such as creating a tank or making a purchase). It stores an ID in a first-party cookie and local storage so it can count visits. After you sign in, events are linked to your account address. Session recording is turned off. There's no in-app switch to turn analytics off yet. Browser tracker blocking or clearing site data will stop or reset it. Our public pages outside the app don't run analytics.</p>
+
+        <h3>3. Other services</h3>
         <ul>
-          <li><strong>Local device (Dexie.js / localStorage):</strong> Tank data, action logs, species cache, companion state. This data never leaves your device unless you explicitly publish to the blockchain or post to The Reef.</li>
-          <li><strong>Supabase (PostgreSQL):</strong> Social layer data — profiles, posts, comments, reactions, notifications, media URLs. Hosted in the US. Protected by Row-Level Security policies.</li>
-          <li><strong>Supabase Storage:</strong> Uploaded photos (profile avatars, tank photos, Reef post images). Delivered via CDN.</li>
-          <li><strong>Base Sepolia blockchain:</strong> On-chain specimen registrations, species catalog entries, and marketplace transactions. Blockchain data is public and immutable.</li>
-          <li><strong>Privy:</strong> Wallet creation and authentication session management. See <a href="https://www.privy.io/privacy" target="_blank" rel="noopener">Privy's Privacy Policy</a>.</li>
-          <li><strong>Vercel:</strong> Frontend hosting and serverless API functions. See <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">Vercel's Privacy Policy</a>.</li>
-          <li><strong>Google Cloud (Gemini AI):</strong> AI query processing for Poseidon, search parsing, and alt-text generation. No personal data is sent — only operational queries.</li>
+          <li><strong>Privy</strong> stores your sign-in session in your browser.</li>
+          <li><strong>Stripe</strong> sets its own cookies on its checkout pages.</li>
+          <li><strong>YouTube</strong> may set cookies when a species page shows an embedded video.</li>
         </ul>
 
-        <h3>4. Local Storage & Browser Data</h3>
-        <p>Aquacellum uses browser <strong>localStorage</strong> and <strong>IndexedDB</strong> (via Dexie.js) to store your operational data locally. This includes:</p>
-        <ul>
-          <li>Your tank configurations, action logs, and species data</li>
-          <li>Companion (Echo) state and XP progress</li>
-          <li>Cached species manifest for offline use</li>
-          <li>Draft social posts and notification state</li>
-        </ul>
-        <p>This data is stored only on your device and is not transmitted to our servers unless you take an explicit action (like publishing a specimen on-chain or posting to The Reef). You can clear this data at any time through your browser settings or the in-app data export/delete tools.</p>
-
-        <h3>5. Data Retention & Deletion</h3>
-        <ul>
-          <li><strong>Local data:</strong> Persists until you clear your browser data or use the in-app export/delete function.</li>
-          <li><strong>Supabase data:</strong> Retained as long as your account is active. You may request deletion of your profile, posts, and social data by emailing <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a>.</li>
-          <li><strong>Blockchain data:</strong> On-chain records (specimen registrations, transactions) are <strong>immutable and cannot be deleted</strong>. This is a fundamental property of blockchain technology.</li>
-          <li><strong>Beta wipe:</strong> All off-chain data (profiles, social posts, local caches) may be wiped before mainnet launch. On-chain testnet data will be abandoned when we migrate to Base mainnet.</li>
-        </ul>
-
-        <h3>6. Children's Privacy (COPPA)</h3>
-        <p>Aquacellum is not directed at children under 13. We do not knowingly collect personal information from children under 13 years of age. If we discover that a child under 13 has provided us with personal information, we will promptly delete it. If you believe a child under 13 is using the platform, please contact us at <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a>.</p>
-
-        <h3>7. Your Rights</h3>
-        <p>Depending on your jurisdiction, you may have the right to:</p>
-        <ul>
-          <li>Access the personal data we hold about you.</li>
-          <li>Request correction of inaccurate data.</li>
-          <li>Request deletion of your off-chain data.</li>
-          <li>Export your data in a portable format (JSON export is available in-app).</li>
-          <li>Opt out of push notifications at any time via your browser or in-app settings.</li>
-        </ul>
-        <p>To exercise any of these rights, email <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a>.</p>
-
-        <h3>8. Security</h3>
-        <p>We implement reasonable security measures including:</p>
-        <ul>
-          <li>Row-Level Security (RLS) on all Supabase database tables.</li>
-          <li>JWT-based authentication bridging Privy wallet sessions to Supabase.</li>
-          <li>Server-side API keys for AI services (never exposed to the client).</li>
-          <li>Location fuzzing (1–3 mile radius) to protect facility addresses.</li>
-          <li>Commit-reveal cryptographic schemes for in-person transaction verification.</li>
-        </ul>
-        <p>No system is 100% secure. We cannot guarantee absolute security of your data but will notify affected users promptly in the event of a breach.</p>
-
-        <h3>9. Changes to This Policy</h3>
-        <p>We may update this Privacy Policy periodically. Material changes will be communicated via the platform. The "Last Updated" date at the top reflects the most recent revision.</p>
-
-        <h3>10. Contact</h3>
-        <p>Privacy questions or data requests: <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a></p>
+        <h3>4. Clearing it</h3>
+        <p>You can clear this data in your browser's settings, or use Settings → Clear this device in the app. Either way, the offline copy of your logbook on that device is removed. Anything already synced to your account comes back when you sign in again.</p>
       </section>
 
       <!-- ========== BETA PROGRAM TERMS ========== -->
       <section class="legal-section" id="beta">
-        <h2>Beta Program Terms</h2>
-        <p class="legal-meta">Effective Date: June 6, 2026 · Last Updated: June 6, 2026</p>
+        <h2>Beta Terms</h2>
+        <p class="legal-meta">Last updated: September 29, 2026</p>
 
-        <p>Thank you for participating in the Aquacellum Beta Program. By using the platform during beta, you acknowledge and agree to the following additional terms.</p>
+        <p>By using Aquacellum during the beta, you also agree to the following.</p>
 
-        <h3>1. Testnet Only</h3>
-        <p>All blockchain activity occurs on <strong>Base Sepolia testnet</strong>. Testnet ETH has no monetary value. Specimen tokens, marketplace transactions, and protocol fees during beta are simulations for testing purposes only.</p>
+        <h3>1. Payments are in test mode</h3>
+        <p>Stripe is in test mode, so <strong>no real money moves yet</strong> and no real card is charged. Orders, holds, payouts, refunds and auction charges run through Stripe's test system. We'll update this page when live payments start.</p>
 
-        <div class="legal-callout">
-          <p><strong>How to get testnet ETH:</strong> Visit the <a href="https://www.coinbase.com/faucet" target="_blank" rel="noopener">Coinbase Faucet</a>, select "Base Sepolia," and request free testnet tokens. These have no real-world value.</p>
-        </div>
+        <h3>2. Test blockchain</h3>
+        <p>Records written to Base Sepolia (see <a href="#privacy">Privacy &amp; Data</a>) are on a test network. They have no monetary value, and they may be reset or left behind as the product changes. XP, badges and tiers have no cash value either.</p>
 
-        <h3>2. Data Persistence</h3>
+        <h3>3. Data may be reset</h3>
+        <p>We may need to reset data between updates. We'll give advance notice before any planned reset. Use Settings → Backup &amp; Restore to keep your own copy of your logbook.</p>
+
+        <h3>4. Things will change</h3>
         <ul>
-          <li>Off-chain data (profiles, social posts, photos, local storage) <strong>may be wiped</strong> before mainnet launch without prior notice.</li>
-          <li>On-chain testnet data will be <strong>abandoned</strong> when we deploy to Base mainnet. Testnet tokens and registrations will not carry over.</li>
-          <li>We recommend using the in-app data export feature periodically if you want to preserve your records.</li>
+          <li>Features may break, change or be removed.</li>
+          <li>Screens, names and workflows may change between visits.</li>
+          <li>Species in the database may be added, removed or corrected.</li>
+          <li>AI features may be slow or unavailable at times.</li>
         </ul>
 
-        <h3>3. Feature Instability</h3>
-        <p>During beta:</p>
+        <h3>5. Feedback</h3>
+        <p>Tap the Feedback button in the app or email <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a>. By sending feedback, you let us use your suggestions without owing you payment or credit, unless we agree otherwise in writing.</p>
+
+        <h3>6. No promises</h3>
         <ul>
-          <li>Features may break, behave unexpectedly, or become temporarily unavailable.</li>
-          <li>UI elements, terminology, and workflows may change between sessions.</li>
-          <li>Smart contract upgrades may reset on-chain state.</li>
-          <li>The species catalog may be modified (species added, removed, or corrected).</li>
-          <li>API rate limits and AI availability may fluctuate.</li>
+          <li>Taking part in the beta doesn't guarantee early access, rewards or special status later.</li>
+          <li>It isn't an investment and doesn't give you any ownership in Aquacellum.</li>
+          <li>We may end the beta, limit access or change these terms at any time.</li>
         </ul>
-
-        <h3>4. Feedback & Bug Reports</h3>
-        <p>We welcome and encourage feedback during beta. You can report bugs, suggest features, or share observations by emailing <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a>.</p>
-        <p>By submitting feedback, you grant Aquacellum the right to use, implement, and modify your suggestions without compensation or attribution, unless otherwise agreed in writing.</p>
-
-        <h3>5. No Guarantees</h3>
-        <ul>
-          <li>Participation in beta does not guarantee early access, priority status, or rewards on mainnet.</li>
-          <li>Beta participation does not constitute a financial relationship, investment, or equity stake in Aquacellum.</li>
-          <li>We reserve the right to end the beta program, restrict access, or modify these terms at any time.</li>
-        </ul>
-
-        <h3>6. Gasless Transactions (Beta Relayer)</h3>
-        <p>During beta, on-chain transactions are submitted through a server-side relayer that covers gas fees. This is a beta convenience only. On mainnet, users may be responsible for their own gas fees (or gas sponsorship will be provided via Base Paymaster — to be determined).</p>
-
-        <h3>7. Embedded Wallets</h3>
-        <p>Beta testers are onboarded via Privy embedded wallets (email, Google, or passkey login). You do not need MetaMask or prior crypto experience. Your embedded wallet is managed by Privy's MPC infrastructure. If Privy's service becomes unavailable, your embedded wallet may be temporarily inaccessible. We are not liable for service interruptions from third-party providers.</p>
       </section>
 
       <!-- ========== COMMUNITY GUIDELINES ========== -->
       <section class="legal-section" id="community">
         <h2>Community Guidelines</h2>
-        <p class="legal-meta">Effective Date: June 6, 2026 · Last Updated: June 6, 2026</p>
+        <p class="legal-meta">Last updated: September 29, 2026</p>
 
-        <p>The Reef is Aquacellum's social layer — a space for sharing tank updates, connecting with fellow fishkeepers, and building trust through genuine aquaculture activity. These guidelines exist to keep that space healthy.</p>
+        <p>The Reef is where fishkeepers share tank updates, join clubs, run events and message each other. These guidelines apply there, in listings and in auctions.</p>
 
-        <h3>1. Be Respectful</h3>
+        <h3>1. Be respectful</h3>
         <ul>
-          <li>Treat every community member with basic courtesy, regardless of experience level.</li>
-          <li>No harassment, personal attacks, hate speech, discrimination, or threats of any kind.</li>
-          <li>Disagreements about care practices are welcome — frame them as learning opportunities, not attacks.</li>
-          <li>Don't spam, flood the feed, or use the platform for self-promotion unrelated to aquaculture.</li>
+          <li>Treat everyone with basic courtesy, whatever their experience level.</li>
+          <li>No harassment, personal attacks, hate speech, discrimination or threats.</li>
+          <li>Disagreeing about care practices is fine. Make it about the fish, not the person.</li>
+          <li>No spam, feed flooding, or promotion unrelated to fishkeeping.</li>
         </ul>
 
-        <h3>2. Keep It Honest</h3>
+        <h3>2. Keep it honest</h3>
         <ul>
-          <li><strong>No fraudulent listings:</strong> Do not create marketplace listings for specimens you don't own or species you've misidentified.</li>
-          <li><strong>No falsified lineage:</strong> Pedigree records must accurately reflect actual breeding pairs. Fabricating ancestry is a bannable offense.</li>
-          <li><strong>No misleading photos:</strong> Photos should accurately represent the specimen or tank being discussed. Heavy color grading, filters that misrepresent species coloration, or using others' photos without credit is prohibited.</li>
-          <li><strong>Species Insights accuracy:</strong> Tips and breeding notes should be based on personal experience or established sources. Don't post unverified medical advice.</li>
+          <li><strong>No fake listings.</strong> Only list animals you have and can deliver, identified as accurately as you can.</li>
+          <li><strong>No made-up lineage.</strong> Pedigree and breeding records must reflect real pairings.</li>
+          <li><strong>No misleading photos.</strong> Photos should show the animal or tank you're talking about, without filters that change its color. Don't use other people's photos without credit.</li>
+          <li><strong>Care tips</strong> should come from your own experience or a real source. Don't post medical advice you can't back up.</li>
         </ul>
 
-        <h3>3. Content Standards</h3>
+        <h3>3. Content standards</h3>
         <ul>
-          <li>All content must be related to aquaculture, fishkeeping, or the Aquacellum platform.</li>
-          <li>No explicit, violent, or disturbing content.</li>
-          <li>No illegal content or promotion of illegal activities (including illegal wildlife trade).</li>
-          <li>Respect intellectual property — don't post content you don't have rights to share.</li>
+          <li>Keep content about fishkeeping, aquatic life or Aquacellum.</li>
+          <li>No explicit, violent or disturbing content.</li>
+          <li>Nothing illegal, including illegal wildlife trade.</li>
+          <li>Only post content you have the right to share.</li>
         </ul>
 
-        <h3>4. Marketplace Conduct</h3>
+        <h3>4. Marketplace and auction conduct</h3>
         <ul>
-          <li>List only specimens you currently own and can fulfil.</li>
-          <li>Accurately describe species, health conditions, and care requirements.</li>
-          <li>Honor committed transactions — backing out after a buyer locks escrow damages community trust.</li>
-          <li>Do not use the platform to facilitate trades of endangered species protected by CITES or local law.</li>
-          <li>Cash handshake bypass (Expo Mode) is intended for legitimate swap meets only. Abuse of this feature will result in suspension.</li>
+          <li>Describe species, health and care needs accurately.</li>
+          <li>Follow through on sales. Backing out after a buyer has paid hurts everyone.</li>
+          <li>Don't sell species protected by CITES or by law without the required permits.</li>
+          <li>Only record cash sales that really happened in person.</li>
+          <li>Bid only if you mean to pay. Shill bidding or bid manipulation leads to suspension.</li>
         </ul>
 
-        <h3>5. AI Interactions</h3>
+        <h3>5. AI helpers</h3>
         <ul>
-          <li>Poseidon and Echo are AI assistants, not veterinarians. Do not rely on AI outputs for medical treatment decisions.</li>
-          <li>Do not attempt to manipulate AI responses for harmful purposes or to generate inappropriate content.</li>
-          <li>Report any AI outputs that seem harmful, inaccurate, or inappropriate.</li>
+          <li>Poseidon and Echo are AI helpers, not veterinarians. Don't rely on them for treatment decisions.</li>
+          <li>Don't try to get them to produce harmful or inappropriate content.</li>
+          <li>Report answers that seem harmful or wrong.</li>
         </ul>
 
-        <h3>6. Reporting & Enforcement</h3>
-        <p>If you encounter content or behavior that violates these guidelines:</p>
+        <h3>6. Clubs and events</h3>
         <ul>
-          <li>Email <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a> with a description and, if possible, a screenshot or link.</li>
+          <li>Club founders and event hosts are expected to keep their spaces welcoming.</li>
+          <li>Events, meetups and auction nights follow these same guidelines.</li>
         </ul>
-        <p><strong>Enforcement escalation:</strong></p>
+
+        <h3>7. Reporting and enforcement</h3>
+        <p>To report content or behavior, email <a href="mailto:kevin@aquacellum.com">kevin@aquacellum.com</a> with a description and, if you can, a link or screenshot.</p>
+        <p>Depending on how serious it is, we may:</p>
         <ol>
-          <li><strong>Warning:</strong> First offense or minor violations receive a direct warning.</li>
-          <li><strong>Temporary mute:</strong> Repeated violations or moderate offenses result in temporary restriction from posting on The Reef (24h–7 days).</li>
-          <li><strong>Suspension:</strong> Serious violations (fraud, harassment, repeated abuse) result in account suspension.</li>
-          <li><strong>Permanent ban:</strong> Egregious or repeat offenses result in permanent removal from the platform.</li>
+          <li><strong>Warn</strong> you, for a first or minor issue.</li>
+          <li><strong>Remove content</strong> or temporarily restrict posting, selling or bidding.</li>
+          <li><strong>Suspend</strong> your account, for fraud, harassment or repeated problems.</li>
+          <li><strong>Permanently ban</strong> you, for severe or repeated violations.</li>
         </ol>
-        <p>We reserve the right to skip escalation steps for severe violations. All enforcement decisions are final during beta.</p>
-
-        <h3>7. Schools & Tides Events</h3>
-        <ul>
-          <li>School founders are responsible for maintaining a welcoming environment in their club channels.</li>
-          <li>Tides events (expos, virtual meetups, auctions) follow all standard community guidelines.</li>
-          <li>Auction bidding must be genuine — shill bidding or bid manipulation will result in immediate suspension.</li>
-        </ul>
+        <p>We may skip steps for serious violations.</p>
 
         <h3>8. Updates</h3>
-        <p>These guidelines may be updated as the community grows. We'll announce material changes on The Reef. Continued use of the platform constitutes acceptance of the current guidelines.</p>
+        <p>We'll update these guidelines as the community grows and change the "Last updated" date. Using the Service after an update means you accept the current guidelines.</p>
 
         <div class="legal-callout">
-          <p>💡 <strong>The short version:</strong> Be kind, be honest, keep it about fish, and help us build something we're all proud of.</p>
+          <p><strong>The short version:</strong> be kind, be honest, keep it about fish, and look after the animals.</p>
         </div>
       </section>
 
@@ -583,7 +699,9 @@
       <div class="footer-links">
         <a href="/about">About</a>
         <a href="/legal#terms">Terms of Service</a>
+        <a href="/legal#marketplace">Fees &amp; Protection</a>
         <a href="/legal#privacy">Privacy Policy</a>
+        <a href="/legal#cookies">Cookies</a>
         <a href="/legal#beta">Beta Terms</a>
         <a href="/legal#community">Community Guidelines</a>
       </div>
