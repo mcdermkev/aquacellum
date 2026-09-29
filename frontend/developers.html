@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Developers — Aquacellum Species Database API</title>
-  <meta name="description" content="Free public API for the Aquacellum species database. 470+ freshwater and saltwater fish with FishBase-validated tank parameters, diet, breeding, and ecology data. Build with it, we'll link back for you.">
+  <meta name="description" content="Free public API for the Aquacellum species database. 500+ freshwater and saltwater species with FishBase- and WoRMS-checked tank parameters, diet, breeding, and ecology data. Build with it, we'll link back for you.">
   <meta name="keywords" content="aquarium species api, fish database api, freshwater fish api, saltwater fish api, fishbase api, aquarium data api">
   <meta property="og:title" content="Aquacellum Species Database API">
-  <meta property="og:description" content="Free, public, read-only API over 470+ validated freshwater and saltwater species. No auth required to start.">
+  <meta property="og:description" content="Free, public, read-only API over 500+ freshwater and saltwater species. No auth required to start.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,41 +22,42 @@
 
     .code-block {
       position: relative;
-      background: #0a0a0f;
-      border: 1px solid var(--glass-border);
+      background: #f5f9fa;
+      border: 1px solid var(--line);
       border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
       padding: 20px;
       overflow-x: auto;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.8rem;
       line-height: 1.7;
-      color: #d4d4e0;
+      color: var(--text-primary);
       white-space: pre;
     }
-    .code-block .cm { color: #6b7280; }
-    .code-block .str { color: #6ee7b7; }
-    .code-block .kw { color: #67e8f9; }
+    .code-block .cm { color: var(--text-muted); }
+    .code-block .str { color: var(--emerald-300); }
+    .code-block .kw { color: var(--cyan-300); }
     .code-copy-btn {
       position: absolute; top: 10px; right: 10px;
       padding: 5px 10px; font-size: 0.68rem; font-weight: 600;
       color: var(--text-secondary);
-      background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+      background: #fff; border: 1px solid var(--line);
       border-radius: 6px; cursor: pointer; transition: var(--transition-fast);
     }
-    .code-copy-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
+    .code-copy-btn:hover { color: var(--text-primary); background: #eaf3f5; border-color: rgba(var(--ink-rgb), 0.2); }
 
     .endpoint-card { padding: 24px; margin-bottom: 16px; }
     .endpoint-method {
       display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 6px;
       font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; font-weight: 700;
-      background: rgba(52,211,153,0.12); color: var(--emerald-300); margin-right: 10px;
+      background: #d1fae5; color: var(--emerald-300); margin-right: 10px;
     }
-    .endpoint-method.post { background: rgba(167,139,250,0.15); color: var(--violet-300); }
-    .endpoint-path { font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; color: #fff; }
+    .endpoint-method.post { background: var(--violet-100); color: var(--violet-300); }
+    .endpoint-path { font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; color: var(--text-primary); }
     .endpoint-desc { font-size: 0.85rem; color: var(--text-secondary); margin-top: 8px; line-height: 1.6; }
     .param-table { width: 100%; margin-top: 14px; font-size: 0.8rem; border-collapse: collapse; }
     .param-table th { text-align: left; color: var(--text-muted); font-weight: 600; padding: 6px 10px; border-bottom: 1px solid var(--glass-border); text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.05em; }
-    .param-table td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.03); color: var(--text-secondary); vertical-align: top; }
+    .param-table td { padding: 8px 10px; border-bottom: 1px solid rgba(var(--ink-rgb), 0.06); color: var(--text-secondary); vertical-align: top; }
     .param-table code { color: var(--cyan-300); font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; }
 
     .rate-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 24px; }
@@ -69,26 +70,26 @@
     .key-form-row .input { flex: 1; min-width: 180px; }
     .key-result {
       margin-top: 16px; padding: 16px; border-radius: var(--radius-sm);
-      background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.25);
+      background: #ecfdf5; border: 1px solid rgba(5,150,105,0.3);
       font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: var(--emerald-300);
       word-break: break-all; display: none;
     }
     .key-result.show { display: block; }
     .key-error {
       margin-top: 16px; padding: 14px; border-radius: var(--radius-sm);
-      background: rgba(251,113,133,0.06); border: 1px solid rgba(251,113,133,0.25);
-      font-size: 0.82rem; color: var(--rose-400); display: none;
+      background: #fff1f2; border: 1px solid rgba(225,29,72,0.3);
+      font-size: 0.82rem; color: #be123c; display: none;
     }
     .key-error.show { display: block; }
 
     .attribution-box { padding: 24px; border-left: 3px solid var(--emerald-500); }
 
     .growth-banner {
-      padding: 32px; background: linear-gradient(135deg, rgba(139,92,246,0.06), rgba(52,211,153,0.04));
-      border: 1px solid rgba(139,92,246,0.15); border-radius: var(--radius-lg);
+      padding: 32px; background: linear-gradient(135deg, rgba(20,184,166,0.08), rgba(14,165,233,0.06)), #fff;
+      border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
       display: flex; align-items: center; gap: 20px; flex-wrap: wrap; justify-content: space-between;
     }
-    .growth-banner-text h3 { font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .growth-banner-text h3 { font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
     .growth-banner-text p { font-size: 0.85rem; color: var(--text-secondary); max-width: 480px; line-height: 1.6; }
   </style>
   <link rel="canonical" href="https://aquacellum.com/developers">
@@ -97,7 +98,7 @@
   <meta property="og:image" content="https://aquacellum.com/og-banner.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Aquacellum Species Database API">
-  <meta name="twitter:description" content="Free, public, read-only API over 470+ validated freshwater and saltwater species. No auth required to start.">
+  <meta name="twitter:description" content="Free, public, read-only API over 500+ freshwater and saltwater species. No auth required to start.">
 </head>
 <body>
   <div class="ambient-layer"><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
@@ -109,7 +110,7 @@
     <div class="container">
       <div class="section-label" style="display:flex; justify-content:center;">🔌 Developer API</div>
       <h1>Build on the <span class="text-gradient">Species Database</span></h1>
-      <p>470+ freshwater and saltwater species, validated against FishBase and WoRMS — tank parameters, diet, breeding behavior, and temperament, free to query. Embed it in a bot, a spreadsheet, a plugin, or your own app. Every response links back here.</p>
+      <p>500+ freshwater and saltwater species, checked against FishBase and WoRMS — tank parameters, diet, breeding behavior, and temperament, free to query. Embed it in a bot, a spreadsheet, a plugin, or your own app. Every response links back here.</p>
       <div class="dev-hero-actions">
         <a href="#quickstart" class="btn btn-primary">Get Started</a>
         <a href="/species-openapi.json" class="btn btn-secondary" target="_blank" rel="noopener">OpenAPI Spec</a>
@@ -200,7 +201,7 @@ console.log(data.commonName, data.tankParameters.temperatureRangeCelsius);
       <div class="rate-grid">
         <div class="card rate-card"><div class="rate-num">60/hr</div><div class="rate-label">No API key (per IP)</div></div>
         <div class="card rate-card"><div class="rate-num">1,000/hr</div><div class="rate-label">Free API key</div></div>
-        <div class="card rate-card"><div class="rate-num">5,000/hr</div><div class="rate-label">Partner tier — <a href="/about.html" style="color:var(--emerald-400);">contact us</a></div></div>
+        <div class="card rate-card"><div class="rate-num">5,000/hr</div><div class="rate-label">Partner tier — <a href="/about.html" style="color:var(--emerald-300); text-decoration:underline; text-underline-offset:3px;">contact us</a></div></div>
       </div>
     </div>
   </section>
@@ -236,7 +237,7 @@ console.log(data.commonName, data.tankParameters.temperatureRangeCelsius);
       <div class="card attribution-box">
         <p class="section-text" style="color:var(--text-secondary); line-height:1.8;">
           This API is free because the data is meant to travel. In exchange, any product or content built with it must credit
-          <strong style="color:#fff;">"Aquacellum (https://aquacellum.com)"</strong> visibly, and should link to the species'
+          <strong style="color:var(--text-primary);">"Aquacellum (https://aquacellum.com)"</strong> visibly, and should link to the species'
           <code style="color:var(--cyan-300);">links.viewOnAquacellum</code> URL when displaying that species. Every response
           already includes this link — just surface it in your UI.
         </p>

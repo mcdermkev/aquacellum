@@ -18,29 +18,31 @@
 
   <style>
     .guide-hero { padding: 2.5rem 0 1rem; }
-    .guide-kicker { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--violet-300, #c4b5fd); }
-    .guide-title { font-family: 'Outfit', sans-serif; font-size: clamp(2rem, 5vw, 3.25rem); font-weight: 800; color: #fff; margin: 0.4rem 0 0.6rem; }
+    .guide-kicker { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--violet-300); }
+    .guide-title { font-family: 'Outfit', sans-serif; font-size: clamp(2rem, 5vw, 3.25rem); font-weight: 800; color: var(--text-primary); margin: 0.4rem 0 0.6rem; }
     .guide-desc { font-size: 0.95rem; line-height: 1.65; color: var(--text-secondary); max-width: 720px; }
-    .guide-species-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 1rem; padding: 9px 16px; border-radius: 11px; font-size: 0.82rem; font-weight: 700; text-decoration: none; color: #dbeafe; background: rgba(96,165,250,0.12); border: 1px solid rgba(96,165,250,0.3); }
-    .guide-species-link:hover { filter: brightness(1.1); }
+    .guide-species-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 1rem; padding: 9px 16px; border-radius: 11px; font-size: 0.82rem; font-weight: 700; text-decoration: none; color: var(--ocean-300); background: #fff; border: 1px solid rgba(14,165,233,0.35); box-shadow: var(--shadow-sm); }
+    .guide-species-link:hover { background: #f0f9ff; box-shadow: var(--shadow-md); }
 
     .morph-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 22px; margin: 1.75rem 0 3rem; }
-    .morph-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-md, 16px); overflow: hidden; backdrop-filter: blur(12px); scroll-margin-top: 90px; }
-    .morph-card__photo { height: 200px; background: linear-gradient(135deg, rgba(96,165,250,0.10), rgba(52,211,153,0.06)); display: flex; align-items: center; justify-content: center; font-size: 2.6rem; }
+    .morph-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius-md, 16px); overflow: hidden; box-shadow: var(--shadow-sm); transition: box-shadow 0.2s ease; scroll-margin-top: 90px; }
+    .morph-card:hover { box-shadow: var(--shadow-md); }
+    .morph-card__photo { height: 200px; background: linear-gradient(135deg, rgba(14,165,233,0.10), rgba(16,185,129,0.08)); display: flex; align-items: center; justify-content: center; font-size: 2.6rem; }
     .morph-card__photo img { width: 100%; height: 100%; object-fit: cover; }
     .morph-card__body { padding: 16px 18px 20px; }
-    .morph-card__name { font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; color: #fff; margin: 0; }
+    .morph-card__name { font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin: 0; }
     .morph-card__species { font-size: 0.72rem; color: var(--text-muted); font-style: italic; margin: 2px 0 0; }
     .morph-traits { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
-    .morph-trait { padding: 3px 10px; border-radius: 50px; font-size: 0.66rem; font-weight: 600; background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.2); color: var(--violet-300, #c4b5fd); }
-    .morph-trait strong { color: #fff; font-weight: 700; }
+    .morph-trait { padding: 3px 10px; border-radius: 50px; font-size: 0.66rem; font-weight: 600; background: var(--violet-100); border: 1px solid rgba(139,92,246,0.25); color: var(--violet-300); }
+    .morph-trait strong { color: var(--text-primary); font-weight: 700; }
     .morph-desc { font-size: 0.86rem; line-height: 1.6; color: var(--text-secondary); margin: 0 0 14px; }
     .morph-actions { display: flex; flex-wrap: wrap; gap: 8px; }
     .morph-btn { display: inline-flex; align-items: center; padding: 8px 14px; border-radius: 10px; font-size: 0.78rem; font-weight: 700; text-decoration: none; }
-    .morph-btn--room { color: #04231a; background: linear-gradient(135deg, var(--emerald-400, #34d399), var(--teal-500, #14b8a6)); }
-    .morph-btn--market { color: #ddd6fe; background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.35); }
-    .morph-btn:hover { filter: brightness(1.08); }
-    .guide-note { max-width: 720px; margin: 0 0 3rem; font-size: 0.78rem; line-height: 1.6; color: var(--text-muted); padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); }
+    .morph-btn--room { color: #fff; background: linear-gradient(135deg, #0f766e, #047857); }
+    .morph-btn--market { color: var(--violet-300); background: #fff; border: 1px solid rgba(139,92,246,0.4); }
+    .morph-btn--room:hover { filter: brightness(1.1); }
+    .morph-btn--market:hover { background: var(--violet-100); }
+    .guide-note { max-width: 720px; margin: 0 0 3rem; font-size: 0.78rem; line-height: 1.6; color: var(--text-muted); padding: 12px 14px; border-radius: 12px; background: #fff; border: 1px solid var(--line); }
     @media (max-width: 640px) { .morph-grid { grid-template-columns: 1fr; } }
   </style>
 </head>

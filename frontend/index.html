@@ -24,11 +24,9 @@
   <link rel="stylesheet" href="/css/shared.css">
 
   <style>
-    /* Front door. Functional first: search, stock, auctions, tools.
-       Muted text uses #9a93b8, not shared.css --text-muted (#4a3f6b), which
-       fails contrast on this background. */
-    :root { --fd-muted: #9a93b8; --fd-line: rgba(167, 139, 250, 0.14); --fd-card: rgba(15, 12, 31, 0.72); }
-    body { background: var(--bg-void); }
+    /* Front door. Functional first: search, stock, auctions, tools. Daylight theme
+       (shared.css v2): white cards on pale aqua, deep-sea ink, teal accent. */
+    :root { --fd-muted: var(--text-muted); --fd-line: var(--line); --fd-card: #ffffff; }
     main { position: relative; z-index: 1; }
     .fd-wrap { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
     .fd-section { padding: 40px 0; }
@@ -41,7 +39,7 @@
 
     /* Welcome / returning bar */
     .fd-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: center; padding: 10px 16px; margin-top: 16px;
-      border: 1px solid var(--fd-line); border-radius: 12px; background: rgba(20, 184, 166, 0.05); color: var(--text-secondary); font-size: 0.88rem; }
+      border: 1px solid var(--fd-line); border-radius: 12px; background: #f0fdfa; color: var(--text-secondary); font-size: 0.88rem; }
     .fd-bar a { color: var(--teal-300); font-weight: 600; text-decoration: none; }
     .fd-bar a:hover { text-decoration: underline; }
 
@@ -50,30 +48,31 @@
     .fd-search h1 { font-family: 'Outfit', sans-serif; font-size: clamp(1.9rem, 5vw, 3rem); line-height: 1.1; margin: 0 0 10px; color: var(--text-primary); letter-spacing: -0.02em; }
     .fd-search .fd-sub { color: var(--text-secondary); font-size: 1rem; margin: 0 auto 22px; max-width: 640px; }
     .fd-form { display: flex; gap: 8px; max-width: 680px; margin: 0 auto; }
-    .fd-form input { flex: 1; min-width: 0; padding: 14px 16px; font-size: 1.05rem; color: #fff; background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 12px; }
+    .fd-form input { flex: 1; min-width: 0; padding: 14px 16px; font-size: 1.05rem; color: var(--text-primary); background: #fff;
+      border: 1px solid rgba(var(--ink-rgb), 0.22); border-radius: 12px; box-shadow: var(--shadow-sm); }
+    .fd-form input:focus { border-color: var(--teal-400); box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2); outline: none; }
     .fd-form input::placeholder { color: var(--fd-muted); }
     .fd-form button { padding: 0 20px; font-weight: 700; border-radius: 12px; border: 0; cursor: pointer; color: #fff;
-      background: linear-gradient(135deg, var(--emerald-500), var(--teal-500)); font-size: 1rem; }
+      background: linear-gradient(135deg, #0d9488, #0284c7); font-size: 1rem; }
     .fd-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 14px auto 0; }
-    .fd-chip { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--fd-line); background: rgba(255,255,255,0.03);
+    .fd-chip { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--fd-line); background: #fff;
       color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; cursor: pointer; }
-    .fd-chip[aria-pressed="true"] { background: rgba(20, 184, 166, 0.14); border-color: rgba(45, 212, 191, 0.55); color: #fff; }
+    .fd-chip[aria-pressed="true"] { background: #ccfbf1; border-color: rgba(13, 148, 136, 0.5); color: var(--teal-300); }
     .fd-meta { color: var(--fd-muted); font-size: 0.85rem; margin: 18px 0 10px; text-align: left; }
 
     /* Cards */
     .fd-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
     .fd-card { display: flex; flex-direction: column; height: 100%; border: 1px solid var(--fd-line); border-radius: 14px; overflow: hidden;
-      background: var(--fd-card); color: inherit; text-decoration: none; transition: border-color 0.2s ease, transform 0.2s ease; }
-    .fd-card:hover { border-color: rgba(45, 212, 191, 0.45); transform: translateY(-2px); }
-    .fd-thumb { aspect-ratio: 4 / 3; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 2rem; overflow: hidden; }
+      background: var(--fd-card); color: inherit; text-decoration: none; box-shadow: var(--shadow-sm); transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; }
+    .fd-card:hover { border-color: rgba(13, 148, 136, 0.4); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .fd-thumb { aspect-ratio: 4 / 3; background: linear-gradient(180deg, #ecfeff, #e0f2f1); display: flex; align-items: center; justify-content: center; font-size: 2rem; overflow: hidden; }
     .fd-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .fd-body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
     .fd-name { font-weight: 700; color: var(--text-primary); font-size: 0.95rem; line-height: 1.3; }
     .fd-sci { font-style: italic; color: var(--fd-muted); font-size: 0.8rem; }
     .fd-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-    .fd-tag { font-size: 0.7rem; padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,0.05); color: var(--text-secondary); border: 1px solid var(--fd-line); }
-    .fd-tag--sale { background: rgba(52, 211, 153, 0.1); border-color: rgba(52, 211, 153, 0.35); color: var(--emerald-300); }
+    .fd-tag { font-size: 0.7rem; padding: 2px 7px; border-radius: 999px; background: #f5f9fa; color: var(--text-secondary); border: 1px solid var(--fd-line); }
+    .fd-tag--sale { background: #ecfdf5; border-color: #a7f3d0; color: var(--emerald-300); font-weight: 600; }
     .fd-tag--marine { color: var(--ocean-300); }
     .fd-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: auto; padding-top: 6px; }
     .fd-price { font-weight: 800; color: var(--emerald-300); font-size: 1rem; }
@@ -85,7 +84,7 @@
     .fd-tools { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
     .fd-tool { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border: 1px solid var(--fd-line); border-radius: 14px;
       background: var(--fd-card); text-decoration: none; color: inherit; }
-    .fd-tool:hover { border-color: rgba(45, 212, 191, 0.45); }
+    .fd-tool:hover { border-color: rgba(13, 148, 136, 0.4); box-shadow: var(--shadow-md); }
     .fd-tool-icon { font-size: 1.4rem; line-height: 1; }
     .fd-tool strong { display: block; color: var(--text-primary); font-size: 0.95rem; }
     .fd-tool span { color: var(--text-secondary); font-size: 0.82rem; }

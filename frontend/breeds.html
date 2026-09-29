@@ -30,19 +30,19 @@
     .hero-stat-num { font-family: 'Outfit', sans-serif; font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, var(--violet-300), var(--emerald-300)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
     .hero-stat-label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-top: 4px; }
     /* Filters Bar */
-    .filters-bar { max-width: 100%; margin: 0 auto 2.5rem; padding: 20px 24px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); backdrop-filter: blur(12px); display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .filters-bar { max-width: 100%; margin: 0 auto 2.5rem; padding: 20px 24px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); backdrop-filter: blur(12px); display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
     .search-wrap { position: relative; flex: 1; min-width: 200px; }
     .search-wrap svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
-    .search-input { width: 100%; padding: 10px 16px 10px 40px; font-size: 0.88rem; color: var(--text-primary); background: rgba(255,255,255,0.04); border: 1px solid rgba(167,139,250,0.15); border-radius: var(--radius-sm); outline: none; transition: var(--transition); }
+    .search-input { width: 100%; padding: 10px 16px 10px 40px; font-size: 0.88rem; color: var(--text-primary); background: #fff; border: 1px solid var(--line); border-radius: var(--radius-sm); outline: none; transition: var(--transition); }
     .search-input:focus { border-color: var(--violet-500); box-shadow: 0 0 0 3px rgba(139,92,246,0.1); }
     .search-input::placeholder { color: var(--text-muted); }
     .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; }
-    .filter-chip { padding: 6px 12px; border-radius: 20px; font-size: 0.68rem; font-weight: 600; color: var(--text-muted); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .filter-chip { padding: 6px 12px; border-radius: 20px; font-size: 0.68rem; font-weight: 600; color: var(--text-secondary); background: #fff; border: 1px solid var(--line); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
     .filter-chip:hover { color: var(--violet-300); border-color: rgba(139,92,246,0.25); background: rgba(139,92,246,0.06); }
     .filter-chip.active { color: var(--violet-300); background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.3); }
     .sort-chips { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; margin-top: 4px; }
-    .sort-chip { padding: 6px 14px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-    .sort-chip:hover { color: var(--text-secondary); border-color: rgba(255,255,255,0.12); }
+    .sort-chip { padding: 6px 14px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); background: #fff; border: 1px solid var(--line); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .sort-chip:hover { color: var(--text-primary); border-color: rgba(var(--ink-rgb),0.2); }
     .sort-chip.active { color: var(--violet-300); background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.25); }
     .result-count { font-size: 0.75rem; color: var(--text-muted); margin-left: auto; white-space: nowrap; }
 
@@ -50,16 +50,16 @@
     .breed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; margin-bottom: 3rem; position: relative; z-index: 1; }
     .breed-card {
       background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-lg);
-      backdrop-filter: blur(12px); overflow: hidden; cursor: pointer; transition: var(--transition);
+      box-shadow: var(--shadow-sm); backdrop-filter: blur(12px); overflow: hidden; cursor: pointer; transition: var(--transition);
       opacity: 0; transform: translateY(20px);
     }
     .breed-card.visible { opacity: 1; transform: translateY(0); transition: transform 0.5s cubic-bezier(0.4,0,0.2,1), opacity 0.4s ease, box-shadow 0.3s ease, border-color 0.3s ease; }
-    .breed-card:hover { border-color: rgba(139,92,246,0.3); transform: translateY(-4px); box-shadow: 0 16px 48px rgba(139,92,246,0.08), 0 0 24px rgba(139,92,246,0.04); }
+    .breed-card:hover { border-color: rgba(139,92,246,0.3); transform: translateY(-4px); box-shadow: var(--shadow-md); }
 
     /* Card header with lineage tree visual */
-    .breed-card-header { position: relative; padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .breed-card-header { position: relative; padding: 20px 20px 16px; border-bottom: 1px solid var(--line); }
     .breed-card-species { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 4px; }
-    .breed-card-strain { font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #fff; margin-bottom: 4px; }
+    .breed-card-strain { font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; }
     .breed-card-sci { font-size: 0.72rem; font-style: italic; color: var(--violet-400); margin-bottom: 10px; }
     .breed-card-gen-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; font-weight: 700; }
     .gen-f1 { background: rgba(96,165,250,0.1); border: 1px solid rgba(96,165,250,0.25); color: var(--blue-400); }
@@ -68,14 +68,14 @@
     .gen-f4 { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); color: var(--amber-300); }
     .gen-wild { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); color: var(--amber-400); }
     /* Lineage tree mini visual */
-    .lineage-mini { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding: 10px 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 10px; }
+    .lineage-mini { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding: 10px 12px; background: var(--bg-void); border: 1px solid var(--line); border-radius: 10px; }
     .lineage-node { display: flex; flex-direction: column; align-items: center; gap: 2px; }
     .lineage-node-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.55rem; font-weight: 700; color: #fff; }
     .lineage-node-dot.sire { background: linear-gradient(135deg, var(--blue-400), var(--cyan-400)); }
     .lineage-node-dot.dam { background: linear-gradient(135deg, var(--rose-400), var(--purple-400)); }
     .lineage-node-dot.offspring { background: linear-gradient(135deg, var(--emerald-400), var(--teal-400)); }
     .lineage-node-label { font-size: 0.5rem; color: var(--text-muted); font-weight: 600; }
-    .lineage-connector { width: 16px; height: 2px; background: rgba(255,255,255,0.1); position: relative; }
+    .lineage-connector { width: 16px; height: 2px; background: rgba(var(--ink-rgb),0.15); position: relative; }
     .lineage-connector::before { content: '→'; position: absolute; top: -7px; left: 4px; font-size: 0.6rem; color: var(--text-muted); }
 
     /* Card body */
@@ -89,7 +89,7 @@
     /* Breeder attribution */
     .breed-card-breeder { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: rgba(139,92,246,0.03); border: 1px solid rgba(139,92,246,0.08); border-radius: 8px; }
     .breed-breeder-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--violet-500), var(--purple-400)); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 700; color: #fff; flex-shrink: 0; }
-    .breed-breeder-name { font-size: 0.75rem; font-weight: 600; color: #fff; }
+    .breed-breeder-name { font-size: 0.75rem; font-weight: 600; color: var(--text-primary); }
     .breed-breeder-label { font-size: 0.6rem; color: var(--text-muted); }
     .breed-breeder-info { flex: 1; }
 
@@ -101,24 +101,24 @@
     .breed-card-cta { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 10px; margin-top: 12px; font-size: 0.72rem; font-weight: 600; color: var(--violet-300); background: rgba(139,92,246,0.06); border: 1px solid rgba(139,92,246,0.15); border-radius: 8px; transition: var(--transition); }
     .breed-card-cta:hover { background: rgba(139,92,246,0.12); border-color: rgba(139,92,246,0.35); }
     /* Detail Popup */
-    .popup-overlay { display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(6,5,15,0.92); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 24px; }
+    .popup-overlay { display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(var(--ink-rgb),0.55); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 24px; }
     .popup-overlay.active { display: flex; }
-    .popup-card { width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; background: rgba(15,12,31,0.97); border: 1px solid rgba(167,139,250,0.2); border-radius: var(--radius-xl); backdrop-filter: blur(24px); box-shadow: 0 40px 100px rgba(0,0,0,0.5), 0 0 40px rgba(139,92,246,0.08); padding: 28px; transform: scale(0.95); transition: transform 0.3s ease; }
+    .popup-card { width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); padding: 28px; transform: scale(0.95); transition: transform 0.3s ease; }
     .popup-overlay.active .popup-card { transform: scale(1); }
-    .popup-close { position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); color: #fff; font-size: 1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); }
-    .popup-close:hover { background: rgba(139,92,246,0.3); }
+    .popup-close { position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border-radius: 50%; background: #fff; border: 1px solid var(--line); color: var(--text-primary); font-size: 1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); }
+    .popup-close:hover { background: rgba(139,92,246,0.1); }
     .popup-header { margin-bottom: 20px; }
     .popup-species-label { font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 4px; }
-    .popup-strain { font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 800; color: #fff; margin-bottom: 4px; }
+    .popup-strain { font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; }
     .popup-sci { font-size: 0.85rem; font-style: italic; color: var(--violet-400); }
     .popup-section { margin-bottom: 20px; }
     .popup-section-title { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--violet-400); margin-bottom: 10px; }
     .popup-params { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .popup-param { padding: 10px 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; }
+    .popup-param { padding: 10px 12px; background: var(--bg-void); border: 1px solid var(--line); border-radius: 8px; }
     .popup-param-label { font-size: 0.6rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
     .popup-param-value { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--text-primary); }
     /* Lineage tree in popup */
-    .lineage-tree { padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; }
+    .lineage-tree { padding: 16px; background: var(--bg-void); border: 1px solid var(--line); border-radius: 12px; }
     .lineage-tree-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
     .lineage-tree-row:last-child { margin-bottom: 0; }
     .lt-node { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: #fff; flex-shrink: 0; }
