@@ -9,6 +9,8 @@ import marketplaceAbi from "../abi/AquadexMarketplace.json";
 import { ListSpecimenModal } from "./ListSpecimenModal";
 import { EditListingModal } from "./EditListingModal";
 import { BatchListingWizard } from "./BatchListingWizard";
+import { FragListingModal } from "./FragListingModal";
+import { FRAG_MOUNT_LABELS, fragFromListing, fragSizeLabel, isFragListing } from "../services/fragListing";
 import { OfferModal } from "./OfferModal";
 import { XP_ACTIONS, getXp } from "../utils/xp";
 import { getProvider } from "../utils/smartAccount";
@@ -153,6 +155,7 @@ export function MarketplaceBoard({
   const error = listingsError ? (listingsError.message || "Failed to load listings") : null;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBatchWizardOpen, setIsBatchWizardOpen] = useState(false);
+  const [isFragModalOpen, setIsFragModalOpen] = useState(false);
   const [offerListing, setOfferListing] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
   const [savedItems, setSavedItems] = useState(() => {
@@ -579,7 +582,11 @@ export function MarketplaceBoard({
   const priceMinCents = priceMinInput.trim() !== "" ? Math.round(parseFloat(priceMinInput) * 100) : undefined;
   const priceMaxCents = priceMaxInput.trim() !== "" ? Math.round(parseFloat(priceMaxInput) * 100) : undefined;
 
-  const routeListingType = routeCollection === "batch" ? "batch" : undefined;
+  const routeListingType = routeCollection === "batch"
+    ? "batch"
+    : routeCollection === "frags"
+      ? "frag"
+      : undefined;
   const routeFulfillment = routeCollection === "shipped"
     ? FULFILLMENT_TYPES.SHIPPING
     : routeCollection === "local"
@@ -1145,6 +1152,9 @@ export function MarketplaceBoard({
               <button className="btn-secondary" onClick={() => setIsBatchWizardOpen(true)} style={{ fontSize: "0.75rem", padding: "0.4rem 0.75rem" }}>
                 🐟 List Fry Batch
               </button>
+              <button className="btn-secondary" onClick={() => setIsFragModalOpen(true)} style={{ fontSize: "0.75rem", padding: "0.4rem 0.75rem" }}>
+                🪸 List Coral Frags
+              </button>
             </div>
           )}
           {casualModeActive && walletAccount && (
@@ -1155,6 +1165,9 @@ export function MarketplaceBoard({
               </button>
               <button className="btn-secondary" onClick={() => setIsBatchWizardOpen(true)} style={{ fontSize: "0.75rem", padding: "0.4rem 0.75rem" }}>
                 🐟 Sell Fry Batch
+              </button>
+              <button className="btn-secondary" onClick={() => setIsFragModalOpen(true)} style={{ fontSize: "0.75rem", padding: "0.4rem 0.75rem" }}>
+                🪸 Sell Coral Frags
               </button>
             </div>
           )}
@@ -1670,7 +1683,7 @@ export function MarketplaceBoard({
 
                       if (item.isBatch) {
                         pedigreeClass = "pedigree-f1";
-                        pedigreeLabel = "Batch Fry Stock";
+                        pedigreeLabel = isFragListing(item) ? "Coral Frag" : "Batch Fry Stock";
                         pedigreeBadgeClass = "badge-blue";
                       } else {
                         // Badge reads STORED provenance. It used to read
@@ -1943,7 +1956,7 @@ export function MarketplaceBoard({
                           <div>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                               <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", letterSpacing: "0.05em", textTransform: "uppercase", fontWeight: "600" }}>
-                                {item.isBatch ? "Batch Fry Exchange" : "Specimen Exchange"}
+                                {isFragListing(item) ? "Coral Frag Exchange" : item.isBatch ? "Batch Fry Exchange" : "Specimen Exchange"}
                               </span>
                               {!casualModeActive && (
                                 <span className="badge badge-blue" style={{ fontSize: "0.6rem", padding: "0.15rem 0.5rem", fontFamily: "monospace" }}>
@@ -2089,7 +2102,39 @@ export function MarketplaceBoard({
                             </div>
                           )}
 
-                          {!casualModeActive && item.isBatch && (
+                          {isFragListing(item) && (() => {
+                            const frag = fragFromListing(item);
+                            const sizeLabel = fragSizeLabel(frag);
+                            return (
+                              <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }} aria-label="Frag details">
+                                {sizeLabel && (
+                                  <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(244,114,182,0.08)", border: "1px solid rgba(244,114,182,0.25)", color: "#f9a8d4" }}>
+                                    🪸 {sizeLabel}
+                                  </span>
+                                )}
+                                {frag.mount && frag.mount !== "none" && (
+                                  <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.2)", color: "#7dd3fc" }}>
+                                    {FRAG_MOUNT_LABELS[frag.mount]}
+                                  </span>
+                                )}
+                                {frag.wysiwyg && (
+                                  <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "#34d399" }}>
+                                    📸 WYSIWYG
+                                  </span>
+                                )}
+                                {frag.origin === "aquacultured" && (
+                                  <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24" }}>
+                                    Aquacultured
+                                  </span>
+                                )}
+                                <span style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "10px", background: "rgba(255,255,255,0.04)", border: "1px solid var(--glass-border)", color: "var(--text-secondary)" }}>
+                                  {Number(item.quantityRemaining ?? item.quantity) || 0} available
+                                </span>
+                              </div>
+                            );
+                          })()}
+
+                          {!casualModeActive && item.isBatch && !isFragListing(item) && (
                             <div style={{
                               padding: "0.75rem",
                               background: "rgba(255,255,255,0.02)",
@@ -2210,7 +2255,7 @@ export function MarketplaceBoard({
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <div>
                                 <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", display: "block", textTransform: "uppercase" }}>
-                                  {item.isBatch ? "Price Per Fish" : "Exchange Price"}
+                                  {isFragListing(item) ? "Price Per Frag" : item.isBatch ? "Price Per Fish" : "Exchange Price"}
                                 </span>
                                 <strong style={{ fontSize: "1.2rem", color: "var(--accent-green)", fontFamily: "monospace" }}>
                                   ${parseFloat(item.priceUsd ?? item.price ?? 0).toFixed(2)}
@@ -2578,6 +2623,14 @@ export function MarketplaceBoard({
       <BatchListingWizard
         isOpen={isBatchWizardOpen}
         onClose={() => setIsBatchWizardOpen(false)}
+        walletAccount={walletAccount}
+        onSuccess={fetchListings}
+      />
+
+      {/* Coral frag listing (fragListing.js) */}
+      <FragListingModal
+        isOpen={isFragModalOpen}
+        onClose={() => setIsFragModalOpen(false)}
         walletAccount={walletAccount}
         onSuccess={fetchListings}
       />

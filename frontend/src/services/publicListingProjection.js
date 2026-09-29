@@ -49,8 +49,9 @@
  * anonymous readers. Derived from what the public pages actually render:
  * `marketplace.html`, `species.html`, and `store.html`.
  *
- * KEEP IN SYNC with the `jsonb_build_object(...)` allowlist in
- * `supabase/migrations/20260728_aquadex_listings_public_view.sql`.
+ * KEEP IN SYNC with the `jsonb_build_object(...)` allowlist in the CURRENT view
+ * migration (the last file in supabase/migration-order.json that defines
+ * `aquadex_listings_public`; 20261001_public_view_frag.sql as of the frag build).
  * `publicListingProjection.test.js` parses that migration and fails if the two
  * ever drift, so the SQL view and this module cannot disagree about what is
  * public.
@@ -90,7 +91,47 @@ export const PUBLIC_LISTING_DATA_FIELDS = Object.freeze([
   "maxPh",
   // Card imagery
   "photoUrl",
+  // Coral frags (fragListing.js). `frag` is a NESTED object, projected down to
+  // PUBLIC_FRAG_DATA_FIELDS — never passed through whole.
+  "listingKind",
+  "frag",
 ]);
+
+/**
+ * The `frag` subkeys that may be exposed, in view order. The view also type- and
+ * enum-checks each value (sellers write their own blob, so the view is the
+ * enforcement point) and only publishes an https mother-colony photo.
+ * `grownUnder` is seller free text and stays withheld, like `description`.
+ */
+export const PUBLIC_FRAG_DATA_FIELDS = Object.freeze([
+  "sizeValue",
+  "sizeUnit",
+  "mount",
+  "wysiwyg",
+  "origin",
+  "motherPhotoUrl",
+]);
+
+const FRAG_ENUMS = Object.freeze({
+  sizeUnit: ["polyps", "heads", "cm", "in"],
+  mount: ["plug", "disc", "rock", "none"],
+  origin: ["aquacultured", "maricultured", "wild"],
+});
+
+/** JS mirror of the view's nested `frag` projection. Null subkeys are dropped. */
+function toPublicFragData(frag) {
+  const out = {};
+  for (const key of PUBLIC_FRAG_DATA_FIELDS) {
+    const v = frag[key];
+    if (v == null) continue;
+    if (key === "sizeValue" && !(typeof v === "number" && Number.isFinite(v))) continue;
+    if (key === "wysiwyg" && typeof v !== "boolean") continue;
+    if (FRAG_ENUMS[key] && !FRAG_ENUMS[key].includes(v)) continue;
+    if (key === "motherPhotoUrl" && !(typeof v === "string" && v.length <= 2048 && /^https:\/\/\S+$/i.test(v))) continue;
+    out[key] = v;
+  }
+  return out;
+}
 
 /**
  * Fields present in the stored blob that are deliberately NOT public. Listed
@@ -153,9 +194,13 @@ export function toPublicListing(listing) {
   const out = {};
   if (!listing || typeof listing !== "object") return out;
   for (const key of PUBLIC_LISTING_DATA_FIELDS) {
-    if (Object.prototype.hasOwnProperty.call(listing, key)) {
-      out[key] = listing[key];
+    if (!Object.prototype.hasOwnProperty.call(listing, key)) continue;
+    if (key === "frag") {
+      const frag = listing.frag;
+      if (frag && typeof frag === "object" && !Array.isArray(frag)) out.frag = toPublicFragData(frag);
+      continue;
     }
+    out[key] = listing[key];
   }
   return out;
 }

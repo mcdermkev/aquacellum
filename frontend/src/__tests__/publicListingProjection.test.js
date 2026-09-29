@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 import {
   PUBLIC_LISTING_DATA_FIELDS,
+  PUBLIC_FRAG_DATA_FIELDS,
   WITHHELD_LISTING_DATA_FIELDS,
   toPublicListing,
   toPublicListings,
@@ -55,20 +56,42 @@ const MIGRATION_CODE = MIGRATION_SQL.replace(/^\s*--.*$/gm, "").replace(
  */
 function sqlAllowlist(sql) {
   const body = sql.slice(sql.indexOf("jsonb_build_object("));
-  // Two legal source forms:
+  // Three legal source forms:
   //   'key', l.data_obj -> 'key'          (from the listing blob)
   //   'key', to_jsonb(l.some_column)       (from a real base-table column)
+  //   'key', case when jsonb_typeof(l.data_obj -> 'key') = 'object' then …
+  //                                        (a nested object rebuilt from its own
+  //                                         allowlist — see sqlNestedAllowlist)
   const re =
-    /'([A-Za-z_][A-Za-z0-9_]*)',\s*(?:l\.data_obj\s*->\s*'([A-Za-z_][A-Za-z0-9_]*)'|to_jsonb\(\s*l\.([a-z_][a-z0-9_]*)\s*\))/g;
+    /'([A-Za-z_][A-Za-z0-9_]*)',\s*(?:l\.data_obj\s*->\s*'([A-Za-z_][A-Za-z0-9_]*)'|to_jsonb\(\s*l\.([a-z_][a-z0-9_]*)\s*\)|case\s+when\s+jsonb_typeof\(\s*l\.data_obj\s*->\s*'([A-Za-z_][A-Za-z0-9_]*)'\s*\)\s*=\s*'object')/g;
   const keys = [];
   let m;
   while ((m = re.exec(body)) !== null) {
-    const [, key, fromBlob, fromColumn] = m;
+    const [, key, fromBlob, fromColumn, fromNested] = m;
     // The emitted key must name the same field as its source; a mismatch would
     // silently rename data under the public consumers. Columns are snake_case,
     // so they must be exactly the camelCase of the emitted key.
-    const source = fromBlob ?? fromColumn.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase());
+    const source = fromBlob ?? fromNested ?? fromColumn.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase());
     expect(source).toBe(key);
+    keys.push(key);
+  }
+  return keys;
+}
+
+/**
+ * Keys of a nested object's allowlist (`'sub', case when … '{parent,sub}' … end`).
+ * Every `{parent,x}` path on a subkey's line must name that same subkey, so a
+ * value can't be wired to the wrong output key.
+ */
+function sqlNestedAllowlist(sql, parent) {
+  const keys = [];
+  const re = new RegExp(`^\\s*'([A-Za-z_][A-Za-z0-9_]*)',\\s*case\\s+when\\b.*\\{${parent},.*$`, "gm");
+  let m;
+  while ((m = re.exec(sql)) !== null) {
+    const [line, key] = m;
+    const paths = [...line.matchAll(new RegExp(`\\{${parent},([A-Za-z_][A-Za-z0-9_]*)\\}`, "g"))].map((p) => p[1]);
+    expect(paths.length).toBeGreaterThan(0);
+    for (const p of paths) expect(p, line.trim()).toBe(key);
     keys.push(key);
   }
   return keys;
@@ -79,6 +102,16 @@ function rawListing() {
   const l = {};
   for (const k of PUBLIC_LISTING_DATA_FIELDS) l[k] = `pub:${k}`;
   for (const k of WITHHELD_LISTING_DATA_FIELDS) l[k] = `SECRET:${k}`;
+  l.frag = {
+    sizeValue: 3,
+    sizeUnit: "polyps",
+    mount: "plug",
+    wysiwyg: true,
+    origin: "aquacultured",
+    motherPhotoUrl: "https://cdn.example/mother.jpg",
+    grownUnder: "SECRET:grownUnder",
+    someFutureFragField: "SECRET:future",
+  };
   l.someFutureFieldNobodyReviewed = "SECRET:future";
   return l;
 }
@@ -140,6 +173,31 @@ describe("toPublicListing — strict allowlist (fail-closed)", () => {
     expect(out).toEqual({ commonName: "Neon Tetra" });
   });
 
+  it("projects a frag down to its public subkeys only", () => {
+    const out = toPublicListing(rawListing());
+    expect(Object.keys(out.frag)).toEqual([...PUBLIC_FRAG_DATA_FIELDS]);
+    expect(out.frag).not.toHaveProperty("grownUnder");
+    expect(out.frag).not.toHaveProperty("someFutureFragField");
+  });
+
+  it("drops invalid frag values the same way the view does", () => {
+    const out = toPublicListing({
+      listingKind: "coral_frag",
+      frag: {
+        sizeValue: "3",
+        sizeUnit: "handfuls",
+        mount: "plug",
+        wysiwyg: "yes",
+        origin: "wild",
+        motherPhotoUrl: "http://insecure.example/m.jpg",
+      },
+    });
+    expect(out).toEqual({ listingKind: "coral_frag", frag: { mount: "plug", origin: "wild" } });
+    expect(toPublicListing({ frag: { motherPhotoUrl: "data:image/jpeg;base64,AAAA" } }).frag).toEqual({});
+    expect(toPublicListing({ frag: "not an object" })).toEqual({});
+    expect(toPublicListing({ frag: [1, 2] })).toEqual({});
+  });
+
   it("keeps seller identity public on purpose (already public on-chain)", () => {
     // Documented deviation from the original T14 sketch: the wallet is readable
     // from AquadexMarketplace.listings(tokenId) by any RPC caller, and public
@@ -149,9 +207,9 @@ describe("toPublicListing — strict allowlist (fail-closed)", () => {
 });
 
 describe("current view definition", () => {
-  it("resolves to the booth stock migration, not the superseded original", () => {
+  it("resolves to the coral frag migration, not a superseded definition", () => {
     expect(MIGRATION_FILE).toBe(
-      "frontend/supabase/migrations/20260918_public_view_quantity_remaining.sql"
+      "frontend/supabase/migrations/20261001_public_view_frag.sql"
     );
   });
 
@@ -185,6 +243,18 @@ describe("current view definition", () => {
 describe("SQL view allowlist matches the JS allowlist", () => {
   it("projects the same field set, in the same order", () => {
     expect(sqlAllowlist(MIGRATION_SQL)).toEqual([...PUBLIC_LISTING_DATA_FIELDS]);
+  });
+
+  it("rebuilds the nested frag object from the same subkey allowlist, in order", () => {
+    expect(sqlNestedAllowlist(MIGRATION_SQL, "frag")).toEqual([...PUBLIC_FRAG_DATA_FIELDS]);
+    // Seller free text on the frag stays behind sign-in, like `description`.
+    expect(MIGRATION_CODE).not.toContain("grownUnder");
+    // The nested object is never passed through whole.
+    expect(MIGRATION_CODE).not.toMatch(/'frag',\s*l\.data_obj\s*->\s*'frag'/);
+  });
+
+  it("only publishes an https mother-colony photo", () => {
+    expect(MIGRATION_CODE).toMatch(/motherPhotoUrl[^\n]*~\*\s*'\^https:\/\//);
   });
 
   it("does not project any withheld field", () => {

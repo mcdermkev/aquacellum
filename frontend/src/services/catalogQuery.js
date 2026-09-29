@@ -337,7 +337,7 @@ function computeFacets(items, familyLookup) {
  * @param {number} [query.priceMinCents]
  * @param {number} [query.priceMaxCents]
  * @param {string} [query.fulfillment] - one of FULFILLMENT_TYPES
- * @param {('batch'|'single')} [query.listingType]
+ * @param {('batch'|'single'|'frag')} [query.listingType]
  * @param {string} [query.sort] - one of SORT_OPTIONS
  * @param {{volume:number, temp:number, ph:number}} [query.displayTank] - required for COMPATIBILITY sort
  * @param {Object} [query.speciesLookup] - { [scientificNameLower]: { minVolumeGallons } }, for COMPATIBILITY sort
@@ -349,8 +349,12 @@ export function applyCatalogQuery(listings = [], query = {}) {
   let filtered = listings.filter((item) => {
     if (!query.includeInactive && !isListingActive(item)) return false;
 
-    if (query.listingType === "batch" && !item.isBatch) return false;
+    // Coral frags are quantity listings (`isBatch`) but not fry: "batch" is the
+    // fry collection, "frag" is corals.
+    const isFrag = item.listingKind === "coral_frag";
+    if (query.listingType === "batch" && (!item.isBatch || isFrag)) return false;
     if (query.listingType === "single" && item.isBatch) return false;
+    if (query.listingType === "frag" && !isFrag) return false;
 
     if (query.speciesId != null && Number(item.speciesId) !== Number(query.speciesId)) return false;
 

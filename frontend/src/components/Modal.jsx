@@ -113,8 +113,10 @@ export function Modal({
     <div
       className="specimen-detail-modal-backdrop modal-backdrop-animate"
       onClick={onClose}
-      aria-hidden="true"
     >
+      {/* The backdrop must NOT be aria-hidden: it wraps the dialog, and
+          aria-hidden on an ancestor hides the whole dialog from assistive tech.
+          Keyboard users close with Escape; the click target is a convenience. */}
       <div
         ref={modalRef}
         role="dialog"

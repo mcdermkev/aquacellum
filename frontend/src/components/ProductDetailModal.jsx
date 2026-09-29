@@ -21,6 +21,7 @@ import { FishSilhouetteSVG, PlantSilhouetteSVG } from "./SilhouetteSVG";
 import { assembleProductDetailView } from "../services/productDetailView";
 import { normalizeSpeciesProfile } from "../services/shippingSafety";
 import { deriveDefaultPackingProfile, normalizeParcelPreset, canAddToParcel } from "../services/packingEngine";
+import { FRAG_MOUNT_LABELS, FRAG_ORIGIN_LABELS, cleanHttpsUrl, fragSizeLabel, isFragListing } from "../services/fragListing";
 
 const isPlantEntry = (specCodeOrItem) => {
   if (typeof specCodeOrItem === "object" && specCodeOrItem !== null) {
@@ -59,7 +60,11 @@ export function ProductDetailModal({
       minPh: listing.minPh,
       maxPh: listing.maxPh,
     });
-    const profile = deriveDefaultPackingProfile(speciesProfile, 1);
+    // A frag carries its own per-unit profile (one small bag); the fish default
+    // would overstate it several times over.
+    const profile = isFragListing(listing) && listing.packingProfile
+      ? listing.packingProfile
+      : deriveDefaultPackingProfile(speciesProfile, 1);
     const preset = normalizeParcelPreset({});
     const fit = canAddToParcel(preset, [], profile);
     return { fitsStandardBox: !fit.addedBox };
@@ -84,6 +89,10 @@ export function ProductDetailModal({
   }
 
   const view = assembleProductDetailView(listing, speciesRecord, { displayTank });
+  const isCoral = !!view.frag || speciesRecord?.type === "coral";
+  const headerIcon = isPlant ? "🌿" : isCoral ? "🪸" : "🐟";
+  const fragSize = view.frag ? fragSizeLabel(view.frag) : "";
+  const fragPhoto = view.frag ? cleanHttpsUrl(listing.photoUrl) : null;
   const isOwner = walletAccount && listing.seller && listing.seller.toLowerCase() === walletAccount.toLowerCase();
 
   const compatColor =
@@ -111,7 +120,7 @@ export function ProductDetailModal({
           padding: "1.25rem 1.5rem", borderBottom: "1px solid var(--glass-border)"
         }}>
           <h3 style={{ fontSize: "1.15rem", color: "#fff", margin: 0, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span>{isPlant ? "🌿" : "🐟"}</span> {view.identity.commonName}
+            <span aria-hidden="true">{headerIcon}</span> {view.identity.commonName}
           </h3>
           <button
             onClick={onClose}
@@ -129,7 +138,13 @@ export function ProductDetailModal({
             background: "linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)",
             border: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            {isPlant ? (
+            {fragPhoto ? (
+              <img
+                src={fragPhoto}
+                alt={`${view.identity.commonName}${view.frag?.wysiwyg ? " (this exact frag)" : ""}`}
+                style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "0.75rem" }}
+              />
+            ) : isPlant ? (
               <PlantSilhouetteSVG specCode={listing.speciesId || 9001} style={{ width: "110px", height: "110px" }} />
             ) : (
               <FishSilhouetteSVG specimenId={view.listingId} style={{ width: "130px", height: "130px" }} />
@@ -144,9 +159,79 @@ export function ProductDetailModal({
               </span>
             )}
             <strong style={{ fontSize: "1.4rem", color: "var(--accent-green)", fontFamily: "monospace" }}>
-              {view.price.display}{view.price.isPerFish ? " / fish" : ""}
+              {view.price.display}{view.price.unit ? ` / ${view.price.unit}` : ""}
             </strong>
           </div>
+
+          {/* Coral frag facts (fragListing.js) */}
+          {view.frag && (
+            <div className="glass-card" style={{ padding: "1rem", border: "1px solid rgba(244,114,182,0.3)" }}>
+              <h4 style={{ fontSize: "0.85rem", color: "#f9a8d4", margin: "0 0 0.6rem 0" }}>
+                <span aria-hidden="true">🪸</span> Frag Details
+              </h4>
+              <dl style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", fontSize: "0.78rem", margin: 0 }}>
+                <div>
+                  <dt style={{ color: "var(--text-muted)" }}>Size</dt>
+                  <dd style={{ color: "#fff", fontWeight: 600, margin: 0 }}>{fragSize || "Not stated"}</dd>
+                </div>
+                <div>
+                  <dt style={{ color: "var(--text-muted)" }}>Mounted on</dt>
+                  <dd style={{ color: "#fff", fontWeight: 600, margin: 0 }}>{FRAG_MOUNT_LABELS[view.frag.mount] || "Not stated"}</dd>
+                </div>
+                <div>
+                  <dt style={{ color: "var(--text-muted)" }}>Origin</dt>
+                  <dd style={{ color: "#fff", fontWeight: 600, margin: 0 }}>{FRAG_ORIGIN_LABELS[view.frag.origin] || "Not stated"}</dd>
+                </div>
+                <div>
+                  <dt style={{ color: "var(--text-muted)" }}>Photo</dt>
+                  <dd style={{ color: "#fff", fontWeight: 600, margin: 0 }}>
+                    {view.frag.wysiwyg ? "WYSIWYG: this exact frag" : "Representative of the colony"}
+                  </dd>
+                </div>
+                {view.frag.grownUnder && (
+                  <div style={{ gridColumn: "1 / -1" }}>
+                    <dt style={{ color: "var(--text-muted)" }}>Grown under</dt>
+                    <dd style={{ color: "#fff", margin: 0 }}>{view.frag.grownUnder}</dd>
+                  </div>
+                )}
+              </dl>
+              {view.frag.motherPhotoUrl && (
+                <figure style={{ margin: "0.75rem 0 0" }}>
+                  <img
+                    src={view.frag.motherPhotoUrl}
+                    alt={`Mother colony of ${view.identity.commonName}`}
+                    loading="lazy"
+                    style={{ width: "100%", maxHeight: "12rem", objectFit: "cover", borderRadius: "0.5rem" }}
+                  />
+                  <figcaption style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.3rem" }}>
+                    Mother colony
+                  </figcaption>
+                </figure>
+              )}
+            </div>
+          )}
+
+          {/* Species-level reef care from the catalog */}
+          {view.coralCare && (
+            <div className="glass-card" style={{ padding: "1rem" }}>
+              <h4 style={{ fontSize: "0.85rem", color: "var(--accent-blue)", margin: "0 0 0.6rem 0" }}>💡 Reef Care</h4>
+              <dl style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", fontSize: "0.78rem", margin: 0 }}>
+                {[
+                  ["Type", view.coralCare.coralType],
+                  ["Light", view.coralCare.light],
+                  ["Flow", view.coralCare.flow],
+                  ["Placement", view.coralCare.placement],
+                  ["Aggression", view.coralCare.aggression],
+                  ["Feeding", view.coralCare.feeding],
+                ].filter(([, v]) => v).map(([label, value]) => (
+                  <div key={label}>
+                    <dt style={{ color: "var(--text-muted)" }}>{label}</dt>
+                    <dd style={{ color: "#fff", fontWeight: 600, margin: 0, textTransform: label === "Type" ? "none" : "capitalize" }}>{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
 
           {/* Compatibility explanation */}
           <div className="glass-card" style={{ padding: "1rem", border: `1px solid ${compatColor}55` }}>

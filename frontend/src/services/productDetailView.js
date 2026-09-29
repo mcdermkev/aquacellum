@@ -30,6 +30,7 @@ import { buildCompatibilityExplanation } from "./compatibilityExplanation.js";
 import { evaluateDeliveryEligibility } from "./deliveryEligibility.js";
 import { normalizePriceCents, formatPriceCents, getFulfillmentTypes, FULFILLMENT_TYPES } from "./catalogQuery.js";
 import { DEFAULT_CLAIM_WINDOW_MS } from "./doaClaims.js";
+import { fragFromListing, listingUnitLabel, coralCareFromSpecies } from "./fragListing.js";
 
 const MS_PER_HOUR = 60 * 60 * 1000;
 
@@ -68,6 +69,7 @@ export function assembleProductDetailView(listing = {}, speciesRecord, ctx = {})
   const compatibility = buildCompatibilityExplanation(speciesProfile, ctx.displayTank || null);
 
   const priceCents = normalizePriceCents(listing);
+  const frag = fragFromListing(listing);
 
   return {
     listingId: listing.isBatch ? listing.listingId : listing.tokenId,
@@ -80,8 +82,14 @@ export function assembleProductDetailView(listing = {}, speciesRecord, ctx = {})
     price: {
       cents: priceCents,
       display: formatPriceCents(priceCents),
-      isPerFish: !!listing.isBatch,
+      isPerFish: !!listing.isBatch && !frag,
+      // What one unit is called on the price line: "fish", "frag", or "" for a single.
+      unit: listingUnitLabel(listing),
     },
+    // Coral frags (fragListing.js): the cleaned frag facts plus species-level reef
+    // care from the catalog record. Both null for fish.
+    frag,
+    coralCare: frag || speciesRecord?.type === "coral" ? coralCareFromSpecies(speciesRecord) : null,
     careRequirements,
     compatibility,
     sellerPolicies: buildSellerPolicies(listing, ctx.sellerPolicy),

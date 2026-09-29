@@ -18,17 +18,18 @@
 
 import {
   deriveDefaultPackingProfile,
+  scalePackingProfile,
   computeUsage,
   boxesRequired,
   remainingCapacity,
 } from "./packingEngine.js";
 
 /**
- * Resolve a cart item to its packing profile: use the explicit one, else derive
- * from the species profile + quantity.
+ * Resolve a cart item to its packing profile: use the explicit one (scaled when
+ * it is a per-unit profile), else derive from the species profile + quantity.
  */
 function resolveProfile(item) {
-  if (item.packingProfile) return item.packingProfile;
+  if (item.packingProfile) return scalePackingProfile(item.packingProfile, item.quantity || 1);
   return deriveDefaultPackingProfile(item.speciesProfile || {}, item.quantity || 1);
 }
 

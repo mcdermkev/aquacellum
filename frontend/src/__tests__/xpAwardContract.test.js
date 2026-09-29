@@ -39,6 +39,7 @@ const AWARD_SITES = [
   "components/BatchGrowOutPanel.jsx",
   "components/BatchListingWizard.jsx",
   "components/CheckoutSummary.jsx",
+  "components/FragListingModal.jsx",
   "components/FacilityTreeView.jsx",
   "components/HandshakeVerification.jsx",
   "components/ListSpecimenModal.jsx",

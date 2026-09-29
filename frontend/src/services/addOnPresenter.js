@@ -15,7 +15,7 @@
  * orderCopy.js's PROHIBITED_TERMS invariant).
  */
 
-import { deriveDefaultPackingProfile } from "./packingEngine.js";
+import { deriveDefaultPackingProfile, scalePackingProfile } from "./packingEngine.js";
 import { planParcels } from "./parcelPlanner.js";
 import { normalizeSpeciesProfile } from "./shippingSafety.js";
 import { getListingKey, normalizePriceCents, isListingActive, formatPriceCents } from "./catalogQuery.js";
@@ -90,7 +90,7 @@ function clamp01(n) {
  * @returns {Object} a packing profile (packingEngine shape)
  */
 export function resolveCartItemProfile(cartItem = {}) {
-  if (cartItem.packingProfile) return cartItem.packingProfile;
+  if (cartItem.packingProfile) return scalePackingProfile(cartItem.packingProfile, cartItem.quantity || 1);
   return deriveDefaultPackingProfile(cartItem.speciesProfile || {}, cartItem.quantity || 1);
 }
 

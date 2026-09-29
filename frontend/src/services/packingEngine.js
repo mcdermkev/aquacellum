@@ -87,6 +87,28 @@ export function deriveDefaultPackingProfile(normalizedSpecies = {}, quantity = 1
   };
 }
 
+/**
+ * Resolve a stored listing profile for a cart quantity. Most stored profiles
+ * already describe the whole listing (a single specimen), so they pass through.
+ * A profile marked `perUnit` (coral frags, fragListing.js) describes ONE unit and
+ * is scaled by the quantity bought.
+ *
+ * @param {Object} profile
+ * @param {number} [quantity=1]
+ */
+export function scalePackingProfile(profile, quantity = 1) {
+  if (!profile || !profile.perUnit) return profile;
+  const qty = Math.max(1, Math.round(Number(quantity) || 1));
+  const perBag = Math.max(1, Math.round(num(profile.maxPerBag) || 1));
+  return {
+    ...profile,
+    bagCount: Math.ceil(qty / perBag) * Math.max(1, Math.round(num(profile.bagCount) || 1)),
+    packedWeightOz: round1(num(profile.packedWeightOz) * qty),
+    volumeIn3: round1(num(profile.volumeIn3) * qty),
+    livestock: Math.max(0, Math.round(num(profile.livestock) || 1)) * qty,
+  };
+}
+
 // ─── Usage + capacity ────────────────────────────────────────────────────────
 
 /**

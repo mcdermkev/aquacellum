@@ -155,6 +155,7 @@
     "frontend/supabase/migrations/20260930_club_desk_serialize.sql",
     "frontend/supabase/migrations/20260930_club_desk_refunds.sql",
     "frontend/supabase/migrations/20260930_club_auction_fees.sql",
-    "frontend/supabase/migrations/20260930_service_pros.sql"
+    "frontend/supabase/migrations/20260930_service_pros.sql",
+    "frontend/supabase/migrations/20261001_public_view_frag.sql"
   ]
 }
