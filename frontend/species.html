@@ -164,7 +164,13 @@
     .compat-chip.caution { border-color: rgba(251,191,36,0.25); background: rgba(251,191,36,0.05); }
     .compat-chip.avoid { border-color: rgba(251,113,133,0.25); background: rgba(251,113,133,0.05); }
 
-    /* FishBase link */
+    /* Record source: FishBase, WoRMS, or curated (see recordSource()) */
+    .source-note {
+      margin-top: 24px; max-width: 70ch;
+      font-size: 0.82rem; line-height: 1.5; color: var(--text-secondary);
+    }
+    .source-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+    .source-actions .source-link { margin-top: 0; }
     .source-link {
       display: inline-flex; align-items: center; gap: 6px;
       margin-top: 16px; padding: 8px 16px; border-radius: 8px;
@@ -488,6 +494,44 @@
       return 'badge-unknown';
     }
 
+    // Hand-assigned catalog IDs (scripts/add-plants-inverts.js). They are not
+    // FishBase SpecCodes, and real SpecCodes also run past 70000, so the number
+    // alone never decides; type and family do most of the work.
+    const PLANT_ID_BAND = [90001, 90999];
+    const INVERT_ID_BAND = [80001, 80999];
+
+    // Where a record comes from, and how to label and link it.
+    //  - Corals and marine inverts (200001+) are WoRMS records (marine.aphiaId).
+    //  - Plants and freshwater inverts are curated profiles; FishBase has no page.
+    //  - Fish link to FishBase by scientific name. The catalog number is shown as
+    //    a "Catalog ID" because not every catalog number is a FishBase SpecCode.
+    function recordSource(sp) {
+      const id = Number(sp.specCode) || null;
+      const aphiaId = Number(sp.marine?.aphiaId);
+      if (Number.isInteger(aphiaId) && aphiaId > 0) {
+        return {
+          kind: 'worms',
+          idLabel: 'WoRMS AphiaID',
+          id: aphiaId,
+          url: `https://www.marinespecies.org/aphia.php?p=taxdetails&id=${aphiaId}`,
+          linkText: `View on WoRMS (AphiaID ${aphiaId})`,
+          note: 'Taxonomy from WoRMS, the World Register of Marine Species. Care values are curated reef-keeping guidance, not FishBase data.',
+        };
+      }
+      const type = String(sp.type || '').toLowerCase();
+      const family = String(sp.family || '');
+      const inBand = ([lo, hi]) => id !== null && id >= lo && id <= hi;
+      const notFish = type === 'plant' || type === 'invertebrate' || type === 'coral'
+        || /\((Plant|Invertebrate|Coral)\)$/.test(family)
+        || inBand(PLANT_ID_BAND) || inBand(INVERT_ID_BAND);
+      if (notFish) {
+        return { kind: 'curated', idLabel: 'Catalog ID', id, url: null, linkText: '', note: 'Curated care profile. This is not a FishBase record, so there is no FishBase page for it.' };
+      }
+      const binomial = String(sp.scientificName || '').trim().split(/\s+/).slice(0, 2);
+      const url = binomial.length === 2 ? `https://www.fishbase.se/summary/${binomial.map(encodeURIComponent).join('-')}.html` : null;
+      return { kind: 'fishbase', idLabel: 'Catalog ID', id, url, linkText: 'View on FishBase', note: '' };
+    }
+
     // Utility: check for placeholder values
     function real(val) {
       return val && val !== 'Information arriving soon' && val !== 'Generic Biotope Details' ? val : null;
@@ -580,8 +624,10 @@
         ? `<img src="${sp.masterPhotoUrl}" alt="${sp.commonName || sp.scientificName}" loading="eager"><video class="hero-video" src="${videoPath}" muted loop playsinline preload="metadata"></video>`
         : `<div class="placeholder-icon">🐟</div>`;
 
-      // Vibe line
-      const vibe = sp.personality?.flavorText?.casual || sp.personality?.vibeLine?.casual || '';
+      // Vibe line: the short tagline in the hero; the longer flavor text goes in
+      // Personality & Keeper Notes below (it used to render in both places).
+      const vibe = sp.personality?.vibeLine?.casual || sp.personality?.flavorText?.casual || '';
+      const source = recordSource(sp);
 
       // Quick stats
       const quickStats = [];
@@ -606,12 +652,12 @@
             <span class="hero-difficulty-badge ${badgeClass}">${difficulty}</span>
           </div>
           <div class="hero-info">
-            <h1 class="hero-common-name">${sp.commonName || 'Unknown Species'}</h1>
-            <p class="hero-sci-name">${sp.scientificName}</p>
+            <h1 class="hero-common-name">${sp.commonName || sp.scientificName || 'Unknown Species'}</h1>
+            ${sp.commonName && sp.commonName !== sp.scientificName ? `<p class="hero-sci-name">${sp.scientificName}</p>` : ''}
             <div class="hero-taxonomy">
-              <span><strong>Family:</strong> ${sp.family || '—'}</span>
+              <span><strong>Family:</strong> ${String(sp.family || '').replace(/\s*\((Plant|Invertebrate|Coral)\)$/, '') || '—'}</span>
               <span><strong>Genus:</strong> ${sp.genus || '—'}</span>
-              <span><strong>SpecCode:</strong> ${sp.specCode || '—'}</span>
+              <span><strong>${source.idLabel}:</strong> ${source.id || '—'}</span>
             </div>
             ${vibe ? `<blockquote class="hero-vibe">${vibe}</blockquote>` : ''}
             <div class="hero-quick-stats">
@@ -739,11 +785,13 @@
       }
 
       // 5. Personality / Keeper Notes
-      const vibeLinePro = sp.personality?.vibeLine?.pro;
       const flavorPro = sp.personality?.flavorText?.pro;
-      const flavorCasual = sp.personality?.flavorText?.casual;
+      // Flavor text often opens with the hero tagline word for word; show only
+      // what it adds, and nothing when it is the tagline.
+      let flavorCasual = sp.personality?.flavorText?.casual || '';
+      if (vibe && flavorCasual.startsWith(vibe)) flavorCasual = flavorCasual.slice(vibe.length).trim();
 
-      if (vibeLinePro || flavorPro || flavorCasual) {
+      if (flavorPro || flavorCasual) {
         html += `
           <div class="section-card full-width">
             <h2 class="section-title"><span class="icon">💬</span> Personality & Keeper Notes</h2>
@@ -764,7 +812,9 @@
               ${compat.map(c => `<div class="compat-chip ${c.type}">${c.icon} ${c.label}</div>`).join('')}
             </div>
             <p class="section-text" style="margin-top:16px; font-size:0.78rem; color: var(--text-muted);">
-              Compatibility is inferred from social behavior, size, and temperament data. Always research specific pairings before stocking.
+              ${sp.marine?.aphiaId
+                ? 'Based on the curated reef-care values (reef safety, sting strength, difficulty).'
+                : 'Compatibility is inferred from social behavior, size, and temperament data.'} Always research specific pairings before stocking.
             </p>
           </div>`;
       }
@@ -1085,22 +1135,28 @@
         html += `</div>`; // close enhanced section-grid
       }
 
-      // FishBase source link
-      if (sp.specCode) {
+      // Where this record comes from: FishBase for fish, WoRMS for corals and
+      // marine inverts, and a curated profile for plants and the rest.
+      if (source.note) {
+        html += `<p class="source-note">${source.note}</p>`;
+      }
+      html += `<div class="source-actions">`;
+      if (source.url) {
         html += `
-          <a href="https://www.fishbase.se/summary/${sp.specCode}" target="_blank" rel="noopener noreferrer" class="source-link">
-            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            View on FishBase (SpecCode ${sp.specCode})
+          <a href="${source.url}" target="_blank" rel="noopener noreferrer" class="source-link">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            ${source.linkText}
           </a>`;
       }
 
       // Compare link
       const slug = toSlug(sp.scientificName);
       html += `
-        <a href="/compare.html?s1=${slug}" class="source-link" style="margin-left:12px;color:var(--cyan-300);background:rgba(34,211,238,0.08);border-color:rgba(34,211,238,0.2);">
-          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/></svg>
+        <a href="/compare.html?s1=${slug}" class="source-link" style="color:var(--cyan-300);background:rgba(34,211,238,0.08);border-color:rgba(34,211,238,0.2);">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/></svg>
           Compare with other species
-        </a>`;
+        </a>
+      </div>`;
 
       html += `</div>`; // close content-sections
 
@@ -1172,7 +1228,25 @@
       const chips = [];
       const social = (sp.ecology?.socialBehavior || '').toLowerCase();
       const difficulty = (sp.tankMetrics?.difficulty || '').toLowerCase();
-      const maxSize = sp.maxLengthCm || 0;
+      const maxSize = Number(sp.maxLengthCm) || 0;
+      const type = String(sp.type || '').toLowerCase();
+      const isFish = recordSource(sp).kind === 'fishbase' && (type === '' || type === 'fish');
+
+      // Corals and marine inverts: use their curated reef facts, not the fish
+      // size rules (a coral has no body length; a 35 cm clam eats no fish).
+      if (sp.marine?.aphiaId) {
+        const reefSafe = sp.marine.reefSafe;
+        if (reefSafe === 'yes') chips.push({ type: 'good', icon: '✓', label: 'Reef safe' });
+        if (reefSafe === 'with caution') chips.push({ type: 'caution', icon: '⚠️', label: 'Reef safe with caution' });
+        if (reefSafe === 'no') chips.push({ type: 'avoid', icon: '✗', label: 'Not reef safe' });
+        const aggression = sp.marine.aggression;
+        if (aggression === 'peaceful') chips.push({ type: 'good', icon: '✓', label: 'Peaceful toward neighbors' });
+        if (aggression === 'semi-aggressive') chips.push({ type: 'caution', icon: '⚠️', label: 'Can sting close neighbors' });
+        if (aggression === 'aggressive') chips.push({ type: 'avoid', icon: '✗', label: 'Strong sting, needs space' });
+        if (difficulty === 'beginner') chips.push({ type: 'good', icon: '🌱', label: 'Great for beginners' });
+        if (difficulty === 'advanced' || difficulty === 'expert') chips.push({ type: 'caution', icon: '🔬', label: 'Needs a stable, mature tank' });
+        return chips;
+      }
 
       // Temperament-based
       if (social.includes('peaceful') || social.includes('community')) {
@@ -1191,11 +1265,12 @@
         chips.push({ type: 'avoid', icon: '✗', label: 'Predatory' });
       }
 
-      // Size-based
-      if (maxSize <= 5) {
+      // Size-based (fish only, and only when the size is known)
+      const sizeKnown = isFish && maxSize > 0;
+      if (sizeKnown && maxSize <= 5) {
         chips.push({ type: 'good', icon: '🐠', label: 'Nano-friendly' });
         chips.push({ type: 'avoid', icon: '✗', label: 'Avoid large tankmates' });
-      } else if (maxSize >= 20) {
+      } else if (sizeKnown && maxSize >= 20) {
         chips.push({ type: 'caution', icon: '📏', label: 'Large — needs space' });
         chips.push({ type: 'avoid', icon: '✗', label: 'May eat small fish' });
       }

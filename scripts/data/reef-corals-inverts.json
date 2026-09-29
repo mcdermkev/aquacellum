@@ -1,7 +1,7 @@
 {
   "_source": "Taxonomy validated against WoRMS REST API on 2026-09-29; husbandry curated from widely published reef-keeping guidance; not FishBase",
   "_reviewedBy": "pending",
-  "_notes": "IDs are not stored here; scripts/add-reef-batch.mjs assigns them from 200001 in list order. aphiaId and family are the WoRMS accepted record. careDefaults apply to every entry unless the entry overrides tempRangeCelsius or phRange. maxLengthCm is null for corals, where colony or disc size is not a body length. soldAs lists older trade names that the add script also checks against the catalog.",
+  "_notes": "IDs are not stored here; scripts/add-reef-batch.mjs assigns them from 200001 in list order. aphiaId and family are the WoRMS accepted record. careDefaults apply to every entry unless the entry overrides tempRangeCelsius or phRange. maxLengthCm is null for corals, where colony or disc size is not a body length. soldAs lists older trade names that the add script also checks against the catalog. Corals default to marine.reefSafe \"yes\"; an entry may set reefSafe (e.g. anemones, which wander and sting corals). commonName is the name hobbyists use; when there is no settled trade name the binomial is used. 2026-09-29 audit: common names, family labels and care values re-checked; all 37 AphiaIDs re-verified as accepted WoRMS records with matching families.",
   "careDefaults": {
     "tempRangeCelsius": [24, 27],
     "phRange": [8.0, 8.4]
@@ -9,7 +9,7 @@
   "corals": [
     {
       "scientificName": "Acropora millepora",
-      "commonName": "Millepora acropora",
+      "commonName": "Acropora millepora",
       "aphiaId": 207023,
       "family": "Acroporidae",
       "maxLengthCm": null,
@@ -65,7 +65,7 @@
       "family": "Pocilloporidae",
       "maxLengthCm": null,
       "minVolumeGallons": 30,
-      "difficulty": "Advanced",
+      "difficulty": "Intermediate",
       "coralType": "SPS",
       "light": "high",
       "flow": "high",
@@ -199,7 +199,7 @@
     },
     {
       "scientificName": "Micromussa lordhowensis",
-      "commonName": "Acan (Acan lord)",
+      "commonName": "Acan lord",
       "aphiaId": 886929,
       "family": "Lobophylliidae",
       "maxLengthCm": null,
@@ -445,6 +445,7 @@
       "placement": "any",
       "aggression": "aggressive",
       "feeding": "photosynthetic + target feed",
+      "reefSafe": "with caution",
       "note": "The classic clownfish host anemone, with bulb-tipped tentacles.",
       "comments": "Add only to a mature, stable tank. Anemones wander until they find a spot they like and can sting corals along the way; cover pump and overflow intakes. Needs strong light plus occasional feeding of meaty foods."
     }
@@ -531,7 +532,7 @@
       "reefSafe": "yes",
       "role": "cleanup crew",
       "soldAs": ["Astraea tecta"],
-      "notes": "Grazes film and hair algae. Often cannot right itself if it falls onto its back; turn it over if you see it. Sold as Astraea tecta, a name WoRMS does not return as a marine record; Lithopoma tectum is the accepted name.",
+      "notes": "Grazes film and hair algae. Often cannot right itself if it falls onto its back; turn it over if you see it. Sold as Astraea tecta, a name with no WoRMS record; Lithopoma tectum is the accepted name.",
       "note": "A pyramid-shaped grazer that works rock and glass all day.",
       "comments": "Hardy algae-grazing turban snail, a staple of reef cleanup crews. Keep a few per tank and add more only if algae outpaces them."
     },

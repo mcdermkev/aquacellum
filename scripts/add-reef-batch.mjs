@@ -18,6 +18,10 @@
  *     100000–199999), and none may already exist in the catalog.
  *
  * Usage: node scripts/add-reef-batch.mjs [--write]
+ *        node scripts/add-reef-batch.mjs --rebuild [--write]
+ *   --rebuild regenerates the already-added records in place from the data file
+ *   (same IDs, same names; photos kept) after a correction to the data.
+ * Then run: node scripts/build-species-index.mjs
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -28,6 +32,7 @@ const PUBLIC_PATH = resolve(ROOT, 'frontend/public/fishbase_master.json');
 const ROOT_PATH = resolve(ROOT, 'frontend/fishbase_master.json');
 const DATA_PATH = resolve(import.meta.dirname, 'data/reef-corals-inverts.json');
 const WRITE = process.argv.includes('--write');
+const REBUILD = process.argv.includes('--rebuild');
 
 const ID_BAND_START = 200001;
 const RESERVED_BAND = [100000, 199999]; // Supabase species_profiles local sequence
@@ -45,8 +50,9 @@ const INVERT_ENUMS = {
   reefSafe: ['yes', 'with caution', 'no'],
   role: ['cleanup crew', 'cleaner', 'display', 'filter feeder'],
 };
-// Matches the existing catalog convention, e.g. "Physidae (Invertebrate)".
-const FAMILY_SUFFIX = { coral: 'Coral', invertebrate: 'Invertebrate' };
+// `family` is the clean WoRMS family name; `type` (coral | invertebrate) carries
+// the kind. (The first run appended " (Coral)" / " (Invertebrate)", which then
+// showed up as the family on the species page.)
 
 const CORAL_TYPE_LABEL = {
   SPS: 'Small-polyp stony coral (SPS)', LPS: 'Large-polyp stony coral (LPS)', soft: 'Soft coral',
@@ -82,6 +88,10 @@ function validateEntry(entry, kind, defaults, problems) {
   for (const [key, allowed] of Object.entries(enums)) {
     if (!allowed.includes(entry[key])) bad(`${key} "${entry[key]}" not in ${allowed.join('|')}`);
   }
+  // Corals default to reef safe; an entry may override (anemones wander and sting).
+  if (kind === 'coral' && entry.reefSafe !== undefined && !INVERT_ENUMS.reefSafe.includes(entry.reefSafe)) {
+    bad(`reefSafe "${entry.reefSafe}" not in ${INVERT_ENUMS.reefSafe.join('|')}`);
+  }
   if (kind === 'invertebrate' && !isNonEmptyString(entry.notes)) bad('missing notes');
 }
 
@@ -99,14 +109,16 @@ function buildRecord(entry, kind, specCode, defaults) {
   let flavorCasual;
   let flavorPro;
   if (kind === 'coral') {
+    const reefSafe = entry.reefSafe ?? 'yes';
+    const reefCaveat = reefSafe === 'yes' ? '' : ` ${REEF_LINE[reefSafe]}`;
     marine = {
-      reefSafe: 'yes', requiresReef: true, aphiaId: entry.aphiaId,
+      reefSafe, requiresReef: true, aphiaId: entry.aphiaId,
       coralType: entry.coralType, light: entry.light, flow: entry.flow, placement: entry.placement,
       aggression: entry.aggression, feeding: entry.feeding,
     };
     vibePro = `${entry.scientificName}; ${entry.family}. ${CORAL_TYPE_LABEL[entry.coralType]}: ${entry.light} light, ${entry.flow} flow, ${entry.placement} placement.`;
-    flavorCasual = `${entry.note} Give it ${entry.light} light and ${entry.flow} flow, placed ${PLACEMENT_PHRASE[entry.placement]}. ${AGGRESSION_LINE[entry.aggression]}`;
-    flavorPro = `${entry.scientificName} (${entry.family}, WoRMS AphiaID ${entry.aphiaId}).${taxonomy} ${CORAL_TYPE_LABEL[entry.coralType]}; ${entry.light} light, ${entry.flow} flow, ${entry.placement} placement, ${entry.aggression}, ${entry.feeding}. Husbandry: ${careLine}. ${provenance}`;
+    flavorCasual = `${entry.note} Give it ${entry.light} light and ${entry.flow} flow, placed ${PLACEMENT_PHRASE[entry.placement]}. ${AGGRESSION_LINE[entry.aggression]}${reefCaveat}`;
+    flavorPro = `${entry.scientificName} (${entry.family}, WoRMS AphiaID ${entry.aphiaId}).${taxonomy} ${CORAL_TYPE_LABEL[entry.coralType]}; ${entry.light} light, ${entry.flow} flow, ${entry.placement} placement, ${entry.aggression}, ${entry.feeding}.${reefCaveat} Husbandry: ${careLine}. ${provenance}`;
   } else {
     marine = { reefSafe: entry.reefSafe, requiresReef: false, aphiaId: entry.aphiaId, role: entry.role, notes: entry.notes };
     vibePro = `${entry.scientificName}; marine ${entry.family}. ${entry.role[0].toUpperCase()}${entry.role.slice(1)}. ${REEF_LINE[entry.reefSafe]}`;
@@ -120,7 +132,7 @@ function buildRecord(entry, kind, specCode, defaults) {
     genus,
     species,
     commonName: entry.commonName,
-    family: `${entry.family} (${FAMILY_SUFFIX[kind]})`,
+    family: entry.family,
     type: kind,
     maxLengthCm: entry.maxLengthCm,
     masterPhotoUrl: '',
@@ -156,8 +168,12 @@ function main() {
   ];
   if (!entries.length) throw new Error('No entries in the data file.');
 
-  const existingCodes = new Set(catalog.map((r) => Number(r.specCode)));
-  const existingNames = new Set(catalog.map((r) => String(r.scientificName).toLowerCase()));
+  // In --rebuild mode the batch's own records (the 200001+ band) are the ones
+  // being replaced, so they don't count as collisions.
+  const inBand = (r) => Number(r.specCode) >= ID_BAND_START;
+  const others = REBUILD ? catalog.filter((r) => !inBand(r)) : catalog;
+  const existingCodes = new Set(others.map((r) => Number(r.specCode)));
+  const existingNames = new Set(others.map((r) => String(r.scientificName).toLowerCase()));
   const problems = [];
   const seenNames = new Set();
   const seenAphia = new Set();
@@ -181,6 +197,8 @@ function main() {
     return problems.length ? null : buildRecord(entry, kind, specCode, defaults);
   });
   if (problems.length) throw new Error(`Refusing to write:\n  ${problems.join('\n  ')}`);
+
+  if (REBUILD) return rebuild(catalog, additions, data);
 
   const corals = additions.filter((a) => a.type === 'coral').length;
   console.log(JSON.stringify({
@@ -209,6 +227,56 @@ function main() {
   writeFileSync(PUBLIC_PATH, serialized, 'utf8');
   writeFileSync(ROOT_PATH, serialized, 'utf8');
   console.log('Wrote both catalog mirrors.');
+}
+
+/**
+ * --rebuild: regenerate the batch's records in place from the data file (after
+ * a correction to it). Each record must already sit at its ID with the same
+ * scientificName, so IDs and slugs never move. Fields added to the catalog
+ * after the first run (masterPhotoUrl) are kept.
+ */
+function rebuild(catalog, rebuilt, data) {
+  const problems = [];
+  const bandCount = catalog.filter((r) => Number(r.specCode) >= ID_BAND_START).length;
+  if (bandCount !== rebuilt.length) problems.push(`catalog has ${bandCount} records at ${ID_BAND_START}+, data file has ${rebuilt.length}`);
+  const next = [...catalog];
+  const changes = [];
+  for (const rec of rebuilt) {
+    const i = next.findIndex((r) => Number(r.specCode) === rec.specCode);
+    if (i < 0) { problems.push(`ID ${rec.specCode} (${rec.scientificName}) is not in the catalog`); continue; }
+    if (next[i].scientificName !== rec.scientificName) {
+      problems.push(`ID ${rec.specCode} is ${next[i].scientificName} in the catalog, ${rec.scientificName} in the data file`);
+      continue;
+    }
+    const merged = { ...rec, masterPhotoUrl: next[i].masterPhotoUrl || rec.masterPhotoUrl };
+    const changed = diffKeys(next[i], merged);
+    if (changed.length) changes.push({ id: rec.specCode, scientificName: rec.scientificName, changed: changed.join(', ') });
+    next[i] = merged;
+  }
+  if (problems.length) throw new Error(`Refusing to rebuild:\n  ${problems.join('\n  ')}`);
+
+  console.log(JSON.stringify({ source: data._source, reviewedBy: data._reviewedBy, rebuilt: rebuilt.length, changed: changes.length }, null, 2));
+  if (changes.length) console.table(changes);
+  if (!WRITE) { console.log('Dry run. Re-run with --rebuild --write to save.'); return; }
+  const serialized = JSON.stringify(next, null, 2);
+  writeFileSync(PUBLIC_PATH, serialized, 'utf8');
+  writeFileSync(ROOT_PATH, serialized, 'utf8');
+  console.log('Wrote both catalog mirrors.');
+}
+
+/** Dotted paths whose values differ between two records (for the rebuild report). */
+function diffKeys(a, b, prefix = '') {
+  const keys = new Set([...Object.keys(a || {}), ...Object.keys(b || {})]);
+  const out = [];
+  for (const k of keys) {
+    const x = a?.[k];
+    const y = b?.[k];
+    const path = prefix ? `${prefix}.${k}` : k;
+    const bothObjects = x && y && typeof x === 'object' && typeof y === 'object' && !Array.isArray(x) && !Array.isArray(y);
+    if (bothObjects) out.push(...diffKeys(x, y, path));
+    else if (JSON.stringify(x) !== JSON.stringify(y)) out.push(path);
+  }
+  return out;
 }
 
 try { main(); } catch (e) { console.error(e.message || e); process.exit(1); }
