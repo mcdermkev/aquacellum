@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { groupNurseryFish } from "../../utils/nurseryGrouping";
 import { SEX, isKnownSex, normalizeSex, sexSymbol } from "../../utils/specimenSex";
+import {
+  coralCare, countInhabitants, inhabitantKind, inhabitantSummary, kindIcon, speciesCarePath, speciesPhotoFor,
+} from "./inhabitants";
 import "./TankInhabitants.css";
 
 /**
@@ -31,6 +34,7 @@ import "./TankInhabitants.css";
  *   onOpenSpecimen(id)     — open the specimen detail
  *   onPhotoSpecimen(spec)  — start a photo upload for this specimen (Casual)
  *   onListSpecimen(spec)   — open the marketplace listing flow
+ *   onSellFrags(spec)      — open the coral frag listing flow (corals only; optional)
  *   onFarewellSpecimen(spec) — open the Farewell modal (Casual)
  *   onViewLineage(id)      — open Ancestry (Pro)
  *   onMoveSpecimens(ids, targetTankId) => Promise — bulk move
@@ -45,6 +49,7 @@ export function TankInhabitants({
   onOpenSpecimen,
   onPhotoSpecimen,
   onListSpecimen,
+  onSellFrags,
   onFarewellSpecimen,
   onViewLineage,
   onMoveSpecimens,
@@ -133,24 +138,43 @@ export function TankInhabitants({
     e.currentTarget.style.opacity = "0.5";
   };
 
+  const counts = countInhabitants(tank, fishbaseData);
+  const onlyFish = counts.total === counts.fish;
+  const saltwater = Number(tank?.tankType) === 1;
+  // "Fish" is wrong the moment a coral or a shrimp is in the tank.
   const heading = casualModeActive
-    ? `Fish in this tank (${total})`
-    : `Specimens (${total})`;
+    ? (onlyFish ? `Fish in this tank (${total})` : `In this tank (${total})`)
+    : `Livestock (${total})`;
+  const breakdown = onlyFish ? null : inhabitantSummary(counts, { casual: casualModeActive });
+  const addLabel = saltwater ? "+ Add livestock" : "+ Add Fish";
 
   return (
     <div className="tank-inhabitants">
       <div className="ti-head">
-        <strong className="ti-title">{heading}</strong>
+        <div className="ti-head-text">
+          <strong className="ti-title">{heading}</strong>
+          {breakdown && <span className="ti-breakdown">{breakdown}</span>}
+        </div>
         <button type="button" className="btn-primary ti-add" onClick={() => onAddFish && onAddFish()}>
-          + Add Fish
+          {addLabel}
         </button>
       </div>
 
+      {saltwater && tank?.marineStyle === "fish_only" && counts.coral > 0 && (
+        <p className="ti-warn" role="status">
+          This tank is set to fish only, but it has {counts.coral === 1 ? "a coral" : `${counts.coral} corals`}. Corals need reef water targets: switch the tank to Reef in {casualModeActive ? "About" : "Overview"}, or move them to a reef tank.
+        </p>
+      )}
+
       {total === 0 ? (
         <div className="ti-empty">
-          <p>{casualModeActive ? "No fish recorded in this tank yet." : "No specimens assigned to this tank."}</p>
+          <p>
+            {casualModeActive
+              ? (saltwater ? "Nothing recorded in this tank yet. Add fish, corals or inverts." : "No fish recorded in this tank yet.")
+              : "No livestock assigned to this tank."}
+          </p>
           <button type="button" className="btn-primary" onClick={() => onAddFish && onAddFish()}>
-            {casualModeActive ? "+ Add your first fish" : "+ Register first specimen"}
+            {casualModeActive ? (saltwater ? "+ Add your first livestock" : "+ Add your first fish") : "+ Register first specimen"}
           </button>
         </div>
       ) : (
@@ -188,7 +212,11 @@ export function TankInhabitants({
           )}
 
           {groups.map((group) => {
-            const img = speciesThumb(group, fishbaseData);
+            const ref = group.fish[0] || group;
+            const img = speciesPhotoFor(ref, fishbaseData);
+            const kind = inhabitantKind(ref, fishbaseData);
+            const care = kind === "coral" ? coralCare(ref, fishbaseData) : null;
+            const carePath = speciesCarePath(ref, fishbaseData);
             const isOpen = !!openGroups[group.key];
             const sel = groupSelectState(group);
             return (
@@ -207,8 +235,8 @@ export function TankInhabitants({
                     aria-label={`Select all ${group.commonName}`}
                     onClick={(e) => e.stopPropagation()}
                   />
-                  <span className="ti-avatar">
-                    {img ? <img src={img} alt={group.commonName} /> : <span>🐠</span>}
+                  <span className={`ti-avatar ti-avatar--${kind}`}>
+                    {img ? <img src={img} alt="" loading="lazy" /> : <span aria-hidden="true">{kindIcon(kind)}</span>}
                   </span>
                   <button
                     type="button"
@@ -218,10 +246,19 @@ export function TankInhabitants({
                   >
                     <strong>{group.count}× {group.commonName}</strong>
                     <span className="ti-genders">
-                      {genderSummary(group.genders)}
+                      {/* Corals and inverts have no sex to record, so no "? 3". */}
+                      {kind === "fish" || kind === "amphibian"
+                        ? genderSummary(group.genders)
+                        : (care ? coralSummary(care) : kindLabel(kind))}
                       {group.scientificName ? <em className="ti-sci"> · {group.scientificName}</em> : null}
                     </span>
                   </button>
+                  {carePath && (
+                    <a className="ti-care-link" href={carePath} onClick={(e) => e.stopPropagation()}>
+                      {casualModeActive ? "Care guide" : "Species page"}
+                      <span className="ti-sr-only"> for {group.commonName}</span>
+                    </a>
+                  )}
                   <button
                     type="button"
                     className="ti-expand"
@@ -249,8 +286,10 @@ export function TankInhabitants({
                           <button type="button" className="ti-ind-main" onClick={() => onOpenSpecimen && onOpenSpecimen(spec.id)}>
                             {photo ? (
                               <img className="ti-ind-thumb" src={photo} alt={spec.commonName} />
+                            ) : img ? (
+                              <img className="ti-ind-thumb" src={img} alt="" loading="lazy" />
                             ) : (
-                              <span className="ti-ind-thumb ti-ind-thumb--empty">🐠</span>
+                              <span className="ti-ind-thumb ti-ind-thumb--empty" aria-hidden="true">{kindIcon(kind)}</span>
                             )}
                             <span className="ti-ind-text">
                               <span className="ti-ind-name">
@@ -273,13 +312,15 @@ export function TankInhabitants({
                             {casualModeActive ? (
                               <>
                                 {onPhotoSpecimen && (
-                                  <button type="button" className="ti-mini" title="Add / update photo" onClick={() => onPhotoSpecimen(spec)}>📷</button>
+                                  <button type="button" className="ti-mini" title="Add / update photo" aria-label={`Add a photo of ${spec.commonName}`} onClick={() => onPhotoSpecimen(spec)}>📷</button>
                                 )}
-                                {onListSpecimen && (
-                                  <button type="button" className="ti-mini ti-mini-sell" title="List for sale" onClick={() => onListSpecimen(spec)}>💰</button>
+                                {kind === "coral" && onSellFrags ? (
+                                  <button type="button" className="ti-mini ti-mini-sell" onClick={() => onSellFrags(spec)}>Sell frags</button>
+                                ) : onListSpecimen && (
+                                  <button type="button" className="ti-mini ti-mini-sell" onClick={() => onListSpecimen(spec)}>Sell</button>
                                 )}
                                 {onFarewellSpecimen && (
-                                  <button type="button" className="ti-mini ti-mini-retire" title="Say farewell" onClick={() => onFarewellSpecimen(spec)}>🌊</button>
+                                  <button type="button" className="ti-mini ti-mini-retire" title="Say farewell" aria-label={`Say farewell to ${spec.commonName}`} onClick={() => onFarewellSpecimen(spec)}>🌊</button>
                                 )}
                               </>
                             ) : (
@@ -287,7 +328,9 @@ export function TankInhabitants({
                                 {onViewLineage && (
                                   <button type="button" className="ti-mini" title="Ancestry" onClick={() => onViewLineage(spec.id)}>Ancestry</button>
                                 )}
-                                {onListSpecimen && (
+                                {kind === "coral" && onSellFrags ? (
+                                  <button type="button" className="ti-mini ti-mini-sell" onClick={() => onSellFrags(spec)}>List frags</button>
+                                ) : onListSpecimen && (
                                   <button type="button" className="ti-mini ti-mini-sell" title="List for sale" onClick={() => onListSpecimen(spec)}>Sell</button>
                                 )}
                                 {onFarewellSpecimen && (
@@ -325,13 +368,17 @@ function genderSummary(g) {
   const parts = [];
   if (g.Male) parts.push(`♂ ${g.Male}`);
   if (g.Female) parts.push(`♀ ${g.Female}`);
-  if (g.Unsexed) parts.push(`? ${g.Unsexed}`);
+  if (g.Unsexed) parts.push(`${g.Unsexed} unsexed`);
   return parts.join("  ") || "—";
 }
 
-function speciesThumb(group, fishbaseData) {
-  const match = (fishbaseData || []).find(
-    (f) => Number(f.speciesId) === Number(group.speciesId) || f.commonName === group.commonName
-  );
-  return match?.masterPhotoUrl || "";
+function coralSummary(care) {
+  const bits = [care.coralType, care.light && `${care.light} light`, care.flow && `${care.flow} flow`, care.placement && `${care.placement === "Anywhere" ? "any height" : `${care.placement.toLowerCase()} of the rock`}`];
+  return bits.filter(Boolean).join(" · ");
+}
+
+function kindLabel(kind) {
+  if (kind === "invertebrate") return "Invertebrate";
+  if (kind === "plant") return "Plant";
+  return "";
 }

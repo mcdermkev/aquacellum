@@ -1,6 +1,6 @@
 /* global clients, self */
 /**
- * sw.js — Aquadex combined service worker (injectManifest source)
+ * sw.js — Aquacellum combined service worker (injectManifest source)
  *
  * This single worker does two jobs:
  *   1. PWA app-shell precaching + safe runtime caching (Workbox).
@@ -204,7 +204,7 @@ self.addEventListener("push", (event) => {
     payload = event.data.json();
   } catch {
     payload = {
-      title: "Aquadex",
+      title: "Aquacellum",
       body: event.data.text(),
     };
   }
@@ -223,7 +223,7 @@ self.addEventListener("push", (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(payload.title || "Aquadex", options)
+    self.registration.showNotification(payload.title || "Aquacellum", options)
   );
 });
 

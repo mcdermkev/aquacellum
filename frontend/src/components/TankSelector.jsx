@@ -29,7 +29,7 @@ function TankSelector({
     <div
       className="tank-selector"
       role="listbox"
-      aria-label={casualModeActive ? "Choose a tank" : "Select containment unit"}
+      aria-label={casualModeActive ? "Choose a tank" : "Select a tank"}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -134,7 +134,7 @@ function TankSelector({
         }}>
           {casualModeActive
             ? "No tanks registered yet."
-            : "No containment units registered."}
+            : "No tanks registered yet."}
         </p>
       )}
     </div>

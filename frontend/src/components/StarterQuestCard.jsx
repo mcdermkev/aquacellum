@@ -86,7 +86,7 @@ export function StarterQuestCard({ onNavigate, compact = false }) {
           </div>
           <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: 2 }}>
             {quest.allDone
-              ? "You've found your way around Aquadex. Nice work."
+              ? "You've found your way around Aquacellum. Nice work."
               : "Five things that get your tanks logged and your fish catalogued."}
           </div>
         </div>

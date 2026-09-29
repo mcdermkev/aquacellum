@@ -1,17 +1,18 @@
 /* StockingGuidance — deterministic combined-inhabitants stocking panel (Task 10). */
 
 .stocking-guide {
-  border: 1px solid var(--glass-border, rgba(var(--ink-rgb), 0.12));
+  border: 1px solid var(--line, rgba(var(--ink-rgb), 0.12));
   border-radius: 12px;
-  background: rgba(var(--ink-rgb), 0.02);
-  padding: 0.85rem 1rem;
+  background: #fff;
+  box-shadow: var(--glass-shadow);
+  padding: 0.9rem 1rem;
 }
 .stocking-guide.sg--warn { border-color: rgba(251, 191, 36, 0.3); background: rgba(251, 191, 36, 0.05); }
 .stocking-guide.sg--alert { border-color: rgba(244, 63, 94, 0.3); background: rgba(244, 63, 94, 0.06); }
 
 .sg-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.55rem; }
 .sg-icon { font-size: 1.05rem; }
-.sg-title { color: var(--text-primary); font-size: 0.88rem; }
+.sg-title { color: var(--text-primary); font-family: var(--font-display); font-size: 0.95rem; }
 .sg-meta { margin-left: auto; font-size: 0.72rem; color: var(--text-muted, #94a3b8); white-space: nowrap; }
 
 .sg-bar {
@@ -33,7 +34,7 @@
 .sg-line strong { color: var(--text-primary); }
 
 .sg-notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
-.sg-notes li { font-size: 0.68rem; line-height: 1.4; color: var(--text-muted, #94a3b8); padding-left: 0.8rem; position: relative; }
+.sg-notes li { font-size: 0.74rem; line-height: 1.4; color: var(--text-muted, #94a3b8); padding-left: 0.8rem; position: relative; }
 .sg-notes li::before { content: "•"; position: absolute; left: 0; color: var(--text-muted, #94a3b8); }
 
 @media (prefers-reduced-motion: reduce) {

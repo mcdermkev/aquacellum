@@ -128,14 +128,23 @@ export function CasualTankGallery({
 
             {/* Care footer — quick glance at maintenance recency */}
             <div className="ctg-footer">
-              <span className="ctg-chip" title="Last water test">🧪 {testedAgo}</span>
-              <span className="ctg-chip" title="Last water change">💧 {changedAgo}</span>
+              <span className="ctg-chip">
+                <span aria-hidden="true">🧪</span> {testedAgo === "—" ? "Not tested yet" : `Tested ${agoText(testedAgo)}`}
+              </span>
+              <span className="ctg-chip">
+                <span aria-hidden="true">💧</span> {changedAgo === "—" ? "No water change logged" : `Water change ${agoText(changedAgo)}`}
+              </span>
             </div>
           </div>
         );
       })}
     </div>
   );
+}
+
+/** "5h" → "5h ago"; "just now" stays as is. */
+function agoText(short) {
+  return short === "just now" ? short : `${short} ago`;
 }
 
 /** Compact relative-time label from a seconds-since-epoch timestamp. */

@@ -65,7 +65,7 @@ function Optional({ id, label, value, step, placeholder, target, onChange, ok })
         style={{ ...numberStyle, ...(ok === false ? { borderColor: "rgba(248, 113, 113, 0.6)" } : {}) }}
       />
       <span id={`${id}-hint`} style={{ ...hintStyle, ...(ok === false ? { color: "var(--accent-red)" } : {}) }}>
-        {ok === false ? "Outside target. " : ""}Target {target}. Optional.
+        {ok === false ? "Outside target. " : ""}{target ? `Target ${target}. ` : "No target for a fish-only tank. "}Optional.
       </span>
     </div>
   );
@@ -90,12 +90,14 @@ export function MarineTestFields({ formData, setFormData, env }) {
         />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
-        <Optional id="marine-ca" label="Calcium (ppm)" value={ca} step="5" placeholder="420" target={`${env.caMin}–${env.caMax}`}
+        {/* A fish-only tank has no calcium / magnesium / phosphate target
+            (tankUtils MARINE_STYLE_OVERRIDES), so say so instead of "null–null". */}
+        <Optional id="marine-ca" label="Calcium (ppm)" value={ca} step="5" placeholder="420" target={env.caMin != null ? `${env.caMin}–${env.caMax}` : null}
           ok={status(ca, env.caMin, env.caMax)} onChange={set("ca")} />
-        <Optional id="marine-mg" label="Magnesium (ppm)" value={mg} step="10" placeholder="1350" target={`${env.mgMin}–${env.mgMax}`}
+        <Optional id="marine-mg" label="Magnesium (ppm)" value={mg} step="10" placeholder="1350" target={env.mgMin != null ? `${env.mgMin}–${env.mgMax}` : null}
           ok={status(mg, env.mgMin, env.mgMax)} onChange={set("mg")} />
-        <Optional id="marine-po4" label="Phosphate (ppm)" value={po4} step="0.01" placeholder="0.05" target={`≤ ${env.po4Max}`}
-          ok={po4 === "" ? null : Number(po4) <= env.po4Max} onChange={set("po4")} />
+        <Optional id="marine-po4" label="Phosphate (ppm)" value={po4} step="0.01" placeholder="0.05" target={env.po4Max != null ? `≤ ${env.po4Max}` : null}
+          ok={po4 === "" || env.po4Max == null ? null : Number(po4) <= env.po4Max} onChange={set("po4")} />
       </div>
     </div>
   );
@@ -105,26 +107,38 @@ export function MarineTestFields({ formData, setFormData, env }) {
  * The saltwater readings from a tank's last log, on the tank detail. Only the
  * values that were actually tested are listed.
  */
-export function MarineReadingTile({ tank }) {
+export function MarineReadingTile({ tank, casual = false }) {
   const r = normalizeReading(tank?.latestLog);
   if (!r) return null;
   const env = envelopeForTank(tank);
+  const fishOnly = tank?.marineStyle === "fish_only";
+  // `target` null = this tank style has no target for it (fish-only Ca/Mg/PO4):
+  // the value is shown without a verdict.
   const rows = [
-    r.salinity !== undefined && { label: "Salinity", value: `${r.salinity.toFixed(3)} SG`, ok: isInsideEnvelope(r.salinity, env.salinityMin, env.salinityMax) },
-    // A fish-only tank has no Ca/Mg/PO4 target: show the value without judging it.
-    r.ca !== undefined && { label: "Calcium", value: `${Math.round(r.ca)} ppm`, ok: env.caMin == null || isInsideEnvelope(r.ca, env.caMin, env.caMax) },
-    r.mg !== undefined && { label: "Magnesium", value: `${Math.round(r.mg)} ppm`, ok: env.mgMin == null || isInsideEnvelope(r.mg, env.mgMin, env.mgMax) },
-    r.po4 !== undefined && { label: "Phosphate", value: `${r.po4.toFixed(2)} ppm`, ok: env.po4Max == null || r.po4 <= env.po4Max },
+    r.salinity !== undefined && { label: casual ? "Salinity" : "Salinity (SG)", value: `${r.salinity.toFixed(3)}`, ok: isInsideEnvelope(r.salinity, env.salinityMin, env.salinityMax), target: `${env.salinityMin}–${env.salinityMax}` },
+    r.kh !== undefined && { label: "Alkalinity", value: `${r.kh.toFixed(1)} dKH`, ok: env.khMin == null || isInsideEnvelope(r.kh, env.khMin, env.khMax), target: env.khMin != null ? `${env.khMin}–${env.khMax}` : null },
+    r.ca !== undefined && { label: "Calcium", value: `${Math.round(r.ca)} ppm`, ok: env.caMin == null || isInsideEnvelope(r.ca, env.caMin, env.caMax), target: env.caMin != null ? `${env.caMin}–${env.caMax}` : null },
+    r.mg !== undefined && { label: "Magnesium", value: `${Math.round(r.mg)} ppm`, ok: env.mgMin == null || isInsideEnvelope(r.mg, env.mgMin, env.mgMax), target: env.mgMin != null ? `${env.mgMin}–${env.mgMax}` : null },
+    r.po4 !== undefined && { label: "Phosphate", value: `${r.po4.toFixed(2)} ppm`, ok: env.po4Max == null || r.po4 <= env.po4Max, target: env.po4Max != null ? `≤ ${env.po4Max}` : null },
   ].filter(Boolean);
   if (!rows.length) return null;
   return (
     <div className="telemetry-tile-premium" style={{ gridColumn: "span 2" }}>
-      <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>🪸 Saltwater chemistry</span>
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem", fontSize: "0.75rem", color: "var(--text-primary)", marginTop: "0.25rem" }}>
+      <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+        <span aria-hidden="true">🪸 </span>{casual ? "Saltwater readings" : "Saltwater chemistry"}{fishOnly ? " · fish only" : " · reef targets"}
+      </span>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem", fontSize: "0.78rem", color: "var(--text-primary)", marginTop: "0.35rem" }}>
         {rows.map((row) => (
-          <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span>{row.label}:</span>
-            <strong style={{ color: row.ok ? "var(--accent-green)" : "var(--accent-red)" }}>{row.value}{row.ok ? "" : " (outside target)"}</strong>
+          <div key={row.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "0.5rem" }}>
+            <span>{row.label}</span>
+            <span style={{ textAlign: "right" }}>
+              <strong style={{ color: row.target == null ? "var(--text-primary)" : row.ok ? "var(--accent-green)" : "var(--accent-red)" }}>
+                {row.value}{row.target != null && !row.ok ? " (outside target)" : ""}
+              </strong>
+              <span style={{ display: "block", fontSize: "0.68rem", color: "var(--text-muted)" }}>
+                {row.target != null ? `Target ${row.target}` : "No target for fish only"}
+              </span>
+            </span>
           </div>
         ))}
       </div>

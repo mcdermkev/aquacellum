@@ -167,7 +167,8 @@ export function ProOpsGrid({
       <div className="ops-row ops-row--head">
         <span className="ops-col-strip" />
         <span className="ops-col-name">Tank</span>
-        <span className="ops-col-num">Fish</span>
+        {/* Counts corals and inverts too, so "Stock", not "Fish". */}
+        <span className="ops-col-num">Stock</span>
         <span className="ops-col-time">Tested</span>
         <span className="ops-col-time">Changed</span>
         <span className="ops-col-flags">Status</span>

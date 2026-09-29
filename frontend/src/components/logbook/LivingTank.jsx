@@ -4,6 +4,7 @@ import { scoreToAmbient } from "../../utils/tankHealth";
 import { tankTypeLabel } from "../../utils/tankUtils";
 import { useUnitPrefs } from "../../hooks/useUnitPrefs";
 import { formatVolume } from "../../utils/units";
+import { countInhabitants, inhabitantKind, inhabitantSummary, speciesRecordFor, swimmingInhabitants } from "./inhabitants";
 import "./LivingTank.css";
 
 /**
@@ -105,7 +106,12 @@ export function LivingTank({
 
   const animate = inView && !reducedMotion;
   const specimens = (tank?.specimens || []).filter((s) => Number(s?.status ?? 0) === 0);
-  const fishCount = specimens.length;
+  // Only fish swim. Corals sit on the rock and inverts on the sand; drawing a
+  // zoanthid as a grey fish silhouette was the most visible saltwater bug.
+  const swimmers = swimmingInhabitants(specimens, fishbaseData);
+  const corals = specimens.filter((s) => inhabitantKind(s, fishbaseData) === "coral");
+  const summary = inhabitantSummary(countInhabitants(tank, fishbaseData));
+  const fishCount = swimmers.length;
 
   // Volume respects the user's unit preference. This line is the one a new keeper
   // asked about: they typed "20" into a field labelled gallons and the card read
@@ -126,7 +132,7 @@ export function LivingTank({
       className={`lt-root lt-${variant}${animate ? " lt--animate" : ""}`}
       style={{ height: rootHeight }}
       role="img"
-      aria-label={`${tank?.name || "Tank"} — ${typeName}, ${fishCount} fish, water status ${ambient.status}`}
+      aria-label={`${tank?.name || "Tank"}: ${typeName}, ${summary}, water status ${ambient.status}`}
       data-testid="living-tank"
       data-status={ambient.status}
       data-animated={animate ? "true" : "false"}
@@ -175,7 +181,7 @@ export function LivingTank({
           style={{ opacity: fishOpacity, filter: fishBlur ? `blur(${fishBlur}px)` : "none" }}
         >
           <TankFishVisualization
-            specimens={specimens}
+            specimens={swimmers}
             fishbaseData={fishbaseData}
             maxVisible={cfg.maxFish}
             containerHeight={fishHeight}
@@ -202,6 +208,11 @@ export function LivingTank({
 
       {/* Substrate */}
       <div className="lt-substrate" />
+
+      {/* Corals on the rock line (reef tanks) */}
+      {corals.length > 0 && variant !== "strip" && (
+        <CoralLayer corals={corals} fishbaseData={fishbaseData} max={variant === "hero" ? 8 : 5} />
+      )}
 
       {/* Bubbles */}
       {cfg.bubbles > 0 && (
@@ -261,19 +272,103 @@ export function LivingTank({
                 </strong>
               </div>
               {variant !== "strip" && (
-                <span style={{ color: "rgba(255,255,255,0.65)", fontSize: "0.7rem" }}>
-                  {typeName} · {volumeLabel} · {fishCount} fish
+                <span style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.72rem" }}>
+                  {typeName} · {volumeLabel} · {summary}
                 </span>
               )}
             </div>
             {variant === "strip" && (
-              <span style={{ color: "rgba(255,255,255,0.7)", fontSize: "0.72rem", whiteSpace: "nowrap" }}>
-                {fishCount} fish · {volumeLabel}
+              <span style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.72rem", whiteSpace: "nowrap" }}>
+                {summary} · {volumeLabel}
               </span>
             )}
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Coral silhouettes by catalog coralType. Stylized, like the fish: the shape
+// says "branching SPS" or "mushroom", not a specific morph.
+const CORAL_COLORS = {
+  SPS: ["#f472b6", "#c084fc"],
+  LPS: ["#34d399", "#a3e635"],
+  soft: ["#f9a8d4", "#fcd34d"],
+  zoanthid: ["#fb923c", "#4ade80"],
+  mushroom: ["#60a5fa", "#f87171"],
+  anemone: ["#fda4af", "#fdba74"],
+};
+
+function CoralShape({ type, color, accent }) {
+  switch (type) {
+    case "SPS": // branching
+      return (
+        <g fill={color}>
+          <rect x="18" y="12" width="4" height="28" rx="2" />
+          <rect x="9" y="18" width="4" height="20" rx="2" transform="rotate(-18 11 28)" />
+          <rect x="27" y="17" width="4" height="21" rx="2" transform="rotate(18 29 27)" />
+          <circle cx="20" cy="12" r="2.4" fill={accent} />
+        </g>
+      );
+    case "LPS": // fleshy tentacles
+      return (
+        <g fill={color}>
+          {[8, 14, 20, 26, 32].map((x, i) => (
+            <path key={x} d={`M${x} 40 C${x - 3} ${30 - (i % 2) * 6} ${x + 3} ${22 - (i % 3) * 3} ${x} ${16 + (i % 2) * 4}`} stroke={color} strokeWidth="3.4" fill="none" strokeLinecap="round" />
+          ))}
+          {[8, 14, 20, 26, 32].map((x, i) => <circle key={`t${x}`} cx={x} cy={16 + (i % 2) * 4} r="2.2" fill={accent} />)}
+        </g>
+      );
+    case "zoanthid": // polyp carpet
+      return (
+        <g>
+          {[7, 14, 21, 28, 34].map((x, i) => (
+            <g key={x}>
+              <circle cx={x} cy={34 - (i % 2) * 4} r="4.2" fill={color} />
+              <circle cx={x} cy={34 - (i % 2) * 4} r="1.8" fill={accent} />
+            </g>
+          ))}
+        </g>
+      );
+    case "mushroom": // discs
+      return (
+        <g>
+          <ellipse cx="14" cy="34" rx="9" ry="4.5" fill={color} />
+          <ellipse cx="28" cy="30" rx="8" ry="4" fill={accent} />
+        </g>
+      );
+    default: // soft corals, anemones: a swaying tuft
+      return (
+        <g fill={color}>
+          <path d="M20 40 C12 30 10 20 16 12 C18 20 20 24 20 40 Z" />
+          <path d="M20 40 C28 30 30 20 24 12 C22 20 20 24 20 40 Z" fill={accent} />
+          <path d="M20 40 C20 28 18 18 20 8 C22 18 22 28 20 40 Z" />
+        </g>
+      );
+  }
+}
+
+function CoralLayer({ corals, fishbaseData, max }) {
+  const shown = corals.slice(0, max);
+  return (
+    <div className="lt-corals" aria-hidden="true">
+      {shown.map((c, i) => {
+        const type = speciesRecordFor(c, fishbaseData)?.marine?.coralType || "soft";
+        const [color, accent] = CORAL_COLORS[type] || CORAL_COLORS.soft;
+        // Spread across the rock line, alternating depth so they don't stack.
+        const left = 6 + ((i * 97) % 84);
+        return (
+          <svg
+            key={c.id ?? i}
+            className="lt-coral"
+            viewBox="0 0 40 42"
+            style={{ left: `${left}%`, bottom: `${i % 2 ? 10 : 12}%`, width: i % 3 === 0 ? 40 : 32 }}
+          >
+            <CoralShape type={type} color={color} accent={accent} />
+          </svg>
+        );
+      })}
     </div>
   );
 }

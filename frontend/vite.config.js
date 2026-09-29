@@ -55,16 +55,17 @@ export default defineConfig({
       // Only inject the manifest <link> into the app shell, not every page.
       includeManifestIcons: false,
       manifest: {
-        name: 'Aquadex — Hobbyist & Breeder Protocol',
-        short_name: 'Aquadex',
-        description: 'Digital aquarium management, breeding registry, and marketplace.',
+        name: 'Aquacellum',
+        short_name: 'Aquacellum',
+        description: 'Log your aquariums, look up freshwater and saltwater species, and buy fish and coral frags from independent breeders.',
         id: '/app',
         start_url: '/app',
         scope: '/',
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#0a0e1a',
-        theme_color: '#0a0e1a',
+        // Daylight: the app's top bar is white and the page is #f5f9fa.
+        background_color: '#f5f9fa',
+        theme_color: '#ffffff',
         icons: [
           {
             src: '/icons/icon-192.png',

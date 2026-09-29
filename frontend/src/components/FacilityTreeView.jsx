@@ -231,7 +231,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
       setTanks(allTanks.filter((t) => t.active));
     } catch (err) {
       console.error("Error fetching tanks for tree view:", err);
-      setError("Failed to query facility containment units.");
+      setError("Couldn't load your tanks. Try again in a moment.");
     } finally {
       setLoading(false);
     }
@@ -344,7 +344,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
       if (onReload) onReload();
     } catch (err) {
       console.error("Register unit transaction failed:", err);
-      setRegisterError(err.reason || err.message || "Failed to register new containment unit.");
+      setRegisterError(err.reason || err.message || "Couldn't save the new tank. Try again.");
     } finally {
       setRegistering(false);
       setRegisterTx(null);
@@ -507,7 +507,7 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
 
       {Object.keys(tree).length === 0 ? (
         <div className="glass-card" style={{ padding: "3rem", textAlign: "center" }}>
-          <p style={{ color: "var(--text-muted)" }}>No containment units registered. Get started by clicking register unit.</p>
+          <p style={{ color: "var(--text-muted)" }}>No tanks yet. Use Register Unit to add your first tank, tub or basket.</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
@@ -659,12 +659,12 @@ export function FacilityTreeView({ contractAddress, walletAccount, onSelectTank,
             border: "1px solid var(--glass-border-hover)"
           }}>
             <h3 style={{ fontSize: "1.5rem", marginBottom: "0.25rem" }}>
-              {casualModeActive ? "Add New Tank" : "Register Containment Unit"}
+              {casualModeActive ? "Add a tank" : "Register a tank"}
             </h3>
             <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
               {casualModeActive 
-                ? "Create a new aquarium system to start tracking your fish and water parameters."
-                : "Define locations and nesting containment structures in the registry."}
+                ? "Name your tank and pick its water type. You can add fish, corals and water tests next."
+                : "Set the water type, volume and location. Tubs and baskets can nest inside a tank or rack."}
             </p>
 
             {registerError && (

@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>This Tank — Aquacellum</title>
-  <meta name="description" content="Every fish in this tank, identified — with prices and a way to buy on the spot. No app, no account.">
+  <meta name="description" content="Every fish, coral and invert in this tank, identified, with care guides, prices and a way to buy on the spot. No app, no account.">
   <meta property="og:title" content="This Tank — Aquacellum">
-  <meta property="og:description" content="Every fish in this tank, identified — with prices and a way to buy on the spot.">
+  <meta property="og:description" content="Every fish in this tank, identified, with care guides, prices and a way to buy on the spot.">
   <meta property="og:type" content="website">
   <meta property="og:image" content="/icons/icon-512.png">
   <meta name="twitter:card" content="summary_large_image">
@@ -20,25 +20,33 @@
     /* Mobile-first: this page is read almost exclusively on a phone held in
        front of a tank at an expo, so the single-column layout is the default
        and the wider grid is the enhancement. */
-    .tank-page { padding: 1.75rem 0 3rem; max-width: 720px; }
-    .tank-kicker { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--violet-300); }
+    /* Vertical padding only: the shorthand used to zero .container's side
+       gutter, so on a phone every card touched the screen edge. */
+    .tank-page { padding-top: 1.75rem; padding-bottom: 3rem; max-width: 720px; }
+    .tank-kicker { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--teal-300); }
     .tank-title { font-family: 'Outfit', sans-serif; font-size: clamp(1.7rem, 6vw, 2.6rem); font-weight: 800; color: var(--text-primary); margin: 0.4rem 0 0.6rem; line-height: 1.15; }
     .tank-caption { font-size: 0.92rem; line-height: 1.65; color: var(--text-secondary); margin: 0; }
     .tank-hero { display: none; margin: 1.1rem 0 0; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: var(--bg-deep); box-shadow: var(--shadow-sm); aspect-ratio: 4 / 3; }
     .tank-hero.visible { display: block; }
     .tank-hero img { width: 100%; height: 100%; display: block; object-fit: cover; }
     .tank-facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-    .tank-fact { padding: 3px 10px; border-radius: 50px; font-size: 0.65rem; font-weight: 600; background: var(--violet-100); border: 1px solid rgba(139,92,246,0.25); color: var(--violet-300); }
+    .tank-fact { padding: 3px 10px; border-radius: 50px; font-size: 0.65rem; font-weight: 600; background: #ecfdf5; border: 1px solid rgba(15,118,110,0.25); color: var(--teal-300); }
 
     .tank-section { margin-top: 2.25rem; }
     .tank-section__title { font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.25rem; }
     .tank-section__hint { font-size: 0.78rem; color: var(--text-muted); margin: 0 0 0.9rem; }
 
     .specimen-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-    .specimen-item { padding: 12px 14px; border-radius: 12px; background: #fff; border: 1px solid var(--line); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 3px; }
+    .specimen-item { padding: 10px 12px; border-radius: 14px; background: #fff; border: 1px solid var(--line); box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 12px; }
+    .specimen-photo { width: 56px; height: 56px; flex-shrink: 0; border-radius: 12px; object-fit: cover; background: var(--bg-band, #eaf3f5); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+    .specimen-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .specimen-kind { align-self: flex-start; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--teal-300); }
+    .seller-card { margin-top: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 16px; border-radius: 14px; background: #fff; border: 1px solid var(--line); box-shadow: var(--shadow-sm); }
+    .seller-card p { margin: 0; font-size: 0.86rem; color: var(--text-secondary); }
+    .seller-card a { min-height: 44px; display: inline-flex; align-items: center; }
     .specimen-name { font-size: 0.92rem; font-weight: 600; color: var(--text-primary); }
     .specimen-species { font-size: 0.76rem; color: var(--text-muted); font-style: italic; }
-    .specimen-species a { color: var(--violet-300); text-decoration: none; font-weight: 600; }
+    .specimen-species a { color: var(--teal-300); text-decoration: none; font-weight: 600; }
     .specimen-species a:hover { text-decoration: underline; }
     .specimen-unlinked { font-size: 0.7rem; color: var(--text-muted); }
 
@@ -57,7 +65,7 @@
     .buy-btn { padding: 11px 20px; border-radius: 11px; border: none; font-size: 0.85rem; font-weight: 700; cursor: pointer; color: #fff; background: linear-gradient(135deg, #0f766e, #047857); box-shadow: 0 4px 14px rgba(4,120,87,0.2); }
     .buy-btn:hover { filter: brightness(1.1); }
     .buy-btn:disabled { opacity: 0.6; cursor: wait; }
-    .detail-link { font-size: 0.78rem; font-weight: 600; text-decoration: none; color: var(--violet-300); }
+    .detail-link { font-size: 0.78rem; font-weight: 600; text-decoration: none; color: var(--teal-300); }
     .detail-link:hover { text-decoration: underline; }
 
     .guest-form { display: none; flex-direction: column; gap: 8px; padding-top: 4px; }
@@ -74,7 +82,7 @@
     .state-panel { max-width: 560px; margin: 5rem auto; text-align: center; padding: 0 1rem; }
     .state-panel h3 { font-family: 'Outfit', sans-serif; font-size: 1.3rem; color: var(--text-primary); margin-bottom: 0.6rem; }
     .state-panel p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
-    .state-panel a { color: var(--violet-300); font-weight: 600; }
+    .state-panel a { color: var(--teal-300); font-weight: 600; }
     @media (min-width: 641px) {
       .tank-hero { aspect-ratio: 16 / 9; }
     }
@@ -99,16 +107,20 @@
 
     <section class="tank-section" aria-labelledby="specimensTitle">
       <h2 class="tank-section__title" id="specimensTitle">What's in this tank</h2>
-      <p class="tank-section__hint">Tap a species name to read its full Aquadex profile.</p>
+      <p class="tank-section__hint">Tap a species to read its care guide.</p>
       <ul class="specimen-list" id="specimenList"></ul>
       <p class="empty-note" id="specimenEmpty" style="display:none;">The keeper hasn't listed the fish in this tank yet.</p>
     </section>
 
     <section class="tank-section" aria-labelledby="commerceTitle">
       <h2 class="tank-section__title" id="commerceTitle">Take one home</h2>
-      <p class="tank-section__hint" id="commerceHint">Buy as a guest — no app and no account needed.</p>
+      <p class="tank-section__hint" id="commerceHint">Buy as a guest. No app and no account needed.</p>
       <div class="commerce-list" id="commerceList"></div>
       <p class="empty-note" id="commerceEmpty" style="display:none;">Nothing from this tank is for sale right now. Ask the keeper.</p>
+      <div class="seller-card" id="sellerCard" style="display:none;">
+        <p>More from this breeder: fish, frags and pickup details.</p>
+        <a class="btn btn-secondary btn-sm" id="sellerLink" href="/marketplace.html">Visit their store</a>
+      </div>
     </section>
 
     <p class="tank-updated" id="tankUpdated"></p>
@@ -168,13 +180,36 @@
     // The species profile route keys off the scientific name (see species.html
     // toSlug). No scientific name means no profile to link to — we still show
     // the fish rather than guessing at a species.
+    // Same rule as species.html toSlug: every run of non-alphanumerics is one
+    // dash. (This used to replace only whitespace, so "Neritina spp." linked to
+    // a slug the species page never generates.)
+    function toSlug(name) {
+      return String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+
     function speciesPath(scientificName) {
       if (typeof scientificName !== 'string') return '';
-      const trimmed = scientificName.trim();
-      if (!trimmed) return '';
-      const slug = trimmed.toLowerCase().replace(/\s+/g, '-');
+      const known = speciesIndex.get(scientificName.trim().toLowerCase());
+      const slug = known?.u || toSlug(scientificName);
       return slug ? `/species/${encodeURIComponent(slug)}` : '';
     }
+
+    // The public species index (name, slug, type, photo) — the same file the
+    // homepage search reads. Best effort: without it the page still lists the
+    // fish, just without photos.
+    const speciesIndex = new Map();
+    async function loadSpeciesIndex() {
+      try {
+        const res = await fetch('/species-index.json', { headers: { Accept: 'application/json' } });
+        if (!res.ok) return;
+        const rows = await res.json();
+        if (!Array.isArray(rows)) return;
+        rows.forEach((row) => { if (row?.s) speciesIndex.set(String(row.s).toLowerCase(), row); });
+      } catch { /* photos are optional */ }
+    }
+
+    const KIND_ICON = { coral: '🪸', invertebrate: '🦐', plant: '🌿' };
+    const KIND_LABEL = { coral: 'Coral', invertebrate: 'Invertebrate', plant: 'Plant' };
 
     function formatCents(cents) {
       const value = Number(cents);
@@ -197,7 +232,7 @@
       const facts = document.getElementById('tankFacts');
       facts.replaceChildren();
       const volume = Number(tank.facts?.volumeLiters);
-      if (Number.isFinite(volume) && volume > 0) facts.append(element('span', 'tank-fact', `${volume} L`));
+      if (Number.isFinite(volume) && volume > 0) facts.append(element('span', 'tank-fact', `${Math.round(volume / 3.78541)} gal · ${volume} L`));
       if (tank.facts?.tankType) facts.append(element('span', 'tank-fact', String(tank.facts.tankType)));
 
       const container = document.getElementById('tankHero');
@@ -213,11 +248,29 @@
     }
 
     function buildSpecimen(specimen) {
-      const item = element('li', 'specimen-item');
-      item.append(element('span', 'specimen-name', specimen.publicName || 'Fish'));
-
+      const outer = element('li', 'specimen-item');
       const scientificName = typeof specimen.scientificName === 'string' ? specimen.scientificName.trim() : '';
       const commonName = typeof specimen.commonName === 'string' ? specimen.commonName.trim() : '';
+      const known = scientificName ? speciesIndex.get(scientificName.toLowerCase()) : null;
+      const photoSrc = known?.p ? safePublicImageUrl(known.p, window.location.origin) : '';
+      if (photoSrc) {
+        const img = element('img', 'specimen-photo');
+        img.src = photoSrc;
+        img.alt = '';
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.addEventListener('error', () => img.replaceWith(element('span', 'specimen-photo', KIND_ICON[known?.t] || '🐠')));
+        outer.append(img);
+      } else {
+        const icon = element('span', 'specimen-photo', KIND_ICON[known?.t] || '🐠');
+        icon.setAttribute('aria-hidden', 'true');
+        outer.append(icon);
+      }
+      const item = element('div', 'specimen-text');
+      outer.append(item);
+      if (KIND_LABEL[known?.t]) item.append(element('span', 'specimen-kind', KIND_LABEL[known.t]));
+      item.append(element('span', 'specimen-name', specimen.publicName || 'Fish'));
+
       const href = speciesPath(scientificName);
 
       if (href) {
@@ -232,7 +285,7 @@
       } else if (commonName && commonName !== specimen.publicName) {
         item.append(element('span', 'specimen-species', commonName));
       }
-      return item;
+      return outer;
     }
 
     function renderSpecimens(specimens) {
@@ -404,11 +457,27 @@
       commerce.forEach((line) => list.append(buildCommerceLine(line)));
     }
 
+    /**
+     * Link the keeper's store, using only what the page already has: a sellable
+     * line carries the seller wallet (the marketplace publishes it for every
+     * active listing), and /store/<wallet> resolves it the same way
+     * marketplace.html's storefrontUrl fallback does. A tank with nothing for
+     * sale exposes no owner, so it shows no store link.
+     */
+    function renderSeller(commerce) {
+      const card = document.getElementById('sellerCard');
+      const wallet = commerce.map((line) => String(line?.sellerWallet || '')).find((w) => /^0x[0-9a-f]{40}$/i.test(w));
+      if (!wallet) { card.style.display = 'none'; return; }
+      document.getElementById('sellerLink').href = `/store/${encodeURIComponent(wallet.toLowerCase())}`;
+      card.style.display = '';
+    }
+
     function render(payload) {
       const tank = payload.tank;
       renderHeader(tank);
       renderSpecimens(Array.isArray(tank.specimens) ? tank.specimens : []);
       renderCommerce(Array.isArray(tank.commerce) ? tank.commerce : []);
+      renderSeller(Array.isArray(tank.commerce) ? tank.commerce : []);
 
       const stamp = tank.updatedAt || payload.updatedAt;
       const updated = document.getElementById('tankUpdated');
@@ -424,6 +493,7 @@
     async function init() {
       const token = tokenFromPath(window.location.pathname);
       if (!token) return showNotFound();
+      const indexReady = loadSpeciesIndex();
       try {
         const response = await fetch(`/api/storefront-detail?action=public-tank&t=${encodeURIComponent(token)}`, {
           headers: { Accept: 'application/json' },
@@ -436,6 +506,7 @@
         if (!payload?.tank || typeof payload.tank !== 'object') {
           return showMessage('Tank unavailable', 'The tank data could not be read.');
         }
+        await indexReady;
         render(payload);
       } catch {
         showMessage('Tank unavailable', 'Please try again in a moment.');

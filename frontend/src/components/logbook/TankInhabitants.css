@@ -7,9 +7,44 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
-.ti-title { font-size: 0.85rem; color: var(--text-secondary, #cbd5e1); }
-.ti-add { padding: 0.35rem 0.75rem; font-size: 0.78rem; white-space: nowrap; }
+.ti-head-text { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.ti-title { font-family: var(--font-display); font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
+.ti-breakdown { font-size: 0.78rem; color: var(--text-muted); }
+.ti-warn {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  background: #fffbeb;
+  border: 1px solid rgba(180, 83, 9, 0.3);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+.ti-add { min-height: 44px; padding: 0.45rem 0.95rem; font-size: 0.82rem; white-space: nowrap; }
+
+.ti-care-link {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent-teal);
+  border: 1px solid rgba(15, 118, 110, 0.3);
+  background: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ti-care-link:hover { background: rgba(15, 118, 110, 0.06); }
+.ti-care-link:focus-visible { outline: 2px solid var(--accent-teal); outline-offset: 2px; }
+.ti-sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
 
 .ti-empty { padding: 2rem; text-align: center; }
 .ti-empty p { color: var(--text-muted, #94a3b8); font-size: 0.85rem; margin-bottom: 1rem; }
@@ -69,9 +104,10 @@
 
 /* Groups */
 .ti-group {
-  border: 1px solid rgba(var(--ink-rgb), 0.05);
-  border-radius: 10px;
-  background: var(--bg-band);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: var(--glass-shadow);
   overflow: hidden;
 }
 
@@ -87,18 +123,20 @@
 .ti-check { width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; accent-color: var(--accent-blue-fill); }
 
 .ti-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
   overflow: hidden;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(14, 165, 233, 0.2));
-  border: 1px solid rgba(56, 189, 248, 0.2);
+  font-size: 1.3rem;
+  background: var(--bg-band);
+  border: 1px solid var(--line);
 }
+.ti-avatar--coral { background: #fdf2f8; border-color: #fbcfe8; }
+.ti-avatar--invertebrate { background: #fff7ed; border-color: #fed7aa; }
 .ti-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .ti-avatar--batch { background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(217, 119, 6, 0.2)); border-color: rgba(251, 191, 36, 0.25); }
 
@@ -178,8 +216,13 @@
 .ti-cert { font-size: 0.66rem; color: var(--accent-blue, #38bdf8); }
 
 .ti-ind-actions { display: flex; align-items: center; gap: 0.3rem; flex-shrink: 0; }
-.ti-mini { padding: 0.2rem 0.45rem; font-size: 0.7rem; border-radius: 5px; cursor: pointer; border: 1px solid rgba(var(--ink-rgb), 0.1); background: rgba(var(--ink-rgb), 0.03); color: var(--text-primary); }
-.ti-mini-sell { color: var(--accent-green, #34d399); border-color: rgba(52, 211, 153, 0.2); background: rgba(52, 211, 153, 0.06); }
+.ti-mini { min-height: 36px; min-width: 36px; padding: 0.2rem 0.55rem; font-size: 0.74rem; border-radius: 8px; cursor: pointer; border: 1px solid rgba(var(--ink-rgb), 0.12); background: #fff; color: var(--text-primary); }
+.ti-mini:focus-visible { outline: 2px solid var(--accent-teal); outline-offset: 2px; }
+.ti-mini-sell { color: var(--accent-green); border-color: rgba(4, 120, 87, 0.3); background: rgba(5, 150, 105, 0.06); }
+@media (pointer: coarse) {
+  .ti-mini, .ti-care-link { min-height: 44px; min-width: 44px; }
+  .ti-check { width: 22px; height: 22px; }
+}
 .ti-mini-retire { color: var(--accent-red); border-color: rgba(248, 113, 113, 0.2); background: rgba(248, 113, 113, 0.06); }
 
 /* Batch placeholders */

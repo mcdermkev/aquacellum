@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { ethers, Contract } from "ethers";
 import { FishSimple, Flask, Drop, Asterisk } from "@phosphor-icons/react";
 import aquadexAbi from "../abi/AquadexManager.json";
@@ -11,7 +12,6 @@ import { db } from "../db";
 import { PoseidonChatConsole } from "./PoseidonChatConsole";
 import { mapContractError } from "../utils/errorHandler";
 import { TankQRCode } from "./TankQRCode";
-import { TankFishVisualization } from "./TankFishVisualization";
 import { useUserTanks } from "../hooks/useUserTanks";
 import { useSpeciesData } from "../hooks/useSpeciesData";
 import { useContractSpecies } from "../hooks/useSpeciesData";
@@ -66,6 +66,13 @@ import { getOrInitTankSchedules } from "../services/tankSchedules";
 import { getTankPhoto, putTankPhoto, putSpecimenPhoto, resolveSpecimenPhoto } from "../services/tankMedia";
 import { isInsideEnvelope, getTrackBackground, CONTAINMENT_TYPES, getWaterEnvelope, envelopeForTank, tankTypeLabel, tankKindLabel, isSaltwaterTank, marineLogFields, marineFormFromLog, MARINE_STYLES } from "../utils/tankUtils";
 import { MarineReadingTile, MarineTestFields } from "./MarineTestFields";
+import { TankConnections } from "./logbook/TankConnections";
+import { countInhabitants, inhabitantSummary, reefPlacement, speciesRecordFor } from "./logbook/inhabitants";
+import { withMarineGlobals } from "./finder/waterFilter";
+import { buildGlobalCatalog } from "../services/speciesCatalog";
+import { FragListingModal } from "./FragListingModal";
+import { BatchListingWizard } from "./BatchListingWizard";
+import "./logbook/TankListDaylight.css";
 export function TankList({ contractAddress, walletAccount, onViewLineage, onListOnMarketplace, onSelectSpecimen, casualModeActive = false }) {
   const queryClient = useQueryClient();
   // Settings → Units & Formatting. `primaryTempUnit` collapses "both" to the
@@ -80,7 +87,25 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const { data: fetchedTanks = [], isLoading: tanksLoading, error: tanksError, refetch: refetchTanks } = useUserTanks(contractAddress, walletAccount);
   const tanks = fetchedTanks;
   const loading = tanksLoading;
-  const error = tanksError ? (tanksError.message || "Failed to fetch tank systems from the secure registry.") : null;
+  const error = tanksError ? (tanksError.message || "Couldn't load your tanks. Check your connection and try again.") : null;
+  // Mobile bottom sheet breakpoint — matches the `.tank-detail-sheet` rules in
+  // styles/index.css (max-width: 768px).
+  const [isMobileSheet, setIsMobileSheet] = useState(
+    () => typeof window !== "undefined" && !!window.matchMedia && window.matchMedia("(max-width: 768px)").matches
+  );
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return undefined;
+    const mq = window.matchMedia("(max-width: 768px)");
+    const onChange = () => setIsMobileSheet(mq.matches);
+    mq.addEventListener?.("change", onChange);
+    return () => mq.removeEventListener?.("change", onChange);
+  }, []);
+  const inSheetPortal = (node) =>
+    isMobileSheet && typeof document !== "undefined" ? createPortal(node, document.body) : node;
+  // Sell-from-the-tank flows that live in the Breeder Store (MarketplaceBoard);
+  // mounted here too so a keeper can list without leaving the tank.
+  const [fragModalOpen, setFragModalOpen] = useState(false);
+  const [batchWizardOpen, setBatchWizardOpen] = useState(false);
 
   const [userAlias, setUserAlias] = useState("");
   const [draggedOverTankId, setDraggedOverTankId] = useState(null);
@@ -237,6 +262,22 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   const [addFishLifeStage, setAddFishLifeStage] = useState("");
   const { data: contractSpecies = [] } = useContractSpecies(contractAddress);
 
+  // What the Add drawer offers for the tank it's adding to. The on-chain catalog
+  // holds only freshwater species so far, so a saltwater tank also gets the
+  // curated marine fish, corals and inverts (specCode 200001+) — the same merge
+  // Fish Finder uses (withMarineGlobals). Marine entries lead for a saltwater tank.
+  const addFishTank = useMemo(
+    () => tanks.find((t) => Number(t.id) === Number(addFishTankId)) || null,
+    [tanks, addFishTankId]
+  );
+  const addFishCatalog = useMemo(() => {
+    if (!isSaltwaterTank(addFishTank)) return contractSpecies;
+    const merged = withMarineGlobals(contractSpecies, buildGlobalCatalog(fishbaseData));
+    const marine = merged.filter((e) => e.waterGroup === "marine");
+    const rest = merged.filter((e) => e.waterGroup !== "marine");
+    return [...marine, ...rest];
+  }, [addFishTank, contractSpecies, fishbaseData]);
+
   // Load the keeper's own registered morph names once per wallet, to offer as
   // autocomplete suggestions in the Add Fish morph field. Read-only, best-effort:
   // a failure just means no suggestions, never a blocked registration.
@@ -264,13 +305,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   // specCode are different numbering schemes (see findCatalogRecord).
   const addFishSpeciesRecord = useMemo(() => {
     if (!addFishSpeciesId) return null;
-    const onChain = contractSpecies.find((s) => String(s.speciesId) === String(addFishSpeciesId));
+    const onChain = addFishCatalog.find((s) => String(s.speciesId) === String(addFishSpeciesId));
     if (!onChain) return null;
     return findCatalogRecord(fishbaseData, {
       scientificName: onChain.scientificName,
       commonName: onChain.commonName,
     });
-  }, [addFishSpeciesId, contractSpecies, fishbaseData]);
+  }, [addFishSpeciesId, addFishCatalog, fishbaseData]);
   const [poseidonChatOpen, setPoseidonChatOpen] = useState(false);
   const [poseidonSeed, setPoseidonSeed] = useState(null); // grounded question seeded from a contextual "Ask Poseidon" tip
   const [activeTankSchedules, setActiveTankSchedules] = useState([]); // schedules for the open tank, so the hero ambient reflects overdue maintenance
@@ -640,10 +681,16 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
       setAddFishError("Please select a species first.");
       return;
     }
+    const pickedSpecies = addFishCatalog.find(s => String(s.speciesId) === String(addFishSpeciesId)) || {};
+    const placement = reefPlacement(speciesRecordFor(pickedSpecies, fishbaseData), addFishTank);
+    if (placement.verdict === "blocked") {
+      setAddFishError(`${placement.reason} Switch the tank to reef in About, or pick a reef tank.`);
+      return;
+    }
     setAddFishSubmitting(true);
     setAddFishError(null);
     try {
-      const species = contractSpecies.find(s => String(s.speciesId) === String(addFishSpeciesId)) || {};
+      const species = pickedSpecies;
       const count = Number(addFishQty) || 1;
 
       for (let i = 0; i < count; i++) {
@@ -678,7 +725,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
       awardXp("MINT_SPECIMEN", { quantity: count });
       showToast(casualModeActive
-        ? `🐟 ${count > 1 ? `${count} ` : ""}${species.commonName || "Fish"} added to your tank!`
+        ? `Added ${count > 1 ? `${count} ` : ""}${species.commonName || "fish"} to ${addFishTank?.name || "your tank"}.`
         : `✅ ${count} birth certificate${count > 1 ? "s" : ""} registered for ${species.commonName || "specimen"}`
       );
 
@@ -1327,6 +1374,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
   // Safe ranges come from the single envelope source (tankUtils.getWaterEnvelope),
   // not an inline per-type if/else. Saltwater is gone; unknown types fall back to FW.
   const _env = selectedLogTank ? envelopeForTank(selectedLogTank) : getWaterEnvelope(0);
+  // The open tank's own envelope, for the detail tiles. They used to read `_env`
+  // (the Quick Log tank), so a reef showed "Ideal range 22–26°C, pH 6.5–7.8".
+  const detailEnv = activeTank ? envelopeForTank(activeTank) : _env;
   const minSafeTemp = _env.tempMin;
   const maxSafeTemp = _env.tempMax;
   const minSafePh = _env.phMin;
@@ -1482,7 +1532,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             waterParams: null,
           });
           queryClient.invalidateQueries({ queryKey: ["tanks", walletAccount] });
-          showToast(casualModeActive ? "🔄 Tank reset! Starting fresh." : "Unit telemetry purged.");
+          showToast(casualModeActive ? "Tank reset. Your fish are still here." : "Unit logs cleared.");
         } catch (err) {
           console.error("Reset tank failed:", err);
           showToast("Failed to reset tank.");
@@ -1671,6 +1721,33 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
     if (nitrate > env.nitrateMax) alerts.push(`High NO₃ (${nitrate} ppm)`);
     return alerts;
   };
+
+  // Reef vs fish-only buttons, shared by the Casual Water Type tile and the Pro overview.
+  const renderMarineStyleButtons = () => activeTank && MARINE_STYLES.map((s) => {
+                              const on = (activeTank.marineStyle === "fish_only" ? "fish_only" : "reef") === s.id;
+                              return (
+                                <button
+                                  key={s.id}
+                                  type="button"
+                                  aria-pressed={on}
+                                  onClick={async () => {
+                                    if (on) return;
+                                    const r = await relaySetMarineStyle(activeTank.id, s.id);
+                                    if (!r.success) { showToast(`Couldn't change the style: ${r.error}`); return; }
+                                    setActiveTank((cur) => (cur && cur.id === activeTank.id ? { ...cur, marineStyle: s.id } : cur));
+                                    queryClient.invalidateQueries({ queryKey: ["tanks", walletAccount] });
+                                    showToast(s.id === "reef" ? "🪸 Set to reef: coral targets apply." : "🐠 Set to fish only: nitrate up to 40 ppm, no coral targets.");
+                                  }}
+                                  style={{
+                                    minHeight: "40px", padding: "0 0.75rem", borderRadius: "999px", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer",
+                                    border: `1px solid ${on ? "var(--accent-teal)" : "var(--line)"}`,
+                                    background: on ? "var(--accent-teal)" : "#ffffff", color: on ? "#ffffff" : "var(--text-secondary)",
+                                  }}
+                                >
+                                  {s.label}
+                                </button>
+                              );
+                            });
 
   // Recursive component to render nested child cards (e.g. baskets)
   const renderNestedChildren = (parentId) => {
@@ -1889,17 +1966,23 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             />
           ) : (
             <div className="vertical-tank-rows">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                <h3 style={{ fontSize: "1.25rem", color: "var(--text-primary)" }}>{casualModeActive ? "🐠 My Tanks" : "Aquarium Containment Systems"}</h3>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                  {!casualModeActive && (
-                    <div className="ops-viewtoggle" role="radiogroup" aria-label="List view">
-                      <button type="button" className={proListView === "grid" ? "active" : ""} onClick={() => setProListView("grid")} role="radio" aria-checked={proListView === "grid"}>⚡ Grid</button>
-                      <button type="button" className={proListView === "cards" ? "active" : ""} onClick={() => setProListView("cards")} role="radio" aria-checked={proListView === "cards"}>🗂 Cards</button>
-                    </div>
+              <div className="tanks-head">
+                <div className="tanks-head-text">
+                  {/* Same name as the nav tab, so the page says where you are. */}
+                  <h2 className="tanks-title">{casualModeActive ? "My Aquariums" : "Aquariums"}</h2>
+                  {tanks.length > 0 && (
+                    <p className="tanks-subtitle">
+                      {filteredTanks.length} {filteredTanks.length === 1 ? "tank" : "tanks"}
+                      {casualModeActive ? " · tap a tank to see its fish, water and care" : " · open a tank for chemistry, livestock and logs"}
+                    </p>
                   )}
-                  <span className="badge badge-blue">{filteredTanks.length} Units Found</span>
                 </div>
+                {!casualModeActive && tanks.length > 0 && (
+                  <div className="ops-viewtoggle" role="radiogroup" aria-label="List view">
+                    <button type="button" className={proListView === "grid" ? "active" : ""} onClick={() => setProListView("grid")} role="radio" aria-checked={proListView === "grid"}>Grid</button>
+                    <button type="button" className={proListView === "cards" ? "active" : ""} onClick={() => setProListView("cards")} role="radio" aria-checked={proListView === "cards"}>Cards</button>
+                  </div>
+                )}
               </div>
 
               {/* Group-level averaged parameter trends — shown whenever the list is
@@ -1913,48 +1996,53 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
               {topLevelTanks.length === 0 ? (
                 tanks.length === 0 ? (
-                  <div className="glass-card" style={{ padding: "3rem 2rem", textAlign: "center", maxWidth: "520px", margin: "2rem auto" }}>
-                    <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>
-                      {casualModeActive ? "🐠" : "🧪"}
+                  <div className="tanks-empty">
+                    <div className="tanks-empty-media">
+                      <img src="/showcase-media/steve/hero/show-pond-blue.jpg" alt="A planted show pond under blue light" loading="lazy" decoding="async" />
                     </div>
-                    <h2 style={{ color: "var(--text-primary)", marginBottom: "0.75rem", fontSize: "1.4rem" }}>
-                      {casualModeActive
-                        ? "Welcome to Aquadex!"
-                        : "Welcome to Aquadex"}
-                    </h2>
-                    <p style={{ color: "var(--text-secondary)", lineHeight: "1.6", marginBottom: "1.5rem" }}>
-                      {casualModeActive
-                        ? "Add your first tank and everything else follows — log water tests, catalogue the fish in it, and track how it's doing over time."
-                        : "Register your first containment unit to begin. Head to the Breeder Tools tab or use the facility tree view to define your system topology."}
-                    </p>
-                    <button
-                      className="btn-primary"
-                      onClick={() => {
-                        setViewMode("tree");
-                        setOpenRegisterOnTreeMount(true);
-                      }}
-                      style={{ padding: "0.75rem 1.5rem", fontSize: "1rem" }}
-                    >
-                      {casualModeActive ? "➕ Create My First Tank" : "➕ Register Containment Unit"}
-                    </button>
-                    {/* The escape hatch for the audience the default is now
-                        wrong for. Casual is the new first-run default because a
-                        confused hobbyist cannot find their way out of "facility
-                        topology", whereas a breeder just needs to be told the
-                        other mode exists — which is what this line does, at the
-                        one moment it is relevant. */}
-                    <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginTop: "1rem" }}>
-                      {casualModeActive
-                        ? "Running a breeding operation? Switch to Pro in the header for racks, rooms and facility tools."
-                        : "This will open the facility tree registration workflow."}
-                    </p>
+                    <div className="tanks-empty-body">
+                      <h2 className="tanks-empty-title">
+                        {casualModeActive ? "Add your first tank" : "Set up your first tank"}
+                      </h2>
+                      <p className="tanks-empty-lead">
+                        {casualModeActive
+                          ? "Add your first tank and everything else follows: log water tests, keep a list of what lives in it, and see how it's doing over time."
+                          : "Register a tank, tub or basket to start logging chemistry and livestock. Use Facility Tree for rooms and racks, or bulk-create a whole rack at once."}
+                      </p>
+                      <ul className="tanks-empty-steps">
+                        <li><span aria-hidden="true">💧</span>{casualModeActive ? "Freshwater, saltwater reef, fish only, brackish or pond" : "Freshwater, reef, FOWLR, brackish and pond envelopes"}</li>
+                        <li><span aria-hidden="true">🧪</span>{casualModeActive ? "Water tests with the right targets for your water" : "Per-tank targets, trends and overdue maintenance"}</li>
+                        <li><span aria-hidden="true">🛒</span>{casualModeActive ? "Sell fish or coral frags straight from the tank" : "List specimens, fry batches and frags from the tank"}</li>
+                      </ul>
+                      <button
+                        type="button"
+                        className="btn-primary tanks-empty-cta"
+                        onClick={() => {
+                          setViewMode("tree");
+                          setOpenRegisterOnTreeMount(true);
+                        }}
+                      >
+                        {casualModeActive ? "+ Add a tank" : "+ Register a tank"}
+                      </button>
+                      {/* The escape hatch for the audience the default is now
+                          wrong for. Casual is the new first-run default because a
+                          confused hobbyist cannot find their way out of "facility
+                          topology", whereas a breeder just needs to be told the
+                          other mode exists — which is what this line does, at the
+                          one moment it is relevant. */}
+                      <p className="tanks-empty-note">
+                        {casualModeActive
+                          ? "Running a breeding operation? Switch to Pro in the header for racks, rooms and facility tools."
+                          : "Opens the Facility Tree with the new-tank form ready."}
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   <div className="glass-card" style={{ padding: "3rem", textAlign: "center" }}>
                     <p style={{ color: "var(--text-muted)" }}>
                       {selectedLocation !== ALL_GROUPS && selectedLocation !== UNASSIGNED
                         ? `Nothing in "${selectedLocation}" yet — pick All, then drag a tank onto the group chip (or use the tank's ⋯ menu) to move it here.`
-                        : "No top-level units match the current filters."}
+                        : "No tanks match the current filters."}
                     </p>
                   </div>
                 )
@@ -2228,8 +2316,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
           />
         </div>
 
-        {/* RIGHT: DETAILED ACTIVE TANK PANEL — Full-screen bottom sheet on mobile */}
-        {activeTank && (
+        {/* RIGHT: DETAILED ACTIVE TANK PANEL — Full-screen bottom sheet on mobile.
+            On mobile the sheet is position:fixed, but the app shell's page
+            transition leaves a transform on an ancestor (and main.app-main has a
+            perspective), which makes that ancestor the containing block: open a
+            tank after scrolling and the sheet rendered off-screen above the
+            viewport. Portalling it to <body> on mobile keeps it on screen. */}
+        {activeTank && inSheetPortal((
           <>
             {/* Backdrop overlay for mobile */}
             <div 
@@ -2353,7 +2446,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   health={deriveTankHealth(activeTank, { schedules: activeTankSchedules })}
                   variant="hero"
                   height={200}
-                  fishbaseData={casualModeActive ? fishbaseData : []}
+                  fishbaseData={fishbaseData}
                   photoUrl={activeTankPhoto || undefined}
                   showLabel={false}
                 />
@@ -2361,14 +2454,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
               <div className="biotope-banner-overlay"></div>
 
-              {/* Dynamic Tank Fish — Pro only; casual uses the LivingTank hero's own fish */}
-              {!casualModeActive && activeTank.specimens && activeTank.specimens.length > 0 && (
-                <TankFishVisualization
-                  specimens={activeTank.specimens}
-                  fishbaseData={fishbaseData}
-                  containerHeight={200}
-                />
-              )}
+              {/* Both modes use the LivingTank hero's own fish layer now. Pro used
+                  to add a second TankFishVisualization here with no catalog
+                  context, which swam corals and snails as fish. */}
 
               {/* A third Echo — a CSS-div fish with its own swim loop — used to
                   swim here, driven by `companionData.companionXp`, a field
@@ -2396,7 +2484,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     border: '1px solid rgba(255,255,255,0.2)',
                     backdropFilter: 'blur(3px)',
                     cursor: 'pointer',
-                    boxShadow: '0 0 10px rgba(0,229,255,0.2)',
+                    boxShadow: '0 2px 6px rgba(11,37,48,0.25)',
                     transition: 'transform 0.2s ease',
                     zIndex: 10,
                     animation: 'eggWobble 4s ease-in-out infinite',
@@ -2429,17 +2517,22 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               
               {/* QR tag identifier anchored over top-right — passive identifier now;
                   printing the label moved to the quick-actions menu (Task 4 declutter). */}
-              <div className="qr-anchor-tag" title={`UNIT #${activeTank.id}`}>
+              <div className="qr-anchor-tag" title={casualModeActive ? "Scan to open this tank in the app" : `UNIT #${activeTank.id}`}>
                 {/* Real QR code rendered as canvas-to-image */}
                 <TankQRCode tankId={activeTank.id} size={40} />
-                <span style={{ fontSize: "0.55rem", fontWeight: "700", color: "var(--text-primary)" }}>UNIT #{activeTank.id}</span>
+                {!casualModeActive && (
+                  <span style={{ fontSize: "0.6rem", fontWeight: "700", color: "var(--text-primary)" }}>UNIT #{activeTank.id}</span>
+                )}
               </div>
 
-              <div style={{ position: "absolute", bottom: "1rem", left: "1rem", zIndex: "2" }}>
-                <span className="badge badge-green" style={{ marginBottom: "0.25rem" }}>
-                  {tankTypeLabel(activeTank.tankType)} {casualModeActive ? "Tank" : CONTAINMENT_TYPES[activeTank.containment]}
+              <div className="tank-hero-caption">
+                <span className="tank-hero-kind">
+                  {casualModeActive ? tankKindLabel(activeTank) : `${tankKindLabel(activeTank)} · ${CONTAINMENT_TYPES[activeTank.containment] || "Tank"}`}
                 </span>
-                <h3 style={{ color: "#fff", fontSize: "1.5rem", textShadow: "0 1px 3px rgba(11, 37, 48, 0.55)" }}>{activeTank.name}</h3>
+                <h3 className="tank-hero-name">{activeTank.name}</h3>
+                <span className="tank-hero-meta">
+                  {formatVolume(activeTank.volumeLiters, volumeUnit)} · {inhabitantSummary(countInhabitants(activeTank, fishbaseData), { casual: casualModeActive })}
+                </span>
                 {!casualModeActive && (
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
                     <span style={{ fontSize: "0.85rem", color: "rgba(255, 255, 255, 0.92)", textShadow: "0 1px 3px rgba(11, 37, 48, 0.55)" }}>
@@ -2487,26 +2580,17 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             </div>
 
             {/* Inline Quick-Tap Action Sheet Toolbar */}
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.75rem",
-              padding: "0.75rem 1rem",
-              background: "rgba(var(--ink-rgb), 0.02)",
-              border: "1px solid var(--glass-border)",
-              borderRadius: "8px",
-              margin: "1rem 0"
-            }}>
-              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>Quick Actions:</span>
+            <div className="tank-quickbar">
+              <span className="tank-quickbar-label">{casualModeActive ? "Log care" : "Quick actions"}</span>
 
               {/* Share — secondary action; opens the composer (no longer a permanent tab) */}
               <button
                 type="button"
                 onClick={() => setDetailSubTab("social")}
-                style={{ order: 2, marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem", padding: "0.4rem 0.8rem", fontSize: "0.8rem", background: "rgba(var(--ink-rgb), 0.03)", border: "1px solid var(--glass-border)", borderRadius: "6px", color: "var(--text-primary)", cursor: "pointer" }}
+                className="tank-quickbar-btn tank-quickbar-share"
                 aria-label={casualModeActive ? "Share tank on The Reef" : "Share to Social Feed"}
               >
-                📢 <span>Share</span>
+                <span aria-hidden="true">📢</span> <span>Share</span>
               </button>
               
               {/* Invisible Photo Input */}
@@ -2552,22 +2636,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
 
               <div style={{ position: "relative" }}>
                 <button
+                  type="button"
                   onClick={() => setQuickActionsOpen(!quickActionsOpen)}
-                  className="btn-secondary"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    padding: "0.4rem 1rem",
-                    fontSize: "0.8rem",
-                    background: "rgba(var(--ink-rgb), 0.03)",
-                    border: "1px solid var(--glass-border)",
-                    borderRadius: "6px",
-                    color: "var(--text-primary)",
-                    cursor: "pointer"
-                  }}
+                  className="tank-quickbar-btn tank-quickbar-primary"
+                  aria-expanded={quickActionsOpen}
                 >
-                  ⚡ Log Care / Actions <span style={{ fontSize: "0.6rem", transition: "transform 0.2s", display: "inline-block", transform: quickActionsOpen ? "rotate(180deg)" : "rotate(0deg)" }}>▼</span>
+                  {/* Label pinned by e2e (starter-quest / logbook-journeys). */}
+                  ⚡ Log Care / Actions <span aria-hidden="true" style={{ fontSize: "0.6rem", transition: "transform 0.2s", display: "inline-block", transform: quickActionsOpen ? "rotate(180deg)" : "rotate(0deg)" }}>▼</span>
                 </button>
 
                 {quickActionsOpen && (
@@ -2918,7 +2993,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                                 </svg>
                               </span>
                               <span className="console-tile-label">Print QR Label</span>
-                              <span className="console-tile-desc">Printable unit tag PDF</span>
+                              <span className="console-tile-desc">Printable tank tag PDF</span>
                             </button>
                           </div>
                         </div>
@@ -2953,12 +3028,24 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               {/* 2.1 OVERVIEW SUB-TAB: Telemetry Grid or Casual System Specs */}
               {detailSubTab === "overview" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  {/* A fish-only tank with corals in it: the fish-only targets
+                      (nitrate to 40 ppm, no Ca/Mg/PO4) are wrong for them. */}
+                  {isSaltwaterTank(activeTank) && activeTank.marineStyle === "fish_only" && countInhabitants(activeTank, fishbaseData).coral > 0 && (
+                    <div className="tank-warn" role="status">
+                      <strong>{casualModeActive ? "Corals in a fish-only tank" : "Corals in a FOWLR tank"}</strong>
+                      <span>
+                        {casualModeActive
+                          ? "This tank is set to fish only, so it isn't checking the calcium, magnesium and low nitrate corals need. Switch it to Reef, or move the corals to a reef tank."
+                          : "Fish-only targets skip Ca/Mg/PO4 and allow NO₃ to 40 ppm. Switch the style to Reef or move the corals."}
+                      </span>
+                    </div>
+                  )}
                   {casualModeActive ? (
                     <>
                     <CareCoach tank={activeTank} walletAccount={walletAccount} onAction={handleCoachAction} />
                     <HealthFlagExplainer tank={activeTank} casualModeActive={casualModeActive} onAskPoseidon={askPoseidon} />
                     <SpeciesCareGuide tank={activeTank} fishbaseData={fishbaseData} contractSpecies={contractSpecies} onAskPoseidon={askPoseidon} />
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                    <div className="tank-casual-tiles" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                       {/* Water Type */}
                       <div className="telemetry-tile-premium" style={{ borderLeft: "3px solid var(--accent-blue)" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -2967,35 +3054,17 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                         <strong style={{ fontSize: "1.25rem", color: "var(--text-primary)", display: "block", marginTop: "0.5rem" }}>
                           {tankKindLabel(activeTank)}
                         </strong>
-                        <span style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>{tankTypeLabel(activeTank.tankType)} ecosystem</span>
+                        <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                          {isSaltwaterTank(activeTank)
+                            ? (activeTank.marineStyle === "fish_only"
+                              ? "Fish only: nitrate up to 40 ppm, no coral targets"
+                              : "Reef: coral targets for nitrate, calcium, magnesium, phosphate")
+                            : `${tankTypeLabel(activeTank.tankType)} targets apply`}
+                        </span>
                         {/* Reef vs fish-only sets the targets and whether corals fit (docs/SALTWATER_SPEC.md). */}
                         {isSaltwaterTank(activeTank) && (
                           <div role="group" aria-label="Saltwater style" style={{ display: "flex", gap: "0.35rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
-                            {MARINE_STYLES.map((s) => {
-                              const on = (activeTank.marineStyle === "fish_only" ? "fish_only" : "reef") === s.id;
-                              return (
-                                <button
-                                  key={s.id}
-                                  type="button"
-                                  aria-pressed={on}
-                                  onClick={async () => {
-                                    if (on) return;
-                                    const r = await relaySetMarineStyle(activeTank.id, s.id);
-                                    if (!r.success) { showToast(`Couldn't change the style: ${r.error}`); return; }
-                                    setActiveTank((cur) => (cur && cur.id === activeTank.id ? { ...cur, marineStyle: s.id } : cur));
-                                    queryClient.invalidateQueries({ queryKey: ["tanks", walletAccount] });
-                                    showToast(s.id === "reef" ? "🪸 Set to reef: coral targets apply." : "🐠 Set to fish only: nitrate up to 40 ppm, no coral targets.");
-                                  }}
-                                  style={{
-                                    minHeight: "32px", padding: "0 0.6rem", borderRadius: "6px", fontSize: "0.7rem", fontWeight: 700, cursor: "pointer",
-                                    border: `1px solid ${on ? "rgba(56,189,248,0.7)" : "var(--glass-border)"}`,
-                                    background: on ? "rgba(56,189,248,0.18)" : "transparent", color: on ? "#e0f2fe" : "var(--text-secondary)",
-                                  }}
-                                >
-                                  {s.label}
-                                </button>
-                              );
-                            })}
+                            {renderMarineStyleButtons()}
                           </div>
                         )}
                       </div>
@@ -3014,51 +3083,58 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       </div>
 
                       {/* Population */}
-                      <div className="telemetry-tile-premium" style={{ borderLeft: "3px solid var(--accent-amber)", gridColumn: "span 2", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>
-                        <div style={{ display: "flex", flexDirection: "column" }}>
-                          <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>🐠 Current Population</span>
-                          <strong style={{ fontSize: "1.25rem", color: "var(--text-primary)", display: "block", marginTop: "0.4rem" }}>
-                            {getSpecimenCount(activeTank)} Fish
+                      <div className="telemetry-tile-premium tank-population-tile" style={{ borderLeft: "3px solid var(--accent-amber)", gridColumn: "span 2" }}>
+                        <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                          <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                            <span aria-hidden="true">{isSaltwaterTank(activeTank) ? "🪸 " : "🐠 "}</span>What lives here
+                          </span>
+                          <strong style={{ fontSize: "1.2rem", color: "var(--text-primary)", display: "block", marginTop: "0.4rem" }}>
+                            {inhabitantSummary(countInhabitants(activeTank, fishbaseData))}
                           </strong>
-                          <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.15rem" }}>Total specimens in this tank</span>
+                          <button type="button" className="tank-link-btn" onClick={() => setDetailSubTab("fish")}>
+                            See the list
+                          </button>
                         </div>
                         <button
                           type="button"
-                          className="btn-primary"
+                          className="btn-primary tank-add-btn"
                           onClick={() => openAddFish(activeTank)}
-                          style={{
-                            padding: "0.5rem 1rem",
-                            fontSize: "0.82rem",
-                            fontWeight: "600",
-                            borderRadius: "8px",
-                            background: "linear-gradient(135deg, var(--accent-amber), #d97706)",
-                            border: "none",
-                            color: "#fff",
-                            boxShadow: "0 4px 12px rgba(245, 158, 11, 0.2)",
-                            transition: "all 0.2s ease",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "0.4rem"
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = "translateY(-1px)";
-                            e.currentTarget.style.boxShadow = "0 6px 16px rgba(245, 158, 11, 0.4)";
-                            e.currentTarget.style.background = "linear-gradient(135deg, #d97706, #b45309)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = "translateY(0)";
-                            e.currentTarget.style.boxShadow = "0 4px 12px rgba(245, 158, 11, 0.2)";
-                            e.currentTarget.style.background = "linear-gradient(135deg, var(--accent-amber), #d97706)";
-                          }}
                         >
-                          + Add Fish
+                          {isSaltwaterTank(activeTank) ? "+ Add fish, coral or invert" : "+ Add Fish"}
                         </button>
                       </div>
                     </div>
+                    {isSaltwaterTank(activeTank) && <MarineReadingTile tank={activeTank} casual />}
                     </>
                   ) : (
                     <>
                       <HealthFlagExplainer tank={activeTank} casualModeActive={casualModeActive} onAskPoseidon={askPoseidon} />
+                      {isSaltwaterTank(activeTank) && (
+                        <div className="tank-style-row">
+                          <span className="tank-style-label">Saltwater style</span>
+                          <div role="group" aria-label="Saltwater style (Pro)" style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+                            {renderMarineStyleButtons()}
+                          </div>
+                        </div>
+                      )}
+                      {(() => {
+                        // Shadow the Quick Log envelope with the OPEN tank's own
+                        // targets for every tile below (reef vs fish-only vs freshwater).
+                        const minSafeTemp = detailEnv.tempMin;
+                        const maxSafeTemp = detailEnv.tempMax;
+                        const minSafePh = detailEnv.phMin;
+                        const maxSafePh = detailEnv.phMax;
+                        const minSafeGh = detailEnv.ghMin;
+                        const maxSafeGh = detailEnv.ghMax;
+                        const minSafeKh = detailEnv.khMin;
+                        const maxSafeKh = detailEnv.khMax;
+                        const minSafeTal = detailEnv.talMin;
+                        const maxSafeTal = detailEnv.talMax;
+                        const nh3Max = detailEnv.ammoniaMax;
+                        const no2Max = detailEnv.nitriteMax;
+                        const no3Max = detailEnv.nitrateMax;
+                        const salt = isSaltwaterTank(activeTank);
+                        return (
                       <div className="telemetry-2x2-grid">
                         {/* Thermal */}
                         <div className="telemetry-tile-premium" style={{ borderLeft: `3px solid ${activeTank.latestLog ? getHslColor(activeTank.latestLog.tempCelsiusX10/10, minSafeTemp, maxSafeTemp, 5) : "var(--glass-border)"}` }}>
@@ -3136,20 +3212,20 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           position: "relative",
                           gridColumn: "span 2",
                           borderLeft: `3px solid ${activeTank.latestLog ? (
-                            (Number(activeTank.latestLog.ammoniaPpmX100)/100 > 0.05 || Number(activeTank.latestLog.nitritePpmX100)/100 > 0.05) 
+                            (Number(activeTank.latestLog.ammoniaPpmX100)/100 > nh3Max || Number(activeTank.latestLog.nitritePpmX100)/100 > no2Max) 
                               ? "var(--accent-red)" 
-                              : Number(activeTank.latestLog.nitratePpmX100)/100 > 20.0 
+                              : Number(activeTank.latestLog.nitratePpmX100)/100 > no3Max 
                                 ? "var(--accent-amber)" 
                                 : "var(--accent-green)"
                           ) : "var(--glass-border)"}`
                         }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>🧬 Nitrogen Cycle</span>
-                            {activeTank.latestLog && (Number(activeTank.latestLog.ammoniaPpmX100)/100 > 0.05 || Number(activeTank.latestLog.nitritePpmX100)/100 > 0.05) ? (
+                            {activeTank.latestLog && (Number(activeTank.latestLog.ammoniaPpmX100)/100 > nh3Max || Number(activeTank.latestLog.nitritePpmX100)/100 > no2Max) ? (
                               <span className="badge pulsate-red-badge" style={{ fontSize: "0.55rem", padding: "0.1rem 0.4rem" }}>
                                 CRITICAL
                               </span>
-                            ) : activeTank.latestLog && Number(activeTank.latestLog.nitratePpmX100)/100 > 20.0 ? (
+                            ) : activeTank.latestLog && Number(activeTank.latestLog.nitratePpmX100)/100 > no3Max ? (
                               <span className="badge badge-amber" style={{ fontSize: "0.55rem", padding: "0.1rem 0.4rem" }}>
                                 HIGH NO₃
                               </span>
@@ -3163,10 +3239,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <span>Ammonia:</span>
                               <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                                <strong style={{ color: activeTank.latestLog && (activeTank.latestLog.ammoniaPpmX100/100) > 0.05 ? "var(--accent-red)" : "var(--accent-green)" }}>
+                                <strong style={{ color: activeTank.latestLog && (activeTank.latestLog.ammoniaPpmX100/100) > nh3Max ? "var(--accent-red)" : "var(--accent-green)" }}>
                                   {activeTank.latestLog ? (activeTank.latestLog.ammoniaPpmX100/100).toFixed(2) : "0.00"} ppm
                                 </strong>
-                                {activeTank.latestLog && (activeTank.latestLog.ammoniaPpmX100/100) > 0.05 && (
+                                {activeTank.latestLog && (activeTank.latestLog.ammoniaPpmX100/100) > nh3Max && (
                                   <span className="badge pulsate-red-badge" style={{ fontSize: "0.5rem", padding: "0.05rem 0.25rem" }}>Critical NH₃</span>
                                 )}
                               </div>
@@ -3174,24 +3250,25 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <span>Nitrite:</span>
                               <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                                <strong style={{ color: activeTank.latestLog && (activeTank.latestLog.nitritePpmX100/100) > 0.05 ? "var(--accent-red)" : "var(--accent-green)" }}>
+                                <strong style={{ color: activeTank.latestLog && (activeTank.latestLog.nitritePpmX100/100) > no2Max ? "var(--accent-red)" : "var(--accent-green)" }}>
                                   {activeTank.latestLog ? (activeTank.latestLog.nitritePpmX100/100).toFixed(2) : "0.00"} ppm
                                 </strong>
-                                {activeTank.latestLog && (activeTank.latestLog.nitritePpmX100/100) > 0.05 && (
+                                {activeTank.latestLog && (activeTank.latestLog.nitritePpmX100/100) > no2Max && (
                                   <span className="badge pulsate-red-badge" style={{ fontSize: "0.5rem", padding: "0.05rem 0.25rem" }}>Critical NO₂</span>
                                 )}
                               </div>
                             </div>
                             <div style={{ display: "flex", justifyContent: "space-between" }}>
-                              <span>Nitrate:</span>
-                              <strong style={{ color: activeTank.latestLog && (activeTank.latestLog.nitratePpmX100/100) > 20 ? "var(--accent-amber)" : "var(--text-primary)" }}>
+                              <span>Nitrate (target ≤ {no3Max} ppm{salt ? (activeTank.marineStyle === "fish_only" ? ", fish only" : ", reef") : ""}):</span>
+                              <strong style={{ color: activeTank.latestLog && (activeTank.latestLog.nitratePpmX100/100) > no3Max ? "var(--accent-amber)" : "var(--text-primary)" }}>
                                 {activeTank.latestLog ? (activeTank.latestLog.nitratePpmX100/100).toFixed(1) : "0.0"} ppm
                               </strong>
                             </div>
                           </div>
                         </div>
                         {/* Hardness & Alkalinity — only shown once a reading carries GH/KH/TAL */}
-                        {activeTank.latestLog && (activeTank.latestLog.ghX10 !== undefined || activeTank.latestLog.khX10 !== undefined || activeTank.latestLog.talPpm !== undefined) && (
+                        {/* Saltwater alkalinity shows in the saltwater tile (dKH against reef targets); GH isn't a marine measure. */}
+                        {!salt && activeTank.latestLog && (activeTank.latestLog.ghX10 !== undefined || activeTank.latestLog.khX10 !== undefined || activeTank.latestLog.talPpm !== undefined) && (
                           <div className="telemetry-tile-premium" style={{ gridColumn: "span 2" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>💎 Hardness & Alkalinity</span>
@@ -3224,8 +3301,10 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             </div>
                           </div>
                         )}
-                        {isSaltwaterTank(activeTank) && <MarineReadingTile tank={activeTank} />}
+                        {salt && <MarineReadingTile tank={activeTank} />}
                       </div>
+                        );
+                      })()}
 
                       {getChemistryAlerts(activeTank).length > 0 && (
                         <div className="glass-card" style={{ padding: "0.75rem 1rem", border: "1px solid rgba(248, 113, 113, 0.3)", background: "rgba(248, 113, 113, 0.05)", borderRadius: "var(--radius-sm)" }}>
@@ -3234,16 +3313,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             One or more nitrogen compounds exceed safe husbandry levels. High ammonia/nitrites can be fatal to specimens. Perform an immediate 25% water change.
                           </p>
                           <button
+                            type="button"
                             className="btn-primary"
-                            style={{ 
-                              marginTop: "0.5rem", 
-                              fontSize: "0.75rem", 
-                              padding: "0.4rem 0.85rem",
-                              background: "linear-gradient(135deg, var(--accent-amber) 0%, #d97706 100%)",
-                              border: "none",
-                              boxShadow: "0 4px 12px rgba(251, 191, 36, 0.2)",
-                              color: "#fff"
-                            }}
+                            style={{ marginTop: "0.5rem", fontSize: "0.8rem", minHeight: "40px", padding: "0.4rem 0.9rem" }}
                             onClick={() => {
                               setFormData({
                                 temp: activeTank.latestLog ? (activeTank.latestLog.tempCelsiusX10/10).toString() : "24.5",
@@ -3254,6 +3326,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                                 gh: activeTank.latestLog?.ghX10 ? (activeTank.latestLog.ghX10/10).toString() : "8.0",
                                 kh: activeTank.latestLog?.khX10 ? (activeTank.latestLog.khX10/10).toString() : "5.0",
                                 tal: activeTank.latestLog?.talPpm ? activeTank.latestLog.talPpm.toString() : "80",
+                                // Saltwater tanks keep their salinity / Ca / Mg / PO4 (and a marine dKH).
+                                ...marineFormFromLog(activeTank.latestLog, activeTank.tankType),
                                 notes: "Immediate water change performed."
                               });
                               setQuickLogMode("water_test");
@@ -3268,6 +3342,20 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                       )}
                     </>
                   )}
+
+                  {/* Links from the tank to the rest of the product (both modes). */}
+                  <TankConnections
+                    tank={activeTank}
+                    fishbaseData={fishbaseData}
+                    casualModeActive={casualModeActive}
+                    walletAccount={walletAccount}
+                    onLogTest={() => logTestLongPress()}
+                    onLogFeed={() => logFeedClick()}
+                    onPrintLabel={() => printTankQRLabel(activeTank)}
+                    onSellFish={() => setDetailSubTab("fish")}
+                    onSellFrags={() => setFragModalOpen(true)}
+                    onListBatch={casualModeActive ? undefined : () => setBatchWizardOpen(true)}
+                  />
 
                   {/* Stocking / bioload guidance (both modes) — grounded, deterministic */}
                   <StockingGuidance
@@ -3306,6 +3394,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     setTimeout(() => specimenPhotoInputRef.current?.click(), 50);
                   }}
                   onListSpecimen={onListOnMarketplace ? (spec) => onListOnMarketplace(activeTank, spec) : undefined}
+                  onSellFrags={walletAccount ? () => setFragModalOpen(true) : undefined}
                   onFarewellSpecimen={(spec) => setFarewellSpecimen(spec)}
                   onViewLineage={onViewLineage ? (id) => onViewLineage(id) : undefined}
                   onMoveSpecimens={handleMoveSpecimensBulk}
@@ -3383,11 +3472,13 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           setComposerCategory("telemetry");
                           
                           // Pre-fill telemetry report
-                          const reportText = `📊 TELEMETRY Snapshot: Operating stable. Parameters: Temp: ${tempVal}, pH: ${phVal}. Total specimens registered: ${specCount}.`;
+                          const reportText = casualModeActive
+                            ? `Tank update: ${tempVal}, pH ${phVal.replace(" pH", "")}. ${inhabitantSummary(countInhabitants(activeTank, fishbaseData))}.`
+                            : `📊 Parameter snapshot: Temp ${tempVal}, pH ${phVal.replace(" pH", "")}. Stock: ${specCount}.`;
                           setCommentText(reportText);
                           setCommenterRole(casualModeActive || !isHatched ? "hobbyist" : "breeder");
                           
-                          showToast("📋 Pre-filled parameter snapshot in telemetry deck!");
+                          showToast(casualModeActive ? "Added your latest readings to the post." : "Parameter snapshot added to the post.");
                           setTimeout(() => commentInputRef.current?.focus(), 100);
                         }}
                         style={{
@@ -3558,7 +3649,9 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                           className={`composer-tab-btn ${composerCategory === "telemetry" ? "active" : ""}`}
                           onClick={() => {
                             setComposerCategory("telemetry");
-                            const reportText = `📊 TELEMETRY Snapshot: Operating stable. Parameters: Temp: ${tempVal}, pH: ${phVal}. Total specimens registered: ${specCount}.`;
+                            const reportText = casualModeActive
+                            ? `Tank update: ${tempVal}, pH ${phVal.replace(" pH", "")}. ${inhabitantSummary(countInhabitants(activeTank, fishbaseData))}.`
+                            : `📊 Parameter snapshot: Temp ${tempVal}, pH ${phVal.replace(" pH", "")}. Stock: ${specCount}.`;
                             setCommentText(reportText);
                           }}
                         >
@@ -3784,7 +3877,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                             {(!casualModeActive && (companionData?.currentTier === "Master" || companionData?.currentTier === "God-Tier")) ? (
                               <div
                                 className={`role-chip master ${commenterRole === "master-breeder" ? "active" : ""}`}
-                                title="You're describing yourself — this tag isn't checked by Aquadex"
+                                title="You're describing yourself — this tag isn't checked by Aquacellum"
                                 onClick={() => setCommenterRole("master-breeder")}
                               >
                                 ⭐ Experienced Breeder
@@ -3904,7 +3997,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
             </div>
           </div>
           </>
-        )}
+        ))}
       </div>
 
       {/* 3. SIMULATED CAMERA SCANNER DIALOG */}
@@ -3917,13 +4010,33 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
         />
       )}
 
+      {/* Sell from the tank: the same listing flows the Breeder Store opens. */}
+      {fragModalOpen && (
+        <FragListingModal
+          isOpen={fragModalOpen}
+          onClose={() => setFragModalOpen(false)}
+          walletAccount={walletAccount}
+          onSuccess={() => { setFragModalOpen(false); showToast("Frag listing saved. It's in the Breeder Store now."); }}
+        />
+      )}
+      {batchWizardOpen && (
+        <BatchListingWizard
+          isOpen={batchWizardOpen}
+          onClose={() => setBatchWizardOpen(false)}
+          walletAccount={walletAccount}
+          onSuccess={() => { setBatchWizardOpen(false); showToast("Batch listing saved."); }}
+        />
+      )}
+
       {/* 3.5 ADD FISH SLIDING DRAWER */}
       {addFishOpen && (
         <div className="sliding-drawer-backdrop" onClick={() => setAddFishOpen(false)}>
           <div className="sliding-drawer-content" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
               <h3 style={{ margin: 0, fontSize: "1.05rem", color: "var(--text-primary)" }}>
-                {casualModeActive ? "🐟 Add Fish to Tank" : "🐟 Register Specimen"}
+                {casualModeActive
+                  ? `Add to ${addFishTank?.name || "tank"}`
+                  : "Register Specimen"}
               </h3>
               <button
                 onClick={() => { setAddFishOpen(false); setAddFishError(null); }}
@@ -3954,13 +4067,21 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                 />
               </div>
 
+              {isSaltwaterTank(addFishTank) && (
+                <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-muted)", lineHeight: 1.45 }}>
+                  {addFishTank?.marineStyle === "fish_only"
+                    ? "Marine fish and inverts are listed first. This tank is set to fish only, so corals can't be added until you switch it to reef."
+                    : "Marine fish, corals and inverts are listed first. Try \u201chammer\u201d, \u201czoanthid\u201d or \u201cclownfish\u201d."}
+                </p>
+              )}
+
               <div style={{ maxHeight: "300px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-                {contractSpecies.length === 0 ? (
+                {addFishCatalog.length === 0 ? (
                   <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", padding: "1rem", textAlign: "center" }}>
-                    No registered species found in the catalog yet.
+                    {casualModeActive ? "The species list hasn't loaded yet. Try again in a moment." : "No registered species found in the catalog yet."}
                   </p>
                 ) : (
-                  contractSpecies
+                  addFishCatalog
                     .filter(s => {
                       const q = addFishSearch.trim().toLowerCase();
                       if (!q) return true;
@@ -3970,31 +4091,50 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     .slice(0, 50)
                     .map(s => {
                       const selected = String(s.speciesId) === String(addFishSpeciesId);
+                      const record = speciesRecordFor(s, fishbaseData);
+                      const fit = reefPlacement(record, addFishTank);
+                      const photo = record?.masterPhotoUrl || "";
+                      const kindTag = s.type === "coral" ? "Coral" : s.type === "invertebrate" ? "Invert" : null;
                       return (
                         <button
                           type="button"
                           key={s.speciesId}
                           onClick={() => setAddFishSpeciesId(String(s.speciesId))}
+                          aria-pressed={selected}
                           style={{
                             display: "flex",
-                            justifyContent: "space-between",
                             alignItems: "center",
+                            gap: "0.6rem",
                             textAlign: "left",
-                            padding: "0.6rem 0.75rem",
-                            background: selected ? "rgba(56,189,248,0.15)" : "var(--bg-band)",
-                            border: selected ? "1px solid var(--accent-blue)" : "1px solid var(--glass-border)",
-                            borderRadius: "6px",
+                            minHeight: "52px",
+                            padding: "0.45rem 0.6rem",
+                            background: selected ? "rgba(15,118,110,0.08)" : "#ffffff",
+                            border: selected ? "1px solid var(--accent-teal)" : "1px solid var(--line)",
+                            borderRadius: "10px",
                             cursor: "pointer",
                             color: "var(--text-primary)"
                           }}
                         >
-                          <span>
+                          {photo ? (
+                            <img src={photo} alt="" loading="lazy" style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
+                          ) : (
+                            <span aria-hidden="true" style={{ width: 40, height: 40, borderRadius: 8, background: "var(--bg-band)", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              {s.type === "coral" ? "🪸" : s.type === "invertebrate" ? "🦐" : "🐠"}
+                            </span>
+                          )}
+                          <span style={{ flex: 1, minWidth: 0 }}>
                             <strong style={{ fontSize: "0.85rem" }}>{s.commonName}</strong>
+                            {kindTag && <span style={{ marginLeft: "0.4rem", fontSize: "0.65rem", fontWeight: 700, color: "var(--accent-teal)" }}>{kindTag}</span>}
                             <span style={{ display: "block", fontSize: "0.7rem", color: "var(--text-muted)", fontStyle: "italic" }}>
                               {s.scientificName}
                             </span>
+                            {fit.verdict !== "ok" && (
+                              <span style={{ display: "block", fontSize: "0.7rem", fontStyle: "normal", color: fit.verdict === "blocked" ? "var(--accent-red)" : "var(--accent-amber)" }}>
+                                {fit.reason}
+                              </span>
+                            )}
                           </span>
-                          {selected && <span style={{ color: "var(--accent-blue)", fontSize: "1.1rem" }}>✓</span>}
+                          {selected && <span aria-hidden="true" style={{ color: "var(--accent-teal)", fontSize: "1.1rem" }}>✓</span>}
                         </button>
                       );
                     })
@@ -4066,7 +4206,8 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                   </div>
                 </div>
 
-                {/* Gender */}
+                {/* Gender — not asked for corals and inverts (nothing to record). */}
+                {!["coral", "invertebrate"].includes(String(addFishSpeciesRecord?.type || "").toLowerCase()) && (
                 <div style={{ flex: 1.2 }}>
                   <label style={{ display: "block", fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "0.35rem" }}>
                     Gender
@@ -4107,6 +4248,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
                     })}
                   </div>
                 </div>
+                )}
 
                 {/* How to actually answer the question above. The catalog has
                     documented sexing notes for this species and, until now, the
@@ -4226,7 +4368,7 @@ export function TankList({ contractAddress, walletAccount, onViewLineage, onList
               >
                 {addFishSubmitting
                   ? (casualModeActive ? "Adding..." : "Registering...")
-                  : (casualModeActive ? "Add to Tank" : "Register Birth Certificate")}
+                  : (casualModeActive ? "Add to tank" : "Register Birth Certificate")}
               </button>
             </form>
           </div>

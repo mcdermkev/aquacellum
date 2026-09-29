@@ -1,8 +1,9 @@
-/* CasualTankGallery — responsive grid of living-aquarium cards (Task 5). */
+/* CasualTankGallery — responsive grid of living-aquarium cards (Task 5).
+   Daylight: white card with the water scene inset, like the marketplace cards. */
 
 .casual-tank-gallery {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1rem;
 }
 
@@ -10,47 +11,59 @@
   border-radius: 16px;
   cursor: pointer;
   outline: none;
-  border: 1px solid transparent;
+  border: 1px solid var(--line, rgba(var(--ink-rgb), 0.1));
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease;
-  background: rgba(var(--ink-rgb), 0.02);
+  background: #ffffff;
+  box-shadow: var(--glass-shadow);
   overflow: hidden;
 }
 
-.ctg-card:hover,
-.ctg-card:focus-visible {
+.ctg-card .lt-root {
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+
+.ctg-card:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow-lg);
-  border-color: rgba(56, 189, 248, 0.3);
+  border-color: rgba(var(--ink-rgb), 0.18);
+}
+
+.ctg-card:focus-visible {
+  outline: 2px solid var(--accent-teal, #0f766e);
+  outline-offset: 2px;
 }
 
 .ctg-card--active {
-  border-color: var(--accent-blue, #38bdf8);
-  box-shadow: var(--shadow-md);
+  border-color: var(--accent-teal, #0f766e);
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.18), var(--shadow-md);
 }
 
 .ctg-card--dragover {
   transform: scale(1.03);
-  border-color: #38bdf8;
+  border-color: var(--accent-teal, #0f766e);
   box-shadow: var(--shadow-md);
 }
 
 .ctg-card--alert {
-  border-color: rgba(248, 113, 113, 0.45);
+  border-color: rgba(220, 38, 38, 0.45);
 }
 
 .ctg-footer {
   display: flex;
-  gap: 0.5rem;
-  padding: 0.5rem 0.65rem;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.6rem 0.75rem 0.7rem;
 }
 
 .ctg-chip {
-  font-size: 0.72rem;
-  color: var(--text-secondary, #cbd5e1);
-  background: rgba(var(--ink-rgb), 0.04);
-  border: 1px solid rgba(var(--ink-rgb), 0.06);
-  border-radius: 8px;
-  padding: 0.2rem 0.5rem;
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  background: var(--bg-band, rgba(var(--ink-rgb), 0.04));
+  border: 1px solid var(--line, rgba(var(--ink-rgb), 0.08));
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
   white-space: nowrap;
 }
 

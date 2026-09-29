@@ -167,6 +167,24 @@
   border-top: 1px solid rgba(0, 0, 0, 0.4);
 }
 
+/* ── Corals on the rock line (reef tanks) ─────────────────── */
+.lt-corals {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+.lt-coral {
+  position: absolute;
+  height: auto;
+  opacity: 0.95;
+  transform-origin: bottom center;
+}
+.lt--animate .lt-coral {
+  animation: lt-sway 8s ease-in-out infinite;
+}
+.lt--animate .lt-coral:nth-child(2n) { animation-duration: 10s; animation-delay: -3s; }
+
 /* ── Fish layer host ──────────────────────────────────────── */
 .lt-fish {
   position: absolute;

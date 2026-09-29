@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { buildSpeciesCarePrompt } from "../../utils/poseidonPrompts";
 import { useUnitPrefs } from "../../hooks/useUnitPrefs";
 import { formatTemperatureRange } from "../../utils/units";
+import { coralCare, speciesCarePath, speciesRecordFor } from "./inhabitants";
 import "./SpeciesCareGuide.css";
 
 /**
@@ -18,6 +19,8 @@ import "./SpeciesCareGuide.css";
  */
 export function SpeciesCareGuide({ tank, fishbaseData = [], contractSpecies = [], onAskPoseidon }) {
   const { tempUnit } = useUnitPrefs();
+  // A mixed reef can hold ten species; show three and let the keeper open the rest.
+  const [showAll, setShowAll] = useState(false);
   const refs = uniqueSpecies(tank?.specimens);
   if (refs.length === 0) return null;
 
@@ -27,11 +30,12 @@ export function SpeciesCareGuide({ tank, fishbaseData = [], contractSpecies = []
 
   if (cards.length === 0) return null;
 
+  const allFish = cards.every((c) => c.kind === "fish" || c.kind === "");
   return (
     <div className="care-guide">
-      <div className="care-guide-title">🎓 Care guide — what your fish need</div>
+      <div className="care-guide-title">{allFish ? "Care guide: what your fish need" : "Care guide: what they need"}</div>
       <div className="care-guide-list">
-        {cards.map((c) => (
+        {(showAll ? cards : cards.slice(0, COLLAPSED_COUNT)).map((c) => (
           <div key={c.key} className="cg-card">
             <div className="cg-head">
               <strong className="cg-name">{c.commonName}</strong>
@@ -44,11 +48,20 @@ export function SpeciesCareGuide({ tank, fishbaseData = [], contractSpecies = []
               {c.phMin != null && c.phMax != null && (
                 <span className="cg-chip">🧪 pH {fmt(c.phMin)}–{fmt(c.phMax)}</span>
               )}
+              {c.coral?.coralType && <span className="cg-chip">🪸 {c.coral.coralType}</span>}
+              {c.coral?.light && <span className="cg-chip">☀️ {c.coral.light} light</span>}
+              {c.coral?.flow && <span className="cg-chip">🌊 {c.coral.flow} flow</span>}
+              {c.coral?.placement && <span className="cg-chip">📍 {c.coral.placement === "Anywhere" ? "Any height" : `${c.coral.placement} of the rock`}</span>}
               {c.maxLengthCm != null && <span className="cg-chip">📏 up to {fmt(c.maxLengthCm)} cm</span>}
               {c.temperament && <span className="cg-chip">🐟 {c.temperament}</span>}
               {c.diet && <span className="cg-chip">🍽️ {c.diet}</span>}
             </div>
             {c.tip && <p className="cg-tip">{c.tip}</p>}
+            {c.carePath && (
+              <a className="cg-link" href={c.carePath}>
+                Full care page<span className="cg-sr"> for {c.commonName}</span>
+              </a>
+            )}
             {onAskPoseidon && (
               <button
                 type="button"
@@ -61,9 +74,16 @@ export function SpeciesCareGuide({ tank, fishbaseData = [], contractSpecies = []
           </div>
         ))}
       </div>
+      {cards.length > COLLAPSED_COUNT && (
+        <button type="button" className="cg-more" aria-expanded={showAll} onClick={() => setShowAll((v) => !v)}>
+          {showAll ? "Show fewer" : `Show all ${cards.length} species`}
+        </button>
+      )}
     </div>
   );
 }
+
+const COLLAPSED_COUNT = 3;
 
 /** Unique species references from a tank's specimens. */
 function uniqueSpecies(specimens) {
@@ -106,7 +126,10 @@ export function getSpeciesCare(ref, fishbaseData = [], contractSpecies = []) {
   const nameMatch = (x) => x?.commonName && ref.commonName && x.commonName === ref.commonName;
 
   const contract = contractSpecies.find((c) => idMatch(c) || nameMatch(c));
-  const fb = fishbaseData.find((f) => idMatch(f) || nameMatch(f));
+  // Scientific name first: a keeper's "Zoanthid" is the catalog's "Zoanthid (zoa)".
+  const fb = speciesRecordFor(ref, fishbaseData) || fishbaseData.find((f) => idMatch(f) || nameMatch(f));
+  const kind = String(fb?.type || "").toLowerCase();
+  const coral = kind === "coral" ? coralCare(ref, fishbaseData) : null;
 
   const tempMin = numOr(contract?.minTemp, fb?.tankMetrics?.tempRangeCelsius?.[0]);
   const tempMax = numOr(contract?.maxTemp, fb?.tankMetrics?.tempRangeCelsius?.[1] ?? fb?.ecology?.tempCeiling);
@@ -120,15 +143,19 @@ export function getSpeciesCare(ref, fishbaseData = [], contractSpecies = []) {
     commonName: ref.commonName || fb?.commonName || fb?.scientificName || "Unknown species",
     careLevelLabel: Number.isFinite(careLevelNum) ? (CARE_LEVELS[careLevelNum] || `Level ${careLevelNum}`) : null,
     tempMin, tempMax, phMin, phMax,
-    maxLengthCm: numOr(fb?.maxLengthCm, undefined),
+    // Corals have no adult length; the catalog gives light / flow / placement instead.
+    maxLengthCm: coral ? undefined : numOr(fb?.maxLengthCm, undefined),
     temperament: FAMILY_TEMPERAMENT[family] || null,
     diet: fb?.diet?.trophicLevel && fb.diet.trophicLevel !== "Information arriving soon" ? fb.diet.trophicLevel : null,
-    tip: truncate(fb?.ecology?.comments),
+    tip: truncate(fb?.ecology?.comments || fb?.marine?.notes),
+    kind: kind || "fish",
+    coral,
+    carePath: speciesCarePath(ref, fishbaseData),
   };
 }
 
 function hasAnyCareData(c) {
-  return c.tempMin != null || c.phMin != null || c.maxLengthCm != null || c.temperament || c.diet || c.careLevelLabel;
+  return c.tempMin != null || c.phMin != null || c.maxLengthCm != null || c.temperament || c.diet || c.careLevelLabel || c.coral;
 }
 
 function numOr(a, b) {
