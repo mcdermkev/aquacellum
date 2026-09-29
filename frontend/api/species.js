@@ -41,6 +41,7 @@ import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { checkRateLimit } from "./_lib/rateLimiter.js";
 import { handleCorsPreFlight } from "./_lib/cors.js";
+import { fishbaseUrl } from "./_lib/fishbaseUrl.js";
 import {
   handleSuggest,
   handleVote,
@@ -141,6 +142,7 @@ function loadCatalog() {
 
 const ALL_FIELDS = [
   "specCode",
+  "fishbaseSpecCode",
   "scientificName",
   "genus",
   "species",
@@ -160,7 +162,10 @@ function toPublicSpecies(sp, fields) {
   const slug = toSlug(sp.scientificName);
 
   const full = {
+    // Aquacellum catalog ID (stable key for ?id= lookups). Not a FishBase code.
     specCode: sp.specCode ?? null,
+    // The species' FishBase SpecCode, when it is a FishBase species.
+    fishbaseSpecCode: sp.fishbaseSpecCode ?? null,
     scientificName: sp.scientificName ?? null,
     genus: sp.genus ?? (sp.scientificName ? sp.scientificName.split(" ")[0] : null),
     species: sp.species ?? null,
@@ -227,7 +232,7 @@ function toPublicSpecies(sp, fields) {
       viewOnAquacellum: `${BASE_URL}/species/${slug}`,
       compareSpecies: `${BASE_URL}/compare.html?s1=${slug}`,
       shopMarketplace: `${MARKETPLACE_URL}?search=${encodeURIComponent(sp.commonName || sp.scientificName || "")}`,
-      fishbaseSource: sp.specCode ? `https://www.fishbase.se/summary/${sp.specCode}` : null,
+      fishbaseSource: fishbaseUrl(sp),
     },
   };
 
@@ -239,6 +244,7 @@ function toPublicSpecies(sp, fields) {
   }
   // Always keep identifiers so consumers can round-trip lookups.
   picked.specCode = full.specCode;
+  picked.fishbaseSpecCode = full.fishbaseSpecCode;
   picked.scientificName = full.scientificName;
   picked.commonName = full.commonName;
   return picked;

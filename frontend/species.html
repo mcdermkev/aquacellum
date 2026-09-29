@@ -521,11 +521,17 @@
       const type = String(sp.type || '').toLowerCase();
       const family = String(sp.family || '');
       const inBand = ([lo, hi]) => id !== null && id >= lo && id <= hi;
-      const notFish = type === 'plant' || type === 'invertebrate' || type === 'coral'
+      const notFish = type === 'plant' || type === 'invertebrate' || type === 'coral' || type === 'amphibian'
         || /\((Plant|Invertebrate|Coral)\)$/.test(family)
         || inBand(PLANT_ID_BAND) || inBand(INVERT_ID_BAND);
       if (notFish) {
         return { kind: 'curated', idLabel: 'Catalog ID', id, url: null, linkText: '', note: 'Curated care profile. This is not a FishBase record, so there is no FishBase page for it.' };
+      }
+      // fishbaseSpecCode is the real FishBase SpecCode (scripts/fix-fishbase-codes.mjs);
+      // specCode is the catalog's own ID and is never used for the FishBase link.
+      const fbCode = Number(sp.fishbaseSpecCode);
+      if (Number.isInteger(fbCode) && fbCode > 0) {
+        return { kind: 'fishbase', idLabel: 'Catalog ID', id, url: `https://www.fishbase.se/summary/${fbCode}`, linkText: `View on FishBase (SpecCode ${fbCode})`, note: '' };
       }
       const binomial = String(sp.scientificName || '').trim().split(/\s+/).slice(0, 2);
       const url = binomial.length === 2 ? `https://www.fishbase.se/summary/${binomial.map(encodeURIComponent).join('-')}.html` : null;

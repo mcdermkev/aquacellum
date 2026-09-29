@@ -1,6 +1,7 @@
 [
   {
     "specCode": 3615,
+    "fishbaseSpecCode": 3615,
     "scientificName": "Amatitlania nigrofasciata",
     "genus": "Amatitlania",
     "species": "nigrofasciata",
@@ -246,6 +247,7 @@
   },
   {
     "specCode": 23347,
+    "fishbaseSpecCode": 23347,
     "scientificName": "Ancistrus cirrhosus",
     "genus": "Ancistrus",
     "species": "cirrhosus",
@@ -492,6 +494,7 @@
   },
   {
     "specCode": 4768,
+    "fishbaseSpecCode": 4768,
     "scientificName": "Betta splendens",
     "commonName": "Betta / Siamese Fighting Fish",
     "tankMetrics": {
@@ -911,6 +914,7 @@
   },
   {
     "specCode": 271,
+    "fishbaseSpecCode": 271,
     "scientificName": "Carassius auratus",
     "commonName": "Common Goldfish",
     "tankMetrics": {
@@ -1222,6 +1226,7 @@
   },
   {
     "specCode": 7777,
+    "fishbaseSpecCode": 7777,
     "scientificName": "Corydoras aeneus",
     "commonName": "Bronze Corydoras",
     "tankMetrics": {
@@ -1468,6 +1473,7 @@
   },
   {
     "specCode": 10926,
+    "fishbaseSpecCode": 10926,
     "scientificName": "Corydoras paleatus",
     "commonName": "Peppered Corydoras",
     "tankMetrics": {
@@ -1523,6 +1529,7 @@
   },
   {
     "specCode": 12063,
+    "fishbaseSpecCode": 12063,
     "scientificName": "Crossocheilus oblongus",
     "commonName": "Siamese Algae Eater",
     "tankMetrics": {
@@ -1578,6 +1585,7 @@
   },
   {
     "specCode": 4653,
+    "fishbaseSpecCode": 4653,
     "scientificName": "Danio rerio",
     "genus": "Danio",
     "species": "rerio",
@@ -1825,6 +1833,7 @@
   },
   {
     "specCode": 4682,
+    "fishbaseSpecCode": 4682,
     "scientificName": "Gymnocorymbus ternetzi",
     "commonName": "Black Skirt Tetra",
     "tankMetrics": {
@@ -1880,6 +1889,7 @@
   },
   {
     "specCode": 10642,
+    "fishbaseSpecCode": 10642,
     "scientificName": "Hemigrammus erythrozonus",
     "commonName": "Glowlight Tetra",
     "tankMetrics": {
@@ -1935,6 +1945,7 @@
   },
   {
     "specCode": 10674,
+    "fishbaseSpecCode": 10674,
     "scientificName": "Moenkhausia sanctaefilomenae",
     "commonName": "Red Eye Tetra",
     "tankMetrics": {
@@ -1990,6 +2001,7 @@
   },
   {
     "specCode": 10691,
+    "fishbaseSpecCode": 10691,
     "scientificName": "Paracheirodon innesi",
     "genus": "Paracheirodon",
     "species": "innesi",
@@ -2230,6 +2242,7 @@
   },
   {
     "specCode": 4714,
+    "fishbaseSpecCode": 4714,
     "scientificName": "Pethia conchonius",
     "commonName": "Rosy Barb",
     "tankMetrics": {
@@ -2285,6 +2298,7 @@
   },
   {
     "specCode": 3228,
+    "fishbaseSpecCode": 3228,
     "scientificName": "Poecilia reticulata",
     "genus": "Poecilia",
     "species": "reticulata",
@@ -2559,6 +2573,7 @@
   },
   {
     "specCode": 4680,
+    "fishbaseSpecCode": 4680,
     "scientificName": "Poecilia sphenops",
     "commonName": "Molly",
     "tankMetrics": {
@@ -2847,6 +2862,7 @@
   },
   {
     "specCode": 51004,
+    "fishbaseSpecCode": 51004,
     "scientificName": "Psalidodon anisitsi",
     "commonName": "Buenos Aires Tetra",
     "tankMetrics": {
@@ -2900,6 +2916,7 @@
   },
   {
     "specCode": 4717,
+    "fishbaseSpecCode": 4717,
     "scientificName": "Pterophyllum scalare",
     "commonName": "Freshwater Angelfish",
     "tankMetrics": {
@@ -3217,6 +3234,7 @@
   },
   {
     "specCode": 4766,
+    "fishbaseSpecCode": 4766,
     "scientificName": "Puntigrus tetrazona",
     "commonName": "Tiger Barb",
     "tankMetrics": {
@@ -3488,6 +3506,7 @@
   },
   {
     "specCode": 6147,
+    "fishbaseSpecCode": 6147,
     "scientificName": "Puntius titteya",
     "commonName": "Cherry Barb",
     "tankMetrics": {
@@ -3735,6 +3754,7 @@
   },
   {
     "specCode": 2389,
+    "fishbaseSpecCode": 2389,
     "scientificName": "Rubricatochromis bimaculatus",
     "commonName": "Jewel Cichlid",
     "tankMetrics": {
@@ -3789,6 +3809,7 @@
   },
   {
     "specCode": 11201,
+    "fishbaseSpecCode": 11201,
     "scientificName": "Trichogaster chuna",
     "commonName": "Honey Gourami",
     "tankMetrics": {
@@ -3842,6 +3863,7 @@
   },
   {
     "specCode": 4774,
+    "fishbaseSpecCode": 4774,
     "scientificName": "Trichogaster lalius",
     "commonName": "Dwarf Gourami",
     "tankMetrics": {
@@ -4116,6 +4138,7 @@
   },
   {
     "specCode": 10881,
+    "fishbaseSpecCode": 10881,
     "scientificName": "Trigonostigma heteromorpha",
     "commonName": "Harlequin Rasbora",
     "tankMetrics": {
@@ -4369,6 +4392,7 @@
   },
   {
     "specCode": 3231,
+    "fishbaseSpecCode": 3231,
     "scientificName": "Xiphophorus hellerii",
     "genus": "Xiphophorus",
     "species": "hellerii",
@@ -4425,6 +4449,7 @@
   },
   {
     "specCode": 3232,
+    "fishbaseSpecCode": 3232,
     "scientificName": "Xiphophorus maculatus",
     "commonName": "Southern Platy",
     "tankMetrics": {
@@ -4478,6 +4503,7 @@
   },
   {
     "specCode": 3233,
+    "fishbaseSpecCode": 3233,
     "scientificName": "Xiphophorus variatus",
     "commonName": "Variatus Platy",
     "tankMetrics": {
@@ -4531,6 +4557,7 @@
   },
   {
     "specCode": 12104,
+    "fishbaseSpecCode": 12104,
     "scientificName": "Agamyxis pectinifrons",
     "commonName": "Spotted Raphael Catfish",
     "tankMetrics": {
@@ -4586,6 +4613,7 @@
   },
   {
     "specCode": 4786,
+    "fishbaseSpecCode": 4786,
     "scientificName": "Amphilophus citrinellus",
     "commonName": "Midas Cichlid",
     "tankMetrics": {
@@ -4639,6 +4667,7 @@
   },
   {
     "specCode": 28238,
+    "fishbaseSpecCode": 28238,
     "scientificName": "Amphilophus labiatus",
     "commonName": "Red Devil Cichlid",
     "tankMetrics": {
@@ -4692,6 +4721,7 @@
   },
   {
     "specCode": 4727,
+    "fishbaseSpecCode": 4727,
     "scientificName": "Andinoacara pulcher",
     "commonName": "Blue Acara",
     "tankMetrics": {
@@ -4745,6 +4775,7 @@
   },
   {
     "specCode": 12209,
+    "fishbaseSpecCode": 12209,
     "scientificName": "Andinoacara rivulatus",
     "commonName": "Green Terror",
     "tankMetrics": {
@@ -4798,6 +4829,7 @@
   },
   {
     "specCode": 4690,
+    "fishbaseSpecCode": 4690,
     "scientificName": "Aplocheilus lineatus",
     "commonName": "Golden Wonder Killifish",
     "tankMetrics": {
@@ -4852,6 +4884,7 @@
   },
   {
     "specCode": 3612,
+    "fishbaseSpecCode": 3612,
     "scientificName": "Astronotus ocellatus",
     "commonName": "Oscar",
     "tankMetrics": {
@@ -5117,6 +5150,7 @@
   },
   {
     "specCode": 2173,
+    "fishbaseSpecCode": 2173,
     "scientificName": "Aulonocara nyassae",
     "commonName": "Emperor Cichlid",
     "tankMetrics": {
@@ -5170,6 +5204,7 @@
   },
   {
     "specCode": 6089,
+    "fishbaseSpecCode": 6089,
     "scientificName": "Balantiocheilos melanopterus",
     "commonName": "Bala Shark",
     "tankMetrics": {
@@ -5223,6 +5258,7 @@
   },
   {
     "specCode": 4677,
+    "fishbaseSpecCode": 4677,
     "scientificName": "Barbodes semifasciolatus",
     "commonName": "Gold Barb",
     "tankMetrics": {
@@ -5276,6 +5312,7 @@
   },
   {
     "specCode": 4765,
+    "fishbaseSpecCode": 4765,
     "scientificName": "Barbonymus schwanenfeldii",
     "commonName": "Tinfoil Barb",
     "tankMetrics": {
@@ -5329,6 +5366,7 @@
   },
   {
     "specCode": 9882,
+    "fishbaseSpecCode": 9882,
     "scientificName": "Bedotia madagascariensis",
     "commonName": "Madagascar Rainbowfish",
     "tankMetrics": {
@@ -5382,6 +5420,7 @@
   },
   {
     "specCode": 24687,
+    "fishbaseSpecCode": 24687,
     "scientificName": "Botia almorhae",
     "commonName": "Zebra Loach",
     "tankMetrics": {
@@ -5435,6 +5474,7 @@
   },
   {
     "specCode": 12255,
+    "fishbaseSpecCode": 12255,
     "scientificName": "Botia striata",
     "commonName": "Yoyo / Striata Loach",
     "tankMetrics": {
@@ -5488,6 +5528,7 @@
   },
   {
     "specCode": 50053,
+    "fishbaseSpecCode": 50053,
     "scientificName": "Chaetostoma milesi",
     "commonName": "Rubber Lipped Pleco",
     "tankMetrics": {
@@ -5541,6 +5582,7 @@
   },
   {
     "specCode": 10897,
+    "fishbaseSpecCode": 10897,
     "scientificName": "Chromobotia macracanthus",
     "commonName": "Clown Loach",
     "tankMetrics": {
@@ -5771,6 +5813,7 @@
   },
   {
     "specCode": 11136,
+    "fishbaseSpecCode": 11136,
     "scientificName": "Cleithracara maronii",
     "commonName": "Keyhole Cichlid",
     "tankMetrics": {
@@ -5825,6 +5868,7 @@
   },
   {
     "specCode": 2312,
+    "fishbaseSpecCode": 2312,
     "scientificName": "Copadichromis borleyi",
     "commonName": "Kadango Cichlid",
     "tankMetrics": {
@@ -5878,6 +5922,7 @@
   },
   {
     "specCode": 10923,
+    "fishbaseSpecCode": 10923,
     "scientificName": "Corydoras julii",
     "commonName": "Julii Corydoras",
     "tankMetrics": {
@@ -5931,6 +5976,7 @@
   },
   {
     "specCode": 12188,
+    "fishbaseSpecCode": 12188,
     "scientificName": "Corydoras panda",
     "commonName": "Panda Corydoras",
     "tankMetrics": {
@@ -5984,6 +6030,7 @@
   },
   {
     "specCode": 46235,
+    "fishbaseSpecCode": 46235,
     "scientificName": "Corydoras sterbai",
     "commonName": "Sterba's Corydoras",
     "tankMetrics": {
@@ -6037,6 +6084,7 @@
   },
   {
     "specCode": 12199,
+    "fishbaseSpecCode": 12199,
     "scientificName": "Corydoras trilineatus",
     "commonName": "Three-stripe Corydoras",
     "tankMetrics": {
@@ -6090,6 +6138,7 @@
   },
   {
     "specCode": 8572,
+    "fishbaseSpecCode": 8572,
     "scientificName": "Cyphotilapia frontosa",
     "commonName": "Frontosa Cichlid",
     "tankMetrics": {
@@ -6143,6 +6192,7 @@
   },
   {
     "specCode": 10824,
+    "fishbaseSpecCode": 10824,
     "scientificName": "Danio albolineatus",
     "commonName": "Pearl Danio",
     "tankMetrics": {
@@ -6196,6 +6246,7 @@
   },
   {
     "specCode": 10829,
+    "fishbaseSpecCode": 10829,
     "scientificName": "Devario aequipinnatus",
     "commonName": "Giant Danio",
     "tankMetrics": {
@@ -6249,6 +6300,7 @@
   },
   {
     "specCode": 10835,
+    "fishbaseSpecCode": 10835,
     "scientificName": "Epalzeorhynchos bicolor",
     "commonName": "Red-Tailed Black Shark",
     "tankMetrics": {
@@ -6302,6 +6354,7 @@
   },
   {
     "specCode": 12069,
+    "fishbaseSpecCode": 12069,
     "scientificName": "Epalzeorhynchos frenatum",
     "commonName": "Rainbow Shark",
     "tankMetrics": {
@@ -6355,6 +6408,7 @@
   },
   {
     "specCode": 10832,
+    "fishbaseSpecCode": 10832,
     "scientificName": "Epalzeorhynchos kalopterum",
     "commonName": "Flying Fox",
     "tankMetrics": {
@@ -6408,6 +6462,7 @@
   },
   {
     "specCode": 9739,
+    "fishbaseSpecCode": 9739,
     "scientificName": "Fundulopanchax gardneri",
     "commonName": "Gardneri Killifish",
     "tankMetrics": {
@@ -6461,6 +6516,7 @@
   },
   {
     "specCode": 4781,
+    "fishbaseSpecCode": 4781,
     "scientificName": "Geophagus surinamensis",
     "commonName": "Redstriped Eartheater",
     "tankMetrics": {
@@ -6514,6 +6570,7 @@
   },
   {
     "specCode": 12360,
+    "fishbaseSpecCode": 12360,
     "scientificName": "Hasemania nana",
     "commonName": "Silvertip Tetra",
     "tankMetrics": {
@@ -6567,6 +6624,7 @@
   },
   {
     "specCode": 500,
+    "fishbaseSpecCode": 500,
     "scientificName": "Helostoma temminckii",
     "commonName": "Kissing Gourami",
     "tankMetrics": {
@@ -6620,6 +6678,7 @@
   },
   {
     "specCode": 3614,
+    "fishbaseSpecCode": 3614,
     "scientificName": "Herichthys cyanoguttatus",
     "commonName": "Texas Cichlid",
     "tankMetrics": {
@@ -6673,6 +6732,7 @@
   },
   {
     "specCode": 52199,
+    "fishbaseSpecCode": 52199,
     "scientificName": "Heros efasciatus",
     "commonName": "Green Severum",
     "tankMetrics": {
@@ -6726,6 +6786,7 @@
   },
   {
     "specCode": 3617,
+    "fishbaseSpecCode": 3617,
     "scientificName": "Heros severus",
     "commonName": "Banded Severum",
     "tankMetrics": {
@@ -6780,6 +6841,7 @@
   },
   {
     "specCode": 60560,
+    "fishbaseSpecCode": 60560,
     "scientificName": "Hyphessobrycon columbianus",
     "commonName": "Colombian Tetra",
     "tankMetrics": {
@@ -6833,6 +6895,7 @@
   },
   {
     "specCode": 46294,
+    "fishbaseSpecCode": 46294,
     "scientificName": "Hyphessobrycon eques",
     "genus": "Hyphessobrycon",
     "species": "eques",
@@ -6888,6 +6951,7 @@
   },
   {
     "specCode": 10651,
+    "fishbaseSpecCode": 10651,
     "scientificName": "Hyphessobrycon erythrostigma",
     "commonName": "Bleeding Heart Tetra",
     "tankMetrics": {
@@ -6941,6 +7005,7 @@
   },
   {
     "specCode": 10654,
+    "fishbaseSpecCode": 10654,
     "scientificName": "Hyphessobrycon herbertaxelrodi",
     "commonName": "Black Neon Tetra",
     "tankMetrics": {
@@ -6994,6 +7059,7 @@
   },
   {
     "specCode": 10658,
+    "fishbaseSpecCode": 10658,
     "scientificName": "Hyphessobrycon megalopterus",
     "commonName": "Black Phantom Tetra",
     "tankMetrics": {
@@ -7047,6 +7113,7 @@
   },
   {
     "specCode": 10656,
+    "fishbaseSpecCode": 10656,
     "scientificName": "Hyphessobrycon pulchripinnis",
     "commonName": "Lemon Tetra",
     "tankMetrics": {
@@ -7100,6 +7167,7 @@
   },
   {
     "specCode": 10659,
+    "fishbaseSpecCode": 10659,
     "scientificName": "Hyphessobrycon sweglesi",
     "commonName": "Red Phantom Tetra",
     "tankMetrics": {
@@ -7153,6 +7221,7 @@
   },
   {
     "specCode": 67132,
+    "fishbaseSpecCode": 67132,
     "scientificName": "Kryptopterus vitreolus",
     "commonName": "Glass Catfish",
     "tankMetrics": {
@@ -7206,6 +7275,7 @@
   },
   {
     "specCode": 4777,
+    "fishbaseSpecCode": 4777,
     "scientificName": "Macropodus opercularis",
     "commonName": "Paradise Fish",
     "tankMetrics": {
@@ -7260,6 +7330,7 @@
   },
   {
     "specCode": 6300,
+    "fishbaseSpecCode": 6300,
     "scientificName": "Marosatherina ladigesi",
     "commonName": "Celebes Rainbowfish",
     "tankMetrics": {
@@ -7313,6 +7384,7 @@
   },
   {
     "specCode": 47109,
+    "fishbaseSpecCode": 47109,
     "scientificName": "Maylandia callainos",
     "commonName": "Cobalt Blue Cichlid",
     "tankMetrics": {
@@ -7366,6 +7438,7 @@
   },
   {
     "specCode": 60044,
+    "fishbaseSpecCode": 60044,
     "scientificName": "Maylandia estherae",
     "commonName": "Red Zebra Cichlid",
     "tankMetrics": {
@@ -7419,6 +7492,7 @@
   },
   {
     "specCode": 2343,
+    "fishbaseSpecCode": 2343,
     "scientificName": "Melanochromis auratus",
     "commonName": "Auratus Cichlid",
     "tankMetrics": {
@@ -7472,6 +7546,7 @@
   },
   {
     "specCode": 10489,
+    "fishbaseSpecCode": 10489,
     "scientificName": "Melanotaenia boesemani",
     "commonName": "Boesemani Rainbowfish",
     "tankMetrics": {
@@ -7525,6 +7600,7 @@
   },
   {
     "specCode": 10495,
+    "fishbaseSpecCode": 10495,
     "scientificName": "Melanotaenia herbertaxelrodi",
     "commonName": "Lake Tebera Rainbowfish",
     "tankMetrics": {
@@ -7578,6 +7654,7 @@
   },
   {
     "specCode": 10497,
+    "fishbaseSpecCode": 10497,
     "scientificName": "Melanotaenia lacustris",
     "commonName": "Lake Kutubu Rainbowfish",
     "tankMetrics": {
@@ -7631,6 +7708,7 @@
   },
   {
     "specCode": 10516,
+    "fishbaseSpecCode": 10516,
     "scientificName": "Melanotaenia praecox",
     "commonName": "Dwarf Neon Rainbowfish",
     "tankMetrics": {
@@ -7684,6 +7762,7 @@
   },
   {
     "specCode": 22717,
+    "fishbaseSpecCode": 22717,
     "scientificName": "Melanotaenia trifasciata",
     "commonName": "Banded Rainbowfish",
     "tankMetrics": {
@@ -7737,6 +7816,7 @@
   },
   {
     "specCode": 11140,
+    "fishbaseSpecCode": 11140,
     "scientificName": "Mesonauta festivus",
     "commonName": "Festive Cichlid",
     "tankMetrics": {
@@ -7790,6 +7870,7 @@
   },
   {
     "specCode": 25518,
+    "fishbaseSpecCode": 25518,
     "scientificName": "Metynnis argenteus",
     "commonName": "Silver Dollar",
     "tankMetrics": {
@@ -7843,6 +7924,7 @@
   },
   {
     "specCode": 15902,
+    "fishbaseSpecCode": 15902,
     "scientificName": "Mikrogeophagus altispinosus",
     "commonName": "Bolivian Ram",
     "tankMetrics": {
@@ -7896,6 +7978,7 @@
   },
   {
     "specCode": 12305,
+    "fishbaseSpecCode": 12305,
     "scientificName": "Mikrogeophagus ramirezi",
     "commonName": "German Blue Ram",
     "tankMetrics": {
@@ -8183,6 +8266,7 @@
   },
   {
     "specCode": 3016,
+    "fishbaseSpecCode": 3016,
     "scientificName": "Misgurnus anguillicaudatus",
     "commonName": "Weather Loach",
     "tankMetrics": {
@@ -8236,6 +8320,7 @@
   },
   {
     "specCode": 10664,
+    "fishbaseSpecCode": 10664,
     "scientificName": "Moenkhausia pittieri",
     "commonName": "Diamond Tetra",
     "tankMetrics": {
@@ -8289,6 +8374,7 @@
   },
   {
     "specCode": 11944,
+    "fishbaseSpecCode": 11944,
     "scientificName": "Myloplus rubripinnis",
     "commonName": "Redhook Silver Dollar",
     "tankMetrics": {
@@ -8342,6 +8428,7 @@
   },
   {
     "specCode": 10683,
+    "fishbaseSpecCode": 10683,
     "scientificName": "Nematobrycon palmeri",
     "commonName": "Emperor Tetra",
     "tankMetrics": {
@@ -8395,6 +8482,7 @@
   },
   {
     "specCode": 8652,
+    "fishbaseSpecCode": 8652,
     "scientificName": "Neolamprologus brichardi",
     "commonName": "Fairy Cichlid",
     "tankMetrics": {
@@ -8448,6 +8536,7 @@
   },
   {
     "specCode": 8670,
+    "fishbaseSpecCode": 8670,
     "scientificName": "Neolamprologus leleupi",
     "commonName": "Lemon Cichlid",
     "tankMetrics": {
@@ -8501,6 +8590,7 @@
   },
   {
     "specCode": 2274,
+    "fishbaseSpecCode": 2274,
     "scientificName": "Nimbochromis livingstonii",
     "commonName": "Livingstoni Cichlid",
     "tankMetrics": {
@@ -8554,6 +8644,7 @@
   },
   {
     "specCode": 2279,
+    "fishbaseSpecCode": 2279,
     "scientificName": "Nimbochromis venustus",
     "commonName": "Venustus Cichlid",
     "tankMetrics": {
@@ -8607,6 +8698,7 @@
   },
   {
     "specCode": 50462,
+    "fishbaseSpecCode": 50462,
     "scientificName": "Otocinclus vittatus",
     "commonName": "Otocinclus Catfish",
     "tankMetrics": {
@@ -8660,6 +8752,7 @@
   },
   {
     "specCode": 52350,
+    "fishbaseSpecCode": 52350,
     "scientificName": "Panaqolus maccus",
     "commonName": "Clown Pleco",
     "tankMetrics": {
@@ -8713,6 +8806,7 @@
   },
   {
     "specCode": 12276,
+    "fishbaseSpecCode": 12276,
     "scientificName": "Pangio kuhlii",
     "commonName": "Kuhli Loach",
     "tankMetrics": {
@@ -8945,6 +9039,7 @@
   },
   {
     "specCode": 8195,
+    "fishbaseSpecCode": 8195,
     "scientificName": "Paracheirodon axelrodi",
     "commonName": "Cardinal Tetra",
     "tankMetrics": {
@@ -9168,6 +9263,7 @@
   },
   {
     "specCode": 6144,
+    "fishbaseSpecCode": 6144,
     "scientificName": "Pethia nigrofasciata",
     "commonName": "Black Ruby Barb",
     "tankMetrics": {
@@ -9221,6 +9317,7 @@
   },
   {
     "specCode": 64645,
+    "fishbaseSpecCode": 64645,
     "scientificName": "Pethia padamya",
     "commonName": "Odessa Barb",
     "tankMetrics": {
@@ -9274,6 +9371,7 @@
   },
   {
     "specCode": 12370,
+    "fishbaseSpecCode": 12370,
     "scientificName": "Petitella rhodostoma",
     "commonName": "Rummy Nose Tetra",
     "tankMetrics": {
@@ -9327,6 +9425,7 @@
   },
   {
     "specCode": 10660,
+    "fishbaseSpecCode": 10660,
     "scientificName": "Phenacogrammus interruptus",
     "commonName": "Congo Tetra",
     "tankMetrics": {
@@ -9380,6 +9479,7 @@
   },
   {
     "specCode": 5808,
+    "fishbaseSpecCode": 5808,
     "scientificName": "Piaractus brachypomus",
     "commonName": "Red-Bellied Pacu",
     "tankMetrics": {
@@ -9433,6 +9533,7 @@
   },
   {
     "specCode": 13115,
+    "fishbaseSpecCode": 13115,
     "scientificName": "Pimelodus pictus",
     "commonName": "Pictus Catfish",
     "tankMetrics": {
@@ -9486,6 +9587,7 @@
   },
   {
     "specCode": 47627,
+    "fishbaseSpecCode": 47627,
     "scientificName": "Platydoras armatulus",
     "commonName": "Striped Raphael Catfish",
     "tankMetrics": {
@@ -9539,6 +9641,7 @@
   },
   {
     "specCode": 4773,
+    "fishbaseSpecCode": 4773,
     "scientificName": "Poecilia velifera",
     "commonName": "Sailfin Molly",
     "tankMetrics": {
@@ -9593,6 +9696,7 @@
   },
   {
     "specCode": 2346,
+    "fishbaseSpecCode": 2346,
     "scientificName": "Pseudotropheus johannii",
     "commonName": "Blue Johanni",
     "tankMetrics": {
@@ -9646,6 +9750,7 @@
   },
   {
     "specCode": 12219,
+    "fishbaseSpecCode": 12219,
     "scientificName": "Pterygoplichthys gibbiceps",
     "commonName": "Sailfin Pleco",
     "tankMetrics": {
@@ -9699,6 +9804,7 @@
   },
   {
     "specCode": 3616,
+    "fishbaseSpecCode": 3616,
     "scientificName": "Rocio octofasciata",
     "commonName": "Jack Dempsey Cichlid",
     "tankMetrics": {
@@ -9752,6 +9858,7 @@
   },
   {
     "specCode": 60051,
+    "fishbaseSpecCode": 60051,
     "scientificName": "Sciaenochromis fryeri",
     "commonName": "Electric Blue Hap",
     "tankMetrics": {
@@ -9805,6 +9912,7 @@
   },
   {
     "specCode": 11185,
+    "fishbaseSpecCode": 11185,
     "scientificName": "Symphysodon aequifasciatus",
     "genus": "Symphysodon",
     "species": "aequifasciatus",
@@ -10092,6 +10200,7 @@
   },
   {
     "specCode": 9559,
+    "fishbaseSpecCode": 9559,
     "scientificName": "Synodontis eupterus",
     "commonName": "Featherfin Synodontis",
     "tankMetrics": {
@@ -10145,6 +10254,7 @@
   },
   {
     "specCode": 9599,
+    "fishbaseSpecCode": 9599,
     "scientificName": "Synodontis nigriventris",
     "commonName": "Upside-Down Catfish",
     "tankMetrics": {
@@ -10198,6 +10308,7 @@
   },
   {
     "specCode": 4758,
+    "fishbaseSpecCode": 4758,
     "scientificName": "Tanichthys albonubes",
     "commonName": "White Cloud Mountain Minnow",
     "tankMetrics": {
@@ -10251,6 +10362,7 @@
   },
   {
     "specCode": 10716,
+    "fishbaseSpecCode": 10716,
     "scientificName": "Thayeria boehlkei",
     "commonName": "Penguin Tetra",
     "tankMetrics": {
@@ -10304,6 +10416,7 @@
   },
   {
     "specCode": 4676,
+    "fishbaseSpecCode": 4676,
     "scientificName": "Thorichthys meeki",
     "commonName": "Firemouth Cichlid",
     "tankMetrics": {
@@ -10357,6 +10470,7 @@
   },
   {
     "specCode": 10114,
+    "fishbaseSpecCode": 4674,
     "scientificName": "Trichopodus leerii",
     "commonName": "Pearl Gourami",
     "tankMetrics": {
@@ -10410,6 +10524,7 @@
   },
   {
     "specCode": 10115,
+    "fishbaseSpecCode": 27073,
     "scientificName": "Trigonostigma espei",
     "commonName": "Lambchop Rasbora",
     "tankMetrics": {
@@ -10463,6 +10578,7 @@
   },
   {
     "specCode": 10116,
+    "fishbaseSpecCode": 12182,
     "scientificName": "Trigonostigma hengeli",
     "commonName": "Hengel's Rasbora",
     "tankMetrics": {
@@ -10516,6 +10632,7 @@
   },
   {
     "specCode": 10117,
+    "fishbaseSpecCode": 23015,
     "scientificName": "Acantopsis dialuzona",
     "commonName": "Horseface Loach",
     "tankMetrics": {
@@ -10569,6 +10686,7 @@
   },
   {
     "specCode": 10118,
+    "fishbaseSpecCode": 8134,
     "scientificName": "Altolamprologus calvus",
     "commonName": "Pearly Compressiceps",
     "tankMetrics": {
@@ -10622,6 +10740,7 @@
   },
   {
     "specCode": 10119,
+    "fishbaseSpecCode": 8135,
     "scientificName": "Altolamprologus compressiceps",
     "commonName": "Compressiceps Cichlid",
     "tankMetrics": {
@@ -10675,6 +10794,7 @@
   },
   {
     "specCode": 10120,
+    "fishbaseSpecCode": 8770,
     "scientificName": "Aphyosemion australe",
     "commonName": "Lyretail Killifish",
     "tankMetrics": {
@@ -10728,6 +10848,7 @@
   },
   {
     "specCode": 10121,
+    "fishbaseSpecCode": 9714,
     "scientificName": "Aphyosemion bivittatum",
     "commonName": "Twostripe Lyretail",
     "tankMetrics": {
@@ -10781,6 +10902,7 @@
   },
   {
     "specCode": 10122,
+    "fishbaseSpecCode": 9795,
     "scientificName": "Aphyosemion striatum",
     "commonName": "Redstriped Killifish",
     "tankMetrics": {
@@ -10834,6 +10956,7 @@
   },
   {
     "specCode": 10123,
+    "fishbaseSpecCode": 26703,
     "scientificName": "Apistogramma agassizii",
     "commonName": "Agassiz's Dwarf Cichlid",
     "tankMetrics": {
@@ -10887,6 +11010,7 @@
   },
   {
     "specCode": 10124,
+    "fishbaseSpecCode": 13116,
     "scientificName": "Apistogramma bitaeniata",
     "commonName": "Two-banded Dwarf Cichlid",
     "tankMetrics": {
@@ -10940,6 +11064,7 @@
   },
   {
     "specCode": 10125,
+    "fishbaseSpecCode": 11138,
     "scientificName": "Apistogramma borellii",
     "genus": "Apistogramma",
     "species": "borellii",
@@ -10995,6 +11120,7 @@
   },
   {
     "specCode": 10126,
+    "fishbaseSpecCode": 12282,
     "scientificName": "Apistogramma cacatuoides",
     "commonName": "Cockatoo Dwarf Cichlid",
     "tankMetrics": {
@@ -11048,6 +11174,7 @@
   },
   {
     "specCode": 10127,
+    "fishbaseSpecCode": 46608,
     "scientificName": "Apistogramma elizabethae",
     "commonName": "Elizabeth's Dwarf Cichlid",
     "tankMetrics": {
@@ -11101,6 +11228,7 @@
   },
   {
     "specCode": 10128,
+    "fishbaseSpecCode": 46633,
     "scientificName": "Apistogramma hongsloi",
     "commonName": "Hongslo's Dwarf Cichlid",
     "tankMetrics": {
@@ -11154,6 +11282,7 @@
   },
   {
     "specCode": 10129,
+    "fishbaseSpecCode": 46660,
     "scientificName": "Apistogramma macmasteri",
     "commonName": "Macmaster's Dwarf Cichlid",
     "tankMetrics": {
@@ -11207,6 +11336,7 @@
   },
   {
     "specCode": 10130,
+    "fishbaseSpecCode": 26702,
     "scientificName": "Apistogramma nijsseni",
     "commonName": "Nijssen's Dwarf Cichlid",
     "tankMetrics": {
@@ -11260,6 +11390,7 @@
   },
   {
     "specCode": 10131,
+    "fishbaseSpecCode": 57507,
     "scientificName": "Apistogramma panduro",
     "commonName": "Panduro Dwarf Cichlid",
     "tankMetrics": {
@@ -11313,6 +11444,7 @@
   },
   {
     "specCode": 10132,
+    "fishbaseSpecCode": 46712,
     "scientificName": "Apistogramma trifasciata",
     "commonName": "Three-striped Dwarf Cichlid",
     "tankMetrics": {
@@ -11366,6 +11498,7 @@
   },
   {
     "specCode": 10133,
+    "fishbaseSpecCode": 46716,
     "scientificName": "Apistogramma viejita",
     "commonName": "Viejita Dwarf Cichlid",
     "tankMetrics": {
@@ -11419,6 +11552,7 @@
   },
   {
     "specCode": 10134,
+    "fishbaseSpecCode": 12341,
     "scientificName": "Boehlkea fredcochui",
     "commonName": "Cochu's Blue Tetra",
     "tankMetrics": {
@@ -11472,6 +11606,7 @@
   },
   {
     "specCode": 10135,
+    "fishbaseSpecCode": 10879,
     "scientificName": "Boraras maculatus",
     "commonName": "Dwarf Rasbora",
     "tankMetrics": {
@@ -11525,6 +11660,7 @@
   },
   {
     "specCode": 10136,
+    "fishbaseSpecCode": 22603,
     "scientificName": "Boraras merah",
     "commonName": "Phoenix Rasbora",
     "tankMetrics": {
@@ -11578,6 +11714,7 @@
   },
   {
     "specCode": 10137,
+    "fishbaseSpecCode": 12211,
     "scientificName": "Boraras urophthalmoides",
     "commonName": "Exclamation Point Rasbora",
     "tankMetrics": {
@@ -11631,6 +11768,7 @@
   },
   {
     "specCode": 10138,
+    "fishbaseSpecCode": 10368,
     "scientificName": "Brevibora dorsiocellata",
     "commonName": "Emerald Eye Rasbora",
     "tankMetrics": {
@@ -11684,6 +11822,7 @@
   },
   {
     "specCode": 10139,
+    "fishbaseSpecCode": 12152,
     "scientificName": "Bunocephalus coracoideus",
     "commonName": "Banjo Catfish",
     "tankMetrics": {
@@ -11737,6 +11876,7 @@
   },
   {
     "specCode": 10140,
+    "fishbaseSpecCode": 10736,
     "scientificName": "Carnegiella strigata",
     "commonName": "Marbled Hatchetfish",
     "tankMetrics": {
@@ -11790,6 +11930,7 @@
   },
   {
     "specCode": 10141,
+    "fishbaseSpecCode": 53380,
     "scientificName": "Chindongo demasoni",
     "commonName": "Demasoni Cichlid",
     "tankMetrics": {
@@ -11843,6 +11984,7 @@
   },
   {
     "specCode": 10142,
+    "fishbaseSpecCode": 46040,
     "scientificName": "Corydoras adolfoi",
     "commonName": "Adolfo's Corydoras",
     "tankMetrics": {
@@ -11896,6 +12038,7 @@
   },
   {
     "specCode": 10143,
+    "fishbaseSpecCode": 13109,
     "scientificName": "Corydoras agassizii",
     "commonName": "Agassiz's Corydoras",
     "tankMetrics": {
@@ -11949,6 +12092,7 @@
   },
   {
     "specCode": 10144,
+    "fishbaseSpecCode": 12159,
     "scientificName": "Corydoras arcuatus",
     "commonName": "Skunk Corydoras",
     "tankMetrics": {
@@ -12002,6 +12146,7 @@
   },
   {
     "specCode": 10145,
+    "fishbaseSpecCode": 46045,
     "scientificName": "Corydoras atropersonatus",
     "commonName": "Fairy Corydoras",
     "tankMetrics": {
@@ -12055,6 +12200,7 @@
   },
   {
     "specCode": 10146,
+    "fishbaseSpecCode": 46054,
     "scientificName": "Corydoras concolor",
     "commonName": "Slate Corydoras",
     "tankMetrics": {
@@ -12108,6 +12254,7 @@
   },
   {
     "specCode": 10147,
+    "fishbaseSpecCode": 53689,
     "scientificName": "Corydoras duplicareus",
     "commonName": "Duplicate Corydoras",
     "tankMetrics": {
@@ -12161,6 +12308,7 @@
   },
   {
     "specCode": 10148,
+    "fishbaseSpecCode": 12168,
     "scientificName": "Corydoras elegans",
     "commonName": "Elegant Corydoras",
     "tankMetrics": {
@@ -12214,6 +12362,7 @@
   },
   {
     "specCode": 10149,
+    "fishbaseSpecCode": 46083,
     "scientificName": "Corydoras habrosus",
     "commonName": "Dainty Corydoras",
     "tankMetrics": {
@@ -12267,6 +12416,7 @@
   },
   {
     "specCode": 10150,
+    "fishbaseSpecCode": 12178,
     "scientificName": "Corydoras hastatus",
     "commonName": "Dwarf Corydoras",
     "tankMetrics": {
@@ -12320,6 +12470,7 @@
   },
   {
     "specCode": 10151,
+    "fishbaseSpecCode": 46104,
     "scientificName": "Corydoras loretoensis",
     "commonName": "Loreto Corydoras",
     "tankMetrics": {
@@ -12373,6 +12524,7 @@
   },
   {
     "specCode": 10152,
+    "fishbaseSpecCode": 12184,
     "scientificName": "Corydoras melini",
     "commonName": "Melini's Corydoras",
     "tankMetrics": {
@@ -12426,6 +12578,7 @@
   },
   {
     "specCode": 10153,
+    "fishbaseSpecCode": 12185,
     "scientificName": "Corydoras metae",
     "commonName": "Bandit Corydoras",
     "tankMetrics": {
@@ -12479,6 +12632,7 @@
   },
   {
     "specCode": 10154,
+    "fishbaseSpecCode": 12195,
     "scientificName": "Corydoras rabauti",
     "commonName": "Rust Corydoras",
     "tankMetrics": {
@@ -12532,6 +12686,7 @@
   },
   {
     "specCode": 10155,
+    "fishbaseSpecCode": 46224,
     "scientificName": "Corydoras schwartzi",
     "commonName": "Schwartz's Corydoras",
     "tankMetrics": {
@@ -12585,6 +12740,7 @@
   },
   {
     "specCode": 10156,
+    "fishbaseSpecCode": 49839,
     "scientificName": "Corydoras similis",
     "commonName": "Similis Corydoras",
     "tankMetrics": {
@@ -12638,6 +12794,7 @@
   },
   {
     "specCode": 10157,
+    "fishbaseSpecCode": 10029,
     "scientificName": "Ctenopoma acutirostre",
     "commonName": "Leopard Bush Fish",
     "tankMetrics": {
@@ -12691,6 +12848,7 @@
   },
   {
     "specCode": 10158,
+    "fishbaseSpecCode": 8573,
     "scientificName": "Cyprichromis leptosoma",
     "commonName": "Slender Cichlid",
     "tankMetrics": {
@@ -12744,6 +12902,7 @@
   },
   {
     "specCode": 10159,
+    "fishbaseSpecCode": 24366,
     "scientificName": "Danio choprae",
     "commonName": "Glowlight Danio",
     "tankMetrics": {
@@ -12797,6 +12956,7 @@
   },
   {
     "specCode": 10160,
+    "fishbaseSpecCode": 24410,
     "scientificName": "Danio erythromicron",
     "commonName": "Emerald Dwarf Danio",
     "tankMetrics": {
@@ -12850,6 +13010,7 @@
   },
   {
     "specCode": 10161,
+    "fishbaseSpecCode": 54620,
     "scientificName": "Danio kyathit",
     "commonName": "Orange Fin Danio",
     "tankMetrics": {
@@ -12903,6 +13064,7 @@
   },
   {
     "specCode": 10162,
+    "fishbaseSpecCode": 2137,
     "scientificName": "Dimidiochromis compressiceps",
     "commonName": "Malawi Eyebiter",
     "tankMetrics": {
@@ -12956,6 +13118,7 @@
   },
   {
     "specCode": 10163,
+    "fishbaseSpecCode": 11280,
     "scientificName": "Farlowella acus",
     "commonName": "Twig Catfish",
     "tankMetrics": {
@@ -13009,6 +13172,7 @@
   },
   {
     "specCode": 10164,
+    "fishbaseSpecCode": 10725,
     "scientificName": "Gasteropelecus sternicla",
     "commonName": "Silver Hatchetfish",
     "tankMetrics": {
@@ -13062,6 +13226,7 @@
   },
   {
     "specCode": 10165,
+    "fishbaseSpecCode": 4751,
     "scientificName": "Geophagus brasiliensis",
     "commonName": "Pearl Cichlid",
     "tankMetrics": {
@@ -13116,6 +13281,7 @@
   },
   {
     "specCode": 10166,
+    "fishbaseSpecCode": 12372,
     "scientificName": "Geophagus steindachneri",
     "commonName": "Redhump Eartheater",
     "tankMetrics": {
@@ -13169,6 +13335,7 @@
   },
   {
     "specCode": 10167,
+    "fishbaseSpecCode": 3224,
     "scientificName": "Heterandria formosa",
     "commonName": "Least Killifish",
     "tankMetrics": {
@@ -13223,6 +13390,7 @@
   },
   {
     "specCode": 10168,
+    "fishbaseSpecCode": 12388,
     "scientificName": "Inpaichthys kerri",
     "commonName": "Blue Emperor Tetra",
     "tankMetrics": {
@@ -13276,6 +13444,7 @@
   },
   {
     "specCode": 10169,
+    "fishbaseSpecCode": 3209,
     "scientificName": "Jordanella floridae",
     "commonName": "Flagfish",
     "tankMetrics": {
@@ -13330,6 +13499,7 @@
   },
   {
     "specCode": 10170,
+    "fishbaseSpecCode": 8608,
     "scientificName": "Julidochromis marlieri",
     "commonName": "Marlier's Julie",
     "tankMetrics": {
@@ -13383,6 +13553,7 @@
   },
   {
     "specCode": 10171,
+    "fishbaseSpecCode": 8609,
     "scientificName": "Julidochromis ornatus",
     "commonName": "Golden Julie",
     "tankMetrics": {
@@ -13436,6 +13607,7 @@
   },
   {
     "specCode": 10172,
+    "fishbaseSpecCode": 8610,
     "scientificName": "Julidochromis regani",
     "commonName": "Convict Julie",
     "tankMetrics": {
@@ -13489,6 +13661,7 @@
   },
   {
     "specCode": 10173,
+    "fishbaseSpecCode": 8611,
     "scientificName": "Julidochromis transcriptus",
     "commonName": "Masked Julie",
     "tankMetrics": {
@@ -13542,6 +13715,7 @@
   },
   {
     "specCode": 10174,
+    "fishbaseSpecCode": 12262,
     "scientificName": "Laetacara curviceps",
     "commonName": "Flag Cichlid",
     "tankMetrics": {
@@ -13595,6 +13769,7 @@
   },
   {
     "specCode": 10175,
+    "fishbaseSpecCode": 12264,
     "scientificName": "Laetacara dorsigera",
     "commonName": "Redbreast Acara",
     "tankMetrics": {
@@ -13648,6 +13823,7 @@
   },
   {
     "specCode": 10176,
+    "fishbaseSpecCode": 8619,
     "scientificName": "Lamprologus ocellatus",
     "commonName": "Ocellatus Shell Dweller",
     "tankMetrics": {
@@ -13701,6 +13877,7 @@
   },
   {
     "specCode": 10177,
+    "fishbaseSpecCode": 13639,
     "scientificName": "Lepidocephalichthys thermalis",
     "commonName": "Common Spiny Loach",
     "tankMetrics": {
@@ -13754,6 +13931,7 @@
   },
   {
     "specCode": 10178,
+    "fishbaseSpecCode": 11981,
     "scientificName": "Limia nigrofasciata",
     "commonName": "Humpback Limia",
     "tankMetrics": {
@@ -13807,6 +13985,7 @@
   },
   {
     "specCode": 10179,
+    "fishbaseSpecCode": 25625,
     "scientificName": "Melanotaenia goldiei",
     "commonName": "Goldie River Rainbowfish",
     "tankMetrics": {
@@ -13860,6 +14039,7 @@
   },
   {
     "specCode": 10180,
+    "fishbaseSpecCode": 25638,
     "scientificName": "Melanotaenia parkinsoni",
     "commonName": "Parkinson's Rainbowfish",
     "tankMetrics": {
@@ -13913,6 +14093,7 @@
   },
   {
     "specCode": 10181,
+    "fishbaseSpecCode": 47758,
     "scientificName": "Microglanis iheringi",
     "commonName": "Bumblebee Catfish",
     "tankMetrics": {
@@ -13966,6 +14147,7 @@
   },
   {
     "specCode": 10182,
+    "fishbaseSpecCode": 11180,
     "scientificName": "Nannacara anomala",
     "commonName": "Golden Dwarf Cichlid",
     "tankMetrics": {
@@ -14019,6 +14201,7 @@
   },
   {
     "specCode": 10183,
+    "fishbaseSpecCode": 10750,
     "scientificName": "Nannostomus beckfordi",
     "commonName": "Beckford's Pencilfish",
     "tankMetrics": {
@@ -14072,6 +14255,7 @@
   },
   {
     "specCode": 10184,
+    "fishbaseSpecCode": 8651,
     "scientificName": "Neolamprologus brevis",
     "commonName": "Brevis Shell Dweller",
     "tankMetrics": {
@@ -14125,6 +14309,7 @@
   },
   {
     "specCode": 10185,
+    "fishbaseSpecCode": 8744,
     "scientificName": "Neolamprologus multifasciatus",
     "commonName": "Multi Shell Dweller",
     "tankMetrics": {
@@ -14178,6 +14363,7 @@
   },
   {
     "specCode": 10186,
+    "fishbaseSpecCode": 4715,
     "scientificName": "Nothobranchius guentheri",
     "commonName": "Redtail Notho",
     "tankMetrics": {
@@ -14231,6 +14417,7 @@
   },
   {
     "specCode": 10187,
+    "fishbaseSpecCode": 11332,
     "scientificName": "Otocinclus affinis",
     "commonName": "Golden Otocinclus",
     "tankMetrics": {
@@ -14284,6 +14471,7 @@
   },
   {
     "specCode": 10188,
+    "fishbaseSpecCode": 50450,
     "scientificName": "Otocinclus macrospilus",
     "commonName": "Dwarf Otocinclus",
     "tankMetrics": {
@@ -14337,6 +14525,7 @@
   },
   {
     "specCode": 10189,
+    "fishbaseSpecCode": 12216,
     "scientificName": "Panaque nigrolineatus",
     "commonName": "Royal Pleco",
     "tankMetrics": {
@@ -14390,6 +14579,7 @@
   },
   {
     "specCode": 10190,
+    "fishbaseSpecCode": 23044,
     "scientificName": "Pangio oblonga",
     "commonName": "Black Kuhli Loach",
     "tankMetrics": {
@@ -14443,6 +14633,7 @@
   },
   {
     "specCode": 10191,
+    "fishbaseSpecCode": 59459,
     "scientificName": "Pangio semicincta",
     "commonName": "Half-banded Kuhli Loach",
     "tankMetrics": {
@@ -14496,6 +14687,7 @@
   },
   {
     "specCode": 10192,
+    "fishbaseSpecCode": 8799,
     "scientificName": "Pelvicachromis taeniatus",
     "commonName": "Striped Kribensis",
     "tankMetrics": {
@@ -14549,6 +14741,7 @@
   },
   {
     "specCode": 10193,
+    "fishbaseSpecCode": 4762,
     "scientificName": "Pethia gelius",
     "commonName": "Golden Dwarf Barb",
     "tankMetrics": {
@@ -14602,6 +14795,7 @@
   },
   {
     "specCode": 10194,
+    "fishbaseSpecCode": 10371,
     "scientificName": "Rasbora einthovenii",
     "commonName": "Brilliant Rasbora",
     "tankMetrics": {
@@ -14655,6 +14849,7 @@
   },
   {
     "specCode": 10195,
+    "fishbaseSpecCode": 10372,
     "scientificName": "Rasbora kalochroma",
     "commonName": "Clown Rasbora",
     "tankMetrics": {
@@ -14708,6 +14903,7 @@
   },
   {
     "specCode": 10196,
+    "fishbaseSpecCode": 60206,
     "scientificName": "Rasbora rubrodorsalis",
     "commonName": "Redstripe Rasbora",
     "tankMetrics": {
@@ -14761,6 +14957,7 @@
   },
   {
     "specCode": 10197,
+    "fishbaseSpecCode": 50585,
     "scientificName": "Rineloricaria lanceolata",
     "commonName": "Whiptail Catfish",
     "tankMetrics": {
@@ -14814,6 +15011,7 @@
   },
   {
     "specCode": 10198,
+    "fishbaseSpecCode": 8864,
     "scientificName": "Steatocranus casuarius",
     "commonName": "Lionhead Cichlid",
     "tankMetrics": {
@@ -14867,6 +15065,7 @@
   },
   {
     "specCode": 10199,
+    "fishbaseSpecCode": 50519,
     "scientificName": "Sturisomatichthys aureum",
     "commonName": "Giant Whiptail Catfish",
     "tankMetrics": {
@@ -14920,6 +15119,7 @@
   },
   {
     "specCode": 10200,
+    "fishbaseSpecCode": 10892,
     "scientificName": "Syncrossus hymenophysa",
     "commonName": "Tiger Botia Loach",
     "tankMetrics": {
@@ -14973,6 +15173,7 @@
   },
   {
     "specCode": 10201,
+    "fishbaseSpecCode": 9596,
     "scientificName": "Synodontis multipunctatus",
     "commonName": "Cuckoo Catfish",
     "tankMetrics": {
@@ -15026,6 +15227,7 @@
   },
   {
     "specCode": 10202,
+    "fishbaseSpecCode": 58712,
     "scientificName": "Tanichthys micagemmae",
     "commonName": "Vietnamese Cardinal Minnow",
     "tankMetrics": {
@@ -15079,6 +15281,7 @@
   },
   {
     "specCode": 10203,
+    "fishbaseSpecCode": 12082,
     "scientificName": "Trichopsis pumila",
     "commonName": "Sparkling Gourami",
     "tankMetrics": {
@@ -15132,6 +15335,7 @@
   },
   {
     "specCode": 10204,
+    "fishbaseSpecCode": 4728,
     "scientificName": "Trichopsis vittata",
     "commonName": "Croaking Gourami",
     "tankMetrics": {
@@ -15185,6 +15389,7 @@
   },
   {
     "specCode": 10205,
+    "fishbaseSpecCode": 8980,
     "scientificName": "Tropheus duboisi",
     "commonName": "White-spotted Cichlid",
     "tankMetrics": {
@@ -15238,6 +15443,7 @@
   },
   {
     "specCode": 10206,
+    "fishbaseSpecCode": 8982,
     "scientificName": "Tropheus moorii",
     "commonName": "Blunthead Cichlid",
     "tankMetrics": {
@@ -15291,6 +15497,7 @@
   },
   {
     "specCode": 10207,
+    "fishbaseSpecCode": 10907,
     "scientificName": "Yasuhikotakia modesta",
     "commonName": "Blue Botia Loach",
     "tankMetrics": {
@@ -15344,6 +15551,7 @@
   },
   {
     "specCode": 10208,
+    "fishbaseSpecCode": 10910,
     "scientificName": "Ambastaia sidthimunki",
     "commonName": "Dwarf Chain Loach",
     "tankMetrics": {
@@ -15397,6 +15605,7 @@
   },
   {
     "specCode": 10209,
+    "fishbaseSpecCode": 11016,
     "scientificName": "Badis badis",
     "commonName": "Badis",
     "tankMetrics": {
@@ -15450,6 +15659,7 @@
   },
   {
     "specCode": 10210,
+    "fishbaseSpecCode": 22509,
     "scientificName": "Boraras brigittae",
     "commonName": "Chili Rasbora",
     "tankMetrics": {
@@ -15503,6 +15713,7 @@
   },
   {
     "specCode": 10211,
+    "fishbaseSpecCode": 25066,
     "scientificName": "Brachygobius doriae",
     "commonName": "Bumblebee Goby",
     "tankMetrics": {
@@ -15557,6 +15768,7 @@
   },
   {
     "specCode": 10212,
+    "fishbaseSpecCode": 25293,
     "scientificName": "Carinotetraodon travancoricus",
     "commonName": "Dwarf Pufferfish",
     "tankMetrics": {
@@ -15610,6 +15822,7 @@
   },
   {
     "specCode": 10213,
+    "fishbaseSpecCode": 22773,
     "scientificName": "Chlamydogobius eremius",
     "commonName": "Desert Goby",
     "tankMetrics": {
@@ -15663,6 +15876,7 @@
   },
   {
     "specCode": 10214,
+    "fishbaseSpecCode": 51376,
     "scientificName": "Colomesus asellus",
     "commonName": "Amazon Pufferfish",
     "tankMetrics": {
@@ -15716,6 +15930,7 @@
   },
   {
     "specCode": 10215,
+    "fishbaseSpecCode": 12194,
     "scientificName": "Corydoras pygmaeus",
     "commonName": "Pygmy Corydoras",
     "tankMetrics": {
@@ -15769,6 +15984,7 @@
   },
   {
     "specCode": 10216,
+    "fishbaseSpecCode": 12201,
     "scientificName": "Corydoras weitzmani",
     "commonName": "Weitzman's Corydoras",
     "tankMetrics": {
@@ -15822,6 +16038,7 @@
   },
   {
     "specCode": 10217,
+    "fishbaseSpecCode": 63298,
     "scientificName": "Danio margaritatus",
     "commonName": "Celestial Pearl Danio",
     "tankMetrics": {
@@ -15875,6 +16092,7 @@
   },
   {
     "specCode": 10218,
+    "fishbaseSpecCode": 65187,
     "scientificName": "Danio tinwini",
     "commonName": "Gold Ring Danio",
     "tankMetrics": {
@@ -15928,6 +16146,7 @@
   },
   {
     "specCode": 10219,
+    "fishbaseSpecCode": 60260,
     "scientificName": "Dario dario",
     "commonName": "Scarlet Badis",
     "tankMetrics": {
@@ -15981,6 +16200,7 @@
   },
   {
     "specCode": 10220,
+    "fishbaseSpecCode": 9821,
     "scientificName": "Epiplatys annulatus",
     "commonName": "Clown Killifish",
     "tankMetrics": {
@@ -16034,6 +16254,7 @@
   },
   {
     "specCode": 10221,
+    "fishbaseSpecCode": 22841,
     "scientificName": "Gastromyzon ctenocephalus",
     "commonName": "Borneo Sucker Loach",
     "tankMetrics": {
@@ -16087,6 +16308,7 @@
   },
   {
     "specCode": 10222,
+    "fishbaseSpecCode": 12376,
     "scientificName": "Hyphessobrycon amandae",
     "commonName": "Ember Tetra",
     "tankMetrics": {
@@ -16140,6 +16362,7 @@
   },
   {
     "specCode": 10223,
+    "fishbaseSpecCode": 52558,
     "scientificName": "Hyphessobrycon elachys",
     "commonName": "Reed Tetra",
     "tankMetrics": {
@@ -16193,6 +16416,7 @@
   },
   {
     "specCode": 10224,
+    "fishbaseSpecCode": 22755,
     "scientificName": "Hypseleotris compressa",
     "commonName": "Empire Gudgeon",
     "tankMetrics": {
@@ -16246,6 +16470,7 @@
   },
   {
     "specCode": 10225,
+    "fishbaseSpecCode": 10998,
     "scientificName": "Limia melanogaster",
     "commonName": "Blackbelly Limia",
     "tankMetrics": {
@@ -16299,6 +16524,7 @@
   },
   {
     "specCode": 10226,
+    "fishbaseSpecCode": 58581,
     "scientificName": "Microdevario kubotai",
     "commonName": "Neon Green Rasbora",
     "tankMetrics": {
@@ -16352,6 +16578,7 @@
   },
   {
     "specCode": 10227,
+    "fishbaseSpecCode": 10754,
     "scientificName": "Nannostomus eques",
     "commonName": "Brown Pencilfish",
     "tankMetrics": {
@@ -16405,6 +16632,7 @@
   },
   {
     "specCode": 10228,
+    "fishbaseSpecCode": 11919,
     "scientificName": "Nannostomus marginatus",
     "commonName": "Dwarf Pencilfish",
     "tankMetrics": {
@@ -16458,6 +16686,7 @@
   },
   {
     "specCode": 10229,
+    "fishbaseSpecCode": 24752,
     "scientificName": "Nomorhamphus liemi",
     "commonName": "Celebes Halfbeak",
     "tankMetrics": {
@@ -16511,6 +16740,7 @@
   },
   {
     "specCode": 10230,
+    "fishbaseSpecCode": 9868,
     "scientificName": "Nothobranchius rachovii",
     "commonName": "Bluefin Notho",
     "tankMetrics": {
@@ -16564,6 +16794,7 @@
   },
   {
     "specCode": 10231,
+    "fishbaseSpecCode": 12394,
     "scientificName": "Paracheirodon simulans",
     "commonName": "Green Neon Tetra",
     "tankMetrics": {
@@ -16617,6 +16848,7 @@
   },
   {
     "specCode": 10232,
+    "fishbaseSpecCode": 63223,
     "scientificName": "Poecilia wingei",
     "commonName": "Endler's Livebearer",
     "tankMetrics": {
@@ -16670,6 +16902,7 @@
   },
   {
     "specCode": 10233,
+    "fishbaseSpecCode": 10530,
     "scientificName": "Pseudomugil furcatus",
     "commonName": "Forktail Blue-eye",
     "tankMetrics": {
@@ -16723,6 +16956,7 @@
   },
   {
     "specCode": 10234,
+    "fishbaseSpecCode": 22749,
     "scientificName": "Pseudomugil gertrudae",
     "commonName": "Gertrude's Blue-eye",
     "tankMetrics": {
@@ -16777,6 +17011,7 @@
   },
   {
     "specCode": 10235,
+    "fishbaseSpecCode": 69397,
     "scientificName": "Pseudomugil luminatus",
     "commonName": "Red Neon Blue-eye",
     "tankMetrics": {
@@ -16830,6 +17065,7 @@
   },
   {
     "specCode": 10236,
+    "fishbaseSpecCode": 22750,
     "scientificName": "Pseudomugil signifer",
     "commonName": "Pacific Blue-eye",
     "tankMetrics": {
@@ -16884,6 +17120,7 @@
   },
   {
     "specCode": 10237,
+    "fishbaseSpecCode": 13204,
     "scientificName": "Sawbwa resplendens",
     "commonName": "Sawbwa Barb",
     "tankMetrics": {
@@ -16937,6 +17174,7 @@
   },
   {
     "specCode": 10238,
+    "fishbaseSpecCode": 26831,
     "scientificName": "Sewellia lineolata",
     "commonName": "Reticulated Hillstream Loach",
     "tankMetrics": {
@@ -16990,6 +17228,7 @@
   },
   {
     "specCode": 10239,
+    "fishbaseSpecCode": 10349,
     "scientificName": "Sundadanio axelrodi",
     "commonName": "Axelrod's Rasbora",
     "tankMetrics": {
@@ -17043,6 +17282,7 @@
   },
   {
     "specCode": 10240,
+    "fishbaseSpecCode": 15907,
     "scientificName": "Tateurndina ocellicauda",
     "commonName": "Peacock Gudgeon",
     "tankMetrics": {
@@ -17096,6 +17336,7 @@
   },
   {
     "specCode": 10241,
+    "fishbaseSpecCode": 11906,
     "scientificName": "Thoracocharax stellatus",
     "commonName": "Spotfin Hatchetfish",
     "tankMetrics": {
@@ -17149,6 +17390,7 @@
   },
   {
     "specCode": 10242,
+    "fishbaseSpecCode": 12083,
     "scientificName": "Trichopsis schalleri",
     "commonName": "Schaller's Croaking Gourami",
     "tankMetrics": {
@@ -17202,6 +17444,7 @@
   },
   {
     "specCode": 10243,
+    "fishbaseSpecCode": 50683,
     "scientificName": "Acanthicus adonis",
     "commonName": "Adonis Pleco",
     "tankMetrics": {
@@ -17255,6 +17498,7 @@
   },
   {
     "specCode": 10244,
+    "fishbaseSpecCode": 46851,
     "scientificName": "Apistogramma diplotaenia",
     "commonName": "Double-banded Dwarf Cichlid",
     "tankMetrics": {
@@ -17308,6 +17552,7 @@
   },
   {
     "specCode": 10245,
+    "fishbaseSpecCode": 57505,
     "scientificName": "Apistogramma mendezi",
     "commonName": "Mendez's Dwarf Cichlid",
     "tankMetrics": {
@@ -17361,6 +17606,7 @@
   },
   {
     "specCode": 10246,
+    "fishbaseSpecCode": 15943,
     "scientificName": "Apteronotus leptorhynchus",
     "commonName": "Brown Ghost Knifefish",
     "tankMetrics": {
@@ -17414,6 +17660,7 @@
   },
   {
     "specCode": 10247,
+    "fishbaseSpecCode": 66161,
     "scientificName": "Baryancistrus xanthellus",
     "commonName": "Gold Nugget Pleco",
     "tankMetrics": {
@@ -17467,6 +17714,7 @@
   },
   {
     "specCode": 10248,
+    "fishbaseSpecCode": 3214,
     "scientificName": "Belonesox belizanus",
     "commonName": "Pike Livebearer",
     "tankMetrics": {
@@ -17521,6 +17769,7 @@
   },
   {
     "specCode": 10249,
+    "fishbaseSpecCode": 27008,
     "scientificName": "Betta albimarginata",
     "commonName": "Whiteseam Betta",
     "tankMetrics": {
@@ -17574,6 +17823,7 @@
   },
   {
     "specCode": 10250,
+    "fishbaseSpecCode": 27010,
     "scientificName": "Betta channoides",
     "commonName": "Snakehead Betta",
     "tankMetrics": {
@@ -17627,6 +17877,7 @@
   },
   {
     "specCode": 10251,
+    "fishbaseSpecCode": 12038,
     "scientificName": "Betta imbellis",
     "commonName": "Peaceful Betta",
     "tankMetrics": {
@@ -17680,6 +17931,7 @@
   },
   {
     "specCode": 10252,
+    "fishbaseSpecCode": 12039,
     "scientificName": "Betta macrostoma",
     "commonName": "Brunei Beauty",
     "tankMetrics": {
@@ -17733,6 +17985,7 @@
   },
   {
     "specCode": 10253,
+    "fishbaseSpecCode": 66633,
     "scientificName": "Betta mahachaiensis",
     "commonName": "Mahachai Betta",
     "tankMetrics": {
@@ -17787,6 +18040,7 @@
   },
   {
     "specCode": 10254,
+    "fishbaseSpecCode": 12040,
     "scientificName": "Betta picta",
     "commonName": "Painted Betta",
     "tankMetrics": {
@@ -17840,6 +18094,7 @@
   },
   {
     "specCode": 10255,
+    "fishbaseSpecCode": 12042,
     "scientificName": "Betta pugnax",
     "commonName": "Forest Betta",
     "tankMetrics": {
@@ -17893,6 +18148,7 @@
   },
   {
     "specCode": 10256,
+    "fishbaseSpecCode": 51579,
     "scientificName": "Betta simplex",
     "commonName": "Krabi Mouthbrooding Betta",
     "tankMetrics": {
@@ -17946,6 +18202,7 @@
   },
   {
     "specCode": 10257,
+    "fishbaseSpecCode": 12047,
     "scientificName": "Betta smaragdina",
     "commonName": "Emerald Betta",
     "tankMetrics": {
@@ -17999,6 +18256,7 @@
   },
   {
     "specCode": 10258,
+    "fishbaseSpecCode": 46719,
     "scientificName": "Biotoecus opercularis",
     "commonName": "Sand Cichlid",
     "tankMetrics": {
@@ -18052,6 +18310,7 @@
   },
   {
     "specCode": 10259,
+    "fishbaseSpecCode": 25169,
     "scientificName": "Carinotetraodon lorteti",
     "commonName": "Redeye Pufferfish",
     "tankMetrics": {
@@ -18105,6 +18364,7 @@
   },
   {
     "specCode": 10260,
+    "fishbaseSpecCode": 27253,
     "scientificName": "Carinotetraodon salivator",
     "commonName": "Striped Borneo Redeye Puffer",
     "tankMetrics": {
@@ -18158,6 +18418,7 @@
   },
   {
     "specCode": 10261,
+    "fishbaseSpecCode": 10258,
     "scientificName": "Chaca chaca",
     "commonName": "Frogmouth Catfish",
     "tankMetrics": {
@@ -18211,6 +18472,7 @@
   },
   {
     "specCode": 10262,
+    "fishbaseSpecCode": 10737,
     "scientificName": "Copeina guttata",
     "commonName": "Redspotted Copeina",
     "tankMetrics": {
@@ -18264,6 +18526,7 @@
   },
   {
     "specCode": 10263,
+    "fishbaseSpecCode": 10741,
     "scientificName": "Copella arnoldi",
     "commonName": "Splash Tetra",
     "tankMetrics": {
@@ -18423,6 +18686,7 @@
   },
   {
     "specCode": 10266,
+    "fishbaseSpecCode": 14506,
     "scientificName": "Datnioides microlepis",
     "commonName": "Indonesian Tiger Fish",
     "tankMetrics": {
@@ -18476,6 +18740,7 @@
   },
   {
     "specCode": 10267,
+    "fishbaseSpecCode": 50395,
     "scientificName": "Datnioides pulcher",
     "commonName": "Siamese Tiger Fish",
     "tankMetrics": {
@@ -18529,6 +18794,7 @@
   },
   {
     "specCode": 10268,
+    "fishbaseSpecCode": 24148,
     "scientificName": "Dawkinsia denisonii",
     "commonName": "Denison Barb",
     "tankMetrics": {
@@ -18582,6 +18848,7 @@
   },
   {
     "specCode": 10269,
+    "fishbaseSpecCode": 12325,
     "scientificName": "Dicrossus filamentosus",
     "commonName": "Checkerboard Cichlid",
     "tankMetrics": {
@@ -18635,6 +18902,7 @@
   },
   {
     "specCode": 10270,
+    "fishbaseSpecCode": 47713,
     "scientificName": "Duringlanis perugiae",
     "commonName": "Honeycomb Catfish",
     "tankMetrics": {
@@ -18688,6 +18956,7 @@
   },
   {
     "specCode": 10271,
+    "fishbaseSpecCode": 4830,
     "scientificName": "Erpetoichthys calabaricus",
     "commonName": "Reedfish / Ropefish",
     "tankMetrics": {
@@ -18742,6 +19011,7 @@
   },
   {
     "specCode": 10272,
+    "fishbaseSpecCode": 5145,
     "scientificName": "Exodon paradoxus",
     "commonName": "Bucktooth Tetra",
     "tankMetrics": {
@@ -18795,6 +19065,7 @@
   },
   {
     "specCode": 10273,
+    "fishbaseSpecCode": 2085,
     "scientificName": "Gnathonemus petersii",
     "commonName": "Elephantnose Fish",
     "tankMetrics": {
@@ -18848,6 +19119,7 @@
   },
   {
     "specCode": 10274,
+    "fishbaseSpecCode": 4519,
     "scientificName": "Gymnarchus niloticus",
     "commonName": "Aba Aba",
     "tankMetrics": {
@@ -18901,6 +19173,7 @@
   },
   {
     "specCode": 10275,
+    "fishbaseSpecCode": 10915,
     "scientificName": "Gymnotus carapo",
     "commonName": "Banded Knifefish",
     "tankMetrics": {
@@ -18954,6 +19227,7 @@
   },
   {
     "specCode": 10276,
+    "fishbaseSpecCode": 13113,
     "scientificName": "Hemiodus gracilis",
     "commonName": "Redtail Hemiodus",
     "tankMetrics": {
@@ -19007,6 +19281,7 @@
   },
   {
     "specCode": 10277,
+    "fishbaseSpecCode": 22877,
     "scientificName": "Homaloptera orthogoniata",
     "commonName": "Lizard Loach",
     "tankMetrics": {
@@ -19060,6 +19335,7 @@
   },
   {
     "specCode": 10278,
+    "fishbaseSpecCode": 53570,
     "scientificName": "Hypancistrus zebra",
     "commonName": "Zebra Pleco",
     "tankMetrics": {
@@ -19113,6 +19389,7 @@
   },
   {
     "specCode": 10279,
+    "fishbaseSpecCode": 10920,
     "scientificName": "Kryptopterus bicirrhis",
     "commonName": "Common Glass Catfish",
     "tankMetrics": {
@@ -19166,6 +19443,7 @@
   },
   {
     "specCode": 10280,
+    "fishbaseSpecCode": 12106,
     "scientificName": "Liosomadoras oncinus",
     "commonName": "Jaguar Catfish",
     "tankMetrics": {
@@ -19219,6 +19497,7 @@
   },
   {
     "specCode": 10281,
+    "fishbaseSpecCode": 63139,
     "scientificName": "Otocinclus cocama",
     "genus": "Otocinclus",
     "species": "cocama",
@@ -19278,7 +19557,7 @@
     "genus": "Neocaridina",
     "species": "davidi",
     "commonName": "Cherry Shrimp",
-    "family": "Atyidae (Invertebrate)",
+    "family": "Atyidae",
     "maxLengthCm": 4,
     "masterPhotoUrl": "/species-images/neocaridina-davidi.png",
     "tankMetrics": {
@@ -19325,7 +19604,8 @@
     "waterTypes": [
       "freshwater"
     ],
-    "waterTypesSource": "curated"
+    "waterTypesSource": "curated",
+    "type": "invertebrate"
   },
   {
     "specCode": 67134,
@@ -19333,7 +19613,7 @@
     "genus": "Ambystoma",
     "species": "mexicanum",
     "commonName": "Axolotl",
-    "family": "Ambystomatidae (Invertebrate)",
+    "family": "Ambystomatidae",
     "maxLengthCm": 30,
     "masterPhotoUrl": "/species-images/ambystoma-mexicanum.png",
     "tankMetrics": {
@@ -19382,7 +19662,8 @@
     "waterTypes": [
       "freshwater"
     ],
-    "waterTypesSource": "curated"
+    "waterTypesSource": "curated",
+    "type": "amphibian"
   },
   {
     "specCode": 80001,
@@ -19390,7 +19671,7 @@
     "genus": "Physella",
     "species": "acuta",
     "commonName": "Bladder Snail",
-    "family": "Physidae (Invertebrate)",
+    "family": "Physidae",
     "maxLengthCm": 1,
     "masterPhotoUrl": "/species-images/physella-acuta.png",
     "type": "invertebrate",
@@ -19434,7 +19715,7 @@
     "genus": "Taxiphyllum",
     "species": "barbieri",
     "commonName": "Java Moss",
-    "family": "Hypnaceae (Plant)",
+    "family": "Hypnaceae",
     "maxLengthCm": 0,
     "masterPhotoUrl": "/species-images/taxiphyllum-barbieri.png",
     "type": "plant",
@@ -19478,7 +19759,7 @@
     "genus": "Ludwigia",
     "species": "repens",
     "commonName": "Ludwigia Repens",
-    "family": "Onagraceae (Plant)",
+    "family": "Onagraceae",
     "maxLengthCm": 50,
     "masterPhotoUrl": "/species-images/ludwigia-repens.png",
     "type": "plant",
@@ -19522,7 +19803,7 @@
     "genus": "Pomacea",
     "species": "bridgesii",
     "commonName": "Mystery Snail",
-    "family": "Ampullariidae (Invertebrate)",
+    "family": "Ampullariidae",
     "maxLengthCm": 6,
     "masterPhotoUrl": "/species-images/pomacea-bridgesii.png",
     "type": "invertebrate",
@@ -19566,7 +19847,7 @@
     "genus": "Melanoides",
     "species": "tuberculata",
     "commonName": "Malaysian Trumpet Snail",
-    "family": "Thiaridae (Invertebrate)",
+    "family": "Thiaridae",
     "maxLengthCm": 3,
     "masterPhotoUrl": "/species-images/melanoides-tuberculata.png",
     "type": "invertebrate",
@@ -19610,7 +19891,7 @@
     "genus": "Lemna",
     "species": "minor",
     "commonName": "Duckweed",
-    "family": "Araceae (Plant)",
+    "family": "Araceae",
     "maxLengthCm": 1,
     "masterPhotoUrl": "/species-images/lemna-minor.png",
     "type": "plant",
@@ -19654,7 +19935,7 @@
     "genus": "Cryptocoryne",
     "species": "parva",
     "commonName": "Cryptocoryne Parva",
-    "family": "Araceae (Plant)",
+    "family": "Araceae",
     "maxLengthCm": 5,
     "masterPhotoUrl": "/species-images/cryptocoryne-parva.png",
     "type": "plant",
@@ -19698,7 +19979,7 @@
     "genus": "Leptochilus",
     "species": "pteropus",
     "commonName": "Java Fern",
-    "family": "Polypodiaceae (Plant)",
+    "family": "Polypodiaceae",
     "maxLengthCm": 30,
     "masterPhotoUrl": "/species-images/leptochilus-pteropus.png",
     "type": "plant",
@@ -19742,7 +20023,7 @@
     "genus": "Echinodorus",
     "species": "spp.",
     "commonName": "Amazon Sword",
-    "family": "Alismataceae (Plant)",
+    "family": "Alismataceae",
     "maxLengthCm": 50,
     "masterPhotoUrl": "/species-images/echinodorus-spp.png",
     "type": "plant",
@@ -19786,7 +20067,7 @@
     "genus": "Anubias",
     "species": "barteri",
     "commonName": "Anubias Barteri",
-    "family": "Araceae (Plant)",
+    "family": "Araceae",
     "maxLengthCm": 25,
     "masterPhotoUrl": "/species-images/anubias-barteri.png",
     "type": "plant",
@@ -19830,7 +20111,7 @@
     "genus": "Limnobium",
     "species": "laevigatum",
     "commonName": "Amazon Frogbit",
-    "family": "Hydrocharitaceae (Plant)",
+    "family": "Hydrocharitaceae",
     "maxLengthCm": 5,
     "masterPhotoUrl": "/species-images/limnobium-laevigatum.png",
     "type": "plant",
@@ -19874,7 +20155,7 @@
     "genus": "Vallisneria",
     "species": "spiralis",
     "commonName": "Vallisneria",
-    "family": "Hydrocharitaceae (Plant)",
+    "family": "Hydrocharitaceae",
     "maxLengthCm": 60,
     "masterPhotoUrl": "/species-images/vallisneria-spiralis.png",
     "type": "plant",
@@ -19918,7 +20199,7 @@
     "genus": "Cryptocoryne",
     "species": "wendtii",
     "commonName": "Cryptocoryne Wendtii",
-    "family": "Araceae (Plant)",
+    "family": "Araceae",
     "maxLengthCm": 20,
     "masterPhotoUrl": "/species-images/cryptocoryne-wendtii.png",
     "type": "plant",
@@ -19962,7 +20243,7 @@
     "genus": "Vallisneria",
     "species": "americana",
     "commonName": "Giant Vallisneria",
-    "family": "Hydrocharitaceae (Plant)",
+    "family": "Hydrocharitaceae",
     "maxLengthCm": 100,
     "masterPhotoUrl": "/species-images/vallisneria-americana.png",
     "type": "plant",
@@ -20006,7 +20287,7 @@
     "genus": "Taxiphyllum",
     "species": "sp. flame",
     "commonName": "Flame Moss",
-    "family": "Hypnaceae (Plant)",
+    "family": "Hypnaceae",
     "maxLengthCm": 8,
     "masterPhotoUrl": "/species-images/taxiphyllum-sp-flame.png",
     "type": "plant",
@@ -20050,7 +20331,7 @@
     "genus": "Hygrophila",
     "species": "difformis",
     "commonName": "Water Wisteria",
-    "family": "Acanthaceae (Plant)",
+    "family": "Acanthaceae",
     "maxLengthCm": 50,
     "masterPhotoUrl": "/species-images/hygrophila-difformis.png",
     "type": "plant",
@@ -20094,7 +20375,7 @@
     "genus": "Neritina",
     "species": "spp.",
     "commonName": "Nerite Snail",
-    "family": "Neritidae (Invertebrate)",
+    "family": "Neritidae",
     "maxLengthCm": 3,
     "masterPhotoUrl": "/species-images/neritina-spp.png",
     "type": "invertebrate",
@@ -20138,7 +20419,7 @@
     "genus": "Vesicularia",
     "species": "montagnei",
     "commonName": "Christmas Moss",
-    "family": "Hypnaceae (Plant)",
+    "family": "Hypnaceae",
     "maxLengthCm": 8,
     "masterPhotoUrl": "/species-images/vesicularia-montagnei.png",
     "type": "plant",
@@ -20182,7 +20463,7 @@
     "genus": "Bucephalandra",
     "species": "spp.",
     "commonName": "Bucephalandra",
-    "family": "Araceae (Plant)",
+    "family": "Araceae",
     "maxLengthCm": 10,
     "masterPhotoUrl": "/species-images/bucephalandra-spp.png",
     "type": "plant",
@@ -20226,7 +20507,7 @@
     "genus": "Planorbella",
     "species": "duryi",
     "commonName": "Ramshorn Snail",
-    "family": "Planorbidae (Invertebrate)",
+    "family": "Planorbidae",
     "maxLengthCm": 3,
     "masterPhotoUrl": "/species-images/planorbella-duryi.png",
     "type": "invertebrate",
@@ -20270,7 +20551,7 @@
     "genus": "Anubias",
     "species": "barteri var. nana",
     "commonName": "Anubias Nana",
-    "family": "Araceae (Plant)",
+    "family": "Araceae",
     "maxLengthCm": 12,
     "masterPhotoUrl": "/species-images/anubias-barteri-var-nana.png",
     "type": "plant",
@@ -20314,7 +20595,7 @@
     "genus": "Caridina",
     "species": "multidentata",
     "commonName": "Amano Shrimp",
-    "family": "Atyidae (Invertebrate)",
+    "family": "Atyidae",
     "maxLengthCm": 5,
     "masterPhotoUrl": "/species-images/caridina-multidentata.png",
     "type": "invertebrate",
@@ -20358,7 +20639,7 @@
     "genus": "Palaemonetes",
     "species": "paludosus",
     "commonName": "Ghost Shrimp",
-    "family": "Palaemonidae (Invertebrate)",
+    "family": "Palaemonidae",
     "maxLengthCm": 5,
     "masterPhotoUrl": "/species-images/palaemonetes-paludosus.png",
     "type": "invertebrate",
@@ -20402,7 +20683,7 @@
     "genus": "Bacopa",
     "species": "monnieri",
     "commonName": "Water Hyssop",
-    "family": "Plantaginaceae (Plant)",
+    "family": "Plantaginaceae",
     "maxLengthCm": 30,
     "masterPhotoUrl": "/species-images/bacopa-monnieri.png",
     "type": "plant",
@@ -20442,6 +20723,7 @@
   },
   {
     "specCode": 70001,
+    "fishbaseSpecCode": 11138,
     "scientificName": "Apistogramma borellii Opal",
     "genus": "Apistogramma",
     "species": "borellii Opal",
@@ -20550,6 +20832,7 @@
   },
   {
     "specCode": 70003,
+    "fishbaseSpecCode": 64495,
     "scientificName": "Leporinus vanzoi",
     "genus": "Leporinus",
     "species": "vanzoi",
@@ -20658,6 +20941,7 @@
   },
   {
     "specCode": 70005,
+    "fishbaseSpecCode": 6234,
     "scientificName": "Osteoglossum bicirrhosum",
     "genus": "Osteoglossum",
     "species": "bicirrhosum",
@@ -20712,6 +20996,7 @@
   },
   {
     "specCode": 70010,
+    "fishbaseSpecCode": 4771,
     "scientificName": "Rasbora trilineata",
     "genus": "Rasbora",
     "species": "trilineata",
@@ -20766,6 +21051,7 @@
   },
   {
     "specCode": 70013,
+    "fishbaseSpecCode": 22673,
     "scientificName": "Iriatherina werneri",
     "genus": "Iriatherina",
     "species": "werneri",
@@ -20820,6 +21106,7 @@
   },
   {
     "specCode": 70014,
+    "fishbaseSpecCode": 12291,
     "scientificName": "Biotodoma cupido",
     "genus": "Biotodoma",
     "species": "cupido",
@@ -20874,6 +21161,7 @@
   },
   {
     "specCode": 70015,
+    "fishbaseSpecCode": 25595,
     "scientificName": "Chilatherina axelrodi",
     "genus": "Chilatherina",
     "species": "axelrodi",
@@ -20928,6 +21216,7 @@
   },
   {
     "specCode": 4592,
+    "fishbaseSpecCode": 4592,
     "scientificName": "Oryzias setnai",
     "genus": "Oryzias",
     "species": "setnai",
@@ -20978,6 +21267,7 @@
   },
   {
     "specCode": 4669,
+    "fishbaseSpecCode": 4669,
     "scientificName": "Oryzias latipes",
     "genus": "Oryzias",
     "species": "latipes",
@@ -21305,6 +21595,7 @@
   },
   {
     "specCode": 5162,
+    "fishbaseSpecCode": 5162,
     "scientificName": "Oryzias luzonensis",
     "genus": "Oryzias",
     "species": "luzonensis",
@@ -21354,6 +21645,7 @@
   },
   {
     "specCode": 6261,
+    "fishbaseSpecCode": 6261,
     "scientificName": "Adrianichthys kruyti",
     "genus": "Adrianichthys",
     "species": "kruyti",
@@ -21395,6 +21687,7 @@
   },
   {
     "specCode": 6262,
+    "fishbaseSpecCode": 6262,
     "scientificName": "Adrianichthys oophorus",
     "genus": "Adrianichthys",
     "species": "oophorus",
@@ -21439,6 +21732,7 @@
   },
   {
     "specCode": 6263,
+    "fishbaseSpecCode": 6263,
     "scientificName": "Adrianichthys poptae",
     "genus": "Adrianichthys",
     "species": "poptae",
@@ -21483,6 +21777,7 @@
   },
   {
     "specCode": 6264,
+    "fishbaseSpecCode": 6264,
     "scientificName": "Oryzias sarasinorum",
     "genus": "Oryzias",
     "species": "sarasinorum",
@@ -21527,6 +21822,7 @@
   },
   {
     "specCode": 6265,
+    "fishbaseSpecCode": 6265,
     "scientificName": "Oryzias marmoratus",
     "genus": "Oryzias",
     "species": "marmoratus",
@@ -21571,6 +21867,7 @@
   },
   {
     "specCode": 6266,
+    "fishbaseSpecCode": 6266,
     "scientificName": "Oryzias matanensis",
     "genus": "Oryzias",
     "species": "matanensis",
@@ -21615,6 +21912,7 @@
   },
   {
     "specCode": 6267,
+    "fishbaseSpecCode": 6267,
     "scientificName": "Oryzias nigrimas",
     "genus": "Oryzias",
     "species": "nigrimas",
@@ -21659,6 +21957,7 @@
   },
   {
     "specCode": 6268,
+    "fishbaseSpecCode": 6268,
     "scientificName": "Oryzias orthognathus",
     "genus": "Oryzias",
     "species": "orthognathus",
@@ -21703,6 +22002,7 @@
   },
   {
     "specCode": 6269,
+    "fishbaseSpecCode": 6269,
     "scientificName": "Oryzias profundicola",
     "genus": "Oryzias",
     "species": "profundicola",
@@ -21747,6 +22047,7 @@
   },
   {
     "specCode": 12252,
+    "fishbaseSpecCode": 12252,
     "scientificName": "Oryzias celebensis",
     "genus": "Oryzias",
     "species": "celebensis",
@@ -21791,6 +22092,7 @@
   },
   {
     "specCode": 12254,
+    "fishbaseSpecCode": 12254,
     "scientificName": "Oryzias javanicus",
     "genus": "Oryzias",
     "species": "javanicus",
@@ -21841,6 +22143,7 @@
   },
   {
     "specCode": 26794,
+    "fishbaseSpecCode": 26794,
     "scientificName": "Oryzias mekongensis",
     "genus": "Oryzias",
     "species": "mekongensis",
@@ -21890,6 +22193,7 @@
   },
   {
     "specCode": 26983,
+    "fishbaseSpecCode": 26983,
     "scientificName": "Oryzias minutillus",
     "genus": "Oryzias",
     "species": "minutillus",
@@ -21934,6 +22238,7 @@
   },
   {
     "specCode": 49577,
+    "fishbaseSpecCode": 49577,
     "scientificName": "Oryzias curvinotus",
     "genus": "Oryzias",
     "species": "curvinotus",
@@ -21984,6 +22289,7 @@
   },
   {
     "specCode": 49578,
+    "fishbaseSpecCode": 49578,
     "scientificName": "Oryzias timorensis",
     "genus": "Oryzias",
     "species": "timorensis",
@@ -22028,6 +22334,7 @@
   },
   {
     "specCode": 50265,
+    "fishbaseSpecCode": 50265,
     "scientificName": "Oryzias dancena",
     "genus": "Oryzias",
     "species": "dancena",
@@ -22078,6 +22385,7 @@
   },
   {
     "specCode": 50267,
+    "fishbaseSpecCode": 50267,
     "scientificName": "Oryzias carnaticus",
     "genus": "Oryzias",
     "species": "carnaticus",
@@ -22128,6 +22436,7 @@
   },
   {
     "specCode": 50269,
+    "fishbaseSpecCode": 50269,
     "scientificName": "Oryzias uwai",
     "genus": "Oryzias",
     "species": "uwai",
@@ -22169,6 +22478,7 @@
   },
   {
     "specCode": 50270,
+    "fishbaseSpecCode": 50270,
     "scientificName": "Oryzias pectoralis",
     "genus": "Oryzias",
     "species": "pectoralis",
@@ -22218,6 +22528,7 @@
   },
   {
     "specCode": 50271,
+    "fishbaseSpecCode": 50271,
     "scientificName": "Oryzias haugiangensis",
     "genus": "Oryzias",
     "species": "haugiangensis",
@@ -22263,6 +22574,7 @@
   },
   {
     "specCode": 50272,
+    "fishbaseSpecCode": 50272,
     "scientificName": "Oryzias hubbsi",
     "genus": "Oryzias",
     "species": "hubbsi",
@@ -22307,6 +22619,7 @@
   },
   {
     "specCode": 52632,
+    "fishbaseSpecCode": 52632,
     "scientificName": "Oryzias sinensis",
     "genus": "Oryzias",
     "species": "sinensis",
@@ -22356,6 +22669,7 @@
   },
   {
     "specCode": 62166,
+    "fishbaseSpecCode": 62166,
     "scientificName": "Adrianichthys roseni",
     "genus": "Adrianichthys",
     "species": "roseni",
@@ -22400,6 +22714,7 @@
   },
   {
     "specCode": 62167,
+    "fishbaseSpecCode": 62167,
     "scientificName": "Oryzias nebulosus",
     "genus": "Oryzias",
     "species": "nebulosus",
@@ -22444,6 +22759,7 @@
   },
   {
     "specCode": 64642,
+    "fishbaseSpecCode": 64642,
     "scientificName": "Oryzias melastigma",
     "genus": "Oryzias",
     "species": "melastigma",
@@ -22489,6 +22805,7 @@
   },
   {
     "specCode": 64835,
+    "fishbaseSpecCode": 64835,
     "scientificName": "Oryzias bonneorum",
     "genus": "Oryzias",
     "species": "bonneorum",
@@ -22532,6 +22849,7 @@
   },
   {
     "specCode": 65542,
+    "fishbaseSpecCode": 65542,
     "scientificName": "Oryzias woworae",
     "genus": "Oryzias",
     "species": "woworae",
@@ -22573,6 +22891,7 @@
   },
   {
     "specCode": 65577,
+    "fishbaseSpecCode": 65577,
     "scientificName": "Oryzias songkhramensis",
     "genus": "Oryzias",
     "species": "songkhramensis",
@@ -22617,6 +22936,7 @@
   },
   {
     "specCode": 65776,
+    "fishbaseSpecCode": 65776,
     "scientificName": "Oryzias hadiatyae",
     "genus": "Oryzias",
     "species": "hadiatyae",
@@ -22661,6 +22981,7 @@
   },
   {
     "specCode": 66418,
+    "fishbaseSpecCode": 66418,
     "scientificName": "Oryzias sakaizumii",
     "genus": "Oryzias",
     "species": "sakaizumii",
@@ -22705,6 +23026,7 @@
   },
   {
     "specCode": 66685,
+    "fishbaseSpecCode": 66685,
     "scientificName": "Oryzias eversi",
     "genus": "Oryzias",
     "species": "eversi",
@@ -22749,6 +23071,7 @@
   },
   {
     "specCode": 67150,
+    "fishbaseSpecCode": 67150,
     "scientificName": "Oryzias asinua",
     "genus": "Oryzias",
     "species": "asinua",
@@ -22793,6 +23116,7 @@
   },
   {
     "specCode": 67151,
+    "fishbaseSpecCode": 67151,
     "scientificName": "Oryzias wolasi",
     "genus": "Oryzias",
     "species": "wolasi",
@@ -22837,6 +23161,7 @@
   },
   {
     "specCode": 67765,
+    "fishbaseSpecCode": 67765,
     "scientificName": "Oryzias soerotoi",
     "genus": "Oryzias",
     "species": "soerotoi",
@@ -22886,6 +23211,7 @@
   },
   {
     "specCode": 69786,
+    "fishbaseSpecCode": 69786,
     "scientificName": "Oryzias kalimpaaensis",
     "genus": "Oryzias",
     "species": "kalimpaaensis",
@@ -22930,6 +23256,7 @@
   },
   {
     "specCode": 70934,
+    "fishbaseSpecCode": 70934,
     "scientificName": "Oryzias polylepis",
     "genus": "Oryzias",
     "species": "polylepis",
@@ -22971,6 +23298,7 @@
   },
   {
     "specCode": 70964,
+    "fishbaseSpecCode": 70964,
     "scientificName": "Oryzias chenglongensis",
     "genus": "Oryzias",
     "species": "chenglongensis",
@@ -23015,6 +23343,7 @@
   },
   {
     "specCode": 70970,
+    "fishbaseSpecCode": 70970,
     "scientificName": "Oryzias dopingdopingensis",
     "genus": "Oryzias",
     "species": "dopingdopingensis",
@@ -23059,6 +23388,7 @@
   },
   {
     "specCode": 70974,
+    "fishbaseSpecCode": 70974,
     "scientificName": "Oryzias landangiensis",
     "genus": "Oryzias",
     "species": "landangiensis",
@@ -23100,6 +23430,7 @@
   },
   {
     "specCode": 70975,
+    "fishbaseSpecCode": 70975,
     "scientificName": "Oryzias loxolepis",
     "genus": "Oryzias",
     "species": "loxolepis",
@@ -23144,6 +23475,7 @@
   },
   {
     "specCode": 70976,
+    "fishbaseSpecCode": 70976,
     "scientificName": "Oryzias moramoensis",
     "genus": "Oryzias",
     "species": "moramoensis",
@@ -23184,6 +23516,7 @@
   },
   {
     "specCode": 9813,
+    "fishbaseSpecCode": 9813,
     "scientificName": "Aphyosemion abacinum",
     "genus": "Aphyosemion",
     "species": "abacinum",
@@ -23233,6 +23566,7 @@
   },
   {
     "specCode": 9713,
+    "fishbaseSpecCode": 9713,
     "scientificName": "Aphyosemion bitaeniatum",
     "genus": "Aphyosemion",
     "species": "bitaeniatum",
@@ -23282,6 +23616,7 @@
   },
   {
     "specCode": 9719,
+    "fishbaseSpecCode": 9719,
     "scientificName": "Aphyosemion cameronense",
     "genus": "Aphyosemion",
     "species": "cameronense",
@@ -23331,6 +23666,7 @@
   },
   {
     "specCode": 9724,
+    "fishbaseSpecCode": 9724,
     "scientificName": "Aphyosemion christyi",
     "genus": "Aphyosemion",
     "species": "christyi",
@@ -23380,6 +23716,7 @@
   },
   {
     "specCode": 9727,
+    "fishbaseSpecCode": 9727,
     "scientificName": "Aphyosemion coeleste",
     "genus": "Aphyosemion",
     "species": "coeleste",
@@ -23429,6 +23766,7 @@
   },
   {
     "specCode": 9738,
+    "fishbaseSpecCode": 9738,
     "scientificName": "Aphyosemion gabunense",
     "genus": "Aphyosemion",
     "species": "gabunense",
@@ -23478,6 +23816,7 @@
   },
   {
     "specCode": 9751,
+    "fishbaseSpecCode": 9751,
     "scientificName": "Aphyosemion lambertorum",
     "genus": "Aphyosemion",
     "species": "lambertorum",
@@ -23527,6 +23866,7 @@
   },
   {
     "specCode": 9756,
+    "fishbaseSpecCode": 9756,
     "scientificName": "Aphyosemion maculatum",
     "genus": "Aphyosemion",
     "species": "maculatum",
@@ -23576,6 +23916,7 @@
   },
   {
     "specCode": 9708,
+    "fishbaseSpecCode": 9708,
     "scientificName": "Fundulopanchax amieti",
     "genus": "Fundulopanchax",
     "species": "amieti",
@@ -23625,6 +23966,7 @@
   },
   {
     "specCode": 9736,
+    "fishbaseSpecCode": 9736,
     "scientificName": "Fundulopanchax filamentosus",
     "genus": "Fundulopanchax",
     "species": "filamentosus",
@@ -23674,6 +24016,7 @@
   },
   {
     "specCode": 9743,
+    "fishbaseSpecCode": 9743,
     "scientificName": "Fundulopanchax gularis",
     "genus": "Fundulopanchax",
     "species": "gularis",
@@ -23723,6 +24066,7 @@
   },
   {
     "specCode": 9789,
+    "fishbaseSpecCode": 9789,
     "scientificName": "Fundulopanchax scheeli",
     "genus": "Fundulopanchax",
     "species": "scheeli",
@@ -23772,6 +24116,7 @@
   },
   {
     "specCode": 9792,
+    "fishbaseSpecCode": 9792,
     "scientificName": "Fundulopanchax sjostedti",
     "genus": "Fundulopanchax",
     "species": "sjostedti",
@@ -23821,6 +24166,7 @@
   },
   {
     "specCode": 9852,
+    "fishbaseSpecCode": 9852,
     "scientificName": "Nothobranchius eggersi",
     "genus": "Nothobranchius",
     "species": "eggersi",
@@ -23870,6 +24216,7 @@
   },
   {
     "specCode": 9854,
+    "fishbaseSpecCode": 9854,
     "scientificName": "Nothobranchius foerschi",
     "genus": "Nothobranchius",
     "species": "foerschi",
@@ -23919,6 +24266,7 @@
   },
   {
     "specCode": 9859,
+    "fishbaseSpecCode": 9859,
     "scientificName": "Nothobranchius korthausae",
     "genus": "Nothobranchius",
     "species": "korthausae",
@@ -23968,6 +24316,7 @@
   },
   {
     "specCode": 9863,
+    "fishbaseSpecCode": 9863,
     "scientificName": "Nothobranchius microlepis",
     "genus": "Nothobranchius",
     "species": "microlepis",
@@ -24017,6 +24366,7 @@
   },
   {
     "specCode": 9864,
+    "fishbaseSpecCode": 9864,
     "scientificName": "Nothobranchius neumanni",
     "genus": "Nothobranchius",
     "species": "neumanni",
@@ -24066,6 +24416,7 @@
   },
   {
     "specCode": 9823,
+    "fishbaseSpecCode": 9823,
     "scientificName": "Epiplatys barmoiensis",
     "genus": "Epiplatys",
     "species": "barmoiensis",
@@ -24115,6 +24466,7 @@
   },
   {
     "specCode": 2474,
+    "fishbaseSpecCode": 2474,
     "scientificName": "Epiplatys bifasciatus",
     "genus": "Epiplatys",
     "species": "bifasciatus",
@@ -24164,6 +24516,7 @@
   },
   {
     "specCode": 46229,
+    "fishbaseSpecCode": 46229,
     "scientificName": "Corydoras simulatus",
     "genus": "Corydoras",
     "species": "simulatus",
@@ -24213,6 +24566,7 @@
   },
   {
     "specCode": 12160,
+    "fishbaseSpecCode": 12160,
     "scientificName": "Corydoras axelrodi",
     "genus": "Corydoras",
     "species": "axelrodi",
@@ -24262,6 +24616,7 @@
   },
   {
     "specCode": 46046,
+    "fishbaseSpecCode": 46046,
     "scientificName": "Corydoras baderi",
     "genus": "Corydoras",
     "species": "baderi",
@@ -24311,6 +24666,7 @@
   },
   {
     "specCode": 46059,
+    "fishbaseSpecCode": 46059,
     "scientificName": "Corydoras ehrhardti",
     "genus": "Corydoras",
     "species": "ehrhardti",
@@ -24360,6 +24716,7 @@
   },
   {
     "specCode": 10924,
+    "fishbaseSpecCode": 10924,
     "scientificName": "Corydoras melanistius",
     "genus": "Corydoras",
     "species": "melanistius",
@@ -24409,6 +24766,7 @@
   },
   {
     "specCode": 46157,
+    "fishbaseSpecCode": 46157,
     "scientificName": "Corydoras nanus",
     "genus": "Corydoras",
     "species": "nanus",
@@ -24458,6 +24816,7 @@
   },
   {
     "specCode": 12193,
+    "fishbaseSpecCode": 12193,
     "scientificName": "Corydoras punctatus",
     "genus": "Corydoras",
     "species": "punctatus",
@@ -24507,6 +24866,7 @@
   },
   {
     "specCode": 10927,
+    "fishbaseSpecCode": 10927,
     "scientificName": "Corydoras reticulatus",
     "genus": "Corydoras",
     "species": "reticulatus",
@@ -24556,6 +24916,7 @@
   },
   {
     "specCode": 46227,
+    "fishbaseSpecCode": 46227,
     "scientificName": "Corydoras septentrionalis",
     "genus": "Corydoras",
     "species": "septentrionalis",
@@ -24605,6 +24966,7 @@
   },
   {
     "specCode": 12154,
+    "fishbaseSpecCode": 12154,
     "scientificName": "Corydoras splendens",
     "genus": "Corydoras",
     "species": "splendens",
@@ -24654,6 +25016,7 @@
   },
   {
     "specCode": 46110,
+    "fishbaseSpecCode": 46110,
     "scientificName": "Corydoras melanotaenia",
     "genus": "Corydoras",
     "species": "melanotaenia",
@@ -24703,6 +25066,7 @@
   },
   {
     "specCode": 12155,
+    "fishbaseSpecCode": 12155,
     "scientificName": "Corydoras acrensis",
     "genus": "Corydoras",
     "species": "acrensis",
@@ -24752,6 +25116,7 @@
   },
   {
     "specCode": 12156,
+    "fishbaseSpecCode": 12156,
     "scientificName": "Corydoras acutus",
     "genus": "Corydoras",
     "species": "acutus",
@@ -24801,6 +25166,7 @@
   },
   {
     "specCode": 12157,
+    "fishbaseSpecCode": 12157,
     "scientificName": "Corydoras amapaensis",
     "genus": "Corydoras",
     "species": "amapaensis",
@@ -24850,6 +25216,7 @@
   },
   {
     "specCode": 69174,
+    "fishbaseSpecCode": 69174,
     "scientificName": "Corydoras benattii",
     "genus": "Corydoras",
     "species": "benattii",
@@ -24899,6 +25266,7 @@
   },
   {
     "specCode": 46248,
+    "fishbaseSpecCode": 46248,
     "scientificName": "Aspidoras albater",
     "genus": "Aspidoras",
     "species": "albater",
@@ -24948,6 +25316,7 @@
   },
   {
     "specCode": 46253,
+    "fishbaseSpecCode": 46253,
     "scientificName": "Aspidoras fuscoguttatus",
     "genus": "Aspidoras",
     "species": "fuscoguttatus",
@@ -24997,6 +25366,7 @@
   },
   {
     "specCode": 12190,
+    "fishbaseSpecCode": 12190,
     "scientificName": "Aspidoras pauciradiatus",
     "genus": "Aspidoras",
     "species": "pauciradiatus",
@@ -25046,6 +25416,7 @@
   },
   {
     "specCode": 46265,
+    "fishbaseSpecCode": 46265,
     "scientificName": "Aspidoras raimundi",
     "genus": "Aspidoras",
     "species": "raimundi",
@@ -25095,6 +25466,7 @@
   },
   {
     "specCode": 12161,
+    "fishbaseSpecCode": 12161,
     "scientificName": "Scleromystax barbatus",
     "genus": "Scleromystax",
     "species": "barbatus",
@@ -25144,6 +25516,7 @@
   },
   {
     "specCode": 12033,
+    "fishbaseSpecCode": 12033,
     "scientificName": "Betta akarensis",
     "genus": "Betta",
     "species": "akarensis",
@@ -25193,6 +25566,7 @@
   },
   {
     "specCode": 12035,
+    "fishbaseSpecCode": 12035,
     "scientificName": "Betta bellica",
     "genus": "Betta",
     "species": "bellica",
@@ -25242,6 +25616,7 @@
   },
   {
     "specCode": 4772,
+    "fishbaseSpecCode": 4772,
     "scientificName": "Trichogaster labiosa",
     "genus": "Trichogaster",
     "species": "labiosa",
@@ -25291,6 +25666,7 @@
   },
   {
     "specCode": 4675,
+    "fishbaseSpecCode": 4675,
     "scientificName": "Trichopodus trichopterus",
     "genus": "Trichopodus",
     "species": "trichopterus",
@@ -25340,6 +25716,7 @@
   },
   {
     "specCode": 12034,
+    "fishbaseSpecCode": 12034,
     "scientificName": "Betta anabatoides",
     "genus": "Betta",
     "species": "anabatoides",
@@ -25389,6 +25766,7 @@
   },
   {
     "specCode": 25132,
+    "fishbaseSpecCode": 25132,
     "scientificName": "Betta coccina",
     "genus": "Betta",
     "species": "coccina",
@@ -25438,6 +25816,7 @@
   },
   {
     "specCode": 15896,
+    "fishbaseSpecCode": 15896,
     "scientificName": "Betta edithae",
     "genus": "Betta",
     "species": "edithae",
@@ -25487,6 +25866,7 @@
   },
   {
     "specCode": 15897,
+    "fishbaseSpecCode": 15897,
     "scientificName": "Betta foerschi",
     "genus": "Betta",
     "species": "foerschi",
@@ -25536,6 +25916,7 @@
   },
   {
     "specCode": 12078,
+    "fishbaseSpecCode": 12078,
     "scientificName": "Parosphromenus deissneri",
     "genus": "Parosphromenus",
     "species": "deissneri",
@@ -25585,6 +25966,7 @@
   },
   {
     "specCode": 12079,
+    "fishbaseSpecCode": 12079,
     "scientificName": "Parosphromenus filamentosus",
     "genus": "Parosphromenus",
     "species": "filamentosus",
@@ -25634,6 +26016,7 @@
   },
   {
     "specCode": 4729,
+    "fishbaseSpecCode": 4729,
     "scientificName": "Trichopodus microlepis",
     "genus": "Trichopodus",
     "species": "microlepis",
@@ -25683,6 +26066,7 @@
   },
   {
     "specCode": 12044,
+    "fishbaseSpecCode": 12044,
     "scientificName": "Betta rubra",
     "genus": "Betta",
     "species": "rubra",
@@ -25732,6 +26116,7 @@
   },
   {
     "specCode": 12037,
+    "fishbaseSpecCode": 12037,
     "scientificName": "Betta fusca",
     "genus": "Betta",
     "species": "fusca",
@@ -25781,6 +26166,7 @@
   },
   {
     "specCode": 12048,
+    "fishbaseSpecCode": 12048,
     "scientificName": "Betta taeniata",
     "genus": "Betta",
     "species": "taeniata",
@@ -25830,6 +26216,7 @@
   },
   {
     "specCode": 5440,
+    "fishbaseSpecCode": 5440,
     "scientificName": "Betta unimaculata",
     "genus": "Betta",
     "species": "unimaculata",
@@ -25879,6 +26266,7 @@
   },
   {
     "specCode": 62587,
+    "fishbaseSpecCode": 62587,
     "scientificName": "Parosphromenus sumatranus",
     "genus": "Parosphromenus",
     "species": "sumatranus",
@@ -25928,6 +26316,7 @@
   },
   {
     "specCode": 15895,
+    "fishbaseSpecCode": 15895,
     "scientificName": "Parosphromenus nagyi",
     "genus": "Parosphromenus",
     "species": "nagyi",
@@ -25977,6 +26366,7 @@
   },
   {
     "specCode": 499,
+    "fishbaseSpecCode": 499,
     "scientificName": "Trichopodus pectoralis",
     "genus": "Trichopodus",
     "species": "pectoralis",
@@ -26026,6 +26416,7 @@
   },
   {
     "specCode": 4795,
+    "fishbaseSpecCode": 4795,
     "scientificName": "Macropodus ocellatus",
     "genus": "Macropodus",
     "species": "ocellatus",
@@ -26075,6 +26466,7 @@
   },
   {
     "specCode": 63050,
+    "fishbaseSpecCode": 63050,
     "scientificName": "Betta raja",
     "genus": "Betta",
     "species": "raja",
@@ -26124,6 +26516,7 @@
   },
   {
     "specCode": 10649,
+    "fishbaseSpecCode": 10649,
     "scientificName": "Holopristis pulchra",
     "genus": "Holopristis",
     "species": "pulchra",
@@ -26173,6 +26566,7 @@
   },
   {
     "specCode": 10695,
+    "fishbaseSpecCode": 10695,
     "scientificName": "Petitella georgiae",
     "genus": "Petitella",
     "species": "georgiae",
@@ -26222,6 +26616,7 @@
   },
   {
     "specCode": 10645,
+    "fishbaseSpecCode": 10645,
     "scientificName": "Holopristis ocellifera",
     "genus": "Holopristis",
     "species": "ocellifera",
@@ -26271,6 +26666,7 @@
   },
   {
     "specCode": 12391,
+    "fishbaseSpecCode": 12391,
     "scientificName": "Bario oligolepis",
     "genus": "Bario",
     "species": "oligolepis",
@@ -26320,6 +26716,7 @@
   },
   {
     "specCode": 10693,
+    "fishbaseSpecCode": 10693,
     "scientificName": "Brachychalcinus orbicularis",
     "genus": "Brachychalcinus",
     "species": "orbicularis",
@@ -26369,6 +26766,7 @@
   },
   {
     "specCode": 10629,
+    "fishbaseSpecCode": 10629,
     "scientificName": "Ctenobrycon spilurus",
     "genus": "Ctenobrycon",
     "species": "spilurus",
@@ -26418,6 +26816,7 @@
   },
   {
     "specCode": 12371,
+    "fishbaseSpecCode": 12371,
     "scientificName": "Hemigrammus unilineatus",
     "genus": "Hemigrammus",
     "species": "unilineatus",
@@ -26467,6 +26866,7 @@
   },
   {
     "specCode": 10652,
+    "fishbaseSpecCode": 10652,
     "scientificName": "Hyphessobrycon flammeus",
     "genus": "Hyphessobrycon",
     "species": "flammeus",
@@ -26516,6 +26916,7 @@
   },
   {
     "specCode": 10653,
+    "fishbaseSpecCode": 10653,
     "scientificName": "Hyphessobrycon griemi",
     "genus": "Hyphessobrycon",
     "species": "griemi",
@@ -26565,6 +26966,7 @@
   },
   {
     "specCode": 10655,
+    "fishbaseSpecCode": 10655,
     "scientificName": "Hyphessobrycon heterorhabdus",
     "genus": "Hyphessobrycon",
     "species": "heterorhabdus",
@@ -26614,6 +27016,7 @@
   },
   {
     "specCode": 10657,
+    "fishbaseSpecCode": 10657,
     "scientificName": "Hyphessobrycon scholzei",
     "genus": "Hyphessobrycon",
     "species": "scholzei",
@@ -26663,6 +27066,7 @@
   },
   {
     "specCode": 10697,
+    "fishbaseSpecCode": 10697,
     "scientificName": "Pristella maxillaris",
     "genus": "Pristella",
     "species": "maxillaris",
@@ -26712,6 +27116,7 @@
   },
   {
     "specCode": 6183,
+    "fishbaseSpecCode": 6183,
     "scientificName": "Gymnocharacinus bergii",
     "genus": "Gymnocharacinus",
     "species": "bergii",
@@ -26761,6 +27166,7 @@
   },
   {
     "specCode": 12367,
+    "fishbaseSpecCode": 12367,
     "scientificName": "Hemigrammus hyanuary",
     "genus": "Hemigrammus",
     "species": "hyanuary",
@@ -26810,6 +27216,7 @@
   },
   {
     "specCode": 12378,
+    "fishbaseSpecCode": 12378,
     "scientificName": "Megalamphodus bentosi",
     "genus": "Megalamphodus",
     "species": "bentosi",
@@ -26859,6 +27266,7 @@
   },
   {
     "specCode": 12383,
+    "fishbaseSpecCode": 12383,
     "scientificName": "Megalamphodus rosaceus",
     "genus": "Megalamphodus",
     "species": "rosaceus",
@@ -26908,6 +27316,7 @@
   },
   {
     "specCode": 12401,
+    "fishbaseSpecCode": 12401,
     "scientificName": "Thayeria obliqua",
     "genus": "Thayeria",
     "species": "obliqua",
@@ -26957,6 +27366,7 @@
   },
   {
     "specCode": 2740,
+    "fishbaseSpecCode": 2740,
     "scientificName": "Astyanax mexicanus",
     "genus": "Astyanax",
     "species": "mexicanus",
@@ -27006,6 +27416,7 @@
   },
   {
     "specCode": 4475,
+    "fishbaseSpecCode": 4475,
     "scientificName": "Astyanax bimaculatus",
     "genus": "Astyanax",
     "species": "bimaculatus",
@@ -27055,6 +27466,7 @@
   },
   {
     "specCode": 26473,
+    "fishbaseSpecCode": 26473,
     "scientificName": "Hemigrammus collettii",
     "genus": "Hemigrammus",
     "species": "collettii",
@@ -27104,6 +27516,7 @@
   },
   {
     "specCode": 6509,
+    "fishbaseSpecCode": 6509,
     "scientificName": "Amphiprion ocellaris",
     "genus": "Amphiprion",
     "species": "ocellaris",
@@ -27172,6 +27585,7 @@
   },
   {
     "specCode": 9209,
+    "fishbaseSpecCode": 9209,
     "scientificName": "Amphiprion percula",
     "genus": "Amphiprion",
     "species": "percula",
@@ -27240,6 +27654,7 @@
   },
   {
     "specCode": 6632,
+    "fishbaseSpecCode": 6632,
     "scientificName": "Amphiprion biaculeatus",
     "genus": "Amphiprion",
     "species": "biaculeatus",
@@ -27308,6 +27723,7 @@
   },
   {
     "specCode": 12448,
+    "fishbaseSpecCode": 12448,
     "scientificName": "Chrysiptera parasema",
     "genus": "Chrysiptera",
     "species": "parasema",
@@ -27376,6 +27792,7 @@
   },
   {
     "specCode": 5679,
+    "fishbaseSpecCode": 5679,
     "scientificName": "Chromis viridis",
     "genus": "Chromis",
     "species": "viridis",
@@ -27444,6 +27861,7 @@
   },
   {
     "specCode": 5110,
+    "fishbaseSpecCode": 5110,
     "scientificName": "Dascyllus aruanus",
     "genus": "Dascyllus",
     "species": "aruanus",
@@ -27512,6 +27930,7 @@
   },
   {
     "specCode": 6018,
+    "fishbaseSpecCode": 6018,
     "scientificName": "Zebrasoma flavescens",
     "genus": "Zebrasoma",
     "species": "flavescens",
@@ -27580,6 +27999,7 @@
   },
   {
     "specCode": 6017,
+    "fishbaseSpecCode": 6017,
     "scientificName": "Paracanthurus hepatus",
     "genus": "Paracanthurus",
     "species": "hepatus",
@@ -27648,6 +28068,7 @@
   },
   {
     "specCode": 1257,
+    "fishbaseSpecCode": 1257,
     "scientificName": "Acanthurus leucosternon",
     "genus": "Acanthurus",
     "species": "leucosternon",
@@ -27716,6 +28137,7 @@
   },
   {
     "specCode": 12023,
+    "fishbaseSpecCode": 12023,
     "scientificName": "Zebrasoma xanthurum",
     "genus": "Zebrasoma",
     "species": "xanthurum",
@@ -27784,6 +28206,7 @@
   },
   {
     "specCode": 7814,
+    "fishbaseSpecCode": 7814,
     "scientificName": "Centropyge loriculus",
     "genus": "Centropyge",
     "species": "loriculus",
@@ -27853,6 +28276,7 @@
   },
   {
     "specCode": 5458,
+    "fishbaseSpecCode": 5458,
     "scientificName": "Centropyge bispinosa",
     "genus": "Centropyge",
     "species": "bispinosa",
@@ -27921,6 +28345,7 @@
   },
   {
     "specCode": 6504,
+    "fishbaseSpecCode": 6504,
     "scientificName": "Pomacanthus imperator",
     "genus": "Pomacanthus",
     "species": "imperator",
@@ -27989,6 +28414,7 @@
   },
   {
     "specCode": 5281,
+    "fishbaseSpecCode": 5281,
     "scientificName": "Gramma loreto",
     "genus": "Gramma",
     "species": "loreto",
@@ -28057,6 +28483,7 @@
   },
   {
     "specCode": 12741,
+    "fishbaseSpecCode": 12741,
     "scientificName": "Pseudochromis fridmani",
     "genus": "Pseudochromis",
     "species": "fridmani",
@@ -28125,6 +28552,7 @@
   },
   {
     "specCode": 12644,
+    "fishbaseSpecCode": 12644,
     "scientificName": "Synchiropus splendidus",
     "genus": "Synchiropus",
     "species": "splendidus",
@@ -28193,6 +28621,7 @@
   },
   {
     "specCode": 3876,
+    "fishbaseSpecCode": 3876,
     "scientificName": "Elacatinus oceanops",
     "genus": "Elacatinus",
     "species": "oceanops",
@@ -28261,6 +28690,7 @@
   },
   {
     "specCode": 6629,
+    "fishbaseSpecCode": 6629,
     "scientificName": "Nemateleotris magnifica",
     "genus": "Nemateleotris",
     "species": "magnifica",
@@ -28329,6 +28759,7 @@
   },
   {
     "specCode": 7198,
+    "fishbaseSpecCode": 7198,
     "scientificName": "Amblygobius phalaena",
     "genus": "Amblygobius",
     "species": "phalaena",
@@ -28397,6 +28828,7 @@
   },
   {
     "specCode": 6058,
+    "fishbaseSpecCode": 6058,
     "scientificName": "Salarias fasciatus",
     "genus": "Salarias",
     "species": "fasciatus",
@@ -28466,6 +28898,7 @@
   },
   {
     "specCode": 6033,
+    "fishbaseSpecCode": 6033,
     "scientificName": "Ecsenius bicolor",
     "genus": "Ecsenius",
     "species": "bicolor",
@@ -28534,6 +28967,7 @@
   },
   {
     "specCode": 15426,
+    "fishbaseSpecCode": 15426,
     "scientificName": "Pterapogon kauderni",
     "genus": "Pterapogon",
     "species": "kauderni",
@@ -28602,6 +29036,7 @@
   },
   {
     "specCode": 5778,
+    "fishbaseSpecCode": 5778,
     "scientificName": "Sphaeramia nematoptera",
     "genus": "Sphaeramia",
     "species": "nematoptera",
@@ -28670,6 +29105,7 @@
   },
   {
     "specCode": 5195,
+    "fishbaseSpecCode": 5195,
     "scientificName": "Pterois volitans",
     "genus": "Pterois",
     "species": "volitans",
@@ -28738,6 +29174,7 @@
   },
   {
     "specCode": 5459,
+    "fishbaseSpecCode": 5459,
     "scientificName": "Labroides dimidiatus",
     "genus": "Labroides",
     "species": "dimidiatus",
@@ -28806,6 +29243,7 @@
   },
   {
     "specCode": 4855,
+    "fishbaseSpecCode": 4855,
     "scientificName": "Halichoeres chrysus",
     "genus": "Halichoeres",
     "species": "chrysus",
@@ -28874,6 +29312,7 @@
   },
   {
     "specCode": 6568,
+    "fishbaseSpecCode": 6568,
     "scientificName": "Pseudanthias squamipinnis",
     "genus": "Pseudanthias",
     "species": "squamipinnis",
@@ -28942,6 +29381,7 @@
   },
   {
     "specCode": 5483,
+    "fishbaseSpecCode": 5483,
     "scientificName": "Chelmon rostratus",
     "genus": "Chelmon",
     "species": "rostratus",
@@ -29011,6 +29451,7 @@
   },
   {
     "specCode": 5955,
+    "fishbaseSpecCode": 5955,
     "scientificName": "Hippocampus kuda",
     "genus": "Hippocampus",
     "species": "kuda",
@@ -29080,6 +29521,7 @@
   },
   {
     "specCode": 4629,
+    "fishbaseSpecCode": 4629,
     "scientificName": "Siganus vulpinus",
     "genus": "Siganus",
     "species": "vulpinus",
@@ -29148,6 +29590,7 @@
   },
   {
     "specCode": 5833,
+    "fishbaseSpecCode": 5833,
     "scientificName": "Oxycirrhites typus",
     "genus": "Oxycirrhites",
     "species": "typus",
@@ -29216,6 +29659,7 @@
   },
   {
     "specCode": 6544,
+    "fishbaseSpecCode": 6544,
     "scientificName": "Canthigaster valentini",
     "genus": "Canthigaster",
     "species": "valentini",
@@ -29284,6 +29728,7 @@
   },
   {
     "specCode": 3684,
+    "fishbaseSpecCode": 3684,
     "scientificName": "Opistognathus aurifrons",
     "genus": "Opistognathus",
     "species": "aurifrons",

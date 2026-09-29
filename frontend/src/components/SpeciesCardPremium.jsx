@@ -319,7 +319,8 @@ export function SpeciesCardPremium({
           </div>
         )}
 
-        {/* Pro: Spec code reference */}
+        {/* Pro: catalog ID reference. speciesId is the Aquacellum catalog ID,
+            not a FishBase SpecCode (that is fishbaseSpecCode on the record). */}
         {proMode && (
           <span style={{
             fontSize: "0.58rem",
@@ -328,7 +329,7 @@ export function SpeciesCardPremium({
             opacity: 0.7,
             marginTop: "auto",
           }}>
-            SpecCode #{breed.speciesId} · FishBase Validated
+            Catalog #{breed.speciesId}
           </span>
         )}
       </div>

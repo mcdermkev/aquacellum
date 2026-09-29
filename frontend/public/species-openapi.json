@@ -44,7 +44,7 @@
           { "name": "fields", "in": "query", "description": "Comma-separated list of top-level fields to include in each record (reduces payload size).", "schema": { "type": "string", "example": "commonName,scientificName,tankParameters" } },
           { "name": "limit", "in": "query", "description": "Page size, max 100.", "schema": { "type": "integer", "default": 25, "maximum": 100 } },
           { "name": "offset", "in": "query", "description": "Pagination offset.", "schema": { "type": "integer", "default": 0 } },
-          { "name": "id", "in": "query", "description": "specCode (e.g. 3615) or scientific-name slug (e.g. amatitlania-nigrofasciata) for single-species lookup.", "schema": { "type": "string" } },
+          { "name": "id", "in": "query", "description": "Catalog specCode (e.g. 3615) or scientific-name slug (e.g. amatitlania-nigrofasciata) for single-species lookup.", "schema": { "type": "string" } },
           { "name": "random", "in": "query", "description": "Set to true to return random species instead of a list.", "schema": { "type": "boolean" } },
           { "name": "count", "in": "query", "description": "Number of random species to return (used with random=true), max 10.", "schema": { "type": "integer", "default": 1, "maximum": 10 } },
           { "name": "stats", "in": "query", "description": "Set to true to return catalog-wide stats instead of species records.", "schema": { "type": "boolean" } }
@@ -117,7 +117,8 @@
       "Species": {
         "type": "object",
         "properties": {
-          "specCode": { "type": "integer", "nullable": true, "description": "FishBase species code, stable unique identifier." },
+          "specCode": { "type": "integer", "nullable": true, "description": "Aquacellum catalog ID, the stable unique identifier used by ?id= lookups. Not a FishBase code; use fishbaseSpecCode for that." },
+          "fishbaseSpecCode": { "type": "integer", "nullable": true, "description": "The species' FishBase SpecCode. Null for plants, invertebrates, corals, amphibians, and fish FishBase lists under a different name." },
           "scientificName": { "type": "string" },
           "genus": { "type": "string", "nullable": true },
           "species": { "type": "string", "nullable": true },
@@ -178,7 +179,7 @@
               "viewOnAquacellum": { "type": "string", "format": "uri" },
               "compareSpecies": { "type": "string", "format": "uri" },
               "shopMarketplace": { "type": "string", "format": "uri" },
-              "fishbaseSource": { "type": "string", "format": "uri", "nullable": true }
+              "fishbaseSource": { "type": "string", "format": "uri", "nullable": true, "description": "FishBase summary page: by fishbaseSpecCode when known, else by scientific name. Null when FishBase has no page (plants, invertebrates, corals, amphibians)." }
             }
           }
         }
