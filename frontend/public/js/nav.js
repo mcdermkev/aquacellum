@@ -15,18 +15,17 @@
   const NAV_LINKS = [
     { href: '/database.html', label: 'Database' },
     { href: '/marketplace.html', label: 'Marketplace' },
-    { href: '/reef.html', label: 'The Reef' },
+    { href: '/app/auctions', label: 'Auctions' },
+    { href: '/app/reef', label: 'The Reef' },
     { href: '/poseidon.html', label: 'Poseidon AI' },
-    { href: '/leaderboard.html', label: 'Leaderboard' },
   ];
 
   const SECONDARY_LINKS = [
     { href: '/breeds.html', label: 'Breed Gallery' },
     { href: '/breeders.html', label: 'Find Breeders' },
     { href: '/compare.html', label: 'Compare Species' },
+    { href: '/leaderboard.html', label: 'Leaderboard' },
     { href: '/how-it-works.html', label: 'How It Works' },
-    { href: '/hobbyist.html', label: 'For Hobbyists' },
-    { href: '/breeder.html', label: 'For Breeders' },
     { href: '/developers.html', label: 'Developers / API' },
     { href: '/about.html', label: 'About' },
     { href: '/legal.html', label: 'Legal' },

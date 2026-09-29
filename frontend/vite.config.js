@@ -152,12 +152,9 @@ export default defineConfig({
         },
       },
       input: {
-        index: resolve(__dirname, 'index.html'),       // Main landing page (/)
-        hobbyist: resolve(__dirname, 'hobbyist.html'), // Hobbyist landing
-        breeder: resolve(__dirname, 'breeder.html'),   // Breeder landing
+        index: resolve(__dirname, 'index.html'),       // Front door (/): search, stock, auctions
         database: resolve(__dirname, 'database.html'), // Species database page
         marketplace: resolve(__dirname, 'marketplace.html'), // Public marketplace browse
-        reef: resolve(__dirname, 'reef.html'),         // The Reef social landing
         reefXr: resolve(__dirname, 'reef-xr.html'),   // Immersive 3D reef (WebXR)
         about: resolve(__dirname, 'about.html'),       // About page
         legal: resolve(__dirname, 'legal.html'),       // Legal & policies page

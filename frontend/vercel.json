@@ -35,7 +35,13 @@
     { "source": "/settings", "destination": "/app/settings", "permanent": false },
     { "source": "/reef-social", "destination": "/app/reef", "permanent": false },
     { "source": "/auctions", "destination": "/app/auctions", "permanent": false },
-    { "source": "/auctions/:id", "destination": "/app/auctions/:id", "permanent": false }
+    { "source": "/auctions/:id", "destination": "/app/auctions/:id", "permanent": false },
+    { "source": "/hobbyist", "destination": "/", "permanent": true },
+    { "source": "/hobbyist.html", "destination": "/", "permanent": true },
+    { "source": "/breeder", "destination": "/app/directory", "permanent": true },
+    { "source": "/breeder.html", "destination": "/app/directory", "permanent": true },
+    { "source": "/reef", "destination": "/app/reef", "permanent": true },
+    { "source": "/reef.html", "destination": "/app/reef", "permanent": true }
   ],
   "rewrites": [
     { "source": "/showcase-media/:path*", "destination": "https://yahsdztnvsykzecjatsl.supabase.co/storage/v1/object/public/showcase-public/:path*" },
@@ -47,12 +53,9 @@
     { "source": "/t/:path*", "destination": "/tank.html" },
     { "source": "/app", "destination": "/app.html" },
     { "source": "/app/:path*", "destination": "/app.html" },
-    { "source": "/hobbyist", "destination": "/hobbyist.html" },
-    { "source": "/breeder", "destination": "/breeder.html" },
     { "source": "/database", "destination": "/database.html" },
     { "source": "/marketplace", "destination": "/marketplace.html" },
     { "source": "/medaka-morphs", "destination": "/medaka-morphs.html" },
-    { "source": "/reef", "destination": "/reef.html" },
     { "source": "/compare", "destination": "/compare.html" },
     { "source": "/how-it-works", "destination": "/how-it-works.html" },
     { "source": "/breeders", "destination": "/breeders.html" },

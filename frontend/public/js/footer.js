@@ -61,20 +61,18 @@
 
           <div class="footer-col">
             <h4 class="footer-col-title">Community</h4>
-            <a href="/reef.html">The Reef</a>
+            <a href="/app/reef">The Reef</a>
+            <a href="/app/auctions">Auctions</a>
+            <a href="/app/auction-night">Club auction night</a>
             <a href="/leaderboard.html">Leaderboard</a>
-            <a href="/hobbyist.html">For Hobbyists</a>
-            <a href="/breeder.html">For Breeders</a>
-            <a href="/how-it-works.html">How It Works</a>
             <a href="/about.html">About Us</a>
           </div>
 
           <div class="footer-col">
             <h4 class="footer-col-title">Resources</h4>
+            <a href="/how-it-works.html">How buying works</a>
+            <a href="/how-it-works.html#fees">Fees</a>
             <a href="/how-it-works.html#faq">FAQ</a>
-            <a href="/how-it-works.html#escrow">Escrow Guide</a>
-            <a href="/about.html#roadmap">Roadmap</a>
-            <a href="/about.html#conservation">Conservation</a>
             <a href="/developers.html">Developer API</a>
             <a href="/legal.html">Legal</a>
           </div>
