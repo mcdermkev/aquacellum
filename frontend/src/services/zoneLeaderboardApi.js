@@ -7,6 +7,7 @@
  */
 
 import { supabase, getCurrentWallet, isSupabaseConfigured } from "./supabaseClient";
+import { fetchMyPrivateProfile } from "./profileColumns";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Zone Leaderboard Queries
@@ -178,13 +179,12 @@ export async function fetchMyZoneAssignment() {
   const wallet = getCurrentWallet();
   if (!wallet) return { ...none, error: "Not connected" };
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("zone_hash, zone_assigned_at, zone_transfer_cooldown")
-    .eq("wallet_address", wallet)
-    .maybeSingle();
+  // zone_assigned_at and zone_transfer_cooldown are owner-only columns (see
+  // 20261003_profiles_private_columns.sql), so read the caller's own row through
+  // my_profile_private() rather than a direct select on profiles.
+  const { data, error } = await fetchMyPrivateProfile();
 
-  if (error) return { ...none, error: error.message };
+  if (error) return { ...none, error };
 
   return {
     assigned: !!data?.zone_hash,
@@ -208,12 +208,8 @@ export async function assignUserToZone(zoneHash) {
   const wallet = getCurrentWallet();
   if (!wallet) return { success: false, error: "Not connected" };
 
-  // Check transfer cooldown
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("zone_hash, zone_transfer_cooldown")
-    .eq("wallet_address", wallet)
-    .single();
+  // Check transfer cooldown (owner-only column; read via my_profile_private())
+  const { data: profile } = await fetchMyPrivateProfile();
 
   if (profile?.zone_hash && profile?.zone_transfer_cooldown) {
     const cooldownEnd = new Date(profile.zone_transfer_cooldown);

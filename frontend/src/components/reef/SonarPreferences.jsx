@@ -47,7 +47,9 @@ import {
   getCurrentWallet,
   isSupabaseConfigured,
   REEF_SESSION_EVENT,
+  waitForReefSession,
 } from "../../services/supabaseClient";
+import { fetchMyPrivateProfile } from "../../services/profileColumns";
 import {
   getPushStatus,
   subscribeToPush,
@@ -181,11 +183,11 @@ export function SonarPreferences({ onClose, casualModeActive = false, poseidonAi
       const wallet = getCurrentWallet();
       if (!wallet) return;
 
-      const { data } = await supabase
-        .from("profiles")
-        .select("notification_preferences")
-        .eq("wallet_address", wallet)
-        .single();
+      // profiles.notification_preferences is owner-only (20261003 column
+      // lockdown), readable through my_profile_private(), which needs the signed
+      // session, so wait for the bridge instead of racing it on mount.
+      await waitForReefSession();
+      const { data } = await fetchMyPrivateProfile();
 
       if (data?.notification_preferences) {
         const stored = { ...DEFAULT_PREFS, ...data.notification_preferences };

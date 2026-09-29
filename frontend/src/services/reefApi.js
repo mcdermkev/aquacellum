@@ -10,6 +10,7 @@
 
 import { supabase, getCurrentWallet, isSupabaseConfigured, resolveProfileWallet } from "./supabaseClient";
 import { checkRateLimit, recordAction } from "./rateLimiter";
+import { PUBLIC_PROFILE_COLUMNS, withOwnPrivateFields } from "./profileColumns";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROFILES
@@ -38,20 +39,20 @@ export async function ensureProfile(walletAddress, initialData = {}) {
   // maybeSingle() returns null (not a 406) when no row matches.
   const { data: existing } = await supabase
     .from("profiles")
-    .select("*")
+    .select(PUBLIC_PROFILE_COLUMNS)
     .eq("wallet_address", normalizedWallet)
     .maybeSingle();
 
-  if (existing) return { data: existing, error: null };
+  if (existing) return { data: await withOwnPrivateFields(existing), error: null };
 
   // Fallback: case-insensitive search to find legacy rows stored with checksum casing
   const { data: existingIlike } = await supabase
     .from("profiles")
-    .select("*")
+    .select(PUBLIC_PROFILE_COLUMNS)
     .ilike("wallet_address", normalizedWallet)
     .maybeSingle();
 
-  if (existingIlike) return { data: existingIlike, error: null };
+  if (existingIlike) return { data: await withOwnPrivateFields(existingIlike), error: null };
 
   // Try direct insert (works if dev RLS bypass policies are active)
   const { data, error } = await supabase
@@ -64,10 +65,10 @@ export async function ensureProfile(walletAddress, initialData = {}) {
       xp_total: initialData.xp_total || 0,
       companion_tier: initialData.companion_tier || "Shallow",
     })
-    .select()
+    .select(PUBLIC_PROFILE_COLUMNS)
     .single();
 
-  if (data) return { data, error: null };
+  if (data) return { data: await withOwnPrivateFields(data), error: null };
 
   return { data: null, error: error?.message || "Profile creation failed" };
 }
@@ -84,22 +85,24 @@ export async function getProfile(walletAddress) {
   // Try exact lowercase match first
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select(PUBLIC_PROFILE_COLUMNS)
     .eq("wallet_address", normalizedWallet)
     .maybeSingle();
 
-  if (data) return { data, error: null };
+  // The caller's own row also gets its private fields (email, notification
+  // preferences ...) via my_profile_private(); anyone else's stays public-only.
+  if (data) return { data: await withOwnPrivateFields(data), error: null };
   // Surface non-"empty" errors (e.g., 401 auth failures) instead of silently treating as not-found
   if (error) console.warn("[reefApi.getProfile] exact lookup error:", error.message || error);
 
   // Fallback: case-insensitive search for legacy rows with checksum casing
   const { data: fallbackData, error: fallbackError } = await supabase
     .from("profiles")
-    .select("*")
+    .select(PUBLIC_PROFILE_COLUMNS)
     .ilike("wallet_address", normalizedWallet)
     .maybeSingle();
 
-  if (fallbackData) return { data: fallbackData, error: null };
+  if (fallbackData) return { data: await withOwnPrivateFields(fallbackData), error: null };
   if (fallbackError) console.warn("[reefApi.getProfile] ilike lookup error:", fallbackError.message || fallbackError);
 
   return { data: null, error: "Not found" };
@@ -118,10 +121,10 @@ export async function updateProfile(walletAddress, updates) {
     .from("profiles")
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq("wallet_address", normalizedWallet)
-    .select()
+    .select(PUBLIC_PROFILE_COLUMNS)
     .maybeSingle();
 
-  if (data) return { data, error: null };
+  if (data) return { data: await withOwnPrivateFields(data), error: null };
 
   // Fallback: case-insensitive match for legacy rows with checksum casing
   const { data: legacyRow } = await supabase
@@ -135,9 +138,9 @@ export async function updateProfile(walletAddress, updates) {
       .from("profiles")
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq("wallet_address", legacyRow.wallet_address)
-      .select()
+      .select(PUBLIC_PROFILE_COLUMNS)
       .maybeSingle();
-    if (fallbackData) return { data: fallbackData, error: null };
+    if (fallbackData) return { data: await withOwnPrivateFields(fallbackData), error: null };
   }
 
   return { data: null, error: error?.message || "Update failed" };

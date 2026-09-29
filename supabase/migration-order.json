@@ -157,6 +157,10 @@
     "frontend/supabase/migrations/20260930_club_auction_fees.sql",
     "frontend/supabase/migrations/20260930_service_pros.sql",
     "frontend/supabase/migrations/20261001_public_view_frag.sql",
-    "frontend/supabase/migrations/20261002_public_leaderboard_view.sql"
+    "frontend/supabase/migrations/20261002_public_leaderboard_view.sql",
+    "frontend/supabase/migrations/20261003_account_deletion.sql",
+    "frontend/supabase/migrations/20261003_profiles_private_columns.sql",
+    "frontend/supabase/migrations/20261003_seller_ship_from_private.sql",
+    "frontend/supabase/migrations/20261003_ai_rate_limit.sql"
   ]
 }

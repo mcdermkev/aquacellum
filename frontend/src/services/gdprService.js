@@ -4,12 +4,67 @@
  * GDPR data export and account deletion for The Reef social layer.
  * 
  * - Export: Gathers all user social data into a downloadable JSON file
- * - Delete: Soft-deletes the account (30-day grace period) then anonymizes
+ * - Delete: records a deletion request; 30 days later the daily purge job
+ *   (/api/retention?action=purge-deletions, api/_lib/accountPurge.js) removes
+ *   the account's personal data and keeps the records listed in DELETION_KEPT.
  * 
  * Privacy rights: right to data portability, right to erasure.
  */
 
-import { supabase, getCurrentWallet, isSupabaseConfigured } from "./supabaseClient";
+import {
+  supabase,
+  getCurrentWallet,
+  isSupabaseConfigured,
+  isFullyAuthenticated,
+  waitForReefSession,
+} from "./supabaseClient";
+import { fetchMyPrivateProfile } from "./profileColumns";
+
+/** Days between the request and the purge. Must match api/_lib/accountPurge.js. */
+export const DELETION_GRACE_DAYS = 30;
+
+/** The exact confirmation phrase the user must type. */
+export const DELETION_CONFIRM_PHRASE = "DELETE MY ACCOUNT";
+
+/**
+ * What the purge removes, in plain words. Mirrors PURGE_PLAN in
+ * api/_lib/accountPurge.js; accountPurge.test.js pins the two together.
+ */
+export const DELETION_REMOVED = Object.freeze([
+  "Your profile details: name, photo, bio, email, notification and privacy settings",
+  "Your synced tanks, livestock, care logs, spawns and grow-out records",
+  "Reef posts, comments, reactions, species insights, follows and tankmate requests",
+  "Direct messages you sent and conversations you are part of",
+  "Club and event activity: memberships, posts, chat, challenge entries and votes",
+  "Notifications, push subscriptions, XP and depth score history, Echo companion data",
+  "Your storefront page, store sections, pickup spots, parcel presets and ship-from address",
+  "Saved payment method reference, carts and order watchlist",
+  "Photos you uploaded for Reef posts, specimens and certificates",
+  "Fish Room showcase pages, if you have one: removed by our team by hand, and the account closes once that is done",
+]);
+
+/** What the purge keeps, and why. */
+export const DELETION_KEPT = Object.freeze([
+  "Orders, payments, refunds, payouts, shipping labels and auction results, including the email on an order, because we need them for accounting, tax and disputes",
+  "Your marketplace listings, switched off so nobody can buy them",
+  "Moderation reports and any account restrictions",
+  "Reward credit records",
+  "Species catalog suggestions and morph submissions you contributed",
+  "Your wallet address, on the records above and on a closed-account marker",
+]);
+
+/**
+ * Map a Supabase RPC error to a message a person can act on.
+ */
+function deletionErrorMessage(error) {
+  if (!error) return null;
+  if (error.code === "PGRST202") {
+    return "Account deletion is not available yet. Please try again later or contact support.";
+  }
+  if (error.code === "42501") return "Please sign in again to manage your account.";
+  if (error.code === "P0002") return "We could not find a profile for this account.";
+  return error.message || "Something went wrong. Please try again.";
+}
 
 /**
  * Export all social data for the current user as a JSON blob.
@@ -34,7 +89,9 @@ export async function exportUserData() {
       requestsSentResult,
       requestsReceivedResult,
     ] = await Promise.all([
-      supabase.from("profiles").select("*").eq("wallet_address", wallet).single(),
+      // Own full row (private columns included) via my_profile_private(); a
+      // direct select("*") on profiles is refused since the column lockdown.
+      fetchMyPrivateProfile(),
       supabase.from("currents").select("*").eq("author_wallet", wallet).order("created_at", { ascending: false }),
       supabase.from("comments").select("*").eq("author_wallet", wallet).order("created_at", { ascending: false }),
       supabase.from("reactions").select("*").eq("user_wallet", wallet),
@@ -112,87 +169,85 @@ export function downloadAsJson(data, filename = "aquacellum-data-export.json") {
 }
 
 /**
- * Request account deletion (soft-delete with 30-day grace period).
- * Sets profile.deletion_requested_at — a cron job handles permanent deletion after 30 days.
- * 
- * During grace period:
- * - Profile hidden from discovery
- * - Content hidden from feeds
- * - User can cancel deletion by logging in and clicking "Cancel Deletion"
- * 
- * After 30 days:
- * - Comments/reactions anonymized (author_wallet → "[deleted]")
- * - Profile, currents, follows, notifications permanently deleted
- * - Media files queued for R2/Storage removal
+ * Turn the RPC status payload into what the UI renders.
  */
-export async function requestAccountDeletion(confirmationText) {
-  if (!isSupabaseConfigured()) return { error: "Supabase not configured" };
-
-  const wallet = getCurrentWallet();
-  if (!wallet) return { error: "Not connected" };
-
-  // Require explicit confirmation
-  if (confirmationText !== "DELETE MY ACCOUNT") {
-    return { error: "Please type 'DELETE MY ACCOUNT' to confirm." };
+function toDeletionStatus(payload) {
+  if (!payload?.pending || !payload.requested_at) {
+    return { pending: false, deletionDate: null };
   }
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      deletion_requested_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("wallet_address", wallet);
-
-  return { error: error?.message || null };
+  const requestedAt = new Date(payload.requested_at);
+  const deletionDate = payload.purge_after
+    ? new Date(payload.purge_after)
+    : new Date(requestedAt.getTime() + DELETION_GRACE_DAYS * 24 * 60 * 60 * 1000);
+  return {
+    pending: true,
+    requestedAt: payload.requested_at,
+    deletionDate: deletionDate.toISOString(),
+    daysRemaining: Math.max(0, Math.ceil((deletionDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000))),
+  };
 }
 
 /**
- * Cancel a pending account deletion (during the 30-day grace period).
+ * Request account deletion.
+ *
+ * Calls request_account_deletion() (20261003_account_deletion.sql), which sets
+ * profiles.deletion_requested_at for the wallet in the signed session. Nothing
+ * is hidden or removed during the grace period; the account keeps working and
+ * the request can be cancelled. After DELETION_GRACE_DAYS the daily purge job
+ * removes everything in DELETION_REMOVED and keeps DELETION_KEPT.
+ *
+ * Repeating the request keeps the original date.
+ *
+ * @returns {Promise<{ error: string|null, status?: object }>}
+ */
+export async function requestAccountDeletion(confirmationText) {
+  if (!isSupabaseConfigured()) return { error: "Supabase not configured" };
+  if (!getCurrentWallet()) return { error: "Not connected" };
+
+  if (confirmationText !== DELETION_CONFIRM_PHRASE) {
+    return { error: `Please type '${DELETION_CONFIRM_PHRASE}' to confirm.` };
+  }
+  if (!isFullyAuthenticated()) {
+    return { error: "Please sign in again to manage your account." };
+  }
+
+  const { data, error } = await supabase.rpc("request_account_deletion");
+  if (error) return { error: deletionErrorMessage(error) };
+  return { error: null, status: toDeletionStatus(data) };
+}
+
+/**
+ * Cancel a pending account deletion (any time before the purge runs).
  */
 export async function cancelAccountDeletion() {
   if (!isSupabaseConfigured()) return { error: "Supabase not configured" };
+  if (!getCurrentWallet()) return { error: "Not connected" };
+  if (!isFullyAuthenticated()) {
+    return { error: "Please sign in again to manage your account." };
+  }
 
-  const wallet = getCurrentWallet();
-  if (!wallet) return { error: "Not connected" };
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      deletion_requested_at: null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("wallet_address", wallet);
-
-  return { error: error?.message || null };
+  const { error } = await supabase.rpc("cancel_account_deletion");
+  return { error: deletionErrorMessage(error) };
 }
 
 /**
  * Check if the current user has a pending deletion request.
+ *
+ * @returns {Promise<{ pending: boolean, deletionDate: string|null,
+ *   requestedAt?: string, daysRemaining?: number, error?: string }>}
  */
 export async function getDeletionStatus() {
   if (!isSupabaseConfigured()) return { pending: false, deletionDate: null };
-
-  const wallet = getCurrentWallet();
-  if (!wallet) return { pending: false, deletionDate: null };
-
-  const { data } = await supabase
-    .from("profiles")
-    .select("deletion_requested_at")
-    .eq("wallet_address", wallet)
-    .single();
-
-  if (!data?.deletion_requested_at) {
-    return { pending: false, deletionDate: null };
+  if (!getCurrentWallet()) return { pending: false, deletionDate: null };
+  // Settings mounts this on first render, which can beat the JWT bridge on a
+  // slow connection. The status RPC needs the signed session, so wait for it
+  // rather than reporting "no deletion scheduled" when one is.
+  await waitForReefSession({ timeoutMs: 8000 });
+  if (!isFullyAuthenticated()) {
+    return { pending: false, deletionDate: null, error: "Please sign in again to manage your account." };
   }
 
-  const requestedAt = new Date(data.deletion_requested_at);
-  const deletionDate = new Date(requestedAt.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-  return {
-    pending: true,
-    requestedAt: data.deletion_requested_at,
-    deletionDate: deletionDate.toISOString(),
-    daysRemaining: Math.max(0, Math.ceil((deletionDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000))),
-  };
+  const { data, error } = await supabase.rpc("my_account_deletion_status");
+  if (error) return { pending: false, deletionDate: null, error: deletionErrorMessage(error) };
+  return toDeletionStatus(data);
 }

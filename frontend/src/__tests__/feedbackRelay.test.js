@@ -1,0 +1,195 @@
+/**
+ * Feedback relay (/api/retention?action=feedback, api/_lib/feedbackRelay.js).
+ *
+ * The Discord webhook used to be a VITE_ variable, inlined into the public
+ * bundle. These pin that it is now server-only, and that the relay limits size,
+ * rate, and what it forwards.
+ */
+
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, it, expect, vi } from "vitest";
+import handleFeedback, {
+  validateFeedback,
+  buildDiscordPayload,
+  sanitizePageUrl,
+  feedbackWebhookUrl,
+  MAX_DESCRIPTION,
+  RATE_LIMIT,
+} from "../../api/_lib/feedbackRelay.js";
+
+const HOOK = "https://discord.com/api/webhooks/123456/abc-DEF_ghi";
+const SB = "https://example-project.supabase.co";
+const ENV = { FEEDBACK_WEBHOOK_URL: HOOK, SUPABASE_URL: SB };
+
+function mockRes() {
+  const res = { statusCode: 200, body: null, headers: {} };
+  res.status = (c) => { res.statusCode = c; return res; };
+  res.json = (b) => { res.body = b; return res; };
+  res.setHeader = (k, v) => { res.headers[k] = v; };
+  return res;
+}
+
+let ipCounter = 0;
+function req(body, { ip, method = "POST", headers = {} } = {}) {
+  return {
+    method,
+    body,
+    headers: { "x-forwarded-for": ip || `203.0.113.${++ipCounter}`, ...headers },
+  };
+}
+
+const read = (p) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), "utf8");
+
+describe("validation", () => {
+  it("requires a description and caps its length", () => {
+    expect(validateFeedback({ description: "   " })).toMatchObject({ ok: false, status: 400 });
+    expect(validateFeedback({ description: "x".repeat(MAX_DESCRIPTION + 1) })).toMatchObject({ ok: false, status: 413 });
+    expect(validateFeedback({ description: "ok", category: "bug" })).toMatchObject({ ok: true });
+  });
+
+  it("rejects oversized bodies even when the description is short", () => {
+    expect(validateFeedback({ description: "ok", padding: "x".repeat(9000) })).toMatchObject({ ok: false, status: 413 });
+  });
+
+  it("normalizes category and drops untrusted fields", () => {
+    const { value } = validateFeedback(
+      {
+        description: "hi",
+        category: "<script>",
+        pageUrl: "https://aquacellum.com/app/tanks?token=secret#tank=9",
+        screenSize: "1280x720; drop",
+        screenshotUrl: "https://evil.example/x.png",
+        wallet_address: "0x1111111111111111111111111111111111111111",
+      },
+      { supabaseUrl: SB }
+    );
+    expect(value).toEqual({
+      category: "other",
+      description: "hi",
+      pageUrl: "https://aquacellum.com/app/tanks",
+      screenSize: null,
+      screenshotUrl: null,
+    });
+  });
+
+  it("keeps screenshot links only when they point at our own public storage", () => {
+    const url = `${SB}/storage/v1/object/public/reef-media/feedback/1.png`;
+    expect(validateFeedback({ description: "hi", screenshotUrl: url }, { supabaseUrl: SB }).value.screenshotUrl).toBe(url);
+  });
+
+  it("strips query strings and fragments from page URLs", () => {
+    expect(sanitizePageUrl("http://localhost:4200/app?e2e=1#x")).toBe("http://localhost:4200/app");
+    expect(sanitizePageUrl("javascript:alert(1)")).toBeNull();
+  });
+});
+
+describe("the Discord message", () => {
+  it("disables mentions and shows only a shortened verified wallet", () => {
+    const payload = buildDiscordPayload(
+      { category: "bug", description: "@everyone broke", pageUrl: null, screenSize: null, screenshotUrl: null },
+      { wallet: "0xabcdef0123456789abcdef0123456789abcdef01" }
+    );
+    expect(payload.allowed_mentions).toEqual({ parse: [] });
+    expect(payload.embeds[0].footer.text).toBe("Wallet: 0xabcd…ef01");
+  });
+});
+
+describe("webhook configuration", () => {
+  it("prefers FEEDBACK_WEBHOOK_URL, falls back to the old name, rejects non-Discord URLs", () => {
+    expect(feedbackWebhookUrl({ FEEDBACK_WEBHOOK_URL: HOOK })).toBe(HOOK);
+    expect(feedbackWebhookUrl({ VITE_DISCORD_FEEDBACK_WEBHOOK: HOOK })).toBe(HOOK);
+    expect(feedbackWebhookUrl({ FEEDBACK_WEBHOOK_URL: "https://evil.example/hook" })).toBeNull();
+    expect(feedbackWebhookUrl({})).toBeNull();
+  });
+});
+
+describe("handler", () => {
+  it("only accepts POST", async () => {
+    const res = mockRes();
+    await handleFeedback(req({}, { method: "GET" }), res, { env: ENV, fetchImpl: vi.fn() });
+    expect(res.statusCode).toBe(405);
+  });
+
+  it("returns 503 without leaking anything when no webhook is configured", async () => {
+    const res = mockRes();
+    const fetchImpl = vi.fn();
+    await handleFeedback(req({ description: "hi" }), res, { env: { SUPABASE_URL: SB }, fetchImpl });
+    expect(res.statusCode).toBe(503);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("relays a valid report and never returns the webhook", async () => {
+    const res = mockRes();
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 204 }));
+    await handleFeedback(req({ description: "the filter chip is stuck", category: "bug" }), res, { env: ENV, fetchImpl });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.stringify(res.body)).not.toContain("discord");
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchImpl.mock.calls[0];
+    expect(url).toBe(HOOK);
+    const sent = JSON.parse(init.body);
+    expect(sent.embeds[0].description).toBe("the filter chip is stuck");
+    expect(sent.embeds[0].footer.text).toBe("Wallet: not signed in");
+  });
+
+  it("maps a Discord failure to a generic 502", async () => {
+    const res = mockRes();
+    await handleFeedback(req({ description: "hi" }), res, { env: ENV, fetchImpl: async () => ({ ok: false, status: 401 }) });
+    expect(res.statusCode).toBe(502);
+    expect(res.body).toEqual({ error: "Could not deliver feedback" });
+  });
+
+  it("rate limits per IP", async () => {
+    const fetchImpl = vi.fn(async () => ({ ok: true, status: 204 }));
+    const ip = "198.51.100.77";
+    const codes = [];
+    for (let i = 0; i < RATE_LIMIT.maxRequests + 1; i++) {
+      const res = mockRes();
+      await handleFeedback(req({ description: `n${i}` }, { ip }), res, { env: ENV, fetchImpl });
+      codes.push(res.statusCode);
+    }
+    expect(codes.slice(0, RATE_LIMIT.maxRequests).every((c) => c === 200)).toBe(true);
+    expect(codes.at(-1)).toBe(429);
+    expect(fetchImpl).toHaveBeenCalledTimes(RATE_LIMIT.maxRequests);
+  });
+
+  it("refuses cross-site origins", async () => {
+    const res = mockRes();
+    await handleFeedback(req({ description: "hi" }, { headers: { origin: "https://evil.example" } }), res, { env: ENV, fetchImpl: vi.fn() });
+    expect(res.statusCode).toBe(403);
+  });
+});
+
+describe("the webhook is out of the client bundle", () => {
+  it("FeedbackWidget posts to our API, not to Discord, and reads no VITE_ webhook", () => {
+    const widget = read("../components/FeedbackWidget.jsx");
+    expect(widget).toContain("/api/retention?action=feedback");
+    expect(widget).not.toMatch(/VITE_DISCORD/);
+    expect(widget).not.toMatch(/discord(app)?\.com\/api\/webhooks/);
+  });
+
+  it("the feedback action is dispatched before the cron gate", () => {
+    const retention = read("../../api/retention.js");
+    const action = retention.indexOf('req.query?.action === "feedback"');
+    const gate = retention.indexOf("if (!isCronRequest(req))");
+    expect(action).toBeGreaterThan(-1);
+    expect(action).toBeLessThan(gate);
+  });
+
+  it("no client source references the old VITE_ webhook variable", () => {
+    const root = fileURLToPath(new URL("../", import.meta.url));
+    const hits = [];
+    const walk = (dir) => {
+      for (const name of readdirSync(dir)) {
+        if (name === "__tests__") continue;
+        const full = path.join(dir, name);
+        if (statSync(full).isDirectory()) walk(full);
+        else if (/\.(jsx?|tsx?)$/.test(name) && readFileSync(full, "utf8").includes("VITE_DISCORD")) hits.push(full);
+      }
+    };
+    walk(root);
+    expect(hits).toEqual([]);
+  });
+});

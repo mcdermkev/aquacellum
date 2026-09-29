@@ -50,7 +50,13 @@ describe("zone assignment is read from the field that actually records it", () =
     const api = read("services/zoneLeaderboardApi.js");
     expect(api).toMatch(/export async function fetchMyZoneAssignment/);
     // Must consult the column the assignment writer updates, not a local mirror.
-    expect(api).toMatch(/select\(["']zone_hash, zone_assigned_at, zone_transfer_cooldown["']\)/);
+    // The cooldown/assigned-at columns are owner-only since
+    // 20261003_profiles_private_columns.sql, so the read goes through the owner
+    // row (my_profile_private) instead of a direct select.
+    const fn = api.slice(api.indexOf("export async function fetchMyZoneAssignment"));
+    expect(fn).toMatch(/fetchMyPrivateProfile\(\)/);
+    expect(fn).toMatch(/data\?\.zone_assigned_at/);
+    expect(fn).toMatch(/data\?\.zone_transfer_cooldown/);
     expect(api).toMatch(/assigned:\s*!!data\?\.zone_hash/);
   });
 

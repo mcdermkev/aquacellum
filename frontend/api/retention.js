@@ -27,6 +27,10 @@
  *     Supabase JWT rather than CRON_SECRET. Folded onto this function because
  *     api/ is at Vercel Hobby's 12-function limit (see
  *     src/__tests__/serverlessFunctionBudget.test.js).
+ *   POST     /api/retention?action=feedback → _lib/feedbackRelay.js. User-facing
+ *     feedback relay to Discord (FEEDBACK_WEBHOOK_URL). Per-IP rate limited.
+ *   GET      /api/retention?action=purge-deletions → _lib/accountPurge.js.
+ *     Daily cron (CRON_SECRET). Closes accounts 30 days after the owner asked.
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -104,6 +108,15 @@ export default async function handler(req, res) {
     return handleTestPush(req, res);
   }
 
+  // `?action=feedback` is also user-facing (the in-app Feedback button). It
+  // relays the report to the team's Discord channel so the webhook URL lives
+  // only in a server env var instead of the public JS bundle. Size-limited and
+  // rate-limited per IP; see _lib/feedbackRelay.js.
+  if (req.query?.action === "feedback") {
+    const { default: handleFeedback } = await import("./_lib/feedbackRelay.js");
+    return handleFeedback(req, res);
+  }
+
   if (!isCronRequest(req)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -125,6 +138,17 @@ export default async function handler(req, res) {
     const { sendWeeklyDigests } = await import("./_lib/weeklyDigest.js");
     const digestResults = await sendWeeklyDigests(supabase);
     return res.status(200).json({ action: "weekly-digest", ...digestResults });
+  }
+
+  // ── `?action=purge-deletions` ─────────────────────────────────────────────
+  // Cron-authenticated. Closes accounts whose owner requested deletion 30+ days
+  // ago (profiles.deletion_requested_at, 20261003_account_deletion.sql): removes
+  // personal and social data from a reviewed table list, keeps order/payment/
+  // auction records, then marks the profile closed. See _lib/accountPurge.js.
+  if (req.query?.action === "purge-deletions") {
+    const { purgeDueAccounts } = await import("./_lib/accountPurge.js");
+    const purgeResults = await purgeDueAccounts(supabase);
+    return res.status(purgeResults.error ? 500 : 200).json(purgeResults);
   }
 
   const results = {

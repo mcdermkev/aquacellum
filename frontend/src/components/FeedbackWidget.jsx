@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { Modal } from "./Modal";
-import { supabase, isSupabaseConfigured } from "../services/supabaseClient";
+import { supabase, isSupabaseConfigured, getMintedToken } from "../services/supabaseClient";
 
 /**
  * FeedbackWidget — Floating "Report Bug / Feedback" button with modal form.
@@ -81,38 +81,29 @@ export function FeedbackWidget({ walletAddress, casualModeActive = true }) {
     }
     feedback.screenshot_url = screenshotUrl;
 
-    // Step 2: Notify Discord FIRST and independently of the database write.
-    // Discord is the team's real-time channel — it must fire even if Supabase is
-    // down or rejects the insert. Discord webhooks allow browser CORS, so this
-    // direct POST works without a server proxy.
-    const discordWebhookUrl = import.meta.env.VITE_DISCORD_FEEDBACK_WEBHOOK;
-    if (discordWebhookUrl) {
-      const categoryEmoji = { bug: "🐛", feature: "💡", ux: "🎨", other: "💬" };
-      try {
-        const res = await fetch(discordWebhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            embeds: [{
-              title: `${categoryEmoji[category] || "💬"} Beta Feedback: ${category.toUpperCase()}`,
-              description: description.trim().slice(0, 1000),
-              color: category === "bug" ? 0xf87171 : category === "feature" ? 0x38bdf8 : category === "ux" ? 0xfbbf24 : 0x94a3b8,
-              fields: [
-                { name: "Page", value: feedback.page_url || "—", inline: true },
-                { name: "Device", value: feedback.screen_size || "—", inline: true },
-                ...(screenshotUrl ? [{ name: "Screenshot", value: `[View](${screenshotUrl})` }] : []),
-              ],
-              footer: { text: `Wallet: ${feedback.wallet_address?.slice(0, 8) || "anonymous"}...` },
-              timestamp: feedback.created_at,
-            }],
-          }),
-        });
-        if (!res.ok) console.warn("[Feedback] Discord webhook returned", res.status);
-      } catch (err) {
-        console.warn("[Feedback] Discord notification failed:", err.message);
-      }
-    } else {
-      console.warn("[Feedback] VITE_DISCORD_FEEDBACK_WEBHOOK not set — Discord notification skipped");
+    // Step 2: Notify the team channel FIRST and independently of the database
+    // write, so it still fires if Supabase is down or rejects the insert. The
+    // post goes through our server (/api/retention?action=feedback), which holds
+    // the Discord webhook in a server-only env var. It used to be read here from
+    // a VITE_ variable, which put the webhook URL in the public bundle.
+    try {
+      const headers = { "Content-Type": "application/json" };
+      const token = getMintedToken();
+      if (token) headers.Authorization = `Bearer ${token}`; // verified wallet attribution only
+      const res = await fetch("/api/retention?action=feedback", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          category,
+          description: feedback.description,
+          pageUrl: feedback.page_url,
+          screenSize: feedback.screen_size,
+          screenshotUrl,
+        }),
+      });
+      if (!res.ok) console.warn("[Feedback] Team notification returned", res.status);
+    } catch (err) {
+      console.warn("[Feedback] Team notification failed:", err.message);
     }
 
     // Step 3: Persist to Supabase (best-effort). On failure, queue locally for later sync.

@@ -14,6 +14,7 @@
  */
 
 import { supabase, getCurrentWallet, isSupabaseConfigured } from "./supabaseClient";
+import { fetchMyPrivateProfile } from "./profileColumns";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tier Discount Map (client-side mirror of get_tier_discount() in SQL)
@@ -53,13 +54,15 @@ export async function getRewardCredits(walletAddress) {
   const wallet = walletAddress || getCurrentWallet();
   if (!wallet) return { data: null, error: "Not connected" };
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("reward_credits, current_tier")
-    .eq("wallet_address", wallet)
-    .single();
+  // reward_credits is owner-only (20261003_profiles_private_columns.sql): the
+  // balance can only be read for the signed-in wallet, via my_profile_private().
+  if (String(wallet).toLowerCase() !== getCurrentWallet()) {
+    return { data: null, error: "Credits are only visible to their owner" };
+  }
+  const { data, error } = await fetchMyPrivateProfile();
 
-  if (error) return { data: null, error: error.message };
+  if (error) return { data: null, error };
+  if (!data) return { data: null, error: "Profile not found" };
 
   return {
     data: {
